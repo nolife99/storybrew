@@ -6,9 +6,10 @@ using System.Text.RegularExpressions;
 
 namespace StorybrewCommon.Storyboarding
 {
+#pragma warning disable CS1591
     public class EffectConfig : MarshalByRefObject
     {
-        private readonly Dictionary<string, ConfigField> fields = new Dictionary<string, ConfigField>();
+        readonly Dictionary<string, ConfigField> fields = new Dictionary<string, ConfigField>();
 
         public int FieldCount => fields.Count;
         public IEnumerable<ConfigField> Fields => fields.Values;
@@ -21,7 +22,6 @@ namespace StorybrewCommon.Storyboarding
                 return sortedValues;
             }
         }
-
         public string[] FieldNames
         {
             get
@@ -34,9 +34,7 @@ namespace StorybrewCommon.Storyboarding
 
         public void UpdateField(string name, string displayName, string description, int order, Type fieldType, object defaultValue, NamedValue[] allowedValues, string beginsGroup)
         {
-            if (fieldType == null)
-                return;
-
+            if (fieldType == null) return;
             if (displayName == null)
             {
                 displayName = Regex.Replace(name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2");
@@ -44,21 +42,17 @@ namespace StorybrewCommon.Storyboarding
             }
 
             var value = fields.TryGetValue(name, out ConfigField field) ?
-                convertFieldValue(field.Value, field.Type, fieldType, defaultValue) :
-                defaultValue;
+                convertFieldValue(field.Value, field.Type, fieldType, defaultValue) : defaultValue;
 
             var isAllowed = allowedValues == null;
-            if (!isAllowed)
-                foreach (var allowedValue in allowedValues)
-                    if (value.Equals(allowedValue.Value))
-                    {
-                        isAllowed = true;
-                        break;
-                    }
-            if (!isAllowed)
-                value = defaultValue;
+            if (!isAllowed) foreach (var allowedValue in allowedValues) if (value.Equals(allowedValue.Value))
+            {
+                isAllowed = true;
+                break;
+            }
+            if (!isAllowed) value = defaultValue;
 
-            fields[name] = new ConfigField()
+            fields[name] = new ConfigField
             {
                 Name = name,
                 DisplayName = displayName,
@@ -67,21 +61,17 @@ namespace StorybrewCommon.Storyboarding
                 Type = fieldType,
                 AllowedValues = allowedValues,
                 BeginsGroup = beginsGroup,
-                Order = order,
+                Order = order
             };
         }
-
-        public void RemoveField(string name)
-            => fields.Remove(name);
-
+        public void RemoveField(string name) => fields.Remove(name);
 
         public bool SetValue(string name, object value)
         {
             var field = fields[name];
-            if (field.Value == value)
-                return false;
+            if (field.Value == value) return false;
 
-            fields[name] = new ConfigField()
+            fields[name] = new ConfigField
             {
                 Name = field.Name,
                 DisplayName = field.DisplayName,
@@ -90,18 +80,15 @@ namespace StorybrewCommon.Storyboarding
                 Type = field.Type,
                 AllowedValues = field.AllowedValues,
                 BeginsGroup = field.BeginsGroup,
-                Order = field.Order,
+                Order = field.Order
             };
             return true;
         }
+        public object GetValue(string name) => fields[name].Value;
 
-        public object GetValue(string name)
-            => fields[name].Value;
-
-        private object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)
+        object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)
         {
-            if (newType.IsAssignableFrom(oldType))
-                return value;
+            if (newType.IsAssignableFrom(oldType)) return value;
 
             try
             {

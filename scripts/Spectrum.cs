@@ -7,10 +7,8 @@ using System.Linq;
 
 namespace StorybrewScripts
 {
-    /// <summary>
-    /// An example of a spectrum effect.
-    /// </summary>
-    public class Spectrum : StoryboardObjectGenerator
+    ///<summary> An example of a spectrum effect. </summary>
+    class Spectrum : StoryboardObjectGenerator
     {
         [Group("Timing")]
         [Configurable] public int StartTime = 0;
@@ -28,14 +26,14 @@ namespace StorybrewScripts
         [Configurable] public int BarCount = 96;
         [Configurable] public int LogScale = 600;
         [Configurable] public OsbEasing FftEasing = OsbEasing.InExpo;
-        [Configurable] public float MinimalHeight = 0.05f;
+        [Configurable] public float MinimalHeight = .05f;
 
         [Group("Optimization")]
-        [Configurable] public double Tolerance = 0.2;
+        [Configurable] public double Tolerance = .2;
         [Configurable] public int CommandDecimals = 1;
         [Configurable] public int FrequencyCutOff = 16000;
 
-        public override void Generate()
+        protected override void Generate()
         {
             if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() != null)
             {
@@ -48,14 +46,14 @@ namespace StorybrewScripts
             var bitmap = GetMapsetBitmap(SpritePath);
 
             var heightKeyframes = new KeyframedValue<float>[BarCount];
-            for (var i = 0; i < BarCount; i++)
-                heightKeyframes[i] = new KeyframedValue<float>(null);
+            for (var i = 0; i < BarCount; i++) heightKeyframes[i] = new KeyframedValue<float>();
 
-            var fftTimeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
-            var fftOffset = fftTimeStep * 0.2;
-            for (var time = (double)StartTime; time < EndTime; time += fftTimeStep)
+            var timeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
+            var offset = timeStep / 5;
+
+            for (double time = StartTime; time < EndTime; time += timeStep)
             {
-                var fft = GetFft(time + fftOffset, BarCount, null, FftEasing, FrequencyCutOff);
+                var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
                 for (var i = 0; i < BarCount; i++)
                 {
                     var height = (float)Math.Log10(1 + fft[i] * LogScale) * SpriteScale.Y / bitmap.Height;
@@ -74,24 +72,18 @@ namespace StorybrewScripts
 
                 var bar = layer.CreateSprite(SpritePath, SpriteOrigin, new Vector2(Position.X + i * barWidth, Position.Y));
                 bar.CommandSplitThreshold = 300;
-                bar.ColorHsb(StartTime, (i * 360.0 / BarCount) + Random(-10.0, 10.0), 0.6 + Random(0.4), 1);
+                bar.ColorHsb(StartTime, (i * 360f / BarCount) + Random(-10f, 10), .6f + Random(.4f), 1);
                 bar.Additive(StartTime, EndTime);
 
                 var scaleX = SpriteScale.X * barWidth / bitmap.Width;
-                scaleX = (float)Math.Floor(scaleX * 10) / 10.0f;
+                scaleX = (float)Math.Floor(scaleX * 10) / 10f;
 
                 var hasScale = false;
-                keyframes.ForEachPair(
-                    (start, end) =>
-                    {
-                        hasScale = true;
-                        bar.ScaleVec(start.Time, end.Time,
-                            scaleX, start.Value,
-                            scaleX, end.Value);
-                    },
-                    MinimalHeight,
-                    s => (float)Math.Round(s, CommandDecimals)
-                );
+                keyframes.ForEachPair((start, end) =>
+                {
+                    hasScale = true;
+                    bar.ScaleVec(start.Time, end.Time, scaleX, start.Value, scaleX, end.Value);
+                }, MinimalHeight, s => (float)Math.Round(s, CommandDecimals));
                 if (!hasScale) bar.ScaleVec(StartTime, scaleX, MinimalHeight);
             }
         }

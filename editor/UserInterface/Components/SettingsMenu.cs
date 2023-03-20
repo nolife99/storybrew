@@ -9,8 +9,8 @@ namespace StorybrewEditor.UserInterface.Components
 {
     public class SettingsMenu : Widget
     {
-        private readonly LinearLayout layout;
-        private Project project;
+        readonly LinearLayout layout;
+        Project project;
 
         public override Vector2 MinSize => layout.MinSize;
         public override Vector2 MaxSize => layout.MaxSize;
@@ -20,7 +20,7 @@ namespace StorybrewEditor.UserInterface.Components
         {
             this.project = project;
 
-            Button referencedAssemblyButton, floatingPointTimeButton, helpButton;
+            Button referencedAssemblyButton, floatingPointTimeButton, helpButton, displayWarningbutton;
             Label dimLabel;
             Slider dimSlider;
 
@@ -31,11 +31,11 @@ namespace StorybrewEditor.UserInterface.Components
                 FitChildren = true,
                 Fill = true,
                 Children = new Widget[]
-                    {
+                {
                     new Label(manager)
                     {
                         Text = "Settings",
-                        CanGrow = false,
+                        CanGrow = false
                     },
                     new LinearLayout(manager)
                     {
@@ -48,13 +48,13 @@ namespace StorybrewEditor.UserInterface.Components
                             {
                                 Text = "Help!",
                                 AnchorFrom = BoxAlignment.Centre,
-                                AnchorTo = BoxAlignment.Centre,
+                                AnchorTo = BoxAlignment.Centre
                             },
                             referencedAssemblyButton = new Button(manager)
                             {
-                                Text = "Referenced Assemblies",
+                                Text = "View referenced assemblies",
                                 AnchorFrom = BoxAlignment.Centre,
-                                AnchorTo = BoxAlignment.Centre,
+                                AnchorTo = BoxAlignment.Centre
                             },
                             new LinearLayout(manager)
                             {
@@ -65,7 +65,7 @@ namespace StorybrewEditor.UserInterface.Components
                                     dimLabel = new Label(manager)
                                     {
                                         StyleName = "small",
-                                        Text = "Dim",
+                                        Text = "Dim"
                                     },
                                     dimSlider = new Slider(manager)
                                     {
@@ -73,22 +73,31 @@ namespace StorybrewEditor.UserInterface.Components
                                         AnchorFrom = BoxAlignment.Centre,
                                         AnchorTo = BoxAlignment.Centre,
                                         Value = 0,
-                                        Step = .05f,
-                                    },
+                                        Step = .05f
+                                    }
                                 }
                             },
                             floatingPointTimeButton = new Button(manager)
                             {
-                                Text = "Export Time as Floating Point",
+                                Text = "Export time as floating-point",
                                 AnchorFrom = BoxAlignment.Centre,
                                 AnchorTo = BoxAlignment.Centre,
                                 Checkable = true,
                                 Checked = project.ExportSettings.UseFloatForTime,
-                                Tooltip = "A storyboard exported with this option enabled\nwill only be compatible with lazer",
+                                Tooltip = "A storyboard exported with this option enabled\nwill only be compatible with lazer."
                             },
+                            displayWarningbutton = new Button(manager)
+                            {
+                                Text = "Toggle debug warnings",
+                                AnchorFrom = BoxAlignment.Centre,
+                                AnchorTo = BoxAlignment.Centre,
+                                Checkable = true,
+                                Checked = project.DisplayDebugWarning,
+                                Tooltip = "Toggle to display debug diagnostics about\nyour storyboard."
+                            }
                         }
                     }
-                },
+                }
             });
 
             helpButton.OnClick += (sender, e) => Process.Start($"https://github.com/{Program.Repository}/wiki");
@@ -99,14 +108,13 @@ namespace StorybrewEditor.UserInterface.Components
                 dimLabel.Text = $"Dim ({project.DimFactor:p})";
             };
             floatingPointTimeButton.OnValueChanged += (sender, e) => project.ExportSettings.UseFloatForTime = floatingPointTimeButton.Checked;
+            displayWarningbutton.OnValueChanged += (sender, e) => project.DisplayDebugWarning = displayWarningbutton.Checked;
         }
-
         protected override void Dispose(bool disposing)
         {
             project = null;
             base.Dispose(disposing);
         }
-
         protected override void Layout()
         {
             base.Layout();

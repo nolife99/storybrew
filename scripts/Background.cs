@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace StorybrewScripts
 {
-    public class Background : StoryboardObjectGenerator
+    class Background : StoryboardObjectGenerator
     {
         [Group("Timing")]
         [Configurable] public int StartTime = 0;
@@ -15,7 +15,7 @@ namespace StorybrewScripts
         [Configurable] public string SpritePath = "";
         [Configurable] public double Opacity = 0.2;
 
-        public override void Generate()
+        protected override void Generate()
         {
             if (SpritePath == "") SpritePath = Beatmap.BackgroundPath ?? string.Empty;
             if (StartTime == EndTime) EndTime = (int)(Beatmap.HitObjects.LastOrDefault()?.EndTime ?? AudioDuration);

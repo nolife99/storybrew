@@ -2,6 +2,7 @@
 
 namespace StorybrewCommon.Storyboarding.CommandValues
 {
+#pragma warning disable CS1591
     [Serializable]
     public struct CommandParameter : CommandValue
     {
@@ -12,11 +13,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
 
         public readonly ParameterType Type;
 
-        private CommandParameter(ParameterType type)
-        {
-            Type = type;
-        }
-
+        CommandParameter(ParameterType type) => Type = type;
         public string ToOsbString(ExportSettings exportSettings)
         {
             switch (Type)
@@ -24,25 +21,17 @@ namespace StorybrewCommon.Storyboarding.CommandValues
                 case ParameterType.FlipHorizontal: return "H";
                 case ParameterType.FlipVertical: return "V";
                 case ParameterType.AdditiveBlending: return "A";
-                default: throw new InvalidOperationException(Type.ToString());
+                default: throw new InvalidOperationException($"Parameter command cannot be None.");
             }
         }
-
         public override string ToString() => ToOsbString(ExportSettings.Default);
 
-        public float DistanceFrom(object obj)
-        {
-            var other = (CommandParameter)obj;
-            return other.Type != Type ? 1 : 0;
-        }
+        public float DistanceFrom(object obj) => ((CommandParameter)obj).Type != Type ? 1 : 0;
+        public override bool Equals(object obj) => obj is CommandParameter parameter && Equals(parameter);
+        public override int GetHashCode() => base.GetHashCode();
 
-        public static bool operator ==(CommandParameter left, CommandParameter right)
-            => left.Type == right.Type;
-
-        public static bool operator !=(CommandParameter left, CommandParameter right)
-            => left.Type != right.Type;
-
-        public static implicit operator bool(CommandParameter obj)
-            => obj.Type != ParameterType.None;
+        public static bool operator ==(CommandParameter left, CommandParameter right) => left.Equals(right);
+        public static bool operator !=(CommandParameter left, CommandParameter right) => !left.Equals(right);
+        public static implicit operator bool(CommandParameter obj) => obj.Type != ParameterType.None;
     }
 }

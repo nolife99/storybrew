@@ -1,19 +1,22 @@
-﻿using System;
+﻿using BrewLib.Util;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace StorybrewCommon.Subtitles.Parsers
 {
-    // YouTube's subtitle format
-    public class SbvParser
+    ///<summary> Parsing methods for .sbv subtitle files. </summary>
+    public class SbvParser : SubtitleParser
     {
+        ///<inheritdoc/>
         public SubtitleSet Parse(string path)
         {
-            using (var stream = BrewLib.Util.Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            using (var stream = Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
                 return Parse(stream);
         }
 
+        ///<inheritdoc/>
         public SubtitleSet Parse(Stream stream)
         {
             var lines = new List<SubtitleLine>();
@@ -28,8 +31,7 @@ namespace StorybrewCommon.Subtitles.Parsers
             }
             return new SubtitleSet(lines);
         }
-
-        private IEnumerable<string> parseBlocks(Stream stream)
+        IEnumerable<string> parseBlocks(Stream stream)
         {
             using (var reader = new StreamReader(stream))
             {
@@ -52,7 +54,6 @@ namespace StorybrewCommon.Subtitles.Parsers
             }
         }
 
-        private double parseTimestamp(string timestamp)
-            => TimeSpan.Parse(timestamp).TotalMilliseconds;
+        double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp).TotalMilliseconds;
     }
 }
