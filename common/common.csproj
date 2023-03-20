@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\brewlib-merge\brewlib.csproj" />
+    <ProjectReference Include="..\brewlib\brewlib.csproj" />
   </ItemGroup>
 
 </Project>
