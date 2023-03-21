@@ -30,9 +30,8 @@ namespace StorybrewCommon.Scripting
         ///<summary> Override to true if this script uses multiple threads. </summary>
         ///<remarks> It will prevent other effects from updating in parallel to this one. </remarks>
         protected virtual bool Multithreaded => false;
-
-        ///<summary> The base compressor for this instance. </summary>
-        public PngCompressor Compressor { get; protected internal set; }
+        
+        internal PngCompressor Compressor { get; private set; }
 
         ///<summary> Creates or retrieves a layer. </summary>
         ///<remarks> The identifier will be shown in the editor as "Effect name (Identifier)". </remarks>
@@ -402,7 +401,6 @@ namespace StorybrewCommon.Scripting
 
                 foreach (var bitmap in bitmaps.Values) bitmap.Dispose();
                 bitmaps.Clear();
-                Compressor.Dispose();
             }
         }
         ///<summary> Main body for storyboard generation. </summary>

@@ -1,6 +1,5 @@
 using BrewLib.Data;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -8,24 +7,25 @@ using System.Text;
 
 namespace BrewLib.Util.Compression
 {
-    public class PngCompressor : ImageCompressor, IDisposable
+    public class PngCompressor : ImageCompressor
     {
-        bool disposedValue;
-        readonly HashSet<string> directories = new HashSet<string>();
-
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(ImageCompressor)), "brewlib");
 
         protected override void compress(string path, string compressionType, 
             LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings, InputFormat inputFormat = null)
         {
+            if (!Environment.Is64BitOperatingSystem && compressionType == "lossy")
+            {
+                Trace.TraceError("Lossy compression failed: Operating system is not x64. Falling back to lossless compress");
+                compressionType = "";
+            }
+            if (!File.Exists(path)) throw new ArgumentException(nameof(path));
+            if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat)))
+                throw new InvalidDataException("Input format is required for file without extension");
+
             try
             {
-                if (!File.Exists(path)) throw new ArgumentException(nameof(path));
-                if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat)))
-                    throw new InvalidDataException("Input format is required for file without extension");
-
-                var bytes = File.ReadAllBytes(path);
                 if (File.Exists(path + "_")) File.Delete(path + "_");
 
                 UtilityName = compressionType != "lossy" ? "optipng.exe" : "pngquant.exe";
@@ -43,22 +43,24 @@ namespace BrewLib.Util.Compression
                 };
                 InitStartInfo(startInfo);
 
-                process = process is null ? Process.Start(startInfo) : throw new InvalidOperationException("Compression has already started");
+                process = process is null ? Process.Start(startInfo) : process;
 
                 waitForExit();
-                if (process.ExitCode != 0) throw new InvalidProgramException("Some error occured");
+                if (process.ExitCode != 0) throw new InvalidProgramException($"An error occured in the process: {process.StandardError.ReadToEnd()}");
                 process.Close();
                 process = null;
-
-                var compressed = File.ReadAllBytes(path + "_");
-                if (bytes.Length > compressed.Length) File.WriteAllBytes(path, compressed);
-                directories.Add(Path.GetDirectoryName(path));
             }
             catch (Exception e)
             {
                 ensureStop();
-                Trace.WriteLine($"Compression failed: {e}");
-                throw;
+                foreach (var file in Directory.GetFiles(Path.GetDirectoryName(path), "*.png_")) File.Delete(file);
+                throw new OperationCanceledException("Compression failed", e);
+            }
+            finally
+            {
+                var bytes = new FileInfo(path);
+                var compressed = new FileInfo(path + "_");
+                if (bytes.Length > compressed.Length) File.Replace(path + "_", path, null);
             }
         }
         protected override string appendArgs(string inputFile, string outputFile, string compressionType, 
@@ -84,7 +86,7 @@ namespace BrewLib.Util.Compression
             }
             else
             {
-                stringBuilder.AppendFormat("{0} -out {1} ", input, output);
+                stringBuilder.AppendFormat("{0} -out {1}", input, output);
                 if (losslessInputSettings != null)
                 {
                     stringBuilder.AppendFormat(" {0} ", losslessInputSettings.OptimizationLevel);
@@ -107,16 +109,8 @@ namespace BrewLib.Util.Compression
             var path = GetUtility();
             if (File.Exists(path)) return;
 
-            using (var stream = container.GetStream(UtilityName, ResourceSource.Embedded | ResourceSource.Relative))
-            using (var dest = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None)) stream.CopyTo(dest);
-        }
-        public void Dispose()
-        {
-            if (!disposedValue)
-            {
-                foreach (var dir in directories) foreach (var file in Directory.GetFiles(dir, "*.png_")) File.Delete(file);
-                disposedValue = true;
-            }
+            using (var stream = container.GetStream(UtilityName, ResourceSource.Embedded | ResourceSource.Relative)) using (var dest = File.OpenWrite(path)) 
+                stream.CopyTo(dest);
         }
     }
 }
