@@ -24,9 +24,9 @@ namespace BrewLib.Util.Compression
                 if (!File.Exists(path)) throw new ArgumentException(nameof(path));
                 if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat)))
                     throw new InvalidDataException("Input format is required for file without extension");
-                    
+
                 var bytes = File.ReadAllBytes(path);
-                if (File.Exists(path + "_")) throw new IOException($"Compression failed: {path + "_"} exists");
+                if (File.Exists(path + "_")) File.Delete(path + "_");
 
                 UtilityName = compressionType != "lossy" ? "optipng.exe" : "pngquant.exe";
                 ensureTool();
@@ -95,11 +95,11 @@ namespace BrewLib.Util.Compression
         }
         protected override void waitForExit()
         {
-            if (process == null) throw new Exception("Image compression process was aborted");
+            if (process == null) return;
             if (!process.HasExited && !process.WaitForExit(ExecutionTimeout.HasValue ? (int)ExecutionTimeout.Value.TotalMilliseconds : int.MaxValue))
             {
                 ensureStop();
-                throw new TimeoutException("Image compression process exceeded execution timeout and was aborted");
+                Trace.WriteLine("Image compression process exceeded execution timeout and was aborted");
             }
         }
         protected override void ensureTool()

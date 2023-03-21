@@ -32,7 +32,7 @@ namespace StorybrewCommon.Scripting
         protected virtual bool Multithreaded => false;
 
         ///<summary> The base compressor for this instance. </summary>
-        protected internal PngCompressor Compressor { get; private set; }
+        public PngCompressor Compressor { get; protected internal set; }
 
         ///<summary> Creates or retrieves a layer. </summary>
         ///<remarks> The identifier will be shown in the editor as "Effect name (Identifier)". </remarks>
