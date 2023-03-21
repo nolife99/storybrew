@@ -15,11 +15,13 @@ namespace BrewLib.Util
         {
             var opt = compressor ?? new PngCompressor();
             opt.LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level1 });
+            if (compressor is null) opt.Dispose();
         }
         public static void Compress(string path, PngCompressor compressor = null)
         {
             var opt = compressor ?? new PngCompressor();
             opt.Compress(path, new LossyInputSettings { Speed = 1 });
+            if (compressor is null) opt.Dispose();
         }
         public static PinnedBitmap Premultiply(Bitmap source)
         {

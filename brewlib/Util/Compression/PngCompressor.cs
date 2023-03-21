@@ -1,5 +1,6 @@
 using BrewLib.Data;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -7,8 +8,11 @@ using System.Text;
 
 namespace BrewLib.Util.Compression
 {
-    public class PngCompressor : ImageCompressor
+    public class PngCompressor : ImageCompressor, IDisposable
     {
+        bool disposedValue;
+        readonly HashSet<string> directories = new HashSet<string>();
+
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(ImageCompressor)), "brewlib");
 
@@ -48,16 +52,13 @@ namespace BrewLib.Util.Compression
 
                 var compressed = File.ReadAllBytes(path + "_");
                 if (bytes.Length > compressed.Length) File.WriteAllBytes(path, compressed);
+                directories.Add(Path.GetDirectoryName(path));
             }
             catch (Exception e)
             {
+                ensureStop();
                 Trace.WriteLine($"Compression failed: {e}");
                 throw;
-            }
-            finally
-            {
-                ensureStop();
-                foreach (var file in Directory.GetFiles(Path.GetDirectoryName(path), "*.png_")) File.Delete(file);
             }
         }
         protected override string appendArgs(string inputFile, string outputFile, string compressionType, 
@@ -108,6 +109,14 @@ namespace BrewLib.Util.Compression
 
             using (var stream = container.GetStream(UtilityName, ResourceSource.Embedded | ResourceSource.Relative))
             using (var dest = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None)) stream.CopyTo(dest);
+        }
+        public void Dispose()
+        {
+            if (!disposedValue)
+            {
+                foreach (var dir in directories) foreach (var file in Directory.GetFiles(dir, "*.png_")) File.Delete(file);
+                disposedValue = true;
+            }
         }
     }
 }
