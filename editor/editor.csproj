@@ -88,7 +88,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\brewlib-merge\bass\$(Platform)\*.dll">
+    <Content Include="..\brewlib\bass\$(Platform)\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

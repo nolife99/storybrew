@@ -402,7 +402,6 @@ namespace StorybrewCommon.Scripting
 
                 foreach (var bitmap in bitmaps.Values) bitmap.Dispose();
                 bitmaps.Clear();
-                Compressor.Dispose();
             }
         }
         ///<summary> Main body for storyboard generation. </summary>
