@@ -7,8 +7,7 @@ using System.IO;
 namespace StorybrewCommon.Storyboarding.CommandValues
 {
     ///<summary> Base struct for coloring commands. </summary>
-    [Serializable]
-    public struct CommandColor : CommandValue, IEquatable<CommandColor>
+    [Serializable] public struct CommandColor : CommandValue, IEquatable<CommandColor>
     {
         ///<summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
         public static readonly CommandColor Black = new CommandColor(0, 0, 0);

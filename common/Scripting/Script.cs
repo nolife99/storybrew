@@ -18,6 +18,7 @@ namespace StorybrewCommon.Scripting
                 identifier = value;
             }
         }
+
         ///<summary/>
         public override object InitializeLifetimeService()
         {

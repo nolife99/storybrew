@@ -66,12 +66,10 @@ namespace StorybrewEditor.Util
         public void CancelQueuedActions(bool stopThreads)
         {
             lock (context.Queue) context.Queue.Clear();
-
             if (stopThreads)
             {
-                var sw = new Stopwatch();
-                sw.Start();
-                foreach (var r in actionRunners) r.JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds));
+                var sw = Stopwatch.StartNew();
+                foreach (var r in actionRunners) r.JoinOrAbort(Math.Max(1000, 2000 - (int)sw.ElapsedMilliseconds));
             }
         }
 
@@ -237,7 +235,7 @@ namespace StorybrewEditor.Util
                     var cancellationToken = cancellationTokenSource.Token;
                     var completed = false;
 
-                    while (!completed && !cancellationToken.IsCancellationRequested) completed = localThread.Join(millisecondsTimeout);
+                    while (!completed && !cancellationToken.IsCancellationRequested) completed = localThread.Join(10);
                     if (!completed) Trace.WriteLine($"Canceling thread {localThread.Name}");
                     else Trace.WriteLine($"Canceled thread {localThread.Name}");
                 }

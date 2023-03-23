@@ -28,7 +28,7 @@ namespace StorybrewCommon.Animations
         public static Func<double, double> QuadIn = x => x * x;
         ///<summary> An easing function that represents a squared easing-out progression. </summary>
         public static Func<double, double> QuadOut = x => Reverse(QuadIn, x);
-        ///<summary> An easing function that represents a basic squared easing-in-out progression. </summary>
+        ///<summary> An easing function that represents a squared easing-in-out progression. </summary>
         public static Func<double, double> QuadInOut = x => ToInOut(QuadIn, x);
 
         ///<summary> An easing function that represents a cubed easing-in progression. </summary>

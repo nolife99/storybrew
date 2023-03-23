@@ -1,8 +1,10 @@
 using OpenTK;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -41,14 +43,19 @@ namespace StorybrewCommon.Storyboarding3d
         readonly CommandGenerator gen = new CommandGenerator();
 
         ///<inheritdoc/>
-        public override IEnumerable<CommandGenerator> CommandGenerators { get { yield return gen; } }
+        public IEnumerable<CommandGenerator> CommandGenerators { get { yield return gen; } }
 
-#pragma warning disable CS1591
+        ///<inheritdoc/>
+        public void ConfigureGenerators(Action<CommandGenerator> action) => action(gen);
+
+        ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
             sprite = sprite ?? segment.CreateSprite(SpritePath, SpriteOrigin);
             spriteBitmap = CommandGenerator.BitmapDimensions(sprite.TexturePath);
         }
+
+        ///<inheritdoc/>
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
         {
             var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
@@ -57,7 +64,7 @@ namespace StorybrewCommon.Storyboarding3d
 
             var delta = endVector.Xy - startVector.Xy;
             var length = delta.Length;
-            if (Math.Round(length, gen.ScaleDecimals) == 0) return;
+            if (delta.LengthSquared == 0) return;
 
             var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
@@ -86,6 +93,8 @@ namespace StorybrewCommon.Storyboarding3d
 
         ///<inheritdoc/>
         public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
+
+        ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
             if (finalize != null) action += (createCommands, sprite) =>
@@ -96,6 +105,8 @@ namespace StorybrewCommon.Storyboarding3d
             gen.GenerateCommands(sprite, action, startTime, endTime, timeOffset, loopable);
         }
     }
+
+#pragma warning disable CS1591
     public class Line3dEx : Node3d, HasOsbSprites
     {
         Action<OsbSprite> finalize;
@@ -139,7 +150,9 @@ namespace StorybrewCommon.Storyboarding3d
             genBottomEdge = new CommandGenerator(),
             genStartCap = new CommandGenerator(),
             genEndCap = new CommandGenerator();
-        public override IEnumerable<CommandGenerator> CommandGenerators
+
+        ///<inheritdoc/>
+        public IEnumerable<CommandGenerator> CommandGenerators
         {
             get
             {
@@ -153,6 +166,7 @@ namespace StorybrewCommon.Storyboarding3d
 
         readonly Vector2[] spriteBitmaps = new Vector2[3];
 
+        ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
             spriteBody = spriteBody ?? segment.CreateSprite(SpritePathBody, OsbOrigin.Centre);
@@ -171,6 +185,8 @@ namespace StorybrewCommon.Storyboarding3d
                 spriteBitmaps[2] = CommandGenerator.BitmapDimensions(SpritePathCap);
             }
         }
+
+        ///<inheritdoc/>
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
         {
             var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
@@ -179,7 +195,7 @@ namespace StorybrewCommon.Storyboarding3d
 
             var delta = endVector.Xy - startVector.Xy;
             var length = delta.Length;
-            if (length == 0) return;
+            if (delta.LengthSquared == 0) return;
 
             var angle = Math.Atan2(delta.Y, delta.X);
             var rotation = InterpolatingFunctions.DoubleAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
@@ -284,6 +300,18 @@ namespace StorybrewCommon.Storyboarding3d
 
         ///<inheritdoc/>
         public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
+
+        ///<inheritdoc/>
+        public void ConfigureGenerators(Action<CommandGenerator> action)
+        {
+            action(genBody);
+            action(genBottomEdge);
+            action(genEndCap);
+            action(genStartCap);
+            action(genTopEdge);
+        }
+
+        ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
             if (finalize != null) action += (createCommands, sprite) =>

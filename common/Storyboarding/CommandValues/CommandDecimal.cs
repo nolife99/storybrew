@@ -4,8 +4,7 @@ using System.IO;
 namespace StorybrewCommon.Storyboarding.CommandValues
 {
     ///<summary> Custom decimal handler for storyboarding. </summary>
-    [Serializable]
-    public struct CommandDecimal : CommandValue, IEquatable<CommandDecimal>
+    [Serializable] public struct CommandDecimal : CommandValue, IEquatable<CommandDecimal>
     {
         readonly double value;
 

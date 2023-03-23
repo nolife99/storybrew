@@ -9,28 +9,28 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace StorybrewCommon.Storyboarding
+namespace StorybrewCommon.Storyboarding.Util
 {
     ///<summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
     public class CommandGenerator
     {
-        readonly KeyframedValue<Vector2> 
+        readonly KeyframedValue<Vector2>
             positions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
             scales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
             finalPositions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
             finalScales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
 
-        readonly KeyframedValue<float> 
+        readonly KeyframedValue<float>
             rotations = new KeyframedValue<float>(InterpolatingFunctions.FloatAngle),
             fades = new KeyframedValue<float>(InterpolatingFunctions.Float),
             finalRotations = new KeyframedValue<float>(InterpolatingFunctions.FloatAngle),
             finalfades = new KeyframedValue<float>(InterpolatingFunctions.Float);
 
-        readonly KeyframedValue<CommandColor> 
+        readonly KeyframedValue<CommandColor>
             colors = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor),
             finalColors = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor);
 
-        readonly KeyframedValue<bool> 
+        readonly KeyframedValue<bool>
             flipH = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom),
             flipV = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom),
             additive = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom);
@@ -97,7 +97,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="timeOffset"> The time offset of the command times. </param>
         ///<param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
         ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
-        public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false) 
+        public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
             => GenerateCommands(sprite, OsuHitObject.WidescreenStoryboardBounds, action, startTime, endTime, timeOffset, loopable);
 
         ///<summary> Generates commands on a sprite based on this generator's states. </summary>
@@ -206,7 +206,7 @@ namespace StorybrewCommon.Storyboarding
                 else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
             }, Vector2.One, s => new Vector2((float)Math.Round(s.X, ScaleDecimals), (float)Math.Round(s.Y, ScaleDecimals)), startState, loopable: loopable);
 
-            finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 
+            finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
                 0, r => (float)Math.Round(r, RotationDecimals), startState, loopable: loopable);
 
             finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White,
@@ -214,9 +214,9 @@ namespace StorybrewCommon.Storyboarding
 
             finalfades.ForEachPair((s, e) =>
             {
-                if (!((s.Time == sprite.CommandsStartTime && s.Time == e.Time && e.Value == 1) ||
-                    (s.Time == sprite.CommandsEndTime && s.Time == e.Time && e.Value == 0)))
-                sprite.Fade(s.Time, e.Time, s.Value, e.Value);
+                if (!(s.Time == sprite.CommandsStartTime && s.Time == e.Time && e.Value == 1 ||
+                    s.Time == sprite.CommandsEndTime && s.Time == e.Time && e.Value == 0))
+                    sprite.Fade(s.Time, e.Time, s.Value, e.Value);
             }, -1, o => (float)Math.Round(o, OpacityDecimals), startState, endState, loopable: loopable);
 
             flipH.ForEachFlag((f, t) => sprite.FlipH(f, t));
@@ -293,7 +293,7 @@ namespace StorybrewCommon.Storyboarding
         /// <returns> <see langword="true"/> if the sprite is within <paramref name="bounds"/>, else returns <see langword="false"/>. </returns>
         public bool IsVisible(Vector2 imageSize, OsbOrigin origin, Box2 bounds, CommandGenerator generator = null)
         {
-            if (Additive && Color == CommandColor.Black || 
+            if (Additive && Color == CommandColor.Black ||
                 (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
                 Scale.X == 0 || Scale.Y == 0)
                 return false;
@@ -304,21 +304,7 @@ namespace StorybrewCommon.Storyboarding
             {
                 var w = imageSize.X * Scale.X;
                 var h = imageSize.Y * Scale.Y;
-                Vector2 originVector;
-
-                switch (origin)
-                {
-                    default:
-                    case OsbOrigin.TopLeft: originVector = Vector2.Zero; break;
-                    case OsbOrigin.TopCentre: originVector = new Vector2(w / 2, 0); break;
-                    case OsbOrigin.TopRight: originVector = new Vector2(w, 0); break;
-                    case OsbOrigin.CentreLeft: originVector = new Vector2(0, h / 2); break;
-                    case OsbOrigin.Centre: originVector = new Vector2(w / 2, h / 2); break;
-                    case OsbOrigin.CentreRight: originVector = new Vector2(w, h / 2); break;
-                    case OsbOrigin.BottomLeft: originVector = new Vector2(0, h); break;
-                    case OsbOrigin.BottomCentre: originVector = new Vector2(w / 2, h); break;
-                    case OsbOrigin.BottomRight: originVector = new Vector2(w, h); break;
-                }
+                var originVector = OsbSprite.GetOriginVector(origin, w, h);
 
                 var obb = new OrientedBoundingBox(Position, originVector, w, h, Rotation);
                 if (!obb.Intersects(bounds)) return false;

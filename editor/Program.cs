@@ -182,8 +182,7 @@ namespace StorybrewEditor
             var watch = new Stopwatch();
 
             watch.Start();
-            var wait = new ManualResetEventSlim();
-            while (window.Exists && !window.IsExiting)
+            using (var wait = new ManualResetEventSlim()) while (window.Exists && !window.IsExiting)
             {
                 var focused = window.Focused;
                 var currentTime = watch.Elapsed.TotalSeconds;
@@ -403,40 +402,42 @@ namespace StorybrewEditor
                 var answered = false;
                 var frozen = 0;
 
-                var wait = new ManualResetEventSlim();
-                while (!SchedulingEnabled) wait.Wait(1000);
-                while (true)
+                using (var wait = new ManualResetEventSlim())
                 {
-                    answered = false;
-                    Schedule(() => answered = true);
-
-                    wait.Wait(1000);
-
-                    if (!answered) frozen++;
-                    if (frozen >= 3)
+                    while (!SchedulingEnabled) wait.Wait(1000);
+                    while (true)
                     {
-                        frozen = 0;
+                        answered = false;
+                        Schedule(() => answered = true);
 
-                        var reset = new AutoResetEvent(false);
-                        reset.WaitOne();
+                        wait.Wait(1000);
 
-                        StackTrace trace = null;
-                        try
+                        if (!answered) frozen++;
+                        if (frozen >= 3)
                         {
-                            trace = new StackTrace(true);
-                            action(new Exception(trace.ToString()));
-                        }
-                        catch (ThreadStateException e)
-                        {
-                            action(e);
-                        }
-                        try
-                        {
-                            wait.Set();
-                        }
-                        catch (ThreadStateException e)
-                        {
-                            action(e);
+                            frozen = 0;
+
+                            var reset = new AutoResetEvent(false);
+                            reset.WaitOne();
+
+                            StackTrace trace = null;
+                            try
+                            {
+                                trace = new StackTrace(true);
+                                action(new Exception(trace.ToString()));
+                            }
+                            catch (ThreadStateException e)
+                            {
+                                action(e);
+                            }
+                            try
+                            {
+                                wait.Set();
+                            }
+                            catch (ThreadStateException e)
+                            {
+                                action(e);
+                            }
                         }
                     }
                 }

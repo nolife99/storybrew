@@ -81,7 +81,7 @@ namespace StorybrewEditor.Storyboarding
             }
             catch (PipeException e)
             {
-                Debug.Print($"Script execution failed with PipeException, reloading {BaseName} ({e.Message})");
+                Debug.Print($"Script execution failed with pipe-related IOException, reloading {BaseName} ({e.Message})");
                 changeStatus(EffectStatus.ReloadPending);
                 Program.Schedule(() =>
                 {
@@ -90,8 +90,9 @@ namespace StorybrewEditor.Storyboarding
                 });
                 return;
             }
-            catch (RemotingException)
+            catch (RemotingException e)
             {
+                Debug.Print($"Script execution failed with RemotingException, reloading {BaseName} ({e.Message})");
                 changeStatus(EffectStatus.ReloadPending);
                 Program.Schedule(() =>
                 {

@@ -4,8 +4,7 @@ using System;
 namespace StorybrewCommon.Storyboarding.CommandValues
 {
     ///<summary> Base struct for vector scale commands. Alternative for <see cref="Vector2"/>. </summary>
-    [Serializable]
-    public struct CommandScale : CommandValue, IEquatable<CommandScale>
+    [Serializable] public struct CommandScale : CommandValue, IEquatable<CommandScale>
     {
 #pragma warning disable CS1591
         ///<summary> Represents a scale in which all values are 1 (one). </summary>

@@ -21,9 +21,8 @@ namespace StorybrewEditor.Processes
         RemoteProcessWorker retrieveWorker(NamedPipeServerStream pipeServer)
         {
             var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            var wait = new ManualResetEventSlim();
 
-            while (true)
+            using (var wait = new ManualResetEventSlim()) while (true)
             {
                 try
                 {

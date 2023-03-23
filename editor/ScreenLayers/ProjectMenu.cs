@@ -434,8 +434,7 @@ namespace StorybrewEditor.ScreenLayers
         void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
         {
             var first = true;
-            var wait = new ManualResetEventSlim();
-            foreach (var beatmap in proj.MapsetManager.Beatmaps)
+            using (var wait = new ManualResetEventSlim()) foreach (var beatmap in proj.MapsetManager.Beatmaps)
             {
                 Program.RunMainThread(() => proj.MainBeatmap = beatmap);
 

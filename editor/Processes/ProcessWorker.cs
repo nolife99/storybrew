@@ -21,8 +21,8 @@ namespace StorybrewEditor.Processes
                 try
                 {
                     var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                    var wait = new ManualResetEventSlim();
-                    while (!exit)
+
+                    using (var wait = new ManualResetEventSlim()) while (!exit)
                     {
                         pipeServer.WaitForConnection();
                         var remoteProcessWorker = new RemoteProcessWorker();

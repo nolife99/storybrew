@@ -698,7 +698,7 @@ namespace StorybrewCommon.Storyboarding
         ///<summary> Gets the end time of the last command on this sprite. </summary>
         public override double EndTime => CommandsEndTime;
 
-#pragma warning disable CS1591
+        ///<summary> Writes this sprite's data to a stream. </summary>
         public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
         {
             if (CommandCount == 0) return;
@@ -713,6 +713,11 @@ namespace StorybrewCommon.Storyboarding
             osbSpriteWriter.WriteOsb();
         }
 
+        ///<summary> Returns whether or not the sprite is within screen bounds. </summary>
+        ///<param name="position"> The position, in osu!pixels, of the sprite. </param>
+        ///<param name="size"> The image size of the sprite texture. </param>
+        ///<param name="rotation"> The rotation, in radians, of the sprite. </param>
+        ///<param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
         public static bool InScreenBounds(Vector2 position, Vector2 size, float rotation, Vector2 origin)
             => new OrientedBoundingBox(position, origin, size.X, size.Y, rotation).Intersects(OsuHitObject.WidescreenStoryboardBounds);
 
@@ -724,20 +729,22 @@ namespace StorybrewCommon.Storyboarding
         {
             switch (origin)
             {
+                default: throw new NotSupportedException(origin.ToString());
                 case OsbOrigin.TopLeft: return Vector2.Zero;
-                case OsbOrigin.TopCentre: return new Vector2(width * 0.5f, 0);
+                case OsbOrigin.TopCentre: return new Vector2(width / 2, 0);
                 case OsbOrigin.TopRight: return new Vector2(width, 0);
-                case OsbOrigin.CentreLeft: return new Vector2(0, height * 0.5f);
-                case OsbOrigin.Centre: return new Vector2(width * 0.5f, height * 0.5f);
-                case OsbOrigin.CentreRight: return new Vector2(width, height * 0.5f);
+                case OsbOrigin.CentreLeft: return new Vector2(0, height / 2);
+                case OsbOrigin.Centre: return new Vector2(width / 2, height / 2);
+                case OsbOrigin.CentreRight: return new Vector2(width, height / 2);
                 case OsbOrigin.BottomLeft: return new Vector2(0, height);
-                case OsbOrigin.BottomCentre: return new Vector2(width * 0.5f, height);
+                case OsbOrigin.BottomCentre: return new Vector2(width / 2, height);
                 case OsbOrigin.BottomRight: return new Vector2(width, height);
             }
-            throw new NotSupportedException(origin.ToString());
         }
     }
-    ///<summary> Used mainly by export functions </summary>
+
+
+#pragma warning disable CS1591
     public enum OsbLayer
     {
         Background, Fail, Pass, Foreground, Overlay
@@ -746,7 +753,32 @@ namespace StorybrewCommon.Storyboarding
     ///<summary> Enumeration values determining the origin of a sprite/image. </summary>
     public enum OsbOrigin
     {
-        TopLeft, TopCentre, TopRight, CentreLeft, Centre, CentreRight, BottomLeft, BottomCentre, BottomRight
+        ///<summary> The sprite is anchored at the top left of the image. </summary>
+        TopLeft,
+
+        ///<summary> The sprite is anchored at the center top of the image. </summary>
+        TopCentre,
+
+        ///<summary> The sprite is anchored at the top right of the image. </summary>
+        TopRight,
+
+        ///<summary> The sprite is anchored at the left center of the image. </summary>
+        CentreLeft,
+
+        ///<summary> The sprite is anchored at the center of the image. </summary>
+        Centre,
+
+        ///<summary> The sprite is anchored at the right center of the image. </summary>
+        CentreRight,
+
+        ///<summary> The sprite is anchored at the bottom left of the image. </summary>
+        BottomLeft,
+
+        ///<summary> The sprite is anchored at the bottom center of the image. </summary>
+        BottomCentre,
+
+        ///<summary> The sprite is anchored at the bottom right of the image. </summary>
+        BottomRight
     }
 
     ///<summary> Apply an easing to a command. Contains enumeration values unlike .osb syntax. </summary>
@@ -769,12 +801,26 @@ namespace StorybrewCommon.Storyboarding
     ///<summary> Define the loop type for an animation. </summary>
     public enum OsbLoopType
     {
-        LoopForever, LoopOnce
+        ///<summary> Loops the animation frames for the sprite's lifetime, repeating at the last frame. </summary>
+        LoopForever,
+
+        ///<summary> Loops the animation frames for the sprite once, stopping at the last frame. </summary>
+        LoopOnce
     }
 
     ///<summary> Define the parameter type for a parameter command. </summary>
     public enum ParameterType
     {
-        None, FlipHorizontal, FlipVertical, AdditiveBlending
+        ///<exception cref="InvalidOperationException"> Do not pass this value to any parameter. </exception>
+        None, 
+        
+        ///<summary> Reflects the sprite across its center X-axis. </summary>
+        FlipHorizontal,
+
+        ///<summary> Reflects the sprite across its center Y-axis. </summary>
+        FlipVertical,
+
+        ///<summary> Applies additive blending to the sprite. </summary>
+        AdditiveBlending
     }
 }

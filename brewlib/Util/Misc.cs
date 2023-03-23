@@ -14,27 +14,35 @@ namespace BrewLib.Util
         public static T WithRetries<T>(Func<T> action, int timeout = 1500, bool canThrow = true)
         {
             var sleepTime = 0;
+            var wait = new ManualResetEventSlim();
+
             while (true)
             {
                 try
                 {
+                    wait.Dispose();
                     return action();
                 }
                 catch (Exception e)
                 {
                     if (sleepTime >= timeout)
                     {
-                        if (canThrow) throw;
+                        if (canThrow)
+                        {
+                            wait.Dispose();
+                            throw;
+                        }
                         else
                         {
                             Trace.Write($"Retryable action failed:{e}");
+                            wait.Dispose();
                             return default;
                         }
                     }
 
                     var retryDelay = timeout / 10;
                     sleepTime += retryDelay;
-                    new ManualResetEventSlim().Wait(retryDelay);
+                    wait.Wait(retryDelay);
                 }
             }
         }

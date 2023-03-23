@@ -26,12 +26,12 @@ namespace BrewLib.Util.Compression
 
             try
             {
-                if (File.Exists(path + "_")) File.Delete(path + "_");
+                if (File.Exists(path + ".tmp")) File.Delete(path + ".tmp");
 
                 UtilityName = compressionType != "lossy" ? "optipng.exe" : "pngquant.exe";
                 ensureTool();
 
-                var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(path, path + "_", compressionType, lossyInputSettings, losslessInputSettings))
+                var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(path, path + ".tmp", compressionType, lossyInputSettings, losslessInputSettings))
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
@@ -53,14 +53,14 @@ namespace BrewLib.Util.Compression
             catch (Exception e)
             {
                 ensureStop();
-                foreach (var file in Directory.GetFiles(Path.GetDirectoryName(path), "*.png_")) File.Delete(file);
+                foreach (var file in Directory.GetFiles(Path.GetDirectoryName(path), "*.png.tmp")) File.Delete(file);
                 throw new OperationCanceledException("Compression failed", e);
             }
             finally
             {
                 var bytes = new FileInfo(path);
-                var compressed = new FileInfo(path + "_");
-                if (bytes.Length > compressed.Length) File.Replace(path + "_", path, null);
+                var compressed = new FileInfo(path + ".tmp");
+                if (bytes.Length > compressed.Length) File.Replace(path + ".tmp", path, null);
             }
         }
         protected override string appendArgs(string inputFile, string outputFile, string compressionType, 

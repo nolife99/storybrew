@@ -1,13 +1,13 @@
-using BrewLib.Util;
 using OpenTK;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Collections.Generic;
 
 namespace StorybrewCommon.Storyboarding3d
 {
-#pragma warning disable CS1591
+    ///<summary> Represents a triangle with 3D functionality. </summary>
     public class Triangle3d : Node3d, HasOsbSprites
     {
         Action<OsbSprite> finalize;
@@ -16,30 +16,45 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public IEnumerable<OsbSprite> Sprites { get { yield return sprite0; yield return sprite1; } }
 
+        ///<summary> The path to the image of this <see cref="Triangle3d"/>. </summary>
         public string SpritePath;
-        public bool Additive, UseDistanceFade = true;
 
-        public readonly KeyframedValue<Vector3> 
-            Position0 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3),
-            Position1 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3),
-            Position2 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        ///<summary> Toggles additive blending on this <see cref="Triangle3d"/>. </summary>
+        public bool Additive;
+
+        ///<summary> Whether to fade sprites based on distance from the <see cref="Camera"/>. </summary>
+        public bool UseDistanceFade = true;
+
+        /// <summary> The position of the first vertex of the triangle. </summary>
+        public readonly KeyframedValue<Vector3> Position0 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+
+        /// <summary> The position of the second vertex of the triangle. </summary>
+        public readonly KeyframedValue<Vector3> Position1 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+
+        /// <summary> The position of the third vertex of the triangle. </summary>
+        public readonly KeyframedValue<Vector3> Position2 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
 
         readonly CommandGenerator Generator0 = new CommandGenerator(), Generator1 = new CommandGenerator();
 
         ///<inheritdoc/>
-        public override IEnumerable<CommandGenerator> CommandGenerators { get { yield return Generator0; yield return Generator1; } }
+        public IEnumerable<CommandGenerator> CommandGenerators { get { yield return Generator0; yield return Generator1; } }
 
         int edgeIndex = 0;
+
+        ///<summary> The index of a vertex/edge to be fixed. </summary>
         public int FixedEdge = -1;
 
         Vector2 spriteBitmap;
 
+        ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
             sprite0 = sprite0 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomLeft);
             sprite1 = sprite1 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomRight);
             spriteBitmap = CommandGenerator.BitmapDimensions(SpritePath);
         }
+
+        ///<inheritdoc/>
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
         {
             var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
@@ -151,6 +166,15 @@ namespace StorybrewCommon.Storyboarding3d
 
         ///<inheritdoc/>
         public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
+
+        ///<inheritdoc/>
+        public void ConfigureGenerators(Action<CommandGenerator> action)
+        {
+            action(Generator0);
+            action(Generator1);
+        }
+
+        ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
             if (finalize != null) action += (createCommands, sprite) =>
