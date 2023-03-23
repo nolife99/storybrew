@@ -181,7 +181,7 @@ namespace StorybrewEditor.Storyboarding
         AsyncActionQueue<Effect> effectUpdateQueue = new AsyncActionQueue<Effect>("Effect Updates", false, Program.Settings.EffectThreads);
         public void QueueEffectUpdate(Effect effect)
         {
-            effectUpdateQueue.Queue(effect, effect.Path, (e) => e.Update(), effect.Multithreaded);
+            effectUpdateQueue.Queue(effect, effect.Path, e => e.Update(), effect.Multithreaded);
             refreshEffectsStatus();
         }
         public void CancelEffectUpdates(bool stopThreads) => effectUpdateQueue.CancelQueuedActions(stopThreads);
@@ -795,6 +795,7 @@ namespace StorybrewEditor.Storyboarding
                     string line;
                     var inEvents = false;
                     var inStoryboard = false;
+
                     while ((line = reader.ReadLine()) != null)
                     {
                         var trimmedLine = line.Trim();
@@ -840,7 +841,7 @@ namespace StorybrewEditor.Storyboarding
 
                         writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
                         foreach (var layer in localLayers.ToArray()) if (layer.OsbLayer == osbLayer && !layer.DiffSpecific)
-                                layer.WriteOsb(writer, ExportSettings);
+                            layer.WriteOsb(writer, ExportSettings);
                     }
                     writer.WriteLine("//Storyboard Sound Samples");
                     stream.Commit();
@@ -849,7 +850,8 @@ namespace StorybrewEditor.Storyboarding
         }
         static void cleanupFolder(string path, string searchPattern)
         {
-            foreach (var filename in Directory.EnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly)) try
+            foreach (var filename in Directory.EnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly)) 
+                try
                 {
                     File.Delete(filename);
                     Debug.Print($"{filename} deleted");

@@ -2,7 +2,7 @@
 
 namespace StorybrewCommon.Animations
 {
-    /// <summary> Represents a simple keyframe with a time and value. </summary>
+    /// <summary> Represents a basic keyframe with a time and value. </summary>
     /// <typeparam name="TValue"> A type that represents the value of this keyframe. </typeparam>
     public struct Keyframe<TValue> : IComparable<Keyframe<TValue>>
     {

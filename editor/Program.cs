@@ -182,6 +182,7 @@ namespace StorybrewEditor
             var watch = new Stopwatch();
 
             watch.Start();
+            var wait = new ManualResetEventSlim();
             while (window.Exists && !window.IsExiting)
             {
                 var focused = window.Focused;
@@ -221,7 +222,7 @@ namespace StorybrewEditor
 
                 var activeDuration = watch.Elapsed.TotalSeconds - currentTime;
                 var sleepMs = Math.Max(0, (int)(((focused ? targetFrameDuration : fixedRateUpdateDuration) - activeDuration) * 1000));
-                Thread.Sleep(sleepMs);
+                wait.Wait(sleepMs);
 
                 var frameTime = currentTime - previousTime;
                 previousTime = currentTime;
@@ -402,21 +403,22 @@ namespace StorybrewEditor
                 var answered = false;
                 var frozen = 0;
 
-                while (!SchedulingEnabled) Thread.Sleep(1000);
+                var wait = new ManualResetEventSlim();
+                while (!SchedulingEnabled) wait.Wait(1000);
                 while (true)
                 {
                     answered = false;
                     Schedule(() => answered = true);
 
-                    Thread.Sleep(1000);
+                    wait.Wait(1000);
 
                     if (!answered) frozen++;
                     if (frozen >= 3)
                     {
                         frozen = 0;
 
-                        var wait = new AutoResetEvent(false);
-                        wait.WaitOne();
+                        var reset = new AutoResetEvent(false);
+                        reset.WaitOne();
 
                         StackTrace trace = null;
                         try

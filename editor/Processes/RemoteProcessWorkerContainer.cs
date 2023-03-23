@@ -8,7 +8,6 @@ namespace StorybrewEditor.Processes
     public class RemoteProcessWorkerContainer : IDisposable
     {
         readonly NamedPipeServerStream pipeServer;
-        Process process;
 
         public RemoteProcessWorker Worker { get; private set; }
         public RemoteProcessWorkerContainer()
@@ -22,9 +21,10 @@ namespace StorybrewEditor.Processes
         RemoteProcessWorker retrieveWorker(NamedPipeServerStream pipeServer)
         {
             var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            var wait = new ManualResetEventSlim();
+
             while (true)
             {
-                Thread.Sleep(250);
                 try
                 {
                     Trace.WriteLine("Waiting for connection...");
@@ -40,6 +40,8 @@ namespace StorybrewEditor.Processes
                 {
                     Trace.WriteLine($"Couldn't start pipe: {e}");
                 }
+
+                wait.Wait(250);
             }
         }
 
@@ -60,14 +62,12 @@ namespace StorybrewEditor.Processes
                     {
                         Trace.WriteLine($"Failed to dispose the worker: {e}");
                     }
-                    if (!process.WaitForExit(2000)) process.Kill();
 
                     pipeServer.Disconnect();
                     pipeServer.Dispose();
                 }
 
                 Worker = null;
-                process = null;
                 disposed = true;
             }
         }

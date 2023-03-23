@@ -431,31 +431,29 @@ namespace StorybrewEditor.ScreenLayers
         }
         void saveProject() => Manager.AsyncLoading("Saving", () => Program.RunMainThread(() => proj.Save()));
         void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
-        void exportProjectAll()
+        void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
         {
-            Manager.AsyncLoading("Exporting", () =>
+            var first = true;
+            var wait = new ManualResetEventSlim();
+            foreach (var beatmap in proj.MapsetManager.Beatmaps)
             {
-                var first = true;
-                foreach (var beatmap in proj.MapsetManager.Beatmaps)
+                Program.RunMainThread(() => proj.MainBeatmap = beatmap);
+
+                while (proj.EffectsStatus != EffectStatus.Ready)
                 {
-                    Program.RunMainThread(() => proj.MainBeatmap = beatmap);
-
-                    while (proj.EffectsStatus != EffectStatus.Ready)
+                    switch (proj.EffectsStatus)
                     {
-                        switch (proj.EffectsStatus)
-                        {
-                            case EffectStatus.CompilationFailed:
-                            case EffectStatus.ExecutionFailed:
-                            case EffectStatus.LoadingFailed: throw new Exception($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
-                        }
-                        Thread.Sleep(200);
+                        case EffectStatus.CompilationFailed:
+                        case EffectStatus.ExecutionFailed:
+                        case EffectStatus.LoadingFailed: throw new Exception($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
                     }
-
-                    proj.ExportToOsb(first);
-                    first = false;
+                    wait.Wait(200);
                 }
-            });
-        }
+
+                proj.ExportToOsb(first);
+                first = false;
+            }
+        });
         public override void FixedUpdate()
         {
             base.FixedUpdate();

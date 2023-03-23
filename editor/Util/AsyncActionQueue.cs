@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util
 {
@@ -62,7 +63,6 @@ namespace StorybrewEditor.Util
                 Monitor.PulseAll(context.Queue);
             }
         }
-
         public void CancelQueuedActions(bool stopThreads)
         {
             lock (context.Queue) context.Queue.Clear();
@@ -94,7 +94,7 @@ namespace StorybrewEditor.Util
 
         #endregion
 
-        class ActionContainer
+        struct ActionContainer
         {
             public T Target;
             public string UniqueKey;
@@ -147,14 +147,14 @@ namespace StorybrewEditor.Util
                 if (thread == null || !thread.IsAlive)
                 {
                     Thread localThread = null;
-                    thread = localThread = new Thread(() =>
+                    thread = localThread = new Thread(async () =>
                     {
                         var mustSleep = false;
                         while (true)
                         {
                             if (mustSleep)
                             {
-                                Thread.Sleep(200);
+                                await Task.Delay(200);
                                 mustSleep = false;
                             }
 
@@ -182,7 +182,7 @@ namespace StorybrewEditor.Util
                                     task = context.Queue.FirstOrDefault(t => !context.Running.Contains(t.UniqueKey)
                                         && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
 
-                                    if (task == null)
+                                    if (task.Action == null && task.UniqueKey == null)
                                     {
                                         mustSleep = true;
                                         continue;
@@ -196,7 +196,7 @@ namespace StorybrewEditor.Util
 
                             try
                             {
-                                task.Action.Invoke(task.Target);
+                                task.Action(task.Target);
                             }
                             catch (Exception e)
                             {
@@ -232,19 +232,14 @@ namespace StorybrewEditor.Util
 
                 lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-                if (!localThread.Join(millisecondsTimeout))
+                using (var cancellationTokenSource = new CancellationTokenSource(millisecondsTimeout))
                 {
-                    Trace.WriteLine($"Canceling thread {localThread.Name}.");
-                    var token = new CancellationToken(true);
+                    var cancellationToken = cancellationTokenSource.Token;
+                    var completed = false;
 
-                    try
-                    {
-                        token.ThrowIfCancellationRequested();
-                    }
-                    catch (OperationCanceledException e)
-                    {
-                        Trace.WriteLine($"Thread cancel success: {e}");
-                    }
+                    while (!completed && !cancellationToken.IsCancellationRequested) completed = localThread.Join(millisecondsTimeout);
+                    if (!completed) Trace.WriteLine($"Canceling thread {localThread.Name}");
+                    else Trace.WriteLine($"Canceled thread {localThread.Name}");
                 }
             }
         }

@@ -33,7 +33,7 @@ namespace StorybrewEditor.Storyboarding
             if (frameStats != null)
             {
                 frameStats.SpriteCount++;
-                frameStats.CommandCount += sprite.CommandCost;
+                frameStats.CommandCount += sprite.CommandCount;
                 frameStats.IncompatibleCommands |= sprite.HasIncompatibleCommands;
                 frameStats.OverlappedCommands |= sprite.HasOverlappedCommands;
             }
@@ -42,7 +42,7 @@ namespace StorybrewEditor.Storyboarding
             if (fade < .00001) return;
 
             var scale = (Vector2)sprite.ScaleAt(time);
-            if (scale.X == 0 || scale.Y == 0) return;
+            if (scale == Vector2.Zero) return;
             if (sprite.FlipHAt(time)) scale.X = -scale.X;
             if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
 
@@ -51,7 +51,7 @@ namespace StorybrewEditor.Storyboarding
             try
             {
                 texture = project.TextureContainer.Get(fullPath);
-                if (texture == null)
+                if (texture is null)
                 {
                     fullPath = Path.Combine(project.ProjectAssetFolderPath, sprite.GetTexturePathAt(time));
                     texture = project.TextureContainer.Get(fullPath);
@@ -66,9 +66,7 @@ namespace StorybrewEditor.Storyboarding
 
             var position = sprite.PositionAt(time);
             var rotation = sprite.RotationAt(time);
-            var color = sprite.ColorAt(time);
-            var finalColor = ((Color4)color).LerpColor(Color4.Black, project.DimFactor).WithOpacity(opacity * fade);
-            var additive = sprite.AdditiveAt(time);
+            var finalColor = ((Color4)sprite.ColorAt(time)).LerpColor(Color4.Black, project.DimFactor).WithOpacity(opacity * fade);
 
             var origin = GetOriginVector(sprite.Origin, texture.Width, texture.Height);
 
@@ -79,7 +77,7 @@ namespace StorybrewEditor.Storyboarding
                 var spriteObb = new OrientedBoundingBox(position, origin * scale, size.X, size.Y, rotation);
                 if (spriteObb.Intersects(OsuHitObject.WidescreenStoryboardBounds))
                 {
-                    frameStats.EffectiveCommandCount += sprite.CommandCost;
+                    frameStats.EffectiveCommandCount += sprite.CommandCount;
 
                     var _sprite = spriteObb.GetAABB();
 
@@ -91,8 +89,8 @@ namespace StorybrewEditor.Storyboarding
             }
 
             var boundsScaling = bounds.Height / 480;
-            DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates).Draw(
-                texture, bounds.Left + bounds.Width * 0.5f + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
+            DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, sprite.AdditiveAt(time) ? AdditiveStates : AlphaBlendStates).Draw(
+                texture, bounds.Left + bounds.Width / 2 + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
                 origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation, finalColor);
         }
     }

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Processes
 {
@@ -20,6 +21,7 @@ namespace StorybrewEditor.Processes
                 try
                 {
                     var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                    var wait = new ManualResetEventSlim();
                     while (!exit)
                     {
                         pipeServer.WaitForConnection();
@@ -32,7 +34,7 @@ namespace StorybrewEditor.Processes
 
                         pipeServer.Disconnect();
                         Program.RunScheduledTasks();
-                        Thread.Sleep(100);
+                        wait.Wait(100);
                     }
                 }
                 finally

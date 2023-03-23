@@ -6,12 +6,12 @@ namespace BrewLib.Util
 {
     public static class Misc
     {
-        public static void WithRetries(Action action, int timeout = 2000, bool canThrow = true) => WithRetries(() =>
+        public static void WithRetries(Action action, int timeout = 1500, bool canThrow = true) => WithRetries(() =>
         {
             action();
             return true;
         }, timeout, canThrow);
-        public static T WithRetries<T>(Func<T> action, int timeout = 2000, bool canThrow = true)
+        public static T WithRetries<T>(Func<T> action, int timeout = 1500, bool canThrow = true)
         {
             var sleepTime = 0;
             while (true)
@@ -34,7 +34,7 @@ namespace BrewLib.Util
 
                     var retryDelay = timeout / 10;
                     sleepTime += retryDelay;
-                    Thread.Sleep(retryDelay);
+                    new ManualResetEventSlim().Wait(retryDelay);
                 }
             }
         }
