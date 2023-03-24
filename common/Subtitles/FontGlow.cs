@@ -59,7 +59,7 @@ namespace StorybrewCommon.Subtitles
                 using (var graphics = Graphics.FromImage(blurSource))
                 {
                     graphics.TextRenderingHint = textGraphics.TextRenderingHint;
-                    graphics.SmoothingMode = SmoothingMode.HighQuality;
+                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
                     graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
                     graphics.DrawString(text, font, brush, x, y, stringFormat);
                 }

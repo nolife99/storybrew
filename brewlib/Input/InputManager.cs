@@ -123,12 +123,7 @@ namespace BrewLib.Input
         void window_KeyDown(object sender, KeyboardKeyEventArgs e) { updateModifierState(e); handler.OnKeyDown(e); }
         void window_KeyUp(object sender, KeyboardKeyEventArgs e) { updateModifierState(e); handler.OnKeyUp(e); }
         void window_KeyPress(object sender, KeyPressEventArgs e) => handler.OnKeyPress(e);
-
-        bool dedupeMouseWheel;
-        void window_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-            if (dedupeMouseWheel = !dedupeMouseWheel) handler.OnMouseWheel(e);
-        }
+        void window_MouseWheel(object sender, MouseWheelEventArgs e) => handler.OnMouseWheel(e);
 
         void gamepadManager_OnConnected(object sender, GamepadEventArgs e) => handler.OnGamepadConnected(e);
         void gamepadManager_OnButtonDown(object sender, GamepadButtonEventArgs e) => handler.OnGamepadButtonDown(e);

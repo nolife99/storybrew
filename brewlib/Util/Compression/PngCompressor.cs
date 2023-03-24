@@ -13,7 +13,7 @@ namespace BrewLib.Util.Compression
         readonly HashSet<string> files = new HashSet<string>();
 
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
-            => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(ImageCompressor)), "brewlib");
+            => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(PngCompressor)), "brewlib");
 
         protected override void compress(string path, string compressionType, 
             LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings, InputFormat inputFormat = null)
@@ -32,6 +32,7 @@ namespace BrewLib.Util.Compression
                 UtilityName = compressionType != "lossy" ? "optipng.exe" : "pngquant.exe";
                 ensureTool();
 
+                if (File.Exists(path + ".tmp")) File.Delete(path + ".tmp");
                 var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(path, path + ".tmp", compressionType, lossyInputSettings, losslessInputSettings))
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,

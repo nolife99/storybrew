@@ -30,7 +30,7 @@ namespace StorybrewCommon.Scripting
         ///<summary> Override to true if this script uses multiple threads. </summary>
         ///<remarks> It will prevent other effects from updating in parallel to this one. </remarks>
         protected virtual bool Multithreaded => false;
-        
+
         internal PngCompressor Compressor { get; private set; }
 
         ///<summary> Creates or retrieves a layer. </summary>
@@ -379,7 +379,7 @@ namespace StorybrewCommon.Scripting
 
         #endregion
 
-        ///<summary/>
+        ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
         {
             if (Current != null) throw new InvalidOperationException("A script is already running in this domain");
@@ -399,6 +399,7 @@ namespace StorybrewCommon.Scripting
                 this.context = null;
                 Current = null;
 
+                Compressor.ClearDirectory();
                 foreach (var bitmap in bitmaps.Values) bitmap.Dispose();
                 bitmaps.Clear();
             }

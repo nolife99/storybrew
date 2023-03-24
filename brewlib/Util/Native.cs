@@ -28,7 +28,7 @@ namespace BrewLib.Util
         }
         public static IEnumerable<IntPtr> EnumerateProcessWindowHandles(Process process)
         {
-            var handles = new List<IntPtr>();
+            var handles = new HashSet<IntPtr>();
             foreach (ProcessThread thread in process.Threads) EnumThreadWindows(thread.Id, (hWnd, lParam) =>
             {
                 handles.Add(hWnd);

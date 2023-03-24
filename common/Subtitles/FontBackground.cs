@@ -18,6 +18,6 @@ namespace StorybrewCommon.Subtitles
 
         ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
-            => textGraphics.Clear(System.Drawing.Color.FromArgb(Color.ToArgb()));
+            => textGraphics.Clear((Color)Color);
     }
 }

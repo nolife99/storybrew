@@ -18,31 +18,31 @@ using Tiny;
 namespace StorybrewCommon.Subtitles
 {
     ///<summary> Stores information about a font image. </summary>
-    public class FontTexture
+    public struct FontTexture
     {
         ///<summary> The path to the font texture. </summary>
-        public string Path { get; }
+        public string Path;
 
         ///<returns> True if the path does not exist, else returns false. </returns>
         public bool IsEmpty => Path == null;
 
         ///<summary> The texture offset in X-units. </summary>
-        public float OffsetX { get; }
+        public float OffsetX;
 
         ///<summary> The texture offset in Y-units. </summary>
-        public float OffsetY { get; }
+        public float OffsetY;
 
         ///<summary> The base width of the texture in pixels. </summary>
-        public int BaseWidth { get; }
+        public int BaseWidth;
 
         ///<summary> The base height of the texture in pixels. </summary>
-        public int BaseHeight { get; }
+        public int BaseHeight;
 
         ///<summary> The actual width of the texture in pixels. </summary>
-        public int Width { get; }
+        public int Width;
 
         ///<summary> The actual width of the texture in pixels. </summary>
-        public int Height { get; }
+        public int Height;
 
         ///<summary> Creates a new <see cref="FontTexture"/> storing information of the font. </summary>
         ///<param name="path"> The path to the font texture. </param>
@@ -70,13 +70,13 @@ namespace StorybrewCommon.Subtitles
             {
                 default:
                 case OsbOrigin.TopLeft: return new Vector2(OffsetX, OffsetY);
-                case OsbOrigin.TopCentre: return new Vector2(OffsetX + Width * .5f, OffsetY);
+                case OsbOrigin.TopCentre: return new Vector2(OffsetX + Width / 2, OffsetY);
                 case OsbOrigin.TopRight: return new Vector2(OffsetX + Width, OffsetY);
-                case OsbOrigin.CentreLeft: return new Vector2(OffsetX, OffsetY + Height * .5f);
-                case OsbOrigin.Centre: return new Vector2(OffsetX + Width * .5f, OffsetY + Height * .5f);
-                case OsbOrigin.CentreRight: return new Vector2(OffsetX + Width, OffsetY + Height * .5f);
+                case OsbOrigin.CentreLeft: return new Vector2(OffsetX, OffsetY + Height / 2);
+                case OsbOrigin.Centre: return new Vector2(OffsetX + Width / 2, OffsetY + Height / 2);
+                case OsbOrigin.CentreRight: return new Vector2(OffsetX + Width, OffsetY + Height / 2);
                 case OsbOrigin.BottomLeft: return new Vector2(OffsetX, OffsetY + Height);
-                case OsbOrigin.BottomCentre: return new Vector2(OffsetX + Width * .5f, OffsetY + Height);
+                case OsbOrigin.BottomCentre: return new Vector2(OffsetX + Width / 2, OffsetY + Height);
                 case OsbOrigin.BottomRight: return new Vector2(OffsetX + Width, OffsetY + Height);
             }
         }
@@ -153,10 +153,13 @@ namespace StorybrewCommon.Subtitles
 
             using (var graphics = Graphics.FromHwnd(IntPtr.Zero))
             using (var stringFormat = new StringFormat(StringFormat.GenericTypographic))
-            using (var textBrush = new SolidBrush(Color.FromArgb(description.Color.ToArgb())))
+            using (var textBrush = new SolidBrush((Color)description.Color))
             using (var fontCollection = new PrivateFontCollection())
             {
-                graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
+                graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+                graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+
                 stringFormat.Alignment = StringAlignment.Center;
                 stringFormat.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip;
 
@@ -168,8 +171,9 @@ namespace StorybrewCommon.Subtitles
                 }
 
                 var dpiScale = 96 / graphics.DpiY;
-                var fontStyle = description.FontStyle;
-                using (var font = fontFamily != null ? new Font(fontFamily, description.FontSize * dpiScale, fontStyle) : new Font(fontPath, description.FontSize * dpiScale, fontStyle))
+                using (var font = fontFamily != null ? 
+                    new Font(fontFamily, description.FontSize * dpiScale, description.FontStyle) : 
+                    new Font(fontPath, description.FontSize * dpiScale, description.FontStyle))
                 {
                     var measuredSize = graphics.MeasureString(text, font, 0, stringFormat);
                     baseWidth = (int)Math.Ceiling(measuredSize.Width);
@@ -196,13 +200,13 @@ namespace StorybrewCommon.Subtitles
 
                     if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0) return new FontTexture(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
 
-                    using (var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb))
+                    using (var bitmap = new Bitmap(width, height))
                     {
                         using (var textGraphics = Graphics.FromImage(bitmap))
                         {
                             textGraphics.TextRenderingHint = graphics.TextRenderingHint;
-                            textGraphics.SmoothingMode = SmoothingMode.HighQuality;
-                            textGraphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                            textGraphics.SmoothingMode = graphics.SmoothingMode;
+                            textGraphics.InterpolationMode = graphics.InterpolationMode;
 
                             if (description.Debug)
                             {
@@ -222,17 +226,20 @@ namespace StorybrewCommon.Subtitles
                         }
 
                         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : Rectangle.Empty;
-                        if (bounds != Rectangle.Empty && bounds != new Rectangle(0, 0, bitmap.Width, bitmap.Height))
-                        using (var trimmedBitmap = new Bitmap(bounds.Width, bounds.Height))
+                        using (var stream = File.OpenWrite(bitmapPath))
                         {
-                            offsetX += bounds.Left;
-                            offsetY += bounds.Top;
-                            width = trimmedBitmap.Width;
-                            height = trimmedBitmap.Height;
-                            using (var trimGraphics = Graphics.FromImage(trimmedBitmap)) trimGraphics.DrawImage(bitmap, 0, 0, bounds, GraphicsUnit.Pixel);
-                            Misc.WithRetries(() => trimmedBitmap.Save(bitmapPath, ImageFormat.Png));
+                            if (bounds != Rectangle.Empty && bounds != new Rectangle(0, 0, bitmap.Width, bitmap.Height))
+                            using (var trimmedBitmap = new Bitmap(bounds.Width, bounds.Height))
+                            {
+                                offsetX += bounds.Left;
+                                offsetY += bounds.Top;
+                                width = trimmedBitmap.Width;
+                                height = trimmedBitmap.Height;
+                                using (var trimGraphics = Graphics.FromImage(trimmedBitmap)) trimGraphics.DrawImage(bitmap, 0, 0, bounds, GraphicsUnit.Pixel);
+                                Misc.WithRetries(() => trimmedBitmap.Save(stream, ImageFormat.Png));
+                            }
+                            else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                         }
-                        else Misc.WithRetries(() => bitmap.Save(bitmapPath, ImageFormat.Png));
 
                         if (File.Exists(bitmapPath) && bitmapPath.Contains(StoryboardObjectGenerator.Current.MapsetPath))
                         {

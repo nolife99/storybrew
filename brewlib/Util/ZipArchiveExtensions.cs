@@ -5,7 +5,7 @@ public static class ZipArchiveExtensions
 {
     public static void ExtractToDirectoryOverwrite(this ZipArchive archive, string destinationDirectoryName)
     {
-        foreach (ZipArchiveEntry file in archive.Entries)
+        foreach (var file in archive.Entries)
         {
             var destinationFileName = Path.Combine(destinationDirectoryName, file.FullName);
             var directory = Path.GetDirectoryName(destinationFileName);

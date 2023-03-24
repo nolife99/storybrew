@@ -31,9 +31,10 @@ namespace StorybrewCommon.Subtitles
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
         {
             var transparentColor = Color.WithOpacity(0);
-            using (var brush = new LinearGradientBrush(new PointF(x + Offset.X, y + Offset.Y),
+            using (var brush = new LinearGradientBrush(
+                new PointF(x + Offset.X, y + Offset.Y), 
                 new PointF(x + Offset.X + Size.X, y + Offset.Y + Size.Y),
-                System.Drawing.Color.FromArgb(Color.ToArgb()), System.Drawing.Color.FromArgb(transparentColor.ToArgb()))
+                (Color)Color, (Color)transparentColor)
             { WrapMode = WrapMode })
                 textGraphics.DrawString(text, font, brush, x, y, stringFormat);
         }

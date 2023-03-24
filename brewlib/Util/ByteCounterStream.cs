@@ -14,21 +14,21 @@ namespace BrewLib.Util
         public override long Position
         {
             get => length;
-            set => throw new NotSupportedException();
+            set { }
         }
 
         public ByteCounterStream() { }
         public override void Flush() { }
 
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) => 0;
+        public override long Seek(long offset, SeekOrigin origin) => 0;
 
         public override void SetLength(long value) => length = value;
         public override void Write(byte[] buffer, int offset, int count)
         {
-            if (offset + count > buffer.Length) throw new ArgumentException();
-            if (buffer == null) throw new ArgumentNullException();
-            if (offset < 0 || count < 0) throw new ArgumentOutOfRangeException();
+            if (offset + count > buffer.Length) throw new OverflowException("Sum of offset and count is greater than buffer size");
+            if (buffer == null) throw new ArgumentNullException("Buffer cannot be null");
+            if (offset < 0 || count < 0) throw new ArgumentOutOfRangeException("Offset or count should be greater than zero");
 
             length += count;
         }

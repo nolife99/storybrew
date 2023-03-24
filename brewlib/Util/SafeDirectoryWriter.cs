@@ -6,7 +6,7 @@ namespace BrewLib.Util
 {
     public class SafeDirectoryWriter : IDisposable
     {
-        readonly List<string> paths = new List<string>();
+        readonly HashSet<string> paths = new HashSet<string>();
         readonly string targetDirectory, tempDirectory, backupDirectory;
         bool committed;
 
