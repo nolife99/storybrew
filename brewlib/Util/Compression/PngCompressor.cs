@@ -1,5 +1,6 @@
 using BrewLib.Data;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -9,6 +10,8 @@ namespace BrewLib.Util.Compression
 {
     public class PngCompressor : ImageCompressor
     {
+        readonly HashSet<string> files = new HashSet<string>();
+
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(ImageCompressor)), "brewlib");
 
@@ -26,8 +29,6 @@ namespace BrewLib.Util.Compression
 
             try
             {
-                if (File.Exists(path + ".tmp")) File.Delete(path + ".tmp");
-
                 UtilityName = compressionType != "lossy" ? "optipng.exe" : "pngquant.exe";
                 ensureTool();
 
@@ -49,18 +50,17 @@ namespace BrewLib.Util.Compression
                 if (process.ExitCode != 0) throw new InvalidProgramException($"An error occured in the process: {process.StandardError.ReadToEnd()}");
                 process.Close();
                 process = null;
+
+                var bytes = new FileInfo(path);
+                var compressed = new FileInfo(path + ".tmp");
+                if (bytes.Length > compressed.Length) File.Replace(path + ".tmp", path, null);
+                else ClearDirectory();
             }
             catch (Exception e)
             {
                 ensureStop();
-                foreach (var file in Directory.GetFiles(Path.GetDirectoryName(path), "*.png.tmp")) File.Delete(file);
+                ClearDirectory();
                 throw new OperationCanceledException("Compression failed", e);
-            }
-            finally
-            {
-                var bytes = new FileInfo(path);
-                var compressed = new FileInfo(path + ".tmp");
-                if (bytes.Length > compressed.Length) File.Replace(path + ".tmp", path, null);
             }
         }
         protected override string appendArgs(string inputFile, string outputFile, string compressionType, 
@@ -111,6 +111,10 @@ namespace BrewLib.Util.Compression
 
             using (var stream = container.GetStream(UtilityName, ResourceSource.Embedded | ResourceSource.Relative)) using (var dest = File.OpenWrite(path)) 
                 stream.CopyTo(dest);
+        }
+        public void ClearDirectory()
+        {
+            foreach (var dir in files) foreach (var file in Directory.GetFiles(dir, "*.png.tmp")) File.Delete(file);
         }
     }
 }
