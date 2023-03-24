@@ -172,8 +172,8 @@ namespace StorybrewCommon.Storyboarding.Util
             colors.TransferKeyframes(finalColors);
 
             fades.Simplify1dKeyframes(OpacityTolerance, f => f);
-            if (fades.StartValue > 0) fades.Add(fades.StartTime, 0, before: true);
-            if (fades.EndValue > 0) fades.Add(fades.EndTime, 0);
+            if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, before: true);
+            if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
             fades.TransferKeyframes(finalfades);
         }
         void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, bool loopable)
@@ -182,7 +182,8 @@ namespace StorybrewCommon.Storyboarding.Util
             var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
 
             var first = finalPositions.FirstOrDefault().Value;
-            bool moveX = finalPositions.All(k => k.Value.Y == first.Y), moveY = finalPositions.All(k => k.Value.X == first.X);
+            double checkPos(double value) => Math.Round(value, PositionDecimals);
+            bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(first.Y)), moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(first.X));
             finalPositions.ForEachPair((s, e) =>
             {
                 if (moveX && !moveY)
@@ -198,8 +199,8 @@ namespace StorybrewCommon.Storyboarding.Util
                 else sprite.Move(s.Time, e.Time, s.Value, e.Value);
             }, new Vector2(320, 240), p => new Vector2((float)Math.Round(p.X, PositionDecimals), (float)Math.Round(p.Y, PositionDecimals)), startState, loopable: loopable);
 
-            var checkScale = ScaleDecimals > 5 ? 5 : ScaleDecimals;
-            var vec = finalScales.Any(k => Math.Round(k.Value.X, checkScale) != Math.Round(k.Value.Y, checkScale));
+            double checkScale(double value) => Math.Round(value, ScaleDecimals);
+            var vec = finalScales.Any(k => checkScale(k.Value.X) != checkScale(k.Value.Y));
             finalScales.ForEachPair((s, e) =>
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -214,6 +215,7 @@ namespace StorybrewCommon.Storyboarding.Util
 
             finalfades.ForEachPair((s, e) =>
             {
+                // what the hell???
                 if (!(s.Time == sprite.CommandsStartTime && s.Time == e.Time && e.Value == 1 ||
                     s.Time == sprite.CommandsEndTime && s.Time == e.Time && e.Value == 0))
                     sprite.Fade(s.Time, e.Time, s.Value, e.Value);
