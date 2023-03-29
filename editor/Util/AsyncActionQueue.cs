@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util
 {
@@ -94,19 +93,19 @@ namespace StorybrewEditor.Util
 
         struct ActionContainer
         {
-            public T Target;
-            public string UniqueKey;
-            public Action<T> Action;
-            public bool MustRunAlone;
+            internal T Target;
+            internal string UniqueKey;
+            internal Action<T> Action;
+            internal bool MustRunAlone;
         }
         class ActionQueueContext
         {
-            public readonly List<ActionContainer> Queue = new List<ActionContainer>();
-            public readonly HashSet<string> Running = new HashSet<string>();
-            public bool RunningLoneTask;
+            internal readonly List<ActionContainer> Queue = new List<ActionContainer>();
+            internal readonly HashSet<string> Running = new HashSet<string>();
+            internal bool RunningLoneTask;
 
-            public event ActionFailedEventHandler OnActionFailed;
-            public bool TriggerActionFailed(T target, Exception e)
+            internal event ActionFailedEventHandler OnActionFailed;
+            internal bool TriggerActionFailed(T target, Exception e)
             {
                 if (OnActionFailed == null) return false;
 
@@ -115,7 +114,7 @@ namespace StorybrewEditor.Util
             }
 
             bool enabled;
-            public bool Enabled
+            internal bool Enabled
             {
                 get => enabled;
                 set
@@ -134,25 +133,25 @@ namespace StorybrewEditor.Util
 
             Thread thread;
 
-            public ActionRunner(ActionQueueContext context, string threadName)
+            internal ActionRunner(ActionQueueContext context, string threadName)
             {
                 this.context = context;
                 this.threadName = threadName;
             }
 
-            public void EnsureThreadAlive()
+            internal void EnsureThreadAlive()
             {
                 if (thread == null || !thread.IsAlive)
                 {
                     Thread localThread = null;
-                    thread = localThread = new Thread(async () =>
+                    thread = localThread = new Thread(() =>
                     {
                         var mustSleep = false;
                         while (true)
                         {
                             if (mustSleep)
                             {
-                                await Task.Delay(200);
+                                using (var wait = new ManualResetEventSlim()) wait.Wait(200);
                                 mustSleep = false;
                             }
 
@@ -221,7 +220,7 @@ namespace StorybrewEditor.Util
                     thread.Start();
                 }
             }
-            public void JoinOrAbort(int millisecondsTimeout)
+            internal void JoinOrAbort(int millisecondsTimeout)
             {
                 if (thread == null) return;
 

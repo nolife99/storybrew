@@ -3,7 +3,7 @@
     public class LosslessInputSettings
     {
         public string CustomInputArgs { get; set; }
-        public string OptimizationLevel { get; set; }
+        public int OptimizationLevel { get; set; }
     }
     public class LossyInputSettings
     {
@@ -14,15 +14,15 @@
     }
     public class OptimizationLevel
     {
-        public const string 
-            Level0 = "-o0", 
-            Level1 = "-o1",
-            Level2 = "-o2",
-            Level3 = "-o3",
-            Level4 = "-o4",
-            Level5 = "-o5",
-            Level6 = "-o6",
-            Level7 = "-o7";
+        public const int 
+            Level0 = 0, 
+            Level1 = 1,
+            Level2 = 2,
+            Level3 = 3,
+            Level4 = 4,
+            Level5 = 5,
+            Level6 = 6,
+            Level7 = 7;
     }
     public class InputFormat
     {

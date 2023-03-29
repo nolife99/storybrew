@@ -14,12 +14,17 @@ namespace BrewLib.Util
         public static void LosslessCompress(string path, PngCompressor compressor = null)
         {
             var opt = compressor ?? new PngCompressor();
-            opt.LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level2 });
+            opt.LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level3 });
         }
         public static void Compress(string path, PngCompressor compressor = null)
         {
             var opt = compressor ?? new PngCompressor();
-            opt.Compress(path, new LossyInputSettings { Speed = 1 });
+            opt.Compress(path, new LossyInputSettings 
+            { 
+                Speed = 1,
+                MinQuality = 75,
+                MaxQuality = 100
+            });
         }
         public static PinnedBitmap Premultiply(Bitmap source)
         {
@@ -281,7 +286,6 @@ namespace BrewLib.Util
             }
 
             source.UnlockBits(data);
-
             return Rectangle.Intersect(Rectangle.FromLTRB(xMin - 1, yMin - 1, xMax + 2, yMax + 2), new Rectangle(0, 0, source.Width, source.Height));
         }
         public class PinnedBitmap : IDisposable

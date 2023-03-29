@@ -119,6 +119,7 @@ namespace StorybrewCommon.Subtitles
         readonly FontEffect[] effects;
         readonly string projectDirectory, assetDirectory;
         readonly PngCompressor compressor;
+        readonly StoryboardObjectGenerator current;
 
         readonly Dictionary<string, FontTexture> textureCache = new Dictionary<string, FontTexture>();
 
@@ -129,7 +130,8 @@ namespace StorybrewCommon.Subtitles
             this.effects = effects;
             this.projectDirectory = projectDirectory;
             this.assetDirectory = assetDirectory;
-            compressor = StoryboardObjectGenerator.Current.Compressor;
+            current = StoryboardObjectGenerator.Current;
+            compressor = current.Compressor;
         }
 
         ///<summary> Gets the texture path of a texture sprite. </summary>
@@ -143,7 +145,8 @@ namespace StorybrewCommon.Subtitles
             var filename = text.Length == 1 ? $"{(int)text[0]:x4}.png" : $"_{textureCache.Count(l => l.Key.Length > 1):x3}.png";
             var bitmapPath = Path.Combine(assetDirectory, Directory, filename);
 
-            System.IO.Directory.CreateDirectory(Path.GetDirectoryName(bitmapPath));
+            var dir = Path.GetDirectoryName(bitmapPath);
+            if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
 
             var fontPath = Path.Combine(projectDirectory, description.FontPath);
             if (!File.Exists(fontPath)) fontPath = description.FontPath;
@@ -152,9 +155,7 @@ namespace StorybrewCommon.Subtitles
             int baseWidth, baseHeight, width, height;
 
             using (var graphics = Graphics.FromHwnd(IntPtr.Zero))
-            using (var stringFormat = new StringFormat(StringFormat.GenericTypographic))
-            using (var textBrush = new SolidBrush((Color)description.Color))
-            using (var fontCollection = new PrivateFontCollection())
+            using (var stringFormat = new StringFormat(StringFormat.GenericTypographic)) using (var fontCollection = new PrivateFontCollection())
             {
                 graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -179,8 +180,7 @@ namespace StorybrewCommon.Subtitles
                     baseWidth = (int)Math.Ceiling(measuredSize.Width);
                     baseHeight = (int)Math.Ceiling(measuredSize.Height);
 
-                    var effectsWidth = 0f;
-                    var effectsHeight = 0f;
+                    float effectsWidth = 0, effectsHeight = 0;
                     foreach (var effect in effects)
                     {
                         var effectSize = effect.Measure();
@@ -198,7 +198,8 @@ namespace StorybrewCommon.Subtitles
                     offsetX = -paddingX;
                     offsetY = -paddingY;
 
-                    if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0) return new FontTexture(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
+                    if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0) 
+                        return new FontTexture(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
 
                     using (var bitmap = new Bitmap(width, height))
                     {
@@ -215,7 +216,8 @@ namespace StorybrewCommon.Subtitles
                             }
 
                             foreach (var effect in effects) if (!effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
-                            if (!description.EffectsOnly) textGraphics.DrawString(text, font, textBrush, textX, textY, stringFormat);
+                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush((Color)description.Color)) 
+                                textGraphics.DrawString(text, font, textBrush, textX, textY, stringFormat);
                             foreach (var effect in effects) if (effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
 
                             if (description.Debug) using (var pen = new Pen(Color.FromArgb(255, 0, 0)))
@@ -226,7 +228,7 @@ namespace StorybrewCommon.Subtitles
                         }
 
                         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : Rectangle.Empty;
-                        using (var stream = File.OpenWrite(bitmapPath))
+                        using (var stream = new FileStream(bitmapPath, FileMode.Create, FileAccess.Write, FileShare.Read))
                         {
                             if (bounds != Rectangle.Empty && bounds != new Rectangle(0, 0, bitmap.Width, bitmap.Height))
                             using (var trimmedBitmap = new Bitmap(bounds.Width, bounds.Height))
@@ -241,10 +243,10 @@ namespace StorybrewCommon.Subtitles
                             else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                         }
 
-                        if (File.Exists(bitmapPath) && bitmapPath.Contains(StoryboardObjectGenerator.Current.MapsetPath))
+                        if (File.Exists(bitmapPath) && (bitmapPath.Contains(current.MapsetPath) || bitmapPath.Contains(current.AssetPath)))
                         {
-                            if (Color4.ToHsl(description.Color).X == 0 || description.FontSize <= 80) BitmapHelper.Compress(bitmapPath, compressor);
-                            else BitmapHelper.LosslessCompress(bitmapPath, compressor);
+                            if (Color4.ToHsl(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(bitmapPath, compressor);
+                            else BitmapHelper.Compress(bitmapPath, compressor);
                         }
                     }
                 }

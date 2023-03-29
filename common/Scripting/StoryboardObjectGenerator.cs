@@ -84,7 +84,7 @@ namespace StorybrewCommon.Scripting
         Bitmap getBitmap(string path, string alternatePath, bool watch)
         {
             path = Path.GetFullPath(path);
-            if (!bitmaps.TryGetValue(path, out Bitmap bitmap)) using (var stream = File.OpenRead(path))
+            if (!bitmaps.TryGetValue(path, out Bitmap bitmap)) using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, (FileShare)(0x3 | 0x4)))
             {
                 if (watch) context.AddDependency(path);
 
@@ -399,7 +399,6 @@ namespace StorybrewCommon.Scripting
                 this.context = null;
                 Current = null;
 
-                Compressor.ClearDirectory();
                 foreach (var bitmap in bitmaps.Values) bitmap.Dispose();
                 bitmaps.Clear();
             }

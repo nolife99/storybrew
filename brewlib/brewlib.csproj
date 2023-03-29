@@ -33,8 +33,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="optipng.exe" />
+    <EmbeddedResource Include="oxipng.exe" />
     <EmbeddedResource Include="pngquant.exe" />
+    <EmbeddedResource Include="truepng.exe" />
   </ItemGroup>
 
   <ItemGroup>

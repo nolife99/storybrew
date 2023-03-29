@@ -29,7 +29,7 @@ namespace BrewLib.Util.Compression
 
         protected abstract void compress(string path, string compressionType, LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings, InputFormat inputFormat = null);
         protected abstract void waitForExit();
-        protected abstract string appendArgs(string inputFile, string outputFile, string compressionType, LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings);
+        protected abstract string appendArgs(string path, string compressionType, LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings);
         protected abstract void ensureTool();
 
         protected void ensureStop()
