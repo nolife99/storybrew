@@ -1,9 +1,9 @@
-﻿using OpenTK;
-using StorybrewCommon.Mapset;
+﻿using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Animations;
 using System.Linq;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewScripts
 {
@@ -32,7 +32,7 @@ namespace StorybrewScripts
 
                 if (hitobject is OsuSlider)
                 {
-                    var keyframe = new KeyframedValue<Vector2>(null);
+                    var keyframe = new KeyframedValue<CommandPosition>(null);
                     var timestep = Beatmap.GetTimingPointAt((int)hitobject.StartTime).BeatDuration / BeatDivisor;
                     var startTime = hitobject.StartTime;
 

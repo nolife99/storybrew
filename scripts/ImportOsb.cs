@@ -1,8 +1,8 @@
-﻿using OpenTK;
-using StorybrewCommon.Scripting;
+﻿using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;

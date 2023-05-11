@@ -5,7 +5,6 @@ using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
-using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Storyboarding3d
 {

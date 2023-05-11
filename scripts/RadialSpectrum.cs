@@ -1,7 +1,7 @@
-﻿using OpenTK;
-using StorybrewCommon.Animations;
+﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using System.Numerics;
 using System;
 using System.Linq;
 
