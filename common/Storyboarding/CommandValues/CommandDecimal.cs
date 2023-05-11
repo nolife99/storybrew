@@ -11,7 +11,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
 #pragma warning disable CS1591
         public CommandDecimal(double value)
         {
-            if (double.IsNaN(value) || double.IsInfinity(value)) throw new InvalidDataException($"Invalid command decimal {value}");
+            if (double.IsNaN(value) || double.IsInfinity(value)) value = 0;
             this.value = value;
         }
 

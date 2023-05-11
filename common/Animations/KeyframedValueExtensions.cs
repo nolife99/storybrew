@@ -1,5 +1,8 @@
 ﻿using OpenTK;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System;
+
+using Vector = System.Numerics;
 
 namespace StorybrewCommon.Animations
 {
@@ -35,6 +38,40 @@ namespace StorybrewCommon.Animations
             if (active) action(startTime, lastKeyframeTime);
         }
 
+        ///<summary> Adds a manually constructed <see cref="CommandScale"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{CommandScale}"/>. </param>
+        ///<param name="x"> The <see cref="CommandScale.X"/> value of the keyframe. </param>
+        ///<param name="y"> The <see cref="CommandScale.Y"/> value of the keyframe. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{CommandScale}"/>. </param>
+        public static KeyframedValue<CommandScale> Add(this KeyframedValue<CommandScale> keyframes, double time, float x, float y, Func<double, double> easing = null)
+            => keyframes.Add(time, new CommandScale(x, y), easing);
+
+        ///<summary> Adds a manually constructed <see cref="Vector2"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{CommandScale}"/>. </param>
+        ///<param name="scale"> The scale value of this <see cref="Keyframe{CommandScale}"/>. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{CommandScale}"/>. </param>
+        public static KeyframedValue<CommandScale> Add(this KeyframedValue<CommandScale> keyframes, double time, float scale, Func<double, double> easing = null)
+            => keyframes.Add(time, new CommandScale(scale), easing);
+
+        ///<summary> Adds a manually constructed <see cref="CommandPosition"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{CommandPosition}"/>. </param>
+        ///<param name="x"> The <see cref="CommandPosition.X"/> value of the keyframe. </param>
+        ///<param name="y"> The <see cref="CommandPosition.Y"/> value of the keyframe. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{CommandPosition}"/>. </param>
+        public static KeyframedValue<CommandPosition> Add(this KeyframedValue<CommandPosition> keyframes, double time, float x, float y, Func<double, double> easing = null)
+            => keyframes.Add(time, new CommandPosition(x, y), easing);
+
+        ///<summary> Adds a manually constructed <see cref="CommandPosition"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{CommandPosition}"/>. </param>
+        ///<param name="scale"> The scale value of this <see cref="Keyframe{CommandPosition}"/>. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{CommandPosition}"/>. </param>
+        public static KeyframedValue<CommandPosition> Add(this KeyframedValue<CommandPosition> keyframes, double time, float scale, Func<double, double> easing = null)
+            => keyframes.Add(time, new CommandPosition(scale, scale), easing);
+
         ///<summary> Adds a manually constructed <see cref="Vector2"/> keyframe to <paramref name="keyframes"/>. </summary>
         ///<param name="keyframes"> The keyframed value to be added to. </param>
         ///<param name="time"> The time of the <see cref="Keyframe{Vector2}"/>. </param>
@@ -69,6 +106,41 @@ namespace StorybrewCommon.Animations
         ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Vector3}"/>. </param>
         public static KeyframedValue<Vector3> Add(this KeyframedValue<Vector3> keyframes, double time, float scale, Func<double, double> easing = null)
             => keyframes.Add(time, new Vector3(scale), easing);
+
+        ///<summary> Adds a manually constructed <see cref="Vector.Vector2"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{Vector2}"/>. </param>
+        ///<param name="x"> The <see cref="Vector2.X"/> value of the keyframe. </param>
+        ///<param name="y"> The <see cref="Vector2.Y"/> value of the keyframe. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Vector2}"/>. </param>
+        public static KeyframedValue<Vector.Vector2> Add(this KeyframedValue<Vector.Vector2> keyframes, double time, float x, float y, Func<double, double> easing = null)
+            => keyframes.Add(time, new Vector.Vector2(x, y), easing);
+
+        ///<summary> Adds a manually constructed <see cref="Vector.Vector2"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{Vector2}"/>. </param>
+        ///<param name="scale"> The scale value of this <see cref="Keyframe{Vector2}"/>. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Vector2}"/>. </param>
+        public static KeyframedValue<Vector.Vector2> Add(this KeyframedValue<Vector.Vector2> keyframes, double time, float scale, Func<double, double> easing = null)
+            => keyframes.Add(time, new Vector.Vector2(scale), easing);
+
+        ///<summary> Adds a manually constructed <see cref="Vector3"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{Vector3}"/>. </param>
+        ///<param name="x"> The <see cref="Vector3.X"/> value of the keyframe. </param>
+        ///<param name="y"> The <see cref="Vector3.Y"/> value of the keyframe. </param>
+        ///<param name="z"> The <see cref="Vector3.Z"/> value of the keyframe. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Vector3}"/>. </param>
+        public static KeyframedValue<Vector.Vector3> Add(this KeyframedValue<Vector.Vector3> keyframes, double time, float x, float y, float z, Func<double, double> easing = null)
+            => keyframes.Add(time, new Vector.Vector3(x, y, z), easing);
+
+        ///<summary> Adds a manually constructed <see cref="Vector3"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{Vector3}"/>. </param>
+        ///<param name="scale"> The scale value of this <see cref="Keyframe{Vector3}"/>. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Vector3}"/>. </param>
+        public static KeyframedValue<Vector.Vector3> Add(this KeyframedValue<Vector.Vector3> keyframes, double time, float scale, Func<double, double> easing = null)
+            => keyframes.Add(time, new Vector.Vector3(scale), easing);
 
         ///<summary> Adds a manually constructed <see cref="Quaternion"/> keyframe to <paramref name="keyframes"/>. </summary>
         ///<param name="keyframes"> The keyframed value to be added to. </param>

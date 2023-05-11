@@ -1,10 +1,12 @@
 ﻿using OpenTK;
 using StorybrewCommon.Animations;
+using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace StorybrewCommon.Storyboarding3d
 {
