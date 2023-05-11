@@ -40,7 +40,8 @@ namespace BrewLib.Util.Compression
                 process = process is null ? Process.Start(startInfo) : process;
 
                 waitForExit();
-                if (process.ExitCode != 0) throw new InvalidProgramException($"An error occured in the process: {process.StandardError.ReadToEnd()}");
+                var error = process.StandardError.ReadToEnd();
+                if (!string.IsNullOrEmpty(error)) throw new InvalidProgramException($"An error occured in the process: {error}");
                 process.Close();
                 process = null;
             }
