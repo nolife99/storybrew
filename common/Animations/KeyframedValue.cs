@@ -1,7 +1,7 @@
-﻿using OpenTK;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 
 namespace StorybrewCommon.Animations
 {
@@ -300,13 +300,13 @@ namespace StorybrewCommon.Animations
         public void Simplify1dKeyframes(double tolerance, Func<TValue, float> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
-            var start = new Vector2d(startKeyframe.Time, getComponent(startKeyframe.Value));
-            var middle = new Vector2d(middleKeyframe.Time, getComponent(middleKeyframe.Value));
-            var end = new Vector2d(endKeyframe.Time, getComponent(endKeyframe.Value));
+            var start = new Vector2((float)startKeyframe.Time, getComponent(startKeyframe.Value));
+            var middle = new Vector2((float)middleKeyframe.Time, getComponent(middleKeyframe.Value));
+            var end = new Vector2((float)endKeyframe.Time, getComponent(endKeyframe.Value));
 
             var area = Math.Abs((start.X * end.Y + end.X * middle.Y + middle.X * start.Y - end.X * start.Y - middle.X * end.Y - start.X * middle.Y) / 2);
             var bottom = Math.Sqrt(Math.Pow(start.X - end.X, 2) + Math.Pow(start.Y - end.Y, 2));
-            return area / bottom * 2;
+            return (float)(area / bottom * 2);
         });
 
         ///<summary> Simplifies keyframes on 2-parameter commands. </summary>
@@ -319,14 +319,14 @@ namespace StorybrewCommon.Animations
             var middleComponent = getComponent(middleKeyframe.Value);
             var endComponent = getComponent(endKeyframe.Value);
 
-            var start = new Vector3d(startKeyframe.Time, startComponent.X, startComponent.Y);
-            var middle = new Vector3d(middleKeyframe.Time, middleComponent.X, middleComponent.Y);
-            var end = new Vector3d(endKeyframe.Time, endComponent.X, endComponent.Y);
+            var start = new Vector3((float)startKeyframe.Time, startComponent.X, startComponent.Y);
+            var middle = new Vector3((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y);
+            var end = new Vector3((float)endKeyframe.Time, endComponent.X, endComponent.Y);
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
             return (startToMiddle - 
-                Vector3d.Dot(startToMiddle, startToEnd) / Vector3d.Dot(startToEnd, startToEnd) * startToEnd).Length;
+                Vector3.Dot(startToMiddle, startToEnd) / Vector3.Dot(startToEnd, startToEnd) * startToEnd).Length();
         });
 
         ///<summary> Simplifies keyframes on 3-parameter commands. </summary>
@@ -339,20 +339,20 @@ namespace StorybrewCommon.Animations
             var middleComponent = getComponent(middleKeyframe.Value);
             var endComponent = getComponent(endKeyframe.Value);
 
-            var start = new Vector4d(startKeyframe.Time, startComponent.X, startComponent.Y, startComponent.Z);
-            var middle = new Vector4d(middleKeyframe.Time, middleComponent.X, middleComponent.Y, middleComponent.Z);
-            var end = new Vector4d(endKeyframe.Time, endComponent.X, endComponent.Y, endComponent.Z);
+            var start = new Vector4((float)startKeyframe.Time, startComponent.X, startComponent.Y, startComponent.Z);
+            var middle = new Vector4((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y, middleComponent.Z);
+            var end = new Vector4((float)endKeyframe.Time, endComponent.X, endComponent.Y, endComponent.Z);
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
-            return (startToMiddle - 
-                Vector4d.Dot(startToMiddle, startToEnd) / Vector4d.Dot(startToEnd, startToEnd) * startToEnd).Length;
+            return (startToMiddle -
+                Vector4.Dot(startToMiddle, startToEnd) / Vector4.Dot(startToEnd, startToEnd) * startToEnd).Length();
         });
 
         ///<summary> Simplifies keyframes on commands. </summary>
         ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
         ///<param name="getDistance"> Distance between keyframes. </param>
-        public void SimplifyKeyframes(double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, double> getDistance)
+        public void SimplifyKeyframes(double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
         {
             if (keyframes.Count < 3) return;
 
@@ -372,7 +372,7 @@ namespace StorybrewCommon.Animations
             });
             keyframes = simplifiedKeyframes;
         }
-        void getSimplifiedKeyframeIndexes(ref List<int> keyframesToKeep, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, double> getDistance)
+        void getSimplifiedKeyframeIndexes(ref List<int> keyframesToKeep, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
         {
             var start = keyframes[firstPoint];
             var end = keyframes[lastPoint];

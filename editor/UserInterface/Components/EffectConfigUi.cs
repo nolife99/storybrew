@@ -233,6 +233,22 @@ namespace StorybrewEditor.UserInterface.Components
                 };
                 return widget;
             }
+            else if (field.Type == typeof(System.Numerics.Vector2))
+            {
+                var widget = new Numeric2Picker(Manager)
+                {
+                    Value = (System.Numerics.Vector2)field.Value,
+                    AnchorFrom = BoxAlignment.Right,
+                    AnchorTo = BoxAlignment.Right,
+                    CanGrow = false
+                };
+                widget.OnValueCommited += (sender, e) =>
+                {
+                    setFieldValue(field, widget.Value);
+                    widget.Value = (System.Numerics.Vector2)effect.Config.GetValue(field.Name);
+                };
+                return widget;
+            }
             else if (field.Type == typeof(Vector2))
             {
                 var widget = new Vector2Picker(Manager)
@@ -278,6 +294,22 @@ namespace StorybrewEditor.UserInterface.Components
                 {
                     setFieldValue(field, widget.Value);
                     widget.Value = (Vector2i)effect.Config.GetValue(field.Name);
+                };
+                return widget;
+            }
+            else if (field.Type == typeof(System.Numerics.Vector3))
+            {
+                var widget = new Numeric3Picker(Manager)
+                {
+                    Value = (System.Numerics.Vector3)field.Value,
+                    AnchorFrom = BoxAlignment.Right,
+                    AnchorTo = BoxAlignment.Right,
+                    CanGrow = false
+                };
+                widget.OnValueCommited += (sender, e) =>
+                {
+                    setFieldValue(field, widget.Value);
+                    widget.Value = (System.Numerics.Vector3)effect.Config.GetValue(field.Name);
                 };
                 return widget;
             }

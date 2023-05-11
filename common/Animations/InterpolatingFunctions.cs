@@ -20,8 +20,11 @@ namespace StorybrewCommon.Animations
         ///<summary> Represents a function that interpolates between 2 <see cref="double"/> angles. </summary>
         public static Func<double, double, double, double> DoubleAngle = (from, to, progress) => from + MathUtil.ShortestAngleDelta(from, to) * progress;
 
-        ///<summary> Represents a function that interpolates between 2 <see cref="OpenTK.Vector2"/> vectors. </summary>
-        public static Func<Vector2, Vector2, double, Vector2> Vector2 = (from, to, progress) => from + (to - from) * (float)progress;
+        ///<summary> Represents a function that interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
+        public static Func<CommandPosition, CommandPosition, double, CommandPosition> Vector2 = (from, to, progress) => from + (to - from) * (float)progress;
+
+        ///<summary> Represents a function that interpolates between 2 <see cref="CommandScale"/> vectors. </summary>
+        public static Func<CommandScale, CommandScale, double, CommandScale> Scale = (from, to, progress) => from + (to - from) * (float)progress;
 
         ///<summary> Represents a function that interpolates between 2 <see cref="OpenTK.Vector3"/> vectors. </summary>
         public static Func<Vector3, Vector3, double, Vector3> Vector3 = (from, to, progress) => from + (to - from) * (float)progress;

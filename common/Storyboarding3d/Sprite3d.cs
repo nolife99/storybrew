@@ -1,6 +1,7 @@
 ﻿using OpenTK;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Collections.Generic;
@@ -35,7 +36,7 @@ namespace StorybrewCommon.Storyboarding3d
         public Vector2? UseDefaultScale = null;
 
         ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
-        public readonly KeyframedValue<Vector2> SpriteScale = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2, Vector2.One);
+        public readonly KeyframedValue<CommandScale> SpriteScale = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale, Vector2.One);
 
         ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
         public readonly KeyframedValue<double> SpriteRotation = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle, 0);
@@ -83,7 +84,7 @@ namespace StorybrewCommon.Storyboarding3d
             var rotation = InterpolatingFunctions.DoubleAngle(
                 previousState?.Rotation ?? -SpriteRotation.ValueAt(previousState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
 
-            var scale = SpriteScale.ValueAt(time) *
+            var scale = (Vector2)SpriteScale.ValueAt(time) *
                 object3dState.WorldTransform.ExtractScale().Xy *
                 (float)(cameraState.FocusDistance / screenPosition.W) *
                 (float)cameraState.ResolutionScale;

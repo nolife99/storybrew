@@ -4,7 +4,7 @@ using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
+using System.Drawing;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -38,7 +38,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<summary> The thickness of this <see cref="Line3d"/>, in osu!pixels, relative to 3D transformations. </summary>
         public readonly KeyframedValue<float> Thickness = new KeyframedValue<float>(InterpolatingFunctions.Float, 1);
 
-        Vector2 spriteBitmap;
+        Size spriteBitmap;
 
         readonly CommandGenerator gen = new CommandGenerator();
 
@@ -83,7 +83,7 @@ namespace StorybrewCommon.Storyboarding3d
             {
                 Time = time,
                 Position = position,
-                Scale = new Vector2(length / spriteBitmap.X, Thickness.ValueAt(time)),
+                Scale = new Vector2(length / spriteBitmap.Width, Thickness.ValueAt(time)),
                 Rotation = InterpolatingFunctions.DoubleAngle(gen.EndState?.Rotation ?? 0, Math.Atan2(delta.Y, delta.X), 1),
                 Color = object3dState.Color,
                 Opacity = opacity,
@@ -164,7 +164,7 @@ namespace StorybrewCommon.Storyboarding3d
             }
         }
 
-        readonly Vector2[] spriteBitmaps = new Vector2[3];
+        readonly Size[] spriteBitmaps = new Size[3];
 
         ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
@@ -221,7 +221,7 @@ namespace StorybrewCommon.Storyboarding3d
             {
                 Time = time,
                 Position = positionBody,
-                Scale = new Vector2(length / spriteBitmaps[0].X, bodyHeight / spriteBitmaps[0].Y),
+                Scale = new Vector2(length / spriteBitmaps[0].Width, bodyHeight / spriteBitmaps[0].Height),
                 Rotation = rotation,
                 Color = object3dState.Color,
                 Opacity = opacity,
@@ -230,7 +230,7 @@ namespace StorybrewCommon.Storyboarding3d
 
             if (SpritePathEdge != null)
             {
-                var edgeScale = new Vector2(length / spriteBitmaps[1].X, edgeHeight / spriteBitmaps[1].Y);
+                var edgeScale = new Vector2(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height);
                 var edgeOffset = new Vector2((float)Math.Cos(angle - Math.PI / 2), (float)Math.Sin(angle - Math.PI / 2)) * (bodyHeight / 2 - EdgeOverlap);
                 var positionTop = positionBody + edgeOffset;
                 var positionBottom = positionBody - edgeOffset;
@@ -263,8 +263,8 @@ namespace StorybrewCommon.Storyboarding3d
             }
             if (SpritePathCap != null)
             {
-                var startCapScale = new Vector2(startScale / spriteBitmaps[2].X, startScale / spriteBitmaps[2].Y);
-                var endCapScale = new Vector2(endScale / spriteBitmaps[2].X, endScale / spriteBitmaps[2].Y);
+                var startCapScale = new Vector2(startScale / spriteBitmaps[2].Width, startScale / spriteBitmaps[2].Height);
+                var endCapScale = new Vector2(endScale / spriteBitmaps[2].Width, endScale / spriteBitmaps[2].Height);
 
                 var capOffset = OrientedCaps ? new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * CapOverlap : Vector2.Zero;
 

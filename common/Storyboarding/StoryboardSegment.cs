@@ -1,4 +1,4 @@
-using OpenTK;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Storyboarding
 {
@@ -14,8 +14,8 @@ namespace StorybrewCommon.Storyboarding
         ///<summary> Creates an <see cref="OsbSprite"/>. </summary>
         ///<param name="path"> Path to the image of this sprite. </param>
         ///<param name="origin"> <see cref="OsbOrigin"/> of this sprite. </param>
-        ///<param name="initialPosition"> The initial <see cref="Vector2"/> value of this sprite. </param>
-        public abstract OsbSprite CreateSprite(string path, OsbOrigin origin, Vector2 initialPosition);
+        ///<param name="initialPosition"> The initial <see cref="CommandPosition"/> value of this sprite. </param>
+        public abstract OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition);
 
         ///<summary> Creates an <see cref="OsbSprite"/>. </summary>
         ///<param name="path"> Path to the image of this sprite. </param>
@@ -28,8 +28,8 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="frameDelay"> Delay between frames in this animation. </param>
         ///<param name="loopType"> <see cref="OsbLoopType"/> of this animation. </param>
         ///<param name="origin"> <see cref="OsbOrigin"/> of this animation. </param>
-        ///<param name="initialPosition"> The initial <see cref="Vector2"/> value of this animation. </param>
-        public abstract OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Vector2 initialPosition);
+        ///<param name="initialPosition"> The initial <see cref="CommandPosition"/> value of this animation. </param>
+        public abstract OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition);
 
         ///<summary> Creates an <see cref="OsbAnimation"/>. </summary>
         ///<param name="path"> Path to the image of this animation. </param>

@@ -3,6 +3,7 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
 using OpenTK;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.IO;
 
@@ -91,10 +92,10 @@ namespace StorybrewEditor.Storyboarding
         public int GetActiveSpriteCount(double time) => Visible ? segment.GetActiveSpriteCount(time) : 0;
         public int GetCommandCost(double time) => Visible ? segment.GetCommandCost(time) : 0;
 
-        public override OsbSprite CreateSprite(string path, OsbOrigin origin, Vector2 initialPosition) => segment.CreateSprite(path, origin, initialPosition);
+        public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition) => segment.CreateSprite(path, origin, initialPosition);
         public override OsbSprite CreateSprite(string path, OsbOrigin origin) => segment.CreateSprite(path, origin, new Vector2(320, 240));
 
-        public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Vector2 initialPosition)
+        public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition)
             => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, initialPosition);
 
         public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin = OsbOrigin.Centre)

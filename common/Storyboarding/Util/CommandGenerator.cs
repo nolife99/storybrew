@@ -1,4 +1,3 @@
-using OpenTK;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
@@ -6,19 +5,23 @@ using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
+using System.Drawing;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
     ///<summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
     public class CommandGenerator
     {
-        readonly KeyframedValue<Vector2>
-            positions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
-            scales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
-            finalPositions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
-            finalScales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
+        readonly KeyframedValue<CommandPosition>
+            positions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Vector2),
+            finalPositions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Vector2);
+
+        readonly KeyframedValue<CommandScale>
+            scales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale),
+            finalScales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale);
 
         readonly KeyframedValue<float>
             rotations = new KeyframedValue<float>(InterpolatingFunctions.FloatAngle),
@@ -109,7 +112,7 @@ namespace StorybrewCommon.Storyboarding.Util
         ///<param name="timeOffset"> The time offset of the command times. </param>
         ///<param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
         ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
-        public bool GenerateCommands(OsbSprite sprite, Box2 bounds, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
+        public bool GenerateCommands(OsbSprite sprite, OpenTK.Box2 bounds, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
         {
             State previousState = null;
             bool wasVisible = false, everVisible = false, stateAdded = false;
@@ -157,12 +160,12 @@ namespace StorybrewCommon.Storyboarding.Util
             clearKeyframes();
             return everVisible;
         }
-        void commitKeyframes(Vector2 imageSize)
+        void commitKeyframes(Size imageSize)
         {
             positions.Simplify2dKeyframes(PositionTolerance, s => s);
             positions.TransferKeyframes(finalPositions);
 
-            scales.Simplify2dKeyframes(ScaleTolerance, v => v * imageSize);
+            scales.Simplify2dKeyframes(ScaleTolerance, v => new Vector2(v.X * imageSize.Width, v.Y * imageSize.Height));
             scales.TransferKeyframes(finalScales);
 
             rotations.Simplify1dKeyframes(RotationTolerance, r => r);
@@ -252,10 +255,10 @@ namespace StorybrewCommon.Storyboarding.Util
             flipV.Clear(true);
             additive.Clear(true);
         }
-        internal static Vector2 BitmapDimensions(string path)
+        internal static Size BitmapDimensions(string path)
         {
             var src = StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fontDirectories.Count == 0);
-            return new Vector2(src.Width, src.Height);
+            return new Size(src.Width, src.Height);
         }
     }
 
@@ -272,10 +275,10 @@ namespace StorybrewCommon.Storyboarding.Util
         public double Opacity = 0;
 
         ///<summary> Represents the position, in osu!pixels, of this state. </summary>
-        public Vector2 Position = new Vector2(320, 240);
+        public CommandPosition Position = new Vector2(320, 240);
 
         ///<summary> Represents the scale, in osu!pixels, of this state. </summary>
-        public Vector2 Scale = Vector2.One;
+        public CommandScale Scale = Vector2.One;
 
         ///<summary> Represents the color, in RGB values, of this state. </summary>
         public CommandColor Color = CommandColor.White;
@@ -293,22 +296,22 @@ namespace StorybrewCommon.Storyboarding.Util
         /// Returns the visibility of the sprite in the current <see cref="State"/> based on its image size, <see cref="OsbOrigin"/>, and screen boundaries. 
         /// </summary>
         /// <returns> <see langword="true"/> if the sprite is within <paramref name="bounds"/>, else returns <see langword="false"/>. </returns>
-        public bool IsVisible(Vector2 imageSize, OsbOrigin origin, Box2 bounds, CommandGenerator generator = null)
+        public bool IsVisible(Size imageSize, OsbOrigin origin, OpenTK.Box2 bounds, CommandGenerator generator = null)
         {
             if (Additive && Color == CommandColor.Black ||
                 (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
                 Scale.X == 0 || Scale.Y == 0)
                 return false;
 
-            if (!bounds.Contains(new Vector2(
-                generator is null ? Position.X : (float)Math.Round(Position.X, generator.PositionDecimals),
-                generator is null ? Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals))))
+            if (!bounds.Contains(new OpenTK.Vector2(
+                generator is null ? (float)Position.X : (float)Math.Round(Position.X, generator.PositionDecimals),
+                generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals))))
             {
-                var w = imageSize.X * Scale.X;
-                var h = imageSize.Y * Scale.Y;
+                var w = imageSize.Width * Scale.X;
+                var h = imageSize.Height * Scale.Y;
                 var originVector = OsbSprite.GetOriginVector(origin, w, h);
 
-                var obb = new OrientedBoundingBox(Position, originVector, w, h, Rotation);
+                var obb = new OrientedBoundingBox(new OpenTK.Vector2(Position.X, Position.Y), originVector, w, h, Rotation);
                 if (!obb.Intersects(bounds)) return false;
             }
             return true;

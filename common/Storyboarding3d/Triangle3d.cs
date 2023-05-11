@@ -4,6 +4,7 @@ using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -44,7 +45,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<summary> The index of a vertex/edge to be fixed. </summary>
         public int FixedEdge = -1;
 
-        Vector2 spriteBitmap;
+        Size spriteBitmap;
 
         ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
@@ -124,8 +125,8 @@ namespace StorybrewCommon.Storyboarding3d
                 }
 
                 var position = project(vector0.Xy, vector2.Xy, vector1.Xy);
-                var scale0 = new Vector2((vector2.Xy - position).Length / spriteBitmap.X, (vector1.Xy - position).Length / spriteBitmap.Y);
-                var scale1 = new Vector2((vector0.Xy - position).Length / spriteBitmap.X, scale0.Y);
+                var scale0 = new Vector2((vector2.Xy - position).Length / spriteBitmap.Width, (vector1.Xy - position).Length / spriteBitmap.Height);
+                var scale1 = new Vector2((vector0.Xy - position).Length / spriteBitmap.Width, scale0.Y);
 
                 var angle = Math.Atan2(delta.Y, delta.X);
                 var rotation = InterpolatingFunctions.DoubleAngle(Generator0.EndState?.Rotation ?? 0, angle, 1);
