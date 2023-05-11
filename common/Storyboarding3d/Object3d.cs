@@ -1,10 +1,10 @@
-﻿using OpenTK;
-using StorybrewCommon.Animations;
+﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -40,7 +40,7 @@ namespace StorybrewCommon.Storyboarding3d
         public void Add(Object3d child) => children.Add(child);
 
         ///<summary> Gets this instance's 3D-world transform at <paramref name="time"/>. </summary>
-        public virtual Matrix4 WorldTransformAt(double time) => Matrix4.Identity;
+        public virtual Matrix4x4 WorldTransformAt(double time) => Matrix4x4.Identity;
 
         ///<summary> Generates the base sprites for this instance. </summary>
         ///<param name="parentSegment"> The <see cref="StoryboardSegment"/> for the sprite to be generated in. </param>
@@ -116,12 +116,12 @@ namespace StorybrewCommon.Storyboarding3d
 #pragma warning disable CS1591
     public struct Object3dState
     {
-        public static readonly Object3dState InitialState = new Object3dState(Matrix4.Identity, CommandColor.White, 1);
-        public readonly Matrix4 WorldTransform;
+        public static readonly Object3dState InitialState = new Object3dState(Matrix4x4.Identity, CommandColor.White, 1);
+        public readonly Matrix4x4 WorldTransform;
         public readonly CommandColor Color;
         public readonly float Opacity;
 
-        public Object3dState(Matrix4 worldTransform, CommandColor color, float opacity)
+        public Object3dState(Matrix4x4 worldTransform, CommandColor color, float opacity)
         {
             WorldTransform = worldTransform;
             Color = color;

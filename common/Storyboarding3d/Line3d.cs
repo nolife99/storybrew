@@ -1,10 +1,11 @@
-using OpenTK;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -62,9 +63,8 @@ namespace StorybrewCommon.Storyboarding3d
             var startVector = cameraState.ToScreen(wvp, StartPosition.ValueAt(time));
             var endVector = cameraState.ToScreen(wvp, EndPosition.ValueAt(time));
 
-            var delta = endVector.Xy - startVector.Xy;
-            var length = delta.Length;
-            if (delta.LengthSquared == 0) return;
+            var delta = new Vector2(endVector.X, endVector.Y) - new Vector2(startVector.X, startVector.Y);
+            if (delta.LengthSquared() == 0) return;
 
             var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
@@ -75,15 +75,15 @@ namespace StorybrewCommon.Storyboarding3d
                 default:
                 case OsbOrigin.TopLeft:
                 case OsbOrigin.CentreLeft:
-                case OsbOrigin.BottomLeft: position = startVector.Xy; break;
-                case OsbOrigin.TopCentre: case OsbOrigin.Centre: case OsbOrigin.BottomCentre: position = startVector.Xy + delta / 2; break;
-                case OsbOrigin.TopRight: case OsbOrigin.CentreRight: case OsbOrigin.BottomRight: position = endVector.Xy; break;
+                case OsbOrigin.BottomLeft: position = new Vector2(startVector.X, startVector.Y); break;
+                case OsbOrigin.TopCentre: case OsbOrigin.Centre: case OsbOrigin.BottomCentre: position = new Vector2(startVector.X, startVector.Y) + delta / 2; break;
+                case OsbOrigin.TopRight: case OsbOrigin.CentreRight: case OsbOrigin.BottomRight: position = new Vector2(endVector.X, endVector.Y); break;
             }
             gen.Add(new State
             {
                 Time = time,
                 Position = position,
-                Scale = new Vector2(length / spriteBitmap.Width, Thickness.ValueAt(time)),
+                Scale = new Vector2(delta.Length() / spriteBitmap.Width, Thickness.ValueAt(time)),
                 Rotation = InterpolatingFunctions.DoubleAngle(gen.EndState?.Rotation ?? 0, Math.Atan2(delta.Y, delta.X), 1),
                 Color = object3dState.Color,
                 Opacity = opacity,
@@ -193,15 +193,15 @@ namespace StorybrewCommon.Storyboarding3d
             var startVector = cameraState.ToScreen(wvp, StartPosition.ValueAt(time));
             var endVector = cameraState.ToScreen(wvp, EndPosition.ValueAt(time));
 
-            var delta = endVector.Xy - startVector.Xy;
-            var length = delta.Length;
-            if (delta.LengthSquared == 0) return;
+            var delta = new Vector2(endVector.X, endVector.Y) - new Vector2(startVector.X, startVector.Y);
+            if (delta.LengthSquared() == 0) return;
 
             var angle = Math.Atan2(delta.Y, delta.X);
             var rotation = InterpolatingFunctions.DoubleAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
 
             var thickness = Thickness.ValueAt(time);
-            var scaleFactor = object3dState.WorldTransform.ExtractScale().Y * (float)cameraState.ResolutionScale;
+            var matrix = object3dState.WorldTransform;
+            var scaleFactor = new Vector3(matrix.M21, matrix.M22, matrix.M23).Length() * (float)cameraState.ResolutionScale;
             var startScale = scaleFactor * (float)(cameraState.FocusDistance / startVector.W) * thickness * StartThickness.ValueAt(time);
             var endScale = scaleFactor * (float)(cameraState.FocusDistance / endVector.W) * thickness * EndThickness.ValueAt(time);
 
@@ -215,8 +215,10 @@ namespace StorybrewCommon.Storyboarding3d
 
             var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
+            
+            var length = delta.Length();
 
-            var positionBody = startVector.Xy + delta / 2;
+            var positionBody = new Vector2(startVector.X, startVector.Y) + delta / 2;
             genBody.Add(new State
             {
                 Time = time,
@@ -277,7 +279,7 @@ namespace StorybrewCommon.Storyboarding3d
                 genStartCap.Add(new State
                 {
                     Time = time,
-                    Position = startVector.Xy + capOffset,
+                    Position = new Vector2(startVector.X, startVector.Y) + capOffset,
                     Scale = startCapScale,
                     Rotation = OrientedCaps ? rotation + Math.PI : 0,
                     Color = object3dState.Color,
@@ -287,7 +289,7 @@ namespace StorybrewCommon.Storyboarding3d
                 genEndCap.Add(new State
                 {
                     Time = time,
-                    Position = endVector.Xy - capOffset,
+                    Position = new Vector2(endVector.X, endVector.Y) - capOffset,
                     Scale = endCapScale,
                     Rotation = OrientedCaps ? rotation + Math.PI : 0,
                     Color = object3dState.Color,

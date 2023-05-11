@@ -1,8 +1,8 @@
-using OpenTK;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -100,11 +100,11 @@ namespace StorybrewCommon.Storyboarding3d
             var switchedEdge = false;
             for (var i = 0; i < 3; i++)
             {
-                var delta = vector2.Xy - vector0.Xy;
-                var deltaLength = delta.Length;
+                var delta = new Vector2(vector2.X, vector2.Y) - new Vector2(vector0.X, vector0.Y);
+                var deltaLength = delta.Length();
                 var normalizedDelta = delta / deltaLength;
 
-                var delta2 = vector1.Xy - vector0.Xy;
+                var delta2 = new Vector2(vector1.X, vector1.Y) - new Vector2(vector0.X, vector0.Y);
                 var dot = Vector2.Dot(normalizedDelta, delta2);
 
                 if (dot <= 0 || dot > deltaLength)
@@ -124,9 +124,9 @@ namespace StorybrewCommon.Storyboarding3d
                     continue;
                 }
 
-                var position = project(vector0.Xy, vector2.Xy, vector1.Xy);
-                var scale0 = new Vector2((vector2.Xy - position).Length / spriteBitmap.Width, (vector1.Xy - position).Length / spriteBitmap.Height);
-                var scale1 = new Vector2((vector0.Xy - position).Length / spriteBitmap.Width, scale0.Y);
+                var position = project(new Vector2(vector0.X, vector0.Y), new Vector2(vector2.X, vector2.Y), new Vector2(vector1.X, vector1.Y));
+                var scale0 = new Vector2((new Vector2(vector2.X, vector2.Y) - position).Length() / spriteBitmap.Width, (new Vector2(vector1.X, vector1.Y) - position).Length() / spriteBitmap.Height);
+                var scale1 = new Vector2((new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.Width, scale0.Y);
 
                 var angle = Math.Atan2(delta.Y, delta.X);
                 var rotation = InterpolatingFunctions.DoubleAngle(Generator0.EndState?.Rotation ?? 0, angle, 1);

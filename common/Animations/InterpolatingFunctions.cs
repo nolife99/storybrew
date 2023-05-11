@@ -1,6 +1,6 @@
-﻿using OpenTK;
-using StorybrewCommon.Storyboarding.CommandValues;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
+using System.Numerics;
 using BrewLib.Util;
 
 namespace StorybrewCommon.Animations
@@ -26,7 +26,7 @@ namespace StorybrewCommon.Animations
         ///<summary> Represents a function that interpolates between 2 <see cref="CommandScale"/> vectors. </summary>
         public static Func<CommandScale, CommandScale, double, CommandScale> Scale = (from, to, progress) => from + (to - from) * (float)progress;
 
-        ///<summary> Represents a function that interpolates between 2 <see cref="OpenTK.Vector3"/> vectors. </summary>
+        ///<summary> Represents a function that interpolates between 2 <see cref="Vector3"/> vectors. </summary>
         public static Func<Vector3, Vector3, double, Vector3> Vector3 = (from, to, progress) => from + (to - from) * (float)progress;
 
         ///<summary> Represents a function that performs spherical linear interpolation on 2 <see cref="Quaternion"/>s. </summary>

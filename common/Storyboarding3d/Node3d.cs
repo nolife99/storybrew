@@ -1,4 +1,4 @@
-﻿using OpenTK;
+﻿using System.Numerics;
 using StorybrewCommon.Animations;
 
 namespace StorybrewCommon.Storyboarding3d
@@ -28,9 +28,9 @@ namespace StorybrewCommon.Storyboarding3d
         public readonly KeyframedValue<Quaternion> Rotation = new KeyframedValue<Quaternion>(InterpolatingFunctions.QuaternionSlerp, Quaternion.Identity);
 
         ///<inheritdoc/>
-        public override Matrix4 WorldTransformAt(double time) 
-            => Matrix4.CreateScale(ScaleX.ValueAt(time), ScaleY.ValueAt(time), ScaleZ.ValueAt(time)) *
-            Matrix4.CreateFromQuaternion(Rotation.ValueAt(time)) *
-            Matrix4.CreateTranslation(PositionX.ValueAt(time), PositionY.ValueAt(time), PositionZ.ValueAt(time));
+        public override Matrix4x4 WorldTransformAt(double time) 
+            => Matrix4x4.CreateScale(ScaleX.ValueAt(time), ScaleY.ValueAt(time), ScaleZ.ValueAt(time)) *
+            Matrix4x4.CreateFromQuaternion(Rotation.ValueAt(time)) *
+            Matrix4x4.CreateTranslation(PositionX.ValueAt(time), PositionY.ValueAt(time), PositionZ.ValueAt(time));
     }
 }

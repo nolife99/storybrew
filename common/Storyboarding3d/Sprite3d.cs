@@ -1,12 +1,11 @@
-﻿using OpenTK;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Scripting;
+﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
-using System.IO;
+using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -86,8 +85,17 @@ namespace StorybrewCommon.Storyboarding3d
             var rotation = InterpolatingFunctions.DoubleAngle(
                 previousState?.Rotation ?? -SpriteRotation.ValueAt(previousState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
 
-            var scale = (Vector2)SpriteScale.ValueAt(time) *
-                object3dState.WorldTransform.ExtractScale().Xy *
+            var scaleVec = new Vector2(new Vector3(
+                object3dState.WorldTransform.M11, 
+                object3dState.WorldTransform.M12, 
+                object3dState.WorldTransform.M13).Length(),
+                
+            new Vector3(
+                object3dState.WorldTransform.M21, 
+                object3dState.WorldTransform.M22, 
+                object3dState.WorldTransform.M23).Length());
+
+            var scale = (Vector2)SpriteScale.ValueAt(time) * scaleVec *
                 (float)(cameraState.FocusDistance / screenPosition.W) *
                 (float)cameraState.ResolutionScale;
 
@@ -97,7 +105,7 @@ namespace StorybrewCommon.Storyboarding3d
             gen.Add(new State
             {
                 Time = time,
-                Position = screenPosition.Xy,
+                Position = new Vector2(screenPosition.X, screenPosition.Y),
                 Scale = UseDefaultScale ?? scale,
                 Rotation = rotation,
                 Color = object3dState.Color,

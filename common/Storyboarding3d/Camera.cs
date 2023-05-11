@@ -1,6 +1,6 @@
-﻿using OpenTK;
-using StorybrewCommon.Animations;
+﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Mapset;
+using System.Numerics;
 using System;
 
 namespace StorybrewCommon.Storyboarding3d
@@ -11,16 +11,16 @@ namespace StorybrewCommon.Storyboarding3d
         public Vector2 Resolution = new Vector2(1366, 768);
         public double ResolutionScale { get => OsuHitObject.StoryboardSize.Y / Resolution.Y; }
         public double AspectRatio { get => Resolution.X / Resolution.Y; }
-        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.X / 2 / Math.Tan(MathHelper.DegreesToRadians(fov) / 2));
-        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Y / 2 / Math.Tan(MathHelper.DegreesToRadians(fov) / 2));
+        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.X / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
+        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Y / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
         public abstract CameraState StateAt(double time);
     }
     public struct CameraState
     {
-        public readonly Matrix4 ViewProjection;
+        public readonly Matrix4x4 ViewProjection;
         public readonly double AspectRatio, FocusDistance, ResolutionScale, NearClip, NearFade, FarFade, FarClip;
 
-        public CameraState(Matrix4 viewProjection, double aspectRatio, double focusDistance, double resolutionScale, double nearClip, double nearFade, double farFade, double farClip)
+        public CameraState(Matrix4x4 viewProjection, double aspectRatio, double focusDistance, double resolutionScale, double nearClip, double nearFade, double farFade, double farClip)
         {
             ViewProjection = viewProjection;
             AspectRatio = aspectRatio;
@@ -31,7 +31,7 @@ namespace StorybrewCommon.Storyboarding3d
             FarFade = farFade;
             FarClip = farClip;
         }
-        public Vector4 ToScreen(Matrix4 transform, Vector3 point)
+        public Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
         {
             var scale = new Vector2(OsuHitObject.StoryboardSize.Y * (float)AspectRatio, OsuHitObject.StoryboardSize.Y);
             var offset = (scale.X - OsuHitObject.StoryboardSize.X) / 2;
@@ -96,18 +96,18 @@ namespace StorybrewCommon.Storyboarding3d
             var aspectRatio = AspectRatio;
             var cameraPosition = new Vector3(PositionX.ValueAt(time), PositionY.ValueAt(time), PositionZ.ValueAt(time));
             var targetPosition = TargetPosition.ValueAt(time);
-            var up = Up.ValueAt(time).Normalized();
+            var up = Up.ValueAt(time) * (1 / Up.ValueAt(time).Length());
 
             double fovY;
             if (HorizontalFov.Count > 0)
             {
-                var fovX = (double)MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
+                var fovX = (double)OpenTK.MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
                 fovY = 2 * Math.Atan(Math.Tan(fovX / 2) / aspectRatio);
             }
             else
             {
-                fovY = VerticalFov.Count > 0 ? MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
-                2 * Math.Atan(Resolution.Y / 2D / Math.Max(.0001, (cameraPosition - targetPosition).Length));
+                fovY = VerticalFov.Count > 0 ? OpenTK.MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
+                2 * Math.Atan(Resolution.Y / 2D / Math.Max(.0001, (cameraPosition - targetPosition).Length()));
             }
 
             var focusDistance = Resolution.Y / 2D / Math.Tan(fovY / 2D);
@@ -117,8 +117,8 @@ namespace StorybrewCommon.Storyboarding3d
             var nearFade = NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip;
             var farFade = FarFade.Count > 0 ? FarFade.ValueAt(time) : farClip;
 
-            var view = Matrix4.LookAt(cameraPosition, targetPosition, up);
-            var projection = Matrix4.CreatePerspectiveFieldOfView((float)fovY, (float)aspectRatio, (float)nearClip, (float)farClip);
+            var view = Matrix4x4.CreateLookAt(cameraPosition, targetPosition, up);
+            var projection = Matrix4x4.CreatePerspectiveFieldOfView((float)fovY, (float)aspectRatio, (float)nearClip, (float)farClip);
 
             return new CameraState(view * projection, aspectRatio, focusDistance, ResolutionScale, nearClip, nearFade, farFade, farClip);
         }
