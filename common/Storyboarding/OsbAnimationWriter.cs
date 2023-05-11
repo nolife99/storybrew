@@ -62,7 +62,7 @@ namespace StorybrewCommon.Storyboarding
             if (sprite is OsbAnimation animation)
             {
                 var frameDelay = animation.FrameDelay;
-                TextWriter.WriteLine($"Animation,{Layer},{animation.Origin},\"{animation.TexturePath.Trim()}\",{animation.InitialPosition.X.ToString(ExportSettings.NumberFormat)},{animation.InitialPosition.Y.ToString(ExportSettings.NumberFormat)},{animation.FrameCount},{frameDelay.ToString(ExportSettings.NumberFormat)},{animation.LoopType}");
+                TextWriter.WriteLine($"Animation,{Layer},{animation.Origin},\"{animation.TexturePath.Trim()}\",{animation.InitialPosition.X},{animation.InitialPosition.Y},{animation.FrameCount},{frameDelay.ToString(ExportSettings.NumberFormat)},{animation.LoopType}");
             }
             else base.WriteHeader(sprite);
         }

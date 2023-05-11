@@ -3,6 +3,7 @@ using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Animations;
+using System.Linq;
 
 namespace StorybrewScripts
 {
@@ -20,11 +21,9 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            foreach (var hitobject in Beatmap.HitObjects)
+            foreach (var hitobject in Beatmap.HitObjects
+                .Where(h => StartTime == EndTime || (h.StartTime > StartTime - 5 && h.EndTime < EndTime + 5)))
             {
-                if ((StartTime != 0 || EndTime != 0) && (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime))
-                    continue;
-
                 var hSprite = GetLayer("").CreateSprite(SpritePath, OsbOrigin.Centre, hitobject.Position + hitobject.StackOffset);
                 hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale * 0.2);
                 hSprite.Fade(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, 1, 0);

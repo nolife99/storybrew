@@ -78,11 +78,11 @@ namespace StorybrewCommon.Storyboarding
         {
             TextWriter.Write($"Sprite,{Layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
             if (!move.HasCommands && !moveX.HasCommands) TextWriter.Write(
-                $",{sprite.InitialPosition.X.ToString(ExportSettings.NumberFormat)}");
+                $",{sprite.InitialPosition.X}");
             else TextWriter.Write($",0");
 
             if (!move.HasCommands && !moveY.HasCommands) TextWriter.WriteLine(
-                $",{sprite.InitialPosition.Y.ToString(ExportSettings.NumberFormat)}");
+                $",{sprite.InitialPosition.Y}");
             else TextWriter.WriteLine($",0");
         }
         protected virtual bool IsFragmentable()

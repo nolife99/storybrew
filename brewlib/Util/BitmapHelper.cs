@@ -288,19 +288,22 @@ namespace BrewLib.Util
             source.UnlockBits(data);
             return Rectangle.Intersect(Rectangle.FromLTRB(xMin - 1, yMin - 1, xMax + 2, yMax + 2), new Rectangle(0, 0, source.Width, source.Height));
         }
-        public class PinnedBitmap : IDisposable
+        public unsafe class PinnedBitmap : IDisposable
         {
-            GCHandle handle;
-
             public readonly Bitmap Bitmap;
             public readonly int[] Data;
+            byte* pPixels;
 
             public PinnedBitmap(int width, int height)
             {
                 Data = new int[width * height];
-                handle = GCHandle.Alloc(Data, GCHandleType.Pinned);
-                Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, handle.AddrOfPinnedObject());
+                fixed (int* pData = Data)
+                {
+                    Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, (IntPtr)pData);
+                    pPixels = (byte*)pData;
+                }
             }
+
             public static PinnedBitmap FromBitmap(Bitmap bitmap)
             {
                 var result = new PinnedBitmap(bitmap.Width, bitmap.Height);
@@ -314,7 +317,6 @@ namespace BrewLib.Util
                 if (disposed) return;
                 disposed = true;
                 Bitmap.Dispose();
-                handle.Free();
             }
         }
     }

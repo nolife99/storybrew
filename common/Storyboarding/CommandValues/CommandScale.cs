@@ -31,6 +31,9 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
         public CommandScale(Vector2 vector) : this(vector.X, vector.Y) { }
 
+        ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="System.Numerics.Vector2"/>. </summary>
+        public CommandScale(System.Numerics.Vector2 vector) : this(vector.X, vector.Y) { }
+
         ///<inheritdoc/>
         public bool Equals(CommandScale other) => x.Equals(other.x) && y.Equals(other.y);
 
@@ -64,6 +67,8 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
         public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
         public static implicit operator CommandScale(Vector2 vector) => new CommandScale(vector);
+        public static implicit operator CommandScale(System.Numerics.Vector2 vector) => new CommandScale(vector);
         public static implicit operator Vector2(CommandScale obj) => new Vector2(obj.x, obj.y);
+        public static implicit operator System.Numerics.Vector2(CommandScale obj) => new System.Numerics.Vector2(obj.x, obj.y);
     }
 }

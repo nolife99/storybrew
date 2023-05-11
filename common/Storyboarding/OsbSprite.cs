@@ -15,7 +15,7 @@ namespace StorybrewCommon.Storyboarding
     public class OsbSprite : StoryboardObject
     {
         ///<summary> Default position of sprites, unless modified elsewhere. </summary>
-        public static readonly Vector2 DefaultPosition = new Vector2(320, 240);
+        public static readonly CommandPosition DefaultPosition = new CommandPosition(320, 240);
 
         readonly List<ICommand> commands = new List<ICommand>();
         CommandGroup currentCommandGroup;
@@ -45,10 +45,10 @@ namespace StorybrewCommon.Storyboarding
         ///<summary> Origin of this sprite. </summary>
         public OsbOrigin Origin = OsbOrigin.Centre;
 
-        Vector2 initialPosition;
+        CommandPosition initialPosition;
 
         ///<returns> The initial position of the <see cref="OsbSprite"/>. </returns>
-        public Vector2 InitialPosition
+        public CommandPosition InitialPosition
         {
             get => initialPosition;
             set
@@ -574,8 +574,7 @@ namespace StorybrewCommon.Storyboarding
 
         void addCommand(ICommand command)
         {
-            var commandGroup = command as CommandGroup;
-            if (commandGroup != null)
+            if (command is CommandGroup commandGroup)
             {
                 currentCommandGroup = commandGroup;
                 commands.Add(commandGroup);
@@ -625,7 +624,7 @@ namespace StorybrewCommon.Storyboarding
         readonly AnimatedValue<CommandDecimal> moveXTimeline = new AnimatedValue<CommandDecimal>();
         readonly AnimatedValue<CommandDecimal> moveYTimeline = new AnimatedValue<CommandDecimal>();
         readonly AnimatedValue<CommandDecimal> scaleTimeline = new AnimatedValue<CommandDecimal>(1);
-        readonly AnimatedValue<CommandScale> scaleVecTimeline = new AnimatedValue<CommandScale>(Vector2.One);
+        readonly AnimatedValue<CommandScale> scaleVecTimeline = new AnimatedValue<CommandScale>(System.Numerics.Vector2.One);
         readonly AnimatedValue<CommandDecimal> rotateTimeline = new AnimatedValue<CommandDecimal>();
         readonly AnimatedValue<CommandDecimal> fadeTimeline = new AnimatedValue<CommandDecimal>(1);
         readonly AnimatedValue<CommandColor> colorTimeline = new AnimatedValue<CommandColor>(CommandColor.White);
@@ -731,13 +730,13 @@ namespace StorybrewCommon.Storyboarding
             {
                 default: throw new NotSupportedException(origin.ToString());
                 case OsbOrigin.TopLeft: return Vector2.Zero;
-                case OsbOrigin.TopCentre: return new Vector2(width / 2, 0);
+                case OsbOrigin.TopCentre: return new Vector2(width * .5f, 0);
                 case OsbOrigin.TopRight: return new Vector2(width, 0);
-                case OsbOrigin.CentreLeft: return new Vector2(0, height / 2);
-                case OsbOrigin.Centre: return new Vector2(width / 2, height / 2);
-                case OsbOrigin.CentreRight: return new Vector2(width, height / 2);
+                case OsbOrigin.CentreLeft: return new Vector2(0, height * .5f);
+                case OsbOrigin.Centre: return new Vector2(width * .5f, height * .5f);
+                case OsbOrigin.CentreRight: return new Vector2(width, height * .5f);
                 case OsbOrigin.BottomLeft: return new Vector2(0, height);
-                case OsbOrigin.BottomCentre: return new Vector2(width / 2, height);
+                case OsbOrigin.BottomCentre: return new Vector2(width * .5f, height);
                 case OsbOrigin.BottomRight: return new Vector2(width, height);
             }
         }
