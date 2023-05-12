@@ -282,12 +282,12 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Convert degrees to radians. </summary>
         ///<param name="degrees">An angle in degrees.</param>
         ///<returns>The angle expressed in radians.</returns>
-        [Pure] public static float DegreesToRadians(float degrees) => (float)DegreesToRadians(degrees);
+        [Pure] public static float DegreesToRadians(float degrees) => (float)DegreesToRadians((double)degrees);
 
         ///<summary> Convert radians to degrees. </summary>
         ///<param name="radians">An angle in radians.</param>
         ///<returns>The angle expressed in degrees.</returns>
-        [Pure] public static float RadiansToDegrees(float radians) => (float)RadiansToDegrees(radians);
+        [Pure] public static float RadiansToDegrees(float radians) => (float)RadiansToDegrees((double)radians);
 
         ///<summary> Convert degrees to radians. </summary>
         ///<param name="degrees">An angle in degrees.</param>

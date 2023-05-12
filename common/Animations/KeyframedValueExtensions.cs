@@ -125,6 +125,6 @@ namespace StorybrewCommon.Animations
         ///<param name="angle"> The rotation angle in radians (rotates about all axes). </param>
         ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Quaternion}"/>. </param>
         public static KeyframedValue<Quaternion> Add(this KeyframedValue<Quaternion> keyframes, double time, float angle, Func<double, double> easing = null)
-            => keyframes.Add(time, new Quaternion(angle, angle, angle, 1), easing);
+            => keyframes.Add(time, Quaternion.CreateFromYawPitchRoll(angle, angle, angle), easing);
     }
 }

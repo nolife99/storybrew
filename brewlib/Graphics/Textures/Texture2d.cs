@@ -71,8 +71,8 @@ namespace BrewLib.Graphics.Textures
         {
             try
             {
-                if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) 
-                    return (Bitmap)Image.FromStream(stream, false);
+                if (File.Exists(filename)) using (var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
+                    return new Bitmap(stream, false);
             }
             catch (OutOfMemoryException)
             {
@@ -88,7 +88,7 @@ namespace BrewLib.Graphics.Textures
                     Trace.WriteLine($"Texture not found: {filename}");
                     return null;
                 }
-                return (Bitmap)Image.FromStream(stream, false);
+                return new Bitmap(stream, false);
             }
         }
 

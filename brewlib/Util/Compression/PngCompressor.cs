@@ -41,7 +41,7 @@ namespace BrewLib.Util.Compression
 
                 waitForExit();
                 var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error)) throw new InvalidProgramException($"An error occured in the process: {error}");
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new InvalidProgramException($"An error occured in the process: {error}");
                 process.Close();
                 process = null;
             }
