@@ -73,7 +73,7 @@ namespace StorybrewCommon.Scripting
 
         #region File loading
 
-        readonly Dictionary<string, Bitmap> bitmaps = new Dictionary<string, Bitmap>();
+        static readonly Dictionary<string, Bitmap> bitmaps = new Dictionary<string, Bitmap>();
 
         ///<summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
         public Bitmap GetProjectBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
@@ -104,6 +104,13 @@ namespace StorybrewCommon.Scripting
                 }
                 else bitmaps.Add(path, bitmap = Util.Misc.WithRetries(() => (Bitmap)Image.FromStream(stream)));
             }
+            return bitmap;
+        }
+
+        static readonly Dictionary<string, Rectangle> trimRect = new Dictionary<string, Rectangle>();
+        internal Rectangle getTrimmedBitmap(string key, Bitmap source)
+        {
+            if (!trimRect.TryGetValue(key, out Rectangle bitmap)) trimRect.Add(key, bitmap = BitmapHelper.FindTransparencyBounds(source));
             return bitmap;
         }
 

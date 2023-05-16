@@ -4,6 +4,7 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using static System.Drawing.Graphics;
 using BrewLib.Util.Compression;
+using System.Web;
 
 namespace BrewLib.Util
 {
@@ -31,7 +32,7 @@ namespace BrewLib.Util
             var result = PinnedBitmap.FromBitmap(source);
 
             var pixels = source.Width * source.Height;
-            for (var index = 0; index < pixels; index++)
+            for (var index = 0; index < pixels; ++index)
             {
                 var color = result.Data[index];
 
@@ -57,14 +58,14 @@ namespace BrewLib.Util
             var total = 0d;
 
             var scale = 1 / (2 * Math.PI * (weight * weight));
-            for (var y = -radius; y <= radius; y++) for (var x = -radius; x <= radius; x++)
+            for (var y = -radius; y <= radius; ++y) for (var x = -radius; x <= radius; ++x)
             {
                 var distance = (x * x + y * y) / (2 * weight * weight);
                 var value = kernel[y + radius, x + radius] = scale * Math.Exp(-distance);
                 total += value;
             }
 
-            for (var y = 0; y < length; y++) for (var x = 0; x < length; x++) kernel[y, x] = kernel[y, x] / total;
+            for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] = kernel[y, x] / total;
             return kernel;
         }
         public static PinnedBitmap Convolute(Bitmap source, double[,] kernel)
@@ -84,20 +85,20 @@ namespace BrewLib.Util
                 var halfKernelWidth = kernelWidth >> 1;
                 var halfKernelHeight = kernelHeight >> 1;
 
-                for (var y = 0; y < height; y++) for (var x = 0; x < width; x++)
+                for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
                     var a = 0d;
                     var r = 0d;
                     var g = 0d;
                     var b = 0d;
 
-                    for (var kernelX = -halfKernelWidth; kernelX <= halfKernelWidth; kernelX++)
+                    for (var kernelX = -halfKernelWidth; kernelX <= halfKernelWidth; ++kernelX)
                     {
                         var pixelX = kernelX + x;
                         if (pixelX < 0) pixelX = 0;
                         else if (pixelX >= width) pixelX = width - 1;
 
-                        for (var kernelY = -halfKernelHeight; kernelY <= halfKernelHeight; kernelY++)
+                        for (var kernelY = -halfKernelHeight; kernelY <= halfKernelHeight; ++kernelY)
                         {
                             var pixelY = kernelY + y;
                             if (pixelY < 0) pixelY = 0;
@@ -150,17 +151,17 @@ namespace BrewLib.Util
 
                 var colorRgb = (color.R << 16) | (color.G << 8) | color.B;
 
-                for (var y = 0; y < height; y++) for (var x = 0; x < width; x++)
+                for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
                     var a = 0d;
 
-                    for (var kernelX = -halfKernelWidth; kernelX <= halfKernelWidth; kernelX++)
+                    for (var kernelX = -halfKernelWidth; kernelX <= halfKernelWidth; ++kernelX)
                     {
                         var pixelX = kernelX + x;
                         if (pixelX < 0) pixelX = 0;
                         else if (pixelX >= width) pixelX = width - 1;
 
-                        for (var kernelY = -halfKernelHeight; kernelY <= halfKernelHeight; kernelY++)
+                        for (var kernelY = -halfKernelHeight; kernelY <= halfKernelHeight; ++kernelY)
                         {
                             var pixelY = kernelY + y;
                             if (pixelY < 0) pixelY = 0;
@@ -186,10 +187,10 @@ namespace BrewLib.Util
             var data = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), (ImageLockMode)1, (PixelFormat)2498570);
             unsafe
             {
-                var buf = (byte*)data.Scan0.ToPointer();
-                for (var y = 0; y < data.Height; y++)
+                var buf = (byte*)data.Scan0;
+                for (var y = 0; y < data.Height; ++y)
                 {
-                    for (var x = 0; x < data.Width; x++)
+                    for (var x = 0; x < data.Width; ++x)
                     {
                         var alpha = *buf;
                         if (alpha != 0)
@@ -206,93 +207,44 @@ namespace BrewLib.Util
             source.UnlockBits(data);
             return true;
         }
-        public static Rectangle FindTransparencyBounds(Bitmap source)
+        public static Rectangle FindTransparencyBounds(Bitmap bitmap)
         {
-            var data = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), (ImageLockMode)1, (PixelFormat)2498570);
-            int xMin = int.MaxValue, xMax = int.MinValue, yMin = int.MaxValue, yMax = int.MinValue;
-            var found = false;
+            if (bitmap == null) return Rectangle.Empty;
+
+            var data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            int xMin = bitmap.Width, yMin = bitmap.Height, xMax = -1, yMax = -1;
 
             unsafe
             {
                 var buf = (byte*)data.Scan0.ToPointer();
-                for (var x = 0; x < data.Width; x++)
-                {
-                    var stop = false;
-                    for (var y = 0; y < data.Height; y++)
-                    {
-                        var alpha = *(buf + y * data.Stride + 4 * x + 3);
-                        if (alpha > 0)
-                        {
-                            xMin = x;
-                            stop = true;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (stop) break;
-                }
 
-                if (!found)
+                for (var y = 0; y < bitmap.Height; ++y)
                 {
-                    source.UnlockBits(data);
-                    return Rectangle.Empty;
-                }
-
-                for (var y = 0; y < data.Height; y++)
-                {
-                    var stop = false;
-                    for (var x = xMin; x < data.Width; x++)
+                    var row = buf + (y * data.Stride);
+                    for (int x = 0; x < bitmap.Width; ++x)
                     {
-                        var alpha = *(buf + y * data.Stride + 4 * x + 3);
-                        if (alpha > 0)
+                        if (*(row + x * 4 + 3) > 0)
                         {
-                            yMin = y;
-                            stop = true;
-                            break;
+                            if (x < xMin) xMin = x;
+                            if (x > xMax) xMax = x;
+                            if (y < yMin) yMin = y;
+                            if (y > yMax) yMax = y;
                         }
                     }
-                    if (stop) break;
-                }
-                for (var x = data.Width - 1; x >= xMin; x--)
-                {
-                    var stop = false;
-                    for (var y = yMin; y < data.Height; y++)
-                    {
-                        var alpha = *(buf + y * data.Stride + 4 * x + 3);
-                        if (alpha > 0)
-                        {
-                            xMax = x;
-                            stop = true;
-                            break;
-                        }
-                    }
-                    if (stop) break;
-                }
-                for (var y = data.Height - 1; y >= yMin; y--)
-                {
-                    var stop = false;
-                    for (var x = xMin; x <= xMax; x++)
-                    {
-                        var alpha = *(buf + y * data.Stride + 4 * x + 3);
-                        if (alpha > 0)
-                        {
-                            yMax = y;
-                            stop = true;
-                            break;
-                        }
-                    }
-                    if (stop) break;
                 }
             }
 
-            source.UnlockBits(data);
-            return Rectangle.Intersect(Rectangle.FromLTRB(xMin - 1, yMin - 1, xMax + 2, yMax + 2), new Rectangle(0, 0, source.Width, source.Height));
+            bitmap.UnlockBits(data);
+
+            if (xMin <= xMax && yMin <= yMax) return Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1);
+            return Rectangle.Empty;
         }
+
         public unsafe class PinnedBitmap : IDisposable
         {
             public readonly Bitmap Bitmap;
             public readonly int[] Data;
-            byte* pPixels;
+            readonly byte* pPixels;
 
             public PinnedBitmap(int width, int height)
             {

@@ -24,7 +24,7 @@ namespace StorybrewCommon.Mapset
         public static readonly RectangleF StoryboardBounds = new RectangleF(0, 0, StoryboardSize.X, StoryboardSize.Y);
 
         ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
-        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF((StoryboardSize.X - WidescreenStoryboardSize.X) / 2, 0, StoryboardSize.X + (WidescreenStoryboardSize.X - StoryboardSize.X) / 2, 480);
+        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF(-107, 0, 854, StoryboardSize.Y);
 
         ///<summary> Represents the position of the playfield in osu!. </summary>
         public Vector2 PlayfieldPosition;

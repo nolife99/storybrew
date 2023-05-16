@@ -9,7 +9,6 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
-using StorybrewCommon.Storyboarding3d;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
@@ -262,7 +261,8 @@ namespace StorybrewCommon.Storyboarding.Util
         }
         internal static Size BitmapDimensions(string path)
         {
-            var src = StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fontDirectories.Count == 0);
+            var src = StoryboardObjectGenerator.Current.getTrimmedBitmap(path, 
+                StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fontDirectories.Count == 0));
             return new Size(src.Width, src.Height);
         }
     }
