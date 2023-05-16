@@ -39,7 +39,7 @@ namespace StorybrewCommon.Storyboarding3d
             var transformedPoint = Vector4.Transform(new Vector4(point, 1), transform);
             var ndc = new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W);
 
-            var screenPosition = (ndc + Vector2.One) / 2 * scale;
+            var screenPosition = (ndc + Vector2.One) * .5f * scale;
             var depth = transformedPoint.Z / transformedPoint.W;
 
             return new Vector4(screenPosition.X - offset, screenPosition.Y, depth, transformedPoint.W);
@@ -101,8 +101,8 @@ namespace StorybrewCommon.Storyboarding3d
             double fovY;
             if (HorizontalFov.Count > 0)
             {
-                var fovX = (double)OpenTK.MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
-                fovY = 2 * Math.Atan(Math.Tan(fovX / 2) / aspectRatio);
+                var fovX = OpenTK.MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
+                fovY = 2 * Math.Atan(Math.Tan(fovX * .5) / aspectRatio);
             }
             else
             {
@@ -111,7 +111,7 @@ namespace StorybrewCommon.Storyboarding3d
             }
 
             var focusDistance = Resolution.Y / 2D / Math.Tan(fovY / 2D);
-            var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance / 2, 1);
+            var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance * .5, 1);
             var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5;
 
             var nearFade = NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip;

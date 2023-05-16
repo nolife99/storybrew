@@ -71,12 +71,17 @@ namespace BrewLib.Graphics.Textures
         {
             try
             {
-                if (File.Exists(filename)) using (var stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
+                if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) 
                     return new Bitmap(stream, false);
             }
-            catch (OutOfMemoryException)
+            catch (OutOfMemoryException e)
             {
-                Trace.WriteLine($"Texture could not be loaded: {filename}");
+                Trace.TraceError($"Texture could not be loaded: {filename} | {e}");
+                return null;
+            }
+            catch (ArgumentException e)
+            {
+                Trace.TraceError($"Texture is invalid: {filename} | {e}");
                 return null;
             }
 
@@ -85,7 +90,7 @@ namespace BrewLib.Graphics.Textures
             {
                 if (stream == null)
                 {
-                    Trace.WriteLine($"Texture not found: {filename}");
+                    Trace.TraceError($"Texture not found: {filename}");
                     return null;
                 }
                 return new Bitmap(stream, false);

@@ -5,7 +5,7 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using StorybrewCommon.OpenTKUtil;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -76,7 +76,7 @@ namespace StorybrewCommon.Storyboarding3d
                 case OsbOrigin.TopLeft:
                 case OsbOrigin.CentreLeft:
                 case OsbOrigin.BottomLeft: position = new Vector2(startVector.X, startVector.Y); break;
-                case OsbOrigin.TopCentre: case OsbOrigin.Centre: case OsbOrigin.BottomCentre: position = new Vector2(startVector.X, startVector.Y) + delta / 2; break;
+                case OsbOrigin.TopCentre: case OsbOrigin.Centre: case OsbOrigin.BottomCentre: position = new Vector2(startVector.X, startVector.Y) + delta * .5f; break;
                 case OsbOrigin.TopRight: case OsbOrigin.CentreRight: case OsbOrigin.BottomRight: position = new Vector2(endVector.X, endVector.Y); break;
             }
             gen.Add(new State
@@ -233,7 +233,7 @@ namespace StorybrewCommon.Storyboarding3d
             if (SpritePathEdge != null)
             {
                 var edgeScale = new Vector2(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height);
-                var edgeOffset = new Vector2((float)Math.Cos(angle - Math.PI / 2), (float)Math.Sin(angle - Math.PI / 2)) * (bodyHeight / 2 - EdgeOverlap);
+                var edgeOffset = new Vector2((float)Math.Cos(angle - Math.PI / 2), (float)Math.Sin(angle - MathHelper.PiOver2)) * (bodyHeight / 2 - EdgeOverlap);
                 var positionTop = positionBody + edgeOffset;
                 var positionBottom = positionBody - edgeOffset;
 

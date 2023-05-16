@@ -79,7 +79,7 @@ namespace StorybrewEditor.Storyboarding
                 {
                     frameStats.EffectiveCommandCount += sprite.CommandCount;
 
-                    var _sprite = spriteObb.GetAABB();
+                    var _sprite = spriteObb.GetRectangleF();
 
                     var intersection = _sprite.IntersectWith(OsuHitObject.WidescreenStoryboardBounds);
                     var intersectionFactor = intersection.Width * intersection.Height / (_sprite.Width * _sprite.Height);

@@ -23,7 +23,7 @@ namespace StorybrewScripts
         [Description("The Size of the font.\nIncreasing the font size creates larger images.")]
         [Configurable] public int FontSize = 26;
         [Description("The Scale of the font.\nIncreasing the font scale does not creates larger images, but the result may be blurrier.")]
-        [Configurable] public float FontScale = 0.5f;
+        [Configurable] public float FontScale = .5f;
         [Configurable] public Color4 FontColor = Color4.White;
         [Configurable] public FontStyle FontStyle = FontStyle.Regular;
 

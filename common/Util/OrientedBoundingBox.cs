@@ -1,5 +1,6 @@
 ﻿using OpenTK;
 using System;
+using System.Drawing;
 
 namespace StorybrewCommon.Util
 {
@@ -44,9 +45,22 @@ namespace StorybrewCommon.Util
             }
             return new Box2(minX, minY, maxX, maxY);
         }
+        public RectangleF GetRectangleF()
+        {
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+            foreach (var corner in corners)
+            {
+                minX = Math.Min(minX, corner.X);
+                maxX = Math.Max(maxX, corner.X);
+                minY = Math.Min(minY, corner.Y);
+                maxY = Math.Max(maxY, corner.Y);
+            }
+            return new RectangleF(minX, minY, maxX, maxY);
+        }
 
         public bool Intersects(OrientedBoundingBox other) => intersects1Way(other) && other.intersects1Way(this);
         public bool Intersects(Box2 other) => Intersects(new OrientedBoundingBox(new Vector2(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
+        public bool Intersects(RectangleF other) => Intersects(new OrientedBoundingBox(new Vector2(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
         bool intersects1Way(OrientedBoundingBox other)
         {
             for (var a = 0; a < 2; a++)

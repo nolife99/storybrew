@@ -296,7 +296,7 @@ namespace StorybrewCommon.Animations
 
         ///<summary> Simplifies keyframes on 1-parameter commands. </summary>
         ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
-        ///<param name="getComponent"> Converts the keyframe values to a float that the method can use. </param>
+        ///<param name="getComponent"> Converts the keyframe values to a <see cref="float"/> that the method can use. </param>
         public void Simplify1dKeyframes(double tolerance, Func<TValue, float> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
@@ -304,14 +304,14 @@ namespace StorybrewCommon.Animations
             var middle = new Vector2((float)middleKeyframe.Time, getComponent(middleKeyframe.Value));
             var end = new Vector2((float)endKeyframe.Time, getComponent(endKeyframe.Value));
 
-            var area = Math.Abs((start.X * end.Y + end.X * middle.Y + middle.X * start.Y - end.X * start.Y - middle.X * end.Y - start.X * middle.Y) / 2);
-            var bottom = Math.Sqrt(Math.Pow(start.X - end.X, 2) + Math.Pow(start.Y - end.Y, 2));
+            var area = Math.Abs((start.X * end.Y + end.X * middle.Y + middle.X * start.Y - end.X * start.Y - middle.X * end.Y - start.X * middle.Y) * .5);
+            var bottom = Math.Sqrt((start.X - end.X) * (start.X - end.X) + (start.Y - end.Y) * (start.Y - end.Y));
             return (float)(area / bottom * 2);
         });
 
         ///<summary> Simplifies keyframes on 2-parameter commands. </summary>
-        ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
-        ///<param name="getComponent"> Converts the keyframe values to a float that the method can use. </param>
+        ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
+        ///<param name="getComponent"> Converts the keyframe values to a <see cref="Vector2"/> that the method can use. </param>
         public void Simplify2dKeyframes(double tolerance, Func<TValue, Vector2> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
@@ -325,13 +325,12 @@ namespace StorybrewCommon.Animations
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
-            return (startToMiddle - 
-                Vector3.Dot(startToMiddle, startToEnd) / Vector3.Dot(startToEnd, startToEnd) * startToEnd).Length();
+            return (startToMiddle - Vector3.Dot(startToMiddle, startToEnd) / Vector3.Dot(startToEnd, startToEnd) * startToEnd).Length();
         });
 
         ///<summary> Simplifies keyframes on 3-parameter commands. </summary>
-        ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
-        ///<param name="getComponent"> Converts the keyframe values to a float that the method can use. </param>
+        ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
+        ///<param name="getComponent"> Converts the keyframe values to a <see cref="Vector3"/> that the method can use. </param>
         public void Simplify3dKeyframes(double tolerance, Func<TValue, Vector3> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
@@ -345,13 +344,12 @@ namespace StorybrewCommon.Animations
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
-            return (startToMiddle -
-                Vector4.Dot(startToMiddle, startToEnd) / Vector4.Dot(startToEnd, startToEnd) * startToEnd).Length();
+            return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / Vector4.Dot(startToEnd, startToEnd) * startToEnd).Length();
         });
 
         ///<summary> Simplifies keyframes on commands. </summary>
-        ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
-        ///<param name="getDistance"> Distance between keyframes. </param>
+        ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
+        ///<param name="getDistance"> A function that gets the distance between three specific keyframes. </param>
         public void SimplifyKeyframes(double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
         {
             if (keyframes.Count < 3) return;

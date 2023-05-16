@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
+using StorybrewCommon.Storyboarding3d;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
@@ -73,6 +74,8 @@ namespace StorybrewCommon.Storyboarding.Util
         ///<summary> The amount of decimal digits for opacity keyframes. </summary>
         public int OpacityDecimals = 1;
 
+        internal KeyframedValue<CommandScale> scale = null;
+
         /// <summary>
         /// Adds a <see cref="State"/> to this instance. The <see cref="State"/> will be automatically sorted.
         /// </summary>
@@ -112,7 +115,7 @@ namespace StorybrewCommon.Storyboarding.Util
         ///<param name="timeOffset"> The time offset of the command times. </param>
         ///<param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
         ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
-        public bool GenerateCommands(OsbSprite sprite, OpenTK.Box2 bounds, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
+        public bool GenerateCommands(OsbSprite sprite, RectangleF bounds, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
         {
             State previousState = null;
             bool wasVisible = false, everVisible = false, stateAdded = false;
@@ -153,8 +156,8 @@ namespace StorybrewCommon.Storyboarding.Util
             if (wasVisible) commitKeyframes(imageSize);
             if (everVisible)
             {
-                if (action is null) convertToCommands(sprite, startTime, endTime, timeOffset, loopable);
-                else action(() => convertToCommands(sprite, startTime, endTime, timeOffset, loopable), sprite);
+                if (action is null) convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable);
+                else action(() => convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable), sprite);
             }
 
             clearKeyframes();
@@ -179,7 +182,7 @@ namespace StorybrewCommon.Storyboarding.Util
             if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
             fades.TransferKeyframes(finalfades);
         }
-        void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, bool loopable)
+        void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, Size imageSize, bool loopable)
         {
             var startState = loopable ? (startTime ?? StartState.Time) + timeOffset : (double?)null;
             var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
@@ -202,8 +205,10 @@ namespace StorybrewCommon.Storyboarding.Util
                 else sprite.Move(s.Time, e.Time, s.Value, e.Value);
             }, new Vector2(320, 240), p => new Vector2((float)Math.Round(p.X, PositionDecimals), (float)Math.Round(p.Y, PositionDecimals)), startState, loopable: loopable);
 
-            double checkScale(double value) => Math.Round(value, ScaleDecimals);
+            int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
+            double checkRound(double value) => Math.Round(value, ScaleDecimals);
             var vec = finalScales.Any(k => checkScale(k.Value.X) != checkScale(k.Value.Y));
+            if (vec) vec = finalScales.Any(k => checkRound(k.Value.X) != checkRound(k.Value.Y));
             finalScales.ForEachPair((s, e) =>
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -296,16 +301,16 @@ namespace StorybrewCommon.Storyboarding.Util
         /// Returns the visibility of the sprite in the current <see cref="State"/> based on its image size, <see cref="OsbOrigin"/>, and screen boundaries. 
         /// </summary>
         /// <returns> <see langword="true"/> if the sprite is within <paramref name="bounds"/>, else returns <see langword="false"/>. </returns>
-        public bool IsVisible(Size imageSize, OsbOrigin origin, OpenTK.Box2 bounds, CommandGenerator generator = null)
+        public bool IsVisible(Size imageSize, OsbOrigin origin, RectangleF bounds, CommandGenerator generator = null)
         {
             if (Additive && Color == CommandColor.Black ||
                 (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
                 Scale.X == 0 || Scale.Y == 0)
                 return false;
 
-            if (!bounds.Contains(new OpenTK.Vector2(
+            if (!bounds.Contains(
                 generator is null ? (float)Position.X : (float)Math.Round(Position.X, generator.PositionDecimals),
-                generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals))))
+                generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals)))
             {
                 var w = imageSize.Width * Scale.X;
                 var h = imageSize.Height * Scale.Y;

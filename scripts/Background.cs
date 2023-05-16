@@ -13,7 +13,7 @@ namespace StorybrewScripts
         [Group("Sprite")]
         [Description("Leave empty to automatically use the map's background.")]
         [Configurable] public string SpritePath = "";
-        [Configurable] public double Opacity = 0.2;
+        [Configurable] public double Opacity = .2;
 
         protected override void Generate()
         {

@@ -1,6 +1,7 @@
 ﻿using OpenTK;
 using OpenTK.Graphics;
 using System;
+using System.Drawing;
 
 namespace StorybrewCommon.Mapset
 {
@@ -20,10 +21,10 @@ namespace StorybrewCommon.Mapset
         public static readonly int WidescreenStoryboardArea = (int)(WidescreenStoryboardSize.X * WidescreenStoryboardSize.Y);
 
         ///<summary> Represents the bounds of the storyboard size in osu!. </summary>
-        public static readonly Box2 StoryboardBounds = new Box2(Vector2.Zero, StoryboardSize);
+        public static readonly RectangleF StoryboardBounds = new RectangleF(0, 0, StoryboardSize.X, StoryboardSize.Y);
 
         ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
-        public static readonly Box2 WidescreenStoryboardBounds = new Box2((StoryboardSize.X - WidescreenStoryboardSize.X) / 2, 0, StoryboardSize.X + (WidescreenStoryboardSize.X - StoryboardSize.X) / 2, 480);
+        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF((StoryboardSize.X - WidescreenStoryboardSize.X) / 2, 0, StoryboardSize.X + (WidescreenStoryboardSize.X - StoryboardSize.X) / 2, 480);
 
         ///<summary> Represents the position of the playfield in osu!. </summary>
         public Vector2 PlayfieldPosition;

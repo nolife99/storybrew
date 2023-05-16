@@ -24,7 +24,7 @@ namespace StorybrewScripts
         [Description("The Size of the font.\nIncreasing the font size creates larger images.")]
         [Configurable] public int FontSize = 26;
         [Description("The Scale of the font.\nIncreasing the font scale does not creates larger images, but the result may be blurrier.")]
-        [Configurable] public float FontScale = 0.5f;
+        [Configurable] public float FontScale = .5f;
         [Configurable] public Color4 FontColor = Color4.White;
         [Configurable] public FontStyle FontStyle = FontStyle.Regular;
         
@@ -147,7 +147,7 @@ namespace StorybrewScripts
                                 sprite.Fade(subtitleLine.EndTime - 200, subtitleLine.EndTime, 1, 0);
                                 if (additive) sprite.Additive(subtitleLine.StartTime - 200, subtitleLine.EndTime);
 
-                                applyKaraoke(sprite, subtitleLine, karaokeStartTime, karaokeEndTime);
+                                applyKaraoke(sprite, karaokeStartTime, karaokeEndTime);
                             }
                             letterX += texture.BaseWidth * FontScale;
                         }
@@ -157,7 +157,7 @@ namespace StorybrewScripts
                 }
             }
         }
-        void applyKaraoke(OsbSprite sprite, SubtitleLine subtitleLine, double startTime, double endTime)
+        void applyKaraoke(OsbSprite sprite, double startTime, double endTime)
         {
             var before = new Color4(.2f, .2f, .2f, 1f);
             var after = new Color4(.6f, .6f, .6f, 1f);
