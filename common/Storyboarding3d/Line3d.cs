@@ -39,7 +39,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<summary> The thickness of this <see cref="Line3d"/>, in osu!pixels, relative to 3D transformations. </summary>
         public readonly KeyframedValue<float> Thickness = new KeyframedValue<float>(InterpolatingFunctions.Float, 1);
 
-        Size spriteBitmap;
+        SizeF spriteBitmap;
 
         readonly CommandGenerator gen = new CommandGenerator();
 
@@ -53,7 +53,7 @@ namespace StorybrewCommon.Storyboarding3d
         public override void GenerateSprite(StoryboardSegment segment)
         {
             sprite = sprite ?? segment.CreateSprite(SpritePath, SpriteOrigin);
-            spriteBitmap = CommandGenerator.BitmapDimensions(sprite.TexturePath);
+            spriteBitmap = CommandGenerator.BitmapDimensions(sprite);
         }
 
         ///<inheritdoc/>
@@ -164,25 +164,25 @@ namespace StorybrewCommon.Storyboarding3d
             }
         }
 
-        readonly Size[] spriteBitmaps = new Size[3];
+        readonly SizeF[] spriteBitmaps = new SizeF[3];
 
         ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
             spriteBody = spriteBody ?? segment.CreateSprite(SpritePathBody, OsbOrigin.Centre);
-            spriteBitmaps[0] = CommandGenerator.BitmapDimensions(SpritePathBody);
+            spriteBitmaps[0] = CommandGenerator.BitmapDimensions(spriteBody);
 
             if (SpritePathEdge != null)
             {
                 spriteTopEdge = spriteTopEdge ?? segment.CreateSprite(SpritePathEdge, OsbOrigin.BottomCentre);
                 spriteBottomEdge = spriteBottomEdge ?? segment.CreateSprite(SpritePathEdge, OsbOrigin.TopCentre);
-                spriteBitmaps[1] = CommandGenerator.BitmapDimensions(SpritePathEdge);
+                spriteBitmaps[1] = CommandGenerator.BitmapDimensions(spriteTopEdge);
             }
             if (SpritePathCap != null)
             {
                 spriteStartCap = spriteStartCap ?? segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
                 spriteEndCap = spriteEndCap ?? segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
-                spriteBitmaps[2] = CommandGenerator.BitmapDimensions(SpritePathCap);
+                spriteBitmaps[2] = CommandGenerator.BitmapDimensions(spriteEndCap);
             }
         }
 
@@ -233,7 +233,7 @@ namespace StorybrewCommon.Storyboarding3d
             if (SpritePathEdge != null)
             {
                 var edgeScale = new Vector2(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height);
-                var edgeOffset = new Vector2((float)Math.Cos(angle - Math.PI / 2), (float)Math.Sin(angle - MathHelper.PiOver2)) * (bodyHeight / 2 - EdgeOverlap);
+                var edgeOffset = new Vector2((float)Math.Cos(angle - MathHelper.PiOver2), (float)Math.Sin(angle - MathHelper.PiOver2)) * (bodyHeight / 2 - EdgeOverlap);
                 var positionTop = positionBody + edgeOffset;
                 var positionBottom = positionBody - edgeOffset;
 
@@ -272,8 +272,8 @@ namespace StorybrewCommon.Storyboarding3d
 
                 if (OrientedCaps)
                 {
-                    startCapScale.X /= 2;
-                    endCapScale.X /= 2;
+                    startCapScale.X *= .5f;
+                    endCapScale.X *= .5f;
                 }
 
                 genStartCap.Add(new State

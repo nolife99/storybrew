@@ -9,10 +9,10 @@ namespace StorybrewCommon.Storyboarding3d
     public abstract class Camera
     {
         public Vector2 Resolution = new Vector2(1366, 768);
-        public double ResolutionScale { get => OsuHitObject.StoryboardSize.Y / Resolution.Y; }
-        public double AspectRatio { get => Resolution.X / Resolution.Y; }
-        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.X / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
-        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Y / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
+        public double ResolutionScale => OsuHitObject.StoryboardSize.Y / Resolution.Y;
+        public double AspectRatio => Resolution.X / Resolution.Y;
+        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.X * .5 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) * .5));
+        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Y * .5 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) * .5));
         public abstract CameraState StateAt(double time);
     }
     public struct CameraState
@@ -34,7 +34,7 @@ namespace StorybrewCommon.Storyboarding3d
         public Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
         {
             var scale = new Vector2(OsuHitObject.StoryboardSize.Y * (float)AspectRatio, OsuHitObject.StoryboardSize.Y);
-            var offset = (scale.X - OsuHitObject.StoryboardSize.X) / 2;
+            var offset = (scale.X - OsuHitObject.StoryboardSize.X) * .5f;
 
             var transformedPoint = Vector4.Transform(new Vector4(point, 1), transform);
             var ndc = new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W);
@@ -110,7 +110,7 @@ namespace StorybrewCommon.Storyboarding3d
                 2 * Math.Atan(Resolution.Y / 2D / Math.Max(.0001, (cameraPosition - targetPosition).Length()));
             }
 
-            var focusDistance = Resolution.Y / 2D / Math.Tan(fovY / 2D);
+            var focusDistance = Resolution.Y * .5 / Math.Tan(fovY * .5);
             var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance * .5, 1);
             var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5;
 

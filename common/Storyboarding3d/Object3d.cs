@@ -67,7 +67,7 @@ namespace StorybrewCommon.Storyboarding3d
                 Opacity.ValueAt(time) * (InheritsOpacity ? parent3dState.Opacity : 1));
 
             GenerateStates(time, cameraState, object3dState);
-            for (var i = 0; i < children.Count; i++) children[i].GenerateTreeStates(time, cameraState, object3dState);
+            for (var i = 0; i < children.Count; ++i) children[i].GenerateTreeStates(time, cameraState, object3dState);
         }
 
         ///<summary> Generates commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
@@ -79,7 +79,7 @@ namespace StorybrewCommon.Storyboarding3d
         public void GenerateTreeCommands(Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
         {
             GenerateCommands(action, startTime, endTime, timeOffset, loopable);
-            for (var i = 0; i < children.Count; i++) children[i].GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
+            for (var i = 0; i < children.Count; ++i) children[i].GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
         }
 
         ///<summary> Generates loop commands on this instance's base sprites based on its <see cref="State"/>s. </summary>

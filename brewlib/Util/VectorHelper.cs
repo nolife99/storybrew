@@ -20,7 +20,7 @@ namespace BrewLib.Util
             var segment = segment1 - segment0;
 
             var segmentLengthSquared = segment.LengthSquared;
-            if (segmentLengthSquared == 0.0) return segment0;
+            if (segmentLengthSquared == 0) return segment0;
 
             var t = Vector2.Dot(point - segment0, segment) / segmentLengthSquared;
 

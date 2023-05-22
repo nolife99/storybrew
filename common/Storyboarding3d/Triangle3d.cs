@@ -45,14 +45,14 @@ namespace StorybrewCommon.Storyboarding3d
         ///<summary> The index of a vertex/edge to be fixed. </summary>
         public int FixedEdge = -1;
 
-        Size spriteBitmap;
+        SizeF spriteBitmap;
 
         ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
             sprite0 = sprite0 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomLeft);
             sprite1 = sprite1 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomRight);
-            spriteBitmap = CommandGenerator.BitmapDimensions(SpritePath);
+            spriteBitmap = CommandGenerator.BitmapDimensions(sprite0);
         }
 
         ///<inheritdoc/>
@@ -98,7 +98,7 @@ namespace StorybrewCommon.Storyboarding3d
             }
 
             var switchedEdge = false;
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 3; ++i)
             {
                 var delta = new Vector2(vector2.X, vector2.Y) - new Vector2(vector0.X, vector0.Y);
                 var deltaLength = delta.Length();

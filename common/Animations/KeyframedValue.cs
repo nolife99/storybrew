@@ -134,9 +134,9 @@ namespace StorybrewCommon.Animations
             bool hasPair = false, forceNextFlat = loopable;
             Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;
 
-            keyframes.ForEach(keyframe =>
+            for (var i = 0; i < keyframes.Count; ++i)
             {
-                var endKeyframe = editKeyframe(keyframe, edit);
+                var endKeyframe = editKeyframe(keyframes[i], edit);
                 if (previous.HasValue)
                 {
                     var startKeyframe = previous.Value;
@@ -176,7 +176,7 @@ namespace StorybrewCommon.Animations
                     }
                 }
                 previous = endKeyframe;
-            });
+            }
             if (stepStart.HasValue)
             {
                 if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time)
@@ -224,14 +224,14 @@ namespace StorybrewCommon.Animations
 
         int indexFor(Keyframe<TValue> keyframe, bool before)
         {
-            var index = keyframes.BinarySearch(keyframe);
-            if (index >= 0)
+            var i = keyframes.BinarySearch(keyframe);
+            if (i >= 0)
             {
-                if (before) while (index > 0 && keyframes[index].Time >= keyframe.Time) index--;
-                else while (index < keyframes.Count && keyframes[index].Time <= keyframe.Time) index++;
+                if (before) while (i > 0 && keyframes[i].Time >= keyframe.Time) --i;
+                else while (i < keyframes.Count && keyframes[i].Time <= keyframe.Time) ++i;
             }
-            else index = ~index;
-            return index;
+            else i = ~i;
+            return i;
         }
         int indexAt(double time, bool before) => indexFor(new Keyframe<TValue>(time), before);
 
@@ -253,7 +253,7 @@ namespace StorybrewCommon.Animations
                     var steps = (int)(duration / timestep);
                     var actualTimestep = duration / steps;
 
-                    for (var i = 0; i < steps; i++)
+                    for (var i = 0; i < steps; ++i)
                     {
                         var time = startKeyFrame.Time + i * actualTimestep;
                         linearKeyframes.Add(new Keyframe<TValue>(time, ValueAt(time)));
@@ -272,7 +272,7 @@ namespace StorybrewCommon.Animations
         public void SimplifyEqualKeyframes()
         {
             var simplifiedKeyframes = new List<Keyframe<TValue>>();
-            for (int i = 0, count = keyframes.Count; i < count; i++)
+            for (int i = 0, count = keyframes.Count; i < count; ++i)
             {
                 var startKeyframe = keyframes[i];
                 simplifiedKeyframes.Add(startKeyframe);
@@ -363,11 +363,11 @@ namespace StorybrewCommon.Animations
 
             keyframesToKeep.Sort();
             var simplifiedKeyframes = new List<Keyframe<TValue>>(keyframesToKeep.Count);
-            keyframesToKeep.ForEach(index =>
+            for (var i = 0; i < keyframesToKeep.Count; ++i)
             {
-                var keyframe = keyframes[index];
+                var keyframe = keyframes[keyframesToKeep[i]];
                 simplifiedKeyframes.Add(new Keyframe<TValue>(keyframe.Time, keyframe.Value));
-            });
+            }
             keyframes = simplifiedKeyframes;
         }
         void getSimplifiedKeyframeIndexes(ref List<int> keyframesToKeep, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
@@ -377,14 +377,14 @@ namespace StorybrewCommon.Animations
 
             var maxDistance = 0d;
             var indexFarthest = 0;
-            for (var index = firstPoint; index < lastPoint; index++)
+            for (var i = firstPoint; i < lastPoint; ++i)
             {
-                var middle = keyframes[index];
+                var middle = keyframes[i];
                 var distance = getDistance(start, middle, end);
                 if (distance > maxDistance)
                 {
                     maxDistance = distance;
-                    indexFarthest = index;
+                    indexFarthest = i;
                 }
             }
             if (maxDistance > tolerance && indexFarthest != 0)

@@ -4,6 +4,7 @@ using StorybrewCommon.Storyboarding;
 using System.Numerics;
 using System;
 using System.Linq;
+using StorybrewCommon.OpenTKUtil;
 
 namespace StorybrewScripts
 {
@@ -46,27 +47,25 @@ namespace StorybrewScripts
             var bitmap = GetMapsetBitmap(SpritePath);
 
             var positionKeyframes = new KeyframedValue<Vector2>[BarCount];
-            for (var i = 0; i < BarCount; i++) positionKeyframes[i] = new KeyframedValue<Vector2>(null);
+            for (var i = 0; i < BarCount; ++i) positionKeyframes[i] = new KeyframedValue<Vector2>();
 
-            var fftTimeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
-            var fftOffset = fftTimeStep / 5;
-            for (var time = (double)StartTime; time < EndTime; time += fftTimeStep)
+            var timeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
+            var offset = timeStep * .2;
+            for (double time = StartTime; time < EndTime; time += timeStep)
             {
-                var fft = GetFft(time + fftOffset, BarCount, null, FftEasing, FrequencyCutOff);
-                for (var i = 0; i < BarCount; i++)
+                var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
+                for (var i = 0; i < BarCount; ++i)
                 {
                     var height = Radius + (float)Math.Log10(1 + fft[i] * LogScale) * Scale;
+                    var angle = i * MathHelper.TwoPi / BarCount;
 
-                    var angle = i * (Math.PI * 2) / BarCount;
-                    var offset = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * height;
-
-                    positionKeyframes[i].Add(time, Position + offset);
+                    positionKeyframes[i].Add(time, Position + new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * height);
                 }
             }
 
             var layer = GetLayer("Spectrum");
             var barScale = Math.PI * 2 * Radius / BarCount / bitmap.Width;
-            for (var i = 0; i < BarCount; i++)
+            for (var i = 0; i < BarCount; ++i)
             {
                 var keyframes = positionKeyframes[i];
                 keyframes.Simplify2dKeyframes(Tolerance, h => h);
@@ -75,7 +74,7 @@ namespace StorybrewScripts
                 var defaultPosition = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * Radius;
 
                 var bar = layer.CreateSprite(SpritePath, SpriteOrigin);
-                bar.ColorHsb(StartTime, (i * 360d / BarCount) + Random(-10d, 10), .6 + Random(.4), 1);
+                bar.ColorHsb(StartTime, i * 360f / BarCount + Random(-10f, 10), .6f + Random(.4f), 1);
                 if (SpriteScale.X == SpriteScale.Y) bar.Scale(StartTime, barScale * SpriteScale.X);
                 else bar.ScaleVec(StartTime, barScale * SpriteScale.X, barScale * SpriteScale.Y);
                 bar.Rotate(StartTime, angle);

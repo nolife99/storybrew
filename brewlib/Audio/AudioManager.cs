@@ -31,13 +31,13 @@ namespace BrewLib.Audio
 
         public void Update()
         {
-            for (var i = 0; i < audioChannels.Count; i++)
+            for (var i = 0; i < audioChannels.Count; ++i)
             {
                 var channel = audioChannels[i];
                 if (channel.Temporary && channel.Completed)
                 {
                     channel.Dispose();
-                    i--;
+                    --i;
                 }
             }
         }

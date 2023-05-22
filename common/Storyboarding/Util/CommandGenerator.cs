@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
+using OpenTK.Graphics.ES10;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
@@ -88,7 +89,7 @@ namespace StorybrewCommon.Storyboarding.Util
             }
 
             var i = states.BinarySearch(state, new State());
-            if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) i++;
+            if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) ++i;
             else i = ~i;
 
             states.Insert(i, state);
@@ -119,7 +120,7 @@ namespace StorybrewCommon.Storyboarding.Util
             State previousState = null;
             bool wasVisible = false, everVisible = false, stateAdded = false;
 
-            var imageSize = BitmapDimensions(sprite.TexturePath);
+            var imageSize = BitmapDimensions(sprite);
             states.ForEach(state =>
             {
                 var time = state.Time + timeOffset;
@@ -162,7 +163,7 @@ namespace StorybrewCommon.Storyboarding.Util
             clearKeyframes();
             return everVisible;
         }
-        void commitKeyframes(Size imageSize)
+        void commitKeyframes(SizeF imageSize)
         {
             positions.Simplify2dKeyframes(PositionTolerance, s => s);
             positions.TransferKeyframes(finalPositions);
@@ -181,7 +182,7 @@ namespace StorybrewCommon.Storyboarding.Util
             if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
             fades.TransferKeyframes(finalfades);
         }
-        void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, Size imageSize, bool loopable)
+        void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)
         {
             var startState = loopable ? (startTime ?? StartState.Time) + timeOffset : (double?)null;
             var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
@@ -259,12 +260,10 @@ namespace StorybrewCommon.Storyboarding.Util
             flipV.Clear(true);
             additive.Clear(true);
         }
-        internal static Size BitmapDimensions(string path)
-        {
-            var src = StoryboardObjectGenerator.Current.getTrimmedBitmap(path, 
-                StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fontDirectories.Count == 0));
-            return new Size(src.Width, src.Height);
-        }
+        internal static SizeF BitmapDimensions(OsbSprite sprite) => sprite.Origin is OsbOrigin.Centre ? 
+            StoryboardObjectGenerator.Current.getTrimmedBitmap(sprite.TexturePath, 
+                StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath, StoryboardObjectGenerator.Current.fontDirectories.Count == 0)).Size :
+            StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath, StoryboardObjectGenerator.Current.fontDirectories.Count == 0).PhysicalDimension;
     }
 
     ///<summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
@@ -301,7 +300,7 @@ namespace StorybrewCommon.Storyboarding.Util
         /// Returns the visibility of the sprite in the current <see cref="State"/> based on its image size, <see cref="OsbOrigin"/>, and screen boundaries. 
         /// </summary>
         /// <returns> <see langword="true"/> if the sprite is within <paramref name="bounds"/>, else returns <see langword="false"/>. </returns>
-        public bool IsVisible(Size imageSize, OsbOrigin origin, RectangleF bounds, CommandGenerator generator = null)
+        public bool IsVisible(SizeF imageSize, OsbOrigin origin, RectangleF bounds, CommandGenerator generator = null)
         {
             if (Additive && Color == CommandColor.Black ||
                 (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||

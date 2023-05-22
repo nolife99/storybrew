@@ -60,14 +60,14 @@ namespace StorybrewCommon.Storyboarding
         }
         protected virtual OsbSprite CreateSprite(List<IFragmentableCommand> segment)
         {
-            var sprite = new OsbSprite
+            var spr = new OsbSprite
             {
-                TexturePath = this.sprite.TexturePath,
-                InitialPosition = this.sprite.InitialPosition,
-                Origin = this.sprite.Origin
+                TexturePath = sprite.TexturePath,
+                InitialPosition = sprite.InitialPosition,
+                Origin = sprite.Origin
             };
-            foreach (var command in segment) sprite.AddCommand(command);
-            return sprite;
+            foreach (var command in segment) spr.AddCommand(command);
+            return spr;
         }
         void writeOsbSprite(OsbSprite sprite)
         {

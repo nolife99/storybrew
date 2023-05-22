@@ -13,7 +13,7 @@ namespace StorybrewCommon.Storyboarding
         readonly OsbOrigin origin;
         readonly CommandPosition position;
         readonly Action<OsbSprite, double, double> attributes;
-        readonly List<PooledSprite> pooledSprites = new List<PooledSprite>();
+        readonly HashSet<PooledSprite> pooledSprites = new HashSet<PooledSprite>();
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
         public int MaxPoolDuration = 0;
@@ -39,7 +39,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
         ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
         public SpritePool(StoryboardSegment segment, string path, OsbOrigin origin, Action<OsbSprite, double, double> attributes = null)
-            : this(segment, path, origin, Vector2.Zero, attributes) { }
+            : this(segment, path, origin, default, attributes) { }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -54,7 +54,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="path"> Image path of the sprite to be used. </param>
         ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
         public SpritePool(StoryboardSegment segment, string path, Action<OsbSprite, double, double> attributes = null)
-            : this(segment, path, OsbOrigin.Centre, Vector2.Zero, attributes) { }
+            : this(segment, path, OsbOrigin.Centre, default, attributes) { }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -64,8 +64,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         public SpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, bool additive)
             : this(segment, path, origin, position, additive ?
-            (pS, sT, eT) => pS.Additive(sT) : (Action<OsbSprite, double, double>)null)
-        { }
+            (pS, sT, eT) => pS.Additive(sT) : (Action<OsbSprite, double, double>)null) { }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -73,7 +72,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         public SpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive)
-            : this(segment, path, origin, Vector2.Zero, additive) { }
+            : this(segment, path, origin, default, additive) { }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -88,7 +87,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="path"> Image path of the sprite to be used. </param>
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         public SpritePool(StoryboardSegment segment, string path, bool additive)
-            : this(segment, path, OsbOrigin.Centre, Vector2.Zero, additive) { }
+            : this(segment, path, OsbOrigin.Centre, default, additive) { }
 
         ///<summary> Gets an available sprite from the sprite pool. </summary>
         ///<remarks> You must input the correct start time and end time of the sprite for correct execution. </remarks>
@@ -99,8 +98,9 @@ namespace StorybrewCommon.Storyboarding
             PooledSprite result = null;
 
             foreach (var pooledSprite in pooledSprites)
-                if (getPoolDuration(startTime, endTime, MaxPoolDuration, pooledSprite) &&
-                (result == null || pooledSprite.StartTime < result.StartTime)) result = pooledSprite;
+                if (getPoolDuration(startTime, MaxPoolDuration, pooledSprite) &&
+                (result == null || pooledSprite.StartTime < result.StartTime)) 
+                    result = pooledSprite;
 
             if (result != null)
             {
@@ -114,7 +114,7 @@ namespace StorybrewCommon.Storyboarding
             return sprite;
         }
 
-        static bool getPoolDuration(double startTime, double endTime, int value, PooledSprite sprite) => value > 0 ?
+        static bool getPoolDuration(double startTime, int value, PooledSprite sprite) => value > 0 ?
             sprite.EndTime <= startTime && startTime < sprite.StartTime + value : sprite.EndTime <= startTime;
 
         internal void Clear()
@@ -211,7 +211,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbSprite Get(double startTime, double endTime, string path, OsbOrigin origin, Action<OsbSprite, double, double> attributes = null, int group = 0)
-            => Get(startTime, endTime, path, origin, Vector2.Zero, attributes, group);
+            => Get(startTime, endTime, path, origin, default, attributes, group);
 
         ///<summary> Gets an available sprite from the sprite pools. </summary>
         ///<param name="startTime"> The start time of the available sprite. </param>
@@ -220,7 +220,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="attributes"> Common commands to be run on each sprite in the pool, in an <see cref="Action{OsbSprite, Double, Double}"/> block. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbSprite Get(double startTime, double endTime, string path, Action<OsbSprite, double, double> attributes = null, int group = 0)
-            => Get(startTime, endTime, path, OsbOrigin.Centre, Vector2.Zero, attributes, group);
+            => Get(startTime, endTime, path, OsbOrigin.Centre, default, attributes, group);
 
         ///<summary> Gets an available sprite from the sprite pools. </summary>
         ///<param name="startTime"> The start time of the available sprite. </param>
@@ -242,7 +242,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbSprite Get(double startTime, double endTime, string path, OsbOrigin origin, bool additive, int group = 0)
-            => Get(startTime, endTime, path, origin, Vector2.Zero, additive, group);
+            => Get(startTime, endTime, path, origin, default, additive, group);
 
         ///<summary> Gets an available sprite from the sprite pools. </summary>
         ///<param name="startTime"> The start time of the available sprite. </param>
@@ -261,7 +261,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbSprite Get(double startTime, double endTime, string path, bool additive, int group = 0)
-            => Get(startTime, endTime, path, OsbOrigin.Centre, Vector2.Zero, additive, group);
+            => Get(startTime, endTime, path, OsbOrigin.Centre, default, additive, group);
 
         ///<summary> Gets an available animation from the pools. </summary>
         ///<param name="startTime"> The start time of the available animation. </param>
@@ -288,7 +288,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbAnimation Get(double startTime, double endTime, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> attributes = null, int group = 0)
-            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, Vector2.Zero, attributes, group);
+            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, attributes, group);
 
         ///<summary> Gets an available animation from the pools. </summary>
         ///<param name="startTime"> The start time of the available animation. </param>
@@ -313,7 +313,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbAnimation Get(double startTime, double endTime, string path, int frameCount, double frameDelay, OsbLoopType loopType, Action<OsbSprite, double, double> attributes = null, int group = 0)
-            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, Vector2.Zero, attributes, group);
+            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, attributes, group);
 
         ///<summary> Gets an available animation from the pools. </summary>
         ///<param name="startTime"> The start time of the available animation. </param>
@@ -341,7 +341,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbAnimation Get(double startTime, double endTime, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, bool additive, int group = 0)
-            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, Vector2.Zero, additive, group);
+            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, additive, group);
 
         ///<summary> Gets an available animation from the pools. </summary>
         ///<param name="startTime"> The start time of the available animation. </param>
@@ -366,7 +366,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbAnimation Get(double startTime, double endTime, string path, int frameCount, double frameDelay, OsbLoopType loopType, bool additive, int group = 0)
-            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, Vector2.Zero, additive, group);
+            => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive, group);
 
         SpritePool getPool(string path, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes, int group)
         {
@@ -379,8 +379,12 @@ namespace StorybrewCommon.Storyboarding
         AnimationPool getPool(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes, int group)
         {
             var key = getKey(path, frameCount, frameDelay, loopType, origin, attributes, group);
-            if (!animationPools.TryGetValue(key, out AnimationPool pool))
-                animationPools.Add(key, pool = new AnimationPool(segment, path, frameCount, frameDelay, loopType, origin, attributes) { MaxPoolDuration = maxPoolDuration });
+            if (!animationPools.TryGetValue(key, out AnimationPool pool)) animationPools.Add(
+                key, pool = new AnimationPool(segment, path, frameCount, frameDelay, loopType, origin, position, attributes) 
+                { 
+                    MaxPoolDuration = maxPoolDuration 
+                }
+            );
 
             return pool;
         }
@@ -443,7 +447,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
         ///<param name="attributes"> Commands to be run on each animation in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
         public AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> attributes = null)
-            : this(segment, path, frameCount, frameDelay, loopType, origin, Vector2.Zero, attributes) { }
+            : this(segment, path, frameCount, frameDelay, loopType, origin, default, attributes) { }
 
         ///<summary> Constructs a new <see cref="AnimationPool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="AnimationPool"/>. </param>
@@ -464,7 +468,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
         ///<param name="attributes"> Commands to be run on each animation in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
         public AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, Action<OsbSprite, double, double> attributes = null)
-            : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, Vector2.Zero, attributes) { }
+            : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, attributes) { }
 
         ///<summary> Constructs a new <see cref="AnimationPool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="AnimationPool"/>. </param>
@@ -489,7 +493,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         public AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, bool additive)
-            : this(segment, path, frameCount, frameDelay, loopType, origin, Vector2.Zero, additive) { }
+            : this(segment, path, frameCount, frameDelay, loopType, origin, default, additive) { }
 
         ///<summary> Constructs a new <see cref="AnimationPool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="AnimationPool"/>. </param>
@@ -510,7 +514,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         public AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, bool additive)
-            : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, Vector2.Zero, additive) { }
+            : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive) { }
 
         internal override OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
             => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);

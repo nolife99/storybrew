@@ -5,7 +5,6 @@ namespace BrewLib.Audio
 {
     public class FftStream : IDisposable
     {
-        readonly string path;
         int stream;
         ChannelInfo info;
 
@@ -16,7 +15,6 @@ namespace BrewLib.Audio
 
         public FftStream(string path)
         {
-            this.path = path;
             stream = Bass.CreateStream(path, 0, 0, BassFlags.Decode | BassFlags.Prescan);
             Duration = Bass.ChannelBytes2Seconds(stream, Bass.ChannelGetLength(stream));
             info = Bass.ChannelGetInfo(stream);
@@ -50,7 +48,6 @@ namespace BrewLib.Audio
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 Bass.StreamFree(stream);
                 stream = 0;
                 disposedValue = true;

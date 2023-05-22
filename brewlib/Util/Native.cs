@@ -20,7 +20,7 @@ namespace BrewLib.Util
         public static string GetWindowText(IntPtr hWnd)
         {
             var length = GetWindowTextLength(hWnd);
-            if (length == 0) return string.Empty;
+            if (length == 0) return "";
 
             var sb = new StringBuilder(length);
             GetWindowText(hWnd, sb, length + 1);

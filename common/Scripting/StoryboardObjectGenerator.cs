@@ -95,14 +95,14 @@ namespace StorybrewCommon.Scripting
 
                     try
                     {
-                        bitmaps.Add(path, bitmap = Util.Misc.WithRetries(() => (Bitmap)Image.FromStream(stream)));
+                        bitmaps.Add(path, bitmap = Util.Misc.WithRetries(() => new Bitmap(stream)));
                     }
                     catch (FileNotFoundException e)
                     {
                         throw new FileNotFoundException(path, e);
                     }
                 }
-                else bitmaps.Add(path, bitmap = Util.Misc.WithRetries(() => (Bitmap)Image.FromStream(stream)));
+                else bitmaps.Add(path, bitmap = Util.Misc.WithRetries(() => new Bitmap(stream)));
             }
             return bitmap;
         }
@@ -180,7 +180,7 @@ namespace StorybrewCommon.Scripting
 
             var resultFft = new float[magnitudes];
             var baseIndex = 0;
-            for (var i = 0; i < magnitudes; i++)
+            for (var i = 0; i < magnitudes; ++i)
             {
                 var progress = EasingFunctions.Ease(easing, (double)i / magnitudes);
                 var index = Math.Min(Math.Max(baseIndex + 1, (int)(progress * usedFftLength)), usedFftLength - 1);
@@ -298,7 +298,7 @@ namespace StorybrewCommon.Scripting
                     fieldType = Enum.GetUnderlyingType(fieldType);
 
                     allowedValues = new NamedValue[enumValues.Length];
-                    for (var i = 0; i < enumValues.Length; i++)
+                    for (var i = 0; i < enumValues.Length; ++i)
                     {
                         var value = enumValues.GetValue(i);
                         allowedValues[i] = new NamedValue

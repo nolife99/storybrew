@@ -1,7 +1,7 @@
 ﻿using StorybrewCommon.Storyboarding.Util;
 using StorybrewCommon.Storyboarding;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 
 namespace StorybrewCommon.Storyboarding3d
 {

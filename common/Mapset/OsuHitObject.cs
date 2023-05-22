@@ -15,7 +15,7 @@ namespace StorybrewCommon.Mapset
         public static readonly Vector2 PlayfieldToStoryboardOffset = new Vector2((StoryboardSize.X - PlayfieldSize.X) * .5f, (StoryboardSize.Y - PlayfieldSize.Y) * .75f - 16);
         
         ///<summary> Represents the widescreen storyboard size in osu!. </summary>
-        public static readonly Vector2 WidescreenStoryboardSize = new Vector2(854, 480);
+        public static readonly Vector2 WidescreenStoryboardSize = new Vector2(854, StoryboardSize.Y);
 
         ///<summary> Represents the area of the widescreen storyboard size in osu!. </summary>
         public static readonly int WidescreenStoryboardArea = (int)(WidescreenStoryboardSize.X * WidescreenStoryboardSize.Y);
@@ -24,7 +24,7 @@ namespace StorybrewCommon.Mapset
         public static readonly RectangleF StoryboardBounds = new RectangleF(0, 0, StoryboardSize.X, StoryboardSize.Y);
 
         ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
-        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF(-107, 0, 854, StoryboardSize.Y);
+        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF(-107, 0, WidescreenStoryboardSize.X, StoryboardSize.Y);
 
         ///<summary> Represents the position of the playfield in osu!. </summary>
         public Vector2 PlayfieldPosition;

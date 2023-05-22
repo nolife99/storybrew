@@ -1,8 +1,9 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
+﻿using OpenTK.Graphics;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.OpenTKUtil;
+using System.Numerics;
 using System;
 
 namespace StorybrewScripts
@@ -37,28 +38,25 @@ namespace StorybrewScripts
         {
             internal int X, Y;
             internal OsbSprite Sprite, Shadow;
-            internal bool HasSprite 
-            { 
-                get => Sprite != null; 
-            }
+            internal bool HasSprite => Sprite != null; 
         }
         Cell[,] cells;
 
         protected override void Generate()
         {
-            var beatDuration = Beatmap.GetTimingPointAt(0).BeatDuration;
+            var beatDuration = Beatmap.GetTimingPointAt(StartTime).BeatDuration;
             var timestep = beatDuration / BeatDivisor;
 
             cells = new Cell[GridWidth, GridHeight];
-            for (var x = 0; x < GridWidth; x++) for (var y = 0; y < GridHeight; y++) cells[x, y] = new Cell() { X = x, Y = y };
+            for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) cells[x, y] = new Cell { X = x, Y = y };
 
             for (var time = (double)StartTime; time < EndTime; time += timestep)
             {
-                for (var i = 0; i < Blocks; i++) addBlock(time - timestep, time);
+                for (var i = 0; i < Blocks; ++i) addBlock(time - timestep, time);
                 if (clearLines(time, time + timestep)) time += Wait ? timestep : 0;
             }
 
-            for (var x = 0; x < GridWidth; x++) for (var y = 0; y < GridHeight; y++) if (cells[x, y].HasSprite)
+            for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) if (cells[x, y].HasSprite)
                 killCell(EndTime, EndTime + timestep, x, y);
         }
         void addBlock(double startTime, double endTime)
@@ -68,9 +66,9 @@ namespace StorybrewScripts
 
             var heightMap = new int[GridWidth];
             var bottom = 0;
-            for (var x = 0; x < GridWidth; x++)
+            for (var x = 0; x < GridWidth; ++x)
             {
-                for (var y = 0; y < GridHeight; y++)
+                for (var y = 0; y < GridHeight; ++y)
                 {
                     if (cells[x, y].HasSprite) break;
                     heightMap[x] = y;
@@ -84,9 +82,9 @@ namespace StorybrewScripts
             var dropY = heightMap[dropX];
 
             fillCell(startTime, endTime, dropX, dropY, color);
-            for (var i = 1; i < BlockLength; i++)
+            for (var i = 1; i < BlockLength; ++i)
             {
-                var options = new int[] { 0, 1, 2, 3 };
+                int[] options = { 0, 1, 2, 3 };
                 shuffle(options);
 
                 foreach (var option in options)
@@ -120,7 +118,7 @@ namespace StorybrewScripts
             for (var y = GridHeight - 1; y >= 0; y--)
             {
                 var combo = true;
-                for (var x = 0; x < GridWidth; x++) if (!cells[x, y].HasSprite)
+                for (var x = 0; x < GridWidth; ++x) if (!cells[x, y].HasSprite)
                 {
                     combo = false;
                     break;
@@ -129,13 +127,13 @@ namespace StorybrewScripts
                 if (combo)
                 {
                     anyCombo = true;
-                    for (var x = 0; x < GridWidth; x++) killCell(startTime, endTime, x, y);
+                    for (var x = 0; x < GridWidth; ++x) killCell(startTime, endTime, x, y);
 
                     dropHeight++;
                 }
                 else if (dropHeight > 0)
                 {
-                    for (var x = 0; x < GridWidth; x++) if (cells[x, y].HasSprite) dropCell(startTime, endTime, x, y, dropHeight);
+                    for (var x = 0; x < GridWidth; ++x) if (cells[x, y].HasSprite) dropCell(startTime, endTime, x, y, dropHeight);
                 }
             }
             return anyCombo;
@@ -151,12 +149,12 @@ namespace StorybrewScripts
             var targetPosition = new Vector2(dropX * CellSize, dropY * CellSize);
             var startPosition = new Vector2(targetPosition.X, targetPosition.Y - CellSize * GridHeight);
 
-            sprite.Rotate(startTime, Rotation / 180 * Math.PI);
+            sprite.Rotate(startTime, MathHelper.DegreesToRadians(Rotation));
             sprite.Scale(startTime, SpriteScale);
             sprite.Color(startTime, color);
             sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
 
-            shadow.Rotate(startTime, Rotation / 180 * Math.PI);
+            shadow.Rotate(startTime, MathHelper.DegreesToRadians(Rotation));
             shadow.Scale(startTime, SpriteScale);
             shadow.Color(startTime, 0, 0, 0);
             shadow.Fade(startTime, .5);
@@ -193,8 +191,8 @@ namespace StorybrewScripts
         }
         Vector2 transform(Vector2 position)
         {
-            position = new Vector2(position.X - GridWidth * CellSize / 2, position.Y - GridHeight * CellSize);
-            return Vector2.Transform(position, Quaternion.FromEulerAngles((float)(Rotation / 180 * Math.PI), 0, 0)) + Offset;
+            position = new Vector2(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize);
+            return Vector2.Transform(position, Quaternion.CreateFromYawPitchRoll(0, (float)MathHelper.DegreesToRadians(Rotation), 0)) + Offset;
         }
         void shuffle(int[] array)
         {

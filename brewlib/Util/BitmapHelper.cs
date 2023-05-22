@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 using static System.Drawing.Graphics;
 using BrewLib.Util.Compression;
-using System.Web;
 
 namespace BrewLib.Util
 {
@@ -192,8 +190,7 @@ namespace BrewLib.Util
                 {
                     for (var x = 0; x < data.Width; ++x)
                     {
-                        var alpha = *buf;
-                        if (alpha != 0)
+                        if (*buf != 0)
                         {
                             source.UnlockBits(data);
                             return false;
@@ -207,34 +204,30 @@ namespace BrewLib.Util
             source.UnlockBits(data);
             return true;
         }
-        public static Rectangle FindTransparencyBounds(Bitmap bitmap)
+        public static Rectangle FindTransparencyBounds(Bitmap source)
         {
-            if (bitmap == null) return Rectangle.Empty;
+            if (source == null) return Rectangle.Empty;
 
-            var data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            int xMin = bitmap.Width, yMin = bitmap.Height, xMax = -1, yMax = -1;
+            var data = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), (ImageLockMode)1, (PixelFormat)2498570);
+            int xMin = data.Width, yMin = data.Height, xMax = -1, yMax = -1;
 
             unsafe
             {
-                var buf = (byte*)data.Scan0.ToPointer();
-
-                for (var y = 0; y < bitmap.Height; ++y)
+                var buf = (byte*)data.Scan0;
+                for (var y = 0; y < data.Height; ++y)
                 {
                     var row = buf + (y * data.Stride);
-                    for (int x = 0; x < bitmap.Width; ++x)
+                    for (int x = 0; x < data.Width; ++x) if (*(row + x * 4 + 3) > 0)
                     {
-                        if (*(row + x * 4 + 3) > 0)
-                        {
-                            if (x < xMin) xMin = x;
-                            if (x > xMax) xMax = x;
-                            if (y < yMin) yMin = y;
-                            if (y > yMax) yMax = y;
-                        }
+                        if (x < xMin) xMin = x;
+                        if (x > xMax) xMax = x;
+                        if (y < yMin) yMin = y;
+                        if (y > yMax) yMax = y;
                     }
                 }
             }
 
-            bitmap.UnlockBits(data);
+            source.UnlockBits(data);
 
             if (xMin <= xMax && yMin <= yMax) return Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1);
             return Rectangle.Empty;

@@ -32,15 +32,15 @@ namespace StorybrewCommon.Mapset
                     if (timingPoint == leftTimingPoint) while (startTime < sectionStartTime)
                     {
                         sectionStartTime -= step;
-                        tickCount--;
-                        if (tickCount % snapDivisor == 0) beatCount--;
+                        --tickCount;
+                        if (tickCount % snapDivisor == 0) --beatCount;
                     }
 
                     for (var time = sectionStartTime; time < sectionEndTime + Beatmap.ControlPointLeniency; time += step)
                     {
                         if (startTime < time) tickAction(timingPoint, time, beatCount, tickCount);
-                        if (tickCount % snapDivisor == 0) beatCount++;
-                        tickCount++;
+                        if (tickCount % snapDivisor == 0) ++beatCount;
+                        ++tickCount;
                     }
                     timingPoint = nextTimingPoint;
                 }
@@ -59,7 +59,7 @@ namespace StorybrewCommon.Mapset
                         SampleSet = circle.SampleSet,
                         AdditionsSampleSet = circle.AdditionsSampleSet,
                         CustomSampleSet = circle.CustomSampleSet,
-                        Volume = circle.Volume,
+                        Volume = circle.Volume
                     }, hitobject); break;
 
                     case OsuSlider slider: foreach (var node in slider.Nodes) action(node, hitobject); break;
@@ -71,7 +71,7 @@ namespace StorybrewCommon.Mapset
                         SampleSet = spinner.SampleSet,
                         AdditionsSampleSet = spinner.AdditionsSampleSet,
                         CustomSampleSet = spinner.CustomSampleSet,
-                        Volume = spinner.Volume,
+                        Volume = spinner.Volume
                     }, hitobject); break;
                 }
             }

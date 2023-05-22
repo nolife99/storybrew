@@ -46,15 +46,15 @@ namespace StorybrewScripts
             var bitmap = GetMapsetBitmap(SpritePath);
 
             var heightKeyframes = new KeyframedValue<float>[BarCount];
-            for (var i = 0; i < BarCount; i++) heightKeyframes[i] = new KeyframedValue<float>();
+            for (var i = 0; i < BarCount; ++i) heightKeyframes[i] = new KeyframedValue<float>();
 
             var timeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
-            var offset = timeStep / 5;
+            var offset = timeStep * .2;
 
             for (double time = StartTime; time < EndTime; time += timeStep)
             {
                 var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
-                for (var i = 0; i < BarCount; i++)
+                for (var i = 0; i < BarCount; ++i)
                 {
                     var height = (float)Math.Log10(1 + fft[i] * LogScale) * SpriteScale.Y / bitmap.Height;
                     if (height < MinimalHeight) height = MinimalHeight;
@@ -65,18 +65,18 @@ namespace StorybrewScripts
 
             var layer = GetLayer("Spectrum");
             var barWidth = Width / BarCount;
-            for (var i = 0; i < BarCount; i++)
+            for (var i = 0; i < BarCount; ++i)
             {
                 var keyframes = heightKeyframes[i];
                 keyframes.Simplify1dKeyframes(Tolerance, h => h);
 
                 var bar = layer.CreateSprite(SpritePath, SpriteOrigin, new Vector2(Position.X + i * barWidth, Position.Y));
                 bar.CommandSplitThreshold = 300;
-                bar.ColorHsb(StartTime, (i * 360f / BarCount) + Random(-10f, 10), .6f + Random(.4f), 1);
+                bar.ColorHsb(StartTime, i * 360f / BarCount + Random(-10f, 10), .6f + Random(.4f), 1);
                 bar.Additive(StartTime, EndTime);
 
                 var scaleX = SpriteScale.X * barWidth / bitmap.Width;
-                scaleX = (float)Math.Floor(scaleX * 10) / 10f;
+                scaleX = (float)Math.Floor(scaleX * 10) * .1f;
 
                 var hasScale = false;
                 keyframes.ForEachPair((start, end) =>
