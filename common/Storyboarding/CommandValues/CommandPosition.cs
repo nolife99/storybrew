@@ -34,7 +34,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public override bool Equals(object obj) => obj is CommandPosition position && Equals(position);
 
         ///<inheritdoc/>
-        public override int GetHashCode() => (x.GetHashCode() * 397) ^ y.GetHashCode();
+        public override int GetHashCode() => ((System.Numerics.Vector2)this).GetHashCode();
 
         ///<summary> Converts this instance to a .osb string. </summary>
         public string ToOsbString(ExportSettings exportSettings) => exportSettings.UseFloatForMove ? $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}" : $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";

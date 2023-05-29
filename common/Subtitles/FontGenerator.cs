@@ -4,6 +4,7 @@ using OpenTK;
 using OpenTK.Graphics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -92,7 +93,7 @@ namespace StorybrewCommon.Subtitles
         public int FontSize = 76;
 
         ///<summary> The coloring tint of the font texture. </summary>
-        public Color4 Color = new Color4(0, 0, 0, 100);
+        public CommandColor Color = new CommandColor(0, 0, 0, 100);
 
         ///<summary> How much extra space is allocated around the text when generating it. </summary>
         public Vector2 Padding = Vector2.Zero;
@@ -216,7 +217,7 @@ namespace StorybrewCommon.Subtitles
                             }
 
                             foreach (var effect in effects) if (!effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
-                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush((Color)description.Color)) 
+                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush(description.Color)) 
                                 textGraphics.DrawString(text, font, textBrush, textX, textY, stringFormat);
                             foreach (var effect in effects) if (effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
 

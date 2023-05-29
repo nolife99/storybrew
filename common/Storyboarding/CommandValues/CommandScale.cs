@@ -41,7 +41,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public override bool Equals(object obj) => obj is CommandScale scale && Equals(scale);
 
         ///<inheritdoc/>
-        public override int GetHashCode() => (x.GetHashCode() * 397) ^ y.GetHashCode();
+        public override int GetHashCode() => ((System.Numerics.Vector2)this).GetHashCode();
 
         ///<summary> Converts this instance to a .osb string. </summary>
         public string ToOsbString(ExportSettings exportSettings) => $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}";

@@ -73,7 +73,7 @@ namespace StorybrewCommon.Scripting
 
         #region File loading
 
-        static readonly Dictionary<string, Bitmap> bitmaps = new Dictionary<string, Bitmap>();
+        static readonly DisposableNativeDictionary<Bitmap> bitmaps = new DisposableNativeDictionary<Bitmap>();
 
         ///<summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
         public Bitmap GetProjectBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
@@ -95,14 +95,14 @@ namespace StorybrewCommon.Scripting
 
                     try
                     {
-                        bitmaps.Add(path, bitmap = Util.Misc.WithRetries(() => new Bitmap(stream)));
+                        bitmaps[path] = bitmap = Util.Misc.WithRetries(() => new Bitmap(stream));
                     }
                     catch (FileNotFoundException e)
                     {
                         throw new FileNotFoundException(path, e);
                     }
                 }
-                else bitmaps.Add(path, bitmap = Util.Misc.WithRetries(() => new Bitmap(stream)));
+                else bitmaps[path] = bitmap = Util.Misc.WithRetries(() => new Bitmap(stream));
             }
             return bitmap;
         }
@@ -186,7 +186,7 @@ namespace StorybrewCommon.Scripting
                 var index = Math.Min(Math.Max(baseIndex + 1, (int)(progress * usedFftLength)), usedFftLength - 1);
 
                 var value = 0f;
-                for (var v = baseIndex; v < index; v++) value = Math.Max(value, fft[index]);
+                for (var v = baseIndex; v < index; ++v) value = Math.Max(value, fft[index]);
 
                 resultFft[i] = value;
                 baseIndex = index;
@@ -286,7 +286,7 @@ namespace StorybrewCommon.Scripting
             if (context != null) throw new InvalidOperationException();
 
             var remainingFieldNames = new List<string>(config.FieldNames);
-            foreach (var configurableField in configurableFields.ToArray())
+            configurableFields.ForEach(configurableField =>
             {
                 var field = configurableField.Field;
                 var allowedValues = (NamedValue[])null;
@@ -324,7 +324,7 @@ namespace StorybrewCommon.Scripting
                 {
                     Trace.WriteLine($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
                 }
-            }
+            });
             remainingFieldNames.ForEach(name => config.RemoveField(name));
         }
 
@@ -406,8 +406,7 @@ namespace StorybrewCommon.Scripting
                 this.context = null;
                 Current = null;
 
-                foreach (var bitmap in bitmaps.Values) bitmap.Dispose();
-                bitmaps.Clear();
+                bitmaps.Dispose();
             }
         }
         ///<summary> Main body for storyboard generation. </summary>
