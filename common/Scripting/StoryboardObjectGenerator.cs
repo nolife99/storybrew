@@ -21,7 +21,7 @@ namespace StorybrewCommon.Scripting
     ///<summary> Base abstract class for all storyboarding scripts. </summary>
     public abstract class StoryboardObjectGenerator : Script
     {
-        ///<summary> Storyboard object generator for non-inherited classes. </summary>
+        ///<summary> A storyboard generator for non-inherited types.<para/>This value will change according to what <see cref="AppDomain"/> is accessing it. </summary>
         public static StoryboardObjectGenerator Current { get; private set; }
 
         List<ConfigurableField> configurableFields;
@@ -375,11 +375,11 @@ namespace StorybrewCommon.Scripting
         }
         struct ConfigurableField
         {
-            public FieldInfo Field;
-            public ConfigurableAttribute Attribute;
-            public object InitialValue;
-            public string BeginsGroup, Description;
-            public int Order;
+            internal FieldInfo Field;
+            internal ConfigurableAttribute Attribute;
+            internal object InitialValue;
+            internal string BeginsGroup, Description;
+            internal int Order;
 
             public override string ToString() => $"{Field.Name} {InitialValue}";
         }
@@ -406,6 +406,7 @@ namespace StorybrewCommon.Scripting
                 this.context = null;
                 Current = null;
 
+                trimRect.Clear();
                 bitmaps.Dispose();
             }
         }
