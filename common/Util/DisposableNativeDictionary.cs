@@ -1,19 +1,22 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace StorybrewCommon.Util
 {
     ///<summary> Represents a native collection of keys and <see cref="IDisposable"/> items. </summary>
-    ///<typeparam name="T"> The type of the <see cref="IDisposable"/> object. </typeparam>
-    public sealed class DisposableNativeDictionary<T> : IDisposable where T : IDisposable
+    ///<typeparam name="TKey"> The type of the key that matches to a <typeparamref name="TValue"/>. </typeparam>
+    ///<typeparam name="TValue"> The type of the <see cref="IDisposable"/> object. </typeparam>
+    public sealed class DisposableNativeDictionary<TKey, TValue> : IDisposable, IEnumerable<KeyValuePair<TKey, TValue>>
+        where TKey : IEquatable<TKey> where TValue : IDisposable
     {
         class Node
         {
-            internal string Key;
-            internal T Value;
+            internal TKey Key;
+            internal TValue Value;
             internal Node Next;
 
-            internal Node(string key, T value, Node next)
+            internal Node(TKey key, TValue value, Node next)
             {
                 Key = key;
                 Value = value;
@@ -21,34 +24,47 @@ namespace StorybrewCommon.Util
             }
         }
 
-        static Node[] table;
-        static int count;
+        Node[] table;
+        int count;
 
-        ///<summary> Creates a new <see cref="DisposableNativeDictionary{T}"/> object, with the given allocation capacity. </summary>
-        public DisposableNativeDictionary(int capacity = 60) => table = new Node[capacity];
+        ///<summary> Creates a new <see cref="DisposableNativeDictionary{TKey, TValue}"/> object, with the given allocation capacity. </summary>
+        public DisposableNativeDictionary(int capacity = 32) => table = new Node[capacity];
 
-        ///<summary> Gets or sets the <see cref="IDisposable"/> item associated with the given key. </summary>
+        ///<summary> Gets or sets the <see cref="IDisposable"/> item associated with the given key. 
+        ///<para/> If <paramref name="key"/> does not match an existing key in the collection, the value will be added. </summary>
         ///<exception cref="KeyNotFoundException"> The specified key was not found in the dictionary. </exception>
-        public T this[string key]
+        public TValue this[TKey key]
         {
             get
             {
-                for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key == key)
+                for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
                     return node.Value;
 
                 throw new KeyNotFoundException($"The specified key was not found in the dictionary: {key}");
             }
             set
             {
-                if (count / (float)table.Length >= .9f) resize();
+                if (count / (float)table.Length >= .95f) unsafe
+                {
+                    var newTable = new Node[table.Length * 2];
 
-                var index = getIndex(key);
-                for (var node = table[index]; node != null; node = node.Next) if (node.Key == key)
+#pragma warning disable CS8500
+                    fixed (Node* oldP = table) fixed (Node* newP = newTable) for (var i = 0; i < table.Length; ++i)
+                    {
+                        var newN = &newP[i];
+                        if (*newN != null) *newN = *&oldP[i];
+#pragma warning restore
+                    }
+                    table = newTable;
+                }
+
+                for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
                 {
                     node.Value = value;
                     return;
                 }
 
+                var index = getIndex(key);
                 var newNode = new Node(key, value, table[index]);
                 table[index] = newNode;
                 ++count;
@@ -57,9 +73,9 @@ namespace StorybrewCommon.Util
 
         ///<summary> Attempts to get the <see cref="IDisposable"/> item associated with the specified key. </summary>
         ///<returns> A value indicating if <paramref name="key"/> was matched. If not, <paramref name="value"/> is returned <see langword="null"/>. </returns>
-        public bool TryGetValue(string key, out T value)
+        public bool TryGetValue(TKey key, out TValue value)
         {
-            for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key == key)
+            for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
             {
                 value = node.Value;
                 return true;
@@ -69,28 +85,26 @@ namespace StorybrewCommon.Util
             return false;
         }
 
-        ///<summary> Releases all resources used by this <see cref="DisposableNativeDictionary{T}"/>, including the <see cref="IDisposable"/> items contained. </summary>
+        ///<inheritdoc/>
         public void Dispose()
         {
             if (count == 0) return;
 
-            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next) 
+            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
                 node.Value.Dispose();
 
             Array.Clear(table, 0, table.Length);
             count = 0;
         }
 
-        void resize()
+        int getIndex(TKey key) => (key.GetHashCode() & 0x7FFFFFFF) % table.Length;
+
+        ///<inheritdoc/>
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            var oldTable = table;
-            table = new Node[oldTable.Length * 2];
-
-            for (var i = 0; i < count; ++i) for (var node = oldTable[i]; node != null; node = node.Next)
-                this[node.Key] = node.Value;
-
-            count = 0;
+            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
+                yield return new KeyValuePair<TKey, TValue>(node.Key, node.Value);
         }
-        int getIndex(string key) => (key.GetHashCode() & 0x7FFFFFFF) % table.Length;
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

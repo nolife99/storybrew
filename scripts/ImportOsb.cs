@@ -30,7 +30,7 @@ namespace StorybrewScripts
         void parseVariables(StreamReader reader) => reader.ParseSectionLines(line =>
         {
             var v = line.Split('=');
-            if (v.Length == 2) vars.Add(v[0], v[1]);
+            if (v.Length == 2) vars[v[0]] = v[1];
         });
         void parseEvents(StreamReader reader)
         {

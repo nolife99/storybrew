@@ -38,7 +38,7 @@ namespace StorybrewCommon.Util
             }
             catch (Exception e)
             {
-                throw new SectionLineParsingFailedException($"Failed to parse line \"{line}\".", e);
+                throw new InvalidDataException($"Failed to parse line \"{line}\".", e);
             }
         }
 
@@ -53,12 +53,5 @@ namespace StorybrewCommon.Util
 
             action(key, value);
         });
-    }
-    [Serializable] public class SectionLineParsingFailedException : Exception
-    {
-        public SectionLineParsingFailedException() { }
-        public SectionLineParsingFailedException(string message) : base(message) { }
-        public SectionLineParsingFailedException(string message, Exception innerException) : base(message, innerException) { }
-        protected SectionLineParsingFailedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

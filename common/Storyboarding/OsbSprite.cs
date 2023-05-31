@@ -7,7 +7,6 @@ using StorybrewCommon.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace StorybrewCommon.Storyboarding
 {
@@ -17,7 +16,7 @@ namespace StorybrewCommon.Storyboarding
         ///<summary> Default position of sprites, unless modified elsewhere. </summary>
         public static readonly CommandPosition DefaultPosition = new CommandPosition(320, 240);
 
-        readonly List<ICommand> commands = new List<ICommand>();
+        readonly HashSet<ICommand> commands = new HashSet<ICommand>();
         CommandGroup currentCommandGroup;
 
         ///<returns> True if the sprite is in a command group, else returns false. </returns>
@@ -35,12 +34,11 @@ namespace StorybrewCommon.Storyboarding
             set
             {
                 if (texturePath == value) return;
-                new FileInfo(value);
                 texturePath = value;
             }
         }
         ///<returns> Image of the sprite at <paramref name="time"/>. </returns>
-        public virtual string GetTexturePathAt(double time) => TexturePath;
+        public virtual string GetTexturePathAt(double time) => texturePath;
 
         ///<summary> Origin of this sprite. </summary>
         public OsbOrigin Origin = OsbOrigin.Centre;
@@ -66,9 +64,6 @@ namespace StorybrewCommon.Storyboarding
 
         ///<returns> The total amount of commands being run on this instance of the <see cref="OsbSprite"/>. </returns>
         public int CommandCount => commands.Count;
-
-        ///<returns> The sum of commands being run on this instance of the <see cref="OsbSprite"/>. </returns>
-        public int CommandCost => commands.Sum(c => c.Cost);
 
         ///<returns> True if the <see cref="OsbSprite"/> has incompatible commands, else returns false. </returns>
         public bool HasIncompatibleCommands =>

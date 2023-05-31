@@ -12,23 +12,27 @@ namespace StorybrewScripts
         [Group("Timing")]
         [Configurable] public int StartTime = 0;
         [Configurable] public int EndTime = 0;
-        [Configurable] public int BeatDivisor = 8;
+        [Configurable] public int BeatDivisor = 160;
 
         [Group("Sprite")]
         [Configurable] public string SpritePath = "sb/glow.png";
         [Configurable] public float SpriteScale = 1;
-        [Configurable] public int FadeDuration = 200;
+        [Configurable] public int FadeDuration = 1000;
 
         protected override void Generate()
         {
+            using (var pool = new SpritePool(GetLayer(""), SpritePath, true))
             foreach (var hitobject in Beatmap.HitObjects
                 .Where(h => StartTime == EndTime || (h.StartTime > StartTime - 5 && h.EndTime < EndTime + 5)))
             {
-                var hSprite = GetLayer("").CreateSprite(SpritePath, OsbOrigin.Centre, hitobject.Position + hitobject.StackOffset);
-                hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale * .2f);
+                var hSprite = pool.Get(hitobject.StartTime, hitobject.EndTime + FadeDuration);
+
+                var pos = hitobject.Position + hitobject.StackOffset;
+                if (hSprite.PositionAt(hitobject.StartTime) != (CommandPosition)pos && !(hitobject is OsuSlider)) 
+                    hSprite.Move(hitobject.StartTime, pos);
+                hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale / 5);
                 hSprite.Fade(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, 1, 0);
-                hSprite.Additive(hitobject.StartTime, hitobject.EndTime + FadeDuration);
-                hSprite.Color(hitobject.StartTime, hitobject.Color);
+                if (hSprite.ColorAt(hitobject.StartTime) != (CommandColor)hitobject.Color) hSprite.Color(hitobject.StartTime, hitobject.Color);
 
                 if (hitobject is OsuSlider)
                 {
@@ -45,11 +49,12 @@ namespace StorybrewScripts
 
                         var startPosition = hitobject.PositionAtTime(startTime);
                         keyframe.Add(startTime, startPosition);
-                        keyframe.Simplify2dKeyframes(1, v => v);
 
                         if (complete) break;
                         startTime += timestep;
                     }
+                    
+                    keyframe.Simplify2dKeyframes(1, v => v);
                     keyframe.ForEachPair((sTime, eTime) => hSprite.Move(sTime.Time, eTime.Time, sTime.Value, eTime.Value));
                 }
             }

@@ -3,9 +3,9 @@ using BrewLib.Util.Compression;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Util;
 using StorybrewCommon.Subtitles;
 using StorybrewCommon.Subtitles.Parsers;
-using StorybrewCommon.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -15,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Tiny;
+using Misc = BrewLib.Util.Misc;
 
 namespace StorybrewCommon.Scripting
 {
@@ -27,9 +28,9 @@ namespace StorybrewCommon.Scripting
         List<ConfigurableField> configurableFields;
         GeneratorContext context;
 
-        ///<summary> Override to true if this script uses multiple threads. </summary>
+        ///<summary> Set to true if this script uses multiple threads. </summary>
         ///<remarks> It will prevent other effects from updating in parallel to this one. </remarks>
-        protected virtual bool Multithreaded => false;
+        protected bool Multithreaded = false;
 
         internal PngCompressor Compressor { get; private set; }
 
@@ -73,7 +74,7 @@ namespace StorybrewCommon.Scripting
 
         #region File loading
 
-        static readonly DisposableNativeDictionary<Bitmap> bitmaps = new DisposableNativeDictionary<Bitmap>();
+        readonly DisposableNativeDictionary<string, Bitmap> bitmaps = new DisposableNativeDictionary<string, Bitmap>();
 
         ///<summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
         public Bitmap GetProjectBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
@@ -95,14 +96,14 @@ namespace StorybrewCommon.Scripting
 
                     try
                     {
-                        bitmaps[path] = bitmap = Util.Misc.WithRetries(() => new Bitmap(stream));
+                        bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
                     }
                     catch (FileNotFoundException e)
                     {
                         throw new FileNotFoundException(path, e);
                     }
                 }
-                else bitmaps[path] = bitmap = Util.Misc.WithRetries(() => new Bitmap(stream));
+                else bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
             }
             return bitmap;
         }
@@ -124,7 +125,7 @@ namespace StorybrewCommon.Scripting
         {
             path = Path.GetFullPath(path);
             if (watch) context.AddDependency(path);
-            return Util.Misc.WithRetries(() => File.OpenRead(path));
+            return Misc.WithRetries(() => File.OpenRead(path));
         }
 
         #endregion
@@ -198,10 +199,10 @@ namespace StorybrewCommon.Scripting
 
         #region Subtitles
 
-        readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
+        static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
 
         internal readonly HashSet<string> fontDirectories = new HashSet<string>();
-        readonly List<FontGenerator> fontGenerators = new List<FontGenerator>();
+        readonly HashSet<FontGenerator> fontGenerators = new HashSet<FontGenerator>();
 
         string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache", "font");
 
@@ -249,7 +250,7 @@ namespace StorybrewCommon.Scripting
                 var path = Path.Combine(cachePath, HashHelper.GetMd5(fontGenerator.Directory) + ".yaml");
                 if (File.Exists(path))
                 {
-                    var cachedFontRoot = Util.Misc.WithRetries(() => TinyToken.Read(path), canThrow: false);
+                    var cachedFontRoot = Misc.WithRetries(() => TinyToken.Read(path), canThrow: false);
                     if (cachedFontRoot != null) fontGenerator.HandleCache(cachedFontRoot);
                 }
             }
@@ -260,7 +261,7 @@ namespace StorybrewCommon.Scripting
             var cachePath = fontCacheDirectory;
             if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
 
-            fontGenerators.ForEach(fontGenerator =>
+            foreach (var fontGenerator in fontGenerators)
             {
                 var path = Path.Combine(cachePath, HashHelper.GetMd5(fontGenerator.Directory) + ".yaml");
 
@@ -273,7 +274,7 @@ namespace StorybrewCommon.Scripting
                 {
                     Trace.WriteLine($"Failed to save font cache for {path} ({e.GetType().FullName})");
                 }
-            });
+            }
         }
 
         #endregion
@@ -406,6 +407,7 @@ namespace StorybrewCommon.Scripting
                 this.context = null;
                 Current = null;
 
+                fontGenerators.Clear();
                 trimRect.Clear();
                 bitmaps.Dispose();
             }

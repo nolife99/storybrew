@@ -83,7 +83,7 @@ namespace StorybrewCommon.Subtitles
         }
     }
 
-    /// <summary> Stores information about a font's looks. </summary>
+    /// <summary> Stores information about a font's appearance. </summary>
     public class FontDescription
     {
         ///<summary> The path to the font texture. </summary>
@@ -93,7 +93,7 @@ namespace StorybrewCommon.Subtitles
         public int FontSize = 76;
 
         ///<summary> The coloring tint of the font texture. </summary>
-        public CommandColor Color = new CommandColor(0, 0, 0, 100);
+        public CommandColor Color = CommandColor.FromRgba(0, 0, 0, 100);
 
         ///<summary> How much extra space is allocated around the text when generating it. </summary>
         public Vector2 Padding = Vector2.Zero;

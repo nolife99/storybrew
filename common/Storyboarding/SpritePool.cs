@@ -372,19 +372,16 @@ namespace StorybrewCommon.Storyboarding
         {
             var key = getKey(path, origin, attributes, group);
             if (!pools.TryGetValue(key, out SpritePool pool))
-                pools.Add(key, pool = new SpritePool(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration });
+                pools[key] = pool = new SpritePool(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
 
             return pool;
         }
         AnimationPool getPool(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes, int group)
         {
             var key = getKey(path, frameCount, frameDelay, loopType, origin, attributes, group);
-            if (!animationPools.TryGetValue(key, out AnimationPool pool)) animationPools.Add(
-                key, pool = new AnimationPool(segment, path, frameCount, frameDelay, loopType, origin, position, attributes) 
-                { 
-                    MaxPoolDuration = maxPoolDuration 
-                }
-            );
+            if (!animationPools.TryGetValue(key, out AnimationPool pool)) animationPools[key] = 
+                pool = new AnimationPool(segment, path, frameCount, frameDelay, loopType, origin, position, attributes) 
+            { MaxPoolDuration = maxPoolDuration };
 
             return pool;
         }

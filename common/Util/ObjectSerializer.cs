@@ -15,7 +15,7 @@ namespace StorybrewCommon.Util
         public abstract string ToString(object value);
         public abstract object FromString(string value);
 
-        static readonly List<ObjectSerializer> serializers = new List<ObjectSerializer>
+        static readonly HashSet<ObjectSerializer> serializers = new HashSet<ObjectSerializer>
         {
             new SimpleObjectSerializer<int>(r => r.ReadInt32(), (w, v) => w.Write((int)v), v => int.Parse(v), v => ((int)v).ToString()),
             new SimpleObjectSerializer<float>(r => r.ReadSingle(), (w, v) => w.Write((float)v), v => float.Parse(v), v => ((float)v).ToString()),
@@ -40,7 +40,8 @@ namespace StorybrewCommon.Util
             {
                 var vector = (Vector2)v;
                 return vector.X.ToString() + "," + vector.Y.ToString();
-            }), new SimpleObjectSerializer<Vector3>(r =>
+            }), 
+            new SimpleObjectSerializer<Vector3>(r =>
             {
                 var x = r.ReadSingle();
                 var y = r.ReadSingle();
@@ -60,7 +61,8 @@ namespace StorybrewCommon.Util
             {
                 var vector = (Vector3)v;
                 return vector.X.ToString() + "," + vector.Y.ToString() + "," + vector.Z.ToString();
-            }), new SimpleObjectSerializer<Color4>(r =>
+            }), 
+            new SimpleObjectSerializer<Color4>(r =>
             {
                 var red = r.ReadByte();
                 var green = r.ReadByte();

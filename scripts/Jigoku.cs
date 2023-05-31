@@ -13,32 +13,31 @@ namespace StorybrewScripts
     {
         #region Timing
 
-        static readonly int Offset = 0;
-        static readonly int BeatDuration = 11715 - 11363;
+        const int Offset = 0;
+        const int BeatDuration = 11715 - 11363;
 
-        static readonly int TimeSbStart = Offset + 0;
-        static readonly int TimeIntro = Offset + 774;
-        static readonly int TimePart1 = Offset + 11363;
-        static readonly int TimePart2 = Offset + 22657;
-        static readonly int TimePart3 = Offset + 33951;
-        static readonly int TimePart4 = Offset + 45245;
-        static readonly int TimePart5 = Offset + 56539;
-        static readonly int TimePart6 = Offset + 67833;
-        static readonly int TimePart7 = Offset + 70657;
-        static readonly int TimePart8 = Offset + 91127;
-        static readonly int TimePart9 = Offset + 96068;
-        static readonly int TimePart10 = Offset + 107362;
-        static readonly int TimePart11 = Offset + 118657;
-        static readonly int TimeEnd = Offset + 124127;
-        static readonly int TimeSbEnd = Offset + 126774;
+        const int TimeSbStart = Offset + 0;
+        const int TimeIntro = Offset + 774;
+        const int TimePart1 = Offset + 11363;
+        const int TimePart2 = Offset + 22657;
+        const int TimePart3 = Offset + 33951;
+        const int TimePart4 = Offset + 45245;
+        const int TimePart5 = Offset + 56539;
+        const int TimePart6 = Offset + 67833;
+        const int TimePart7 = Offset + 70657;
+        const int TimePart8 = Offset + 91127;
+        const int TimePart9 = Offset + 96068;
+        const int TimePart10 = Offset + 107362;
+        const int TimePart11 = Offset + 118657;
+        const int TimeEnd = Offset + 124127;
+        const int TimeSbEnd = Offset + 126774;
 
         #endregion
 
-        readonly double BgScaling = 480d / 768;
+        const float BgScaling = 480f / 768;
 
-        StoryboardLayer bgLayer;
-        StoryboardLayer mainLayer;
-        SpritePools spritePools;
+        static StoryboardLayer bgLayer, mainLayer;
+        static SpritePools spritePools;
 
         protected override void Generate()
         {
