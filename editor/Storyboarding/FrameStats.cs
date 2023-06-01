@@ -4,6 +4,6 @@
     {
         public int SpriteCount, CommandCount, EffectiveCommandCount;
         public bool IncompatibleCommands, OverlappedCommands;
-        public double ScreenFill;
+        public float ScreenFill;
     }
 }

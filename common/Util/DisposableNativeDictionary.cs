@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorybrewCommon.Util
 {
@@ -44,18 +46,17 @@ namespace StorybrewCommon.Util
             }
             set
             {
-                if (count / (float)table.Length >= .95f) unsafe
+                if (count / (float)table.Length >= 1)
                 {
-                    var newTable = new Node[table.Length * 2];
+                    var oldTable = table;
+                    table = new Node[oldTable.Length * 2];
 
-#pragma warning disable CS8500
-                    fixed (Node* oldP = table) fixed (Node* newP = newTable) for (var i = 0; i < table.Length; ++i)
+                    for (var i = 0; i < oldTable.Length; ++i) for (var node = oldTable[i]; node != null; node = node.Next)
                     {
-                        var newN = &newP[i];
-                        if (*newN != null) *newN = *&oldP[i];
-#pragma warning restore
+                        var nIndex = getIndex(node.Key);
+                        var newN = new Node(node.Key, node.Value, table[nIndex]);
+                        table[nIndex] = newN;
                     }
-                    table = newTable;
                 }
 
                 for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))

@@ -9,7 +9,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
-using OpenTK.Graphics.ES10;
+using System.Threading.Tasks;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
@@ -189,7 +189,23 @@ namespace StorybrewCommon.Storyboarding.Util
 
             var first = finalPositions.FirstOrDefault().Value;
             double checkPos(double value) => Math.Round(value, PositionDecimals);
-            bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(first.Y)), moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(first.X));
+            bool moveX = true, moveY = true;
+            Parallel.ForEach(finalPositions, (k, state) =>
+            {
+                if (checkPos(k.Value.Y) != checkPos(first.Y))
+                {
+                    moveX = false;
+                    state.Stop();
+                }
+            });
+            Parallel.ForEach(finalPositions, (k, state) =>
+            {
+                if (checkPos(k.Value.X) != checkPos(first.X))
+                {
+                    moveY = false;
+                    state.Stop();
+                }
+            });
             finalPositions.ForEachPair((s, e) =>
             {
                 if (moveX && !moveY)
@@ -206,9 +222,15 @@ namespace StorybrewCommon.Storyboarding.Util
             }, new Vector2(320, 240), p => new Vector2((float)Math.Round(p.X, PositionDecimals), (float)Math.Round(p.Y, PositionDecimals)), startState, loopable: loopable);
 
             int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
-            double checkRound(double value) => Math.Round(value, ScaleDecimals);
-            var vec = finalScales.Any(k => checkScale(k.Value.X) != checkScale(k.Value.Y));
-            if (vec) vec = finalScales.Any(k => checkRound(k.Value.X) != checkRound(k.Value.Y));
+            bool vec = false;
+            Parallel.ForEach(finalScales, (k, state) =>
+            {
+                if (checkScale(k.Value.X) != checkScale(k.Value.Y))
+                {
+                    vec = true;
+                    state.Stop();
+                }
+            });
             finalScales.ForEachPair((s, e) =>
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);

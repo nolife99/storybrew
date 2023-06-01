@@ -81,13 +81,12 @@ namespace StorybrewCommon.Storyboarding3d
                 }
             }
 
-            var previousState = gen.EndState;
             var rotation = InterpolatingFunctions.DoubleAngle(
-                previousState?.Rotation ?? -SpriteRotation.ValueAt(previousState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
+                gen.EndState?.Rotation ?? -SpriteRotation.ValueAt(gen.EndState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
 
             Matrix4x4.Decompose(object3dState.WorldTransform, out Vector3 v, out _, out _);
             var scale = (Vector2)SpriteScale.ValueAt(time) * 
-                new Vector2(v.X, v.Y) *
+                (RotationMode is RotationMode.Fixed ? new Vector2(v.X) : new Vector2(v.X, v.Y)) *
                 (float)(cameraState.FocusDistance / screenPosition.W) *
                 (float)cameraState.ResolutionScale;
 

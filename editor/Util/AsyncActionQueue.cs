@@ -234,9 +234,9 @@ namespace StorybrewEditor.Util
                     var cancellationToken = cancellationTokenSource.Token;
                     var completed = false;
 
-                    while (!completed && !cancellationToken.IsCancellationRequested) completed = localThread.Join(10);
                     if (!completed) Trace.WriteLine($"Canceling thread {localThread.Name}");
-                    else Trace.WriteLine($"Canceled thread {localThread.Name}");
+                    while (!completed && !cancellationToken.IsCancellationRequested) completed = localThread.Join(10);
+                    if (completed) Trace.WriteLine($"Canceled thread {localThread.Name}");
                 }
             }
         }

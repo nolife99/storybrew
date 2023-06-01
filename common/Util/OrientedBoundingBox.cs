@@ -27,25 +27,13 @@ namespace StorybrewCommon.Util
 
             axis[0] = corners[1] - corners[0];
             axis[1] = corners[3] - corners[0];
-            for (var a = 0; a < 2; a++)
+            for (var a = 0; a < 2; ++a)
             {
                 axis[a] /= axis[a].LengthSquared;
                 origins[a] = Vector2.Dot(corners[0], axis[a]);
             }
         }
-        public Box2 GetAABB()
-        {
-            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
-            foreach (var corner in corners)
-            {
-                minX = Math.Min(minX, corner.X);
-                maxX = Math.Max(maxX, corner.X);
-                minY = Math.Min(minY, corner.Y);
-                maxY = Math.Max(maxY, corner.Y);
-            }
-            return new Box2(minX, minY, maxX, maxY);
-        }
-        public RectangleF GetRectangleF()
+        public RectangleF GetAABB()
         {
             float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
             foreach (var corner in corners)
@@ -63,12 +51,12 @@ namespace StorybrewCommon.Util
         public bool Intersects(RectangleF other) => Intersects(new OrientedBoundingBox(new Vector2(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
         bool intersects1Way(OrientedBoundingBox other)
         {
-            for (var a = 0; a < 2; a++)
+            for (var a = 0; a < 2; ++a)
             {
                 var t = Vector2.Dot(other.corners[0], axis[a]);
                 var tMin = t;
                 var tMax = t;
-                for (var c = 1; c < 4; c++)
+                for (var c = 1; c < 4; ++c)
                 {
                     t = Vector2.Dot(other.corners[c], axis[a]);
                     if (t < tMin) tMin = t;

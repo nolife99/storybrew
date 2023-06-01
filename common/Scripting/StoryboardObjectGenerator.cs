@@ -15,7 +15,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Tiny;
-using Misc = BrewLib.Util.Misc;
 
 namespace StorybrewCommon.Scripting
 {

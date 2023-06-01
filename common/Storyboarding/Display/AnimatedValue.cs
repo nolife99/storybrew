@@ -50,8 +50,7 @@ namespace StorybrewCommon.Storyboarding.Display
         }
         public void Remove(ITypedCommand<TValue> command)
         {
-            var triggerable = command as TriggerDecorator<TValue>;
-            if (triggerable == null) commands.Remove(command);
+            if (!(command is TriggerDecorator<TValue> triggerable)) commands.Remove(command);
             else triggerable.OnStateChanged -= triggerable_OnStateChanged;
         }
 
@@ -60,7 +59,7 @@ namespace StorybrewCommon.Storyboarding.Display
         {
             if (commands.Count == 0) return DefaultValue;
 
-            if (!findCommandIndex(time, out int index) && index > 0) index--;
+            if (!findCommandIndex(time, out int index) && index > 0) --index;
             if (HasOverlap) for (var i = 0; i < index; ++i) if (time < commands[i].EndTime)
             {
                 index = i;
