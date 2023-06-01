@@ -1,6 +1,5 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Numerics;
 
 namespace StorybrewCommon.Subtitles
 {
@@ -11,7 +10,7 @@ namespace StorybrewCommon.Subtitles
         public int Thickness = 1;
 
         ///<summary> The color tinting of the shadow. </summary>
-        public Color4 Color = new Color4(0, 0, 0, 100);
+        public FontColor Color = new FontColor(0, 0, 0, 100);
 
         ///<inheritdoc/>
         public bool Overlay => false;
@@ -23,7 +22,7 @@ namespace StorybrewCommon.Subtitles
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
         {
             if (Thickness < 1) return;
-            using (var brush = new SolidBrush((Color)Color)) for (var i = 1; i <= Thickness; i++) textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
+            using (var brush = new SolidBrush(Color)) for (var i = 1; i <= Thickness; ++i) textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
         }
     }
 }

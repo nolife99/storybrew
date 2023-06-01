@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StorybrewCommon.Util;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -50,7 +51,7 @@ namespace StorybrewEditor.Util
 
             lock (context.Queue)
             {
-                if (!allowDuplicates && context.Queue.Any(q => q.Target.Equals(target))) return;
+                if (!allowDuplicates && ParallelExtensions.Any(context.Queue, q => q.Target.Equals(target))) return;
 
                 context.Queue.Add(new ActionContainer
                 {

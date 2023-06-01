@@ -26,7 +26,7 @@ namespace StorybrewCommon.Storyboarding
                 color,
                 writer, exportSettings, layer) => this.animation = animation;
 
-        protected override OsbSprite CreateSprite(List<IFragmentableCommand> segment)
+        protected override OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
         {
             if (animation.LoopType == OsbLoopType.LoopOnce && segment.Min(c => c.StartTime) >= animation.AnimationEndTime)
             {

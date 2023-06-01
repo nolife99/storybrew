@@ -1,5 +1,5 @@
-﻿using OpenTK;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Numerics;
 
 namespace StorybrewCommon.Subtitles
 {

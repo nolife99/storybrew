@@ -24,11 +24,11 @@ namespace StorybrewCommon.Storyboarding.Util
             scales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale),
             finalScales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale);
 
-        readonly KeyframedValue<float>
-            rotations = new KeyframedValue<float>(InterpolatingFunctions.FloatAngle),
-            fades = new KeyframedValue<float>(InterpolatingFunctions.Float),
-            finalRotations = new KeyframedValue<float>(InterpolatingFunctions.FloatAngle),
-            finalfades = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        readonly KeyframedValue<double>
+            rotations = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle),
+            fades = new KeyframedValue<double>(InterpolatingFunctions.Double),
+            finalRotations = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle),
+            finalfades = new KeyframedValue<double>(InterpolatingFunctions.Double);
 
         readonly KeyframedValue<CommandColor>
             colors = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor),
@@ -74,10 +74,8 @@ namespace StorybrewCommon.Storyboarding.Util
         ///<summary> The amount of decimal digits for opacity keyframes. </summary>
         public int OpacityDecimals = 1;
 
-        internal KeyframedValue<CommandScale> scale = null;
-
         /// <summary>
-        /// Adds a <see cref="State"/> to this instance. The <see cref="State"/> will be automatically sorted.
+        /// Adds a <see cref="State"/> to this instance that will be automatically sorted.
         /// </summary>
         public void Add(State state)
         {
@@ -171,13 +169,13 @@ namespace StorybrewCommon.Storyboarding.Util
             scales.Simplify2dKeyframes(ScaleTolerance, v => new Vector2(v.X * imageSize.Width, v.Y * imageSize.Height));
             scales.TransferKeyframes(finalScales);
 
-            rotations.Simplify1dKeyframes(RotationTolerance, r => r);
+            rotations.Simplify1dKeyframes(RotationTolerance, r => (float)r);
             rotations.TransferKeyframes(finalRotations);
 
             colors.Simplify3dKeyframes(ColorTolerance, c => new Vector3(c.R, c.G, c.B));
             colors.TransferKeyframes(finalColors);
 
-            fades.Simplify1dKeyframes(OpacityTolerance, f => f);
+            fades.Simplify1dKeyframes(OpacityTolerance, f => (float)f);
             if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, before: true);
             if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
             fades.TransferKeyframes(finalfades);
@@ -189,23 +187,9 @@ namespace StorybrewCommon.Storyboarding.Util
 
             var first = finalPositions.FirstOrDefault().Value;
             double checkPos(double value) => Math.Round(value, PositionDecimals);
-            bool moveX = true, moveY = true;
-            Parallel.ForEach(finalPositions, (k, state) =>
-            {
-                if (checkPos(k.Value.Y) != checkPos(first.Y))
-                {
-                    moveX = false;
-                    state.Stop();
-                }
-            });
-            Parallel.ForEach(finalPositions, (k, state) =>
-            {
-                if (checkPos(k.Value.X) != checkPos(first.X))
-                {
-                    moveY = false;
-                    state.Stop();
-                }
-            });
+            bool moveX = ParallelExtensions.All(finalPositions, k => checkPos(k.Value.Y) == checkPos(first.Y)), 
+                 moveY = ParallelExtensions.All(finalPositions, k => checkPos(k.Value.X) == checkPos(first.X));
+
             finalPositions.ForEachPair((s, e) =>
             {
                 if (moveX && !moveY)
@@ -222,15 +206,7 @@ namespace StorybrewCommon.Storyboarding.Util
             }, new Vector2(320, 240), p => new Vector2((float)Math.Round(p.X, PositionDecimals), (float)Math.Round(p.Y, PositionDecimals)), startState, loopable: loopable);
 
             int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
-            bool vec = false;
-            Parallel.ForEach(finalScales, (k, state) =>
-            {
-                if (checkScale(k.Value.X) != checkScale(k.Value.Y))
-                {
-                    vec = true;
-                    state.Stop();
-                }
-            });
+            bool vec = ParallelExtensions.Any(finalScales, k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) >= 1);
             finalScales.ForEachPair((s, e) =>
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -259,9 +235,9 @@ namespace StorybrewCommon.Storyboarding.Util
         {
             positions.Add(time, state.Position);
             scales.Add(time, state.Scale);
-            rotations.Add(time, (float)state.Rotation);
+            rotations.Add(time, state.Rotation);
             colors.Add(time, state.Color);
-            fades.Add(time, (float)state.Opacity);
+            fades.Add(time, state.Opacity);
             flipH.Add(time, state.FlipH);
             flipV.Add(time, state.FlipV);
             additive.Add(time, state.Additive);

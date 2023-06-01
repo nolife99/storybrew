@@ -5,7 +5,6 @@ using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
-using StorybrewCommon.OpenTKUtil;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -67,26 +66,24 @@ namespace StorybrewCommon.Storyboarding3d
             {
                 case RotationMode.UnitX:
                 {
-                    var unitXPosition = cameraState.ToScreen(wvp, Vector3.UnitX);
-                    var delta = unitXPosition - screenPosition;
+                    var delta = cameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
                     angle += Math.Atan2(delta.Y, delta.X);
                     break;
                 }
                 case RotationMode.UnitY:
                 {
-                    var unitYPosition = cameraState.ToScreen(wvp, Vector3.UnitY);
-                    var delta = unitYPosition - screenPosition;
-                    angle += Math.Atan2(delta.Y, delta.X) - MathHelper.PiOver2;
+                    var delta = cameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
+                    angle += Math.Atan2(delta.Y, delta.X) - Math.PI * .5;
                     break;
                 }
             }
 
+            var previousState = gen.EndState;
             var rotation = InterpolatingFunctions.DoubleAngle(
-                gen.EndState?.Rotation ?? -SpriteRotation.ValueAt(gen.EndState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
+                previousState?.Rotation ?? -SpriteRotation.ValueAt(previousState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
 
             Matrix4x4.Decompose(object3dState.WorldTransform, out Vector3 v, out _, out _);
-            var scale = (Vector2)SpriteScale.ValueAt(time) * 
-                (RotationMode is RotationMode.Fixed ? new Vector2(v.X) : new Vector2(v.X, v.Y)) *
+            var scale = (Vector2)SpriteScale.ValueAt(time) * new Vector2(v.X, v.Y) *
                 (float)(cameraState.FocusDistance / screenPosition.W) *
                 (float)cameraState.ResolutionScale;
 

@@ -1,6 +1,5 @@
 ﻿using BrewLib.Util;
 using BrewLib.Util.Compression;
-using OpenTK;
 using OpenTK.Graphics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
@@ -12,6 +11,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Numerics;
 using System.IO;
 using System.Linq;
 using Tiny;
@@ -83,6 +83,152 @@ namespace StorybrewCommon.Subtitles
         }
     }
 
+    ///<summary> Base struct for coloring commands. </summary>
+    [Serializable] public struct FontColor : IEquatable<FontColor>
+    {
+        ///<summary> Represents a <see cref="FontColor"/> value as the color black. </summary>
+        public static readonly FontColor Black = new FontColor(0, 0, 0);
+
+        ///<summary> Represents a <see cref="FontColor"/> value as the color white. </summary>
+        public static readonly FontColor White = new FontColor(1, 1, 1);
+
+        ///<summary> Represents a <see cref="FontColor"/> value as the color red. </summary>
+        public static readonly FontColor Red = new FontColor(1, 0, 0);
+
+        ///<summary> Represents a <see cref="FontColor"/> value as the color green. </summary>
+        public static readonly FontColor Green = new FontColor(0, 1, 0);
+
+        ///<summary> Represents a <see cref="FontColor"/> value as the color blue. </summary>
+        public static readonly FontColor Blue = new FontColor(0, 0, 1);
+
+        readonly float r, g, b, a;
+
+        ///<summary> Gets the red value of this instance. </summary>
+        public byte R => toByte(r);
+
+        ///<summary> Gets the green value of this instance. </summary>
+        public byte G => toByte(g);
+
+        ///<summary> Gets the blue value of this instance. </summary>
+        public byte B => toByte(b);
+
+        ///<summary> Gets the blue value of this instance. </summary>
+        public byte A => toByte(a);
+
+        ///<summary> Constructs a new <see cref="CommandColor"/> from red, green, and blue values from 0.0 to 1.0. </summary>
+        public FontColor(double r = 1, double g = 1, double b = 1, double a = 1)
+        {
+            if (double.IsNaN(r) || double.IsInfinity(r) ||
+                double.IsNaN(g) || double.IsInfinity(g) ||
+                double.IsNaN(b) || double.IsInfinity(b) ||
+                double.IsNaN(a) || double.IsInfinity(a))
+                throw new InvalidDataException($"Invalid font color {r}, {g}, {b}");
+
+            this.r = (float)r;
+            this.g = (float)g;
+            this.b = (float)b;
+            this.a = (float)a;
+        }
+
+        ///<summary> Constructs a new <see cref="FontColor"/> from a <see cref="Vector3"/> containing red, green, and blue values from 0.0 to 1.0. </summary>
+        public FontColor(Vector3 vector) : this(vector.X, vector.Y, vector.Z) { }
+
+        ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
+        public bool Equals(FontColor other) => r == other.r && g == other.g && b == other.b;
+
+        ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
+        public override bool Equals(object other)
+        {
+            if (other is null) return false;
+            return other is CommandColor color && Equals(color);
+        }
+
+        ///<summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
+        public override int GetHashCode() => ((Color)this).ToArgb();
+
+        ///<summary> Converts this instance into a string, formatted as "R, G, B". </summary>
+        public override string ToString() => $"{R}, {G}, {B}";
+
+        ///<summary> Returns a <see cref="FontColor"/> structure that represents the hash code's color information. </summary>
+        public static FontColor FromHashCode(int code) => Color.FromArgb(code);
+
+        ///<summary> Creates a <see cref="FontColor"/> from RGB byte values. </summary>
+        public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new FontColor(r / 255f, g / 255f, b / 255f, a / 255f);
+
+        ///<summary> Creates a <see cref="FontColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
+        public static FontColor FromHsb(float hue, float saturation, float brightness)
+        {
+            var hi = (int)(hue / 60) % 6;
+            var f = hue / 60 - (int)(hue / 60);
+
+            var v = brightness;
+            var p = brightness * (1 - saturation);
+            var q = brightness * (1 - (f * saturation));
+            var t = brightness * (1 - ((1 - f) * saturation));
+
+            if (hi == 0) return new FontColor(v, t, p);
+            if (hi == 1) return new FontColor(q, v, p);
+            if (hi == 2) return new FontColor(p, v, t);
+            if (hi == 3) return new FontColor(p, q, v);
+            if (hi == 4) return new FontColor(t, p, v);
+            return new FontColor(v, p, q);
+        }
+
+        ///<summary> Creates a <see cref="Vector4"/> containing the hue, saturation, brightness, and alpha values from a <see cref="FontColor"/>. </summary>
+        public static Vector4 ToHsb(FontColor rgb)
+        {
+            var max = Math.Max(rgb.R, Math.Max(rgb.G, rgb.B));
+            var min = Math.Min(rgb.R, Math.Min(rgb.G, rgb.B));
+            var diff = max - min;
+
+            var h = 0f;
+            if (diff == 0) h = 0; 
+            else if (max == rgb.R)
+            {
+                h = (rgb.G - rgb.B) / diff % 6;
+                if (h < 0) h += 6;
+            }
+            else if (max == rgb.G) h = ((rgb.B - rgb.R) / diff) + 2; 
+            else if (max == rgb.B) h = ((rgb.R - rgb.G) / diff) + 4;
+
+            var hue = h / 6;
+            if (hue < 0) ++hue;
+
+            var lightness = (max + min) / 2;
+
+            var saturation = 0f;
+            if (1 - Math.Abs(2 * lightness - 1) != 0) saturation = diff / (1 - Math.Abs(2 * lightness - 1));
+
+            return new Vector4(hue, saturation, lightness, rgb.A);
+        }
+
+        ///<summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
+        public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith("#") ? htmlColor : "#" + htmlColor);
+
+        static byte toByte(double x)
+        {
+            x *= 255;
+            if (x > 255) return 255;
+            if (x < 0) return 0;
+            return (byte)x;
+        }
+
+#pragma warning disable CS1591
+        public static implicit operator Color4(FontColor obj) => new Color4(obj.R, obj.G, obj.B, obj.A);
+        public static implicit operator FontColor(Color4 obj) => new FontColor(obj.R, obj.G, obj.B, obj.A);
+        public static implicit operator FontColor(Color obj) => new FontColor(obj.R / 255f, obj.G / 255f, obj.B / 255f, obj.A / 255f);
+        public static implicit operator Color(FontColor obj) => Color.FromArgb(obj.A, obj.R, obj.G, obj.B);
+        public static implicit operator FontColor(string hexCode) => FromHtml(hexCode);
+        public static bool operator ==(FontColor left, FontColor right) => left.Equals(right);
+        public static bool operator !=(FontColor left, FontColor right) => !left.Equals(right);
+        public static FontColor operator +(FontColor left, FontColor right) => new FontColor(left.r + right.r, left.g + right.g, left.b + right.b, left.a + right.a);
+        public static FontColor operator -(FontColor left, FontColor right) => new FontColor(left.r - right.r, left.g - right.g, left.b - right.b, left.a - right.a);
+        public static FontColor operator *(FontColor left, FontColor right) => new FontColor(left.r * right.r, left.g * right.g, left.b * right.b, left.a * right.a);
+        public static FontColor operator *(FontColor left, double right) => new FontColor(left.r * right, left.g * right, left.b * right, left.a * right);
+        public static FontColor operator *(double left, FontColor right) => right * left;
+        public static FontColor operator /(FontColor left, double right) => new FontColor(left.r / right, left.g / right, left.b / right, left.a / right);
+    }
+
     /// <summary> Stores information about a font's appearance. </summary>
     public class FontDescription
     {
@@ -93,7 +239,7 @@ namespace StorybrewCommon.Subtitles
         public int FontSize = 76;
 
         ///<summary> The coloring tint of the font texture. </summary>
-        public CommandColor Color = CommandColor.FromRgba(0, 0, 0, 100);
+        public FontColor Color = FontColor.FromRgba(0, 0, 0, 100);
 
         ///<summary> How much extra space is allocated around the text when generating it. </summary>
         public Vector2 Padding = Vector2.Zero;
@@ -217,7 +363,7 @@ namespace StorybrewCommon.Subtitles
                             }
 
                             foreach (var effect in effects) if (!effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
-                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush(description.Color)) 
+                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush((Color)description.Color)) 
                                 textGraphics.DrawString(text, font, textBrush, textX, textY, stringFormat);
                             foreach (var effect in effects) if (effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
 
@@ -246,7 +392,7 @@ namespace StorybrewCommon.Subtitles
 
                         if (File.Exists(bitmapPath) && (bitmapPath.Contains(current.MapsetPath) || bitmapPath.Contains(current.AssetPath)))
                         {
-                            if (Color4.ToHsl(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(bitmapPath, compressor);
+                            if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(bitmapPath, compressor);
                             else BitmapHelper.Compress(bitmapPath, compressor);
                         }
                     }
@@ -314,9 +460,9 @@ namespace StorybrewCommon.Subtitles
             foreach (var field in effectType.GetFields())
             {
                 var fieldType = field.FieldType;
-                if (fieldType == typeof(Color4))
+                if (fieldType == typeof(FontColor))
                 {
-                    var color = (Color4)field.GetValue(fontEffect);
+                    var color = (FontColor)field.GetValue(fontEffect);
                     if (!MathUtil.FloatEquals(cache.Value<float>($"{field.Name}R"), color.R, .00001f) ||
                         !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}G"), color.G, .00001f) ||
                         !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}B"), color.B, .00001f) ||
@@ -400,9 +546,9 @@ namespace StorybrewCommon.Subtitles
             foreach (var field in effectType.GetFields())
             {
                 var fieldType = field.FieldType;
-                if (fieldType == typeof(Color4))
+                if (fieldType == typeof(FontColor))
                 {
-                    var color = (Color4)field.GetValue(fontEffect);
+                    var color = (FontColor)field.GetValue(fontEffect);
                     cache[$"{field.Name}R"] = color.R;
                     cache[$"{field.Name}G"] = color.G;
                     cache[$"{field.Name}B"] = color.B;

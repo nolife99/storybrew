@@ -1,6 +1,5 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Numerics;
 
 namespace StorybrewCommon.Subtitles
 {
@@ -8,7 +7,7 @@ namespace StorybrewCommon.Subtitles
     public class FontBackground : FontEffect
     {
         ///<summary> The coloring tint of the glow. </summary>
-        public Color4 Color = new Color4(0, 0, 0, 255);
+        public FontColor Color = FontColor.FromRgba(0, 0, 0, 255);
 
         ///<inheritdoc/>
         public bool Overlay => false;
@@ -18,6 +17,6 @@ namespace StorybrewCommon.Subtitles
 
         ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
-            => textGraphics.Clear((Color)Color);
+            => textGraphics.Clear(Color);
     }
 }

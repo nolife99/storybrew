@@ -1,10 +1,9 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using BrewLib.Util;
+﻿using BrewLib.Util;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Numerics;
 
 namespace StorybrewCommon.Subtitles
 {
@@ -40,7 +39,7 @@ namespace StorybrewCommon.Subtitles
         }
 
         ///<summary> The coloring tint of the glow. </summary>
-        public Color4 Color = new Color4(255, 255, 255, 100);
+        public FontColor Color = FontColor.FromRgba(255, 255, 255, 100);
 
         ///<inheritdoc/>
         public bool Overlay => false;
@@ -55,7 +54,7 @@ namespace StorybrewCommon.Subtitles
 
             using (var blurSource = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb))
             {
-                using (var brush = new SolidBrush(System.Drawing.Color.White))
+                using (var brush = new SolidBrush(FontColor.White))
                 using (var graphics = Graphics.FromImage(blurSource))
                 {
                     graphics.TextRenderingHint = textGraphics.TextRenderingHint;
@@ -71,7 +70,7 @@ namespace StorybrewCommon.Subtitles
                     kernel = BitmapHelper.CalculateGaussianKernel(radius, power);
                 }
 
-                using (var blurredBitmap = BitmapHelper.ConvoluteAlpha(blurSource, kernel, System.Drawing.Color.FromArgb(Color.ToArgb())))
+                using (var blurredBitmap = BitmapHelper.ConvoluteAlpha(blurSource, kernel, Color))
                     textGraphics.DrawImage(blurredBitmap.Bitmap, 0, 0);
             }
         }

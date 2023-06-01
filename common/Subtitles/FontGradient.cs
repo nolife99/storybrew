@@ -1,8 +1,6 @@
-﻿using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Numerics;
 
 namespace StorybrewCommon.Subtitles
 {
@@ -16,7 +14,7 @@ namespace StorybrewCommon.Subtitles
         public Vector2 Size = new Vector2(0, 24);
 
         ///<summary> The color tinting of the gradient. </summary>
-        public Color4 Color = new Color4(255, 0, 0, 0);
+        public FontColor Color = FontColor.FromRgba(255, 0, 0, 0);
 
         ///<summary> Specifies how the gradient is tiled when it is smaller than the area being filled. </summary>
         public WrapMode WrapMode = WrapMode.TileFlipXY;
@@ -30,11 +28,11 @@ namespace StorybrewCommon.Subtitles
         ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
         {
-            var transparentColor = Color.WithOpacity(0);
+            var transparentColor = FontColor.FromRgba(Color.R, Color.G, Color.B, 0);
             using (var brush = new LinearGradientBrush(
                 new PointF(x + Offset.X, y + Offset.Y), 
                 new PointF(x + Offset.X + Size.X, y + Offset.Y + Size.Y),
-                (Color)Color, (Color)transparentColor)
+                Color, transparentColor)
             { WrapMode = WrapMode })
                 textGraphics.DrawString(text, font, brush, x, y, stringFormat);
         }

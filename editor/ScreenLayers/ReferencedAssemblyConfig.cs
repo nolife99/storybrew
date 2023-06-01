@@ -224,8 +224,6 @@ namespace StorybrewEditor.ScreenLayers
             .Select(ass => getAssemblyName(ass))
             .Contains(getAssemblyName(assembly));
 
-        bool assemblyImported(string assembly) => assemblyImported(assembly, selectedAssemblies);
-
         bool isDefaultAssembly(string assembly) => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
         bool isSystemAssembly(string assemblyId) => getAssemblyName(assemblyId).StartsWith("System.");
 
