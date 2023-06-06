@@ -10,7 +10,7 @@ namespace StorybrewCommon.Animations
         public static double Reverse(Func<double, double> func, double value) => 1 - func(1 - value);
 
         ///<summary> Converts an easing function to its in-out counterpart. </summary>
-        public static double ToInOut(Func<double, double> func, double value) => (value < .5 ? func(2 * value) : (2 - func(2 - 2 * value))) / 2;
+        public static double ToInOut(Func<double, double> func, double value) => (value < .5 ? func(2 * value) : (2 - func(2 - 2 * value))) * .5;
 
         ///<summary> An easing function that represents the integer value of the progression. </summary>
         public static Func<double, double> Step = x => x >= 1 ? 1 : 0;
@@ -53,7 +53,7 @@ namespace StorybrewCommon.Animations
         public static Func<double, double> QuintInOut = x => ToInOut(QuintIn, x);
 
         ///<summary> An easing function that represents a sinusoidal easing-in progression. </summary>
-        public static Func<double, double> SineIn = x => 1 - Math.Cos(x * Math.PI / 2);
+        public static Func<double, double> SineIn = x => 1 - Math.Cos(x * Math.PI * .5);
         ///<summary> An easing function that represents a sinusoidal easing-out progression. </summary>
         public static Func<double, double> SineOut = x => Reverse(SineIn, x);
         ///<summary> An easing function that represents a sinusoidal easing-in-out progression. </summary>

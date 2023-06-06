@@ -11,8 +11,12 @@ namespace StorybrewCommon.Storyboarding.CommandValues
 #pragma warning disable CS1591
         public CommandDecimal(double value)
         {
-            if (double.IsNaN(value) || double.IsInfinity(value)) value = 0;
-            this.value = value;
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                this.value = 0;
+                return;
+            }
+            this.value = (decimal)value;
         }
 
         public bool Equals(CommandDecimal other) => value.Equals(other.value);
@@ -23,8 +27,8 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public float DistanceFrom(object obj) => (float)Math.Abs(value - ((CommandDecimal)obj).value);
         public string ToOsbString(ExportSettings exportSettings) => ((float)value).ToString(exportSettings.NumberFormat);
 
-        public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => new CommandDecimal(left.value - right.value);
-        public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => new CommandDecimal(left.value + right.value);
+        public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => left.value - right.value;
+        public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => left.value + right.value;
         public static bool operator ==(CommandDecimal left, CommandDecimal right) => left.Equals(right);
         public static bool operator !=(CommandDecimal left, CommandDecimal right) => !left.Equals(right);
         public static implicit operator CommandDecimal(double value) => new CommandDecimal(value);

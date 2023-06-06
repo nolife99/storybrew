@@ -25,6 +25,13 @@ namespace StorybrewCommon.Animations
         ///<summary> Returns the end value of the last keyframe in the keyframed value. </summary>
         public TValue EndValue => keyframes.Count == 0 ? defaultValue : keyframes[keyframes.Count - 1].Value;
 
+        ///<summary> Gets or sets the <see cref="Keyframe{TValue}"/> at the current index. </summary>
+        public Keyframe<TValue> this[int index]
+        {
+            get => keyframes[index];
+            set => keyframes[index] = value;
+        }
+
         ///<summary> Returns the amount of keyframes in the keyframed value. </summary>
         public int Count => keyframes.Count;
 
@@ -277,7 +284,7 @@ namespace StorybrewCommon.Animations
                 var startKeyframe = keyframes[i];
                 simplifiedKeyframes.Add(startKeyframe);
 
-                for (var j = i + 1; j < count; j++)
+                for (var j = i + 1; j < count; ++j)
                 {
                     var endKeyframe = keyframes[j];
                     if (!startKeyframe.Value.Equals(endKeyframe.Value))

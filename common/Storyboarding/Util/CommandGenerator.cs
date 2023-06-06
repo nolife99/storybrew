@@ -9,7 +9,6 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
-using System.Threading.Tasks;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
@@ -86,7 +85,7 @@ namespace StorybrewCommon.Storyboarding.Util
                 return;
             }
 
-            var i = states.BinarySearch(state, new State());
+            var i = states.BinarySearch(state, state);
             if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) ++i;
             else i = ~i;
 
@@ -185,10 +184,9 @@ namespace StorybrewCommon.Storyboarding.Util
             var startState = loopable ? (startTime ?? StartState.Time) + timeOffset : (double?)null;
             var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
 
-            var first = finalPositions.FirstOrDefault().Value;
             double checkPos(double value) => Math.Round(value, PositionDecimals);
-            bool moveX = ParallelExtensions.All(finalPositions, k => checkPos(k.Value.Y) == checkPos(first.Y)), 
-                 moveY = ParallelExtensions.All(finalPositions, k => checkPos(k.Value.X) == checkPos(first.X));
+            bool moveX = finalPositions.AsParallel().All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
+                 moveY = finalPositions.AsParallel().All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
             finalPositions.ForEachPair((s, e) =>
             {
@@ -206,7 +204,7 @@ namespace StorybrewCommon.Storyboarding.Util
             }, new Vector2(320, 240), p => new Vector2((float)Math.Round(p.X, PositionDecimals), (float)Math.Round(p.Y, PositionDecimals)), startState, loopable: loopable);
 
             int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
-            bool vec = ParallelExtensions.Any(finalScales, k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) >= 1);
+            var vec = finalScales.AsParallel().Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) >= 1);
             finalScales.ForEachPair((s, e) =>
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -216,9 +214,7 @@ namespace StorybrewCommon.Storyboarding.Util
             finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
                 0, r => (float)Math.Round(r, RotationDecimals), startState, loopable: loopable);
 
-            finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White,
-                c => CommandColor.FromRgb(c.R, c.G, c.B), startState, loopable: loopable);
-
+            finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState, loopable: loopable);
             finalfades.ForEachPair((s, e) =>
             {
                 // what the hell???
@@ -300,17 +296,19 @@ namespace StorybrewCommon.Storyboarding.Util
         /// <returns> <see langword="true"/> if the sprite is within <paramref name="bounds"/>, else returns <see langword="false"/>. </returns>
         public bool IsVisible(SizeF imageSize, OsbOrigin origin, RectangleF bounds, CommandGenerator generator = null)
         {
+            var w = imageSize.Width * Scale.X;
+            var h = imageSize.Height * Scale.Y;
+
             if (Additive && Color == CommandColor.Black ||
-                (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
-                Scale.X == 0 || Scale.Y == 0)
+                (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) == 0 ||
+                (generator is null ? w : Math.Round(w, 1)) == 0 ||
+                (generator is null ? h : Math.Round(h, 1)) == 0)
                 return false;
 
             if (!bounds.Contains(
                 generator is null ? (float)Position.X : (float)Math.Round(Position.X, generator.PositionDecimals),
                 generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals)))
             {
-                var w = imageSize.Width * Scale.X;
-                var h = imageSize.Height * Scale.Y;
                 var originVector = OsbSprite.GetOriginVector(origin, w, h);
 
                 var obb = new OrientedBoundingBox(new OpenTK.Vector2(Position.X, Position.Y), originVector, w, h, Rotation);

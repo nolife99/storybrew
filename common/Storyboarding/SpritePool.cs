@@ -1,7 +1,7 @@
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;
-using System.Numerics;
 using System.Collections.Generic;
+using StorybrewCommon.Util;
 
 namespace StorybrewCommon.Storyboarding
 {
@@ -161,8 +161,8 @@ namespace StorybrewCommon.Storyboarding
     public class SpritePools : IDisposable
     {
         readonly StoryboardSegment segment;
-        readonly Dictionary<string, SpritePool> pools = new Dictionary<string, SpritePool>();
-        readonly Dictionary<string, AnimationPool> animationPools = new Dictionary<string, AnimationPool>();
+        readonly DisposableNativeDictionary<string, SpritePool> pools = new DisposableNativeDictionary<string, SpritePool>();
+        readonly DisposableNativeDictionary<string, AnimationPool> animationPools = new DisposableNativeDictionary<string, AnimationPool>();
 
         ///<summary> Constructs a <see cref="SpritePools"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
@@ -394,8 +394,8 @@ namespace StorybrewCommon.Storyboarding
 
         void Clear()
         {
-            foreach (var pool in pools) pool.Value.Clear();
-            pools.Clear();
+            pools.Dispose();
+            animationPools.Dispose();
         }
 
         bool disposed = false;

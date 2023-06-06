@@ -1,17 +1,19 @@
-﻿using StorybrewCommon.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util
 {
-    public class AsyncActionQueue<T> : IDisposable
+    public sealed class AsyncActionQueue<T> : IDisposable
     {
         readonly ActionQueueContext context = new ActionQueueContext();
         readonly List<ActionRunner> actionRunners = new List<ActionRunner>();
         readonly bool allowDuplicates;
+
+        readonly static SemaphoreSlim semaphore = new SemaphoreSlim(Environment.ProcessorCount - 1);
 
         public delegate void ActionFailedEventHandler(T target, Exception e);
         public event ActionFailedEventHandler OnActionFailed
@@ -40,7 +42,7 @@ namespace StorybrewEditor.Util
             if (runnerCount == 0) runnerCount = Environment.ProcessorCount - 1;
             runnerCount = Math.Max(1, runnerCount);
 
-            for (var i = 0; i < runnerCount; i++) actionRunners.Add(new ActionRunner(context, $"{threadName} #{i + 1}"));
+            for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new ActionRunner(context, $"{threadName} #{i + 1}"));
         }
 
         public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
@@ -51,7 +53,7 @@ namespace StorybrewEditor.Util
 
             lock (context.Queue)
             {
-                if (!allowDuplicates && ParallelExtensions.Any(context.Queue, q => q.Target.Equals(target))) return;
+                if (!allowDuplicates) foreach (var q in context.Queue) if (q.Target.Equals(target)) return;
 
                 context.Queue.Add(new ActionContainer
                 {
@@ -65,7 +67,10 @@ namespace StorybrewEditor.Util
         }
         public void CancelQueuedActions(bool stopThreads)
         {
-            lock (context.Queue) context.Queue.Clear();
+            semaphore.Wait(); 
+            context.Queue.Clear();
+            semaphore.Release();
+
             if (stopThreads)
             {
                 var sw = Stopwatch.StartNew();
@@ -76,7 +81,7 @@ namespace StorybrewEditor.Util
         #region IDisposable Support
 
         bool disposed = false;
-        protected virtual void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (!disposed)
             {
@@ -145,14 +150,14 @@ namespace StorybrewEditor.Util
                 if (thread == null || !thread.IsAlive)
                 {
                     Thread localThread = null;
-                    thread = localThread = new Thread(() =>
+                    thread = localThread = new Thread(async () =>
                     {
                         var mustSleep = false;
-                        while (true)
+                        for (;;)
                         {
                             if (mustSleep)
                             {
-                                using (var wait = new ManualResetEventSlim()) wait.Wait(200);
+                                await Task.Delay(200);
                                 mustSleep = false;
                             }
 

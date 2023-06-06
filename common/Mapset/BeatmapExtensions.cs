@@ -6,7 +6,7 @@ namespace StorybrewCommon.Mapset
 #pragma warning disable CS1591
     public static class BeatmapExtensions
     {
-        ///<summary> Calls tickAction with timingPoint, time, beatCount, tickCount </summary>
+        ///<summary> Calls <paramref name="tickAction"/> for each beatmap tick divided by <paramref name="snapDivisor"/>. </summary>
         public static void ForEachTick(this Beatmap beatmap, int startTime, int endTime, int snapDivisor, Action<ControlPoint, double, int, int> tickAction)
         {
             var leftTimingPoint = beatmap.GetTimingPointAt(startTime);

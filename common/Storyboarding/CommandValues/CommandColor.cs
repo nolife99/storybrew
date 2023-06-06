@@ -75,10 +75,10 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public override int GetHashCode() => ((Color)this).ToArgb();
 
         ///<summary> Converts this instance into a string, formatted as "R, G, B". </summary>
-        public override string ToString() => $"{R},{G},{B}";
+        public override string ToString() => $"{R}, {G}, {B}";
 
-        ///<summary> Converts this instance into a .osb formatted string, formatted as "R, G, B". </summary>
-        public string ToOsbString(ExportSettings exportSettings) => ToString();
+        ///<summary> Converts this instance into a .osb formatted string, formatted as "R,G,B". </summary>
+        public string ToOsbString(ExportSettings exportSettings) => $"{R},{G},{B}";
 
         ///<summary> Returns a <see cref="CommandColor"/> structure that represents the hash code's color information. </summary>
         public static CommandColor FromHashCode(int code) => Color.FromArgb(code);

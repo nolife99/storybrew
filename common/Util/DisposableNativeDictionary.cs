@@ -4,11 +4,10 @@ using System.Collections.Generic;
 
 namespace StorybrewCommon.Util
 {
-    ///<summary> Represents a native collection of keys and <see cref="IDisposable"/> items. </summary>
-    ///<typeparam name="TKey"> The type of the key that matches to a <typeparamref name="TValue"/>. </typeparam>
-    ///<typeparam name="TValue"> The type of the <see cref="IDisposable"/> object. </typeparam>
+    ///<summary> Represents a fast native collection of keys and items. </summary>
+    ///<typeparam name="TKey"> The type of the keys in the dictionary. </typeparam>
+    ///<typeparam name="TValue"> The type of the values in the dictionary. </typeparam>
     public sealed class DisposableNativeDictionary<TKey, TValue> : IDisposable, IEnumerable<KeyValuePair<TKey, TValue>>
-        where TKey : IEquatable<TKey> where TValue : IDisposable
     {
         class Node
         {
@@ -30,7 +29,7 @@ namespace StorybrewCommon.Util
         ///<summary> Creates a new <see cref="DisposableNativeDictionary{TKey, TValue}"/> object, with the given allocation capacity. </summary>
         public DisposableNativeDictionary(int capacity = 32) => table = new Node[capacity];
 
-        ///<summary> Gets or sets the <see cref="IDisposable"/> item associated with the given key. 
+        ///<summary> Gets or sets the item associated with the given key. 
         ///<para/> If <paramref name="key"/> does not match an existing key in the collection, the value will be added. </summary>
         ///<exception cref="KeyNotFoundException"> The specified key was not found in the dictionary. </exception>
         public TValue this[TKey key]
@@ -70,7 +69,27 @@ namespace StorybrewCommon.Util
             }
         }
 
-        ///<summary> Attempts to get the <see cref="IDisposable"/> item associated with the specified key. </summary>
+        ///<summary> Returns a collection of keys that are contained within this dictionary. </summary>
+        public IEnumerable<TKey> Keys
+        {
+            get
+            {
+                for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
+                    yield return node.Key;
+            }
+        }
+
+        ///<summary> Returns a collection of values that are contained within this dictionary. </summary>
+        public IEnumerable<TValue> Values
+        {
+            get
+            {
+                for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
+                    yield return node.Value;
+            }
+        }
+
+        ///<summary> Attempts to get the item associated with the specified key. </summary>
         ///<returns> A value indicating if <paramref name="key"/> was matched. If not, <paramref name="value"/> is returned <see langword="null"/>. </returns>
         public bool TryGetValue(TKey key, out TValue value)
         {
@@ -90,7 +109,7 @@ namespace StorybrewCommon.Util
             if (count == 0) return;
 
             for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                node.Value.Dispose();
+                if (node.Value is IDisposable value) value.Dispose();
 
             Array.Clear(table, 0, table.Length);
             count = 0;
