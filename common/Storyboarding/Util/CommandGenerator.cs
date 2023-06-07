@@ -1,9 +1,7 @@
 using StorybrewCommon.Animations;
-using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Util;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
@@ -284,19 +282,18 @@ namespace StorybrewCommon.Storyboarding.Util
         /// <returns> <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>. </returns>
         public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
         {
-            var w = imageSize.Width * Scale.X;
-            var h = imageSize.Height * Scale.Y;
-
             if (Additive && Color == CommandColor.Black ||
                 (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) == 0 ||
-                w <= 0 || h <= 0)
+                (generator is null ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals)) <= 0 ||
+                (generator is null ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals)) <= 0)
                 return false;
 
             var rounded = new Vector2(
                 generator is null ? (float)Position.X : (float)Math.Round(Position.X, generator.PositionDecimals),
                 generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals));
 
-            return OsbSprite.InScreenBounds(rounded, new SizeF(w, h), generator is null ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
+            return OsbSprite.InScreenBounds(rounded, new SizeF(imageSize.Width * Scale.X, imageSize.Height * Scale.Y), 
+                generator is null ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
         }
 
         int IComparer<State>.Compare(State x, State y) => x.Time.CompareTo(y.Time);

@@ -82,10 +82,11 @@ namespace StorybrewCommon.Storyboarding3d
             var rotation = InterpolatingFunctions.DoubleAngle(
                 previousState?.Rotation ?? -SpriteRotation.ValueAt(previousState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
 
-            Matrix4x4.Decompose(object3dState.WorldTransform, out Vector3 v, out _, out _);
-            var scale = (Vector2)(SpriteScale.ValueAt(time) * (CommandScale)new Vector2(v.X, v.Y)) *
-                (float)(cameraState.FocusDistance / screenPosition.W) *
-                (float)cameraState.ResolutionScale;
+            var scale = (Vector2)(SpriteScale.ValueAt(time) * new CommandScale(
+                new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13).Length(),
+                new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length())) *
+            (float)(cameraState.FocusDistance / screenPosition.W) *
+            (float)cameraState.ResolutionScale;
 
             var opacity = screenPosition.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade) opacity *= cameraState.OpacityAt(screenPosition.W);

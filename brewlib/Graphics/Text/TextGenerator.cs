@@ -43,16 +43,16 @@ namespace BrewLib.Graphics.Text
                 default: verticalAlignment = StringAlignment.Center; break;
             }
 
-            using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero))
-            using (StringFormat stringFormat = new StringFormat(StringFormat.GenericTypographic))
+            using (var graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero))
+            using (var stringFormat = new StringFormat(StringFormat.GenericTypographic))
             {
-                graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+                graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
                 stringFormat.Alignment = horizontalAlignment;
                 stringFormat.LineAlignment = verticalAlignment;
                 stringFormat.Trimming = trimming;
-                stringFormat.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip; // | StringFormatFlags.LineLimit
+                stringFormat.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip;
 
-                var dpiScale = 96f / graphics.DpiY;
+                var dpiScale = 96 / graphics.DpiY;
                 var font = getFont(fontName, fontSize * dpiScale, FontStyle.Regular);
 
                 var measuredSize = graphics.MeasureString(text, font, new SizeF(maxSize.X, maxSize.Y), stringFormat);
@@ -68,11 +68,11 @@ namespace BrewLib.Graphics.Text
                 var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
                 try
                 {
-                    using (System.Drawing.Graphics textGraphics = System.Drawing.Graphics.FromImage(bitmap))
+                    using (var textGraphics = System.Drawing.Graphics.FromImage(bitmap))
                     {
                         textGraphics.TextRenderingHint = graphics.TextRenderingHint;
-                        textGraphics.SmoothingMode = SmoothingMode.HighSpeed;
-                        textGraphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+                        textGraphics.SmoothingMode = SmoothingMode.None;
+                        textGraphics.InterpolationMode = InterpolationMode.High;
 
                         textGraphics.DrawString(text, font, shadowBrush, new RectangleF(offsetX + 1, offsetY + 1, width, height), stringFormat);
                         textGraphics.DrawString(text, font, textBrush, new RectangleF(offsetX, offsetY, width, height), stringFormat);

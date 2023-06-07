@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Util
 {
@@ -12,13 +13,13 @@ namespace StorybrewCommon.Util
         class Node
         {
             internal TKey Key;
-            internal TValue Value;
+            internal GCHandle Handle;
             internal Node Next;
 
             internal Node(TKey key, TValue value, Node next)
             {
                 Key = key;
-                Value = value;
+                Handle = GCHandle.Alloc(value);
                 Next = next;
             }
         }
@@ -37,7 +38,7 @@ namespace StorybrewCommon.Util
             get
             {
                 for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
-                    return node.Value;
+                    return (TValue)node.Handle.Target;
 
                 throw new KeyNotFoundException($"The specified key was not found in the dictionary: {key}");
             }
@@ -50,21 +51,22 @@ namespace StorybrewCommon.Util
 
                     for (var i = 0; i < oldTable.Length; ++i) for (var node = oldTable[i]; node != null; node = node.Next)
                     {
-                        var nIndex = getIndex(node.Key);
-                        var newN = new Node(node.Key, node.Value, table[nIndex]);
-                        table[nIndex] = newN;
+                        var nHash = getIndex(node.Key);
+                        var newN = new Node(node.Key, (TValue)node.Handle.Target, table[nHash]);
+                        table[nHash] = newN;
                     }
                 }
 
                 for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
                 {
-                    node.Value = value;
+                    node.Handle.Free();
+                    node.Handle = GCHandle.Alloc(value);
                     return;
                 }
 
-                var index = getIndex(key);
-                var newNode = new Node(key, value, table[index]);
-                table[index] = newNode;
+                var hash = getIndex(key);
+                var newNode = new Node(key, value, table[hash]);
+                table[hash] = newNode;
                 ++count;
             }
         }
@@ -85,7 +87,7 @@ namespace StorybrewCommon.Util
             get
             {
                 for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                    yield return node.Value;
+                    yield return (TValue)node.Handle.Target;
             }
         }
 
@@ -95,7 +97,7 @@ namespace StorybrewCommon.Util
         {
             for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
             {
-                value = node.Value;
+                value = (TValue)node.Handle.Target;
                 return true;
             }
 
@@ -108,8 +110,12 @@ namespace StorybrewCommon.Util
         {
             if (count == 0) return;
 
-            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                if (node.Value is IDisposable value) value.Dispose();
+            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next) if (node.Handle.IsAllocated)
+            {
+                var value = (IDisposable)node.Handle.Target;
+                value?.Dispose();
+                node.Handle.Free();
+            }
 
             Array.Clear(table, 0, table.Length);
             count = 0;
@@ -121,7 +127,7 @@ namespace StorybrewCommon.Util
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
             for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                yield return new KeyValuePair<TKey, TValue>(node.Key, node.Value);
+                yield return new KeyValuePair<TKey, TValue>(node.Key, (TValue)node.Handle.Target);
         }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
