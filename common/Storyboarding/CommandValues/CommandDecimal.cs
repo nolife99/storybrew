@@ -16,7 +16,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
                 this.value = 0;
                 return;
             }
-            this.value = (decimal)value;
+            this.value = value;
         }
 
         public bool Equals(CommandDecimal other) => value.Equals(other.value);

@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using static System.Drawing.Graphics;
 using BrewLib.Util.Compression;
+using System.Runtime.InteropServices;
 
 namespace BrewLib.Util
 {
@@ -233,20 +234,18 @@ namespace BrewLib.Util
             return Rectangle.Empty;
         }
 
-        public unsafe class PinnedBitmap : IDisposable
+        public class PinnedBitmap : IDisposable
         {
+            GCHandle handle;
+
             public readonly Bitmap Bitmap;
             public readonly int[] Data;
-            readonly byte* pPixels;
 
             public PinnedBitmap(int width, int height)
             {
                 Data = new int[width * height];
-                fixed (int* pData = Data)
-                {
-                    Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, (IntPtr)pData);
-                    pPixels = (byte*)pData;
-                }
+                handle = GCHandle.Alloc(Data, GCHandleType.Pinned);
+                Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, handle.AddrOfPinnedObject());
             }
 
             public static PinnedBitmap FromBitmap(Bitmap bitmap)
@@ -262,6 +261,7 @@ namespace BrewLib.Util
                 if (disposed) return;
                 disposed = true;
                 Bitmap.Dispose();
+                handle.Free();
             }
         }
     }

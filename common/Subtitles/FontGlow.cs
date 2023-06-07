@@ -54,8 +54,7 @@ namespace StorybrewCommon.Subtitles
 
             using (var blurSource = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb))
             {
-                using (var brush = new SolidBrush(FontColor.White))
-                using (var graphics = Graphics.FromImage(blurSource))
+                using (var brush = new SolidBrush(FontColor.White)) using (var graphics = Graphics.FromImage(blurSource))
                 {
                     graphics.TextRenderingHint = textGraphics.TextRenderingHint;
                     graphics.SmoothingMode = SmoothingMode.AntiAlias;

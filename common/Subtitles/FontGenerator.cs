@@ -153,13 +153,13 @@ namespace StorybrewCommon.Subtitles
         public static FontColor FromHashCode(int code) => Color.FromArgb(code);
 
         ///<summary> Creates a <see cref="FontColor"/> from RGB byte values. </summary>
-        public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new FontColor(r / 255f, g / 255f, b / 255f, a / 255f);
+        public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new FontColor(r / 255d, g / 255d, b / 255d, a / 255d);
 
         ///<summary> Creates a <see cref="FontColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
         public static FontColor FromHsb(float hue, float saturation, float brightness)
         {
-            var hi = (int)(hue / 60) % 6;
-            var f = hue / 60 - (int)(hue / 60);
+            var hi = Math.Floor(hue / 60) % 6;
+            var f = hue / 60 - Math.Floor(hue / 60);
 
             var v = brightness;
             var p = brightness * (1 - saturation);
