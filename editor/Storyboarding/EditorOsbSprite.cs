@@ -32,7 +32,7 @@ namespace StorybrewEditor.Storyboarding
 
             if (frameStats != null)
             {
-                frameStats.SpriteCount++;
+                ++frameStats.SpriteCount;
                 frameStats.CommandCount += sprite.CommandCount;
                 frameStats.IncompatibleCommands |= sprite.HasIncompatibleCommands;
                 frameStats.OverlappedCommands |= sprite.HasOverlappedCommands;
@@ -74,7 +74,7 @@ namespace StorybrewEditor.Storyboarding
             {
                 var size = texture.Size * scale;
 
-                var spriteObb = new OrientedBoundingBox(position, origin * scale, size.X, size.Y, rotation);
+                var spriteObb = new OrientedBoundingBox(position, (Vector2)origin * scale, size.X, size.Y, rotation);
                 if (spriteObb.Intersects(OsuHitObject.WidescreenStoryboardBounds))
                 {
                     frameStats.EffectiveCommandCount += sprite.CommandCount;
@@ -90,7 +90,7 @@ namespace StorybrewEditor.Storyboarding
 
             var boundsScaling = bounds.Height / 480;
             DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, sprite.AdditiveAt(time) ? AdditiveStates : AlphaBlendStates).Draw(
-                texture, bounds.Left + bounds.Width / 2 + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
+                texture, bounds.Left + bounds.Width * .5f + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
                 origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation, finalColor);
         }
     }

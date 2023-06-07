@@ -1,11 +1,12 @@
-﻿using OpenTK;
-using StorybrewCommon.Mapset;
+﻿using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Display;
 using StorybrewCommon.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 
 namespace StorybrewCommon.Storyboarding
@@ -712,14 +713,15 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="size"> The image size of the sprite texture. </param>
         ///<param name="rotation"> The rotation, in radians, of the sprite. </param>
         ///<param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
-        public static bool InScreenBounds(Vector2 position, Vector2 size, float rotation, Vector2 origin)
-            => new OrientedBoundingBox(position, origin, size.X, size.Y, rotation).Intersects(OsuHitObject.WidescreenStoryboardBounds);
+        public static bool InScreenBounds(CommandPosition position, SizeF size, double rotation, OsbOrigin origin)
+            => new OrientedBoundingBox(position, GetOriginVector(origin, size.Width, size.Height), size.Width, size.Height, rotation)
+                           .Intersects(OsuHitObject.WidescreenStoryboardBounds);
 
         ///<summary> Gets the <see cref="Vector2"/> origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
         ///<param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>
         ///<param name="width"> The width of the sprite. </param>
         ///<param name="height"> The height of the sprite. </param>
-        public static Vector2 GetOriginVector(OsbOrigin origin, float width, float height)
+        public static CommandPosition GetOriginVector(OsbOrigin origin, float width, float height)
         {
             switch (origin)
             {

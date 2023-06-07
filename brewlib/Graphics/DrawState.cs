@@ -196,7 +196,7 @@ namespace BrewLib.Graphics
                 samplerTextureIds[samplerIndex] = textureId;
 
                 //Debug.Print("Bound texture " + textureId + " (" + mode + ") to unit " + samplerIndex);
-                TextureBinds++;
+                ++TextureBinds;
             }
         }
         public static int BindTexture(BindableTexture texture, bool activate = false)

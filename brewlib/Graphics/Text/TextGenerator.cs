@@ -15,10 +15,7 @@ namespace BrewLib.Graphics.Text
 {
     public class TextGenerator : IDisposable
     {
-        const bool debugFont = false;
-
-        SolidBrush textBrush = new SolidBrush(Color.FromArgb(255, 255, 255, 255));
-        SolidBrush shadowBrush = new SolidBrush(Color.FromArgb(220, 0, 0, 0));
+        SolidBrush textBrush = new SolidBrush(Color.White), shadowBrush = new SolidBrush(Color.FromArgb(220, 0, 0, 0));
         Dictionary<string, Font> fonts = new Dictionary<string, Font>();
         Dictionary<string, FontFamily> fontFamilies = new Dictionary<string, FontFamily>();
         Dictionary<string, PrivateFontCollection> fontCollections = new Dictionary<string, PrivateFontCollection>();
@@ -49,7 +46,7 @@ namespace BrewLib.Graphics.Text
             using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero))
             using (StringFormat stringFormat = new StringFormat(StringFormat.GenericTypographic))
             {
-                graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
+                graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
                 stringFormat.Alignment = horizontalAlignment;
                 stringFormat.LineAlignment = verticalAlignment;
                 stringFormat.Trimming = trimming;
@@ -74,14 +71,8 @@ namespace BrewLib.Graphics.Text
                     using (System.Drawing.Graphics textGraphics = System.Drawing.Graphics.FromImage(bitmap))
                     {
                         textGraphics.TextRenderingHint = graphics.TextRenderingHint;
-                        textGraphics.SmoothingMode = SmoothingMode.HighQuality;
-                        textGraphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-
-                        if (debugFont)
-                        {
-                            /* var r = new Random(debugSeed++);
-                            textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255))); */
-                        }
+                        textGraphics.SmoothingMode = SmoothingMode.HighSpeed;
+                        textGraphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
 
                         textGraphics.DrawString(text, font, shadowBrush, new RectangleF(offsetX + 1, offsetY + 1, width, height), stringFormat);
                         textGraphics.DrawString(text, font, textBrush, new RectangleF(offsetX, offsetY, width, height), stringFormat);
@@ -126,14 +117,13 @@ namespace BrewLib.Graphics.Text
                 var bytes = resourceContainer.GetBytes(name, ResourceSource.Embedded);
                 if (bytes != null)
                 {
-                    GCHandle pinnedArray = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+                    var pinnedArray = GCHandle.Alloc(bytes, GCHandleType.Pinned);
                     try
                     {
                         if (!fontCollections.TryGetValue(name, out PrivateFontCollection fontCollection))
                             fontCollections.Add(name, fontCollection = new PrivateFontCollection());
 
-                        IntPtr ptr = pinnedArray.AddrOfPinnedObject();
-                        fontCollection.AddMemoryFont(ptr, bytes.Length);
+                        fontCollection.AddMemoryFont(pinnedArray.AddrOfPinnedObject(), bytes.Length);
 
                         if (fontCollection.Families.Length == 1)
                         {

@@ -42,7 +42,7 @@ namespace BrewLib.Audio
                         Seek = (offset, user) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
                         Close = user => resourceStream.Dispose()
                     };
-                    decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, procedures, IntPtr.Zero);
+                    decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, procedures);
                 }
             }
             if (decodeStream == 0)

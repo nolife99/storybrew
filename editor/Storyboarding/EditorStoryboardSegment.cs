@@ -114,7 +114,7 @@ namespace StorybrewEditor.Storyboarding
 
             if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) / 2);
 
-            foreach (var displayableObject in displayableObjects.ToArray()) displayableObject.Draw(drawContext, camera, bounds, opacity, project, frameStats);
+            displayableObjects.ForEach(obj => obj.Draw(drawContext, camera, bounds, opacity, project, frameStats));
         }
         public void PostProcess()
         {

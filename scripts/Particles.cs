@@ -1,11 +1,13 @@
-using OpenTK;
 using OpenTK.Graphics;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.OpenTKUtil;
 using System;
+using System.Numerics;
 using System.Drawing;
-using System.Linq;
+using System.Linq
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewScripts
 {
@@ -18,7 +20,7 @@ namespace StorybrewScripts
         [Group("Sprite")]
         [Configurable] public string Path = "sb/particle.png";
         [Configurable] public OsbOrigin Origin = OsbOrigin.Centre;
-        [Configurable] public Vector2 Scale = new Vector2(1, 1);
+        [Configurable] public Vector2 Scale = Vector2.One;
         [Description("Rotation of the sprite; does not influences particle motion direction.")]
         [Configurable] public float Rotation = 0;
         [Configurable] public Color4 Color = Color4.White;
@@ -56,16 +58,16 @@ namespace StorybrewScripts
 
             var bitmap = GetMapsetBitmap(Path);
 
-            var duration = (double)(EndTime - StartTime);
+            var duration = (float)(EndTime - StartTime);
             var loopCount = Math.Max(1, (int)Math.Floor(duration / Lifetime));
 
-            for (var i = 0; i < ParticleCount; i++)
+            for (var i = 0; i < ParticleCount; ++i)
             {
                 var spawnAngle = Random(Math.PI * 2);
                 var spawnDistance = (float)(SpawnSpread * Math.Sqrt(Random(1f)));
 
-                var moveAngle = MathHelper.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) * 0.5f);
-                var moveDistance = Speed * Lifetime * 0.001f;
+                var moveAngle = MathHelper.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) * .5f);
+                var moveDistance = Speed * Lifetime * .001f;
 
                 var spriteRotation = moveAngle + MathHelper.DegreesToRadians(Rotation);
 
@@ -85,12 +87,12 @@ namespace StorybrewScripts
                     ColorVariance = MathHelper.Clamp(ColorVariance, 0, 1);
 
                     var hsba = Color4.ToHsl(color);
-                    var sMin = Math.Max(0, hsba.Y - ColorVariance * 0.5f);
+                    var sMin = Math.Max(0, hsba.Y - ColorVariance * .5f);
                     var sMax = Math.Min(sMin + ColorVariance, 1);
-                    var vMin = Math.Max(0, hsba.Z - ColorVariance * 0.5f);
+                    var vMin = Math.Max(0, hsba.Z - ColorVariance * .5f);
                     var vMax = Math.Min(vMin + ColorVariance, 1);
 
-                    color = Color4.FromHsl(new Vector4(hsba.X, (float)Random(sMin, sMax), (float)Random(vMin, vMax), hsba.W));
+                    color = CommandColor.FromHsb(hsba.X, (float)Random(sMin, sMax), (float)Random(vMin, vMax));
                 }
 
                 var particle = GetLayer("").CreateSprite(Path, Origin);
@@ -104,21 +106,19 @@ namespace StorybrewScripts
                 if (Additive) particle.Additive(startTime, endTime);
 
                 particle.StartLoopGroup(startTime, loopCount);
-                particle.Fade(OsbEasing.Out, 0, loopDuration * 0.2, 0, color.A);
-                particle.Fade(OsbEasing.In, loopDuration * 0.8, loopDuration, color.A, 0);
+                particle.Fade(OsbEasing.Out, 0, loopDuration * .2f, 0, color.A);
+                particle.Fade(OsbEasing.In, loopDuration * .8f, loopDuration, color.A, 0);
                 particle.Move(Easing, 0, loopDuration, startPosition, endPosition);
                 particle.EndGroup();
             }
         }
         bool isVisible(Bitmap bitmap, Vector2 startPosition, Vector2 endPosition, float rotation, float duration)
         {
-            var spriteSize = new Vector2(bitmap.Width * Scale.X, bitmap.Height * Scale.Y);
-            var originVector = OsbSprite.GetOriginVector(Origin, spriteSize.X, spriteSize.Y);
-
+            var spriteSize = new SizeF(bitmap.Width * Scale.X, bitmap.Height * Scale.Y);
             for (var t = 0; t < duration; t += 200)
             {
                 var position = Vector2.Lerp(startPosition, endPosition, t / duration);
-                if (OsbSprite.InScreenBounds(position, spriteSize, rotation, originVector)) return true;
+                if (OsbSprite.InScreenBounds(position, spriteSize, rotation, Origin)) return true;
             }
             return false;
         }

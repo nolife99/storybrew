@@ -1,5 +1,6 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
+using System.Numerics;
 using System.Drawing;
 
 namespace StorybrewCommon.Util
@@ -7,16 +8,16 @@ namespace StorybrewCommon.Util
 #pragma warning disable CS1591
     public class OrientedBoundingBox
     {
-        readonly Vector2[] corners = new Vector2[4];
-        readonly Vector2[] axis = new Vector2[2];
+        readonly CommandPosition[] corners = new CommandPosition[4];
+        readonly CommandPosition[] axis = new CommandPosition[2];
         readonly double[] origins = new double[2];
 
-        public OrientedBoundingBox(Vector2 position, Vector2 origin, double width, double height, double angle)
+        public OrientedBoundingBox(CommandPosition position, CommandPosition origin, double width, double height, double angle)
         {
-            var unitRight = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
-            var unitUp = new Vector2((float)-Math.Sin(angle), (float)Math.Cos(angle));
-            var right = unitRight * (float)(width - origin.X);
-            var up = unitUp * (float)(height - origin.Y);
+            var unitRight = new CommandPosition(Math.Cos(angle), Math.Sin(angle));
+            var unitUp = new CommandPosition(-Math.Sin(angle), Math.Cos(angle));
+            var right = unitRight * (width - origin.X);
+            var up = unitUp * (height - origin.Y);
             var left = unitRight * -origin.X;
             var down = unitUp * -origin.Y;
 
@@ -29,7 +30,7 @@ namespace StorybrewCommon.Util
             axis[1] = corners[3] - corners[0];
             for (var a = 0; a < 2; ++a)
             {
-                axis[a] /= axis[a].LengthSquared;
+                axis[a] /= ((Vector2)axis[a]).LengthSquared();
                 origins[a] = Vector2.Dot(corners[0], axis[a]);
             }
         }
@@ -47,7 +48,6 @@ namespace StorybrewCommon.Util
         }
 
         public bool Intersects(OrientedBoundingBox other) => intersects1Way(other) && other.intersects1Way(this);
-        public bool Intersects(Box2 other) => Intersects(new OrientedBoundingBox(new Vector2(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
         public bool Intersects(RectangleF other) => Intersects(new OrientedBoundingBox(new Vector2(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
         bool intersects1Way(OrientedBoundingBox other)
         {

@@ -142,7 +142,6 @@ namespace BrewLib.Graphics.Drawables
                 if (y + height < clipRegion.Top) continue;
 
                 var x = bounds.Left + position.X * inverseScaling;
-                var width = glyph.Width * inverseScaling;
 
                 renderer.Draw(glyph.Texture, x, y, 0, 0, inverseScaling, inverseScaling, 0, color);
             }

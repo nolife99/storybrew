@@ -101,18 +101,6 @@ namespace StorybrewCommon.Storyboarding.Util
         ///<param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
         ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
         public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
-            => GenerateCommands(sprite, OsuHitObject.WidescreenStoryboardBounds, action, startTime, endTime, timeOffset, loopable);
-
-        ///<summary> Generates commands on a sprite based on this generator's states. </summary>
-        ///<param name="sprite"> The <see cref="OsbSprite"/> to have commands generated on. </param>
-        ///<param name="bounds"> The rectangular boundary for the sprite to be generated within. </param>
-        ///<param name="action"> Encapsulates a group of commands to be generated on <paramref name="sprite"/>. </param>
-        ///<param name="startTime"> The explicit start time of the command generation. Can be left <see langword="null"/> if <see cref="State.Time"/> is used. </param>
-        ///<param name="endTime"> The explicit end time of the command generation. Can be left <see langword="null"/> if <see cref="State.Time"/> is used. </param>
-        ///<param name="timeOffset"> The time offset of the command times. </param>
-        ///<param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
-        ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
-        public bool GenerateCommands(OsbSprite sprite, RectangleF bounds, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
         {
             State previousState = null;
             bool wasVisible = false, everVisible = false, stateAdded = false;
@@ -121,7 +109,7 @@ namespace StorybrewCommon.Storyboarding.Util
             states.ForEach(state =>
             {
                 var time = state.Time + timeOffset;
-                var isVisible = state.IsVisible(imageSize, sprite.Origin, bounds, this);
+                var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
 
                 if (isVisible && everVisible != true) everVisible = true;
                 if (!wasVisible && isVisible)
@@ -293,28 +281,22 @@ namespace StorybrewCommon.Storyboarding.Util
         /// <summary> 
         /// Returns the visibility of the sprite in the current <see cref="State"/> based on its image size, <see cref="OsbOrigin"/>, and screen boundaries. 
         /// </summary>
-        /// <returns> <see langword="true"/> if the sprite is within <paramref name="bounds"/>, else returns <see langword="false"/>. </returns>
-        public bool IsVisible(SizeF imageSize, OsbOrigin origin, RectangleF bounds, CommandGenerator generator = null)
+        /// <returns> <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>. </returns>
+        public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
         {
             var w = imageSize.Width * Scale.X;
             var h = imageSize.Height * Scale.Y;
 
             if (Additive && Color == CommandColor.Black ||
                 (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) == 0 ||
-                (generator is null ? w : Math.Round(w, 1)) == 0 ||
-                (generator is null ? h : Math.Round(h, 1)) == 0)
+                w <= 0 || h <= 0)
                 return false;
 
-            if (!bounds.Contains(
+            var rounded = new Vector2(
                 generator is null ? (float)Position.X : (float)Math.Round(Position.X, generator.PositionDecimals),
-                generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals)))
-            {
-                var originVector = OsbSprite.GetOriginVector(origin, w, h);
+                generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals));
 
-                var obb = new OrientedBoundingBox(new OpenTK.Vector2(Position.X, Position.Y), originVector, w, h, Rotation);
-                if (!obb.Intersects(bounds)) return false;
-            }
-            return true;
+            return OsbSprite.InScreenBounds(rounded, new SizeF(w, h), generator is null ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
         }
 
         int IComparer<State>.Compare(State x, State y) => x.Time.CompareTo(y.Time);
