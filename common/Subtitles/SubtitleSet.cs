@@ -3,7 +3,7 @@
 namespace StorybrewCommon.Subtitles
 {
 #pragma warning disable CS1591
-    public struct SubtitleSet
+    public readonly struct SubtitleSet
     {
         readonly HashSet<SubtitleLine> lines;
         public IEnumerable<SubtitleLine> Lines => lines;

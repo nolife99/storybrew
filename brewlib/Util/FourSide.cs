@@ -2,7 +2,7 @@
 
 namespace BrewLib.Util
 {
-    public struct FourSide
+    public readonly struct FourSide
     {
         public static readonly FourSide Zero = new FourSide(0);
 
@@ -48,7 +48,7 @@ namespace BrewLib.Util
 
         public override string ToString() => $"{Top}, {Right}, {Bottom}, {Left}";
     }
-    public struct FourSide<T> where T : class
+    public readonly struct FourSide<T> where T : class
     {
         public readonly T Top, Right, Bottom, Left;
 

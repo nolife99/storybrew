@@ -4,7 +4,7 @@ using System;
 namespace StorybrewCommon.Storyboarding.CommandValues
 {
     ///<summary> Base struct for movement commands. Alternative for <see cref="Vector2"/>. </summary>
-    [Serializable] public struct CommandPosition : CommandValue, IEquatable<CommandPosition>
+    [Serializable] public readonly struct CommandPosition : CommandValue, IEquatable<CommandPosition>
     {
         readonly CommandDecimal x, y;
 

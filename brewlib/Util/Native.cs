@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -43,6 +44,14 @@ namespace BrewLib.Util
                 return hWnd;
 
             return IntPtr.Zero;
+        }
+        public static IntPtr GetWindowHandle(this GameWindow window)
+        {
+            var handle = Native.FindProcessWindow(window.Title);
+            if (handle != IntPtr.Zero) return handle;
+
+            // This handle is incorrect for some users, only use it if the window couldn't be found by title
+            return window.WindowInfo.Handle;
         }
 
         [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]

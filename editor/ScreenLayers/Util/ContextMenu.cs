@@ -120,7 +120,7 @@ namespace StorybrewEditor.ScreenLayers
             base.Resize(width, height);
             mainLayout.Pack(400, 0, 0, 600);
         }
-        public struct Option
+        public readonly struct Option
         {
             public readonly string Name;
             public readonly T Value;

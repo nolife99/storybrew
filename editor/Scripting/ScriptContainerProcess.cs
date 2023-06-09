@@ -3,6 +3,8 @@ using StorybrewEditor.Processes;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace StorybrewEditor.Scripting
 {
@@ -18,7 +20,7 @@ namespace StorybrewEditor.Scripting
             if (disposedValue) throw new ObjectDisposedException(nameof(ScriptContainerAppDomain<TScript>));
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Guid.NewGuid()}.dll");
+                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name}-{DateTime.UtcNow.Millisecond}.dll");
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 workerProcess?.Dispose();

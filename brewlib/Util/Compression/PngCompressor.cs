@@ -80,7 +80,7 @@ namespace BrewLib.Util.Compression
                         stringBuilder.AppendFormat(" -o {0} ", losslessInputSettings.OptimizationLevel);
                         stringBuilder.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
                     }
-                    stringBuilder.AppendFormat("−s -a -Z --out {0} {0}", input);
+                    stringBuilder.AppendFormat("−s -a {0}", input);
                 }
             }
             else

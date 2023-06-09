@@ -165,7 +165,7 @@ namespace StorybrewEditor
             {
                 if (!InputManager.AltOnly) return false;
 
-                volumeSlider.Value += e.DeltaPrecise * 0.05f;
+                volumeSlider.Value += e.DeltaPrecise * .05f;
                 return true;
             };
         }
@@ -242,7 +242,7 @@ namespace StorybrewEditor
 
             DrawState.Viewport = new Rectangle(0, 0, width, height);
 
-            overlayCamera.VirtualHeight = (int)(height * Math.Max(1024d / width, 768d / height));
+            overlayCamera.VirtualHeight = (int)(height * Math.Max(1024f / width, 768f / height));
             overlayCamera.VirtualWidth = width * overlayCamera.VirtualHeight / height;
             overlay.Size = new Vector2(overlayCamera.VirtualWidth, overlayCamera.VirtualHeight);
         }

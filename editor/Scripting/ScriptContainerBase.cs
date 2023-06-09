@@ -106,7 +106,6 @@ namespace StorybrewEditor.Scripting
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 scriptProvider = null;
                 disposedValue = true;
             }

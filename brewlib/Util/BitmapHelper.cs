@@ -14,7 +14,7 @@ namespace BrewLib.Util
         public static void LosslessCompress(string path, PngCompressor compressor = null)
         {
             var opt = compressor ?? new PngCompressor();
-            opt.LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level3 });
+            opt.LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level4 });
         }
         public static void Compress(string path, PngCompressor compressor = null)
         {

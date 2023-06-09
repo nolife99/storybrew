@@ -114,7 +114,7 @@ namespace StorybrewCommon.Storyboarding3d
     }
 
 #pragma warning disable CS1591
-    public struct Object3dState
+    public readonly struct Object3dState
     {
         public static readonly Object3dState InitialState = new Object3dState(Matrix4x4.Identity, CommandColor.White, 1);
         public readonly Matrix4x4 WorldTransform;

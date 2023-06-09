@@ -91,11 +91,8 @@ namespace StorybrewEditor.Scripting
                 }
             }
 
-            var compilation = CSharpCompilation.Create(
-                Path.GetFileName(outputPath),
-                trees.Keys,
-                references: references,
-                options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+            var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references,
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
                     allowUnsafe: true, platform: Platform.AnyCpu, optimizationLevel: 
                     OptimizationLevel.Release, assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default));
 

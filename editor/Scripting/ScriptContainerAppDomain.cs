@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
+using System.Security.Cryptography;
 using System.Security.Permissions;
+using System.Text;
 
 namespace StorybrewEditor.Scripting
 {
@@ -21,7 +23,7 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Guid.NewGuid()}.dll");
+                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name}-{DateTime.UtcNow.Millisecond}.dll");
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 var setup = new AppDomainSetup
@@ -80,7 +82,6 @@ namespace StorybrewEditor.Scripting
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 if (appDomain != null) AppDomain.Unload(appDomain);
                 appDomain = null;
                 disposedValue = true;

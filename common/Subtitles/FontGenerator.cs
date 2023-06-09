@@ -84,7 +84,7 @@ namespace StorybrewCommon.Subtitles
     }
 
     ///<summary> Base struct for coloring commands. </summary>
-    [Serializable] public struct FontColor : IEquatable<FontColor>
+    [Serializable] public readonly struct FontColor : IEquatable<FontColor>
     {
         ///<summary> Represents a <see cref="FontColor"/> value as the color black. </summary>
         public static readonly FontColor Black = new FontColor(0, 0, 0);
@@ -158,8 +158,8 @@ namespace StorybrewCommon.Subtitles
         ///<summary> Creates a <see cref="FontColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
         public static FontColor FromHsb(float hue, float saturation, float brightness)
         {
-            var hi = Math.Floor(hue / 60) % 6;
-            var f = hue / 60 - Math.Floor(hue / 60);
+            var hi = (int)(hue / 60) % 6;
+            var f = hue / 60 - (int)(hue / 60);
 
             var v = brightness;
             var p = brightness * (1 - saturation);

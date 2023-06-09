@@ -153,8 +153,8 @@ namespace StorybrewEditor
             Trace.WriteLine($"Window dpi scale: {window.Height / (float)windowHeight}");
 
             window.Location = new Point(
-                (int)(primaryScreenArea.Left + (primaryScreenArea.Width - window.Size.Width) / 2d),
-                (int)(primaryScreenArea.Top + (primaryScreenArea.Height - window.Size.Height) / 2d)
+                (int)(primaryScreenArea.Left + (primaryScreenArea.Width - window.Size.Width) * .5),
+                (int)(primaryScreenArea.Top + (primaryScreenArea.Height - window.Size.Height) * .5)
             );
             if (window.Location.X < 0 || window.Location.Y < 0)
             {
@@ -363,7 +363,7 @@ namespace StorybrewEditor
                 try
                 {
                     var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-                    using (StreamWriter w = new StreamWriter(logPath, true))
+                    using (var w = new StreamWriter(logPath, true))
                     {
                         w.Write(DateTime.Now + " - ");
                         w.WriteLine(e);
@@ -412,7 +412,7 @@ namespace StorybrewEditor
 
                         wait.Wait(1000);
 
-                        if (!answered) frozen++;
+                        if (!answered) ++frozen;
                         if (frozen >= 3)
                         {
                             frozen = 0;
