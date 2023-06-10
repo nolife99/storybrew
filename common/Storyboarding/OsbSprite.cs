@@ -721,20 +721,20 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>
         ///<param name="width"> The width of the sprite. </param>
         ///<param name="height"> The height of the sprite. </param>
-        public static CommandPosition GetOriginVector(OsbOrigin origin, float width, float height)
+        public static CommandPosition GetOriginVector(OsbOrigin origin, double width, double height)
         {
             switch (origin)
             {
                 default: throw new NotSupportedException(origin.ToString());
-                case OsbOrigin.TopLeft: return Vector2.Zero;
-                case OsbOrigin.TopCentre: return new Vector2(width * .5f, 0);
-                case OsbOrigin.TopRight: return new Vector2(width, 0);
-                case OsbOrigin.CentreLeft: return new Vector2(0, height * .5f);
-                case OsbOrigin.Centre: return new Vector2(width * .5f, height * .5f);
-                case OsbOrigin.CentreRight: return new Vector2(width, height * .5f);
-                case OsbOrigin.BottomLeft: return new Vector2(0, height);
-                case OsbOrigin.BottomCentre: return new Vector2(width * .5f, height);
-                case OsbOrigin.BottomRight: return new Vector2(width, height);
+                case OsbOrigin.TopLeft: return default;
+                case OsbOrigin.TopCentre: return new CommandPosition(width * .5, 0);
+                case OsbOrigin.TopRight: return new CommandPosition(width, 0);
+                case OsbOrigin.CentreLeft: return new CommandPosition(0, height * .5);
+                case OsbOrigin.Centre: return new CommandPosition(width * .5, height * .5);
+                case OsbOrigin.CentreRight: return new CommandPosition(width, height * .5);
+                case OsbOrigin.BottomLeft: return new CommandPosition(0, height);
+                case OsbOrigin.BottomCentre: return new CommandPosition(width * .5, height);
+                case OsbOrigin.BottomRight: return new CommandPosition(width, height);
             }
         }
     }

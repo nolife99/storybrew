@@ -30,6 +30,8 @@
   	<Title>storybrew editor</Title>
   	<Copyright>Copyright © Damnae 2016</Copyright>
   	<PackageLicenseFile>LICENSE</PackageLicenseFile>
+  	<AnalysisLevel>6.0-all</AnalysisLevel>
+  	<PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -58,6 +60,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+  	<None Include="..\README.md">
+  	  <Pack>True</Pack>
+  	  <PackagePath>\</PackagePath>
+  	</None>
   	<None Include="App.config" />
   	<EmbeddedResource Include="Resources\FontAwesome.ttf" />
   	<EmbeddedResource Include="Resources\Roboto-Light.ttf" />
@@ -96,7 +102,7 @@
   <ItemGroup>
   	<PackageReference Include="Damnae.Tiny" Version="1.1.0" />
   	<PackageReference Include="ManagedBass" Version="3.1.1" />
-  	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
   	<PackageReference Include="OpenTK" Version="3.3.3" />
   	<PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>

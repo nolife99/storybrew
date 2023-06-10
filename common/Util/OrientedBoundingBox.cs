@@ -34,6 +34,18 @@ namespace StorybrewCommon.Util
                 origins[a] = Vector2.Dot(corners[0], axis[a]);
             }
         }
+        public OpenTK.Box2 GetAABBBox()
+        {
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+            foreach (var corner in corners)
+            {
+                minX = Math.Min(minX, corner.X);
+                maxX = Math.Max(maxX, corner.X);
+                minY = Math.Min(minY, corner.Y);
+                maxY = Math.Max(maxY, corner.Y);
+            }
+            return new OpenTK.Box2(minX, minY, maxX, maxY);
+        }
         public RectangleF GetAABB()
         {
             float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
@@ -49,6 +61,7 @@ namespace StorybrewCommon.Util
 
         public bool Intersects(OrientedBoundingBox other) => intersects1Way(other) && other.intersects1Way(this);
         public bool Intersects(RectangleF other) => Intersects(new OrientedBoundingBox(new Vector2(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
+        public bool Intersects(OpenTK.Box2 other) => Intersects(new OrientedBoundingBox(new Vector2(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
         bool intersects1Way(OrientedBoundingBox other)
         {
             for (var a = 0; a < 2; ++a)

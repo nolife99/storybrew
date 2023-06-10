@@ -6,6 +6,7 @@ using StorybrewEditor.Storyboarding;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 
 namespace StorybrewEditor.Mapset
@@ -129,7 +130,7 @@ namespace StorybrewEditor.Mapset
                             switch (key)
                             {
                                 case "AudioFilename": beatmap.audioFilename = value; break;
-                                case "StackLeniency": beatmap.stackLeniency = double.Parse(value); break;
+                                case "StackLeniency": beatmap.stackLeniency = double.Parse(value, CultureInfo.InvariantCulture); break;
                             }
                         }); 
                         break;
@@ -139,7 +140,7 @@ namespace StorybrewEditor.Mapset
                             switch (key)
                             {
                                 case "Bookmarks": foreach (var bookmark in value.Split(',')) if (value.Length > 0) 
-                                    beatmap.bookmarks.Add(int.Parse(bookmark));
+                                    beatmap.bookmarks.Add(int.Parse(bookmark, CultureInfo.InvariantCulture));
                                     break;
                             }
                         }); 
@@ -150,7 +151,7 @@ namespace StorybrewEditor.Mapset
                             switch (key)
                             {
                                 case "Version": beatmap.name = value; break;
-                                case "BeatmapID": beatmap.id = long.Parse(value); break;
+                                case "BeatmapID": beatmap.id = long.Parse(value, CultureInfo.InvariantCulture); break;
                             }
                         }); 
                         break;
@@ -159,12 +160,12 @@ namespace StorybrewEditor.Mapset
                         {
                             switch (key)
                             {
-                                case "HPDrainRate": beatmap.hpDrainRate = double.Parse(value); break;
-                                case "CircleSize": beatmap.circleSize = double.Parse(value); break;
-                                case "OverallDifficulty": beatmap.overallDifficulty = double.Parse(value); break;
-                                case "ApproachRate": beatmap.approachRate = double.Parse(value); break;
-                                case "SliderMultiplier": beatmap.sliderMultiplier = double.Parse(value); break;
-                                case "SliderTickRate": beatmap.sliderTickRate = double.Parse(value); break;
+                                case "HPDrainRate": beatmap.hpDrainRate = double.Parse(value, CultureInfo.InvariantCulture); break;
+                                case "CircleSize": beatmap.circleSize = double.Parse(value, CultureInfo.InvariantCulture); break;
+                                case "OverallDifficulty": beatmap.overallDifficulty = double.Parse(value, CultureInfo.InvariantCulture); break;
+                                case "ApproachRate": beatmap.approachRate = double.Parse(value, CultureInfo.InvariantCulture); break;
+                                case "SliderMultiplier": beatmap.sliderMultiplier = double.Parse(value, CultureInfo.InvariantCulture); break;
+                                case "SliderTickRate": beatmap.sliderTickRate = double.Parse(value, CultureInfo.InvariantCulture); break;
                             }
                         }); 
                         break;
@@ -197,7 +198,7 @@ namespace StorybrewEditor.Mapset
                                 if (!key.StartsWith("Combo")) return;
 
                                 var rgb = value.Split(',');
-                                beatmap.comboColors.Add(new Color4(byte.Parse(rgb[0]), byte.Parse(rgb[1]), byte.Parse(rgb[2]), 255));
+                                beatmap.comboColors.Add(new Color4(byte.Parse(rgb[0], CultureInfo.InvariantCulture), byte.Parse(rgb[1], CultureInfo.InvariantCulture), byte.Parse(rgb[2], CultureInfo.InvariantCulture), 255));
                             });
 
                             if (beatmap.comboColors.Count == 0) beatmap.comboColors.AddRange(defaultComboColors);

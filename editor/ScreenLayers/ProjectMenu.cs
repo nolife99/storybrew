@@ -519,15 +519,15 @@ namespace StorybrewEditor.ScreenLayers
 
             var effectiveCommandCount = proj.FrameStats.EffectiveCommandCount;
             var unusedCommandCount = commandCount - effectiveCommandCount;
-            var unusedCommandFactor = (double)unusedCommandCount / commandCount;
+            var unusedCommandFactor = (float)unusedCommandCount / commandCount;
             if ((unusedCommandCount >= 5000 && unusedCommandFactor > .5) ||
                 (unusedCommandCount >= 10000 && unusedCommandFactor > .2) ||
                 unusedCommandCount >= 15000)
                 warnings += $"⚠ {unusedCommandCount:n0} ({unusedCommandFactor:0%}) Commands on Hidden Sprites\n";
 
-            var screenFill = proj.FrameStats.ScreenFill;
-            if (screenFill > 0 && screenFill < 5 && proj.DisplayDebugWarning) warnings += $"{Math.Round(screenFill)}x Screen Fill\n";
-            else if (screenFill >= 5) warnings += $"⚠ {Math.Round(screenFill)}x Screen Fill\n";
+            var screenFill = (float)proj.FrameStats.ScreenFill;
+            if (screenFill > 0 && screenFill < 5 && proj.DisplayDebugWarning) warnings += $"{screenFill:F0}x Screen Fill\n";
+            else if (screenFill >= 5) warnings += $"⚠ {screenFill:F0}x Screen Fill\n";
 
             if (proj.FrameStats.OverlappedCommands) warnings += $"⚠ Overlapped Commands\n";
             if (proj.FrameStats.IncompatibleCommands) warnings += $"⚠ Incompatible Commands\n";

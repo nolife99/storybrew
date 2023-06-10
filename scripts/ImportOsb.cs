@@ -4,6 +4,7 @@ using StorybrewCommon.Util;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -17,7 +18,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            using (var stream = OpenProjectFile(Path)) using (var reader = new StreamReader(stream, new UTF8Encoding()))
+            using (var stream = OpenProjectFile(Path)) using (var reader = new StreamReader(stream, Encoding.ASCII))
             reader.ParseSections(section =>
             {
                 switch (section)
@@ -59,8 +60,8 @@ namespace StorybrewScripts
                     {
                         var origin = (OsbOrigin)Enum.Parse(typeof(OsbOrigin), v[2]);
                         var path = removeQuotes(v[3]);
-                        var x = float.Parse(v[4]);
-                        var y = float.Parse(v[5]);
+                        var x = float.Parse(v[4], CultureInfo.InvariantCulture);
+                        var y = float.Parse(v[5], CultureInfo.InvariantCulture);
                         sprite = GetLayer(v[1]).CreateSprite(path, origin, new Vector2(x, y));
                         break;
                     }
@@ -68,28 +69,28 @@ namespace StorybrewScripts
                     {
                         var origin = (OsbOrigin)Enum.Parse(typeof(OsbOrigin), v[2]);
                         var path = removeQuotes(v[3]);
-                        var x = float.Parse(v[4]);
-                        var y = float.Parse(v[5]);
-                        var frameCount = int.Parse(v[6]);
-                        var frameDelay = double.Parse(v[7]);
+                        var x = float.Parse(v[4], CultureInfo.InvariantCulture);
+                        var y = float.Parse(v[5], CultureInfo.InvariantCulture);
+                        var frameCount = int.Parse(v[6], CultureInfo.InvariantCulture);
+                        var frameDelay = float.Parse(v[7], CultureInfo.InvariantCulture);
                         var loopType = (OsbLoopType)Enum.Parse(typeof(OsbLoopType), v[8]);
                         sprite = GetLayer(v[1]).CreateAnimation(path, frameCount, frameDelay, loopType, origin, new Vector2(x, y));
                         break;
                     }
                     case "Sample":
                     {
-                        GetLayer(v[2]).CreateSample(removeQuotes(v[3]), int.Parse(v[1]), float.Parse(v[4]));
+                        GetLayer(v[2]).CreateSample(removeQuotes(v[3]), int.Parse(v[1], CultureInfo.InvariantCulture), float.Parse(v[4], CultureInfo.InvariantCulture));
                         break;
                     }
                     case "T":
                     {
-                        sprite.StartTriggerGroup(v[1], int.Parse(v[2]), int.Parse(v[3]), v.Length > 4 ? int.Parse(v[4]) : 0);
+                        sprite.StartTriggerGroup(v[1], int.Parse(v[2], CultureInfo.InvariantCulture), int.Parse(v[3], CultureInfo.InvariantCulture), v.Length > 4 ? int.Parse(v[4], CultureInfo.InvariantCulture) : 0);
                         loopable = true;
                         break;
                     }
                     case "L":
                     {
-                        sprite.StartLoopGroup(int.Parse(v[1]), int.Parse(v[2]));
+                        sprite.StartLoopGroup(int.Parse(v[1], CultureInfo.InvariantCulture), int.Parse(v[2], CultureInfo.InvariantCulture));
                         loopable = true;
                         break;
                     }
@@ -98,73 +99,73 @@ namespace StorybrewScripts
                         if (string.IsNullOrEmpty(v[3])) v[3] = v[2];
 
                         var command = v[0];
-                        var easing = (OsbEasing)int.Parse(v[1]);
-                        var startTime = int.Parse(v[2]);
-                        var endTime = int.Parse(v[3]);
+                        var easing = (OsbEasing)int.Parse(v[1], CultureInfo.InvariantCulture);
+                        var startTime = int.Parse(v[2], CultureInfo.InvariantCulture);
+                        var endTime = int.Parse(v[3], CultureInfo.InvariantCulture);
 
                         switch (command)
                         {
                             case "F":
                             {
-                                var startValue = double.Parse(v[4]);
-                                var endValue = v.Length > 5 ? double.Parse(v[5]) : startValue;
+                                var startValue = float.Parse(v[4], CultureInfo.InvariantCulture);
+                                var endValue = v.Length > 5 ? float.Parse(v[5], CultureInfo.InvariantCulture) : startValue;
                                 sprite.Fade(easing, startTime, endTime, startValue, endValue);
                                 break;
                             }
                             case "S":
                             {
-                                var startValue = double.Parse(v[4]);
-                                var endValue = v.Length > 5 ? double.Parse(v[5]) : startValue;
+                                var startValue = float.Parse(v[4], CultureInfo.InvariantCulture);
+                                var endValue = v.Length > 5 ? float.Parse(v[5], CultureInfo.InvariantCulture) : startValue;
                                 sprite.Scale(easing, startTime, endTime, startValue, endValue);
                                 break;
                             }
                             case "V":
                             {
-                                var startX = double.Parse(v[4]);
-                                var startY = double.Parse(v[5]);
-                                var endX = v.Length > 6 ? double.Parse(v[6]) : startX;
-                                var endY = v.Length > 7 ? double.Parse(v[7]) : startY;
+                                var startX = float.Parse(v[4], CultureInfo.InvariantCulture);
+                                var startY = float.Parse(v[5], CultureInfo.InvariantCulture);
+                                var endX = v.Length > 6 ? float.Parse(v[6], CultureInfo.InvariantCulture) : startX;
+                                var endY = v.Length > 7 ? float.Parse(v[7], CultureInfo.InvariantCulture) : startY;
                                 sprite.ScaleVec(easing, startTime, endTime, startX, startY, endX, endY);
                                 break;
                             }
                             case "R":
                             {
-                                var startValue = double.Parse(v[4]);
-                                var endValue = v.Length > 5 ? double.Parse(v[5]) : startValue;
+                                var startValue = float.Parse(v[4], CultureInfo.InvariantCulture);
+                                var endValue = v.Length > 5 ? float.Parse(v[5], CultureInfo.InvariantCulture) : startValue;
                                 sprite.Rotate(easing, startTime, endTime, startValue, endValue);
                                 break;
                             }
                             case "M":
                             {
-                                var startX = double.Parse(v[4]);
-                                var startY = double.Parse(v[5]);
-                                var endX = v.Length > 6 ? double.Parse(v[6]) : startX;
-                                var endY = v.Length > 7 ? double.Parse(v[7]) : startY;
+                                var startX = float.Parse(v[4], CultureInfo.InvariantCulture);
+                                var startY = float.Parse(v[5], CultureInfo.InvariantCulture);
+                                var endX = v.Length > 6 ? float.Parse(v[6], CultureInfo.InvariantCulture) : startX;
+                                var endY = v.Length > 7 ? float.Parse(v[7], CultureInfo.InvariantCulture) : startY;
                                 sprite.Move(easing, startTime, endTime, startX, startY, endX, endY);
                                 break;
                             }
                             case "MX":
                             {
-                                var startValue = double.Parse(v[4]);
-                                var endValue = v.Length > 5 ? double.Parse(v[5]) : startValue;
+                                var startValue = float.Parse(v[4], CultureInfo.InvariantCulture);
+                                var endValue = v.Length > 5 ? float.Parse(v[5], CultureInfo.InvariantCulture) : startValue;
                                 sprite.MoveX(easing, startTime, endTime, startValue, endValue);
                                 break;
                             }
                             case "MY":
                             {
-                                var startValue = double.Parse(v[4]);
-                                var endValue = v.Length > 5 ? double.Parse(v[5]) : startValue;
+                                var startValue = float.Parse(v[4], CultureInfo.InvariantCulture);
+                                var endValue = v.Length > 5 ? float.Parse(v[5], CultureInfo.InvariantCulture) : startValue;
                                 sprite.MoveY(easing, startTime, endTime, startValue, endValue);
                                 break;
                             }
                             case "C":
                             {
-                                var startX = double.Parse(v[4]) / 255;
-                                var startY = double.Parse(v[5]) / 255;
-                                var startZ = double.Parse(v[6]) / 255;
-                                var endX = v.Length > 7 ? double.Parse(v[7]) / 255 : startX;
-                                var endY = v.Length > 8 ? double.Parse(v[8]) / 255 : startY;
-                                var endZ = v.Length > 9 ? double.Parse(v[9]) / 255 : startZ;
+                                var startX = float.Parse(v[4], CultureInfo.InvariantCulture) / 255;
+                                var startY = float.Parse(v[5], CultureInfo.InvariantCulture) / 255;
+                                var startZ = float.Parse(v[6], CultureInfo.InvariantCulture) / 255;
+                                var endX = v.Length > 7 ? float.Parse(v[7], CultureInfo.InvariantCulture) / 255 : startX;
+                                var endY = v.Length > 8 ? float.Parse(v[8], CultureInfo.InvariantCulture) / 255 : startY;
+                                var endZ = v.Length > 9 ? float.Parse(v[9], CultureInfo.InvariantCulture) / 255 : startZ;
                                 sprite.Color(easing, startTime, endTime, startX, startY, startZ, endX, endY, endZ);
                                 break;
                             }

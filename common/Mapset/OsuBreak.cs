@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 
 namespace StorybrewCommon.Mapset
 {
@@ -13,8 +14,8 @@ namespace StorybrewCommon.Mapset
             var values = line.Split(',');
             return new OsuBreak
             {
-                StartTime = int.Parse(values[1]),
-                EndTime = int.Parse(values[2])
+                StartTime = int.Parse(values[1], CultureInfo.InvariantCulture),
+                EndTime = int.Parse(values[2], CultureInfo.InvariantCulture)
             };
         }
     }

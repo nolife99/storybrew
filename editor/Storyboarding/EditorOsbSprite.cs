@@ -7,6 +7,7 @@ using OpenTK;
 using OpenTK.Graphics;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 using System;
 using System.IO;
@@ -74,17 +75,14 @@ namespace StorybrewEditor.Storyboarding
             {
                 var size = texture.Size * scale;
 
-                var spriteObb = new OrientedBoundingBox(position, (Vector2)origin * scale, size.X, size.Y, rotation);
-                if (spriteObb.Intersects(OsuHitObject.WidescreenStoryboardBounds))
+                var spriteBox = new OrientedBoundingBox(position, origin * (CommandPosition)scale, size.X, size.Y, rotation);
+                if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
                 {
                     frameStats.EffectiveCommandCount += sprite.CommandCount;
 
-                    var _sprite = spriteObb.GetAABB();
-
-                    var intersection = _sprite.IntersectWith(OsuHitObject.WidescreenStoryboardBounds);
-                    var intersectionFactor = intersection.Width * intersection.Height / (_sprite.Width * _sprite.Height);
-                    var intersectionArea = size.X * size.Y * intersectionFactor;
-                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) / OsuHitObject.WidescreenStoryboardArea;
+                    var _sprite = spriteBox.GetAABBBox();
+                    frameStats.ScreenFill += Math.Abs(Math.Min(OsuHitObject.WidescreenStoryboardArea, size.Area() * _sprite.IntersectWith(
+                        OsuHitObject.WidescreenStoryboardBounds).Area() / _sprite.Area()) / OsuHitObject.WidescreenStoryboardArea);
                 }
             }
 

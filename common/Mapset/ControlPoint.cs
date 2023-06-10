@@ -73,13 +73,13 @@ namespace StorybrewCommon.Mapset
             {
                 Offset = double.Parse(values[0], CultureInfo.InvariantCulture),
                 beatDurationSV = double.Parse(values[1], CultureInfo.InvariantCulture),
-                BeatPerMeasure = values.Length > 2 ? int.Parse(values[2]) : 4,
-                SampleSet = values.Length > 3 ? (SampleSet)int.Parse(values[3]) : SampleSet.Normal,
-                CustomSampleSet = values.Length > 4 ? int.Parse(values[4]) : 0,
-                Volume = values.Length > 5 ? int.Parse(values[5]) : 100,
-                IsInherited = values.Length > 6 && int.Parse(values[6]) == 0,
-                IsKiai = values.Length > 7 && (int.Parse(values[7]) & 1) != 0,
-                OmitFirstBarLine = values.Length > 7 && (int.Parse(values[7]) & 8) != 0
+                BeatPerMeasure = values.Length > 2 ? int.Parse(values[2], CultureInfo.InvariantCulture) : 4,
+                SampleSet = values.Length > 3 ? (SampleSet)int.Parse(values[3], CultureInfo.InvariantCulture) : SampleSet.Normal,
+                CustomSampleSet = values.Length > 4 ? int.Parse(values[4], CultureInfo.InvariantCulture) : 0,
+                Volume = values.Length > 5 ? int.Parse(values[5], CultureInfo.InvariantCulture) : 100,
+                IsInherited = values.Length > 6 && int.Parse(values[6], CultureInfo.InvariantCulture) == 0,
+                IsKiai = values.Length > 7 && (int.Parse(values[7], CultureInfo.InvariantCulture) & 1) != 0,
+                OmitFirstBarLine = values.Length > 7 && (int.Parse(values[7], CultureInfo.InvariantCulture) & 8) != 0
             };
         }
     }

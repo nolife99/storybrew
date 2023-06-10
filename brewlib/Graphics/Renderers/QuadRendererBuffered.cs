@@ -192,7 +192,7 @@ namespace BrewLib.Graphics.Renderers
             }
 
             quadsInBatch = 0;
-            FlushedBufferCount++;
+            ++FlushedBufferCount;
 
             lastFlushWasBuffered = canBuffer;
         }
@@ -211,8 +211,8 @@ namespace BrewLib.Graphics.Renderers
 
             primitives[quadsInBatch] = quad;
 
-            RenderedQuadCount++;
-            quadsInBatch++;
+            ++RenderedQuadCount;
+            ++quadsInBatch;
         }
     }
 }

@@ -69,21 +69,8 @@ namespace BrewLib.Graphics.Textures
 
         public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
         {
-            try
-            {
-                if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) 
-                    return new Bitmap(stream, false);
-            }
-            catch (OutOfMemoryException e)
-            {
-                Trace.TraceError($"Texture could not be loaded: {filename} | {e}");
-                return null;
-            }
-            catch (ArgumentException e)
-            {
-                Trace.TraceError($"Texture is invalid: {filename} | {e}");
-                return null;
-            }
+            if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) 
+                return new Bitmap(stream, false);
 
             if (resourceContainer == null) return null;
             using (var stream = resourceContainer.GetStream(filename, ResourceSource.Embedded))

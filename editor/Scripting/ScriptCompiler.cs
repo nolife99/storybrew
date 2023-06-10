@@ -37,20 +37,21 @@ namespace StorybrewEditor.Scripting
                     typeof(ScriptCompiler).Assembly.ManifestModule.FullyQualifiedName,
                     typeof(ScriptCompiler).FullName);
 
-                compiler.compile(sourcePaths, outputPath, referencedAssemblies);
+                compile(sourcePaths, outputPath, referencedAssemblies);
             }
             finally
             {
                 AppDomain.Unload(compilerDomain);
             }
         }
-        void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+
+        static void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             var trees = new Dictionary<SyntaxTree, KeyValuePair<string, SourceText>>();
             foreach (var sourcePath in sourcePaths) using (var sourceStream = File.OpenRead(sourcePath))
             {
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-                var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Latest);
+                var parseOptions = new CSharpParseOptions(LanguageVersion.Latest);
 
                 var syntaxTree = SyntaxFactory.ParseSyntaxTree(sourceText, parseOptions);
                 trees.Add(syntaxTree, new KeyValuePair<string, SourceText>(sourcePath, sourceText));

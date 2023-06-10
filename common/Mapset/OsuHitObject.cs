@@ -2,6 +2,7 @@
 using OpenTK.Graphics;
 using System;
 using System.Drawing;
+using System.Globalization;
 
 namespace StorybrewCommon.Mapset
 {
@@ -12,10 +13,10 @@ namespace StorybrewCommon.Mapset
         public static readonly Vector2 PlayfieldSize = new Vector2(512, 384), StoryboardSize = new Vector2(640, 480);
 
         ///<summary> Represents the offset between the playfield and the storyboard field in osu!. </summary>
-        public static readonly Vector2 PlayfieldToStoryboardOffset = new Vector2((StoryboardSize.X - PlayfieldSize.X) * .5f, (StoryboardSize.Y - PlayfieldSize.Y) * .75f - 16);
+        public static readonly Vector2 PlayfieldToStoryboardOffset = new Vector2((StoryboardSize.X - PlayfieldSize.X) / 2, (StoryboardSize.Y - PlayfieldSize.Y) * .75f - 16);
         
         ///<summary> Represents the widescreen storyboard size in osu!. </summary>
-        public static readonly Vector2 WidescreenStoryboardSize = new Vector2(854, StoryboardSize.Y);
+        public static readonly Vector2 WidescreenStoryboardSize = new Vector2(StoryboardSize.X * 4 / 3, StoryboardSize.Y);
 
         ///<summary> Represents the area of the widescreen storyboard size in osu!. </summary>
         public static readonly int WidescreenStoryboardArea = (int)(WidescreenStoryboardSize.X * WidescreenStoryboardSize.Y);
@@ -24,21 +25,21 @@ namespace StorybrewCommon.Mapset
         public static readonly RectangleF StoryboardBounds = new RectangleF(0, 0, StoryboardSize.X, StoryboardSize.Y);
 
         ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
-        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF(-107, 0, WidescreenStoryboardSize.X, StoryboardSize.Y);
+        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF((StoryboardSize.X - WidescreenStoryboardSize.X) / 2, 0, WidescreenStoryboardSize.X, WidescreenStoryboardSize.Y);
 
-        ///<summary> Represents the position of the playfield in osu!. </summary>
+        ///<summary> Represents the hit object's position in osu!. </summary>
         public Vector2 PlayfieldPosition;
 
-        ///<summary> Represents the stacking offset of hit objects in osu!. </summary>
+        ///<summary> Represents this hit object's stacking offset in osu!. </summary>
         public Vector2 StackOffset;
 
-        ///<summary> Represents the storyboard field position in osu!. </summary>
+        ///<summary> Represents this hit object's storyboard position in osu!. </summary>
         public Vector2 Position => PlayfieldPosition + PlayfieldToStoryboardOffset;
 
-        ///<summary> Represents the end position of the playfield in osu!. </summary>
+        ///<summary> Represents this hit object's end position in osu!. </summary>
         public virtual Vector2 PlayfieldEndPosition => PlayfieldPositionAtTime(EndTime);
 
-        ///<summary> Represents the end position of the storyboard field in osu!. </summary>
+        ///<summary> Represents this hit object's storyboard end position in osu!. </summary>
         public Vector2 EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;
 
         ///<summary> Represents the start time of this hit object. </summary>
@@ -77,31 +78,31 @@ namespace StorybrewCommon.Mapset
         ///<summary> Represents the combo color of this hit object. </summary>
         public Color4 Color = Color4.White;
 
-        ///<summary> Represents whether this hit object is a new combo. </summary>
+        ///<returns> Whether or not this hit object is a new combo. </returns>
         public bool NewCombo => (Flags & HitObjectFlag.NewCombo) > 0;
 
-        ///<summary/>
+        ///<summary> Represents this hit object's combo color number. </summary>
         public int ComboOffset => ((int)Flags >> 4) & 7;
 
-        ///<summary> Returns the playfield's position at <paramref name="time"/>. </summary>
+        ///<returns> This hit object's position at <paramref name="time"/>. </returns>
         public virtual Vector2 PlayfieldPositionAtTime(double time) => PlayfieldPosition;
 
-        ///<summary> Returns this hit object's position at <paramref name="time"/>. </summary>
+        ///<returns> This hit object's storyboard position at <paramref name="time"/>. </returns>
         public Vector2 PositionAtTime(double time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
 
-        ///<summary> Converts this hit object to a <see cref="string"/> representation. </summary>
+        ///<inheritdoc/>
         public override string ToString() => $"{(int)StartTime}, {Flags}";
 
-        ///<summary> Parses a hit object from a given beatmap and a given line. </summary>
+        ///<summary> Parses a hit object from a given beatmap and line. </summary>
         public static OsuHitObject Parse(Beatmap beatmap, string line)
         {
             var values = line.Split(',');
 
-            var x = int.Parse(values[0]);
-            var y = int.Parse(values[1]);
-            var startTime = double.Parse(values[2]);
-            var flags = (HitObjectFlag)int.Parse(values[3]);
-            var additions = (HitSoundAddition)int.Parse(values[4]);
+            var x = int.Parse(values[0], CultureInfo.InvariantCulture);
+            var y = int.Parse(values[1], CultureInfo.InvariantCulture);
+            var startTime = double.Parse(values[2], CultureInfo.InvariantCulture);
+            var flags = (HitObjectFlag)int.Parse(values[3], CultureInfo.InvariantCulture);
+            var additions = (HitSoundAddition)int.Parse(values[4], CultureInfo.InvariantCulture);
 
             var timingPoint = beatmap.GetTimingPointAt((int)startTime);
             var controlPoint = beatmap.GetControlPointAt((int)startTime);
@@ -115,7 +116,7 @@ namespace StorybrewCommon.Mapset
             else if (flags.HasFlag(HitObjectFlag.Slider)) return OsuSlider.Parse(beatmap, values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet, additionsSampleSet, customSampleSet, volume);
             else if (flags.HasFlag(HitObjectFlag.Hold)) return OsuHold.Parse(values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet, additionsSampleSet, customSampleSet, volume);
             else if (flags.HasFlag(HitObjectFlag.Spinner)) return OsuSpinner.Parse(values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet, additionsSampleSet, customSampleSet, volume);
-            return null;
+            throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line}");
         }
     }
 

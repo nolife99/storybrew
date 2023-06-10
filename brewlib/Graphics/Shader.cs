@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -9,9 +10,7 @@ namespace BrewLib.Graphics
 {
     public class Shader : IDisposable
     {
-        int vertexShaderId = -1;
-        int fragmentShaderId = -1;
-        int programId = -1;
+        int vertexShaderId = -1, fragmentShaderId = -1, programId = -1;
 
         bool isInitialized, started;
         string log = string.Empty;
@@ -166,7 +165,7 @@ namespace BrewLib.Graphics
             GL.GetProgram(programId, GetProgramParameterName.ActiveAttributes, out int attributeCount);
 
             attributes = new Dictionary<string, Property<ActiveAttribType>>(attributeCount);
-            for (int i = 0; i < attributeCount; i++)
+            for (var i = 0; i < attributeCount; ++i)
             {
                 var name = GL.GetActiveAttrib(programId, i, out int size, out ActiveAttribType type);
                 var location = GL.GetAttribLocation(programId, name);
@@ -178,7 +177,7 @@ namespace BrewLib.Graphics
             GL.GetProgram(programId, GetProgramParameterName.ActiveUniforms, out int uniformCount);
 
             uniforms = new Dictionary<string, Property<ActiveUniformType>>(uniformCount);
-            for (int i = 0; i < uniformCount; i++)
+            for (int i = 0; i < uniformCount; ++i)
             {
                 var name = GL.GetActiveUniform(programId, i, out int size, out ActiveUniformType type);
                 var location = GL.GetUniformLocation(programId, name);
@@ -198,8 +197,8 @@ namespace BrewLib.Graphics
                 var match = errorRegex.Match(line);
                 if (match.Success)
                 {
-                    var character = int.Parse(match.Groups[1].Value);
-                    var lineNumber = int.Parse(match.Groups[2].Value) - 1;
+                    var character = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+                    var lineNumber = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) - 1;
 
                     if (lineNumber > 0)
                     {

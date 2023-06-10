@@ -1,5 +1,6 @@
 ﻿using OpenTK;
 using System;
+using System.Globalization;
 
 namespace StorybrewCommon.Mapset
 {
@@ -14,12 +15,12 @@ namespace StorybrewCommon.Mapset
                 var special = values[5];
                 var specialValues = special.Split(':');
 
-                var objectSampleSet = (SampleSet)int.Parse(specialValues[0]);
-                var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1]);
+                var objectSampleSet = (SampleSet)int.Parse(specialValues[0], CultureInfo.InvariantCulture);
+                var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1], CultureInfo.InvariantCulture);
                 var objectCustomSampleSet = 0;
-                if (specialValues.Length > 2) objectCustomSampleSet = int.Parse(specialValues[2]);
+                if (specialValues.Length > 2) objectCustomSampleSet = int.Parse(specialValues[2], CultureInfo.InvariantCulture);
                 var objectVolume = 0f;
-                if (specialValues.Length > 3) objectVolume = int.Parse(specialValues[3]);
+                if (specialValues.Length > 3) objectVolume = int.Parse(specialValues[3], CultureInfo.InvariantCulture);
                 if (specialValues.Length > 4) samplePath = specialValues[4];
 
                 if (objectSampleSet != 0)

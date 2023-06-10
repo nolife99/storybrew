@@ -185,8 +185,8 @@ namespace StorybrewCommon.Mapset
                 sliderControlPoints.Add(new Vector2(controlPointX, controlPointY));
             }
 
-            var nodeCount = int.Parse(values[6]) + 1;
-            var length = double.Parse(values[7]);
+            var nodeCount = int.Parse(values[6], CultureInfo.InvariantCulture) + 1;
+            var length = double.Parse(values[7], CultureInfo.InvariantCulture);
 
             var sliderMultiplierLessLength = length / beatmap.SliderMultiplier;
             var travelDurationBeats = sliderMultiplierLessLength / 100 * controlPoint.SliderMultiplier;
@@ -214,7 +214,7 @@ namespace StorybrewCommon.Mapset
                 for (var i = 0; i < sliderAdditionValues.Length; i++)
                 {
                     var node = sliderNodes[i];
-                    var nodeAdditions = (HitSoundAddition)int.Parse(sliderAdditionValues[i]);
+                    var nodeAdditions = (HitSoundAddition)int.Parse(sliderAdditionValues[i], CultureInfo.InvariantCulture);
                     node.Additions = nodeAdditions;
                 }
             }
@@ -226,8 +226,8 @@ namespace StorybrewCommon.Mapset
                 {
                     var node = sliderNodes[i];
                     var sampleAndAdditionSampleSetValues2 = sampleAndAdditionSampleSetValues[i].Split(':');
-                    var nodeSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0]);
-                    var nodeAdditionsSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[1]);
+                    var nodeSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0], CultureInfo.InvariantCulture);
+                    var nodeAdditionsSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[1], CultureInfo.InvariantCulture);
 
                     if (nodeSampleSet != 0)
                     {
@@ -244,12 +244,12 @@ namespace StorybrewCommon.Mapset
                 var special = values[10];
                 var specialValues = special.Split(':');
 
-                var objectSampleSet = (SampleSet)int.Parse(specialValues[0]);
-                var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1]);
+                var objectSampleSet = (SampleSet)int.Parse(specialValues[0], CultureInfo.InvariantCulture);
+                var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1], CultureInfo.InvariantCulture);
                 var objectCustomSampleSet = 0;
-                if (specialValues.Length > 2) objectCustomSampleSet = int.Parse(specialValues[2]);
-                var objectVolume = 0.0f;
-                if (specialValues.Length > 3) objectVolume = int.Parse(specialValues[3]);
+                if (specialValues.Length > 2) objectCustomSampleSet = int.Parse(specialValues[2], CultureInfo.InvariantCulture);
+                var objectVolume = 0f;
+                if (specialValues.Length > 3) objectVolume = int.Parse(specialValues[3], CultureInfo.InvariantCulture);
                 if (specialValues.Length > 4) samplePath = specialValues[4];
 
                 if (objectSampleSet != 0)
@@ -259,7 +259,7 @@ namespace StorybrewCommon.Mapset
                 }
                 if (objectAdditionsSampleSet != 0) additionsSampleSet = objectAdditionsSampleSet;
                 if (objectCustomSampleSet != 0) customSampleSet = objectCustomSampleSet;
-                if (objectVolume > 0.001f) volume = objectVolume;
+                if (objectVolume > .001) volume = objectVolume;
             }
 
             return new OsuSlider(sliderNodes, sliderControlPoints)
