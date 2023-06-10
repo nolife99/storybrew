@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO.Pipes;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace StorybrewEditor.Processes
 {

@@ -80,7 +80,7 @@ namespace StorybrewEditor.Util
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         void Dispose(bool disposing)
         {
             if (!disposed)

@@ -129,23 +129,22 @@ namespace StorybrewEditor.Storyboarding
             startTime = double.MaxValue;
             endTime = double.MinValue;
 
-            foreach (var sbo in storyboardObjects.ToArray())
+            storyboardObjects.ForEach(sbo =>
             {
                 startTime = Math.Min(startTime, sbo.StartTime);
                 endTime = Math.Max(endTime, sbo.EndTime);
-            }
+            });
         }
         public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer)
-        {
-            foreach (var sbo in storyboardObjects.ToArray()) sbo.WriteOsb(writer, exportSettings, osbLayer);
-        }
+            => storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
+
         public int CalculateSize(OsbLayer osbLayer)
         {
             var exportSettings = new ExportSettings { OptimiseSprites = false };
 
             using (var stream = new ByteCounterStream()) using (var writer = new StreamWriter(stream, Project.Encoding))
             {
-                foreach (var sbo in storyboardObjects.ToArray()) sbo.WriteOsb(writer, exportSettings, osbLayer);
+                storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
                 return (int)stream.Length;
             }
         }

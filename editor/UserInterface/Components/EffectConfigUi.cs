@@ -435,7 +435,7 @@ namespace StorybrewEditor.UserInterface.Components
                 using (var stream = (Stream)ClipboardHelper.GetData(effectConfigFormat)) using (var reader = new BinaryReader(stream))
                 {
                     var fieldCount = reader.ReadInt32();
-                    for (var i = 0; i < fieldCount; i++)
+                    for (var i = 0; i < fieldCount; ++i)
                     {
                         var name = reader.ReadString();
                         var value = ObjectSerializer.Read(reader);

@@ -16,7 +16,7 @@ namespace BrewLib.Audio
         public static double GetNoteFrequency(float note, float a = 440) => Math.Pow(2, (note - 49) / 12) * a;
         public static float GetNoteRailsback(float note, float factor = .4f)
         {
-            var p = (note - 44) / 44f;
+            var p = (note - 44) / 44;
             return p >= 0 ? note + p * p * factor : note + p * p * -factor;
         }
 

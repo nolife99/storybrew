@@ -7,13 +7,13 @@ namespace BrewLib.Util
 {
     public static class HashHelper
     {
-        public static string GetMd5(string value) => GetMd5(Encoding.UTF8.GetBytes(value));
+        public static string GetMd5(string value) => GetMd5(Encoding.ASCII.GetBytes(value));
         public static string GetMd5(byte[] data)
         {
             using (var md5 = MD5.Create()) data = md5.ComputeHash(data);
 
             var characters = new char[data.Length * 2];
-            for (var i = 0; i < data.Length; i++)
+            for (var i = 0; i < data.Length; ++i)
                 data[i].ToString("x2", CultureInfo.InvariantCulture.NumberFormat).CopyTo(0, characters, i * 2, 2);
 
             return new string(characters);

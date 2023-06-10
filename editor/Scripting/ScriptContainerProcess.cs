@@ -26,7 +26,7 @@ namespace StorybrewEditor.Scripting
                 workerProcess?.Dispose();
                 workerProcess = new RemoteProcessWorkerContainer();
 
-                var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
+                var scriptProvider = RemoteProcessWorker.CreateScriptProvider<TScript>();
                 scriptProvider.Initialize(assemblyPath, ScriptTypeName);
 
                 return scriptProvider;
@@ -43,7 +43,7 @@ namespace StorybrewEditor.Scripting
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         protected override void Dispose(bool disposing)
         {
             if (!disposedValue)

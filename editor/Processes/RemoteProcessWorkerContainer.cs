@@ -46,7 +46,7 @@ namespace StorybrewEditor.Processes
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)

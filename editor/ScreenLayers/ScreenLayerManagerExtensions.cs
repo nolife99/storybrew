@@ -41,7 +41,7 @@ namespace StorybrewEditor.ScreenLayers
                     ShowHelp = false,
                     FileName = initialValue,
                     Filter = filter,
-                    InitialDirectory = initialDirectory != null ? Path.GetFullPath(initialDirectory) : string.Empty
+                    InitialDirectory = initialDirectory != null ? Path.GetFullPath(initialDirectory) : ""
                 })
                 if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
                 {
@@ -85,10 +85,10 @@ namespace StorybrewEditor.ScreenLayers
             => screenLayer.Add(new MessageBox(message, yes, no, cancel));
 
         public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, Action<string> action)
-            => screenLayer.Add(new PromptBox(title, string.Empty, string.Empty, action));
+            => screenLayer.Add(new PromptBox(title, "", "", action));
 
         public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, string description, Action<string> action)
-            => screenLayer.Add(new PromptBox(title, description, string.Empty, action));
+            => screenLayer.Add(new PromptBox(title, description, "", action));
 
         public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, string description, string text, Action<string> action)
             => screenLayer.Add(new PromptBox(title, description, text, action));

@@ -191,7 +191,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         protected override void Dispose(bool disposing)
         {
             if (!disposed)

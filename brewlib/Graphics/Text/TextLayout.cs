@@ -71,7 +71,7 @@ namespace BrewLib.Graphics.Text
                 foreach (var glyph in line.Glyphs)
                 {
                     if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * 0.5f) return index;
-                    index++;
+                    ++index;
                 }
                 if (lineMatches) return index - 1;
             }
@@ -111,7 +111,7 @@ namespace BrewLib.Graphics.Text
                     return previousLine.GetGlyph(Math.Min(index, previousLine.GlyphCount - 1)).Index;
                 }
                 index -= line.GlyphCount;
-                lineIndex++;
+                ++lineIndex;
             }
             return getLastGlyph().Index;
         }

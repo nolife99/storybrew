@@ -22,7 +22,7 @@ namespace StorybrewEditor
 {
     class Program
     {
-        public const string Name = "storybrew editor", Repository = "Damnae/storybrew";
+        public const string Name = "storybrew editor", Repository = "nolife99/storybrew";
         public static Version Version = Assembly.GetExecutingAssembly().GetName().Version;
         public static string FullName = $"{Name} {Version} ({Repository})", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
 
@@ -30,7 +30,7 @@ namespace StorybrewEditor
         public static Settings Settings { get; set; }
 
         static int mainThreadId;
-        public static bool IsMainThread => Thread.CurrentThread.ManagedThreadId == mainThreadId;
+        public static bool IsMainThread => Environment.CurrentManagedThreadId == mainThreadId;
         public static void CheckMainThread([CallerFilePath] string callerPath = "", [CallerLineNumber] int callerLine = -1, [CallerMemberName] string callerName = "")
         {
             if (IsMainThread) return;
@@ -40,7 +40,7 @@ namespace StorybrewEditor
         [STAThread] static void Main(string[] args)
         {
             mainThreadId = Environment.CurrentManagedThreadId;
-            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.SystemDefault;
 
             if (args.Length != 0 && handleArguments(args)) return;
             setupLogging(checkFrozen: false);
@@ -131,7 +131,7 @@ namespace StorybrewEditor
                 catch (Exception e2)
                 {
                     Trace.WriteLine($"Failed to use display device #{deviceIndex}: {e2}");
-                    deviceIndex++;
+                    ++deviceIndex;
                 }
             }
             throw new InvalidOperationException("Failed to find a display device");

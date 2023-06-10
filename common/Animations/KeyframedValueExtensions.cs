@@ -126,5 +126,15 @@ namespace StorybrewCommon.Animations
         ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Quaternion}"/>. </param>
         public static KeyframedValue<Quaternion> Add(this KeyframedValue<Quaternion> keyframes, double time, float angle, Func<double, double> easing = null)
             => keyframes.Add(time, Quaternion.CreateFromYawPitchRoll(angle, angle, angle), easing);
+
+        ///<summary> Adds a manually constructed <see cref="Quaternion"/> keyframe to <paramref name="keyframes"/>. </summary>
+        ///<param name="keyframes"> The keyframed value to be added to. </param>
+        ///<param name="time"> The time of the <see cref="Keyframe{Quaternion}"/>. </param>
+        ///<param name="pitch"> The pitch (x-axis) angle of the <see cref="Quaternion"/>. </param>
+        ///<param name="yaw"> The yaw (y-axis) angle of the <see cref="Quaternion"/>. </param>
+        ///<param name="roll"> The roll (z-axis) angle of the <see cref="Quaternion"/>. </param>
+        ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{Quaternion}"/>. </param>
+        public static KeyframedValue<Quaternion> Add(this KeyframedValue<Quaternion> keyframes, double time, float pitch, float yaw, float roll, Func<double, double> easing = null)
+            => keyframes.Add(time, Quaternion.CreateFromYawPitchRoll(pitch, yaw, roll), easing);
     }
 }

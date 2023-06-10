@@ -1,12 +1,11 @@
-﻿using StorybrewCommon.Scripting;
+﻿using BrewLib.Util;
+using StorybrewCommon.Scripting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
-using System.Security.Cryptography;
 using System.Security.Permissions;
-using System.Text;
 
 namespace StorybrewEditor.Scripting
 {
@@ -23,10 +22,7 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                string assemblyPath;
-                using (var hash = MD5.Create()) 
-                    assemblyPath = $"{CompiledScriptsPath}/{BitConverter.ToString(hash.ComputeHash(Encoding.ASCII.GetBytes(Name + DateTime.Now.Ticks))).Replace("-", "").ToLowerInvariant()}.dll";
-
+                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + DateTime.Now.Ticks).Replace("-", "").ToLowerInvariant()}.dll";
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 var setup = new AppDomainSetup

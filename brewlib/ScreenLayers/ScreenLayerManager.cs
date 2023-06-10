@@ -123,7 +123,7 @@ namespace BrewLib.ScreenLayers
                 top = false;
             }
 
-            foreach (var layer in removedLayers) layer.Dispose();
+            removedLayers.ForEach(layer => layer.Dispose());
             removedLayers.Clear();
 
             if (layers.Count == 0) window.Exit();
@@ -167,7 +167,7 @@ namespace BrewLib.ScreenLayers
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

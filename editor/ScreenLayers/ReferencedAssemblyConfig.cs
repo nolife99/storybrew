@@ -194,7 +194,7 @@ namespace StorybrewEditor.ScreenLayers
             }
         }
 
-        string getAssemblyName(string assemblyPath)
+        static string getAssemblyName(string assemblyPath)
         {
             try
             {
@@ -207,7 +207,7 @@ namespace StorybrewEditor.ScreenLayers
         }
         string getRelativePath(string assembly) => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ? assembly : Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
 
-        bool isValidAssembly(string assembly)
+        static bool isValidAssembly(string assembly)
         {
             try
             {
@@ -220,14 +220,14 @@ namespace StorybrewEditor.ScreenLayers
             return true;
         }
 
-        bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies
+        static bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies
             .Select(ass => getAssemblyName(ass))
             .Contains(getAssemblyName(assembly));
 
-        bool isDefaultAssembly(string assembly) => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
-        bool isSystemAssembly(string assemblyId) => getAssemblyName(assemblyId).StartsWith("System.");
+        static bool isDefaultAssembly(string assembly) => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
+        static bool isSystemAssembly(string assemblyId) => getAssemblyName(assemblyId).StartsWith("System.");
 
-        bool validateAssembly(string assembly, IEnumerable<string> assemblies) => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));
+        static bool validateAssembly(string assembly, IEnumerable<string> assemblies) => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));
         bool validateAssembly(string assembly) => validateAssembly(assembly, selectedAssemblies);
 
         IEnumerable<string> getAvailableSystemAssemblies()
@@ -325,9 +325,9 @@ namespace StorybrewEditor.ScreenLayers
             {
                 WidgetManager.ScreenLayerManager.ShowMessage("Cannot find Global Assembly Cache folders. Consider your installation of the .NET framework.");
             }
-            catch (Exception exception)
+            catch (Exception e)
             {
-                WidgetManager.ScreenLayerManager.ShowMessage($"An error occurred. Check your .NET Framework installation.\nException:\n{exception}");
+                WidgetManager.ScreenLayerManager.ShowMessage($"An error occurred. Check your .NET Framework installation.\nException:\n{e}");
             }
         }
     }

@@ -41,7 +41,7 @@ namespace StorybrewEditor.Storyboarding
         public void Replace(List<EditorStoryboardLayer> oldLayers, List<EditorStoryboardLayer> newLayers)
         {
             oldLayers = new List<EditorStoryboardLayer>(oldLayers);
-            foreach (var newLayer in newLayers.ToArray())
+            newLayers.ForEach(newLayer =>
             {
                 var oldLayer = oldLayers.Find(l => l.Name == newLayer.Name);
                 if (oldLayer != null)
@@ -56,12 +56,12 @@ namespace StorybrewEditor.Storyboarding
                 }
                 else layers.Insert(findLayerIndex(newLayer), newLayer);
                 newLayer.OnChanged += layer_OnChanged;
-            }
-            foreach (var oldLayer in oldLayers.ToArray())
+            });
+            oldLayers.ForEach(oldLayer =>
             {
                 oldLayer.OnChanged -= layer_OnChanged;
                 layers.Remove(oldLayer);
-            }
+            });
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
         }
         public void Replace(EditorStoryboardLayer oldLayer, List<EditorStoryboardLayer> newLayers)
@@ -69,11 +69,11 @@ namespace StorybrewEditor.Storyboarding
             var index = layers.IndexOf(oldLayer);
             if (index != -1)
             {
-                foreach (var newLayer in newLayers.ToArray())
+                newLayers.ForEach(newLayer =>
                 {
                     newLayer.CopySettings(oldLayer, copyGuid: false);
                     newLayer.OnChanged += layer_OnChanged;
-                }
+                });
                 layers.InsertRange(index, newLayers);
 
                 oldLayer.OnChanged -= layer_OnChanged;
@@ -199,7 +199,7 @@ namespace StorybrewEditor.Storyboarding
         void sortLayer(EditorStoryboardLayer layer)
         {
             var initialIndex = layers.IndexOf(layer);
-            if (initialIndex < 0) new InvalidOperationException($"Layer '{layer.Name}' cannot be found");
+            if (initialIndex < 0) throw new InvalidOperationException($"Layer '{layer.Name}' cannot be found");
 
             var newIndex = initialIndex;
             while (newIndex > 0 && layer.CompareTo(layers[newIndex - 1]) < 0) newIndex--;

@@ -11,10 +11,12 @@ using StorybrewEditor.UserInterface.Components;
 using StorybrewEditor.UserInterface.Drawables;
 using StorybrewEditor.Util;
 using System;
+using System.Globalization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using StorybrewEditor.Scripting;
 
 namespace StorybrewEditor.ScreenLayers
 {
@@ -392,9 +394,9 @@ namespace StorybrewEditor.ScreenLayers
                     case Key.C:
                         if (e.Control)
                         {
-                            if (e.Shift) ClipboardHelper.SetText(new TimeSpan(0, 0, 0, 0, (int)(timeSource.Current * 1000)).ToString(Program.Settings.TimeCopyFormat));
+                            if (e.Shift) ClipboardHelper.SetText(new TimeSpan(0, 0, 0, 0, (int)(timeSource.Current * 1000)).ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
                             else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
-                            else ClipboardHelper.SetText(((int)(timeSource.Current * 1000)).ToString());
+                            else ClipboardHelper.SetText(((int)(timeSource.Current * 1000)).ToString(CultureInfo.InvariantCulture));
                             return true;
                         }
                         break;
@@ -444,7 +446,7 @@ namespace StorybrewEditor.ScreenLayers
                     {
                         case EffectStatus.CompilationFailed:
                         case EffectStatus.ExecutionFailed:
-                        case EffectStatus.LoadingFailed: throw new Exception($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
+                        case EffectStatus.LoadingFailed: throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
                     }
                     wait.Wait(200);
                 }
@@ -631,7 +633,7 @@ namespace StorybrewEditor.ScreenLayers
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

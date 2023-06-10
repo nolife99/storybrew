@@ -150,7 +150,7 @@ namespace StorybrewEditor.ScreenLayers
                             foreach (var asset in release.Values<TinyObject>("assets"))
                             {
                                 var downloadName = asset.Value<string>("name");
-                                if (downloadName.EndsWith(".zip"))
+                                if (downloadName.EndsWith(".zip", StringComparison.InvariantCulture))
                                 {
                                     downloadUrl = asset.Value<string>("browser_download_url");
                                     break;
@@ -164,7 +164,7 @@ namespace StorybrewEditor.ScreenLayers
                             var authorName = release.Value<string>("author", "login");
 
                             var body = release.Value<string>("body");
-                            if (body.Contains("---")) body = body.Substring(0, body.IndexOf("---"));
+                            if (body.Contains("---")) body = body.Substring(0, body.IndexOf("---", StringComparison.InvariantCulture));
                             body = body.Replace("\r\n", "\n").Trim(' ', '\n');
                             body = $"v{version} - {authorName}, {publishDate.ToTimeAgo()}\n{body}\n\n";
 

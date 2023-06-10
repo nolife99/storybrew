@@ -33,14 +33,14 @@ namespace StorybrewEditor.Mapset
             if (!Directory.Exists(path)) return;
 
             foreach (var beatmapPath in Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly)) try
-                {
-                    beatmaps.Add(EditorBeatmap.Load(beatmapPath));
-                }
-                catch (Exception e)
-                {
-                    if (logLoadingExceptions) Trace.WriteLine($"Failed to load beatmap: {e}");
-                    else throw e;
-                }
+            {
+                beatmaps.Add(EditorBeatmap.Load(beatmapPath));
+            }
+            catch (Exception e)
+            {
+                if (logLoadingExceptions) Trace.WriteLine($"Failed to load beatmap: {e}");
+                else throw;
+            }
         }
 
         #endregion
@@ -81,7 +81,7 @@ namespace StorybrewEditor.Mapset
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)

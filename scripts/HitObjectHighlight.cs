@@ -2,7 +2,6 @@
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Animations;
-using System.Linq;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewScripts
@@ -18,13 +17,16 @@ namespace StorybrewScripts
         [Configurable] public string SpritePath = "sb/glow.png";
         [Configurable] public float SpriteScale = 1;
         [Configurable] public int FadeDuration = 1000;
+        [Configurable] public bool Additive = true;
 
         protected override void Generate()
         {
-            using (var pool = new SpritePool(GetLayer(""), SpritePath, true))
-            foreach (var hitobject in Beatmap.HitObjects
-                .Where(h => StartTime == EndTime || (h.StartTime > StartTime - 5 && h.EndTime < EndTime + 5)))
+            using (var pool = new SpritePool(GetLayer(""), SpritePath, Additive))
+            foreach (var hitobject in Beatmap.HitObjects)
             {
+                if ((StartTime != 0 || EndTime != 0) && (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime))
+                    continue;
+
                 var hSprite = pool.Get(hitobject.StartTime, hitobject.EndTime + FadeDuration);
 
                 var pos = hitobject.Position + hitobject.StackOffset;

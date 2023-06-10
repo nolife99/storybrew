@@ -172,8 +172,8 @@ namespace StorybrewEditor.Mapset
 
                         case "Events": reader.ParseSectionLines(line =>
                         {
-                            if (line.StartsWith("//")) return;
-                            if (line.StartsWith(" ")) return;
+                            if (line.StartsWith("//", StringComparison.InvariantCulture)) return;
+                            if (line.StartsWith(" ", StringComparison.InvariantCulture)) return;
 
                             var values = line.Split(',');
                             switch (values[0])
@@ -195,7 +195,7 @@ namespace StorybrewEditor.Mapset
                             beatmap.comboColors.Clear();
                             reader.ParseKeyValueSection((key, value) =>
                             {
-                                if (!key.StartsWith("Combo")) return;
+                                if (!key.StartsWith("Combo", StringComparison.InvariantCulture)) return;
 
                                 var rgb = value.Split(',');
                                 beatmap.comboColors.Add(new Color4(byte.Parse(rgb[0], CultureInfo.InvariantCulture), byte.Parse(rgb[1], CultureInfo.InvariantCulture), byte.Parse(rgb[2], CultureInfo.InvariantCulture), 255));
@@ -223,7 +223,7 @@ namespace StorybrewEditor.Mapset
                                     colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
                                     comboIndex = 1;
                                 }
-                                else comboIndex++;
+                                else ++comboIndex;
 
                                 hitobject.ComboIndex = comboIndex;
                                 hitobject.ColorIndex = colorIndex;
@@ -250,7 +250,7 @@ namespace StorybrewEditor.Mapset
             var stackLenienceSquared = 9;
             var preemtTime = GetDifficultyRange(ApproachRate, 1800, 1200, 450);
 
-            for (var i = hitObjects.Count - 1; i > 0; i--)
+            for (var i = hitObjects.Count - 1; i > 0; --i)
             {
                 var objectI = hitObjects[i];
 
@@ -265,11 +265,11 @@ namespace StorybrewEditor.Mapset
                         if (objectN is OsuSpinner) continue;
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.EndTime) break;
 
-                        var spanN = objectN as OsuSlider;
+                        var spanN = (OsuSlider)objectN;
                         if (spanN != null && (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
                         {
                             var offset = objectI.StackIndex - objectN.StackIndex + 1;
-                            for (var j = n + 1; j <= i; j++) 
+                            for (var j = n + 1; j <= i; ++j) 
                                 if ((spanN.PlayfieldEndPosition - hitObjects[j].PlayfieldPosition).LengthSquared < stackLenienceSquared)
                                 hitObjects[j].StackIndex -= offset;
 
@@ -305,7 +305,7 @@ namespace StorybrewEditor.Mapset
             hitObjects.ForEach(h => h.StackOffset = new Vector2(-stackOffset, -stackOffset) * h.StackIndex);
         }
 
-        static string removePathQuotes(string path) => path.StartsWith("\"") && path.EndsWith("\"") ?
+        static string removePathQuotes(string path) => path.StartsWith("\"", StringComparison.InvariantCulture) && path.EndsWith("\"", StringComparison.InvariantCulture) ?
             path.Substring(1, path.Length - 2) : path;
 
         #endregion

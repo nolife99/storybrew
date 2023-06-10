@@ -11,7 +11,7 @@ namespace StorybrewEditor.ScreenLayers
     {
         CameraOrtho uiCamera;
         protected WidgetManager WidgetManager { get; private set; }
-        float opacity = 0;
+        float opacity;
 
         public override void Load()
         {
@@ -49,7 +49,7 @@ namespace StorybrewEditor.ScreenLayers
         }
         protected void MakeTabs(Button[] buttons, Widget[] widgets)
         {
-            for (var i = 0; i < buttons.Length; i++)
+            for (var i = 0; i < buttons.Length; ++i)
             {
                 var button = buttons[i];
                 var widget = widgets[i];
@@ -67,7 +67,7 @@ namespace StorybrewEditor.ScreenLayers
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         protected override void Dispose(bool disposing)
         {
             if (!disposed)

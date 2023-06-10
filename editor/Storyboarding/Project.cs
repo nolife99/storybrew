@@ -25,7 +25,7 @@ namespace StorybrewEditor.Storyboarding
 {
     public class Project : IDisposable
     {
-        public static readonly Encoding Encoding = new UTF8Encoding();
+        public static readonly Encoding Encoding = Encoding.ASCII;
 
         public const string BinaryExtension = ".sbp", TextExtension = ".yaml";
         public const string DefaultBinaryFilename = "project" + BinaryExtension, DefaultTextFilename = "project.sbrew" + TextExtension;
@@ -38,7 +38,7 @@ namespace StorybrewEditor.Storyboarding
         public string ProjectFolderPath => Path.GetDirectoryName(projectPath);
         public string ProjectAssetFolderPath => Path.Combine(ProjectFolderPath, "assetlibrary");
 
-        internal bool DisplayDebugWarning = false;
+        internal bool DisplayDebugWarning;
 
         public string ScriptsPath { get; }
         public string CommonScriptsPath { get; }
@@ -436,10 +436,10 @@ namespace StorybrewEditor.Storyboarding
             // Binary format isn't saved anymore and may be obsolete:
             // Load from the text format if possible even if the binary format has been selected.
             var textFormatPath = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
-            if (projectPath.EndsWith(BinaryExtension) && File.Exists(textFormatPath)) projectPath = textFormatPath;
+            if (projectPath.EndsWith(BinaryExtension, StringComparison.InvariantCulture) && File.Exists(textFormatPath)) projectPath = textFormatPath;
 
             var project = new Project(projectPath, withCommonScripts, resourceContainer);
-            if (projectPath.EndsWith(BinaryExtension)) project.loadBinary(projectPath);
+            if (projectPath.EndsWith(BinaryExtension, StringComparison.InvariantCulture)) project.loadBinary(projectPath);
             else project.loadText(textFormatPath);
             return project;
         }
@@ -579,7 +579,7 @@ namespace StorybrewEditor.Storyboarding
                 }
 
                 // Write each effect
-                foreach (var effect in effects.ToArray())
+                effects.ForEach(effect =>
                 {
                     var effectRoot = new TinyObject
                     {
@@ -630,7 +630,7 @@ namespace StorybrewEditor.Storyboarding
 
                     var effectPath = directoryWriter.GetPath("effect." + effect.Guid.ToString("N") + ".yaml");
                     effectRoot.Write(effectPath);
-                }
+                });
 
                 directoryWriter.Commit(checkPaths: true);
                 Changed = false;
@@ -669,67 +669,68 @@ namespace StorybrewEditor.Storyboarding
                 ImportedAssemblies = indexRoot.Values<string>("Assemblies");
 
                 // Load effects
-                var layerInserters = new Dictionary<string, Action>();
-                foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
+                using (var layerInserters = new DisposableNativeDictionary<string, Action>())
                 {
-                    var guidMatch = effectGuidRegex.Match(effectPath);
-                    if (!guidMatch.Success || guidMatch.Groups.Count < 2) throw new InvalidDataException($"Could not parse effect Guid from '{effectPath}'");
-
-                    var effectRoot = TinyToken.Read(effectPath);
-
-                    var effectVersion = effectRoot.Value<int>("FormatVersion");
-                    if (effectVersion > Version) throw new InvalidOperationException("This project has an effect that was saved with a newer version; you need to update.");
-
-                    var effect = AddScriptedEffect(effectRoot.Value<string>("Script"), effectRoot.Value<bool>("Multithreaded"));
-                    effect.Guid = Guid.Parse(guidMatch.Groups[1].Value);
-                    effect.Name = effectRoot.Value<string>("Name");
-
-                    var configRoot = effectRoot.Value<TinyObject>("Config");
-                    var fieldIndex = 0;
-                    foreach (var fieldProperty in configRoot)
+                    foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
                     {
-                        var fieldRoot = fieldProperty.Value;
+                        var guidMatch = effectGuidRegex.Match(effectPath);
+                        if (!guidMatch.Success || guidMatch.Groups.Count < 2) throw new InvalidDataException($"Could not parse effect Guid from '{effectPath}'");
 
-                        var fieldTypeName = fieldRoot.Value<string>("Type");
-                        var fieldContent = fieldRoot.Value<string>("Value");
-                        var beginsGroup = fieldRoot.Value<string>("BeginsGroup");
+                        var effectRoot = TinyToken.Read(effectPath);
 
-                        var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldContent);
+                        var effectVersion = effectRoot.Value<int>("FormatVersion");
+                        if (effectVersion > Version) throw new InvalidOperationException("This project has an effect that was saved with a newer version; you need to update.");
 
-                        var allowedValues = fieldRoot.Value<TinyObject>("AllowedValues")?
-                            .Select(p => new NamedValue { Name = p.Key, Value = ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()), }).ToArray();
+                        var effect = AddScriptedEffect(effectRoot.Value<string>("Script"), effectRoot.Value<bool>("Multithreaded"));
+                        effect.Guid = Guid.Parse(guidMatch.Groups[1].Value);
+                        effect.Name = effectRoot.Value<string>("Name");
 
-                        effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++, fieldValue?.GetType(), fieldValue, allowedValues, beginsGroup);
-                    }
-
-                    var layersRoot = effectRoot.Value<TinyObject>("Layers");
-                    foreach (var layerProperty in layersRoot)
-                    {
-                        var layerEffect = effect;
-                        var layerGuid = layerProperty.Key;
-                        var layerRoot = layerProperty.Value;
-                        layerInserters.Add(layerGuid, () => layerEffect.AddPlaceholder(new EditorStoryboardLayer(layerRoot.Value<string>("Name"), layerEffect)
+                        var configRoot = effectRoot.Value<TinyObject>("Config");
+                        var fieldIndex = 0;
+                        foreach (var fieldProperty in configRoot)
                         {
-                            Guid = Guid.Parse(layerGuid),
-                            OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
-                            DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
-                            Visible = layerRoot.Value<bool>("Visible")
-                        }));
+                            var fieldRoot = fieldProperty.Value;
+
+                            var fieldTypeName = fieldRoot.Value<string>("Type");
+                            var fieldContent = fieldRoot.Value<string>("Value");
+                            var beginsGroup = fieldRoot.Value<string>("BeginsGroup");
+
+                            var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldContent);
+
+                            var allowedValues = fieldRoot.Value<TinyObject>("AllowedValues")?
+                                .Select(p => new NamedValue { Name = p.Key, Value = ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()), }).ToArray();
+
+                            effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++, fieldValue?.GetType(), fieldValue, allowedValues, beginsGroup);
+                        }
+
+                        var layersRoot = effectRoot.Value<TinyObject>("Layers");
+                        foreach (var layerProperty in layersRoot)
+                        {
+                            var layerEffect = effect;
+                            var layerGuid = layerProperty.Key;
+                            var layerRoot = layerProperty.Value;
+                            layerInserters[layerGuid] = () => layerEffect.AddPlaceholder(new EditorStoryboardLayer(layerRoot.Value<string>("Name"), layerEffect)
+                            {
+                                Guid = Guid.Parse(layerGuid),
+                                OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
+                                DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
+                                Visible = layerRoot.Value<bool>("Visible")
+                            });
+                        }
                     }
-                }
 
-                if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
+                    if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
 
-                // Insert layers defined in the index
-                var layersOrder = indexRoot.Values<string>("Layers");
-                if (layersOrder != null) foreach (var layerGuid in layersOrder.Distinct())
+                    var layersOrder = indexRoot.Values<string>("Layers");
+                    if (layersOrder != null) foreach (var layerGuid in layersOrder.Distinct())
                         if (layerInserters.TryGetValue(layerGuid, out var insertLayer)) insertLayer();
 
-                // Insert all remaining layers
-                foreach (var key in layersOrder == null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
-                {
-                    var insertLayer = layerInserters[key];
-                    insertLayer();
+                    // Insert all remaining layers
+                    foreach (var key in layersOrder == null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
+                    {
+                        var insertLayer = layerInserters[key];
+                        insertLayer();
+                    }
                 }
             }
         }
@@ -739,10 +740,10 @@ namespace StorybrewEditor.Storyboarding
 
             var hasInvalidCharacters = false;
             foreach (var character in Path.GetInvalidFileNameChars()) if (projectFolderName.Contains(character.ToString()))
-                {
-                    hasInvalidCharacters = true;
-                    break;
-                }
+            {
+                hasInvalidCharacters = true;
+                break;
+            }
 
             if (hasInvalidCharacters || string.IsNullOrWhiteSpace(projectFolderName)) throw new InvalidOperationException($"'{projectFolderName}' isn't a valid project folder name");
 
@@ -799,7 +800,7 @@ namespace StorybrewEditor.Storyboarding
 
                         if (inEvents)
                         {
-                            if (trimmedLine.StartsWith("//Storyboard Layer"))
+                            if (trimmedLine.StartsWith("//Storyboard Layer", StringComparison.InvariantCulture))
                             {
                                 if (!inStoryboard)
                                 {
@@ -809,12 +810,12 @@ namespace StorybrewEditor.Storyboarding
 
                                         writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
                                         foreach (var layer in localLayers) if (layer.OsbLayer == osbLayer && layer.DiffSpecific)
-                                                layer.WriteOsb(writer, ExportSettings);
+                                            layer.WriteOsb(writer, ExportSettings);
                                     }
                                     inStoryboard = true;
                                 }
                             }
-                            else if (inStoryboard && trimmedLine.StartsWith("//")) inStoryboard = false;
+                            else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.InvariantCulture)) inStoryboard = false;
                             if (inStoryboard) continue;
                         }
                         writer.WriteLine(line);
@@ -848,7 +849,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region IDisposable Support
 
-        public bool Disposed { get; set; } = false;
+        public bool Disposed { get; set; }
 
         protected virtual void Dispose(bool disposing)
         {
