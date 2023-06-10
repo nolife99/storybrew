@@ -23,7 +23,10 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name}-{DateTime.UtcNow.Millisecond}.dll");
+                string assemblyPath;
+                using (var hash = MD5.Create()) 
+                    assemblyPath = $"{CompiledScriptsPath}/{BitConverter.ToString(hash.ComputeHash(Encoding.ASCII.GetBytes(Name + DateTime.Now.Ticks))).Replace("-", "").ToLowerInvariant()}.dll";
+
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 var setup = new AppDomainSetup
@@ -77,13 +80,19 @@ namespace StorybrewEditor.Scripting
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
                 if (appDomain != null) AppDomain.Unload(appDomain);
                 appDomain = null;
+                foreach (var item in Directory.GetFiles(CompiledScriptsPath))
+                try
+                {
+                    File.Delete(item);
+                }
+                catch (UnauthorizedAccessException) { }
                 disposedValue = true;
             }
             base.Dispose(disposing);

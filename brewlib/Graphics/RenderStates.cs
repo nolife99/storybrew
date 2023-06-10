@@ -19,8 +19,8 @@ namespace BrewLib.Graphics
         public DepthState Depth = DepthState.Default2d;
         public PointSpriteState PointSprite = PointSpriteState.Default;
 
-        static readonly List<FieldInfo> fields = new List<FieldInfo>(typeof(RenderStates).GetFields());
-        static readonly Dictionary<Type, RenderState> currentStates = new Dictionary<Type, RenderState>();
+        static readonly IEnumerable<FieldInfo> fields = new HashSet<FieldInfo>(typeof(RenderStates).GetFields());
+        static readonly IDictionary<Type, RenderState> currentStates = new Dictionary<Type, RenderState>();
 
         public void Apply()
         {

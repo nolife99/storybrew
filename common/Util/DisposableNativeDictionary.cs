@@ -112,8 +112,7 @@ namespace StorybrewCommon.Util
 
             for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next) if (node.Handle.IsAllocated)
             {
-                var value = (IDisposable)node.Handle.Target;
-                value?.Dispose();
+                if (node.Handle.Target is IDisposable value) value.Dispose();
                 node.Handle.Free();
             }
 

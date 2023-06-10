@@ -1,6 +1,7 @@
 ﻿using BrewLib.Data;
 using BrewLib.Util;
 using StorybrewCommon.Scripting;
+using StorybrewCommon.Util;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
 using System;
@@ -33,7 +34,7 @@ namespace StorybrewEditor.Scripting
         FileSystemWatcher scriptWatcher;
         readonly FileSystemWatcher libraryWatcher;
         ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
-        Dictionary<string, ScriptContainer<TScript>> scriptContainers = new Dictionary<string, ScriptContainer<TScript>>();
+        DisposableNativeDictionary<string, ScriptContainer<TScript>> scriptContainers = new DisposableNativeDictionary<string, ScriptContainer<TScript>>();
 
         public string ScriptsPath { get; }
 
@@ -98,7 +99,7 @@ namespace StorybrewEditor.Scripting
             }
 
             scriptContainer = new ScriptContainerAppDomain<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
-            scriptContainers.Add(scriptName, scriptContainer);
+            scriptContainers[scriptName] = scriptContainer;
             return scriptContainer;
         }
         public IEnumerable<string> GetScriptNames()
@@ -122,7 +123,7 @@ namespace StorybrewEditor.Scripting
             Trace.WriteLine($"Watched script file {change}: {e.FullPath}");
 
             if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
-            if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, key =>
+            if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, _ =>
             {
                 if (disposedValue) return;
                 var scriptName = Path.GetFileNameWithoutExtension(e.Name);
@@ -196,7 +197,7 @@ namespace StorybrewEditor.Scripting
                 {
                     scriptWatcher.Dispose();
                     libraryWatcher.Dispose();
-                    foreach (var entry in scriptContainers) entry.Value.Dispose();
+                    scriptContainers.Dispose();
                 }
                 scheduler = null;
                 scriptWatcher = null;

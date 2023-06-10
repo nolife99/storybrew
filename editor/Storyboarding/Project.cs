@@ -112,11 +112,6 @@ namespace StorybrewEditor.Storyboarding
 
             var compiledScriptsPath = Path.GetFullPath("cache/scripts");
             if (!Directory.Exists(compiledScriptsPath)) Directory.CreateDirectory(compiledScriptsPath);
-            else
-            {
-                cleanupFolder(compiledScriptsPath, "*.dll");
-                cleanupFolder(compiledScriptsPath, "*.pdb");
-            }
 
             initializeAssetWatcher();
 
@@ -847,19 +842,6 @@ namespace StorybrewEditor.Storyboarding
                     stream.Commit();
                 }
             }
-        }
-        static void cleanupFolder(string path, string searchPattern)
-        {
-            foreach (var filename in Directory.EnumerateFiles(path, searchPattern, SearchOption.TopDirectoryOnly)) 
-                try
-                {
-                    File.Delete(filename);
-                    Debug.Print($"{filename} deleted");
-                }
-                catch (Exception e)
-                {
-                    Trace.WriteLine($"{filename} couldn't be deleted: {e.Message}");
-                }
         }
 
         #endregion

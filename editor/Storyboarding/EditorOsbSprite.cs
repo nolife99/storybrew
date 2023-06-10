@@ -29,7 +29,8 @@ namespace StorybrewEditor.Storyboarding
         public static void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, Project project, FrameStats frameStats, OsbSprite sprite)
         {
             var time = project.DisplayTime * 1000;
-            if (sprite.GetTexturePathAt(time) == null || !sprite.IsActive(time)) return;
+            var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
+            if (texturePath == null || !sprite.IsActive(time)) return;
 
             if (frameStats != null)
             {
@@ -48,13 +49,13 @@ namespace StorybrewEditor.Storyboarding
             if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
 
             Texture2dRegion texture;
-            var fullPath = Path.Combine(project.MapsetPath, sprite.GetTexturePathAt(time));
+            var fullPath = Path.Combine(project.MapsetPath, texturePath);
             try
             {
                 texture = project.TextureContainer.Get(fullPath);
                 if (texture is null)
                 {
-                    fullPath = Path.Combine(project.ProjectAssetFolderPath, sprite.GetTexturePathAt(time));
+                    fullPath = Path.Combine(project.ProjectAssetFolderPath, texturePath);
                     texture = project.TextureContainer.Get(fullPath);
                 }
             }
@@ -81,8 +82,8 @@ namespace StorybrewEditor.Storyboarding
                     frameStats.EffectiveCommandCount += sprite.CommandCount;
 
                     var _sprite = spriteBox.GetAABBBox();
-                    frameStats.ScreenFill += Math.Abs(Math.Min(OsuHitObject.WidescreenStoryboardArea, size.Area() * _sprite.IntersectWith(
-                        OsuHitObject.WidescreenStoryboardBounds).Area() / _sprite.Area()) / OsuHitObject.WidescreenStoryboardArea);
+                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, size.Area() * _sprite.IntersectWith(
+                        OsuHitObject.WidescreenStoryboardBounds).Area() / _sprite.Area()) / OsuHitObject.WidescreenStoryboardArea;
                 }
             }
 

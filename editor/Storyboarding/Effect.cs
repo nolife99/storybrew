@@ -99,14 +99,11 @@ namespace StorybrewEditor.Storyboarding
         ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate(Effect)"/>. Doesn't run on the main thread. </summary>
         public abstract void Update();
 
-        void refreshLayerNames()
-        {
-            foreach (var layer in layers.ToArray()) layer._Name = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})";
-        }
+        void refreshLayerNames() => layers.ForEach(layer => layer._Name = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
         void refreshEstimatedSize()
         {
             EstimatedSize = 0;
-            foreach (var layer in layers.ToArray()) EstimatedSize += layer.EstimatedSize;
+            layers.ForEach(layer => EstimatedSize += layer.EstimatedSize);
             RaiseChanged();
         }
 
