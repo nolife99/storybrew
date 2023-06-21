@@ -27,7 +27,6 @@ namespace BrewLib.Util
                 color.B * invBlend + otherColor.B * blend,
                 color.A * invBlend + otherColor.A * blend);
         }
-
         public static Color4 LerpColor(this Color4 color, Color4 otherColor, float blend)
         {
             var invBlend = 1 - blend;
@@ -37,6 +36,7 @@ namespace BrewLib.Util
                 color.B * invBlend + otherColor.B * blend,
                 color.A);
         }
+
         public static Vector4 ToHsba(this Color4 color)
         {
             float r = color.R, g = color.G, b = color.B;

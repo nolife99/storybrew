@@ -1,7 +1,6 @@
 ﻿using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Display;
-using StorybrewCommon.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -87,7 +86,7 @@ namespace StorybrewCommon.Storyboarding
         protected virtual bool IsFragmentable()
         {
             // if there are commands with non-deterministic results (aka triggercommands) the sprite can't reliably be split
-            if (sprite.Commands.AsParallel().Any(c => !(c is IFragmentableCommand))) return false;
+            if (sprite.Commands.Any(c => !(c is IFragmentableCommand))) return false;
 
             return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap ||
                 rotate.HasOverlap ||
@@ -140,7 +139,7 @@ namespace StorybrewCommon.Storyboarding
                 if (fragmentationTimes.Contains((int)lastCommand.StartTime) && lastCommand.StartTime > startTime) endTime = (int)lastCommand.StartTime;
                 else
                 {
-                    if (fragmentationTimes.AsParallel().Any(t => t < (int)lastCommand.StartTime))
+                    if (fragmentationTimes.Any(t => t < (int)lastCommand.StartTime))
                     {
                         endTime = fragmentationTimes.Where(t => t < (int)lastCommand.StartTime).Max();
                         if (endTime == startTime) endTime = fragmentationTimes.First(t => t > startTime);
@@ -152,42 +151,42 @@ namespace StorybrewCommon.Storyboarding
         }
         void addStaticCommands(ICollection<IFragmentableCommand> segment, int startTime)
         {
-            if (move.HasCommands && !segment.AsParallel().Any(c => c is MoveCommand && c.StartTime == startTime))
+            if (move.HasCommands && !segment.Any(c => c is MoveCommand && c.StartTime == startTime))
             {
                 var value = move.ValueAtTime(startTime);
                 segment.Add(new MoveCommand(OsbEasing.None, startTime, startTime, value, value));
             }
-            if (moveX.HasCommands && !segment.AsParallel().Any(c => c is MoveXCommand && c.StartTime == startTime))
+            if (moveX.HasCommands && !segment.Any(c => c is MoveXCommand && c.StartTime == startTime))
             {
                 var value = moveX.ValueAtTime(startTime);
                 segment.Add(new MoveXCommand(OsbEasing.None, startTime, startTime, value, value));
             }
-            if (moveY.HasCommands && !segment.AsParallel().Any(c => c is MoveYCommand && c.StartTime == startTime))
+            if (moveY.HasCommands && !segment.Any(c => c is MoveYCommand && c.StartTime == startTime))
             {
                 var value = moveY.ValueAtTime(startTime);
                 segment.Add(new MoveYCommand(OsbEasing.None, startTime, startTime, value, value));
             }
-            if (rotate.HasCommands && !segment.AsParallel().Any(c => c is RotateCommand && c.StartTime == startTime))
+            if (rotate.HasCommands && !segment.Any(c => c is RotateCommand && c.StartTime == startTime))
             {
                 var value = rotate.ValueAtTime(startTime);
                 segment.Add(new RotateCommand(OsbEasing.None, startTime, startTime, value, value));
             }
-            if (scale.HasCommands && !segment.AsParallel().Any(c => c is ScaleCommand && c.StartTime == startTime))
+            if (scale.HasCommands && !segment.Any(c => c is ScaleCommand && c.StartTime == startTime))
             {
                 var value = scale.ValueAtTime(startTime);
                 segment.Add(new ScaleCommand(OsbEasing.None, startTime, startTime, value, value));
             }
-            if (scaleVec.HasCommands && !segment.AsParallel().Any(c => c is VScaleCommand && c.StartTime == startTime))
+            if (scaleVec.HasCommands && !segment.Any(c => c is VScaleCommand && c.StartTime == startTime))
             {
                 var value = scaleVec.ValueAtTime(startTime);
                 segment.Add(new VScaleCommand(OsbEasing.None, startTime, startTime, value, value));
             }
-            if (color.HasCommands && !segment.AsParallel().Any(c => c is ColorCommand && c.StartTime == startTime))
+            if (color.HasCommands && !segment.Any(c => c is ColorCommand && c.StartTime == startTime))
             {
                 var value = color.ValueAtTime(startTime);
                 segment.Add(new ColorCommand(OsbEasing.None, startTime, startTime, value, value));
             }
-            if (fade.HasCommands && !segment.AsParallel().Any(c => c is FadeCommand && c.StartTime == startTime))
+            if (fade.HasCommands && !segment.Any(c => c is FadeCommand && c.StartTime == startTime))
             {
                 var value = fade.ValueAtTime(startTime);
                 segment.Add(new FadeCommand(OsbEasing.None, startTime, startTime, value, value));

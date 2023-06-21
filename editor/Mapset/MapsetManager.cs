@@ -11,7 +11,7 @@ namespace StorybrewEditor.Mapset
         readonly string path;
         readonly bool logLoadingExceptions;
 
-        readonly List<EditorBeatmap> beatmaps = new List<EditorBeatmap>();
+        readonly HashSet<EditorBeatmap> beatmaps = new HashSet<EditorBeatmap>();
         public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
         public int BeatmapCount => beatmaps.Count;
 
@@ -87,6 +87,7 @@ namespace StorybrewEditor.Mapset
             if (!disposed)
             {
                 if (disposing) fileWatcher?.Dispose();
+                beatmaps.Clear();
                 fileWatcher = null;
                 disposed = true;
             }

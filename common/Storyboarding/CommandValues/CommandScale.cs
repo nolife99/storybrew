@@ -6,7 +6,6 @@ namespace StorybrewCommon.Storyboarding.CommandValues
     ///<summary> Base struct for vector scale commands. Alternative for <see cref="Vector2"/>. </summary>
     [Serializable] public struct CommandScale : CommandValue, IEquatable<CommandScale>
     {
-#pragma warning disable CS1591
         ///<summary> Represents a scale in which all values are 1 (one). </summary>
         public static CommandScale One = new CommandScale(1, 1);
 
@@ -47,17 +46,12 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public string ToOsbString(ExportSettings exportSettings) => $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}";
 
         ///<summary> Converts this instance to a string. </summary>
-        public override string ToString() => ToOsbString(ExportSettings.Default);
+        public override string ToString() => ((Vector2)this).ToString();
 
         ///<summary> Returns the distance between this instance and point <paramref name="obj"/> on the Cartesian plane. </summary>
-        public float DistanceFrom(object obj)
-        {
-            var other = (CommandScale)obj;
-            var diffX = X.DistanceFrom(other.X);
-            var diffY = Y.DistanceFrom(other.Y);
-            return (float)Math.Sqrt(diffX * diffX + diffY * diffY);
-        }
+        public float DistanceFrom(object obj) => Vector2.Distance(this, (Vector2)obj);
 
+#pragma warning disable CS1591
         public static CommandScale operator +(CommandScale left, CommandScale right) => new CommandScale(left.X + right.X, left.Y + right.Y);
         public static CommandScale operator -(CommandScale left, CommandScale right) => new CommandScale(left.X - right.X, left.Y - right.Y);
         public static CommandScale operator *(CommandScale left, CommandScale right) => new CommandScale(left.X * right.X, left.Y * right.Y);

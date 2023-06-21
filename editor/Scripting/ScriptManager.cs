@@ -201,7 +201,6 @@ namespace StorybrewEditor.Scripting
                 }
                 scheduler = null;
                 scriptWatcher = null;
-                scriptContainers = null;
 
                 disposedValue = true;
             }

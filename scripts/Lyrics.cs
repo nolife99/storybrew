@@ -1,9 +1,9 @@
-using OpenTK;
 using OpenTK.Graphics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Subtitles;
 using System;
+using System.Numerics;
 using System.Drawing;
 using System.IO;
 
@@ -130,7 +130,7 @@ namespace StorybrewScripts
                     var lineHeight = 0f;
                     foreach (var letter in line)
                     {
-                        var texture = font.GetTexture(letter.ToString());
+                        var texture = font.GetTexture(letter);
                         lineWidth += texture.BaseWidth * FontScale;
                         lineHeight = Math.Max(lineHeight, texture.BaseHeight * FontScale);
                     }
@@ -138,7 +138,7 @@ namespace StorybrewScripts
                     var letterX = 320 - lineWidth * .5f;
                     foreach (var letter in line)
                     {
-                        var texture = font.GetTexture(letter.ToString());
+                        var texture = font.GetTexture(letter);
                         if (!texture.IsEmpty)
                         {
                             var position = new Vector2(letterX, letterY) + texture.OffsetFor(Origin) * FontScale;

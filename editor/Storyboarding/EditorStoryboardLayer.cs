@@ -75,7 +75,7 @@ namespace StorybrewEditor.Storyboarding
 
         public bool Highlight;
 
-        public int EstimatedSize { get; set; }
+        public long EstimatedSize { get; set; }
 
         public event ChangedHandler OnChanged;
         protected void RaiseChanged(string propertyName)

@@ -1,6 +1,5 @@
 ﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Numerics;
@@ -36,7 +35,7 @@ namespace StorybrewCommon.Storyboarding3d
         public Vector2? UseDefaultScale = null;
 
         ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
-        public readonly KeyframedValue<CommandScale> SpriteScale = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale, Vector2.One);
+        public readonly KeyframedValue<Vector2> SpriteScale = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2, Vector2.One);
 
         ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
         public readonly KeyframedValue<double> SpriteRotation = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle, 0);
@@ -82,9 +81,9 @@ namespace StorybrewCommon.Storyboarding3d
             var rotation = InterpolatingFunctions.DoubleAngle(
                 previousState?.Rotation ?? -SpriteRotation.ValueAt(previousState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
 
-            var scale = (Vector2)(SpriteScale.ValueAt(time) * new CommandScale(
+            var scale = SpriteScale.ValueAt(time) * new Vector2(
                 new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13).Length(),
-                new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length())) *
+                new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length()) *
             (float)(cameraState.FocusDistance / screenPosition.W) *
             (float)cameraState.ResolutionScale;
 

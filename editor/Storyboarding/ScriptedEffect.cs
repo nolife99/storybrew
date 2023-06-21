@@ -75,7 +75,7 @@ namespace StorybrewEditor.Storyboarding
 
                 changeStatus(EffectStatus.Updating);
                 script.Generate(context);
-                foreach (var layer in context.EditorLayers) layer.PostProcess();
+                context.EditorLayers.ForEach(layer => layer.PostProcess());
 
                 success = true;
             }
@@ -130,7 +130,7 @@ namespace StorybrewEditor.Storyboarding
                     }
                     else dependencyWatcher = newDependencyWatcher;
                 }
-                context.DisposeResources();
+                context.Dispose();
             }
             changeStatus(EffectStatus.Ready, null, context.Log);
 
@@ -160,16 +160,16 @@ namespace StorybrewEditor.Storyboarding
             {
                 var duration = statusStopwatch.ElapsedMilliseconds;
                 if (duration > 0) switch (this.status)
-                    {
-                        case EffectStatus.Ready:
-                        case EffectStatus.CompilationFailed:
-                        case EffectStatus.LoadingFailed:
-                        case EffectStatus.ExecutionFailed: break;
-                        default: Debug.Print($"{BaseName}'s {this.status} status took {duration}ms"); break;
-                    }
+                {
+                    case EffectStatus.Ready:
+                    case EffectStatus.CompilationFailed:
+                    case EffectStatus.LoadingFailed:
+                    case EffectStatus.ExecutionFailed: break;
+                    default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
+                }
 
                 this.status = status;
-                statusMessage = message ?? string.Empty;
+                statusMessage = message ?? "";
 
                 if (!string.IsNullOrWhiteSpace(log))
                 {
@@ -184,7 +184,7 @@ namespace StorybrewEditor.Storyboarding
         string getExecutionFailedMessage(Exception e)
         {
             if (e is FileNotFoundException)
-                return $"File not found while {status}. Make sure this path is correct:\n{(e as FileNotFoundException).FileName}\n\nDetails:\n{e}";
+                return $"File not found while {status}. Make sure this path is correct:\n{((FileNotFoundException)e).FileName}\n\nDetails:\n{e}";
 
             return $"Unexpected error during {status}:\n{e}";
         }

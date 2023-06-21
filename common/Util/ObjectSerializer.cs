@@ -1,4 +1,5 @@
-﻿using OpenTK;
+﻿using BrewLib.Util;
+using OpenTK;
 using OpenTK.Graphics;
 using System;
 using System.Collections.Generic;
@@ -61,7 +62,47 @@ namespace StorybrewCommon.Util
             {
                 var vector = (Vector3)v;
                 return vector.X.ToString() + "," + vector.Y.ToString() + "," + vector.Z.ToString();
-            }), 
+            }),
+            new SimpleObjectSerializer<System.Numerics.Vector2>(r =>
+            {
+                var x = r.ReadSingle();
+                var y = r.ReadSingle();
+                return new Vector2(x, y);
+            }, (w, v) =>
+            {
+                var vector = (Vector2)v;
+                w.Write(vector.X);
+                w.Write(vector.Y);
+            }, v =>
+            {
+                var split = v.Split(',');
+                return new Vector2(float.Parse(split[0]), float.Parse(split[1]));
+            }, v =>
+            {
+                var vector = (Vector2)v;
+                return vector.X.ToString() + "," + vector.Y.ToString();
+            }),
+            new SimpleObjectSerializer<System.Numerics.Vector3>(r =>
+            {
+                var x = r.ReadSingle();
+                var y = r.ReadSingle();
+                var z = r.ReadSingle();
+                return new Vector3(x, y, z);
+            }, (w, v) =>
+            {
+                var vector = (Vector3)v;
+                w.Write(vector.X);
+                w.Write(vector.Y);
+                w.Write(vector.Z);
+            }, v =>
+            {
+                var split = v.Split(',');
+                return new Vector3(float.Parse(split[0]), float.Parse(split[1]), float.Parse(split[2]));
+            }, v =>
+            {
+                var vector = (Vector3)v;
+                return vector.X.ToString() + "," + vector.Y.ToString() + "," + vector.Z.ToString();
+            }),
             new SimpleObjectSerializer<Color4>(r =>
             {
                 var red = r.ReadByte();
@@ -89,9 +130,9 @@ namespace StorybrewCommon.Util
 
         public static object Read(BinaryReader reader)
         {
-            var typeName = reader.ReadString();
-            if (typeName == string.Empty) return null;
-
+            var typeName = reader.ReadEncodedString();
+            if (string.IsNullOrEmpty(typeName)) return null;
+            
             var serializer = GetSerializer(typeName);
             if (serializer == null) throw new NotSupportedException($"Cannot read objects of type {typeName}");
 
@@ -110,7 +151,7 @@ namespace StorybrewCommon.Util
             var serializer = GetSerializer(typeName);
             if (serializer == null) throw new NotSupportedException($"Cannot write objects of type {typeName}");
 
-            writer.Write(typeName);
+            writer.WriteEncodedString(typeName);
             serializer.WriteValue(writer, value);
         }
         public static object FromString(string typeName, string value)
@@ -126,7 +167,7 @@ namespace StorybrewCommon.Util
         {
             if (value == null) return string.Empty;
 
-            var typeName = value.GetType().FullName;
+            var typeName = type.FullName;
 
             var serializer = GetSerializer(typeName);
             if (serializer == null) throw new NotSupportedException($"Cannot write objects of type {typeName}");

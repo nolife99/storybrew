@@ -41,7 +41,7 @@ namespace StorybrewEditor.Storyboarding
         public double EndTime => layers.Select(l => l.EndTime).DefaultIfEmpty().Max();
         public bool Highlight;
 
-        public int EstimatedSize { get; set; }
+        public long EstimatedSize { get; set; }
 
         public event EventHandler OnChanged;
         protected void RaiseChanged() => OnChanged?.Invoke(this, EventArgs.Empty);

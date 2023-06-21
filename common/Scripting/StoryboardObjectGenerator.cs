@@ -84,7 +84,7 @@ namespace StorybrewCommon.Scripting
         Bitmap getBitmap(string path, string alternatePath, bool watch)
         {
             path = Path.GetFullPath(path);
-            if (!bitmaps.TryGetValue(path, out Bitmap bitmap)) using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, (FileShare)(0x3 | 0x4)))
+            if (!bitmaps.TryGetValue(path, out Bitmap bitmap)) using (var stream = File.OpenRead(path))
             {
                 if (watch) context.AddDependency(path);
 
@@ -107,11 +107,11 @@ namespace StorybrewCommon.Scripting
             return bitmap;
         }
 
-        static readonly Dictionary<string, Rectangle> trimRect = new Dictionary<string, Rectangle>();
+        readonly DisposableNativeDictionary<string, Rectangle> trimRect = new DisposableNativeDictionary<string, Rectangle>();
         internal Rectangle getTrimmedBitmap(string key, Bitmap source)
         {
-            if (!trimRect.TryGetValue(key, out Rectangle bitmap)) trimRect.Add(key, bitmap = BitmapHelper.FindTransparencyBounds(source));
-            return bitmap;
+            if (!trimRect.TryGetValue(key, out Rectangle bounds)) trimRect[key] = bounds = BitmapHelper.FindTransparencyBounds(source);
+            return bounds;
         }
 
         ///<summary> Opens a project file in read-only mode. You are responsible for disposing it. </summary>
@@ -150,10 +150,10 @@ namespace StorybrewCommon.Scripting
         public double Random(double maxValue) => rnd.NextDouble() * maxValue;
 
         ///<summary> Gets a pseudo-random float with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
-        public float Random(float minValue, float maxValue) => minValue + (float)rnd.NextDouble() * (maxValue - minValue);
+        public float Random(float minValue, float maxValue) => (float)(minValue + rnd.NextDouble() * (maxValue - minValue));
 
         ///<summary> Gets a pseudo-random float with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
-        public float Random(float maxValue) => (float)rnd.NextDouble() * maxValue;
+        public float Random(float maxValue) => (float)(rnd.NextDouble() * maxValue);
 
         #endregion
 
@@ -362,15 +362,7 @@ namespace StorybrewCommon.Scripting
                 var group = field.GetCustomAttribute<GroupAttribute>(true);
                 var description = field.GetCustomAttribute<DescriptionAttribute>(true);
 
-                configurableFields.Add(new ConfigurableField
-                {
-                    Field = field,
-                    Attribute = configurable,
-                    InitialValue = field.GetValue(this),
-                    BeginsGroup = group?.Name?.Trim(),
-                    Description = description?.Content?.Trim(),
-                    Order = order++
-                });
+                configurableFields.Add(new ConfigurableField(field, configurable, field.GetValue(this), group?.Name?.Trim(), description?.Content?.Trim(), order++));
             }
         }
         struct ConfigurableField
@@ -380,6 +372,16 @@ namespace StorybrewCommon.Scripting
             internal object InitialValue;
             internal string BeginsGroup, Description;
             internal int Order;
+
+            internal ConfigurableField(FieldInfo field, ConfigurableAttribute attribute, object initialValue, string beginsGroup, string description, int order)
+            {
+                Field = field;
+                Attribute = attribute;
+                InitialValue = initialValue;
+                BeginsGroup = beginsGroup;
+                Description = description;
+                Order = order;
+            }
 
             public override string ToString() => $"{Field.Name} {InitialValue}";
         }
@@ -407,7 +409,7 @@ namespace StorybrewCommon.Scripting
                 Current = null;
 
                 fontGenerators.Clear();
-                trimRect.Clear();
+                trimRect.Dispose();
                 bitmaps.Dispose();
             }
         }

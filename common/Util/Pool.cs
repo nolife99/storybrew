@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace StorybrewCommon.Util
 {
 #pragma warning disable CS1591
-    public sealed class Pool<T> where T : class
+    public sealed class Pool<T>
     {
         readonly Func<T> allocator;
         readonly Action<T> disposer;

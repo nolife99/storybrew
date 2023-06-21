@@ -5,6 +5,7 @@ using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using OpenTK;
 using OpenTK.Graphics;
+using StorybrewCommon.Animations;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -64,7 +65,7 @@ namespace StorybrewEditor.Storyboarding
                 // Happens when another process is writing to the file, will try again later.
                 return;
             }
-            if (texture == null) return;
+            if (texture is null) return;
 
             var position = sprite.PositionAt(time);
             var rotation = sprite.RotationAt(time);
@@ -89,7 +90,7 @@ namespace StorybrewEditor.Storyboarding
 
             var boundsScaling = bounds.Height / 480;
             DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, sprite.AdditiveAt(time) ? AdditiveStates : AlphaBlendStates).Draw(
-                texture, bounds.Left + bounds.Width * .5f + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
+                texture, bounds.Left + bounds.Width / 2 + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
                 origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation, finalColor);
         }
     }

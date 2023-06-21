@@ -103,8 +103,10 @@ namespace StorybrewEditor.Storyboarding
         }
         public void TriggerEvents(double fromTime, double toTime)
         {
-            foreach (var eventObject in eventObjects.ToArray()) if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime)
-                eventObject.TriggerEvent(Effect.Project, toTime);
+            eventObjects.ForEach(eventObject =>
+            {
+                if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime) eventObject.TriggerEvent(Effect.Project, toTime);
+            });
             segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
         }
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, Project project, FrameStats frameStats)
@@ -112,7 +114,7 @@ namespace StorybrewEditor.Storyboarding
             var displayTime = project.DisplayTime * 1000;
             if (displayTime < StartTime || EndTime < displayTime) return;
 
-            if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) / 2);
+            if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Cos(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) / 2);
 
             displayableObjects.ForEach(obj => obj.Draw(drawContext, camera, bounds, opacity, project, frameStats));
         }
@@ -124,7 +126,7 @@ namespace StorybrewEditor.Storyboarding
                 displayableObjects.Reverse();
             }
 
-            foreach (var storyboardObject in storyboardObjects.ToArray()) (storyboardObject as HasPostProcess)?.PostProcess();
+            storyboardObjects.ForEach(sbo => (sbo as HasPostProcess)?.PostProcess());
 
             startTime = double.MaxValue;
             endTime = double.MinValue;
@@ -138,14 +140,14 @@ namespace StorybrewEditor.Storyboarding
         public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer)
             => storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
 
-        public int CalculateSize(OsbLayer osbLayer)
+        public long CalculateSize(OsbLayer osbLayer)
         {
             var exportSettings = new ExportSettings { OptimiseSprites = false };
 
             using (var stream = new ByteCounterStream()) using (var writer = new StreamWriter(stream, Project.Encoding))
             {
                 storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
-                return (int)stream.Length;
+                return stream.Length;
             }
         }
     }

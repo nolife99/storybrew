@@ -24,8 +24,7 @@ namespace BrewLib.Audio
 
         public float[] GetFft(double time, bool splitChannels = false)
         {
-            var position = Bass.ChannelSeconds2Bytes(stream, time);
-            Bass.ChannelSetPosition(stream, position);
+            Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 
             var size = 1024;
             var flags = DataFlags.FFT2048;
@@ -43,14 +42,14 @@ namespace BrewLib.Audio
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposed = false;
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!disposed)
             {
                 Bass.StreamFree(stream);
                 stream = 0;
-                disposedValue = true;
+                disposed = true;
             }
         }
 

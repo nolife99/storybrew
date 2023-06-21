@@ -40,18 +40,10 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public string ToOsbString(ExportSettings exportSettings) => exportSettings.UseFloatForMove ? $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}" : $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
         
         ///<summary> Converts this instance to a string. </summary>
-        public override string ToString() => ToOsbString(ExportSettings.Default);
+        public override string ToString() => ((Vector2)this).ToString();
 
         ///<summary> Returns the distance between this instance and point <paramref name="obj"/> on the Cartesian plane. </summary>
-        public float DistanceFrom(object obj) => Distance(this, (CommandPosition)obj);
-
-        ///<summary> Returns the distance between <paramref name="a"/> and <paramref name="b"/> on the Cartesian plane. </summary>
-        public static float Distance(CommandPosition a, CommandPosition b)
-        {
-            var diffX = a.X - b.X;
-            var diffY = a.Y - b.Y;
-            return (float)Math.Sqrt((diffX * diffX) + (diffY * diffY));
-        }
+        public float DistanceFrom(object obj) => Vector2.Distance(this, (Vector2)obj);
 
 #pragma warning disable CS1591
         public static CommandPosition operator +(CommandPosition left, CommandPosition right) => new CommandPosition(left.X + right.X, left.Y + right.Y);

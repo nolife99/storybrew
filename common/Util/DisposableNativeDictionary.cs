@@ -2,13 +2,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace StorybrewCommon.Util
 {
     ///<summary> Represents a fast native collection of keys and items. </summary>
     ///<typeparam name="TKey"> The type of the keys in the dictionary. </typeparam>
     ///<typeparam name="TValue"> The type of the values in the dictionary. </typeparam>
-    public sealed class DisposableNativeDictionary<TKey, TValue> : IDisposable, IEnumerable<KeyValuePair<TKey, TValue>>
+    public sealed class DisposableNativeDictionary<TKey, TValue> : IDisposable, IDictionary<TKey, TValue>, IDictionary
     {
         class Node
         {
@@ -16,10 +17,10 @@ namespace StorybrewCommon.Util
             internal GCHandle Handle;
             internal Node Next;
 
-            internal Node(TKey key, TValue value, Node next)
+            internal Node(TKey key, GCHandle handle, Node next)
             {
                 Key = key;
-                Handle = GCHandle.Alloc(value);
+                Handle = handle;
                 Next = next;
             }
         }
@@ -30,9 +31,7 @@ namespace StorybrewCommon.Util
         ///<summary> Creates a new <see cref="DisposableNativeDictionary{TKey, TValue}"/> object, with the given allocation capacity. </summary>
         public DisposableNativeDictionary(int capacity = 32) => table = new Node[capacity];
 
-        ///<summary> Gets or sets the item associated with the given key. 
-        ///<para/> If <paramref name="key"/> does not match an existing key in the collection, the value will be added. </summary>
-        ///<exception cref="KeyNotFoundException"> The specified key was not found in the dictionary. </exception>
+        ///<inheritdoc/>
         public TValue this[TKey key]
         {
             get
@@ -42,57 +41,88 @@ namespace StorybrewCommon.Util
 
                 throw new KeyNotFoundException($"The specified key was not found in the dictionary: {key}");
             }
-            set
-            {
-                if (count / (float)table.Length >= 1)
-                {
-                    var oldTable = table;
-                    table = new Node[oldTable.Length * 2];
-
-                    for (var i = 0; i < oldTable.Length; ++i) for (var node = oldTable[i]; node != null; node = node.Next)
-                    {
-                        var nHash = getIndex(node.Key);
-                        var newN = new Node(node.Key, (TValue)node.Handle.Target, table[nHash]);
-                        table[nHash] = newN;
-                    }
-                }
-
-                for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
-                {
-                    node.Handle.Free();
-                    node.Handle = GCHandle.Alloc(value);
-                    return;
-                }
-
-                var hash = getIndex(key);
-                var newNode = new Node(key, value, table[hash]);
-                table[hash] = newNode;
-                ++count;
-            }
+            set => Add(key, value);
         }
 
-        ///<summary> Returns a collection of keys that are contained within this dictionary. </summary>
-        public IEnumerable<TKey> Keys
+        ///<inheritdoc/>
+        public int Count => count;
+
+        ///<inheritdoc/>
+        public ICollection<TKey> Keys
         {
             get
             {
+                var collection = new HashSet<TKey>();
                 for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                    yield return node.Key;
+                    collection.Add(node.Key);
+
+                return collection;
             }
         }
 
-        ///<summary> Returns a collection of values that are contained within this dictionary. </summary>
-        public IEnumerable<TValue> Values
+        ///<inheritdoc/>
+        ICollection IDictionary.Keys => (ICollection)Keys;
+
+        ///<inheritdoc/>
+        public bool ContainsKey(TKey key)
+        {
+            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
+                if (node.Key.Equals(key)) return true;
+
+            return false;
+        }
+
+        ///<inheritdoc/>
+        public bool Contains(object key) => ContainsKey((TKey)key);
+
+        ///<inheritdoc/>
+        public ICollection<TValue> Values
         {
             get
             {
+                var collection = new HashSet<TValue>();
                 for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                    yield return (TValue)node.Handle.Target;
+                    collection.Add((TValue)node.Handle.Target);
+
+                return collection;
             }
         }
 
-        ///<summary> Attempts to get the item associated with the specified key. </summary>
-        ///<returns> A value indicating if <paramref name="key"/> was matched. If not, <paramref name="value"/> is returned <see langword="null"/>. </returns>
+        ///<inheritdoc/>
+        ICollection IDictionary.Values => (ICollection)Values;
+
+        ///<inheritdoc/>
+        public bool Contains(KeyValuePair<TKey, TValue> item) => TryGetValue(item.Key, out TValue value) && value.Equals(item.Value);
+
+        ///<inheritdoc cref="IDictionary.IsReadOnly"/>
+        public bool IsReadOnly => false;
+
+        ///<inheritdoc/>
+        public bool IsFixedSize => false;
+
+        object syncRoot;
+
+        ///<inheritdoc/>
+        public object SyncRoot
+        {
+            get
+            {
+                if (syncRoot == null) Interlocked.CompareExchange<object>(ref syncRoot, new object(), null);
+                return syncRoot;
+            }
+        }
+
+        ///<inheritdoc/>
+        public bool IsSynchronized => false;
+
+        ///<inheritdoc/>
+        public object this[object key] 
+        { 
+            get => this[(TKey)key]; 
+            set => Add((TKey)key, (TValue)value); 
+        }
+
+        ///<inheritdoc/>
         public bool TryGetValue(TKey key, out TValue value)
         {
             for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
@@ -106,11 +136,27 @@ namespace StorybrewCommon.Util
         }
 
         ///<inheritdoc/>
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            if (array == null) throw new ArgumentNullException("'array' cannot be 'null'.");
+            if (arrayIndex < 0) throw new ArgumentOutOfRangeException("'arrayIndex' cannot be negative.");
+            if (array.Length - arrayIndex < count) throw new ArgumentException("'array' does not have enough space to fit this collection's elements.");
+
+            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next) 
+                array[arrayIndex++] = new KeyValuePair<TKey, TValue>(node.Key, (TValue)node.Handle.Target);
+        }
+
+        ///<inheritdoc/>
+        public void CopyTo(Array array, int index) => CopyTo((KeyValuePair<TKey, TValue>[])array, index);
+
+        bool disposed;
+
+        ///<inheritdoc/>
         public void Dispose()
         {
-            if (count == 0) return;
+            if (count == 0 || disposed) return;
 
-            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next) if (node.Handle.IsAllocated)
+            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
             {
                 if (node.Handle.Target is IDisposable value) value.Dispose();
                 node.Handle.Free();
@@ -118,6 +164,8 @@ namespace StorybrewCommon.Util
 
             Array.Clear(table, 0, table.Length);
             count = 0;
+
+            disposed = true;
         }
 
         int getIndex(TKey key) => (key.GetHashCode() & 0x7FFFFFFF) % table.Length;
@@ -128,6 +176,104 @@ namespace StorybrewCommon.Util
             for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
                 yield return new KeyValuePair<TKey, TValue>(node.Key, (TValue)node.Handle.Target);
         }
+
+        ///<inheritdoc/>
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        ///<inheritdoc/>
+        public void Add(TKey key, TValue value)
+        {
+            if (value == null) throw new ArgumentNullException("Cannot allocate a value with type 'null'.");
+            if (count / (float)table.Length >= 1)
+            {
+                var oldTable = table;
+                table = new Node[oldTable.Length * 2];
+
+                for (var i = 0; i < oldTable.Length; ++i) for (var node = oldTable[i]; node != null; node = node.Next)
+                {
+                    var nHash = getIndex(node.Key);
+                    var newN = new Node(node.Key, node.Handle, table[nHash]);
+                    table[nHash] = newN;
+                }
+            }
+
+            for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
+            {
+                if (node.Handle.Target is IDisposable dispose) dispose.Dispose();
+                node.Handle.Free();
+                node.Handle = GCHandle.Alloc(value);
+                return;
+            }
+
+            var hash = getIndex(key);
+            var newNode = new Node(key, GCHandle.Alloc(value), table[hash]);
+            table[hash] = newNode;
+            ++count;
+        }
+
+        ///<inheritdoc/>
+        public void Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
+
+        ///<inheritdoc/>
+        public void Add(object key, object value) => Add((TKey)key, (TValue)value);
+
+        ///<inheritdoc/>
+        public bool Remove(TKey key)
+        {
+            for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
+            {
+                node.Key = default;
+                if (node.Handle.Target is IDisposable dispose) dispose.Dispose();
+                node.Handle.Target = default;
+                node.Handle.Free();
+
+                return true;
+            }
+
+            return false;
+        }
+        
+        ///<inheritdoc/>
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            if (item.Value == null) throw new ArgumentNullException("Value inside 'item' cannot be 'null'.");
+            for (var node = table[getIndex(item.Key)]; node != null; node = node.Next) if (node.Key.Equals(item.Key))
+            {
+                if (!node.Handle.Target.Equals(item.Value)) return false;
+
+                node.Key = default;
+                if (node.Handle.Target is IDisposable dispose) dispose.Dispose();
+                node.Handle.Target = default;
+                node.Handle.Free();
+
+                return true;
+            }
+
+            return false;
+        }
+
+        ///<inheritdoc/>
+        public void Remove(object key) => Remove((TValue)key);
+
+        ///<inheritdoc/>
+        public void Clear() => Dispose();
+
+        ///<inheritdoc/>
+        IDictionaryEnumerator IDictionary.GetEnumerator() => new Enumerator(this);
+
+        readonly struct Enumerator : IDictionaryEnumerator
+        {
+            readonly IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
+            internal Enumerator(IDictionary<TKey, TValue> dictionary) => enumerator = dictionary.GetEnumerator();
+
+            public DictionaryEntry Entry => new DictionaryEntry(enumerator.Current.Key, enumerator.Current.Value);
+            public object Key => enumerator.Current.Key;
+            public object Value => enumerator.Current.Value;
+            public object Current => Entry;
+
+            public bool MoveNext() => enumerator.MoveNext();
+
+            public void Reset() => enumerator.Reset();
+        }
     }
 }

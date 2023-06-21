@@ -1,4 +1,5 @@
-﻿using System;
+﻿using StorybrewCommon.Util;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,8 +8,8 @@ namespace StorybrewEditor.Util
 {
     public class MultiFileWatcher : IDisposable
     {
-        Dictionary<string, FileSystemWatcher> folderWatchers = new Dictionary<string, FileSystemWatcher>();
-        readonly Dictionary<string, FileSystemWatcher> recursiveFolderWatchers = new Dictionary<string, FileSystemWatcher>();
+        DisposableNativeDictionary<string, FileSystemWatcher> folderWatchers = new DisposableNativeDictionary<string, FileSystemWatcher>();
+        readonly DisposableNativeDictionary<string, FileSystemWatcher> recursiveFolderWatchers = new DisposableNativeDictionary<string, FileSystemWatcher>();
         HashSet<string> watchedFilenames = new HashSet<string>();
         readonly ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
 
@@ -38,11 +39,11 @@ namespace StorybrewEditor.Util
 
                 if (!folderWatchers.TryGetValue(directoryPath, out FileSystemWatcher watcher))
                 {
-                    folderWatchers.Add(directoryPath, watcher = new FileSystemWatcher
+                    folderWatchers[directoryPath] = watcher = new FileSystemWatcher
                     {
                         Path = directoryPath,
                         IncludeSubdirectories = false
-                    });
+                    };
                     
                     watcher.NotifyFilter = NotifyFilters.Attributes
                         | NotifyFilters.DirectoryName
@@ -74,11 +75,11 @@ namespace StorybrewEditor.Util
 
                     if (!recursiveFolderWatchers.TryGetValue(parentDirectoryPath, out FileSystemWatcher watcher))
                     {
-                        recursiveFolderWatchers.Add(parentDirectoryPath, watcher = new FileSystemWatcher
+                        recursiveFolderWatchers[parentDirectoryPath] = watcher = new FileSystemWatcher
                         {
                             Path = parentDirectoryPath,
                             IncludeSubdirectories = true
-                        });
+                        };
 
                         watcher.NotifyFilter = NotifyFilters.Attributes
                             | NotifyFilters.DirectoryName
@@ -100,11 +101,8 @@ namespace StorybrewEditor.Util
         }
         public void Clear()
         {
-            foreach (var folderWatcher in folderWatchers.Values) folderWatcher.Dispose();
-            folderWatchers.Clear();
-
-            foreach (var folderWatcher in recursiveFolderWatchers.Values) folderWatcher.Dispose();
-            recursiveFolderWatchers.Clear();
+            folderWatchers.Dispose();
+            recursiveFolderWatchers.Dispose();
 
             lock (watchedFilenames) watchedFilenames.Clear();
         }
@@ -124,13 +122,12 @@ namespace StorybrewEditor.Util
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposed)
             {
                 if (disposing) Clear();
-                folderWatchers = null;
                 watchedFilenames = null;
                 OnFileChanged = null;
                 disposed = true;

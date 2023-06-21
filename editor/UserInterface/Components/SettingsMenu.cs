@@ -10,7 +10,6 @@ namespace StorybrewEditor.UserInterface.Components
     public class SettingsMenu : Widget
     {
         readonly LinearLayout layout;
-        Project project;
 
         public override Vector2 MinSize => layout.MinSize;
         public override Vector2 MaxSize => layout.MaxSize;
@@ -18,8 +17,6 @@ namespace StorybrewEditor.UserInterface.Components
 
         public SettingsMenu(WidgetManager manager, Project project) : base(manager)
         {
-            this.project = project;
-
             Button referencedAssemblyButton, floatingPointTimeButton, helpButton, displayWarningbutton;
             Label dimLabel;
             Slider dimSlider;
@@ -110,11 +107,8 @@ namespace StorybrewEditor.UserInterface.Components
             floatingPointTimeButton.OnValueChanged += (sender, e) => project.ExportSettings.UseFloatForTime = floatingPointTimeButton.Checked;
             displayWarningbutton.OnValueChanged += (sender, e) => project.DisplayDebugWarning = displayWarningbutton.Checked;
         }
-        protected override void Dispose(bool disposing)
-        {
-            project = null;
-            base.Dispose(disposing);
-        }
+
+        protected override void Dispose(bool disposing) => base.Dispose(disposing);
         protected override void Layout()
         {
             base.Layout();

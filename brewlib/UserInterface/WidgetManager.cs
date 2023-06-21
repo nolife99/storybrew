@@ -86,9 +86,9 @@ namespace BrewLib.UserInterface
             InputManager = inputManager;
             Skin = skin;
 
-            rootContainer = new StackLayout(this) { FitChildren = true, };
-            rootContainer.Add(Root = new StackLayout(this) { FitChildren = true, });
-            rootContainer.Add(tooltipOverlay = new Widget(this) { Hoverable = false, });
+            rootContainer = new StackLayout(this) { FitChildren = true };
+            rootContainer.Add(Root = new StackLayout(this) { FitChildren = true });
+            rootContainer.Add(tooltipOverlay = new Widget(this) { Hoverable = false });
 
             initializeDragAndDrop();
         }
@@ -128,15 +128,12 @@ namespace BrewLib.UserInterface
 
         readonly Dictionary<Widget, Widget> tooltips = new Dictionary<Widget, Widget>();
 
-        public void RegisterTooltip(Widget widget, string text)
+        public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget, new Label(this)
         {
-            RegisterTooltip(widget, new Label(this)
-            {
-                StyleName = "tooltip",
-                AnchorTarget = widget,
-                Text = text
-            });
-        }
+            StyleName = "tooltip",
+            AnchorTarget = widget,
+            Text = text
+        });
         public void RegisterTooltip(Widget widget, Widget tooltip)
         {
             UnregisterTooltip(widget);

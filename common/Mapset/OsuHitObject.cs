@@ -19,13 +19,13 @@ namespace StorybrewCommon.Mapset
         public static readonly Vector2 WidescreenStoryboardSize = new Vector2(StoryboardSize.X * 4 / 3, StoryboardSize.Y);
 
         ///<summary> Represents the area of the widescreen storyboard size in osu!. </summary>
-        public static readonly int WidescreenStoryboardArea = (int)(WidescreenStoryboardSize.X * WidescreenStoryboardSize.Y);
+        public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.X * WidescreenStoryboardSize.Y;
 
         ///<summary> Represents the bounds of the storyboard size in osu!. </summary>
         public static readonly RectangleF StoryboardBounds = new RectangleF(0, 0, StoryboardSize.X, StoryboardSize.Y);
 
         ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
-        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF((StoryboardSize.X - WidescreenStoryboardSize.X) / 2, 0, WidescreenStoryboardSize.X, WidescreenStoryboardSize.Y);
+        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF((StoryboardSize.X - WidescreenStoryboardSize.X) / 2, 0, WidescreenStoryboardSize.X, StoryboardSize.Y);
 
         ///<summary> Represents the hit object's position in osu!. </summary>
         public Vector2 PlayfieldPosition;

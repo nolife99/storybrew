@@ -13,13 +13,11 @@ namespace StorybrewCommon.Storyboarding.Util
     ///<summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
     public class CommandGenerator
     {
-        readonly KeyframedValue<CommandPosition>
-            positions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Vector2),
-            finalPositions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Vector2);
-
-        readonly KeyframedValue<CommandScale>
-            scales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale),
-            finalScales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale);
+        readonly KeyframedValue<Vector2>
+            positions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
+            finalPositions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
+            scales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
+            finalScales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
 
         readonly KeyframedValue<double>
             rotations = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle),
@@ -171,8 +169,8 @@ namespace StorybrewCommon.Storyboarding.Util
             var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
 
             double checkPos(double value) => Math.Round(value, PositionDecimals);
-            bool moveX = finalPositions.AsParallel().All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
-                 moveY = finalPositions.AsParallel().All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
+            bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
+                 moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
             finalPositions.ForEachPair((s, e) =>
             {
@@ -190,7 +188,7 @@ namespace StorybrewCommon.Storyboarding.Util
             }, new Vector2(320, 240), p => new CommandPosition(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, loopable: loopable);
 
             int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
-            var vec = finalScales.AsParallel().Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) >= 1);
+            var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) >= 1);
             finalScales.ForEachPair((s, e) =>
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -277,7 +275,7 @@ namespace StorybrewCommon.Storyboarding.Util
         public bool Additive;
 
         /// <summary> 
-        /// Returns the visibility of the sprite in the current <see cref="State"/> based on its image size, <see cref="OsbOrigin"/>, and screen boundaries. 
+        /// Returns the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and <see cref="OsbOrigin"/>. 
         /// </summary>
         /// <returns> <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>. </returns>
         public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)

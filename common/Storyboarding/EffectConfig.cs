@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 
 namespace StorybrewCommon.Storyboarding
@@ -15,12 +16,7 @@ namespace StorybrewCommon.Storyboarding
         public IEnumerable<ConfigField> Fields => fields.Values;
         public IEnumerable<ConfigField> SortedFields
         {
-            get
-            {
-                var sortedValues = new List<ConfigField>(fields.Values);
-                sortedValues.Sort((first, second) => first.Order - second.Order);
-                return sortedValues;
-            }
+            get => new SortedSet<ConfigField>(fields.Values, Comparer<ConfigField>.Create((first, second) => first.Order - second.Order));
         }
         public string[] FieldNames
         {
@@ -102,13 +98,10 @@ namespace StorybrewCommon.Storyboarding
 
         public struct ConfigField
         {
-            public string Name;
-            public string DisplayName;
-            public string Description;
+            public string Name, DisplayName, Description, BeginsGroup;
             public object Value;
             public Type Type;
             public NamedValue[] AllowedValues;
-            public string BeginsGroup;
             public int Order;
         }
     }

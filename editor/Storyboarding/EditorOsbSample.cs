@@ -29,7 +29,7 @@ namespace StorybrewEditor.Storyboarding
                 return;
             }
 
-            sample.Play((float)Volume * .01f);
+            sample.Play((float)(Volume * .01));
         }
     }
 }

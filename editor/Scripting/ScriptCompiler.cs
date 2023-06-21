@@ -2,6 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
+using StorybrewCommon.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -47,32 +48,32 @@ namespace StorybrewEditor.Scripting
 
         static void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            var trees = new Dictionary<SyntaxTree, KeyValuePair<string, SourceText>>();
+            var trees = new DisposableNativeDictionary<SyntaxTree, KeyValuePair<string, SourceText>>();
             foreach (var sourcePath in sourcePaths) using (var sourceStream = File.OpenRead(sourcePath))
             {
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-                var parseOptions = new CSharpParseOptions(LanguageVersion.Latest);
+                var parseOptions = new CSharpParseOptions(LanguageVersion.CSharp7_3);
 
                 var syntaxTree = SyntaxFactory.ParseSyntaxTree(sourceText, parseOptions);
-                trees.Add(syntaxTree, new KeyValuePair<string, SourceText>(sourcePath, sourceText));
+                trees[syntaxTree] = new KeyValuePair<string, SourceText>(sourcePath, sourceText);
             }
-            var references = new List<MetadataReference>
+            var references = new HashSet<MetadataReference>
             {
                 MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
             };
 
             foreach (var referencedAssembly in referencedAssemblies)
             {
-                string asmPath = referencedAssembly;
+                var asmPath = referencedAssembly;
                 try
                 {
                     if (Path.IsPathRooted(asmPath)) references.Add(MetadataReference.CreateFromFile(asmPath));
                     else
                     {
                         var isExist = false;
-                        foreach (var environmentDir in environmentDirectories)
+                        for (var i = 0; i < environmentDirectories.Length; ++i)
                         {
-                            var actualAsmPath = Path.Combine(environmentDir, referencedAssembly);
+                            var actualAsmPath = Path.Combine(environmentDirectories[i], referencedAssembly);
                             if (!File.Exists(actualAsmPath)) continue;
                             isExist = true;
                             asmPath = actualAsmPath;
@@ -80,7 +81,7 @@ namespace StorybrewEditor.Scripting
                         }
 
                         if (isExist) references.Add(MetadataReference.CreateFromFile(asmPath));
-                        else throw new Exception($"Could not resolve dependency: \"{referencedAssembly}\". " +
+                        else throw new IOException($"Could not resolve dependency: \"{referencedAssembly}\". " +
                             $"Searched directories: {string.Join(";", environmentDirectories.Select(k => $"\"{k}\""))}");
                     }
                 }
@@ -105,16 +106,15 @@ namespace StorybrewEditor.Scripting
 
                 if (result.Success) return;
 
-                var failures = result.Diagnostics.Where(diagnostic => 
-                    diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error).ToList();
-
-                failures.Reverse();
-                var failureGroup = failures.GroupBy(k =>
+                var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                    .Reverse().GroupBy(k =>
                 {
                     if (k.Location.SourceTree == null) return "";
                     if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
                     return "";
                 }).ToDictionary(k => k.Key, k => k.ToHashSet());
+
+                trees.Dispose();
 
                 var message = new StringBuilder("Compilation error\n\n");
                 foreach (var kvp in failureGroup)

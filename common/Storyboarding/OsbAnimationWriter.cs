@@ -73,7 +73,7 @@ namespace StorybrewCommon.Storyboarding
             var tMax = fragmentationTimes.Max();
             var nonFragmentableTimes = new HashSet<int>();
 
-            for (double d = animation.StartTime; d < animation.AnimationEndTime; d += animation.LoopDuration)
+            for (var d = animation.StartTime; d < animation.AnimationEndTime; d += animation.LoopDuration)
             {
                 var range = Enumerable.Range((int)d + 1, (int)(animation.LoopDuration - 1));
                 nonFragmentableTimes.UnionWith(range);

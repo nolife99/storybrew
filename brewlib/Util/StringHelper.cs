@@ -9,7 +9,7 @@
             var order = 0;
             while (byteCount >= 1024 && order < sizeOrders.Length - 1)
             {
-                order++;
+                ++order;
                 byteCount /= 1024;
             }
             return string.Format(format, byteCount, sizeOrders[order]);

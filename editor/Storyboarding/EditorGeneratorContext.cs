@@ -1,6 +1,7 @@
 ﻿using BrewLib.Audio;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Util;
 using StorybrewEditor.Mapset;
 using StorybrewEditor.Util;
 using System;
@@ -10,7 +11,7 @@ using System.Text;
 
 namespace StorybrewEditor.Storyboarding
 {
-    public class EditorGeneratorContext : GeneratorContext
+    public class EditorGeneratorContext : GeneratorContext, IDisposable
     {
         readonly Effect effect;
         readonly MultiFileWatcher watcher;
@@ -77,7 +78,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region Audio data
 
-        Dictionary<string, FftStream> fftAudioStreams = new Dictionary<string, FftStream>();
+        readonly DisposableNativeDictionary<string, FftStream> fftAudioStreams = new DisposableNativeDictionary<string, FftStream>();
         FftStream getFftStream(string path)
         {
             path = Path.GetFullPath(path);
@@ -92,10 +93,6 @@ namespace StorybrewEditor.Storyboarding
 
         #endregion
 
-        public void DisposeResources()
-        {
-            foreach (var audioStream in fftAudioStreams.Values) audioStream.Dispose();
-            fftAudioStreams = null;
-        }
+        public void Dispose() => fftAudioStreams.Dispose();
     }
 }

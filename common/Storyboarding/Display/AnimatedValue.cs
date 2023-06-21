@@ -11,7 +11,7 @@ namespace StorybrewCommon.Storyboarding.Display
     {
         public TValue DefaultValue;
 
-        readonly List<ITypedCommand<TValue>> commands = new List<ITypedCommand<TValue>>();
+        readonly IList<ITypedCommand<TValue>> commands = new List<ITypedCommand<TValue>>();
         public IEnumerable<ITypedCommand<TValue>> Commands => commands;
 
         public bool HasCommands => commands.Count > 0;
@@ -28,21 +28,20 @@ namespace StorybrewCommon.Storyboarding.Display
 
         public void Add(ITypedCommand<TValue> command)
         {
-            var triggerable = command as TriggerDecorator<TValue>;
-            if (triggerable == null)
+            if (!(command is TriggerDecorator<TValue> triggerable))
             {
-                if (command.EndTime < command.StartTime) Debug.Print($"'{command}' ends before it starts");
+                if (command.EndTime < command.StartTime) Trace.TraceWarning($"'{command}' ends before it starts");
 
                 findCommandIndex(command.StartTime, out int index);
                 while (index < commands.Count)
                 {
-                    if (commands[index].CompareTo(command) < 0) index++;
+                    if (commands[index].CompareTo(command) < 0) ++index;
                     else break;
                 }
 
                 HasOverlap |=
-                    (index > 0 && (int)Math.Round(command.StartTime) < (int)Math.Round(commands[index - 1].EndTime)) ||
-                    (index < commands.Count && (int)Math.Round(commands[index].StartTime) < (int)Math.Round(command.EndTime));
+                    (index > 0 && Math.Round(command.StartTime) < Math.Round(commands[index - 1].EndTime)) ||
+                    (index < commands.Count && Math.Round(commands[index].StartTime) < Math.Round(command.EndTime));
 
                 commands.Insert(index, command);
             }
@@ -66,8 +65,7 @@ namespace StorybrewCommon.Storyboarding.Display
                 break;
             }
 
-            var command = commands[index];
-            return command.ValueAtTime(time);
+            return commands[index].ValueAtTime(time);
         }
         bool findCommandIndex(double time, out int index)
         {

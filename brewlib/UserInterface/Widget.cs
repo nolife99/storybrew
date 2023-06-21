@@ -153,7 +153,7 @@ namespace BrewLib.UserInterface
 #endif
             using (ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : null)
             {
-                foreach (var child in children) if (child.displayed) child.Draw(drawContext, actualOpacity);
+                children.ForEach(child => child.Draw(drawContext, actualOpacity), child => child.displayed);
 #if DEBUG
                 if (ClipChildren) clipRegionDebug = DrawState.GetClipRegion(Manager.Camera);
 #endif
@@ -214,7 +214,8 @@ namespace BrewLib.UserInterface
 
         Widget parent;
         public Widget Parent => parent;
-        List<Widget> children = new List<Widget>();
+
+        readonly List<Widget> children = new List<Widget>();
         public IEnumerable<Widget> Children
         {
             get => children;
@@ -262,7 +263,7 @@ namespace BrewLib.UserInterface
         }
         public bool HasDescendant(Widget widget)
         {
-            foreach (Widget child in children) if (child == widget || child.HasDescendant(widget)) return true;
+            foreach (var child in children) if (child == widget || child.HasDescendant(widget)) return true;
             return false;
         }
         public List<Widget> GetAncestors()
@@ -394,7 +395,7 @@ namespace BrewLib.UserInterface
 
                 absolutePosition = manager.SnapToPixel(absolutePosition);
             }
-            if (includeChildren) foreach (var child in children) child.UpdateAnchoring(iteration);
+            if (includeChildren) children.ForEach(child => child.UpdateAnchoring(iteration));
         }
 
         #endregion
@@ -454,10 +455,7 @@ namespace BrewLib.UserInterface
             if (!needsLayout) return;
             Layout();
         }
-        public virtual void PreLayout()
-        {
-            foreach (var child in children) child.PreLayout();
-        }
+        public virtual void PreLayout() => children.ForEach(child => child.PreLayout());
         protected virtual void Layout()
         {
             lastLayoutTime = manager.ScreenLayerManager.TimeSource.Current;
@@ -500,16 +498,13 @@ namespace BrewLib.UserInterface
         public event HandleableWidgetEventHandler<KeyPressEventArgs> OnKeyPress;
         public bool NotifyKeyPress(WidgetEvent evt, KeyPressEventArgs e) => Raise(OnKeyPress, evt, e);
 
-        public event WidgetEventHandler<WidgetHoveredEventArgs> OnHovered;
-        public event WidgetEventHandler<WidgetHoveredEventArgs> OnHoveredWidgetChange;
+        public event WidgetEventHandler<WidgetHoveredEventArgs> OnHovered, OnHoveredWidgetChange;
         public bool NotifyHoveredWidgetChange(WidgetEvent evt, WidgetHoveredEventArgs e)
         {
             var related = evt.RelatedTarget;
-            while (related != null && related != this)
-                related = related.parent;
+            while (related != null && related != this) related = related.parent;
 
-            if (related != this)
-                Raise(OnHovered, evt, e);
+            if (related != this) Raise(OnHovered, evt, e);
 
             Raise(OnHoveredWidgetChange, evt, e);
             return false;
@@ -534,26 +529,26 @@ namespace BrewLib.UserInterface
         protected static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
         {
             if (handler != null) foreach (var handlerDelegate in handler.GetInvocationList())
+            {
+                try
                 {
-                    try
+                    if (!Array.Exists(handler.GetInvocationList(), h => h == handlerDelegate)) continue;
+                    if (((HandleableWidgetEventHandler<T>)handlerDelegate)(evt, e))
                     {
-                        if (!Array.Exists(handler.GetInvocationList(), h => h == handlerDelegate)) continue;
-                        if (((HandleableWidgetEventHandler<T>)handlerDelegate)(evt, e))
-                        {
-                            evt.Handled = true;
-                            break;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        Trace.WriteLine($"Event handler '{handler.Method}' for '{handler.Target}' raised an exception:\n{exception}");
+                        evt.Handled = true;
+                        break;
                     }
                 }
+                catch (Exception exception)
+                {
+                    Trace.WriteLine($"Event handler '{handler.Method}' for '{handler.Target}' raised an exception:\n{exception}");
+                }
+            }
 
             return evt.Handled;
         }
-        protected static void Raise<T>(WidgetEventHandler<T> handler, WidgetEvent evt, T e) => EventHelper.InvokeStrict(
-            () => handler, d => ((WidgetEventHandler<T>)d)(evt, e));
+        protected static void Raise<T>(WidgetEventHandler<T> handler, WidgetEvent evt, T e) 
+            => EventHelper.InvokeStrict(() => handler, d => ((WidgetEventHandler<T>)d)(evt, e));
 
         public event EventHandler OnDisposed;
 
@@ -586,7 +581,8 @@ namespace BrewLib.UserInterface
                     manager.NotifyWidgetDisposed(this);
                     ClearWidgets();
                 }
-                children = null;
+                children.Clear();
+                children.TrimExcess();
 
                 disposedValue = true;
                 if (disposing) OnDisposed?.Invoke(this, EventArgs.Empty);

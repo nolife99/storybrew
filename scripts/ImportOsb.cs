@@ -3,7 +3,6 @@ using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
 using System;
 using System.Numerics;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -14,7 +13,7 @@ namespace StorybrewScripts
     {
         [Description("Path to the .osb to import, relative to the project folder.")]
         [Configurable] public string Path = "storyboard.osb";
-        readonly Dictionary<string, string> vars = new Dictionary<string, string>();
+        readonly DisposableNativeDictionary<string, string> vars = new DisposableNativeDictionary<string, string>();
 
         protected override void Generate()
         {
@@ -27,6 +26,8 @@ namespace StorybrewScripts
                     case "Events": parseEvents(reader); break;
                 }
             });
+
+            vars.Dispose();
         }
         void parseVariables(StreamReader reader) => reader.ParseSectionLines(line =>
         {
@@ -192,7 +193,9 @@ namespace StorybrewScripts
             }
         }
 
-        string removeQuotes(string path) => path.StartsWith("\"") && path.EndsWith("\"") ? path.Substring(1, path.Length - 2) : path;
+        string removeQuotes(string path) => 
+            path.StartsWith("\"", StringComparison.InvariantCulture) && path.EndsWith("\"", StringComparison.InvariantCulture) ? path.Substring(1, path.Length - 2) : path;
+
         string applyVariables(string line)
         {
             if (!line.Contains("$")) return line;

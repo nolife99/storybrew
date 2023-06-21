@@ -225,12 +225,6 @@ namespace StorybrewEditor
             overlay.Draw(drawContext);
             DrawState.CompleteFrame();
         }
-        public string GetStats()
-        {
-            var spriteRenderer = drawContext.Get<QuadRenderer>();
-            return string.Format("Sprite - t:{0}k f:{1:0.0}k b:{2} w:{3} lb:{4}",
-                spriteRenderer.RenderedQuadCount / 1000, spriteRenderer.FlushedBufferCount / 1000f, spriteRenderer.DiscardedBufferCount, spriteRenderer.BufferWaitCount, spriteRenderer.LargestBatch);
-        }
 
         void window_Resize(object sender, EventArgs e) => resizeToWindow();
         void window_Closing(object sender, CancelEventArgs e) => e.Cancel = ScreenLayerManager.Close();
@@ -242,9 +236,12 @@ namespace StorybrewEditor
 
             DrawState.Viewport = new Rectangle(0, 0, width, height);
 
-            overlayCamera.VirtualHeight = (int)(height * Math.Max(1024f / width, 768f / height));
-            overlayCamera.VirtualWidth = width * overlayCamera.VirtualHeight / height;
-            overlay.Size = new Vector2(overlayCamera.VirtualWidth, overlayCamera.VirtualHeight);
+            var virtualHeight = height * Math.Max(1024f / width, 768f / height);
+            overlayCamera.VirtualHeight = (int)virtualHeight;
+
+            var virtualWidth = width * virtualHeight / height;
+            overlayCamera.VirtualWidth = (int)virtualWidth;
+            overlay.Size = new Vector2(virtualWidth, virtualHeight);
         }
     }
     public class FormsWindow : System.Windows.Forms.IWin32Window

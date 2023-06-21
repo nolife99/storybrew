@@ -8,7 +8,7 @@ namespace BrewLib.Util
 
         public static int NextPowerOfTwo(int v)
         {
-            v--;
+            --v;
             v |= v >> 1;
             v |= v >> 2;
             v |= v >> 4;
@@ -25,34 +25,6 @@ namespace BrewLib.Util
 
             var diff = (to - from) % (Math.PI * 2);
             return 2 * diff % (Math.PI * 2) - diff;
-        }
-
-        [Obsolete("This method is slower than Math.Sqrt() and shouldn't be used.")]
-        public static float FastSqrt(float x)
-        {
-            var half = x * .5f;
-            unsafe
-            {
-                var i = *(int*)&x;
-                i = 0x5f375a86 - (i >> 1);
-                x = *(float*)&i;
-            }
-            for (var j = 0; j < 3; j++) x *= 1.5f - half * x * x;
-            return 1 / x;
-        }
-
-        [Obsolete("This method is slower than Math.Sqrt() and shouldn't be used.")]
-        public static double FastSqrt(double x)
-        {
-            var half = x * .5;
-            unsafe
-            {
-                var i = *(long*)&x;
-                i = 0x5fe6eb50c7b537a9 - (i >> 1);
-                x = *(double*)&i;
-            }
-            for (var j = 0; j < 5; j++) x *= 1.5 - half * x * x;
-            return 1 / x;
         }
     }
 }

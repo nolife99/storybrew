@@ -59,7 +59,7 @@ namespace StorybrewEditor.Mapset
             }
         }
 
-        static readonly List<Color4> defaultComboColors = new List<Color4>
+        static readonly Color4[] defaultComboColors =
         {
             new Color4(255, 192, 0, 255),
             new Color4(0, 202, 0, 255),
@@ -69,7 +69,7 @@ namespace StorybrewEditor.Mapset
         readonly List<Color4> comboColors = new List<Color4>(defaultComboColors);
         public override IEnumerable<Color4> ComboColors => comboColors;
 
-        public string backgroundPath;
+        string backgroundPath;
         public override string BackgroundPath => backgroundPath;
 
         readonly List<OsuBreak> breaks = new List<OsuBreak>();
@@ -120,7 +120,7 @@ namespace StorybrewEditor.Mapset
             try
             {
                 var beatmap = new EditorBeatmap(path);
-                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var stream = File.OpenRead(path))
                 using (var reader = new StreamReader(stream, Project.Encoding)) reader.ParseSections(section =>
                 {
                     switch (section)
@@ -265,16 +265,16 @@ namespace StorybrewEditor.Mapset
                         if (objectN is OsuSpinner) continue;
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.EndTime) break;
 
-                        var spanN = (OsuSlider)objectN;
-                        if (spanN != null && (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
+                        if (objectN is OsuSlider spanN && (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
                         {
                             var offset = objectI.StackIndex - objectN.StackIndex + 1;
-                            for (var j = n + 1; j <= i; ++j) 
+                            for (var j = n + 1; j <= i; ++j)
                                 if ((spanN.PlayfieldEndPosition - hitObjects[j].PlayfieldPosition).LengthSquared < stackLenienceSquared)
                                 hitObjects[j].StackIndex -= offset;
 
                             break;
                         }
+
                         if ((objectN.PlayfieldPosition - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
                         {
                             objectN.StackIndex = objectI.StackIndex + 1;

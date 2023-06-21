@@ -40,7 +40,7 @@ namespace BrewLib.Graphics.Textures
                     atlases.Add(textureOptions, atlas = new TextureMultiAtlas2d(width, height, $"{description} (Option set {atlases.Count})", textureOptions, padding));
 
                 using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer)) if (bitmap != null)
-                        texture = atlas.AddRegion(bitmap, filename);
+                    texture = atlas.AddRegion(bitmap, filename);
 
                 textures.Add(filename, texture);
                 ResourceLoaded?.Invoke(filename, texture);

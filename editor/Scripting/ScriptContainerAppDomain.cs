@@ -22,7 +22,7 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + DateTime.Now.Ticks).Replace("-", "").ToLowerInvariant()}.dll";
+                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + DateTime.Now.Ticks)}.dll";
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 var setup = new AppDomainSetup

@@ -211,24 +211,29 @@ namespace BrewLib.Util
 
             var data = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), (ImageLockMode)1, (PixelFormat)2498570);
             int xMin = data.Width, yMin = data.Height, xMax = -1, yMax = -1;
-
-            unsafe
+            
+            try
             {
-                var buf = (byte*)data.Scan0;
-                for (var y = 0; y < data.Height; ++y)
+                unsafe
                 {
-                    var row = buf + (y * data.Stride);
-                    for (int x = 0; x < data.Width; ++x) if (*(row + x * 4 + 3) > 0)
+                    var buf = (byte*)data.Scan0;
+                    for (var y = 0; y < data.Height; ++y)
                     {
-                        if (x < xMin) xMin = x;
-                        if (x > xMax) xMax = x;
-                        if (y < yMin) yMin = y;
-                        if (y > yMax) yMax = y;
+                        var row = buf + (y * data.Stride);
+                        for (var x = 0; x < data.Width; ++x) if (*(row + x * 4 + 3) > 0)
+                        {
+                            if (x < xMin) xMin = x;
+                            if (x > xMax) xMax = x;
+                            if (y < yMin) yMin = y;
+                            if (y > yMax) yMax = y;
+                        }
                     }
                 }
             }
-
-            source.UnlockBits(data);
+            finally
+            {
+                source.UnlockBits(data);
+            }
 
             if (xMin <= xMax && yMin <= yMax) return Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1);
             return Rectangle.Empty;

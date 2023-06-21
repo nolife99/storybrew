@@ -20,11 +20,11 @@ using System.Windows.Forms;
 
 namespace StorybrewEditor
 {
-    class Program
+    public static class Program
     {
-        public const string Name = "storybrew editor", Repository = "nolife99/storybrew";
-        public static Version Version = Assembly.GetExecutingAssembly().GetName().Version;
-        public static string FullName = $"{Name} {Version} ({Repository})", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
+        public const string Name = "storybrew editor", Repository = "nolife99/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
+        public readonly static Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+        public readonly static string FullName = $"{Name} {Version} ({Repository})";
 
         public static AudioManager AudioManager { get; set; }
         public static Settings Settings { get; set; }
@@ -194,7 +194,7 @@ namespace StorybrewEditor
                 while (currentTime - fixedRateTime >= fixedRateUpdateDuration && fixedUpdates < 2)
                 {
                     fixedRateTime += fixedRateUpdateDuration;
-                    fixedUpdates++;
+                    ++fixedUpdates;
 
                     editor.Update(fixedRateTime, true);
                 }

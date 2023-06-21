@@ -25,7 +25,7 @@ namespace StorybrewCommon.Subtitles
         public string Path;
 
         ///<returns> True if the path does not exist, else returns false. </returns>
-        public bool IsEmpty => Path == null;
+        public bool IsEmpty => Path is null;
 
         ///<summary> The texture offset in X-units. </summary>
         public float OffsetX;
@@ -116,22 +116,19 @@ namespace StorybrewCommon.Subtitles
         public byte A => toByte(a);
 
         ///<summary> Constructs a new <see cref="CommandColor"/> from red, green, and blue values from 0.0 to 1.0. </summary>
-        public FontColor(double r = 1, double g = 1, double b = 1, double a = 1)
+        public FontColor(float r = 1, float g = 1, float b = 1, float a = 1)
         {
-            if (double.IsNaN(r) || double.IsInfinity(r) ||
-                double.IsNaN(g) || double.IsInfinity(g) ||
-                double.IsNaN(b) || double.IsInfinity(b) ||
-                double.IsNaN(a) || double.IsInfinity(a))
+            if (float.IsNaN(r) || float.IsInfinity(r) ||
+                float.IsNaN(g) || float.IsInfinity(g) ||
+                float.IsNaN(b) || float.IsInfinity(b) ||
+                float.IsNaN(a) || float.IsInfinity(a))
                 throw new InvalidDataException($"Invalid font color {r}, {g}, {b}");
 
-            this.r = (float)r;
-            this.g = (float)g;
-            this.b = (float)b;
-            this.a = (float)a;
+            this.r = r;
+            this.g = g;
+            this.b = b;
+            this.a = a;
         }
-
-        ///<summary> Constructs a new <see cref="FontColor"/> from a <see cref="Vector3"/> containing red, green, and blue values from 0.0 to 1.0. </summary>
-        public FontColor(Vector3 vector) : this(vector.X, vector.Y, vector.Z) { }
 
         ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
         public bool Equals(FontColor other) => r == other.r && g == other.g && b == other.b;
@@ -153,7 +150,7 @@ namespace StorybrewCommon.Subtitles
         public static FontColor FromHashCode(int code) => Color.FromArgb(code);
 
         ///<summary> Creates a <see cref="FontColor"/> from RGB byte values. </summary>
-        public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new FontColor(r / 255d, g / 255d, b / 255d, a / 255d);
+        public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new FontColor(r / 255f, g / 255f, b / 255f, a / 255f);
 
         ///<summary> Creates a <see cref="FontColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
         public static FontColor FromHsb(float hue, float saturation, float brightness)
@@ -224,9 +221,9 @@ namespace StorybrewCommon.Subtitles
         public static FontColor operator +(FontColor left, FontColor right) => new FontColor(left.r + right.r, left.g + right.g, left.b + right.b, left.a + right.a);
         public static FontColor operator -(FontColor left, FontColor right) => new FontColor(left.r - right.r, left.g - right.g, left.b - right.b, left.a - right.a);
         public static FontColor operator *(FontColor left, FontColor right) => new FontColor(left.r * right.r, left.g * right.g, left.b * right.b, left.a * right.a);
-        public static FontColor operator *(FontColor left, double right) => new FontColor(left.r * right, left.g * right, left.b * right, left.a * right);
+        public static FontColor operator *(FontColor left, double right) => new FontColor((float)(left.r * right), (float)(left.g * right), (float)(left.b * right), (float)(left.a * right));
         public static FontColor operator *(double left, FontColor right) => right * left;
-        public static FontColor operator /(FontColor left, double right) => new FontColor(left.r / right, left.g / right, left.b / right, left.a / right);
+        public static FontColor operator /(FontColor left, double right) => new FontColor((float)(left.r / right), (float)(left.g / right), (float)(left.b / right), (float)(left.a / right));
     }
 
     /// <summary> Stores information about a font's appearance. </summary>
@@ -281,15 +278,18 @@ namespace StorybrewCommon.Subtitles
             compressor = current.Compressor;
         }
 
-        ///<summary> Gets the texture path of a texture sprite. </summary>
-        public FontTexture GetTexture(string text)
+        ///<summary> Gets the texture path of the matching item's string representation. </summary>
+        public FontTexture GetTexture(object text)
         {
-            if (!textureCache.TryGetValue(text, out FontTexture texture)) textureCache.Add(text, texture = generateTexture(text));
+            if (!textureCache.TryGetValue(text.ToString(), out FontTexture texture)) textureCache[text.ToString()] = texture = generateTexture(text.ToString());
             return texture;
         }
         FontTexture generateTexture(string text)
         {
-            var filename = text.Length == 1 ? $"{(int)text[0]:x4}.png" : $"_{textureCache.Count(l => l.Key.Length > 1):x3}.png";
+            var filename = text.Length == 1 ? 
+                $"{(char.IsPunctuation(text[0]) ? ((int)text[0]).ToString("x4") : (char.IsUpper(text[0]) ? text[0].ToString().ToLowerInvariant() + "_" : text[0].ToString()))}.png" : 
+                $"_{textureCache.Count(l => l.Key.Length > 1):x3}.png";
+
             var bitmapPath = Path.Combine(assetDirectory, Directory, filename);
 
             var dir = Path.GetDirectoryName(bitmapPath);
@@ -328,9 +328,9 @@ namespace StorybrewCommon.Subtitles
                     baseHeight = (int)Math.Ceiling(measuredSize.Height);
 
                     float effectsWidth = 0, effectsHeight = 0;
-                    foreach (var effect in effects)
+                    for (var i = 0; i < effects.Length; ++i)
                     {
-                        var effectSize = effect.Measure();
+                        var effectSize = effects[i].Measure();
                         effectsWidth = Math.Max(effectsWidth, effectSize.X);
                         effectsHeight = Math.Max(effectsHeight, effectSize.Y);
                     }
@@ -362,15 +362,15 @@ namespace StorybrewCommon.Subtitles
                                 textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
                             }
 
-                            foreach (var effect in effects) if (!effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
-                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush((Color)description.Color)) 
+                            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
+                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush(description.Color)) 
                                 textGraphics.DrawString(text, font, textBrush, textX, textY, stringFormat);
-                            foreach (var effect in effects) if (effect.Overlay) effect.Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
+                            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
 
                             if (description.Debug) using (var pen = new Pen(Color.FromArgb(255, 0, 0)))
                             {
                                 textGraphics.DrawLine(pen, textX, textY, textX, textY + baseHeight);
-                                textGraphics.DrawLine(pen, textX - baseWidth / 2f, textY, textX + baseWidth / 2f, textY);
+                                textGraphics.DrawLine(pen, textX - baseWidth * .5f, textY, textX + baseWidth * .5f, textY);
                             }
                         }
 
@@ -420,11 +420,11 @@ namespace StorybrewCommon.Subtitles
                 }
                 if (textureCache.ContainsKey(text)) throw new InvalidDataException($"The font texture for \"{text}\" ({path}) has been cached multiple times");
 
-                textureCache.Add(text, new FontTexture(path,
+                textureCache[text] = new FontTexture(path,
                     cacheEntry.Value<float>("OffsetX"), cacheEntry.Value<float>("OffsetY"),
                     cacheEntry.Value<int>("BaseWidth"), cacheEntry.Value<int>("BaseHeight"),
                     cacheEntry.Value<int>("Width"), cacheEntry.Value<int>("Height")
-                ));
+                );
             }
         }
         bool matches(TinyToken cachedFontRoot)
@@ -445,7 +445,7 @@ namespace StorybrewCommon.Subtitles
                 var effectsRoot = cachedFontRoot.Value<TinyArray>("Effects");
                 if (effectsRoot.Count != effects.Length) return false;
 
-                for (var i = 0; i < effects.Length; i++) if (!matches(effects[i], effectsRoot[i].Value<TinyToken>()))
+                for (var i = 0; i < effects.Length; ++i) if (!matches(effects[i], effectsRoot[i].Value<TinyToken>()))
                     return false;
 
                 return true;

@@ -175,11 +175,7 @@ namespace BrewLib.ScreenLayers
                 if (disposing)
                 {
                     changeFocus(null);
-                    for (var i = layers.Count - 1; i >= 0; --i)
-                    {
-                        var layer = layers[i];
-                        layer.Dispose();
-                    }
+                    for (var i = layers.Count - 1; i >= 0; --i) layers[i].Dispose();
                     window.Resize -= window_Resize;
                 }
                 disposedValue = true;

@@ -25,8 +25,7 @@ namespace BrewLib.ScreenLayers
         bool isExiting;
         public bool IsExiting => isExiting;
 
-        readonly InputDispatcher inputDispatcher = new InputDispatcher();
-        readonly InputDispatcher innerInputDispatcher = new InputDispatcher();
+        readonly InputDispatcher inputDispatcher = new InputDispatcher(), innerInputDispatcher = new InputDispatcher();
         public InputHandler InputHandler => inputDispatcher;
 
         public virtual void Load()

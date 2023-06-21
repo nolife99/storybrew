@@ -10,7 +10,7 @@ namespace StorybrewCommon.Storyboarding
         public bool UseFloatForMove = true;
         public bool UseFloatForTime = false;
 
-        ///<summary> Enables optimisation for OsbSprites that have a MaxCommandCount > 0 </summary>
+        ///<summary> Enables optimisation for sprites that have <see cref="OsbSprite.CommandSplitThreshold"/> > 0 </summary>
         public bool OptimiseSprites = true;
 
         public readonly NumberFormatInfo NumberFormat = new CultureInfo(@"en-US", false).NumberFormat;

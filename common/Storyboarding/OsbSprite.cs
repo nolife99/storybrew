@@ -80,8 +80,7 @@ namespace StorybrewCommon.Storyboarding
             colorTimeline.HasOverlap ||
             additiveTimeline.HasOverlap || flipHTimeline.HasOverlap || flipVTimeline.HasOverlap;
 
-        double commandsStartTime = double.MaxValue;
-        double commandsEndTime = double.MinValue;
+        double commandsStartTime = double.MaxValue, commandsEndTime = double.MinValue;
 
         ///<returns> The start time, in milliseconds, of this instance of the <see cref="OsbSprite"/>. </returns>
         public double CommandsStartTime
@@ -92,6 +91,7 @@ namespace StorybrewCommon.Storyboarding
                 return commandsStartTime;
             }
         }
+
         ///<returns> The end time, in milliseconds, of this instance of the <see cref="OsbSprite"/>. </returns>
         public double CommandsEndTime
         {
@@ -708,16 +708,16 @@ namespace StorybrewCommon.Storyboarding
             osbSpriteWriter.WriteOsb();
         }
 
-        ///<summary> Returns whether or not the sprite is within screen bounds. </summary>
-        ///<param name="position"> The position, in osu!pixels, of the sprite. </param>
-        ///<param name="size"> The image size of the sprite texture. </param>
+        ///<summary> Returns whether or not the sprite is within widescreen storyboard bounds. </summary>
+        ///<param name="position"> The storyboard position, in osu!pixels, of the sprite. </param>
+        ///<param name="size"> The image dimensions of the sprite texture. </param>
         ///<param name="rotation"> The rotation, in radians, of the sprite. </param>
         ///<param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
         public static bool InScreenBounds(CommandPosition position, SizeF size, double rotation, OsbOrigin origin)
             => new OrientedBoundingBox(position, GetOriginVector(origin, size.Width, size.Height), size.Width, size.Height, rotation)
                            .Intersects(OsuHitObject.WidescreenStoryboardBounds);
 
-        ///<summary> Gets the <see cref="Vector2"/> origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
+        ///<summary> Gets the <see cref="CommandPosition"/> origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
         ///<param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>
         ///<param name="width"> The width of the sprite. </param>
         ///<param name="height"> The height of the sprite. </param>
@@ -738,7 +738,6 @@ namespace StorybrewCommon.Storyboarding
             }
         }
     }
-
 
 #pragma warning disable CS1591
     public enum OsbLayer
@@ -797,7 +796,7 @@ namespace StorybrewCommon.Storyboarding
     ///<summary> Define the loop type for an animation. </summary>
     public enum OsbLoopType
     {
-        ///<summary> Loops the animation frames for the sprite's lifetime, repeating at the last frame. </summary>
+        ///<summary> Loops the animation frames for the sprite's lifetime, repeating when the last frame is reached. </summary>
         LoopForever,
 
         ///<summary> Loops the animation frames for the sprite once, stopping at the last frame. </summary>
