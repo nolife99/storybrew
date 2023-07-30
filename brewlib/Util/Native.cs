@@ -2,21 +2,37 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security;
 using System.Text;
 
 namespace BrewLib.Util
 {
-    public static class Native
+    [SuppressUnmanagedCodeSecurity] public static class Native
     {
-        [DllImport("kernel32.dll", EntryPoint = "CopyMemory", SetLastError = false)] public static extern void CopyMemory(IntPtr dest, IntPtr src, uint count);
-        [DllImport("user32.dll")] public static extern void SwitchToThisWindow(IntPtr hWnd, bool fAltTab);
-        [DllImport("user32.dll")] public static extern bool EnumThreadWindows(int dwThreadId, EnumThreadDelegate lpfn, IntPtr lParam);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DllImport("kernel32.dll", EntryPoint = "RtlCopyMemory", CallingConvention = CallingConvention.Winapi)] 
+        static extern void memcpy(IntPtr dest, IntPtr src, uint count);
+
+        public static void CopyMemory(IntPtr source, IntPtr destination, uint count)
+        {
+            if (source != default && destination != default) memcpy(destination, source, count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)]
+        public static extern bool EnumThreadWindows(int dwThreadId, EnumThreadDelegate lpfn, IntPtr lParam);
 
         public delegate bool EnumThreadDelegate(IntPtr hWnd, IntPtr lParam);
 
-        [DllImport("user32.dll")] public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
-        [DllImport("user32.dll")] public static extern int GetWindowTextLength(IntPtr hWnd);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)] 
+        public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)] 
+        public static extern int GetWindowTextLength(IntPtr hWnd);
 
         public static string GetWindowText(IntPtr hWnd)
         {
@@ -30,7 +46,8 @@ namespace BrewLib.Util
         public static IEnumerable<IntPtr> EnumerateProcessWindowHandles(Process process)
         {
             var handles = new HashSet<IntPtr>();
-            foreach (ProcessThread thread in process.Threads) EnumThreadWindows(thread.Id, (hWnd, lParam) =>
+            var threads = process.Threads;
+            for (var i = 0; i < threads.Count; ++i) EnumThreadWindows(threads[i].Id, (hWnd, lParam) =>
             {
                 handles.Add(hWnd);
                 return true;
@@ -47,19 +64,10 @@ namespace BrewLib.Util
         }
         public static IntPtr GetWindowHandle(this GameWindow window)
         {
-            var handle = Native.FindProcessWindow(window.Title);
+            var handle = FindProcessWindow(window.Title);
             if (handle != IntPtr.Zero) return handle;
 
-            // This handle is incorrect for some users, only use it if the window couldn't be found by title
             return window.WindowInfo.Handle;
         }
-
-        [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
-        public static extern IntPtr MemSet(IntPtr dest, int value, int count);
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int memcmp(byte[] b1, byte[] b2, long count);
-
-        public static bool ArrayEquals(byte[] b1, byte[] b2) => b1.Length == b2.Length && memcmp(b1, b2, b1.Length) == 0;
     }
 }

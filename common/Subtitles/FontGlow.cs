@@ -2,7 +2,6 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 using System.Numerics;
 
 namespace StorybrewCommon.Subtitles
@@ -52,7 +51,7 @@ namespace StorybrewCommon.Subtitles
         {
             if (Radius < 1) return;
 
-            using (var blurSource = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb))
+            using (var blurSource = new Bitmap(bitmap.Width, bitmap.Height, bitmap.PixelFormat))
             {
                 using (var brush = new SolidBrush(FontColor.White)) using (var graphics = Graphics.FromImage(blurSource))
                 {
@@ -62,7 +61,7 @@ namespace StorybrewCommon.Subtitles
                     graphics.DrawString(text, font, brush, x, y, stringFormat);
                 }
 
-                if (kernel == null)
+                if (kernel is null)
                 {
                     var radius = Math.Min(Radius, 24);
                     var power = Power >= 1 ? Power : Radius * .5;

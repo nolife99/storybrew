@@ -15,6 +15,7 @@ using System.Numerics;
 using System.IO;
 using System.Linq;
 using Tiny;
+using System.Globalization;
 
 namespace StorybrewCommon.Subtitles
 {
@@ -71,13 +72,13 @@ namespace StorybrewCommon.Subtitles
             {
                 default:
                 case OsbOrigin.TopLeft: return new Vector2(OffsetX, OffsetY);
-                case OsbOrigin.TopCentre: return new Vector2(OffsetX + Width / 2, OffsetY);
+                case OsbOrigin.TopCentre: return new Vector2(OffsetX + Width * .5f, OffsetY);
                 case OsbOrigin.TopRight: return new Vector2(OffsetX + Width, OffsetY);
-                case OsbOrigin.CentreLeft: return new Vector2(OffsetX, OffsetY + Height / 2);
-                case OsbOrigin.Centre: return new Vector2(OffsetX + Width / 2, OffsetY + Height / 2);
-                case OsbOrigin.CentreRight: return new Vector2(OffsetX + Width, OffsetY + Height / 2);
+                case OsbOrigin.CentreLeft: return new Vector2(OffsetX, OffsetY + Height * .5f);
+                case OsbOrigin.Centre: return new Vector2(OffsetX + Width * .5f, OffsetY + Height * .5f);
+                case OsbOrigin.CentreRight: return new Vector2(OffsetX + Width, OffsetY + Height * .5f);
                 case OsbOrigin.BottomLeft: return new Vector2(OffsetX, OffsetY + Height);
-                case OsbOrigin.BottomCentre: return new Vector2(OffsetX + Width / 2, OffsetY + Height);
+                case OsbOrigin.BottomCentre: return new Vector2(OffsetX + Width * .5f, OffsetY + Height);
                 case OsbOrigin.BottomRight: return new Vector2(OffsetX + Width, OffsetY + Height);
             }
         }
@@ -279,16 +280,17 @@ namespace StorybrewCommon.Subtitles
         }
 
         ///<summary> Gets the texture path of the matching item's string representation. </summary>
-        public FontTexture GetTexture(object text)
+        public FontTexture GetTexture(object obj)
         {
-            if (!textureCache.TryGetValue(text.ToString(), out FontTexture texture)) textureCache[text.ToString()] = texture = generateTexture(text.ToString());
+            var text = Convert.ToString(obj, CultureInfo.InvariantCulture);
+            if (!textureCache.TryGetValue(text, out FontTexture texture)) textureCache[text] = texture = generateTexture(text);
             return texture;
         }
         FontTexture generateTexture(string text)
         {
-            var filename = text.Length == 1 ? 
-                $"{(char.IsPunctuation(text[0]) ? ((int)text[0]).ToString("x4") : (char.IsUpper(text[0]) ? text[0].ToString().ToLowerInvariant() + "_" : text[0].ToString()))}.png" : 
-                $"_{textureCache.Count(l => l.Key.Length > 1):x3}.png";
+            var filename = text.Length == 1 ?
+                $"{(!PathHelper.IsValidFilename(text[0].ToString()) ? ((int)text[0]).ToString("x4").TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0]) + "_" : text[0].ToString()))}.png" : 
+                $"_{textureCache.Count(l => l.Key.Length > 1).ToString("x3").TrimStart('0')}.png";
 
             var bitmapPath = Path.Combine(assetDirectory, Directory, filename);
 
@@ -337,9 +339,9 @@ namespace StorybrewCommon.Subtitles
                     width = (int)Math.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
                     height = (int)Math.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
 
-                    var paddingX = description.Padding.X + effectsWidth / 2;
-                    var paddingY = description.Padding.Y + effectsHeight / 2;
-                    var textX = paddingX + measuredSize.Width / 2;
+                    var paddingX = description.Padding.X + effectsWidth * .5f;
+                    var paddingY = description.Padding.Y + effectsHeight * .5f;
+                    var textX = paddingX + measuredSize.Width * .5f;
                     var textY = paddingY;
 
                     offsetX = -paddingX;
@@ -367,17 +369,17 @@ namespace StorybrewCommon.Subtitles
                                 textGraphics.DrawString(text, font, textBrush, textX, textY, stringFormat);
                             for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
 
-                            if (description.Debug) using (var pen = new Pen(Color.FromArgb(255, 0, 0)))
+                            if (description.Debug) using (var pen = new Pen(Color.Red))
                             {
                                 textGraphics.DrawLine(pen, textX, textY, textX, textY + baseHeight);
                                 textGraphics.DrawLine(pen, textX - baseWidth * .5f, textY, textX + baseWidth * .5f, textY);
                             }
                         }
 
-                        var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : Rectangle.Empty;
-                        using (var stream = new FileStream(bitmapPath, FileMode.Create, FileAccess.Write, FileShare.Read))
+                        var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : default;
+                        using (var stream = new FileStream(bitmapPath, FileMode.Create, FileAccess.Write))
                         {
-                            if (bounds != Rectangle.Empty && bounds != new Rectangle(0, 0, bitmap.Width, bitmap.Height))
+                            if (bounds != default && bounds != new Rectangle(default, bitmap.Size))
                             using (var trimmedBitmap = new Bitmap(bounds.Width, bounds.Height))
                             {
                                 offsetX += bounds.Left;

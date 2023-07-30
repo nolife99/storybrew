@@ -19,11 +19,11 @@ namespace BrewLib.Graphics.Text
 
         public IEnumerable<TextLayoutGlyph> Glyphs
         {
-            get { foreach (var line in lines) foreach (var glyph in line.Glyphs) yield return glyph; }
+            get { for (var i = 0; i < lines.Count; ++i) foreach (var glyph in lines[i].Glyphs) yield return glyph; }
         }
         public IEnumerable<TextLayoutGlyph> VisibleGlyphs
         {
-            get { foreach (var line in lines) foreach (var glyph in line.Glyphs) if (!glyph.Glyph.IsEmpty) yield return glyph; }
+            get { for (var i = 0; i < lines.Count; ++i) foreach (var glyph in lines[i].Glyphs) if (!glyph.Glyph.IsEmpty) yield return glyph; }
         }
 
         public TextLayout(string text, TextFont font, BoxAlignment alignment, StringTrimming trimming, Vector2 maxSize)
@@ -31,12 +31,12 @@ namespace BrewLib.Graphics.Text
             textLines = LineBreaker.Split(text, (int)Math.Ceiling(maxSize.X), c => font.GetGlyph(c).Width);
 
             var glyphIndex = 0;
-            var width = .0f;
-            var height = .0f;
+            var width = 0f;
+            var height = 0f;
             foreach (var textLine in textLines)
             {
                 var line = new TextLayoutLine(this, height, alignment, lines.Count == 0);
-                foreach (var c in textLine) line.Add(font.GetGlyph(c), glyphIndex++);
+                foreach (var c in textLine) line.Add(font.GetGlyph(c), ++glyphIndex);
 
                 // trimming != StringTrimming.None && 
                 // if (maxSize.Y > 0 && height + line.Height > maxSize.Y) break;
@@ -80,11 +80,12 @@ namespace BrewLib.Graphics.Text
         public void ForTextBounds(int startIndex, int endIndex, Action<Box2> action)
         {
             var index = 0;
-            foreach (var line in lines)
+            lines.ForEach(line =>
             {
                 var topLeft = Vector2.Zero;
                 var bottomRight = Vector2.Zero;
                 var hasBounds = false;
+
                 foreach (var layoutGlyph in line.Glyphs)
                 {
                     if (!hasBounds && startIndex <= index)
@@ -93,10 +94,10 @@ namespace BrewLib.Graphics.Text
                         hasBounds = true;
                     }
                     if (index < endIndex) bottomRight = layoutGlyph.Position + layoutGlyph.Glyph.Size;
-                    index++;
+                    ++index;
                 }
                 if (hasBounds) action(new Box2(topLeft, bottomRight));
-            }
+            });
         }
         public int GetCharacterIndexAbove(int index)
         {
@@ -193,11 +194,7 @@ namespace BrewLib.Graphics.Text
 
         public Vector2 Position
         {
-            get
-            {
-                var linePosition = line.Position;
-                return new Vector2(linePosition.X + x, linePosition.Y);
-            }
+            get => new Vector2(line.Position.X + x, line.Position.Y);
         }
         public TextLayoutGlyph(TextLayoutLine line, FontGlyph glyph, int index, float x)
         {

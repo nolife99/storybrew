@@ -103,13 +103,13 @@ namespace BrewLib.UserInterface.Skinning
             if (includes != null)
             {
                 var snapshot = new List<TinyToken>(includes);
-                foreach (var include in snapshot)
+                snapshot.ForEach(include =>
                 {
                     var path = include.Value<string>();
                     var includedData = loadJson(path, resourceContainer);
 
                     data.Merge(includedData);
-                }
+                });
             }
             return data;
         }

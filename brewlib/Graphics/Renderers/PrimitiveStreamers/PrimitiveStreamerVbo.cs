@@ -13,8 +13,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         readonly VertexDeclaration vertexDeclaration;
         readonly int primitiveSize;
 
-        int vertexBufferId = -1;
-        int indexBufferId = -1;
+        int vertexBufferId = -1, indexBufferId = -1;
 
         Shader currentShader;
         bool bound;
@@ -105,7 +104,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             Debug.Assert(drawCount % primitiveCount == 0);
 
             GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(primitiveCount * primitiveSize), primitives, BufferUsageHint.StreamDraw);
-            DiscardedBufferCount++;
+            ++DiscardedBufferCount;
 
             if (indexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);
             else GL.DrawArrays(primitiveType, 0, drawCount);

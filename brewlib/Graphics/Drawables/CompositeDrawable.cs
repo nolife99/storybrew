@@ -15,12 +15,13 @@ namespace BrewLib.Graphics.Drawables
             {
                 var minWidth = 0f;
                 var minHeight = 0f;
-                foreach (var drawable in Drawables)
+
+                Drawables.ForEach(drawable =>
                 {
                     var minSize = drawable.MinSize;
                     minWidth = Math.Min(minWidth, minSize.X);
                     minHeight = Math.Min(minWidth, minSize.Y);
-                }
+                });
                 return new Vector2(minWidth, minHeight);
             }
         }
@@ -41,9 +42,7 @@ namespace BrewLib.Graphics.Drawables
             }
         }
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity)
-        {
-            foreach (var drawable in Drawables) drawable.Draw(drawContext, camera, bounds, opacity);
-        }
+            => Drawables.ForEach(drawable => drawable.Draw(drawContext, camera, bounds, opacity));
 
         #region IDisposable Support
 

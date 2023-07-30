@@ -41,10 +41,7 @@ namespace BrewLib.UserInterface
         public float ScrollableY => Math.Max(0, scrollContainer.Height - Height);
 
         readonly StackLayout scrollContainer;
-        readonly Label scrollIndicatorTop;
-        readonly Label scrollIndicatorBottom;
-        readonly Label scrollIndicatorLeft;
-        readonly Label scrollIndicatorRight;
+        readonly Label scrollIndicatorTop, scrollIndicatorBottom, scrollIndicatorLeft, scrollIndicatorRight;
         bool dragged;
 
         public ScrollArea(WidgetManager manager, Widget scrollable) : base(manager)

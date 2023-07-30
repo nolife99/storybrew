@@ -8,8 +8,7 @@ namespace BrewLib.UserInterface
 {
     public class LinearLayout : Widget
     {
-        Vector2 minSize;
-        Vector2 preferredSize;
+        Vector2 minSize, preferredSize;
         bool invalidSizes = true;
 
         public override Vector2 MinSize
@@ -147,7 +146,7 @@ namespace BrewLib.UserInterface
                 usedSpace = totalSpacing;
                 scalableItems = 0;
 
-                foreach (var item in items)
+                items.ForEach(item =>
                 {
                     if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
 
@@ -166,7 +165,7 @@ namespace BrewLib.UserInterface
                                 item.Length = item.MaxSize.X;
                                 item.Scalable = false;
                             }
-                            else scalableItems++;
+                            else ++scalableItems;
                         }
                         else
                         {
@@ -180,15 +179,15 @@ namespace BrewLib.UserInterface
                                 item.Length = item.MaxSize.Y;
                                 item.Scalable = false;
                             }
-                            else scalableItems++;
+                            else ++scalableItems;
                         }
                     }
                     usedSpace += item.Length;
-                }
+                });
             }
 
             var distance = horizontal ? padding.Left : padding.Top;
-            foreach (var item in items)
+            items.ForEach(item =>
             {
                 var child = item.Widget;
                 var minSize = item.MinSize;
@@ -211,7 +210,7 @@ namespace BrewLib.UserInterface
                     PlaceChildren(child, new Vector2(padding.GetHorizontalOffset(anchor), distance), new Vector2(childBreadth, item.Length), anchor);
                 }
                 distance += item.Length + spacing;
-            }
+            });
         }
         protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
         {

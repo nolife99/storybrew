@@ -19,14 +19,11 @@ namespace BrewLib.Graphics.Shaders
             variables.Add(variable);
             return variable;
         }
-        public void DeclareVariables(StringBuilder code)
+        public void DeclareVariables(StringBuilder code) => variables.ForEach(variable =>
         {
-            foreach (var variable in variables)
-            {
-                code.Append($"{variable.ShaderTypeName} {variable.Name}");
-                if (variable.ArrayCount != -1) code.Append($"[{variable.ArrayCount}]");
-                code.AppendLine(";");
-            }
-        }
+            code.Append($"{variable.ShaderTypeName} {variable.Name}");
+            if (variable.ArrayCount != -1) code.Append($"[{variable.ArrayCount}]");
+            code.AppendLine(";");
+        });
     }
 }

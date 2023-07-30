@@ -13,8 +13,7 @@ namespace BrewLib.Graphics.Renderers
     public class QuadRendererBuffered : QuadRenderer
     {
         public const int VertexPerQuad = 4;
-        public const string CombinedMatrixUniformName = "u_combinedMatrix";
-        public const string TextureUniformName = "u_texture";
+        public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
         public static readonly VertexDeclaration VertexDeclaration =
             new VertexDeclaration(VertexAttribute.CreatePosition2d(), VertexAttribute.CreateDiffuseCoord(0), VertexAttribute.CreateColor(true));
@@ -49,8 +48,7 @@ namespace BrewLib.Graphics.Renderers
         #endregion
 
         Shader shader;
-        readonly int combinedMatrixLocation;
-        readonly int textureUniformLocation;
+        readonly int combinedMatrixLocation, textureUniformLocation;
 
         public Shader Shader => ownsShader ? null : shader;
         readonly bool ownsShader;
@@ -88,11 +86,9 @@ namespace BrewLib.Graphics.Renderers
         readonly int maxQuadsPerBatch;
 
         BindableTexture currentTexture;
-        int currentSamplerUnit;
+        int currentSamplerUnit, currentLargestBatch;
         bool rendering;
-
-        int currentLargestBatch;
-
+        
         public int RenderedQuadCount { get; set; }
         public int FlushedBufferCount { get; set; }
         public int DiscardedBufferCount => primitiveStreamer.DiscardedBufferCount;

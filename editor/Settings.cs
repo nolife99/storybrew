@@ -1,6 +1,7 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
 using StorybrewCommon.Util;
+using StorybrewEditor.Storyboarding;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -35,8 +36,7 @@ namespace StorybrewEditor
             var type = GetType();
             try
             {
-                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var reader = new StreamReader(stream, System.Text.Encoding.UTF8))
+                using (var stream = File.OpenRead(path)) using (var reader = new StreamReader(stream, Project.Encoding))
                 reader.ParseKeyValueSection((key, value) =>
                 {
                     var field = type.GetField(key);
@@ -64,7 +64,7 @@ namespace StorybrewEditor
         {
             Trace.WriteLine($"Saving settings at '{path}'");
 
-            using (var stream = new SafeWriteStream(path)) using (var writer = new StreamWriter(stream, System.Text.Encoding.UTF8))
+            using (var stream = new SafeWriteStream(path)) using (var writer = new StreamWriter(stream, Project.Encoding))
             {
                 foreach (var field in GetType().GetFields())
                 {
@@ -104,7 +104,7 @@ namespace StorybrewEditor
             OnValueChanged += handler = (sender, e) =>
             {
                 field.FieldValue = value;
-                changedAction();
+                changedAction?.Invoke();
             };
             field.OnDisposed += (sender, e) => OnValueChanged -= handler;
             handler(this, EventArgs.Empty);
@@ -126,8 +126,8 @@ namespace StorybrewEditor
             EventHandler handler;
             setting.OnValueChanged += handler = (sender, e) =>
             {
-                button.Checked = (bool)Convert.ChangeType((T)setting, typeof(bool));
-                changedAction();
+                button.Checked = (bool)Convert.ChangeType((T)setting, typeof(bool), CultureInfo.InvariantCulture);
+                changedAction?.Invoke();
             };
             button.OnDisposed += (sender, e) => setting.OnValueChanged -= handler;
             handler(button, EventArgs.Empty);

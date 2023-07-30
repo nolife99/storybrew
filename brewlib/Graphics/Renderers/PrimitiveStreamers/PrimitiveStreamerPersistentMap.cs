@@ -9,17 +9,12 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
     public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive>, PrimitiveStreamer<TPrimitive> where TPrimitive : struct
     {
         GpuCommandSync commandSync;
-        int vertexBufferSize;
-
         IntPtr bufferPointer;
-        int bufferOffset;
-        int drawOffset;
+        int bufferOffset, drawOffset, vertexBufferSize;
 
         public PrimitiveStreamerPersistentMap(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
-            : base(vertexDeclaration, minRenderableVertexCount, indexes)
-        {
-            commandSync = new GpuCommandSync();
-        }
+            : base(vertexDeclaration, minRenderableVertexCount, indexes) => commandSync = new GpuCommandSync();
+
         protected override void initializeVertexBuffer()
         {
             base.initializeVertexBuffer();
@@ -62,14 +57,14 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             }
             if (commandSync.WaitForRange(bufferOffset, vertexDataSize))
             {
-                BufferWaitCount++;
+                ++BufferWaitCount;
                 expandVertexBuffer();
             }
 
             var pinnedVertexData = GCHandle.Alloc(primitives, GCHandleType.Pinned);
             try
             {
-                Native.CopyMemory(bufferPointer + bufferOffset, pinnedVertexData.AddrOfPinnedObject(), (uint)vertexDataSize);
+                Native.CopyMemory(pinnedVertexData.AddrOfPinnedObject(), bufferPointer + bufferOffset, (uint)vertexDataSize);
             }
             finally
             {
@@ -89,10 +84,10 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             if (IndexBufferId != -1) return;
 
             // Prevent the vertex buffer from becoming too large (maxes at 8mb * grow factor)
-            if (MinRenderableVertexCount * VertexDeclaration.VertexSize > 8 * 1024 * 1024) return;
+            if (MinRenderableVertexCount * VertexDeclaration.VertexSize > 8388608) return;
 
             MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.75);
-            if (commandSync.WaitForAll()) BufferWaitCount++;
+            if (commandSync.WaitForAll()) ++BufferWaitCount;
 
             Unbind();
 
@@ -119,7 +114,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             bufferOffset = 0;
             drawOffset = 0;
 
-            DiscardedBufferCount++;
+            ++DiscardedBufferCount;
         }
         public new static bool HasCapabilities() => DrawState.HasCapabilities(4, 4, "GL_ARB_buffer_storage") &&
             DrawState.HasCapabilities(3, 0, "GL_ARB_map_buffer_range") && DrawState.HasCapabilities(1, 5) && GpuCommandSync.HasCapabilities() &&

@@ -13,6 +13,6 @@ namespace StorybrewCommon.Storyboarding
         ///<summary> Enables optimisation for sprites that have <see cref="OsbSprite.CommandSplitThreshold"/> > 0 </summary>
         public bool OptimiseSprites = true;
 
-        public readonly NumberFormatInfo NumberFormat = new CultureInfo(@"en-US", false).NumberFormat;
+        public readonly NumberFormatInfo NumberFormat = CultureInfo.InvariantCulture.NumberFormat;
     }
 }

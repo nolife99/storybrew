@@ -14,8 +14,7 @@ namespace BrewLib.Graphics.Drawables
         TextLayout textLayout;
 
         TextFont font;
-        float currentFontSize;
-        float currentScaling = 1;
+        float currentFontSize, currentScaling = 1;
 
         public Vector2 MinSize => Size;
         public Vector2 PreferredSize => Size;
@@ -184,7 +183,7 @@ namespace BrewLib.Graphics.Drawables
         void validate()
         {
             if (textLayout != null) return;
-            if (font == null || font.Name != FontName || currentFontSize != FontSize || currentScaling != Scaling)
+            if (font is null || font.Name != FontName || currentFontSize != FontSize || currentScaling != Scaling)
             {
                 font?.Dispose();
                 font = DrawState.TextFontManager.GetTextFont(FontName, FontSize, Scaling);

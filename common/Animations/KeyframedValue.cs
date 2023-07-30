@@ -14,10 +14,10 @@ namespace StorybrewCommon.Animations
         readonly TValue defaultValue;
 
         ///<summary> Returns the start time of the first keyframe in the keyframed value. </summary>
-        public double StartTime => keyframes.Count == 0 ? 0 : keyframes[0].Time;
+        public double StartTime => keyframes.Count == 0 ? int.MinValue : keyframes[0].Time;
 
         ///<summary> Returns the end time of the last keyframe in the keyframed value. </summary>
-        public double EndTime => keyframes.Count == 0 ? 0 : keyframes[keyframes.Count - 1].Time;
+        public double EndTime => keyframes.Count == 0 ? int.MinValue : keyframes[keyframes.Count - 1].Time;
 
         ///<summary> Returns the start value of the first keyframe in the keyframed value. </summary>
         public TValue StartValue => keyframes.Count == 0 ? defaultValue : keyframes[0].Value;
@@ -36,8 +36,8 @@ namespace StorybrewCommon.Animations
         public int Count => keyframes.Count;
 
         ///<summary> Constructs a new keyframed value. </summary>
-        ///<param name="interpolate"> The <see cref="InterpolatingFunctions"/> type of this keyframed value. </param>
-        ///<param name="defaultValue"> The default type value of this keyframed value. </param>
+        ///<param name="interpolate"> The <see cref="InterpolatingFunctions"/> to use to interpolate between values. Required to use <see cref="ValueAt(double)"/> </param>
+        ///<param name="defaultValue"> The default value of the type of this keyframed value. </param>
         public KeyframedValue(Func<TValue, TValue, double, TValue> interpolate = null, TValue defaultValue = default)
         {
             this.interpolate = interpolate;
@@ -92,11 +92,18 @@ namespace StorybrewCommon.Animations
             return Add(time, keyframes[index == keyframes.Count ? keyframes.Count - 1 : index].Value);
         }
 
+        internal KeyframedValue<TValue> DebugUntil(double time)
+        {
+            var index = indexAt(time, false);
+            return Add(new Keyframe<TValue>(time, keyframes[index == keyframes.Count ? keyframes.Count - 1 : index].Value, null, true));
+        }
+
         ///<summary> Transfers the keyframes in this instance to another keyframed value. </summary>
         ///<param name="to"> The keyframed value to transfer to. </param>
         ///<param name="clear"> Whether to clear the keyframes in this instance. </param>
         public void TransferKeyframes(KeyframedValue<TValue> to, bool clear = true)
         {
+            if (Count == 0) return;
             to.AddRange(this);
             if (clear) Clear();
         }
@@ -160,10 +167,10 @@ namespace StorybrewCommon.Animations
                         if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time)
                         {
                             var initialPair = stepStart.Value.WithTime(startTime);
-                            pair(initialPair, loopable ? stepStart.Value : initialPair);
+                            if (!stepStart.Value.Until) pair(initialPair, loopable ? stepStart.Value : initialPair);
                         }
 
-                        pair(stepStart.Value, startKeyframe);
+                        if (!stepStart.Value.Until) pair(stepStart.Value, startKeyframe);
                         previousPairEnd = startKeyframe;
                         stepStart = null;
                         hasPair = true;
@@ -216,7 +223,7 @@ namespace StorybrewCommon.Animations
         }
 
         static Keyframe<TValue> editKeyframe(Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit != null ?
-            new Keyframe<TValue>(keyframe.Time, edit(keyframe.Value), keyframe.Ease) : keyframe;
+            new Keyframe<TValue>(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
 
         ///<summary> Removes all keyframes in the keyframed value. </summary>
         public void Clear(bool trim = false)
@@ -240,7 +247,7 @@ namespace StorybrewCommon.Animations
             else i = ~i;
             return i;
         }
-        int indexAt(double time, bool before) => indexFor(new Keyframe<TValue>(time), before);
+        internal int indexAt(double time, bool before) => indexFor(new Keyframe<TValue>(time), before);
 
         #region Manipulation
 

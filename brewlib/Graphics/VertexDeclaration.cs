@@ -64,7 +64,7 @@ namespace BrewLib.Graphics
         #region Enumerable
 
         public IEnumerator<VertexAttribute> GetEnumerator() => ((IEnumerable<VertexAttribute>)vertexAttributes).GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<VertexAttribute>)vertexAttributes).GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         #endregion
     }

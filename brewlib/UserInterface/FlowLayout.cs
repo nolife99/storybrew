@@ -14,9 +14,30 @@ namespace BrewLib.UserInterface
         List<LayoutLine> lines;
         bool invalidSizes = true;
 
-        public override Vector2 MinSize { get { measureChildren(); return new Vector2(0, PreferredSize.Y); } }
-        public override Vector2 PreferredSize { get { measureChildren(); return preferredSize; } }
-        public override Vector2 MaxSize { get { measureChildren(); return preferredSize; } }
+        public override Vector2 MinSize 
+        { 
+            get 
+            { 
+                measureChildren(); 
+                return new Vector2(0, PreferredSize.Y); 
+            } 
+        }
+        public override Vector2 PreferredSize 
+        { 
+            get 
+            { 
+                measureChildren(); 
+                return preferredSize; 
+            } 
+        }
+        public override Vector2 MaxSize 
+        { 
+            get 
+            { 
+                measureChildren(); 
+                return preferredSize; 
+            } 
+        }
 
         float spacing;
         public float Spacing
@@ -86,7 +107,7 @@ namespace BrewLib.UserInterface
             var layoutStyle = (LinearLayoutStyle)style;
 
             //Spacing = layoutStyle.Spacing;
-            LineSpacing = layoutStyle.Spacing / 2;
+            LineSpacing = layoutStyle.Spacing * .5f;
         }
         public override void InvalidateLayout()
         {
@@ -116,10 +137,10 @@ namespace BrewLib.UserInterface
             }
 
             var y = padding.Top;
-            foreach (var line in lines)
+            lines.ForEach(line =>
             {
                 var x = padding.Left;
-                foreach (var item in line.Items)
+                line.Items.ForEach(item =>
                 {
                     var child = item.Widget;
                     var minSize = item.MinSize;
@@ -132,15 +153,15 @@ namespace BrewLib.UserInterface
                     var verticalAlignment = child.AnchorFrom & BoxAlignment.Vertical;
                     switch (verticalAlignment)
                     {
-                        case BoxAlignment.Centre: verticalOffset = line.Height * 0.5f; break;
+                        case BoxAlignment.Centre: verticalOffset = line.Height * .5f; break;
                         case BoxAlignment.Bottom: verticalOffset = line.Height; break;
                     }
                     var anchor = verticalAlignment | BoxAlignment.Left;
                     PlaceChildren(child, new Vector2(x, y + verticalOffset), new Vector2(item.Width, childHeight), anchor);
                     x += item.Width + spacing;
-                }
+                });
                 y += line.Height + lineSpacing;
-            }
+            });
         }
         protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
         {
@@ -206,10 +227,10 @@ namespace BrewLib.UserInterface
             }
 
             var firstLine = true;
-            foreach (var line in lines)
+            lines.ForEach(line =>
             {
                 var scalableItems = line.Items.Count;
-                while (scalableItems > 0 && Math.Abs(innerSizeWidth - line.Width) > 0.001f)
+                while (scalableItems > 0 && Math.Abs(innerSizeWidth - line.Width) > .001f)
                 {
                     var remainingWidth = innerSizeWidth - line.Width;
                     if (!fill && remainingWidth > 0) break;
@@ -218,7 +239,7 @@ namespace BrewLib.UserInterface
                     line.Width = line.GetTotalSpacing(spacing);
                     scalableItems = 0;
 
-                    foreach (var item in line.Items)
+                    line.Items.ForEach(item =>
                     {
                         if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
 
@@ -235,16 +256,16 @@ namespace BrewLib.UserInterface
                                 item.Width = item.MaxSize.Y;
                                 item.Scalable = false;
                             }
-                            else scalableItems++;
+                            else ++scalableItems;
                         }
                         line.Width += item.Width;
-                    }
+                    });
                 }
 
                 width = Math.Max(width, line.Width);
                 height += firstLine ? line.Height : line.Height + lineSpacing;
                 firstLine = false;
-            }
+            });
             flowWidth = Math.Max(flowWidth, width + padding.Horizontal);
             preferredSize = new Vector2(flowWidth, height + padding.Vertical);
         }

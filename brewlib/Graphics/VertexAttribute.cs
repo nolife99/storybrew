@@ -4,18 +4,17 @@ namespace BrewLib.Graphics
 {
     public class VertexAttribute
     {
-        public const string PositionAttributeName = "a_position";
-        public const string NormalAttributeName = "a_normal";
-        public const string TextureCoordAttributeName = "a_textureCoord";
-        public const string ColorAttributeName = "a_color";
-        public const string BoneWeightAttributeName = "a_boneWeight";
-        public const string ScaleAttributeName = "a_scale";
-        public const string PresenceAttributeName = "a_presence";
+        public const string PositionAttributeName = "a_position", 
+            NormalAttributeName = "a_normal",
+            TextureCoordAttributeName = "a_textureCoord",
+            ColorAttributeName = "a_color",
+            BoneWeightAttributeName = "a_boneWeight",
+            ScaleAttributeName = "a_scale",
+            PresenceAttributeName = "a_presence";
 
         public string Name;
         public VertexAttribPointerType Type = VertexAttribPointerType.Float;
-        public int ComponentSize = 4;
-        public int ComponentCount = 1;
+        public int ComponentSize = 4, ComponentCount = 1;
         public bool Normalized = false;
         public int Offset;
         public AttributeUsage Usage = AttributeUsage.Undefined;
@@ -28,14 +27,11 @@ namespace BrewLib.Graphics
             if (other == this) return true;
 
             var otherAttribute = other as VertexAttribute;
-            if (otherAttribute == null) return false;
-            if (Name != otherAttribute.Name) return false;
-            if (Type != otherAttribute.Type) return false;
-            if (ComponentSize != otherAttribute.ComponentSize) return false;
-            if (ComponentCount != otherAttribute.ComponentCount) return false;
-            if (Normalized != otherAttribute.Normalized) return false;
-            if (Offset != otherAttribute.Offset) return false;
-            if (Usage != otherAttribute.Usage) return false;
+            if (otherAttribute is null || 
+                Name != otherAttribute.Name || Type != otherAttribute.Type ||
+                ComponentSize != otherAttribute.ComponentSize || ComponentCount != otherAttribute.ComponentCount ||
+                Normalized != otherAttribute.Normalized || Offset != otherAttribute.Offset || Usage != otherAttribute.Usage) 
+                return false;
 
             return true;
         }

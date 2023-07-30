@@ -13,11 +13,13 @@ namespace StorybrewCommon.Storyboarding.Util
     ///<summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
     public class CommandGenerator
     {
-        readonly KeyframedValue<Vector2>
-            positions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
-            finalPositions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
-            scales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2),
-            finalScales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
+        readonly KeyframedValue<CommandPosition>
+            positions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Position),
+            finalPositions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Position);
+
+        readonly KeyframedValue<CommandScale>
+            scales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale),
+            finalScales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale);
 
         readonly KeyframedValue<double>
             rotations = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle),
@@ -110,7 +112,7 @@ namespace StorybrewCommon.Storyboarding.Util
                 if (isVisible && everVisible != true) everVisible = true;
                 if (!wasVisible && isVisible)
                 {
-                    if (!stateAdded && previousState != null) addKeyframes(previousState, loopable ? time : previousState.Time + timeOffset);
+                    if (!stateAdded && previousState != null) addKeyframes(previousState, loopable ? time : (previousState.Time + timeOffset));
                     addKeyframes(state, time);
                     if (stateAdded != true) stateAdded = true;
                 }
@@ -131,9 +133,6 @@ namespace StorybrewCommon.Storyboarding.Util
                 wasVisible = isVisible;
             });
 
-            states.Clear();
-            states.TrimExcess();
-
             if (wasVisible) commitKeyframes(imageSize);
             if (everVisible)
             {
@@ -147,19 +146,23 @@ namespace StorybrewCommon.Storyboarding.Util
         void commitKeyframes(SizeF imageSize)
         {
             positions.Simplify2dKeyframes(PositionTolerance, s => s);
+            if (finalPositions.EndTime != int.MinValue) finalPositions.DebugUntil(positions.StartTime);
             positions.TransferKeyframes(finalPositions);
 
             scales.Simplify2dKeyframes(ScaleTolerance, v => new Vector2(v.X * imageSize.Width, v.Y * imageSize.Height));
+            if (finalScales.EndTime != int.MinValue) finalScales.DebugUntil(scales.StartTime);
             scales.TransferKeyframes(finalScales);
 
             rotations.Simplify1dKeyframes(RotationTolerance, r => (float)r);
+            if (finalRotations.EndTime != int.MinValue) finalRotations.DebugUntil(rotations.StartTime);
             rotations.TransferKeyframes(finalRotations);
 
             colors.Simplify3dKeyframes(ColorTolerance, c => new Vector3(c.R, c.G, c.B));
+            if (finalColors.EndTime != int.MinValue) finalColors.DebugUntil(colors.StartTime);
             colors.TransferKeyframes(finalColors);
 
             fades.Simplify1dKeyframes(OpacityTolerance, f => (float)f);
-            if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, before: true);
+            if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
             if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
             fades.TransferKeyframes(finalfades);
         }
@@ -177,15 +180,15 @@ namespace StorybrewCommon.Storyboarding.Util
                 if (moveX && !moveY)
                 {
                     sprite.MoveX(s.Time, e.Time, s.Value.X, e.Value.X);
-                    sprite.InitialPosition = new Vector2(0, s.Value.Y);
+                    sprite.InitialPosition = new CommandPosition(0, s.Value.Y);
                 }
                 else if (moveY && !moveX)
                 {
                     sprite.MoveY(s.Time, e.Time, s.Value.Y, e.Value.Y);
-                    sprite.InitialPosition = new Vector2(s.Value.X, 0);
+                    sprite.InitialPosition = new CommandPosition(s.Value.X, 0);
                 }
                 else sprite.Move(s.Time, e.Time, s.Value, e.Value);
-            }, new Vector2(320, 240), p => new CommandPosition(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, loopable: loopable);
+            }, new Vector2(320, 240), p => new CommandPosition(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, endState, loopable);
 
             int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
             var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) >= 1);
@@ -193,19 +196,19 @@ namespace StorybrewCommon.Storyboarding.Util
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
                 else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
-            }, Vector2.One, s => new CommandScale(Math.Round(s.X, ScaleDecimals), Math.Round(s.Y, ScaleDecimals)), startState, loopable: loopable);
+            }, Vector2.One, s => new CommandScale(Math.Round(s.X, ScaleDecimals), Math.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
 
             finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
-                0, r => Math.Round(r, RotationDecimals), startState, loopable: loopable);
+                0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
 
-            finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState, loopable: loopable);
+            finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState, endState, loopable);
             finalfades.ForEachPair((s, e) =>
             {
                 // what the hell???
-                if (!(s.Time == sprite.CommandsStartTime && s.Time == e.Time && e.Value == 1 ||
-                    s.Time == sprite.CommandsEndTime && s.Time == e.Time && e.Value == 0))
+                if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 ||
+                    s.Time == sprite.EndTime || s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0))
                     sprite.Fade(s.Time, e.Time, s.Value, e.Value);
-            }, -1, o => Math.Round(o, OpacityDecimals), startState, endState, loopable: loopable);
+            }, -1, o => Math.Round(o, OpacityDecimals), startState, endState, loopable);
 
             flipH.ForEachFlag((f, t) => sprite.FlipH(f, t));
             flipV.ForEachFlag((f, t) => sprite.FlipV(f, t));
@@ -237,10 +240,10 @@ namespace StorybrewCommon.Storyboarding.Util
             flipH.Clear(true);
             flipV.Clear(true);
             additive.Clear(true);
+            states.Clear();
+            states.TrimExcess();
         }
-        internal static SizeF BitmapDimensions(OsbSprite sprite) => sprite.Origin is OsbOrigin.Centre ? 
-            StoryboardObjectGenerator.Current.getTrimmedBitmap(sprite.TexturePath, 
-                StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath, StoryboardObjectGenerator.Current.fontDirectories.Count == 0)).Size :
+        internal static SizeF BitmapDimensions(OsbSprite sprite) => 
             StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath, StoryboardObjectGenerator.Current.fontDirectories.Count == 0).PhysicalDimension;
     }
 
@@ -286,9 +289,9 @@ namespace StorybrewCommon.Storyboarding.Util
                 (generator is null ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals)) <= 0)
                 return false;
 
-            var rounded = new Vector2(
-                generator is null ? (float)Position.X : (float)Math.Round(Position.X, generator.PositionDecimals),
-                generator is null ? (float)Position.Y : (float)Math.Round(Position.Y, generator.PositionDecimals));
+            var rounded = new CommandPosition(
+                generator is null ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
+                generator is null ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals));
 
             return OsbSprite.InScreenBounds(rounded, new SizeF(imageSize.Width * Scale.X, imageSize.Height * Scale.Y), 
                 generator is null ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);

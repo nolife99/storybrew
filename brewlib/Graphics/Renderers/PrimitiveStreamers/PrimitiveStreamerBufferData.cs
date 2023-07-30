@@ -15,7 +15,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             Debug.Assert(drawCount % primitiveCount == 0);
 
             GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(primitiveCount * PrimitiveSize), primitives, BufferUsageHint.StreamDraw);
-            DiscardedBufferCount++;
+            ++DiscardedBufferCount;
 
             if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);
             else GL.DrawArrays(primitiveType, 0, drawCount);

@@ -28,7 +28,7 @@ namespace StorybrewEditor.ScreenLayers.Util
                 Exception exception = null;
                 try
                 {
-                    action.Invoke();
+                    action();
                 }
                 catch (Exception e)
                 {

@@ -4,9 +4,7 @@ namespace BrewLib.UserInterface
 {
     public class WidgetEvent
     {
-        public readonly Widget Target;
-        public readonly Widget RelatedTarget;
-
+        public readonly Widget Target, RelatedTarget;
         public Widget Listener;
         public bool Handled;
 
@@ -25,7 +23,7 @@ namespace BrewLib.UserInterface
     }
     public class WidgetFocusEventArgs : EventArgs
     {
-        private readonly bool hasFocus;
+        readonly bool hasFocus;
         public bool HasFocus => hasFocus;
 
         public WidgetFocusEventArgs(bool hasFocus) => this.hasFocus = hasFocus;

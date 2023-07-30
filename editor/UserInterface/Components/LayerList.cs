@@ -92,7 +92,7 @@ namespace StorybrewEditor.UserInterface.Components
             var layers = layerManager.FindLayers(l => l.OsbLayer == osbLayer && l.DiffSpecific == diffSpecific);
 
             var index = 0;
-            foreach (var layer in layers)
+            layers.ForEach(layer =>
             {
                 var effect = layer.Effect;
 
@@ -125,7 +125,7 @@ namespace StorybrewEditor.UserInterface.Components
                                 nameLabel = new Label(Manager)
                                 {
                                     StyleName = "listItem",
-                                    Text = layer.Name,
+                                    Text = layer.Identifier,
                                     AnchorFrom = BoxAlignment.Left,
                                     AnchorTo = BoxAlignment.Left
                                 },
@@ -183,7 +183,7 @@ namespace StorybrewEditor.UserInterface.Components
 
                 layer.OnChanged += changedHandler = (sender, e) =>
                 {
-                    nameLabel.Text = la.Name;
+                    nameLabel.Text = la.Identifier;
                     diffSpecificButton.Icon = la.DiffSpecific ? IconFont.FileO : IconFont.FilesO;
                     diffSpecificButton.Tooltip = la.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)";
                     showHideButton.Icon = la.Visible ? IconFont.Eye : IconFont.EyeSlash;
@@ -217,8 +217,8 @@ namespace StorybrewEditor.UserInterface.Components
 
                 diffSpecificButton.OnClick += (sender, e) => la.DiffSpecific = !la.DiffSpecific;
                 showHideButton.OnValueChanged += (sender, e) => la.Visible = showHideButton.Checked;
-                index++;
-            }
+                ++index;
+            });
         }
 
         static string getLayerDetails(EditorStoryboardLayer layer, Effect effect) => layer.EstimatedSize > 40960 ?

@@ -6,7 +6,8 @@ using System.Threading;
 
 namespace StorybrewCommon.Util
 {
-    ///<summary> Represents a fast native collection of keys and items. </summary>
+    ///<summary> Represents a unordered generic native collection of keys and values. </summary>
+    ///<remarks> This collection must be released with <see cref="Clear"/> or <see cref="Dispose"/> as soon as possible. </remarks>
     ///<typeparam name="TKey"> The type of the keys in the dictionary. </typeparam>
     ///<typeparam name="TValue"> The type of the values in the dictionary. </typeparam>
     public sealed class DisposableNativeDictionary<TKey, TValue> : IDisposable, IDictionary<TKey, TValue>, IDictionary
@@ -45,6 +46,27 @@ namespace StorybrewCommon.Util
         }
 
         ///<inheritdoc/>
+        ///<exception cref="InvalidCastException"> The type of 'key' and/or 'value' cannot be casted to the respective value type. </exception>
+        public object this[object key]
+        {
+            get
+            {
+                try
+                {
+                    for (var node = table[getIndex((TKey)key)]; node != null; node = node.Next) if (node.Key.Equals(key))
+                        return (TValue)node.Handle.Target;
+
+                    return null;
+                }
+                catch (InvalidCastException)
+                {
+                    return null;
+                }
+            }
+            set => Add(key, value);
+        }
+
+        ///<inheritdoc/>
         public int Count => count;
 
         ///<inheritdoc/>
@@ -52,7 +74,7 @@ namespace StorybrewCommon.Util
         {
             get
             {
-                var collection = new HashSet<TKey>();
+                var collection = new List<TKey>();
                 for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
                     collection.Add(node.Key);
 
@@ -66,9 +88,7 @@ namespace StorybrewCommon.Util
         ///<inheritdoc/>
         public bool ContainsKey(TKey key)
         {
-            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                if (node.Key.Equals(key)) return true;
-
+            for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key)) return true;
             return false;
         }
 
@@ -80,7 +100,7 @@ namespace StorybrewCommon.Util
         {
             get
             {
-                var collection = new HashSet<TValue>();
+                var collection = new List<TValue>();
                 for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
                     collection.Add((TValue)node.Handle.Target);
 
@@ -116,13 +136,6 @@ namespace StorybrewCommon.Util
         public bool IsSynchronized => false;
 
         ///<inheritdoc/>
-        public object this[object key] 
-        { 
-            get => this[(TKey)key]; 
-            set => Add((TKey)key, (TValue)value); 
-        }
-
-        ///<inheritdoc/>
         public bool TryGetValue(TKey key, out TValue value)
         {
             for (var node = table[getIndex(key)]; node != null; node = node.Next) if (node.Key.Equals(key))
@@ -142,11 +155,12 @@ namespace StorybrewCommon.Util
             if (arrayIndex < 0) throw new ArgumentOutOfRangeException("'arrayIndex' cannot be negative.");
             if (array.Length - arrayIndex < count) throw new ArgumentException("'array' does not have enough space to fit this collection's elements.");
 
-            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next) 
+            for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
                 array[arrayIndex++] = new KeyValuePair<TKey, TValue>(node.Key, (TValue)node.Handle.Target);
         }
 
         ///<inheritdoc/>
+        ///<exception cref="InvalidCastException"> The type of 'array' cannot be casted to the respective value type. </exception>
         public void CopyTo(Array array, int index) => CopyTo((KeyValuePair<TKey, TValue>[])array, index);
 
         bool disposed;
@@ -215,6 +229,7 @@ namespace StorybrewCommon.Util
         public void Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
 
         ///<inheritdoc/>
+        ///<exception cref="InvalidCastException"> The type of 'key' and/or 'value' cannot be casted to the respective value type. </exception>
         public void Add(object key, object value) => Add((TKey)key, (TValue)value);
 
         ///<inheritdoc/>
@@ -232,7 +247,7 @@ namespace StorybrewCommon.Util
 
             return false;
         }
-        
+
         ///<inheritdoc/>
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
@@ -253,9 +268,10 @@ namespace StorybrewCommon.Util
         }
 
         ///<inheritdoc/>
+        ///<exception cref="InvalidCastException"> The type of 'key' cannot be casted to the respective value type. </exception>
         public void Remove(object key) => Remove((TValue)key);
 
-        ///<inheritdoc/>
+        ///<inheritdoc cref="IDictionary.Clear"/>
         public void Clear() => Dispose();
 
         ///<inheritdoc/>

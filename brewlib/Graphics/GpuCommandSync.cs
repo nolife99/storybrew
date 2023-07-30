@@ -1,7 +1,6 @@
 ﻿using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace BrewLib.Graphics
 {
@@ -20,7 +19,7 @@ namespace BrewLib.Graphics
 
             var blocked = syncRanges[syncRanges.Count - 1].Wait();
 
-            foreach (var syncRange in syncRanges) syncRange.Dispose();
+            for (var i = 0; i < syncRanges.Count; ++i) syncRanges[i].Dispose();
             syncRanges.Clear();
 
             return blocked;
@@ -64,7 +63,7 @@ namespace BrewLib.Graphics
         }
         void clearToIndex(int index)
         {
-            for (var i = 0; i <= index; i++) syncRanges[i].Dispose();
+            for (var i = 0; i <= index; ++i) syncRanges[i].Dispose();
             syncRanges.RemoveRange(0, index + 1);
         }
 
@@ -77,7 +76,7 @@ namespace BrewLib.Graphics
             {
                 if (disposing)
                 {
-                    foreach (var syncRange in syncRanges) syncRange.Dispose();
+                    for (var i = 0; i < syncRanges.Count; ++i) syncRanges[i].Dispose();
                     syncRanges.Clear();
                 }
                 syncRanges = null;
@@ -142,7 +141,6 @@ namespace BrewLib.Graphics
             {
                 if (!disposedValue)
                 {
-                    if (disposing) { }
                     GL.DeleteSync(Fence);
                     Fence = IntPtr.Zero;
                     disposedValue = true;

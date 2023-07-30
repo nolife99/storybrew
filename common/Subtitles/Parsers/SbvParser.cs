@@ -12,7 +12,7 @@ namespace StorybrewCommon.Subtitles.Parsers
         ///<inheritdoc/>
         public SubtitleSet Parse(string path)
         {
-            using (var stream = Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            using (var stream = Misc.WithRetries(() => File.OpenRead(path)))
                 return Parse(stream);
         }
 

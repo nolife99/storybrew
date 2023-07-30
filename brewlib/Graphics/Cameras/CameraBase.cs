@@ -6,8 +6,7 @@ namespace BrewLib.Graphics.Cameras
 {
     public abstract class CameraBase : Camera
     {
-        public static Vector3 DefaultForward = new Vector3(0, -1, 0);
-        public static Vector3 DefaultUp = new Vector3(0, 0, 1);
+        public static Vector3 DefaultForward = new Vector3(0, -1, 0), DefaultUp = new Vector3(0, 0, 1);
 
         Rectangle internalViewport, extendedViewport;
         public Rectangle InternalViewport { get { Validate(); return internalViewport; } }
@@ -128,7 +127,7 @@ namespace BrewLib.Graphics.Cameras
             var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
             var devicePosition = transformedPosition.Xyz / Math.Abs(transformedPosition.W);
 
-            return new Vector3((devicePosition.X + 1) / 2 * viewport.Width, (-devicePosition.Y + 1) / 2 * viewport.Height, devicePosition.Z);
+            return new Vector3((devicePosition.X + 1) * .5f * viewport.Width, (-devicePosition.Y + 1) * .5f * viewport.Height, devicePosition.Z);
         }
 
         public Vector3 ToScreen(Vector2 worldCoords) => ToScreen(new Vector3(worldCoords));

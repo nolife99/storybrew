@@ -99,7 +99,10 @@ namespace StorybrewEditor.Storyboarding
         ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate(Effect)"/>. Doesn't run on the main thread. </summary>
         public abstract void Update();
 
-        void refreshLayerNames() => layers.ForEach(layer => layer._Name = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
+        void refreshLayerNames()
+        {
+            foreach (var layer in layers) layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})";
+        }
         void refreshEstimatedSize()
         {
             EstimatedSize = 0;
@@ -109,12 +112,13 @@ namespace StorybrewEditor.Storyboarding
 
         #region IDisposable Support
 
-        public bool Disposed { get; set; } = false;
+        public bool Disposed { get; set; }
         protected virtual void Dispose(bool disposing)
         {
             if (!Disposed)
             {
-                if (disposing) foreach (var layer in layers.ToArray()) Project.LayerManager.Remove(layer);
+                if (disposing) for (var i = 0; i < layers.Count; ++i) Project.LayerManager.Remove(layers[i]);
+                layers.Clear();
                 layers = null;
                 OnChanged = null;
                 Disposed = true;

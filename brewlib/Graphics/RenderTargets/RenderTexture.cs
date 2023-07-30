@@ -51,7 +51,7 @@ namespace BrewLib.Graphics.RenderTargets
             Width = width;
             Height = height;
 
-            PixelInternalFormat pixelInternalFormat = (PixelInternalFormat)storage;
+            var pixelInternalFormat = (PixelInternalFormat)storage;
             PixelFormat pixelFormat;
             PixelType pixelType;
 

@@ -16,11 +16,13 @@ namespace BrewLib.Graphics.Textures
         public Box2 Bounds => bounds;
         public float X => bounds.Left;
         public float Y => bounds.Top;
+
         public float Width => bounds.Width;
         public float Height => bounds.Height;
         public Vector2 Size => new Vector2(bounds.Width, bounds.Height);
+
         public Box2 UvBounds => Box2.FromTLRB(bounds.Top / texture.Height, bounds.Left / texture.Width, bounds.Right / texture.Width, bounds.Bottom / texture.Height);
-        public Vector2 UvRatio => new Vector2(1f / texture.Width, 1f / texture.Height);
+        public Vector2 UvRatio => new Vector2(1 / texture.Width, 1 / texture.Height);
 
         public Texture2dRegion(Texture2d texture, Box2 bounds, string description)
         {
@@ -34,12 +36,12 @@ namespace BrewLib.Graphics.Textures
             if (texture == null) throw new InvalidOperationException();
             if (x < 0 || y < 0) throw new ArgumentOutOfRangeException();
 
-            var updateX = (int)bounds.Left + x;
-            var updateY = (int)bounds.Top + y;
+            var updateX = bounds.Left + x;
+            var updateY = bounds.Top + y;
 
             if (updateX + bitmap.Width > bounds.Right || updateY + bitmap.Height > bounds.Bottom) throw new ArgumentOutOfRangeException();
 
-            texture.Update(bitmap, updateX, updateY, textureOptions);
+            texture.Update(bitmap, (int)updateX, (int)updateY, textureOptions);
         }
 
         public override string ToString() => $"Texture2dRegion#{texture.TextureId} {Description} ({Width}x{Height})";
@@ -53,9 +55,6 @@ namespace BrewLib.Graphics.Textures
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                }
                 texture = null;
                 disposedValue = true;
             }

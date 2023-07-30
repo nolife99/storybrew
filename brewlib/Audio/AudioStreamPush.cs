@@ -41,7 +41,6 @@ namespace BrewLib.Audio
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 if (stream != 0)
                 {
                     Bass.StreamFree(stream);

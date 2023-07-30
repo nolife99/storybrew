@@ -35,6 +35,8 @@ namespace BrewLib.Graphics.Text
             if (!disposedValue)
             {
                 if (disposing) foreach (var entry in fonts) entry.Value.Dispose();
+                fonts.Clear();
+                references.Clear();
                 fonts = null;
                 disposedValue = true;
             }

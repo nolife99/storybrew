@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using BrewLib.Util;
 
 namespace BrewLib.Graphics.Shaders
 {
     public class ProgramScope
     {
         readonly List<ShaderType> types = new List<ShaderType>();
-        readonly List<ShaderVariable> varyings = new List<ShaderVariable>();
-        readonly List<ShaderVariable> uniforms = new List<ShaderVariable>();
+        readonly List<ShaderVariable> varyings = new List<ShaderVariable>(), uniforms = new List<ShaderVariable>();
 
         int lastId;
         string nextGenericTypeName => $"t_{lastId++:000}";
@@ -31,41 +31,29 @@ namespace BrewLib.Graphics.Shaders
             varyings.Add(varying);
             return varying;
         }
-        public void DeclareTypes(StringBuilder code)
+        public void DeclareTypes(StringBuilder code) => types.ForEach(type =>
         {
-            foreach (var type in types)
-            {
-                code.AppendLine($"struct {type.Name} {{");
-                foreach (var field in type.Fields) code.AppendLine($"    {field.ShaderTypeName} {field.Name};");
-                code.AppendLine("};");
-            }
-        }
-        public void DeclareUniforms(StringBuilder code)
+            code.AppendLine($"struct {type.Name} {{");
+            foreach (var field in type.Fields) code.AppendLine($"    {field.ShaderTypeName} {field.Name};");
+            code.AppendLine("};");
+        });
+        public void DeclareUniforms(StringBuilder code) => uniforms.ForEach(uniform =>
         {
-            foreach (var uniform in uniforms)
-            {
-                code.Append($"uniform {uniform.ShaderTypeName} {uniform.Name}");
-                if (uniform.ArrayCount != -1) code.Append($"[{uniform.ArrayCount}]");
-                code.AppendLine(";");
-            }
-        }
-        public void DeclareVaryings(StringBuilder code, ShaderContext context)
+            code.Append($"uniform {uniform.ShaderTypeName} {uniform.Name}");
+            if (uniform.ArrayCount != -1) code.Append($"[{uniform.ArrayCount}]");
+            code.AppendLine(";");
+        });
+        public void DeclareVaryings(StringBuilder code, ShaderContext context) => varyings.ForEach(varying =>
         {
-            foreach (var varying in varyings) if (context.Uses(varying))
-                {
-                    code.Append($"varying {varying.ShaderTypeName} {varying.Name}");
-                    if (varying.ArrayCount != -1) code.Append($"[{varying.ArrayCount}]");
-                    code.AppendLine(";");
-                }
-        }
-        public void DeclareUnusedVaryingsAsVariables(StringBuilder code, ShaderContext context)
+            code.Append($"varying {varying.ShaderTypeName} {varying.Name}");
+            if (varying.ArrayCount != -1) code.Append($"[{varying.ArrayCount}]");
+            code.AppendLine(";");
+        }, varying => context.Uses(varying));
+        public void DeclareUnusedVaryingsAsVariables(StringBuilder code, ShaderContext context) => varyings.ForEach(varying =>
         {
-            foreach (var varying in varyings) if (!context.Uses(varying))
-                {
-                    code.Append($"{varying.ShaderTypeName} {varying.Name}");
-                    if (varying.ArrayCount != -1) code.Append($"[{varying.ArrayCount}]");
-                    code.AppendLine(";");
-                }
-        }
+            code.Append($"{varying.ShaderTypeName} {varying.Name}");
+            if (varying.ArrayCount != -1) code.Append($"[{varying.ArrayCount}]");
+            code.AppendLine(";");
+        }, varying => !context.Uses(varying));
     }
 }

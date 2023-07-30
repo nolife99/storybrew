@@ -12,8 +12,7 @@ namespace BrewLib.Graphics.Drawables
         public Texture2dRegion Texture;
         public readonly RenderStates RenderStates = new RenderStates();
         public Color4 Color = Color4.White;
-        public FourSide Borders;
-        public FourSide Outset;
+        public FourSide Borders, Outset;
         public bool BordersOnly;
 
         public Vector2 MinSize => Texture != null ? new Vector2(
@@ -25,7 +24,7 @@ namespace BrewLib.Graphics.Drawables
 
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity)
         {
-            if (Texture == null) return;
+            if (Texture is null) return;
 
             var x0 = bounds.Left - Outset.Left;
             var y0 = bounds.Top - Outset.Top;

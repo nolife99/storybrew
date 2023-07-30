@@ -6,13 +6,8 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
 {
     public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : struct
     {
-        protected int MinRenderableVertexCount;
         protected VertexDeclaration VertexDeclaration;
-        protected int PrimitiveSize;
-
-        protected int VertexArrayId = -1;
-        protected int VertexBufferId = -1;
-        protected int IndexBufferId = -1;
+        protected int VertexArrayId = -1, VertexBufferId = -1, IndexBufferId = -1, PrimitiveSize, MinRenderableVertexCount;
 
         protected Shader CurrentShader;
         protected bool Bound;
@@ -125,7 +120,6 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         }
 
         public abstract void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false);
-
         public static bool HasCapabilities() => DrawState.HasCapabilities(2, 0) && DrawState.HasCapabilities(3, 0, "GL_ARB_vertex_array_object");
     }
 }

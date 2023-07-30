@@ -1,6 +1,8 @@
 namespace BrewLib.Util
 {
     using System;
+    using System.Numerics;
+
     public static class MathUtil
     {
         public static bool FloatEquals(float a, float b, float epsilon) => Math.Abs(a - b) < epsilon;
@@ -21,10 +23,11 @@ namespace BrewLib.Util
             if (from == to) return 0;
             if (from == 0) return to;
             if (to == 0) return -from;
-            if (Math.Abs(from) == Math.Abs(to)) return Math.Abs(from) + Math.Abs(to);
+            if (Math.Abs(from - to) == Math.Abs(to - from)) return to - from;
 
-            var diff = (to - from) % (Math.PI * 2);
-            return 2 * diff % (Math.PI * 2) - diff;
+            return -Math.Atan2(Math.Sin(to - from), Math.Cos(to - from));
         }
+
+        public static float DotLength(this Quaternion q1) => Quaternion.Dot(q1, q1);
     }
 }

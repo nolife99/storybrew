@@ -11,8 +11,8 @@ namespace BrewLib.Graphics.Shaders.Snippets
         {
             get
             {
-                foreach (var snippet in snippets) foreach (var requiredExtension in snippet.RequiredExtensions)
-                        yield return requiredExtension;
+                for (var i = 0; i < snippets.Length; ++i) foreach (var requiredExtension in snippets[i].RequiredExtensions)
+                    yield return requiredExtension;
             }
         }
         public override int MinVersion
@@ -20,8 +20,8 @@ namespace BrewLib.Graphics.Shaders.Snippets
             get
             {
                 var minVersion = base.MinVersion;
-                foreach (var snippet in snippets) if (snippet.MinVersion > minVersion)
-                        minVersion = snippet.MinVersion;
+                for (var i = 0; i < snippets.Length; ++i) if (snippets[i].MinVersion > minVersion)
+                    minVersion = snippets[i].MinVersion;
 
                 return minVersion;
             }
@@ -30,11 +30,11 @@ namespace BrewLib.Graphics.Shaders.Snippets
 
         public override void GenerateFunctions(StringBuilder code)
         {
-            foreach (var snippet in snippets) snippet.GenerateFunctions(code);
+            for (var i = 0; i < snippets.Length; ++i) snippets[i].GenerateFunctions(code);
         }
         public override void Generate(ShaderContext context)
         {
-            foreach (var snippet in snippets) snippet.Generate(context);
+            for (var i = 0; i < snippets.Length; ++i) snippets[i].Generate(context);
         }
     }
 }

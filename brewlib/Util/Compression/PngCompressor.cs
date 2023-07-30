@@ -37,7 +37,7 @@ namespace BrewLib.Util.Compression
                 };
                 InitStartInfo(startInfo);
 
-                process = process is null ? Process.Start(startInfo) : process;
+                if (process is null) process = Process.Start(startInfo);
 
                 waitForExit();
                 var error = process.StandardError.ReadToEnd();
@@ -77,7 +77,7 @@ namespace BrewLib.Util.Compression
                 {
                     if (losslessInputSettings != null)
                     {
-                        stringBuilder.AppendFormat(" -o {0} ", losslessInputSettings.OptimizationLevel);
+                        stringBuilder.AppendFormat(" -o {0} ", (int)losslessInputSettings.OptimizationLevel);
                         stringBuilder.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
                     }
                     stringBuilder.AppendFormat("−s -a {0}", input);
@@ -87,7 +87,7 @@ namespace BrewLib.Util.Compression
             {
                 if (losslessInputSettings != null)
                 {
-                    stringBuilder.AppendFormat(" /o{0} ", losslessInputSettings.OptimizationLevel);
+                    stringBuilder.AppendFormat(" /o{0} ", (int)losslessInputSettings.OptimizationLevel);
                     stringBuilder.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
                 }
                 stringBuilder.AppendFormat("/md remove all /quiet -Z /y /out {0} {0}", input);

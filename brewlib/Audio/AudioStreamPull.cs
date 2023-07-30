@@ -7,7 +7,6 @@ namespace BrewLib.Audio
 {
     public class AudioStreamPull : AudioChannel
     {
-        public static readonly int StreamEnded = (int)StreamProcedureType.End;
         public delegate int CallbackDelegate(IntPtr buffer, int sampleCount);
 
         readonly CallbackDelegate callback;
@@ -40,7 +39,7 @@ namespace BrewLib.Audio
         {
             var samples = byteLength / bytesPerSample;
             var writtenSamples = callback(buffer, samples);
-            if (writtenSamples == StreamEnded) return StreamEnded;
+            if (writtenSamples == int.MinValue) return int.MinValue;
             return writtenSamples * bytesPerSample;
         }
 
@@ -51,7 +50,6 @@ namespace BrewLib.Audio
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 if (stream != 0)
                 {
                     Bass.StreamFree(stream);

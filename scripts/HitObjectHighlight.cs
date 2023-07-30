@@ -11,12 +11,12 @@ namespace StorybrewScripts
         [Group("Timing")]
         [Configurable] public int StartTime = 0;
         [Configurable] public int EndTime = 0;
-        [Configurable] public int BeatDivisor = 160;
+        [Configurable] public int BeatDivisor = 480;
 
         [Group("Sprite")]
         [Configurable] public string SpritePath = "sb/glow.png";
         [Configurable] public float SpriteScale = 1;
-        [Configurable] public int FadeDuration = 1000;
+        [Configurable] public float FadeDuration = 1000;
         [Configurable] public bool Additive = true;
 
         protected override void Generate()

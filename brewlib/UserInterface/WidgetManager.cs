@@ -391,9 +391,9 @@ namespace BrewLib.UserInterface
         }
         static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, List<Widget> targets, Widget relatedTarget = null, bool bubbles = true)
         {
-            foreach (var target in targets)
+            for (var i = 0; i < targets.Count; ++i)
             {
-                var widgetEvent = fire(notify, target, relatedTarget, bubbles);
+                var widgetEvent = fire(notify, targets[i], relatedTarget, bubbles);
                 if (widgetEvent.Handled) return widgetEvent;
             }
             return new WidgetEvent(targets.Count > 0 ? targets[targets.Count - 1] : null, relatedTarget);
@@ -408,11 +408,11 @@ namespace BrewLib.UserInterface
             widgetEvent.Listener = target;
             if (notify(target, widgetEvent)) return widgetEvent;
 
-            if (ancestors != null) foreach (var ancestor in ancestors)
-                {
-                    widgetEvent.Listener = ancestor;
-                    if (notify(ancestor, widgetEvent)) return widgetEvent;
-                }
+            if (ancestors != null) for (var i = 0; i < ancestors.Count; ++i)
+            {
+                widgetEvent.Listener = ancestors[i];
+                if (notify(ancestors[i], widgetEvent)) return widgetEvent;
+            }
 
             return widgetEvent;
         }

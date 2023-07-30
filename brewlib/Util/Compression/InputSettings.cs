@@ -2,27 +2,24 @@
 {
     public class LosslessInputSettings
     {
-        public string CustomInputArgs { get; set; }
-        public int OptimizationLevel { get; set; }
+        public string CustomInputArgs;
+        public OptimizationLevel OptimizationLevel;
     }
     public class LossyInputSettings
     {
-        public string CustomInputArgs { get; set; }
-        public int MinQuality { get; set; }
-        public int MaxQuality { get; set; }
-        public int Speed { get; set; }
+        public string CustomInputArgs;
+        public int MinQuality, MaxQuality, Speed;
     }
-    public class OptimizationLevel
+    public enum OptimizationLevel
     {
-        public const int 
-            Level0 = 0, 
-            Level1 = 1,
-            Level2 = 2,
-            Level3 = 3,
-            Level4 = 4,
-            Level5 = 5,
-            Level6 = 6,
-            Level7 = 7;
+        Level0 = 0, 
+        Level1 = 1,
+        Level2 = 2,
+        Level3 = 3,
+        Level4 = 4,
+        Level5 = 5,
+        Level6 = 6,
+        Level7 = 7
     }
     public class InputFormat
     {

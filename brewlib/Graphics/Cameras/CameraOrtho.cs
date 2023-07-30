@@ -67,7 +67,7 @@ namespace BrewLib.Graphics.Cameras
 
             if (virtualHeight != 0)
             {
-                var scale = screenViewport.Height == 0 ? 1.0 : (double)virtualHeight / screenViewport.Height;
+                var scale = screenViewport.Height == 0 ? 1 : (double)virtualHeight / screenViewport.Height;
                 orthoViewport.Width = (int)Math.Round(screenViewport.Width * scale);
                 orthoViewport.Height = virtualHeight;
                 if (virtualWidth > 0) orthoViewport.X += (orthoViewport.Width - virtualWidth) / 2;
@@ -78,7 +78,7 @@ namespace BrewLib.Graphics.Cameras
             extendedViewport = orthoViewport;
 
             projection = Matrix4.CreateTranslation(
-                orthoViewport.X - extendedViewport.Width / 2f, orthoViewport.Y - (yDown ? -extendedViewport.Height : extendedViewport.Height) / 2f, 0) *
+                orthoViewport.X - extendedViewport.Width * .5f, orthoViewport.Y - (yDown ? -extendedViewport.Height : extendedViewport.Height) * .5f, 0) *
                 Matrix4.CreateOrthographic(extendedViewport.Width * zoom, extendedViewport.Height * zoom, NearPlane, FarPlane);
 
             view = Matrix4.LookAt(Position, Position + Forward, Up);

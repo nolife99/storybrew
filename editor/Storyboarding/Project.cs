@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -23,7 +24,7 @@ using Tiny;
 
 namespace StorybrewEditor.Storyboarding
 {
-    public class Project : IDisposable
+    public sealed class Project : IDisposable
     {
         public static readonly Encoding Encoding = Encoding.ASCII;
 
@@ -84,7 +85,7 @@ namespace StorybrewEditor.Storyboarding
         }
 
         public readonly ExportSettings ExportSettings = new ExportSettings();
-        public LayerManager LayerManager { get; } = new LayerManager();
+        public readonly LayerManager LayerManager = new LayerManager();
 
         public Project(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
         {
@@ -183,6 +184,7 @@ namespace StorybrewEditor.Storyboarding
 
         public IEnumerable<string> GetEffectNames() => scriptManager.GetScriptNames();
         public Effect GetEffectByName(string name) => effects.Find(e => e.Name == name);
+
         public Effect AddScriptedEffect(string scriptName, bool multithreaded = false)
         {
             if (Disposed) throw new ObjectDisposedException(nameof(Project));
@@ -207,7 +209,7 @@ namespace StorybrewEditor.Storyboarding
             if (Disposed) throw new ObjectDisposedException(nameof(Project));
 
             effects.Remove(effect);
-            effect.Dispose();
+            effect?.Dispose();
             Changed = true;
 
             refreshEffectsStatus();
@@ -427,8 +429,8 @@ namespace StorybrewEditor.Storyboarding
 
         public void Save()
         {
-            if (projectPath.Contains(DefaultBinaryFilename)) saveBinary(projectPath);
-            else if (projectPath.Contains(DefaultTextFilename)) saveText(projectPath);
+            if (File.Exists(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename))) saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
+            if (File.Exists(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename))) saveText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
         }
 
         public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
@@ -441,7 +443,7 @@ namespace StorybrewEditor.Storyboarding
         void saveBinary(string path)
         {
             if (Disposed) throw new ObjectDisposedException(nameof(Project));
-            using (var stream = new SafeWriteStream(path)) using (var w = new BinaryWriter(stream, Encoding))
+            using (var stream = File.Create(path)) using (var w = new BinaryWriter(stream, Encoding))
             {
                 w.Write(Version);
 
@@ -467,10 +469,10 @@ namespace StorybrewEditor.Storyboarding
                         ObjectSerializer.Write(w, field.Value);
 
                         w.Write(field.AllowedValues?.Length ?? 0);
-                        if (field.AllowedValues != null) foreach (var allowedValue in field.AllowedValues)
+                        if (field.AllowedValues != null) for (var i = 0; i < field.AllowedValues.Length; ++i)
                         {
-                            w.WriteEncodedString(allowedValue.Name);
-                            ObjectSerializer.Write(w, allowedValue.Value);
+                            w.WriteEncodedString(field.AllowedValues[i].Name);
+                            ObjectSerializer.Write(w, field.AllowedValues[i].Value);
                         }
                     }
                 });
@@ -489,13 +491,13 @@ namespace StorybrewEditor.Storyboarding
                 w.Write(importedAssemblies.Count);
                 importedAssemblies.ForEach(assembly => w.WriteEncodedString(assembly));
 
-                stream.Commit();
                 Changed = false;
             }
         }
         void loadBinary(string path)
         {
-            using (var stream = File.OpenRead(path)) using (var r = new BinaryReader(stream, Encoding))
+            using (var file = MemoryMappedFile.CreateFromFile(path, FileMode.Open)) 
+            using (var stream = file.CreateViewStream(0, 0, MemoryMappedFileAccess.Read)) using (var r = new BinaryReader(stream, Encoding))
             {
                 var version = r.ReadInt32();
                 if (version > Version) throw new InvalidOperationException("This project was saved with a newer version; you need to update.");
@@ -781,7 +783,6 @@ namespace StorybrewEditor.Storyboarding
             return project;
         }
 
-        ///<summary> Doesn't run in the main thread </summary>
         public void ExportToOsb(bool exportOsb = true)
         {
             if (Disposed) throw new ObjectDisposedException(nameof(Project));
@@ -794,7 +795,7 @@ namespace StorybrewEditor.Storyboarding
                 osbPath = OsbPath;
 
                 if (!OwnsOsb && File.Exists(osbPath)) File.Copy(osbPath, $"{osbPath}.bak");
-                OwnsOsb = true;
+                if (!OwnsOsb) OwnsOsb = true;
 
                 localLayers = new List<EditorStoryboardLayer>(LayerManager.FindLayers(l => l.Visible));
             });
@@ -803,11 +804,9 @@ namespace StorybrewEditor.Storyboarding
 
             if (!string.IsNullOrEmpty(osuPath))
             {
-                Debug.Print($"Exporting diff specific events to {osuPath}");
-                using (var stream = new SafeWriteStream(osuPath))
-                using (var writer = new StreamWriter(stream, Encoding))
-                using (var fileStream = new FileStream(osuPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var reader = new StreamReader(fileStream, Encoding))
+                Trace.WriteLine($"Exporting diff specific events to {osuPath}");
+                using (var stream = new SafeWriteStream(osuPath)) using (var writer = new StreamWriter(stream, Encoding))
+                using (var fileStream = File.OpenRead(osuPath)) using (var reader = new StreamReader(fileStream, Encoding))
                 {
                     string line;
                     var inEvents = false;
@@ -821,21 +820,22 @@ namespace StorybrewEditor.Storyboarding
 
                         if (inEvents)
                         {
-                            if (trimmedLine.StartsWith("//Storyboard Layer", StringComparison.InvariantCulture)) if (!inStoryboard)
+                            if (trimmedLine.StartsWith("//Storyboard Layer", StringComparison.InvariantCulture))
                             {
-                                foreach (var osbLayer in OsbLayers)
+                                if (!inStoryboard)
                                 {
-                                    if (osbLayer == OsbLayer.Overlay && !usesOverlayLayer) continue;
-                           
-                                    writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
-                                    localLayers.ForEach(layer =>
+                                    foreach (var osbLayer in OsbLayers)
                                     {
-                                        if (layer.OsbLayer == osbLayer && layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
-                                    });
+                                        if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
+
+                                        writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
+                                        foreach (var layer in localLayers) if (layer.OsbLayer == osbLayer && layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
+                                    }
+                                    inStoryboard = true;
                                 }
-                                inStoryboard = true;
                             }
                             else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.InvariantCulture)) inStoryboard = false;
+
                             if (inStoryboard) continue;
                         }
                         writer.WriteLine(line);
@@ -843,25 +843,22 @@ namespace StorybrewEditor.Storyboarding
                     stream.Commit();
                 }
             }
+
             if (exportOsb)
             {
-                Debug.Print($"Exporting osb to {osbPath}");
-                using (var stream = new SafeWriteStream(osbPath))
-                using (var writer = new StreamWriter(stream, Encoding))
+                Trace.WriteLine($"Exporting osb to {osbPath}");
+                using (var stream = new SafeWriteStream(osbPath)) using (var writer = new StreamWriter(stream, Encoding))
                 {
                     writer.WriteLine("[Events]");
                     writer.WriteLine("//Background and Video events");
                     foreach (var osbLayer in OsbLayers)
                     {
-                        if (osbLayer == OsbLayer.Overlay && !usesOverlayLayer) continue;
+                        if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
                         writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
-                        localLayers.ForEach(layer =>
-                        {
-                            if (layer.OsbLayer == osbLayer && !layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
-                        });
+                        foreach (var layer in localLayers) if (layer.OsbLayer == osbLayer && !layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
                     }
-                    writer.Write("//Storyboard Sound Samples");
+                    writer.WriteLine("//Storyboard Sound Samples");
                     stream.Commit();
                 }
             }
@@ -872,21 +869,18 @@ namespace StorybrewEditor.Storyboarding
         #region IDisposable Support
 
         public bool Disposed { get; set; }
-
-        protected virtual void Dispose(bool disposing)
+        public void Dispose()
         {
             if (!Disposed)
             {
-                if (disposing)
-                {
-                    // Always dispose this first to ensure updates aren't happening while the project is being disposed
-                    effectUpdateQueue.Dispose();
-                    assetWatcher.Dispose();
-                    MapsetManager?.Dispose();
-                    scriptManager.Dispose();
-                    TextureContainer.Dispose();
-                    AudioContainer.Dispose();
-                }
+                // Always dispose this first to ensure updates aren't happening while the project is being disposed
+                effectUpdateQueue.Dispose();
+                assetWatcher.Dispose();
+                MapsetManager?.Dispose();
+                scriptManager.Dispose();
+                TextureContainer.Dispose();
+                AudioContainer.Dispose();
+
                 assetWatcher = null;
                 MapsetManager = null;
                 effectUpdateQueue = null;
@@ -896,7 +890,6 @@ namespace StorybrewEditor.Storyboarding
                 Disposed = true;
             }
         }
-        public void Dispose() => Dispose(true);
 
         #endregion
     }

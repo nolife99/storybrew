@@ -128,7 +128,7 @@ namespace StorybrewCommon.Mapset
             var previousPosition = PlayfieldPosition;
             curvePoints.Add(previousPosition);
 
-            foreach (var controlPoint in controlPoints)
+            controlPoints.ForEach(controlPoint =>
             {
                 if (controlPoint.PlayfieldPosition == previousPosition)
                 {
@@ -138,16 +138,18 @@ namespace StorybrewCommon.Mapset
 
                 curvePoints.Add(controlPoint.PlayfieldPosition);
                 previousPosition = controlPoint.PlayfieldPosition;
-            }
+            });
 
             if (curvePoints.Count > 1) curves.Add(new Curves.BezierCurve(curvePoints, precision));
             return new CompositeCurve(curves);
         }
         Curve generateCatmullCurve()
         {
-            List<Vector2> curvePoints = new List<Vector2>(controlPoints.Count + 1);
-            curvePoints.Add(PlayfieldPosition);
-            foreach (var controlPoint in controlPoints) curvePoints.Add(controlPoint.PlayfieldPosition);
+            var curvePoints = new List<Vector2>(controlPoints.Count + 1)
+            {
+                PlayfieldPosition
+            };
+            for (var i = 0; i < ControlPointCount; ++i) curvePoints.Add(controlPoints[i].PlayfieldPosition);
 
             var precision = (int)Math.Ceiling(Length);
             return new CatmullCurve(curvePoints, precision);
@@ -157,7 +159,7 @@ namespace StorybrewCommon.Mapset
             var curves = new List<Curve>();
 
             var previousPoint = PlayfieldPosition;
-            foreach (var controlPoint in controlPoints)
+            controlPoints.ForEach(controlPoint =>
             {
                 curves.Add(new Curves.BezierCurve(new List<Vector2>
                 {
@@ -165,7 +167,7 @@ namespace StorybrewCommon.Mapset
                     controlPoint.PlayfieldPosition
                 }, 0));
                 previousPoint = controlPoint.PlayfieldPosition;
-            }
+            });
             return new CompositeCurve(curves);
         }
 
@@ -197,7 +199,7 @@ namespace StorybrewCommon.Mapset
             {
                 var nodeStartTime = startTime + i * travelDuration;
                 var nodeControlPoint = beatmap.GetTimingPointAt((int)nodeStartTime);
-                sliderNodes.Add(new OsuSliderNode()
+                sliderNodes.Add(new OsuSliderNode
                 {
                     Time = nodeStartTime,
                     SampleSet = nodeControlPoint.SampleSet,

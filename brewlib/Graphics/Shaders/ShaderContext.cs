@@ -10,12 +10,10 @@ namespace BrewLib.Graphics.Shaders
         string nextGenericName => $"_tmp_{lastId++:000}";
 
         readonly Dictionary<ShaderVariable, HashSet<ShaderVariable>> dependencies = new Dictionary<ShaderVariable, HashSet<ShaderVariable>>();
-        readonly HashSet<ShaderVariable> usedVariables = new HashSet<ShaderVariable>();
-        readonly HashSet<ShaderVariable> flowVariables = new HashSet<ShaderVariable>();
+        readonly HashSet<ShaderVariable> usedVariables = new HashSet<ShaderVariable>(), flowVariables = new HashSet<ShaderVariable>();
         ShaderVariable[] dependantVariables;
-        bool flowDependant;
+        bool flowDependant, canReceiveCommands;
         StringBuilder code;
-        bool canReceiveCommands;
 
         public VertexDeclaration VertexDeclaration;
 
@@ -43,7 +41,7 @@ namespace BrewLib.Graphics.Shaders
             canReceiveCommands = false;
 
             foreach (var flowVariable in flowVariables) markUsed(flowVariable);
-            foreach (var outputVariable in outputVariables) markUsed(outputVariable);
+            for (var i = 0; i < outputVariables.Length; ++i) markUsed(outputVariables[i]);
         }
         public void GenerateCode(StringBuilder code, Action action)
         {
@@ -141,12 +139,10 @@ namespace BrewLib.Graphics.Shaders
 
             if (result == null) throw new ArgumentNullException(nameof(result));
             if (declare && components != null) throw new InvalidOperationException("Cannot set components when declaring a variable");
-            if (expression != null)
-            {
-                Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
-                    components != null ?
-                    $"{result.Ref}.{components} = {expression()}" : $"{result.Ref} = {expression()}", result);
-            }
+            if (expression != null) Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
+                components != null ?
+                $"{result.Ref}.{components} = {expression()}" : $"{result.Ref} = {expression()}", result);
+
             else if (declare) code?.AppendLine($"{result.ShaderTypeName} {result.Name};");
             else throw new ArgumentNullException(nameof(expression));
         }

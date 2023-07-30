@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
 
 namespace StorybrewCommon.Storyboarding
@@ -14,15 +13,12 @@ namespace StorybrewCommon.Storyboarding
 
         public int FieldCount => fields.Count;
         public IEnumerable<ConfigField> Fields => fields.Values;
-        public IEnumerable<ConfigField> SortedFields
-        {
-            get => new SortedSet<ConfigField>(fields.Values, Comparer<ConfigField>.Create((first, second) => first.Order - second.Order));
-        }
+        public IEnumerable<ConfigField> SortedFields => new SortedSet<ConfigField>(fields.Values, Comparer<ConfigField>.Create((a, b) => a.Order - b.Order));
         public string[] FieldNames
         {
             get
             {
-                var names = new string[fields.Keys.Count];
+                var names = new string[fields.Count];
                 fields.Keys.CopyTo(names, 0);
                 return names;
             }
@@ -30,8 +26,8 @@ namespace StorybrewCommon.Storyboarding
 
         public void UpdateField(string name, string displayName, string description, int order, Type fieldType, object defaultValue, NamedValue[] allowedValues, string beginsGroup)
         {
-            if (fieldType == null) return;
-            if (displayName == null)
+            if (fieldType is null) return;
+            if (displayName is null)
             {
                 displayName = Regex.Replace(name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2");
                 displayName = Regex.Replace(displayName, @"(\p{Ll})(\P{Ll})", "$1 $2");
@@ -40,8 +36,8 @@ namespace StorybrewCommon.Storyboarding
             var value = fields.TryGetValue(name, out ConfigField field) ?
                 convertFieldValue(field.Value, field.Type, fieldType, defaultValue) : defaultValue;
 
-            var isAllowed = allowedValues == null;
-            if (!isAllowed) foreach (var allowedValue in allowedValues) if (value.Equals(allowedValue.Value))
+            var isAllowed = allowedValues is null;
+            if (!isAllowed) for (var i = 0; i < allowedValues.Length; ++i) if (value.Equals(allowedValues[i].Value))
             {
                 isAllowed = true;
                 break;
@@ -65,7 +61,7 @@ namespace StorybrewCommon.Storyboarding
         public bool SetValue(string name, object value)
         {
             var field = fields[name];
-            if (field.Value == value) return false;
+            if (field.Value.Equals(value)) return false;
 
             fields[name] = new ConfigField
             {
@@ -85,7 +81,6 @@ namespace StorybrewCommon.Storyboarding
         object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)
         {
             if (newType.IsAssignableFrom(oldType)) return value;
-
             try
             {
                 return Convert.ChangeType(value, newType, CultureInfo.InvariantCulture);

@@ -1,9 +1,9 @@
-using OpenTK;
 using OpenTK.Graphics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Subtitles;
 using System;
+using System.Numerics;
 using System.Drawing;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -27,7 +27,7 @@ namespace StorybrewScripts
         [Configurable] public float FontScale = .5f;
         [Configurable] public Color4 FontColor = Color4.White;
         [Configurable] public FontStyle FontStyle = FontStyle.Regular;
-        
+
         [Group("Outline")]
         [Configurable] public int OutlineThickness = 3;
         [Configurable] public Color4 OutlineColor = new Color4(50, 50, 50, 200);

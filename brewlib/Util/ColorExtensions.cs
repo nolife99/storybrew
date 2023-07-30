@@ -10,7 +10,7 @@ namespace BrewLib.Util
             => new Color4(lhs.R * rhs.R, lhs.G * rhs.G, lhs.B * rhs.B, lhs.A * rhs.A);
 
         public static int ToRgba(this Color4 color)
-            => ((int)(color.A * 255) << 24) | ((int)(color.B * 255) << 16) | ((int)(color.G * 255) << 8) | (int)(color.R * 255);
+            => ((byte)(color.A * 255) << 24) | ((byte)(color.B * 255) << 16) | ((byte)(color.G * 255) << 8) | (byte)(color.R * 255);
 
         public static Color4 ToColor4(this int color) => new Color4(
             (byte)(color & 0xFF),

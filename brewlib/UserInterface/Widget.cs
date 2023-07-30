@@ -253,7 +253,7 @@ namespace BrewLib.UserInterface
         public void ClearWidgets()
         {
             var childrenSnapshot = new List<Widget>(children);
-            foreach (var child in childrenSnapshot) child.Dispose();
+            childrenSnapshot.ForEach(child => child.Dispose());
         }
         public bool HasAncestor(Widget widget)
         {

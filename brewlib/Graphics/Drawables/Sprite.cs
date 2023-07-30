@@ -21,7 +21,7 @@ namespace BrewLib.Graphics.Drawables
 
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity)
         {
-            if (Texture == null) return;
+            if (Texture is null) return;
 
             var renderer = DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, RenderStates);
             var color = Color.WithOpacity(opacity);
@@ -31,8 +31,8 @@ namespace BrewLib.Graphics.Drawables
             var textureX1 = Texture.Width;
             var textureY1 = Texture.Height;
 
-            var scaleH = bounds.Width / Texture.Width;
-            var scaleV = bounds.Height / Texture.Height;
+            var scaleH = bounds.Width / textureX1;
+            var scaleV = bounds.Height / textureY1;
 
             float scale;
             switch (ScaleMode)
@@ -41,36 +41,35 @@ namespace BrewLib.Graphics.Drawables
                     if (scaleH > scaleV)
                     {
                         scale = scaleH;
-                        textureY0 = (Texture.Height - bounds.Height / scale) / 2;
+                        textureY0 = (Texture.Height - bounds.Height / scale) * .5f;
                         textureY1 = Texture.Height - textureY0;
                     }
                     else
                     {
                         scale = scaleV;
-                        textureX0 = (Texture.Width - bounds.Width / scale) / 2;
+                        textureX0 = (Texture.Width - bounds.Width / scale) * .5f;
                         textureX1 = Texture.Width - textureX0;
                     }
                     break;
                 case ScaleMode.Fit:
                 case ScaleMode.RepeatFit: scale = Math.Min(scaleH, scaleV); break;
-                default: scale = 1f; break;
+                default: scale = 1; break;
             }
             switch (ScaleMode)
             {
                 case ScaleMode.Repeat:
                 case ScaleMode.RepeatFit:
-                    for (var y = bounds.Top; y < bounds.Bottom; y += Texture.Height * scale)
-                        for (var x = bounds.Left; x < bounds.Right; x += Texture.Width * scale)
-                        {
-                            var textureX = Math.Min((bounds.Right - x) / scale, Texture.Width);
-                            var textureY = Math.Min((bounds.Bottom - y) / scale, Texture.Height);
-                            renderer.Draw(Texture, x, y, 0, 0, scale, scale, 0, color, 0, 0, textureX, textureY);
-                        }
+                    for (var y = bounds.Top; y < bounds.Bottom; y += Texture.Height * scale) for (var x = bounds.Left; x < bounds.Right; x += Texture.Width * scale)
+                    {
+                        var textureX = Math.Min((bounds.Right - x) / scale, Texture.Width);
+                        var textureY = Math.Min((bounds.Bottom - y) / scale, Texture.Height);
+                        renderer.Draw(Texture, x, y, 0, 0, scale, scale, 0, color, 0, 0, textureX, textureY);
+                    }
                     break;
 
                 default:
-                    renderer.Draw(Texture, (bounds.Left + bounds.Right) / 2, (bounds.Top + bounds.Bottom) / 2,
-                    (textureX1 - textureX0) / 2, (textureY1 - textureY0) / 2,
+                    renderer.Draw(Texture, (bounds.Left + bounds.Right) * .5f, (bounds.Top + bounds.Bottom) * .5f,
+                    (textureX1 - textureX0) / 2, (textureY1 - textureY0) * .5f,
                     scale, scale, Rotation, color, textureX0, textureY0, textureX1, textureY1);
                     break;
             }
@@ -78,12 +77,7 @@ namespace BrewLib.Graphics.Drawables
 
         #region IDisposable Support
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing) { }
-            Texture = null;
-        }
-        public void Dispose() => Dispose(true);
+        public void Dispose() => Texture = null;
 
         #endregion
     }

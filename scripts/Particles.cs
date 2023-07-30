@@ -6,7 +6,7 @@ using StorybrewCommon.OpenTKUtil;
 using System;
 using System.Numerics;
 using System.Drawing;
-using System.Linq
+using System.Linq;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewScripts

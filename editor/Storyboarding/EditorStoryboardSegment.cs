@@ -142,11 +142,9 @@ namespace StorybrewEditor.Storyboarding
 
         public long CalculateSize(OsbLayer osbLayer)
         {
-            var exportSettings = new ExportSettings { OptimiseSprites = false };
-
             using (var stream = new ByteCounterStream()) using (var writer = new StreamWriter(stream, Project.Encoding))
             {
-                storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
+                for (var i = 0; i < storyboardObjects.Count; ++i) storyboardObjects[i].WriteOsb(writer, Effect.Project.ExportSettings, osbLayer);
                 return stream.Length;
             }
         }

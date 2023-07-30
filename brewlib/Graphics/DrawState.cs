@@ -411,7 +411,7 @@ namespace BrewLib.Graphics
         }
         static void setupDebugOutput()
         {
-#if DEBUG
+#if !true // because vscode is stupid
             if (!HasCapabilities(4, 3, "GL_KHR_debug"))
             {
                 Trace.WriteLine("openGL debug output is unavailable");
@@ -438,7 +438,7 @@ namespace BrewLib.Graphics
         public static bool HasCapabilities(int major, int minor, params string[] extensions) => openGlVersion >= new Version(major, minor) || HasExtensions(extensions);
         public static bool HasExtensions(params string[] extensions)
         {
-            foreach (var extension in extensions) if (!supportedExtensions.Contains(extension)) return false;
+            for (var i = 0; i < extensions.Length; ++i) if (!supportedExtensions.Contains(extensions[i])) return false;
             return true;
         }
         public static bool HasShaderCapabilities(int major, int minor) => glslVersion >= new Version(major, minor);

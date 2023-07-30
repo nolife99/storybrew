@@ -7,8 +7,7 @@ namespace BrewLib.Graphics.Shaders.Snippets
     public class Condition : ShaderSnippet
     {
         readonly Func<string> expression;
-        readonly ShaderSnippet trueSnippet;
-        readonly ShaderSnippet falseSnippet;
+        readonly ShaderSnippet trueSnippet, falseSnippet;
 
         public override IEnumerable<string> RequiredExtensions
         {

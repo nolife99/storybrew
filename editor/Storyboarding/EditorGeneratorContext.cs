@@ -11,7 +11,7 @@ using System.Text;
 
 namespace StorybrewEditor.Storyboarding
 {
-    public class EditorGeneratorContext : GeneratorContext, IDisposable
+    public sealed class EditorGeneratorContext : GeneratorContext, IDisposable
     {
         readonly Effect effect;
         readonly MultiFileWatcher watcher;
@@ -88,7 +88,7 @@ namespace StorybrewEditor.Storyboarding
         }
 
         public override double AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;
-        public override float[] GetFft(double time, string path = null, bool splitChannels = false) => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * 0.001, splitChannels);
+        public override float[] GetFft(double time, string path = null, bool splitChannels = false) => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001, splitChannels);
         public override float GetFftFrequency(string path = null) => getFftStream(path ?? effect.Project.AudioPath).Frequency;
 
         #endregion

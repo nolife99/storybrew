@@ -24,7 +24,7 @@ namespace BrewLib.Graphics.RenderTargets
             this.renderTextures = renderTextures;
             this.depthStencilTexture = depthStencilTexture;
 
-            foreach (var renderTexture in renderTextures) renderTexture.OnChanged += renderTexture_OnChanged;
+            for (var i = 0; i < renderTextures.Length; ++i) renderTextures[i].OnChanged += renderTexture_OnChanged;
             if (depthStencilTexture != null) depthStencilTexture.OnChanged += renderTexture_OnChanged;
         }
 
@@ -44,7 +44,7 @@ namespace BrewLib.Graphics.RenderTargets
             else if (renderTextures.Length > 1)
             {
                 var buffers = new DrawBuffersEnum[renderTextures.Length];
-                for (int i = 0, size = renderTextures.Length; i < size; i++)
+                for (int i = 0, size = renderTextures.Length; i < size; ++i)
                 {
                     Debug.Assert(DrawBuffersEnum.ColorAttachment0 + i <= DrawBuffersEnum.ColorAttachment15);
                     buffers[i] = DrawBuffersEnum.ColorAttachment0 + i;
@@ -89,7 +89,7 @@ namespace BrewLib.Graphics.RenderTargets
 
             clear();
 
-            foreach (var renderTexture in renderTextures) renderTexture.OnChanged -= renderTexture_OnChanged;
+            for (var i = 0; i < renderTextures.Length; ++i) renderTextures[i].OnChanged -= renderTexture_OnChanged;
             renderTextures = null;
 
             if (depthStencilTexture != null)
@@ -107,7 +107,7 @@ namespace BrewLib.Graphics.RenderTargets
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, frameBufferId);
 
             // Attach textures
-            for (int i = 0, size = renderTextures.Length; i < size; i++)
+            for (int i = 0, size = renderTextures.Length; i < size; ++i)
             {
                 var renderTexture = renderTextures[i];
                 if (i == 0)

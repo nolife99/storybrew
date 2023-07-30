@@ -6,8 +6,7 @@ namespace BrewLib.UserInterface
 {
     public class StackLayout : Widget
     {
-        Vector2 minSize;
-        Vector2 preferredSize;
+        Vector2 minSize, preferredSize;
         bool invalidSizes = true;
 
         public override Vector2 MinSize { get { measureChildren(); return minSize; } }

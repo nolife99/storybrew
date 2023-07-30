@@ -11,8 +11,7 @@ namespace BrewLib.Graphics.Shaders
 
         readonly ShaderContext Context = new ShaderContext();
         readonly ProgramScope ProgramScope = new ProgramScope();
-        readonly ShaderPartScope VertexShaderScope = new ShaderPartScope("vs");
-        readonly ShaderPartScope FragmentShaderScope = new ShaderPartScope("fs");
+        readonly ShaderPartScope VertexShaderScope = new ShaderPartScope("vs"), FragmentShaderScope = new ShaderPartScope("fs");
 
         public ShaderSnippet VertexShader, FragmentShader;
         public readonly ShaderVariable GlPosition, GlPointSize, GlPointCoord, GlFragColor, GlFragDepth;
@@ -60,10 +59,10 @@ namespace BrewLib.Graphics.Shaders
 
             code.AppendLine($"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
-            var requiredExtensions = new HashSet<string>();
+            var requiredExtensions = new List<string>();
             foreach (var extensionName in VertexShader.RequiredExtensions) requiredExtensions.Add(extensionName);
             foreach (var extensionName in FragmentShader.RequiredExtensions) requiredExtensions.Add(extensionName);
-            foreach (var extensionName in requiredExtensions) code.AppendLine($"#extension {extensionName} : enable");
+            requiredExtensions.ForEach(extensionName => code.AppendLine($"#extension {extensionName} : enable"));
 
             code.AppendLine("#ifdef GL_ES");
             code.AppendLine("    precision mediump float;");

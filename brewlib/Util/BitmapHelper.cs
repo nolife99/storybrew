@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using static System.Drawing.Graphics;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
 
@@ -11,24 +10,19 @@ namespace BrewLib.Util
     {
         public static PinnedBitmap Blur(Bitmap source, int radius, double power) => Convolute(source, CalculateGaussianKernel(radius, power));
 
-        public static void LosslessCompress(string path, PngCompressor compressor = null)
-        {
-            var opt = compressor ?? new PngCompressor();
-            opt.LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level4 });
-        }
-        public static void Compress(string path, PngCompressor compressor = null)
-        {
-            var opt = compressor ?? new PngCompressor();
-            opt.Compress(path, new LossyInputSettings 
-            { 
-                Speed = 1,
-                MinQuality = 75,
-                MaxQuality = 100
-            });
-        }
+        public static void LosslessCompress(string path, PngCompressor compressor = null) 
+            => (compressor ?? new PngCompressor()).LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level4 });
+
+        public static void Compress(string path, PngCompressor compressor = null) 
+            => (compressor ?? new PngCompressor()).Compress(path, new LossyInputSettings 
+        { 
+            Speed = 1,
+            MinQuality = 75,
+            MaxQuality = 100
+        });
         public static PinnedBitmap Premultiply(Bitmap source)
         {
-            var result = PinnedBitmap.FromBitmap(source);
+            var result = new PinnedBitmap(source);
 
             var pixels = source.Width * source.Height;
             for (var index = 0; index < pixels; ++index)
@@ -38,7 +32,7 @@ namespace BrewLib.Util
                 var alpha = (color >> 24) & 0x000000FF;
                 var red = (color >> 16) & 0x000000FF;
                 var green = (color >> 8) & 0x000000FF;
-                var blue = (color) & 0x000000FF;
+                var blue = color & 0x000000FF;
 
                 var a = alpha / 255f;
                 red = (int)(red * a);
@@ -56,7 +50,7 @@ namespace BrewLib.Util
             var kernel = new double[length, length];
             var total = 0d;
 
-            var scale = 1 / (2 * Math.PI * (weight * weight));
+            var scale = 1 / (weight * weight * 2 * Math.PI);
             for (var y = -radius; y <= radius; ++y) for (var x = -radius; x <= radius; ++x)
             {
                 var distance = (x * x + y * y) / (2 * weight * weight);
@@ -72,9 +66,9 @@ namespace BrewLib.Util
             var kernelHeight = kernel.GetUpperBound(0) + 1;
             var kernelWidth = kernel.GetUpperBound(1) + 1;
 
-            if ((kernelWidth % 2) == 0 || (kernelHeight % 2) == 0) throw new InvalidOperationException("Invalid kernel size");
+            if (kernelWidth % 2 == 0 || kernelHeight % 2 == 0) throw new InvalidOperationException("Invalid kernel size");
 
-            using (var pinnedSource = PinnedBitmap.FromBitmap(source))
+            using (var pinnedSource = new PinnedBitmap(source))
             {
                 var width = source.Width;
                 var height = source.Height;
@@ -112,18 +106,12 @@ namespace BrewLib.Util
                         }
                     }
 
-                    var alphaInt = (int)a;
-                    var alpha = (byte)((alphaInt > 255) ? 255 : ((alphaInt < 0) ? 0 : alphaInt));
+                    var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
                     if (alpha == 1) alpha = 0;
 
-                    var redInt = (int)r;
-                    var red = (byte)((redInt > 255) ? 255 : ((redInt < 0) ? 0 : redInt));
-
-                    var greenInt = (int)g;
-                    var green = (byte)((greenInt > 255) ? 255 : ((greenInt < 0) ? 0 : greenInt));
-
-                    var blueInt = (int)b;
-                    var blue = (byte)((blueInt > 255) ? 255 : ((blueInt < 0) ? 0 : blueInt));
+                    var red = (byte)(r > 255 ? 255 : (r < 0 ? 0 : r));
+                    var green = (byte)(g > 255 ? 255 : (g < 0 ? 0 : g));
+                    var blue = (byte)(b > 255 ? 255 : (b < 0 ? 0 : b));
 
                     result.Data[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
                 }
@@ -136,9 +124,9 @@ namespace BrewLib.Util
             var kernelHeight = kernel.GetUpperBound(0) + 1;
             var kernelWidth = kernel.GetUpperBound(1) + 1;
 
-            if ((kernelWidth % 2) == 0 || (kernelHeight % 2) == 0) throw new InvalidOperationException("Invalid kernel size");
+            if (kernelWidth % 2 == 0 || kernelHeight % 2 == 0) throw new InvalidOperationException("Invalid kernel size");
 
-            using (var pinnedSource = PinnedBitmap.FromBitmap(source))
+            using (var pinnedSource = new PinnedBitmap(source))
             {
                 var width = source.Width;
                 var height = source.Height;
@@ -172,18 +160,49 @@ namespace BrewLib.Util
                         }
                     }
 
-                    var alphaInt = (int)a;
-                    var alpha = (byte)((alphaInt > 255) ? 255 : ((alphaInt < 0) ? 0 : alphaInt));
-
+                    var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
                     result.Data[index++] = (alpha << 24) | colorRgb;
                 }
 
                 return result;
             }
         }
+
+        public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
+        {
+            if (src is null) throw new ArgumentNullException(nameof(src));
+            if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
+                throw new ArgumentOutOfRangeException(nameof(sect));
+
+            if (sect.Size == src.PhysicalDimension && sect.Location == default) return src;
+
+            var dest = new Bitmap((int)sect.Width, (int)sect.Height, src.PixelFormat);
+            var srcDat = src.LockBits(new Rectangle(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
+            var destDat = dest.LockBits(new Rectangle(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
+
+            var pixByte = (((int)src.PixelFormat >> 8) & 0xFF) * .125f;
+            var len = (uint)(dest.Width * pixByte);
+
+            try
+            {
+                for (var y = 0; y < destDat.Height; ++y) Native.CopyMemory(
+                    srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixByte), destDat.Scan0 + y * destDat.Stride,
+                    len);
+            }
+            finally
+            {
+                src.UnlockBits(srcDat);
+                dest.UnlockBits(destDat);
+            }
+
+            return dest;
+        }
+
         public static bool IsFullyTransparent(Bitmap source)
         {
-            var data = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), (ImageLockMode)1, (PixelFormat)2498570);
+            if (source is null) return true;
+
+            var data = source.LockBits(new Rectangle(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             unsafe
             {
                 var buf = (byte*)data.Scan0;
@@ -201,15 +220,15 @@ namespace BrewLib.Util
                     buf += data.Stride - source.Width * 4;
                 }
             }
-
             source.UnlockBits(data);
+
             return true;
         }
         public static Rectangle FindTransparencyBounds(Bitmap source)
         {
-            if (source == null) return Rectangle.Empty;
+            if (source is null) return Rectangle.Empty;
 
-            var data = source.LockBits(new Rectangle(0, 0, source.Width, source.Height), (ImageLockMode)1, (PixelFormat)2498570);
+            var data = source.LockBits(new Rectangle(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             int xMin = data.Width, yMin = data.Height, xMax = -1, yMax = -1;
             
             try
@@ -220,7 +239,7 @@ namespace BrewLib.Util
                     for (var y = 0; y < data.Height; ++y)
                     {
                         var row = buf + (y * data.Stride);
-                        for (var x = 0; x < data.Width; ++x) if (*(row + x * 4 + 3) > 0)
+                        for (var x = 0; x < data.Width; ++x) if (row[x * 4 + 3] > 0)
                         {
                             if (x < xMin) xMin = x;
                             if (x > xMax) xMax = x;
@@ -235,16 +254,14 @@ namespace BrewLib.Util
                 source.UnlockBits(data);
             }
 
-            if (xMin <= xMax && yMin <= yMax) return Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1);
-            return Rectangle.Empty;
+            return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
         }
 
         public class PinnedBitmap : IDisposable
         {
-            GCHandle handle;
-
             public readonly Bitmap Bitmap;
             public readonly int[] Data;
+            readonly GCHandle handle;
 
             public PinnedBitmap(int width, int height)
             {
@@ -252,21 +269,26 @@ namespace BrewLib.Util
                 handle = GCHandle.Alloc(Data, GCHandleType.Pinned);
                 Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, handle.AddrOfPinnedObject());
             }
-
-            public static PinnedBitmap FromBitmap(Bitmap bitmap)
+            public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
             {
-                var result = new PinnedBitmap(bitmap.Width, bitmap.Height);
-                using (var graphics = FromImage(result.Bitmap)) graphics.DrawImage(bitmap, 0, 0);
-                return result;
+                var data = bitmap.LockBits(new Rectangle(default, Bitmap.Size), ImageLockMode.ReadOnly, Bitmap.PixelFormat);
+                try
+                {
+                    Marshal.Copy(data.Scan0, Data, 0, Data.Length);
+                }
+                finally
+                {
+                    bitmap.UnlockBits(data);
+                }
             }
 
             bool disposed;
             public void Dispose()
             {
                 if (disposed) return;
+                Bitmap?.Dispose();
+                if (handle.IsAllocated) handle.Free();
                 disposed = true;
-                Bitmap.Dispose();
-                handle.Free();
             }
         }
     }

@@ -31,7 +31,7 @@ namespace BrewLib.Data
             {
                 if (sources.HasFlag(ResourceSource.Absolute))
                 {
-                    if (File.Exists(path)) return new FileStream(path, FileMode.Open, FileAccess.Read);
+                    if (File.Exists(path)) return File.OpenRead(path);
                 }
                 else throw new InvalidOperationException($"Resource paths must be relative ({path})");
             }
@@ -40,7 +40,7 @@ namespace BrewLib.Data
                 if (sources.HasFlag(ResourceSource.Relative))
                 {
                     var combinedPath = basePath != null ? Path.Combine(basePath, path) : path;
-                    if (File.Exists(combinedPath)) return new FileStream(combinedPath, FileMode.Open, FileAccess.Read);
+                    if (File.Exists(combinedPath)) return File.OpenRead(combinedPath);
                 }
                 if (sources.HasFlag(ResourceSource.Embedded))
                 {

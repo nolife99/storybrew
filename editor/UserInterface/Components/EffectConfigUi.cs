@@ -206,8 +206,8 @@ namespace StorybrewEditor.UserInterface.Components
                     Value = field.Value,
                     Options = new NamedValue[]
                     {
-                        new NamedValue{ Name = true.ToString(), Value = true },
-                        new NamedValue{ Name = false.ToString(), Value = false }
+                        new NamedValue{ Name = bool.TrueString, Value = true },
+                        new NamedValue{ Name = bool.FalseString, Value = false }
                     },
                     AnchorFrom = BoxAlignment.Right,
                     AnchorTo = BoxAlignment.Right,
@@ -415,8 +415,7 @@ namespace StorybrewEditor.UserInterface.Components
         }
         void copyConfiguration()
         {
-            using (var stream = new MemoryStream())
-            using (var writer = new BinaryWriter(stream))
+            using (var stream = new MemoryStream()) using (var writer = new BinaryWriter(stream))
             {
                 writer.Write(effect.Config.FieldCount);
                 foreach (var field in effect.Config.Fields)

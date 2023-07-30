@@ -39,8 +39,7 @@ namespace BrewLib.Graphics.Textures
                 if (!atlases.TryGetValue(textureOptions, out TextureMultiAtlas2d atlas))
                     atlases.Add(textureOptions, atlas = new TextureMultiAtlas2d(width, height, $"{description} (Option set {atlases.Count})", textureOptions, padding));
 
-                using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer)) if (bitmap != null)
-                    texture = atlas.AddRegion(bitmap, filename);
+                using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer)) if (bitmap != null) texture = atlas.AddRegion(bitmap, filename);
 
                 textures.Add(filename, texture);
                 ResourceLoaded?.Invoke(filename, texture);
@@ -58,6 +57,7 @@ namespace BrewLib.Graphics.Textures
                 if (disposing)
                 {
                     foreach (var entry in atlases) entry.Value?.Dispose();
+                    atlases.Clear();
                     textures.Clear();
                 }
                 textures = null;

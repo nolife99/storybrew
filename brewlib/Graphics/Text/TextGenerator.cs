@@ -168,6 +168,8 @@ namespace BrewLib.Graphics.Text
                     shadowBrush.Dispose();
                     foreach (var entry in fonts) entry.Value.Dispose();
                     foreach (var fontCollection in fontCollections.Values) fontCollection.Dispose();
+                    fonts.Clear();
+                    fontCollections.Clear();
                 }
 
                 textBrush = null;

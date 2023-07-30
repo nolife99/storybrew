@@ -9,11 +9,8 @@ namespace BrewLib.Graphics.RenderTargets
 {
     public class RenderTarget : IDisposable
     {
-        int textureId = -1;
-        int frameBufferId = -1;
-        int renderBufferId = -1;
-        bool started;
-        bool valid;
+        int textureId = -1, frameBufferId = -1, renderBufferId = -1;
+        bool started, valid;
 
         int previousFrameBufferId;
         Rectangle previousViewport;

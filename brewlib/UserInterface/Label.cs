@@ -45,7 +45,7 @@ namespace BrewLib.UserInterface
 
                 var alignment = textDrawable.Alignment;
                 if ((alignment & BoxAlignment.Right) > 0) position.X += size.X - textSize.X;
-                else if ((alignment & BoxAlignment.Left) == 0) position.X += size.X * 0.5f - textSize.X * .5f;
+                else if ((alignment & BoxAlignment.Left) == 0) position.X += size.X * .5f - textSize.X * .5f;
                 if ((alignment & BoxAlignment.Bottom) > 0) position.Y += size.Y - textSize.Y;
                 else if ((alignment & BoxAlignment.Top) == 0) position.Y += size.Y * .5f - textSize.Y * .5f;
 

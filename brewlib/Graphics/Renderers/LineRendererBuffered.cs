@@ -79,11 +79,9 @@ namespace BrewLib.Graphics.Renderers
             }
         }
 
-        int linesInBatch;
+        int linesInBatch, currentLargestBatch;
         readonly int maxLinesPerBatch;
         bool rendering;
-
-        int currentLargestBatch;
 
         public int RenderedLineCount { get; set; }
         public int FlushedBufferCount { get; set; }
@@ -105,8 +103,7 @@ namespace BrewLib.Graphics.Renderers
 
             throw new NotSupportedException();
 
-        }, shader, maxLinesPerBatch, primitiveBufferSize)
-        { }
+        }, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
         public LineRendererBuffered(CreatePrimitiveStreamerDelegate<LinePrimitive> createPrimitiveStreamer, Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
         {
@@ -188,7 +185,7 @@ namespace BrewLib.Graphics.Renderers
             }
 
             linesInBatch = 0;
-            FlushedBufferCount++;
+            ++FlushedBufferCount;
 
             lastFlushWasBuffered = canBuffer;
         }
@@ -213,8 +210,8 @@ namespace BrewLib.Graphics.Renderers
 
             primitives[linesInBatch] = linePrimitive;
 
-            RenderedLineCount++;
-            linesInBatch++;
+            ++RenderedLineCount;
+            ++linesInBatch;
         }
     }
     [StructLayout(LayoutKind.Sequential)]

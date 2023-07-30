@@ -24,19 +24,20 @@ namespace StorybrewCommon.Curves
             get
             {
                 var length = 0d;
-                foreach (var curve in curves) length += curve.Length;
+                curves.ForEach(curve => length += curve.Length);
                 return length;
             }
         }
 
         ///<summary> Constructs a composite curve from a list of curves <paramref name="curves"/>. </summary>
-        public CompositeCurve(List<Curve> curves) => this.curves = new List<Curve>(curves);
+        public CompositeCurve(IEnumerable<Curve> curves) => this.curves = new List<Curve>(curves);
 
         ///<inheritdoc/>
         public Vector2 PositionAtDistance(double distance)
         {
-            foreach (var curve in curves)
+            for (var i = 0; i < curves.Count; ++i)
             {
+                var curve = curves[i];
                 if (distance < curve.Length) return curve.PositionAtDistance(distance);
                 distance -= curve.Length;
             }
@@ -49,9 +50,9 @@ namespace StorybrewCommon.Curves
             var length = Length;
 
             var d = delta;
-            for (var curveIndex = 0; curveIndex < curves.Count; ++curveIndex)
+            for (var i = 0; i < curves.Count; ++i)
             {
-                var curve = curves[curveIndex];
+                var curve = curves[i];
                 var curveDelta = curve.Length / length;
 
                 if (d < curveDelta) return curve.PositionAtDelta(d / curveDelta);

@@ -8,7 +8,7 @@ namespace StorybrewCommon.Curves
     [Serializable]
     public class BezierCurve : BaseCurve
     {
-        readonly List<Vector2> points;
+        readonly IList<Vector2> points;
         readonly int precision;
 
         ///<summary> The start position (the head) of the bézier curve. </summary>
@@ -21,7 +21,7 @@ namespace StorybrewCommon.Curves
         public bool IsLinear => points.Count < 3;
 
         ///<summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
-        public BezierCurve(List<Vector2> points, int precision)
+        public BezierCurve(IList<Vector2> points, int precision)
         {
             this.points = points;
             this.precision = precision;

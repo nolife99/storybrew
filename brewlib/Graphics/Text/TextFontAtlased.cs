@@ -60,6 +60,7 @@ namespace BrewLib.Graphics.Text
                 if (disposing)
                 {
                     foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
+                    glyphs.Clear();
                     atlas?.Dispose();
                 }
                 glyphs = null;

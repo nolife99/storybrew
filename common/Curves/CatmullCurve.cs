@@ -7,7 +7,7 @@ namespace StorybrewCommon.Curves
     ///<summary> Represents a Catmull-Rom spline curve. </summary>
     [Serializable] public class CatmullCurve : BaseCurve
     {
-        readonly List<Vector2> points;
+        readonly IList<Vector2> points;
         readonly int precision;
 
         ///<inheritdoc/>
@@ -20,7 +20,7 @@ namespace StorybrewCommon.Curves
         public bool IsLinear => points.Count < 3;
 
         ///<summary> Constructs a Catmull-Rom curve from given control points <paramref name="points"/>. </summary>
-        public CatmullCurve(List<Vector2> points, int precision)
+        public CatmullCurve(IList<Vector2> points, int precision)
         {
             this.points = points;
             this.precision = precision;

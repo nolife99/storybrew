@@ -9,9 +9,7 @@ namespace BrewLib.ScreenLayers
     {
         public ScreenLayerManager Manager { get; set; }
 
-        protected double TransitionInDuration = .25;
-        protected double TransitionOutDuration = .25;
-        protected double TransitionProgress = 0;
+        protected double TransitionInDuration = .25, TransitionOutDuration = .25, TransitionProgress = 0;
         public double MinTween;
 
         public State CurrentState = State.Hidden;

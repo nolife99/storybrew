@@ -17,6 +17,8 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using StorybrewEditor.Scripting;
+using StorybrewEditor.Mapset;
+using System.Drawing;
 
 namespace StorybrewEditor.ScreenLayers
 {
@@ -436,10 +438,11 @@ namespace StorybrewEditor.ScreenLayers
         void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
         {
             var first = true;
-            using (var wait = new ManualResetEventSlim()) foreach (var beatmap in proj.MapsetManager.Beatmaps)
+            var mainBeatmap = proj.MainBeatmap;
+
+            using (var wait = new ManualResetEventSlim()) proj.MapsetManager.Beatmaps.ToList().ForEach(beatmap =>
             {
                 Program.RunMainThread(() => proj.MainBeatmap = beatmap);
-
                 while (proj.EffectsStatus != EffectStatus.Ready)
                 {
                     switch (proj.EffectsStatus)
@@ -448,12 +451,13 @@ namespace StorybrewEditor.ScreenLayers
                         case EffectStatus.ExecutionFailed:
                         case EffectStatus.LoadingFailed: throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
                     }
-                    wait.Wait(200);
                 }
 
                 proj.ExportToOsb(first);
                 first = false;
-            }
+            });
+
+            if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.RunMainThread(() => proj.MainBeatmap = mainBeatmap);
         });
         public override void FixedUpdate()
         {

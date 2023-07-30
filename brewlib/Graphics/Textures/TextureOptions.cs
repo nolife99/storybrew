@@ -16,16 +16,13 @@ namespace BrewLib.Graphics.Textures
         public static readonly TextureOptions Default = new TextureOptions();
 
         // Settings
-        public bool Srgb = true;
-        public bool PreMultiply = false;
-        public bool GenerateMipmaps = false;
+        public bool Srgb = true, PreMultiply = false, GenerateMipmaps = false;
 
         // Parameters
         public int TextureLodBias = 0;
         public TextureMinFilter TextureMinFilter = TextureMinFilter.Linear;
         public TextureMagFilter TextureMagFilter = TextureMagFilter.Linear;
-        public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge;
-        public TextureWrapMode TextureWrapT = TextureWrapMode.ClampToEdge;
+        public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge, TextureWrapT = TextureWrapMode.ClampToEdge;
 
         public void ApplyParameters(TextureTarget target)
         {
@@ -109,11 +106,11 @@ namespace BrewLib.Graphics.Textures
         }
         static readonly Dictionary<Type, Func<TinyToken, object>> fieldParsers = new Dictionary<Type, Func<TinyToken, object>>
         {
-            [typeof(string)] = (data) => data.Value<string>(),
-            [typeof(float)] = (data) => data.Value<float>(),
-            [typeof(double)] = (data) => data.Value<double>(),
-            [typeof(int)] = (data) => data.Value<int>(),
-            [typeof(bool)] = (data) => data.Value<bool>()
+            [typeof(string)] = data => data.Value<string>(),
+            [typeof(float)] = data => data.Value<float>(),
+            [typeof(double)] = data => data.Value<double>(),
+            [typeof(int)] = data => data.Value<int>(),
+            [typeof(bool)] = data => data.Value<bool>()
         };
     }
 }

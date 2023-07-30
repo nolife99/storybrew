@@ -16,8 +16,7 @@ namespace BrewLib.Graphics.Renderers
     public class SpriteRendererBuffered : SpriteRenderer
     {
         public const int VertexPerSprite = 4;
-        public const string CombinedMatrixUniformName = "u_combinedMatrix";
-        public const string TextureUniformName = "u_texture";
+        public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
         public static readonly VertexDeclaration VertexDeclaration =
             new VertexDeclaration(VertexAttribute.CreatePosition2d(), VertexAttribute.CreateDiffuseCoord(0), VertexAttribute.CreateColor(true));
@@ -58,8 +57,8 @@ namespace BrewLib.Graphics.Renderers
         Action flushAction;
         public Action FlushAction
         {
-            get { return flushAction; }
-            set { flushAction = value; }
+            get => flushAction;
+            set => flushAction = value;
         }
 
         PrimitiveStreamer<SpritePrimitive> primitiveStreamer;
@@ -68,7 +67,7 @@ namespace BrewLib.Graphics.Renderers
         Camera camera;
         public Camera Camera
         {
-            get { return camera; }
+            get => camera;
             set
             {
                 if (camera == value)
@@ -82,7 +81,7 @@ namespace BrewLib.Graphics.Renderers
         Matrix4 transformMatrix = Matrix4.Identity;
         public Matrix4 TransformMatrix
         {
-            get { return transformMatrix; }
+            get => transformMatrix;
             set
             {
                 if (transformMatrix.Equals(value))
@@ -134,7 +133,7 @@ namespace BrewLib.Graphics.Renderers
             this.flushAction = flushAction;
             this.shader = shader;
 
-            var primitiveBatchSize = Math.Max(maxSpritesPerBatch, primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize));
+            var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
             primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
             spriteArray = new SpritePrimitive[maxSpritesPerBatch];
@@ -351,8 +350,8 @@ namespace BrewLib.Graphics.Renderers
 
             spriteArray[spritesInBatch] = spritePrimitive;
 
-            RenderedSpriteCount++;
-            spritesInBatch++;
+            ++RenderedSpriteCount;
+            ++spritesInBatch;
         }
     }
 

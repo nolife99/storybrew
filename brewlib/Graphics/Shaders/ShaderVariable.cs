@@ -5,8 +5,7 @@ namespace BrewLib.Graphics.Shaders
     public class ShaderVariable
     {
         public readonly ShaderContext Context;
-        public readonly string Name;
-        public readonly string ShaderTypeName;
+        public readonly string Name, ShaderTypeName;
         public readonly int ArrayCount;
 
         readonly Reference reference;

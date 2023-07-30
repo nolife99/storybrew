@@ -19,13 +19,13 @@ namespace StorybrewEditor.Scripting
         readonly ResourceContainer resourceContainer;
         readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
 
-        List<string> referencedAssemblies = new List<string>();
+        HashSet<string> referencedAssemblies = new HashSet<string>();
         public IEnumerable<string> ReferencedAssemblies
         {
             get => referencedAssemblies;
             set
             {
-                referencedAssemblies = new List<string>(value);
+                referencedAssemblies = new HashSet<string>(value);
                 foreach (var scriptContainer in scriptContainers.Values) scriptContainer.ReferencedAssemblies = referencedAssemblies;
                 updateSolutionFiles();
             }
@@ -156,7 +156,7 @@ namespace StorybrewEditor.Scripting
             File.WriteAllBytes(slnPath, resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative));
 
             var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
-            var document = new XmlDocument { PreserveWhitespace = false };
+            var document = new XmlDocument();
             try
             {
                 using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
@@ -166,8 +166,7 @@ namespace StorybrewEditor.Scripting
 
                 var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
                 document.DocumentElement.AppendChild(referencedAssembliesGroup);
-                var importedAssemblies = referencedAssemblies.Where(e => !Project.DefaultAssemblies.Contains(e));
-                foreach (var path in importedAssemblies)
+                foreach (var path in referencedAssemblies) if (!Project.DefaultAssemblies.Contains(path))
                 {
                     var relativePath = PathHelper.GetRelativePath(ScriptsPath, path);
 
@@ -188,7 +187,7 @@ namespace StorybrewEditor.Scripting
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

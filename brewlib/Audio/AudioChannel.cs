@@ -191,7 +191,6 @@ namespace BrewLib.Audio
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 channel = 0;
                 disposedValue = true;
                 if (disposing) Manager.UnregisterChannel(this);

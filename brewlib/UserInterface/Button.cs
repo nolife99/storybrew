@@ -9,8 +9,8 @@ namespace BrewLib.UserInterface
 {
     public class Button : Widget, Field
     {
-        private readonly Label label;
-        private readonly ClickBehavior clickBehavior;
+        readonly Label label;
+        readonly ClickBehavior clickBehavior;
 
         public override Vector2 MinSize => new Vector2(label.MinSize.X + padding.Horizontal, label.MinSize.Y + padding.Vertical);
         public override Vector2 PreferredSize => new Vector2(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
@@ -18,7 +18,7 @@ namespace BrewLib.UserInterface
         public string Text { get => label.Text; set => label.Text = value; }
         public IconFont Icon { get => label.Icon; set => label.Icon = value; }
 
-        private FourSide padding;
+        FourSide padding;
         public FourSide Padding
         {
             get => padding;
@@ -30,7 +30,7 @@ namespace BrewLib.UserInterface
             }
         }
 
-        private bool isCheckable;
+        bool isCheckable;
         public bool Checkable
         {
             get => isCheckable;
@@ -42,7 +42,7 @@ namespace BrewLib.UserInterface
             }
         }
 
-        private bool isChecked;
+        bool isChecked;
         public bool Checked
         {
             get => isChecked;
@@ -93,10 +93,7 @@ namespace BrewLib.UserInterface
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                clickBehavior.Dispose();
-            }
+            if (disposing) clickBehavior.Dispose();
             base.Dispose(disposing);
         }
 

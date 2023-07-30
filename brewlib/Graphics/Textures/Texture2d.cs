@@ -24,7 +24,7 @@ namespace BrewLib.Graphics.Textures
         }
         public TexturingModes TexturingMode => TexturingModes.Texturing2d;
 
-        public Texture2d(int textureId, int width, int height, string description) : base(null, Box2.FromTLRB(0, 0, width, height), description)
+        public Texture2d(int textureId, int width, int height, string description) : base(null, new Box2(0, 0, width, height), description)
             => this.textureId = textureId;
 
         public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
@@ -40,10 +40,10 @@ namespace BrewLib.Graphics.Textures
             textureOptions = textureOptions ?? TextureOptions.Default;
             textureOptions.WithBitmap(bitmap, b =>
             {
-                var bitmapData = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, bitmapData.Width, bitmapData.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bitmapData.Scan0);
+                var data = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, b.PixelFormat);
+                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
                 GL.Finish();
-                b.UnlockBits(bitmapData);
+                b.UnlockBits(data);
             });
 
             DrawState.CheckError("updating texture");
@@ -69,8 +69,8 @@ namespace BrewLib.Graphics.Textures
 
         public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
         {
-            if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) 
-                return new Bitmap(stream, false);
+            if (File.Exists(filename)) using (var stream = File.OpenRead(filename))
+                    return new Bitmap(stream, false);
 
             if (resourceContainer == null) return null;
             using (var stream = resourceContainer.GetStream(filename, ResourceSource.Embedded))
@@ -99,9 +99,9 @@ namespace BrewLib.Graphics.Textures
             textureOptions = textureOptions ?? TextureOptions.Default;
             if (textureOptions.PreMultiply) color = color.Premultiply();
 
-            var rgba = color.ToRgba();
+            var rgba = color.ToArgb();
             var data = new int[width * height];
-            for (int i = 0; i < width * height; i++) data[i] = rgba;
+            for (var i = 0; i < width * height; ++i) data[i] = rgba;
 
             var textureId = GL.GenTexture();
             try

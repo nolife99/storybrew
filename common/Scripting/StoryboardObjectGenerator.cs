@@ -107,13 +107,6 @@ namespace StorybrewCommon.Scripting
             return bitmap;
         }
 
-        readonly DisposableNativeDictionary<string, Rectangle> trimRect = new DisposableNativeDictionary<string, Rectangle>();
-        internal Rectangle getTrimmedBitmap(string key, Bitmap source)
-        {
-            if (!trimRect.TryGetValue(key, out Rectangle bounds)) trimRect[key] = bounds = BitmapHelper.FindTransparencyBounds(source);
-            return bounds;
-        }
-
         ///<summary> Opens a project file in read-only mode. You are responsible for disposing it. </summary>
         public Stream OpenProjectFile(string path, bool watch = true) => openFile(Path.Combine(context.ProjectPath, path), watch);
 
@@ -165,7 +158,7 @@ namespace StorybrewCommon.Scripting
         ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with default magnitudes. </summary>
         public float[] GetFft(double time, string path = null, bool splitChannels = false)
         {
-            if (path != null) AddDependency(path);
+            if (!(path is null)) AddDependency(path);
             return context.GetFft(time, path, splitChannels);
         }
 
@@ -173,17 +166,16 @@ namespace StorybrewCommon.Scripting
         public float[] GetFft(double time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
         {
             var fft = GetFft(time, path);
-            if (magnitudes == fft.Length && easing == OsbEasing.None) return fft;
+            if (magnitudes == fft.Length && easing is OsbEasing.None) return fft;
 
-            var usedFftLength = frequencyCutOff > 0 ?
-                (int)Math.Floor(frequencyCutOff / (context.GetFftFrequency(path) / 2) * fft.Length) : fft.Length;
-
+            var usedFftLength = frequencyCutOff > 0 ? (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5) * fft.Length) : fft.Length;
             var resultFft = new float[magnitudes];
+
             var baseIndex = 0;
             for (var i = 0; i < magnitudes; ++i)
             {
                 var progress = EasingFunctions.Ease(easing, (double)i / magnitudes);
-                var index = Math.Min(Math.Max(baseIndex + 1, (int)(progress * usedFftLength)), usedFftLength - 1);
+                var index = (int)Math.Min(Math.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
 
                 var value = 0f;
                 for (var v = baseIndex; v < index; ++v) value = Math.Max(value, fft[index]);
@@ -221,18 +213,19 @@ namespace StorybrewCommon.Scripting
             throw new NotSupportedException($"{Path.GetExtension(path)} isn't a supported subtitle format");
         }
 
-        ///<summary> Gets a <see cref="FontGenerator"/> to create and load textures. </summary>
+        ///<summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
         ///<param name="directory"> The path to the font file. </param>
         ///<param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
         ///<param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
         public FontGenerator LoadFont(string directory, FontDescription description, params FontEffect[] effects) 
             => LoadFont(directory, false, description, effects);
 
-        ///<summary> Gets a <see cref="FontGenerator"/> to create and load textures. </summary>
+        ///<summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
         ///<param name="directory"> The path to the font file. </param>
         ///<param name="asAsset"> Whether to place textures in the asset library directory or the beatmap's storyboard directory. </param>
         ///<param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
         ///<param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
+        ///<exception cref="InvalidOperationException"/>
         public FontGenerator LoadFont(string directory, bool asAsset, FontDescription description, params FontEffect[] effects)
         {
             var assetDirectory = asAsset ? context.ProjectAssetPath : context.MapsetPath;
@@ -409,7 +402,6 @@ namespace StorybrewCommon.Scripting
                 Current = null;
 
                 fontGenerators.Clear();
-                trimRect.Dispose();
                 bitmaps.Dispose();
             }
         }

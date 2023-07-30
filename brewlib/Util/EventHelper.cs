@@ -7,7 +7,7 @@ namespace BrewLib.Util
         public static void InvokeStrict(Func<MulticastDelegate> getEventDelegate, Action<Delegate> raise)
         {
             var invocationList = getEventDelegate()?.GetInvocationList();
-            if (invocationList == null) return;
+            if (invocationList is null) return;
 
             var first = true;
             foreach (var handler in invocationList)
@@ -16,7 +16,7 @@ namespace BrewLib.Util
                 else
                 {
                     var currentList = getEventDelegate()?.GetInvocationList();
-                    if (currentList == null) return;
+                    if (currentList is null) return;
 
                     if (!Array.Exists(currentList, h => h == handler)) continue;
                 }

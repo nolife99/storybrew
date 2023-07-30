@@ -1,6 +1,7 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Input;
 using BrewLib.Time;
+using BrewLib.Util;
 using OpenTK;
 using OpenTK.Graphics;
 using System;
@@ -17,9 +18,7 @@ namespace BrewLib.ScreenLayers
         readonly object context;
         public T GetContext<T>() => (T)context;
 
-        readonly List<ScreenLayer> layers = new List<ScreenLayer>();
-        readonly List<ScreenLayer> updateQueue = new List<ScreenLayer>();
-        readonly List<ScreenLayer> removedLayers = new List<ScreenLayer>();
+        readonly List<ScreenLayer> layers = new List<ScreenLayer>(), updateQueue = new List<ScreenLayer>(), removedLayers = new List<ScreenLayer>();
         ScreenLayer focusedLayer;
         readonly InputDispatcher inputDispatcher = new InputDispatcher();
         public InputHandler InputHandler => inputDispatcher;
@@ -51,7 +50,7 @@ namespace BrewLib.ScreenLayers
         public void Set(ScreenLayer layer)
         {
             var layersToExit = new List<ScreenLayer>(layers);
-            for (int i = layersToExit.Count - 1; i >= 0; --i) layersToExit[i].Exit();
+            for (var i = layersToExit.Count - 1; i >= 0; --i) layersToExit[i].Exit();
             Add(layer);
         }
         public void Remove(ScreenLayer layer)
@@ -64,7 +63,7 @@ namespace BrewLib.ScreenLayers
         }
         public bool Close()
         {
-            for (int i = layers.Count - 1; i >= 0; --i)
+            for (var i = layers.Count - 1; i >= 0; --i)
             {
                 var layer = layers[i];
                 if (layer.IsExiting) continue;
@@ -77,7 +76,7 @@ namespace BrewLib.ScreenLayers
         public void Exit()
         {
             var snapshot = new List<ScreenLayer>(layers);
-            for (int i = snapshot.Count - 1; i >= 0; --i)
+            for (var i = snapshot.Count - 1; i >= 0; --i)
             {
                 var layer = snapshot[i];
                 if (layer.IsExiting) continue;
@@ -128,18 +127,13 @@ namespace BrewLib.ScreenLayers
 
             if (layers.Count == 0) window.Exit();
         }
-        public void Draw(DrawContext drawContext, double tween)
+        public void Draw(DrawContext drawContext, double tween) => layers.ForEach(layer =>
         {
-            foreach (var layer in layers)
-            {
-                if (layer.CurrentState == ScreenLayer.State.Hidden) continue;
+            var layerTween = Math.Max(layer.MinTween, tween);
+            layer.MinTween = layerTween;
 
-                var layerTween = Math.Max(layer.MinTween, tween);
-                layer.MinTween = layerTween;
-
-                layer.Draw(drawContext, layerTween);
-            }
-        }
+            layer.Draw(drawContext, layerTween);
+        }, layer => layer.CurrentState != ScreenLayer.State.Hidden);
         void changeFocus(ScreenLayer layer)
         {
             if (focusedLayer != null)
@@ -162,7 +156,7 @@ namespace BrewLib.ScreenLayers
 
             if (width == 0 || height == 0) return;
 
-            foreach (ScreenLayer layer in layers) layer.Resize(width, height);
+            layers.ForEach(layer => layer.Resize(width, height));
         }
 
         #region IDisposable Support

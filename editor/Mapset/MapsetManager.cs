@@ -32,7 +32,9 @@ namespace StorybrewEditor.Mapset
         {
             if (!Directory.Exists(path)) return;
 
-            foreach (var beatmapPath in Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly)) try
+            var maps = Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly);
+            Array.Sort(maps);
+            foreach (var beatmapPath in maps) try
             {
                 beatmaps.Add(EditorBeatmap.Load(beatmapPath));
             }

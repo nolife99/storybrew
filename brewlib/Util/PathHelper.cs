@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace BrewLib.Util
 {
@@ -38,18 +40,23 @@ namespace BrewLib.Util
 
             return path.Substring(folder.Length + 1);
         }
+
+        static readonly HashSet<char> invalidChars = new HashSet<char>
+        {
+            '"', '<', '>', '|', '\0', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005',
+            '\u0006', '\a', '\b', '\t', '\n', '\v', '\f', '\r', '\u000e', '\u000f',
+            '\u0010', '\u0011', '\u0012', '\u0013', '\u0014', '\u0015', '\u0016', '\u0017', '\u0018', '\u0019',
+            '\u001a', '\u001b', '\u001c', '\u001d', '\u001e', '\u001f'
+        };
         public static bool IsValidPath(string path)
         {
-            foreach (var invalidCharacter in Path.GetInvalidPathChars()) foreach (var character in path)
-                    if (character == invalidCharacter) return false;
-
+            foreach (var character in path) if (invalidChars.Contains(character)) return false;
             return true;
         }
         public static bool IsValidFilename(string filename)
         {
-            foreach (var invalidCharacter in Path.GetInvalidFileNameChars()) foreach (var character in filename)
-                    if (character == invalidCharacter) return false;
-
+            foreach (var character in filename) if (invalidChars.Contains(character) ||
+                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character))) return false;
             return true;
         }
     }

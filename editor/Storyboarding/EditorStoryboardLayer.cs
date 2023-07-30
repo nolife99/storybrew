@@ -14,14 +14,14 @@ namespace StorybrewEditor.Storyboarding
         public Guid Guid { get; set; } = Guid.NewGuid();
 
         string name = "";
-        public string _Name
+        public string Identifier
         {
             get => name;
             set
             {
                 if (name == value) return;
                 name = value;
-                RaiseChanged(nameof(_Name));
+                RaiseChanged(nameof(Identifier));
             }
         }
 

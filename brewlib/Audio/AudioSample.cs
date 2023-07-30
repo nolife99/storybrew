@@ -51,7 +51,6 @@ namespace BrewLib.Audio
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 if (sample != 0)
                 {
                     Bass.SampleFree(sample);

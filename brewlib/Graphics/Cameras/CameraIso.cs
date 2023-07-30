@@ -27,15 +27,15 @@ namespace BrewLib.Graphics.Cameras
         {
             var screenViewport = Viewport;
 
-            var distanceSqrt = (float)Math.Sqrt(1 / 3f);
+            var distanceSqrt = .57735026919f;
             Forward = new Vector3(distanceSqrt, -distanceSqrt, -distanceSqrt);
             Position = target - Forward;
             Up = DefaultUp;
 
             internalViewport = extendedViewport = screenViewport;
             projection = Matrix4.CreateOrthographicOffCenter(
-                -screenViewport.Width / 2f, screenViewport.Width / 2f,
-                -(screenViewport.Height / 2f), screenViewport.Height / 2f,
+                -screenViewport.Width * .5f, screenViewport.Width * .5f,
+                -(screenViewport.Height * .5f), screenViewport.Height * .5f,
                 NearPlane, FarPlane);
 
             view = Matrix4.LookAt(Position, Position + Forward, Up);

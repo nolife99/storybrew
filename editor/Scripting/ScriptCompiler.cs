@@ -104,7 +104,11 @@ namespace StorybrewEditor.Scripting
                 var embeddedTexts = trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value));
                 var result = compilation.Emit(assemblyStream, embeddedTexts: embeddedTexts, options: emitOptions);
 
-                if (result.Success) return;
+                if (result.Success)
+                {
+                    trees.Dispose();
+                    return;
+                }
 
                 var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
                     .Reverse().GroupBy(k =>
@@ -112,7 +116,7 @@ namespace StorybrewEditor.Scripting
                     if (k.Location.SourceTree == null) return "";
                     if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
                     return "";
-                }).ToDictionary(k => k.Key, k => k.ToHashSet());
+                }).ToDictionary(k => k.Key, k => k);
 
                 trees.Dispose();
 

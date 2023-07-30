@@ -18,7 +18,7 @@ namespace BrewLib.Audio
                 if (volume == value) return;
 
                 volume = value;
-                foreach (var audio in audioChannels) audio.UpdateVolume();
+                audioChannels.ForEach(audio => audio.UpdateVolume());
             }
         }
         public AudioManager(IntPtr handle)

@@ -17,7 +17,6 @@ namespace BrewLib.Util
             set { }
         }
 
-        public ByteCounterStream() { }
         public override void Flush() { }
 
         public override int Read(byte[] buffer, int offset, int count) => 0;

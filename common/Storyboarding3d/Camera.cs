@@ -33,13 +33,12 @@ namespace StorybrewCommon.Storyboarding3d
         }
         public Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
         {
-            var scale = new Vector2(OsuHitObject.StoryboardSize.Y * (float)AspectRatio, OsuHitObject.StoryboardSize.Y);
-            var offset = (scale.X - OsuHitObject.StoryboardSize.X) * .5f;
+            var offset = (OsuHitObject.WidescreenStoryboardSize.X - OsuHitObject.StoryboardSize.X) * .5f;
 
             var transformedPoint = Vector4.Transform(new Vector4(point, 1), transform);
-            var ndc = new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W);
+            var ndc = new OpenTK.Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W);
 
-            var screenPosition = (ndc + Vector2.One) * .5f * scale;
+            var screenPosition = (ndc + OpenTK.Vector2.One) * .5f * OsuHitObject.WidescreenStoryboardSize;
             var depth = transformedPoint.Z / transformedPoint.W;
 
             return new Vector4(screenPosition.X - offset, screenPosition.Y, depth, transformedPoint.W);

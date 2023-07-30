@@ -13,8 +13,8 @@ namespace StorybrewEditor.Util
                 if (registryKey == null) return string.Empty;
 
                 var value = registryKey.GetValue(null).ToString();
-                var startIndex = value.IndexOf("\"");
-                var endIndex = value.LastIndexOf("\"");
+                var startIndex = value.IndexOf("\"", StringComparison.InvariantCulture);
+                var endIndex = value.LastIndexOf("\"", StringComparison.InvariantCulture);
                 return value.Substring(startIndex + 1, endIndex - 1);
             }
         }

@@ -13,7 +13,7 @@ namespace StorybrewCommon.Storyboarding3d
     ///<summary> Represents a basic 3D object. </summary>
     public class Object3d
     {
-        readonly List<Object3d> children = new List<Object3d>();
+        readonly IList<Object3d> children = new List<Object3d>();
 
         ///<summary> A keyframed value representing this instance's color keyframes. </summary>
         public readonly KeyframedValue<CommandColor> Coloring = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor, CommandColor.White);

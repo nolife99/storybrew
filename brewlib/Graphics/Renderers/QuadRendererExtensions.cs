@@ -171,7 +171,7 @@ namespace BrewLib.Graphics.Renderers
                 color4 = innerColorRgba
             };
 
-            for (var i = 1; i <= lineCount; i++)
+            for (var i = 1; i <= lineCount; ++i)
             {
                 var angle = startAngle + angleStep * i;
 

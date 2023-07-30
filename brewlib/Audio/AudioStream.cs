@@ -1,7 +1,6 @@
 ﻿using BrewLib.Data;
 using ManagedBass;
 using ManagedBass.Fx;
-using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -66,7 +65,6 @@ namespace BrewLib.Audio
         {
             if (!disposedValue)
             {
-                if (disposing) { }
                 if (stream != 0)
                 {
                     Bass.StreamFree(stream);

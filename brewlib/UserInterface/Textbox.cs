@@ -44,8 +44,7 @@ namespace BrewLib.UserInterface
             get
             {
                 var contentSize = content.PreferredSize;
-                if (string.IsNullOrWhiteSpace(label.Text))
-                    return new Vector2(Math.Max(contentSize.X, DefaultSize.X), contentSize.Y);
+                if (string.IsNullOrWhiteSpace(label.Text)) return new Vector2(Math.Max(contentSize.X, DefaultSize.X), contentSize.Y);
 
                 var labelSize = label.PreferredSize;
                 return new Vector2(Math.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);
@@ -277,11 +276,11 @@ namespace BrewLib.UserInterface
             if (hasFocus)
             {
                 if (cursorPosition != selectionStart) content.ForTextBounds(SelectionLeft, SelectionRight, selectionBounds =>
-                    cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * 0.2f));
+                    cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
 
                 var bounds = content.GetCharacterBounds(cursorPosition);
-                var position = new Vector2(bounds.Left, bounds.Top + bounds.Height * 0.2f);
-                var scale = new Vector2(Manager.PixelSize, bounds.Height * 0.6f);
+                var position = new Vector2(bounds.Left, bounds.Top + bounds.Height * .2f);
+                var scale = new Vector2(Manager.PixelSize, bounds.Height * .6f);
                 cursorLine.Draw(drawContext, Manager.Camera, new Box2(position, position + scale), actualOpacity);
             }
         }

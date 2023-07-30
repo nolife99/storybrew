@@ -127,9 +127,7 @@ namespace BrewLib.Graphics
     }
     public class BlendingEquationState : RenderState, IEquatable<BlendingEquationState>
     {
-        readonly BlendEquationMode colorMode = BlendEquationMode.FuncAdd;
-        readonly BlendEquationMode alphaMode = BlendEquationMode.FuncAdd;
-
+        readonly BlendEquationMode colorMode = BlendEquationMode.FuncAdd, alphaMode = BlendEquationMode.FuncAdd;
         public static BlendingEquationState Default = new BlendingEquationState();
 
         public BlendingEquationState() { }
@@ -173,9 +171,7 @@ namespace BrewLib.Graphics
     public class CullFaceState : RenderState, IEquatable<CullFaceState>
     {
         readonly CullFaceMode? mode;
-
-        public static CullFaceState Default2d = new CullFaceState(null);
-        public static CullFaceState Default3d = new CullFaceState(CullFaceMode.Back);
+        public static CullFaceState Default2d = new CullFaceState(null), Default3d = new CullFaceState(CullFaceMode.Back);
 
         public CullFaceState(CullFaceMode? mode) => this.mode = mode;
 
@@ -190,8 +186,7 @@ namespace BrewLib.Graphics
     }
     public class PointSpriteState : RenderState, IEquatable<PointSpriteState>
     {
-        readonly bool enabled;
-        readonly bool sizeEnabled;
+        readonly bool enabled, sizeEnabled;
 
         public static readonly PointSpriteState Default = new PointSpriteState(false, false);
 

@@ -21,6 +21,7 @@ namespace StorybrewEditor.Storyboarding
 
         EffectStatus status = EffectStatus.Initializing;
         public override EffectStatus Status => status;
+
         string statusMessage = string.Empty;
         public override string StatusMessage => statusMessage;
 
@@ -154,39 +155,36 @@ namespace StorybrewEditor.Storyboarding
         }
 
         void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
-        void changeStatus(EffectStatus status, string message = null, string log = null)
+        void changeStatus(EffectStatus status, string message = null, string log = null) => Program.Schedule(() =>
         {
-            Program.Schedule(() =>
+            var duration = statusStopwatch.ElapsedMilliseconds;
+            if (duration > 0) switch (this.status)
             {
-                var duration = statusStopwatch.ElapsedMilliseconds;
-                if (duration > 0) switch (this.status)
-                {
-                    case EffectStatus.Ready:
-                    case EffectStatus.CompilationFailed:
-                    case EffectStatus.LoadingFailed:
-                    case EffectStatus.ExecutionFailed: break;
-                    default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
-                }
+                case EffectStatus.Ready:
+                case EffectStatus.CompilationFailed:
+                case EffectStatus.LoadingFailed:
+                case EffectStatus.ExecutionFailed: break;
+                default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
+            }
 
-                this.status = status;
-                statusMessage = message ?? "";
+            this.status = status;
+            statusMessage = message ?? "";
 
-                if (!string.IsNullOrWhiteSpace(log))
-                {
-                    if (!string.IsNullOrWhiteSpace(statusMessage)) statusMessage += "\n\n";
-                    statusMessage += $"Log:\n\n{log}";
-                }
-                RaiseChanged();
+            if (!string.IsNullOrWhiteSpace(log))
+            {
+                if (!string.IsNullOrWhiteSpace(statusMessage)) statusMessage += "\n\n";
+                statusMessage += $"Log:\n\n{log}";
+            }
+            RaiseChanged();
 
-                statusStopwatch.Restart();
-            });
-        }
+            statusStopwatch.Restart();
+        });
         string getExecutionFailedMessage(Exception e)
         {
-            if (e is FileNotFoundException)
-                return $"File not found while {status}. Make sure this path is correct:\n{((FileNotFoundException)e).FileName}\n\nDetails:\n{e}";
+            if (e is FileNotFoundException exception)
+                return $"File not found while {status.ToString().ToLowerInvariant()}. Make sure this path is correct:\n{exception.FileName}\n\nDetails:\n{e}";
 
-            return $"Unexpected error during {status}:\n{e}";
+            return $"Unexpected error during {status.ToString().ToLowerInvariant()}:\n{e}";
         }
 
         #region IDisposable Support
