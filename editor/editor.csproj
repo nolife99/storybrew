@@ -100,7 +100,6 @@
   </ItemGroup>
 
   <ItemGroup>
-  	<PackageReference Include="Damnae.Tiny" Version="1.1.0" />
   	<PackageReference Include="ManagedBass" Version="3.1.1" />
 	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
   	<PackageReference Include="OpenTK" Version="3.3.3" />
@@ -109,6 +108,7 @@
   <ItemGroup>
   	<ProjectReference Include="..\brewlib\brewlib.csproj" />
   	<ProjectReference Include="..\common\common.csproj" />
+	<ProjectReference Include="..\tiny\tiny.csproj" />
   </ItemGroup>
   <ItemGroup>
   	<Reference Include="System.Runtime.Remoting" />

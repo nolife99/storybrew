@@ -91,7 +91,7 @@ namespace BrewLib.Graphics.RenderTargets
             Texture = new Texture2d(textureId, Width, Height, "rendertexture");
 
             DrawState.BindPrimaryTexture(textureId);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, pixelInternalFormat, Width, Height, 0, pixelFormat, pixelType, IntPtr.Zero);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, pixelInternalFormat, Width, Height, 0, pixelFormat, pixelType, default);
             DrawState.CheckError("creating a render texture's texture");
 
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);

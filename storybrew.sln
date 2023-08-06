@@ -4,12 +4,23 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.0.31808.319
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "common", "common\common.csproj", "{F0EDCCEC-4B64-4CE8-801F-1377E3384DC4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC} = {1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "scripts", "scripts\scripts.csproj", "{1C15241D-4AA0-4ABE-923A-E1FDFE5B8FE5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "editor", "editor\editor.csproj", "{FF59AEEA-C133-4BF8-8A0B-620A3C99022B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC} = {1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "brewlib", "brewlib\brewlib.csproj", "{A4F7CC21-B769-424B-AB59-89E93D781762}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC} = {1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "tiny", "tiny\tiny.csproj", "{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -90,6 +101,24 @@ Global
 		{A4F7CC21-B769-424B-AB59-89E93D781762}.Release|x64.Build.0 = Release|Any CPU
 		{A4F7CC21-B769-424B-AB59-89E93D781762}.Release|x86.ActiveCfg = Release|x86
 		{A4F7CC21-B769-424B-AB59-89E93D781762}.Release|x86.Build.0 = Release|x86
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Build|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Build|Any CPU.Build.0 = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Build|x64.ActiveCfg = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Build|x64.Build.0 = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Build|x86.ActiveCfg = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Build|x86.Build.0 = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Debug|x64.Build.0 = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Debug|x86.Build.0 = Debug|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Release|x64.ActiveCfg = Release|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Release|x64.Build.0 = Release|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Release|x86.ActiveCfg = Release|Any CPU
+		{1FB6409E-2CB2-4794-99CB-290AD1FB6EBC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -51,21 +51,19 @@ namespace BrewLib.Util
             {
                 handles.Add(hWnd);
                 return true;
-            }, IntPtr.Zero);
+            }, default);
 
             return handles;
         }
         public static IntPtr FindProcessWindow(string title)
         {
-            foreach (var hWnd in EnumerateProcessWindowHandles(Process.GetCurrentProcess())) if (GetWindowText(hWnd) == title)
-                return hWnd;
-
-            return IntPtr.Zero;
+            foreach (var hWnd in EnumerateProcessWindowHandles(Process.GetCurrentProcess())) if (GetWindowText(hWnd) == title) return hWnd;
+            return default;
         }
         public static IntPtr GetWindowHandle(this GameWindow window)
         {
             var handle = FindProcessWindow(window.Title);
-            if (handle != IntPtr.Zero) return handle;
+            if (handle != default) return handle;
 
             return window.WindowInfo.Handle;
         }

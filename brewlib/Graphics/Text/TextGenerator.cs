@@ -43,7 +43,7 @@ namespace BrewLib.Graphics.Text
                 default: verticalAlignment = StringAlignment.Center; break;
             }
 
-            using (var graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero))
+            using (var graphics = System.Drawing.Graphics.FromHwnd(default))
             using (var stringFormat = new StringFormat(StringFormat.GenericTypographic))
             {
                 graphics.TextRenderingHint = TextRenderingHint.AntiAlias;

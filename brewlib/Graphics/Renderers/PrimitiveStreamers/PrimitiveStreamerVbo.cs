@@ -37,7 +37,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         {
             indexBufferId = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(indexes.Length * sizeof(ushort)), indexes, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, new IntPtr(indexes.Length * sizeof(ushort)), indexes, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
         }
         public void Dispose()
@@ -103,7 +103,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             Debug.Assert(primitiveCount <= primitives.Length);
             Debug.Assert(drawCount % primitiveCount == 0);
 
-            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(primitiveCount * primitiveSize), primitives, BufferUsageHint.StreamDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(primitiveCount * primitiveSize), primitives, BufferUsageHint.StreamDraw);
             ++DiscardedBufferCount;
 
             if (indexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);

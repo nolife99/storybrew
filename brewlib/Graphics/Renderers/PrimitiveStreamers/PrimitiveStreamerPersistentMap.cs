@@ -21,10 +21,10 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-            GL.BufferStorage(BufferTarget.ArrayBuffer, (IntPtr)vertexBufferSize, IntPtr.Zero,
+            GL.BufferStorage(BufferTarget.ArrayBuffer, new IntPtr(vertexBufferSize), default,
                 BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
 
-            bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, IntPtr.Zero, (IntPtr)vertexBufferSize,
+            bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, default, new IntPtr(vertexBufferSize),
                 BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
 
             DrawState.CheckError("mapping vertex buffer", bufferPointer == null);

@@ -92,7 +92,7 @@ namespace BrewLib.Graphics
         class SyncRange : IDisposable
         {
             public int Index, Length;
-            public IntPtr Fence = IntPtr.Zero;
+            public IntPtr Fence;
             bool expired;
 
             public SyncRange(int index, int length)
@@ -104,7 +104,7 @@ namespace BrewLib.Graphics
 
             public bool Wait(bool canBlock = true)
             {
-                if (expired || Fence == IntPtr.Zero) return false;
+                if (expired || Fence == default) return false;
 
                 var blocked = false;
                 var waitSyncFlags = ClientWaitSyncFlags.None;
@@ -142,7 +142,7 @@ namespace BrewLib.Graphics
                 if (!disposedValue)
                 {
                     GL.DeleteSync(Fence);
-                    Fence = IntPtr.Zero;
+                    Fence = default;
                     disposedValue = true;
                 }
             }

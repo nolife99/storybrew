@@ -186,8 +186,7 @@ namespace BrewLib.Util
             try
             {
                 for (var y = 0; y < destDat.Height; ++y) Native.CopyMemory(
-                    srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixByte), destDat.Scan0 + y * destDat.Stride,
-                    len);
+                    srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixByte), destDat.Scan0 + y * destDat.Stride, len);
             }
             finally
             {
@@ -271,7 +270,7 @@ namespace BrewLib.Util
             }
             public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
             {
-                var data = bitmap.LockBits(new Rectangle(default, Bitmap.Size), ImageLockMode.ReadOnly, Bitmap.PixelFormat);
+                var data = bitmap.LockBits(new Rectangle(default, Bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
                 try
                 {
                     Marshal.Copy(data.Scan0, Data, 0, Data.Length);

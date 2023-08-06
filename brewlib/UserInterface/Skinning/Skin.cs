@@ -2,7 +2,6 @@
 using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Textures;
 using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
 using OpenTK;
 using OpenTK.Graphics;
 using System;
@@ -353,15 +352,15 @@ namespace BrewLib.UserInterface.Skinning
                 }
                 throw new InvalidDataException($"Incorrect color format: {data}");
             },
-            [typeof(FourSide)] = (data, constants, skin) =>
+            [typeof(Util.FourSide)] = (data, constants, skin) =>
             {
                 if (data is TinyArray tinyArray) switch (tinyArray.Count)
                 {
-                    case 1: return new FourSide(resolve<float>(tinyArray[0], constants));
-                    case 2: return new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants));
-                    case 3: return new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants));
+                    case 1: return new Util.FourSide(resolve<float>(tinyArray[0], constants));
+                    case 2: return new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants));
+                    case 3: return new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants));
                     default:
-                    case 4: return new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants));
+                    case 4: return new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants));
                 }
                 throw new InvalidDataException($"Incorrect four side format: {data}");
             }

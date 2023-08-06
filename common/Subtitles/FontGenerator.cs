@@ -303,7 +303,7 @@ namespace StorybrewCommon.Subtitles
             float offsetX = 0, offsetY = 0;
             int baseWidth, baseHeight, width, height;
 
-            using (var graphics = Graphics.FromHwnd(IntPtr.Zero))
+            using (var graphics = Graphics.FromHwnd(default))
             using (var stringFormat = new StringFormat(StringFormat.GenericTypographic)) using (var fontCollection = new PrivateFontCollection())
             {
                 graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
