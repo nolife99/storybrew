@@ -10,12 +10,12 @@ namespace BrewLib.Util
     {
         public static PinnedBitmap Blur(Bitmap source, int radius, double power) => Convolute(source, CalculateGaussianKernel(radius, power));
 
-        public static void LosslessCompress(string path, PngCompressor compressor = null) 
+        public static void LosslessCompress(string path, PngCompressor compressor = null)
             => (compressor ?? new PngCompressor()).LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level4 });
 
-        public static void Compress(string path, PngCompressor compressor = null) 
-            => (compressor ?? new PngCompressor()).Compress(path, new LossyInputSettings 
-        { 
+        public static void Compress(string path, PngCompressor compressor = null)
+            => (compressor ?? new PngCompressor()).Compress(path, new LossyInputSettings
+        {
             Speed = 1,
             MinQuality = 75,
             MaxQuality = 100
@@ -29,10 +29,10 @@ namespace BrewLib.Util
             {
                 var color = result.Data[index];
 
-                var alpha = (color >> 24) & 0x000000FF;
-                var red = (color >> 16) & 0x000000FF;
-                var green = (color >> 8) & 0x000000FF;
-                var blue = color & 0x000000FF;
+                var alpha = (color >> 24) & 0xFF;
+                var red = (color >> 16) & 0xFF;
+                var green = (color >> 8) & 0xFF;
+                var blue = color & 0xFF;
 
                 var a = alpha / 255f;
                 red = (int)(red * a);
@@ -99,10 +99,10 @@ namespace BrewLib.Util
 
                             var col = pinnedSource.Data[pixelY * width + pixelX];
                             var k = kernel[kernelY + halfKernelWidth, kernelX + halfKernelHeight];
-                            a += ((col >> 24) & 0x000000FF) * k;
-                            r += ((col >> 16) & 0x000000FF) * k;
-                            g += ((col >> 8) & 0x000000FF) * k;
-                            b += ((col) & 0x000000FF) * k;
+                            a += ((col >> 24) & 0xFF) * k;
+                            r += ((col >> 16) & 0xFF) * k;
+                            g += ((col >> 8) & 0xFF) * k;
+                            b += ((col) & 0xFF) * k;
                         }
                     }
 
@@ -156,7 +156,7 @@ namespace BrewLib.Util
 
                             var col = pinnedSource.Data[pixelY * width + pixelX];
                             var k = kernel[kernelY + halfKernelWidth, kernelX + halfKernelHeight];
-                            a += ((col >> 24) & 0x000000FF) * k;
+                            a += ((col >> 24) & 0xFF) * k;
                         }
                     }
 
@@ -172,7 +172,7 @@ namespace BrewLib.Util
         {
             if (src is null) throw new ArgumentNullException(nameof(src));
             if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
-                throw new ArgumentOutOfRangeException(nameof(sect));
+                throw new ArgumentOutOfRangeException(nameof(sect) + " has invalid dimensions.");
 
             if (sect.Size == src.PhysicalDimension && sect.Location == default) return src;
 
@@ -180,13 +180,13 @@ namespace BrewLib.Util
             var srcDat = src.LockBits(new Rectangle(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
             var destDat = dest.LockBits(new Rectangle(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
 
-            var pixByte = (((int)src.PixelFormat >> 8) & 0xFF) * .125f;
-            var len = (uint)(dest.Width * pixByte);
+            var pixBit = Image.GetPixelFormatSize(src.PixelFormat) * .125f;
+            var len = (uint)(dest.Width * pixBit);
 
             try
             {
                 for (var y = 0; y < destDat.Height; ++y) Native.CopyMemory(
-                    srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixByte), destDat.Scan0 + y * destDat.Stride, len);
+                    srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixBit), destDat.Scan0 + y * destDat.Stride, len);
             }
             finally
             {
@@ -229,7 +229,7 @@ namespace BrewLib.Util
 
             var data = source.LockBits(new Rectangle(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             int xMin = data.Width, yMin = data.Height, xMax = -1, yMax = -1;
-            
+
             try
             {
                 unsafe
@@ -266,11 +266,11 @@ namespace BrewLib.Util
             {
                 Data = new int[width * height];
                 handle = GCHandle.Alloc(Data, GCHandleType.Pinned);
-                Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, handle.AddrOfPinnedObject());
+                Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, Marshal.UnsafeAddrOfPinnedArrayElement(Data, 0));
             }
             public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
             {
-                var data = bitmap.LockBits(new Rectangle(default, Bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+                var data = bitmap.LockBits(new Rectangle(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
                 try
                 {
                     Marshal.Copy(data.Scan0, Data, 0, Data.Length);

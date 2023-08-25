@@ -22,7 +22,7 @@ namespace StorybrewEditor
 {
     public static class Program
     {
-        public const string Name = "storybrew editor", Repository = "nolife99/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
+        public const string Name = "storybrew editor", Repository = "Damnae/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
         public readonly static Version Version = Assembly.GetExecutingAssembly().GetName().Version;
         public readonly static string FullName = $"{Name} {Version} ({Repository})";
 
@@ -87,7 +87,7 @@ namespace StorybrewEditor
             using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager(window))
             using (var editor = new Editor(window))
             {
-                Trace.WriteLine($"{getOSVersion()} / {window.WindowInfo}");
+                Trace.WriteLine($"{Environment.OSVersion} / {window.WindowInfo}");
                 Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
                 window.Icon = new Icon(typeof(Program), "icon.ico");
@@ -102,16 +102,6 @@ namespace StorybrewEditor
 
                 Settings.Save();
             }
-        }
-        static string getOSVersion()
-        {
-            try
-            {
-                using (var registryKey = Registry.LocalMachine.OpenSubKey("Software\\Microsoft\\Windows NT\\CurrentVersion"))
-                    return (string)registryKey.GetValue("ProductName");
-            }
-            catch { }
-            return Environment.OSVersion.ToString();
         }
         static DisplayDevice findDisplayDevice()
         {
@@ -138,8 +128,7 @@ namespace StorybrewEditor
         }
         static GameWindow createWindow(DisplayDevice displayDevice)
         {
-            var graphicsMode = new GraphicsMode(new ColorFormat(32), 24, 8, 0, ColorFormat.Empty, 2, false);
-            var contextFlags = GraphicsContextFlags.ForwardCompatible;
+            var graphicsMode = new GraphicsMode(32, 24, 8, 0, ColorFormat.Empty, 2, false);
             var primaryScreenArea = Screen.PrimaryScreen.WorkingArea;
 
             int windowWidth = 1366, windowHeight = 768;
@@ -149,12 +138,12 @@ namespace StorybrewEditor
                 windowHeight = 600;
                 if (windowWidth >= primaryScreenArea.Width) windowWidth = 800;
             }
-            var window = new GameWindow(windowWidth, windowHeight, graphicsMode, Name, GameWindowFlags.Default, displayDevice, 2, 0, contextFlags);
+            var window = new GameWindow(windowWidth, windowHeight, graphicsMode, Name, GameWindowFlags.Default, displayDevice, 2, 0, GraphicsContextFlags.ForwardCompatible);
             Trace.WriteLine($"Window dpi scale: {window.Height / (float)windowHeight}");
 
             window.Location = new Point(
-                (int)(primaryScreenArea.Left + (primaryScreenArea.Width - window.Size.Width) * .5),
-                (int)(primaryScreenArea.Top + (primaryScreenArea.Height - window.Size.Height) * .5)
+                (int)(primaryScreenArea.Left + (primaryScreenArea.Width - window.Size.Width) * .5f),
+                (int)(primaryScreenArea.Top + (primaryScreenArea.Height - window.Size.Height) * .5f)
             );
             if (window.Location.X < 0 || window.Location.Y < 0)
             {
@@ -167,7 +156,7 @@ namespace StorybrewEditor
         }
         static AudioManager createAudioManager(GameWindow window)
         {
-            var audioManager = new AudioManager(window.GetWindowHandle())
+            var audioManager = new AudioManager(window.WindowInfo.Handle)
             {
                 Volume = Settings.Volume
             };
@@ -203,7 +192,7 @@ namespace StorybrewEditor
 
                 if (!window.Exists || window.IsExiting) return;
 
-                window.VSync = focused ? VSyncMode.Off : VSyncMode.On;
+                window.VSync = VSyncMode.On;
                 if (window.WindowState != WindowState.Minimized)
                 {
                     var tween = Math.Min((currentTime - fixedRateTime) / fixedRateUpdateDuration, 1);
@@ -314,7 +303,7 @@ namespace StorybrewEditor
 
             foreach (var action in actionsToRun) try
             {
-                action.Invoke();
+                action();
             }
             catch (Exception e)
             {

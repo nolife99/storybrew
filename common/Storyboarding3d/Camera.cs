@@ -15,7 +15,7 @@ namespace StorybrewCommon.Storyboarding3d
         public float DistanceForVerticalFov(double fov) => (float)(Resolution.Y * .5 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) * .5));
         public abstract CameraState StateAt(double time);
     }
-    public readonly struct CameraState
+    public class CameraState
     {
         public readonly Matrix4x4 ViewProjection;
         public readonly double AspectRatio, FocusDistance, ResolutionScale, NearClip, NearFade, FarFade, FarClip;

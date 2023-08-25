@@ -104,13 +104,13 @@ namespace BrewLib.Graphics.Text
             else recentlyUsedFonts.AddFirst(identifier);
 
             if (recentlyUsedFonts.Count > 64) while (recentlyUsedFonts.Count > 32)
-                {
-                    var lastFontIdentifier = recentlyUsedFonts.Last.Value;
-                    recentlyUsedFonts.RemoveLast();
+            {
+                var lastFontIdentifier = recentlyUsedFonts.Last.Value;
+                recentlyUsedFonts.RemoveLast();
 
-                    fonts[lastFontIdentifier].Dispose();
-                    fonts.Remove(lastFontIdentifier);
-                }
+                fonts[lastFontIdentifier].Dispose();
+                fonts.Remove(lastFontIdentifier);
+            }
 
             if (!fontFamilies.TryGetValue(name, out FontFamily fontFamily))
             {
@@ -123,7 +123,7 @@ namespace BrewLib.Graphics.Text
                         if (!fontCollections.TryGetValue(name, out PrivateFontCollection fontCollection))
                             fontCollections.Add(name, fontCollection = new PrivateFontCollection());
 
-                        fontCollection.AddMemoryFont(pinnedArray.AddrOfPinnedObject(), bytes.Length);
+                        fontCollection.AddMemoryFont(Marshal.UnsafeAddrOfPinnedArrayElement(bytes, 0), bytes.Length);
 
                         if (fontCollection.Families.Length == 1)
                         {
