@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
@@ -443,13 +444,13 @@ namespace StorybrewEditor.Storyboarding
         void saveBinary(string path)
         {
             if (Disposed) throw new ObjectDisposedException(nameof(Project));
-            using (var stream = File.Create(path)) using (var w = new BinaryWriter(stream, Encoding))
+            using (var file = File.Create(path)) using (var dfl = new DeflateStream(file, CompressionLevel.Optimal)) using (var w = new BinaryWriter(dfl, Encoding))
             {
                 w.Write(Version);
 
-                w.WriteEncodedString(MapsetPath);
+                w.Write(MapsetPath);
                 w.Write(MainBeatmap.Id);
-                w.WriteEncodedString(MainBeatmap.Name);
+                w.Write(MainBeatmap.Name);
 
                 w.Write(OwnsOsb);
 
@@ -457,21 +458,21 @@ namespace StorybrewEditor.Storyboarding
                 effects.ForEach(effect =>
                 {
                     w.Write(effect.Guid.ToByteArray());
-                    w.WriteEncodedString(effect.BaseName);
+                    w.Write(effect.BaseName);
                     w.Write(effect.Multithreaded);
-                    w.WriteEncodedString(effect.Name);
+                    w.Write(effect.Name);
 
                     w.Write(effect.Config.FieldCount);
                     foreach (var field in effect.Config.SortedFields)
                     {
-                        w.WriteEncodedString(field.Name);
-                        w.WriteEncodedString(field.DisplayName);
+                        w.Write(field.Name);
+                        w.Write(field.DisplayName);
                         ObjectSerializer.Write(w, field.Value);
 
                         w.Write(field.AllowedValues?.Length ?? 0);
                         if (field.AllowedValues != null) for (var i = 0; i < field.AllowedValues.Length; ++i)
                         {
-                            w.WriteEncodedString(field.AllowedValues[i].Name);
+                            w.Write(field.AllowedValues[i].Name);
                             ObjectSerializer.Write(w, field.AllowedValues[i].Value);
                         }
                     }
@@ -481,7 +482,7 @@ namespace StorybrewEditor.Storyboarding
                 foreach (var layer in LayerManager.Layers)
                 {
                     w.Write(layer.Guid.ToByteArray());
-                    w.WriteEncodedString(layer.Name);
+                    w.Write(layer.Name);
                     w.Write(effects.IndexOf(layer.Effect));
                     w.Write(layer.DiffSpecific);
                     w.Write((int)layer.OsbLayer);
@@ -489,21 +490,21 @@ namespace StorybrewEditor.Storyboarding
                 }
 
                 w.Write(importedAssemblies.Count);
-                importedAssemblies.ForEach(assembly => w.WriteEncodedString(assembly));
+                importedAssemblies.ForEach(assembly => w.Write(assembly));
 
                 Changed = false;
             }
         }
         void loadBinary(string path)
         {
-            using (var file = MemoryMappedFile.CreateFromFile(path, FileMode.Open)) 
-            using (var stream = file.CreateViewStream(0, 0, MemoryMappedFileAccess.Read)) using (var r = new BinaryReader(stream, Encoding))
+            using (var ram = MemoryMappedFile.CreateFromFile(path, FileMode.Open)) 
+            using (var file = ram.CreateViewStream()) using (var dfl = new DeflateStream(file, CompressionMode.Decompress)) using (var r = new BinaryReader(dfl, Encoding))
             {
                 var version = r.ReadInt32();
                 if (version > Version) throw new InvalidOperationException("This project was saved with a newer version; you need to update.");
 
-                MapsetPath = r.ReadEncodedString();
-                if (version >= 1) SelectBeatmap(r.ReadInt64(), r.ReadEncodedString());
+                MapsetPath = r.ReadString();
+                if (version >= 1) SelectBeatmap(r.ReadInt64(), r.ReadString());
 
                 OwnsOsb = version < 4 || r.ReadBoolean();
 
@@ -511,17 +512,17 @@ namespace StorybrewEditor.Storyboarding
                 for (var effectIndex = 0; effectIndex < effectCount; ++effectIndex)
                 {
                     var guid = version > 5 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
-                    var effect = AddScriptedEffect(r.ReadEncodedString(), r.ReadBoolean());
+                    var effect = AddScriptedEffect(r.ReadString(), r.ReadBoolean());
                     effect.Guid = guid;
-                    effect.Name = r.ReadEncodedString();
+                    effect.Name = r.ReadString();
 
                     if (version > 0)
                     {
                         var fieldCount = r.ReadInt32();
                         for (var fieldIndex = 0; fieldIndex < fieldCount; ++fieldIndex)
                         {
-                            var fieldName = r.ReadEncodedString();
-                            var fieldDisplayName = r.ReadEncodedString();
+                            var fieldName = r.ReadString();
+                            var fieldDisplayName = r.ReadString();
                             var fieldValue = ObjectSerializer.Read(r);
 
                             var allowedValueCount = r.ReadInt32();
@@ -529,7 +530,7 @@ namespace StorybrewEditor.Storyboarding
                             for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
                                 allowedValues[allowedValueIndex] = new NamedValue
                                 {
-                                    Name = r.ReadEncodedString(),
+                                    Name = r.ReadString(),
                                     Value = ObjectSerializer.Read(r)
                                 };
 
@@ -542,7 +543,7 @@ namespace StorybrewEditor.Storyboarding
                 for (var layerIndex = 0; layerIndex < layerCount; ++layerIndex)
                 {
                     var guid = version > 5 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
-                    var name = r.ReadEncodedString();
+                    var name = r.ReadString();
 
                     var effect = effects[r.ReadInt32()];
                     effect.AddPlaceholder(new EditorStoryboardLayer(name, effect)
@@ -558,7 +559,7 @@ namespace StorybrewEditor.Storyboarding
                 {
                     var assemblyCount = r.ReadInt32();
                     var importedAssemblies = new string[assemblyCount];
-                    for (var i = 0; i < assemblyCount; ++i) importedAssemblies[i] = r.ReadEncodedString();
+                    for (var i = 0; i < assemblyCount; ++i) importedAssemblies[i] = r.ReadString();
 
                     ImportedAssemblies = importedAssemblies;
                 }

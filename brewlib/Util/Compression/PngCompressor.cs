@@ -1,6 +1,7 @@
 ﻿using BrewLib.Data;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -77,7 +78,8 @@ namespace BrewLib.Util.Compression
                 {
                     if (losslessInputSettings != null)
                     {
-                        stringBuilder.AppendFormat(" -o {0} ", (int)losslessInputSettings.OptimizationLevel);
+                        var level = (byte)losslessInputSettings.OptimizationLevel;
+                        stringBuilder.AppendFormat(" -o {0} ", level == 7 ? "max" : level.ToString(CultureInfo.InvariantCulture));
                         stringBuilder.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
                     }
                     stringBuilder.AppendFormat("−s -a {0}", input);

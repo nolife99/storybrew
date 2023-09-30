@@ -6,9 +6,6 @@ namespace BrewLib.Util
 {
     public static class ColorExtensions
     {
-        public static Color4 Multiply(this Color4 lhs, Color4 rhs)
-            => new Color4(lhs.R * rhs.R, lhs.G * rhs.G, lhs.B * rhs.B, lhs.A * rhs.A);
-
         public static int ToRgba(this Color4 color)
             => ((byte)(color.A * 255) << 24) | ((byte)(color.B * 255) << 16) | ((byte)(color.G * 255) << 8) | (byte)(color.R * 255);
 
@@ -18,15 +15,6 @@ namespace BrewLib.Util
             (byte)((color >> 16) & 0xFF),
             (byte)(color >> 24));
 
-        public static Color4 Lerp(this Color4 color, Color4 otherColor, float blend)
-        {
-            var invBlend = 1 - blend;
-            return new Color4(
-                color.R * invBlend + otherColor.R * blend,
-                color.G * invBlend + otherColor.G * blend,
-                color.B * invBlend + otherColor.B * blend,
-                color.A * invBlend + otherColor.A * blend);
-        }
         public static Color4 LerpColor(this Color4 color, Color4 otherColor, float blend)
         {
             var invBlend = 1 - blend;
@@ -58,14 +46,6 @@ namespace BrewLib.Util
         public static Color4 WithOpacity(this Color4 color, float opacity)
             => new Color4(color.R, color.G, color.B, color.A * opacity);
 
-        public static Color4 Premultiply(this Color4 color) => Multiply(color, color.A);
-        public static Color4 Multiply(this Color4 color, float factor)
-            => new Color4(color.R * factor, color.G * factor, color.B * factor, color.A);
-
-        public static Color4 ToLinear(this Color4 color, float power = 2.2f)
-            => new Color4((float)Math.Pow(color.R, power), (float)Math.Pow(color.G, power), (float)Math.Pow(color.B, power), color.A);
-
-        public static Color4 ToSrgb(this Color4 color, float power = 2.2f)
-            => new Color4((float)Math.Pow(color.R, 1 / power), (float)Math.Pow(color.G, 1 / power), (float)Math.Pow(color.B, 1 / power), color.A);
+        public static Color4 Premultiply(this Color4 color) => new Color4(color.R * color.A, color.G * color.A, color.B * color.A, color.A);
     }
 }

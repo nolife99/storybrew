@@ -130,7 +130,7 @@ namespace StorybrewCommon.Util
 
         public static object Read(BinaryReader reader)
         {
-            var typeName = reader.ReadEncodedString();
+            var typeName = reader.ReadString();
             if (string.IsNullOrEmpty(typeName)) return null;
             
             var serializer = GetSerializer(typeName);
@@ -151,7 +151,7 @@ namespace StorybrewCommon.Util
             var serializer = GetSerializer(typeName);
             if (serializer == null) throw new NotSupportedException($"Cannot write objects of type {typeName}");
 
-            writer.WriteEncodedString(typeName);
+            writer.Write(typeName);
             serializer.WriteValue(writer, value);
         }
         public static object FromString(string typeName, string value)

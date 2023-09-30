@@ -11,7 +11,7 @@ namespace BrewLib.Util
         public static PinnedBitmap Blur(Bitmap source, int radius, double power) => Convolute(source, CalculateGaussianKernel(radius, power));
 
         public static void LosslessCompress(string path, PngCompressor compressor = null)
-            => (compressor ?? new PngCompressor()).LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level4 });
+            => (compressor ?? new PngCompressor()).LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level7 });
 
         public static void Compress(string path, PngCompressor compressor = null)
             => (compressor ?? new PngCompressor()).Compress(path, new LossyInputSettings

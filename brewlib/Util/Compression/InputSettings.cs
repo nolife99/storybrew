@@ -10,7 +10,7 @@
         public string CustomInputArgs;
         public int MinQuality, MaxQuality, Speed;
     }
-    public enum OptimizationLevel
+    public enum OptimizationLevel : byte
     {
         Level0 = 0, 
         Level1 = 1,
