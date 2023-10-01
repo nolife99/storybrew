@@ -60,7 +60,7 @@ namespace StorybrewEditor.Util
                     {
                         if (e.Error == null)
                         {
-                            var response = Encoding.UTF8.GetString(e.Result);
+                            var response = Encoding.ASCII.GetString(e.Result);
                             Program.Schedule(() => action(response, null));
                         }
                         else Program.Schedule(() => action(null, e.Error));
@@ -82,7 +82,7 @@ namespace StorybrewEditor.Util
                     Debug.Print($"Post {url}");
                     webClient.Headers.Add("user-agent", Program.Name);
                     var result = webClient.UploadValues(new Uri(url), "POST", data);
-                    var response = Encoding.UTF8.GetString(result);
+                    var response = Encoding.ASCII.GetString(result);
                     action(response, null);
                 }
             }

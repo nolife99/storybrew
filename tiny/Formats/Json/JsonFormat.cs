@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 
 namespace Tiny.Formats.Json
 {
@@ -7,7 +6,7 @@ namespace Tiny.Formats.Json
     {
         public const string BooleanTrue = "true", BooleanFalse = "false";
 
-        static readonly List<RegexTokenizer<JsonTokenType>.Definition> definitions = new List<RegexTokenizer<JsonTokenType>.Definition>
+        static readonly RegexTokenizer<JsonTokenType>.Definition[] definitions =
         {
             new RegexTokenizer<JsonTokenType>.Definition(JsonTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
             new RegexTokenizer<JsonTokenType>.Definition(JsonTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),

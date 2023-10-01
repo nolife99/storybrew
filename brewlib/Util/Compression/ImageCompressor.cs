@@ -34,9 +34,8 @@ namespace BrewLib.Util.Compression
 
         protected void ensureStop()
         {
-            if (process == null) return;
-            if (process.HasExited) return;
-            process.Kill();
+            if (process is null) return;
+            process.Close();
             process = null;
         }
 

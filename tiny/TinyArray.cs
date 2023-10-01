@@ -56,17 +56,11 @@ namespace Tiny
             return false;
         }
 
-        public void CopyTo(TinyToken[] array, int arrayIndex)
-        {
-            if (array == null) throw new ArgumentNullException(nameof(array));
-            if (arrayIndex < 0 || arrayIndex + count > array.Length) throw new ArgumentOutOfRangeException(nameof(arrayIndex));
-
-            Array.Copy(tokens, 0, array, arrayIndex, count);
-        }
+        public void CopyTo(TinyToken[] array, int arrayIndex) => Array.Copy(tokens, 0, array, arrayIndex, count);
 
         public int IndexOf(TinyToken item)
         {
-            for (var i = 0; i < count; i++) if (tokens[i] == item) return i;
+            for (var i = 0; i < count; ++i) if (tokens[i] == item) return i;
             return -1;
         }
 
@@ -100,12 +94,11 @@ namespace Tiny
         {
             for (var i = 0; i < count; ++i) yield return tokens[i];
         }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => tokens.GetEnumerator();
 
         public override T Value<T>(object key)
         {
-            if (key == null) return (T)(object)this;
+            if (key is null) return (T)(object)this;
             if (key is int index) return this[index].Value<T>();
 
             throw new ArgumentException($"Key must be an integer, was {key}", "key");

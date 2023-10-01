@@ -18,8 +18,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            using (var stream = OpenProjectFile(Path)) using (var reader = new StreamReader(stream, Encoding.ASCII))
-            reader.ParseSections(section =>
+            using (var stream = OpenProjectFile(Path)) using (var reader = new StreamReader(stream, Encoding.ASCII)) reader.ParseSections(section =>
             {
                 switch (section)
                 {
@@ -78,22 +77,19 @@ namespace StorybrewScripts
                         break;
                     }
                     case "Sample":
-                    {
                         GetLayer(v[2]).CreateSample(removeQuotes(v[3]), int.Parse(v[1], CultureInfo.InvariantCulture), float.Parse(v[4], CultureInfo.InvariantCulture));
                         break;
-                    }
+
                     case "T":
-                    {
                         sprite.StartTriggerGroup(v[1], int.Parse(v[2], CultureInfo.InvariantCulture), int.Parse(v[3], CultureInfo.InvariantCulture), v.Length > 4 ? int.Parse(v[4], CultureInfo.InvariantCulture) : 0);
                         loopable = true;
                         break;
-                    }
+
                     case "L":
-                    {
                         sprite.StartLoopGroup(int.Parse(v[1], CultureInfo.InvariantCulture), int.Parse(v[2], CultureInfo.InvariantCulture));
                         loopable = true;
                         break;
-                    }
+
                     default:
                     {
                         if (string.IsNullOrEmpty(v[3])) v[3] = v[2];
@@ -192,8 +188,8 @@ namespace StorybrewScripts
             }
         }
 
-        string removeQuotes(string path) =>
-            path.StartsWith("\"", StringComparison.InvariantCulture) && path.EndsWith("\"", StringComparison.InvariantCulture) ? path.Substring(1, path.Length - 2) : path;
+        string removeQuotes(string path) => path.StartsWith("\"", StringComparison.InvariantCulture) && path.EndsWith("\"", StringComparison.InvariantCulture) ? 
+            path.Substring(1, path.Length - 2) : path;
 
         string applyVariables(string line)
         {

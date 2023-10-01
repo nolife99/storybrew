@@ -90,13 +90,16 @@ namespace Tiny
             using (var stream = File.Create(path)) Write(stream, GetFormat(path));
         }
 
+        public static YamlFormat Yaml = new YamlFormat();
+        public static JsonFormat Json = new JsonFormat();
+
         public static Format GetFormat(string path)
         {
             var extension = Path.GetExtension(path);
             switch (Path.GetExtension(path))
             {
-                case ".yml": case ".yaml": return new YamlFormat();
-                case ".json": return new JsonFormat();
+                case ".yml": case ".yaml": return Yaml;
+                case ".json": return Json;
             }
             throw new NotImplementedException($"No format matches extension '{extension}'.");
         }

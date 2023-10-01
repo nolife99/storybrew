@@ -52,7 +52,7 @@ namespace Tiny
         }
 
         public IEnumerator<KeyValuePair<string, TinyToken>> GetEnumerator() => items.GetEnumerator();
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => items.GetEnumerator();
 
         public override T Value<T>(object key)
         {

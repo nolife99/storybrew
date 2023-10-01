@@ -7,10 +7,10 @@ namespace Tiny.Formats
 {
     public class RegexTokenizer<TokenType> : Tokenizer<TokenType> where TokenType : struct
     {
-        readonly List<Definition> definitions;
+        readonly IEnumerable<Definition> definitions;
         readonly TokenType? endLineToken;
 
-        public RegexTokenizer(List<Definition> definitions, TokenType? endLineToken)
+        public RegexTokenizer(IEnumerable<Definition> definitions, TokenType? endLineToken)
         {
             this.definitions = definitions;
             this.endLineToken = endLineToken;

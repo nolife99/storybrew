@@ -17,9 +17,9 @@ namespace BrewLib.Util.Compression
         protected override void compress(string path, string compressionType, 
             LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings, InputFormat inputFormat = null)
         {
-            if (!File.Exists(path)) throw new ArgumentException(nameof(path));
+            if (!File.Exists(path)) throw new FileNotFoundException(nameof(path));
             if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat)))
-                throw new InvalidDataException("Input format is required for file without extension");
+                throw new ArgumentException("Input format is required for file without extension");
 
             try
             {
@@ -39,67 +39,63 @@ namespace BrewLib.Util.Compression
                 InitStartInfo(startInfo);
 
                 if (process is null) process = Process.Start(startInfo);
-
-                waitForExit();
                 var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new InvalidProgramException($"An error occured in the process: {error}");
-                process.Close();
-                process = null;
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new ApplicationException($"The image compression closed with code {process.ExitCode}: {error}");
             }
-            catch (Exception e)
+            finally
             {
                 ensureStop();
-                throw new OperationCanceledException("Compression failed", e);
             }
         }
         protected override string appendArgs(string path, string compressionType, 
             LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings)
         {
             var input = string.Format("\"{0}\"", path);
-            var stringBuilder = new StringBuilder();
+            var str = new StringBuilder();
 
             if (is64bit)
             {
                 if (compressionType == "lossy")
                 {
-                    stringBuilder.AppendFormat("{0} -o {0} -f --skip-if-larger --strip", input);
+                    str.AppendFormat("{0} -o {0} -f --skip-if-larger --strip", input);
                     if (lossyInputSettings != null)
                     {
                         if (lossyInputSettings.MinQuality >= 0 && lossyInputSettings.MaxQuality > 0 && lossyInputSettings.MaxQuality <= 100)
-                            stringBuilder.AppendFormat(" --quality {0}-{1} ", lossyInputSettings.MinQuality, lossyInputSettings.MaxQuality);
+                            str.AppendFormat(" --quality {0}-{1} ", lossyInputSettings.MinQuality, lossyInputSettings.MaxQuality);
 
                         if (lossyInputSettings.Speed > 0 && lossyInputSettings.Speed <= 10)
-                            stringBuilder.AppendFormat(" -s{0} ", lossyInputSettings.Speed);
+                            str.AppendFormat(" -s{0} ", lossyInputSettings.Speed);
 
-                        stringBuilder.AppendFormat(" {0} ", lossyInputSettings.CustomInputArgs);
+                        str.AppendFormat(" {0} ", lossyInputSettings.CustomInputArgs);
                     }
                 }
                 else
                 {
                     if (losslessInputSettings != null)
                     {
-                        var level = (byte)losslessInputSettings.OptimizationLevel;
-                        stringBuilder.AppendFormat(" -o {0} ", level == 7 ? "max" : level.ToString(CultureInfo.InvariantCulture));
-                        stringBuilder.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
+                        var lvl = (byte)losslessInputSettings.OptimizationLevel;
+                        str.AppendFormat(" -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
+                        str.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
                     }
-                    stringBuilder.AppendFormat("−s -a {0}", input);
+                    str.AppendFormat("−s -a {0}", input);
                 }
             }
             else
             {
                 if (losslessInputSettings != null)
                 {
-                    stringBuilder.AppendFormat(" /o{0} ", (int)losslessInputSettings.OptimizationLevel);
-                    stringBuilder.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
+                    var lvl = (byte)losslessInputSettings.OptimizationLevel;
+                    str.AppendFormat(" /o{0} ", lvl > 4 ? 4 : lvl);
+                    str.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
                 }
-                stringBuilder.AppendFormat("/md remove all /quiet -Z /y /out {0} {0}", input);
+                str.AppendFormat("/md remove all /a1 -Z /y /out {0} {0}", input);
             }
-            return stringBuilder.ToString();
+            return str.ToString();
         }
         protected override void waitForExit()
         {
-            if (process == null) return;
-            if (!process.HasExited && !process.WaitForExit(ExecutionTimeout.HasValue ? (int)ExecutionTimeout.Value.TotalMilliseconds : int.MaxValue))
+            if (process is null) return;
+            if (!process.HasExited && !process.WaitForExit(ExecutionTimeout.HasValue ? (int)ExecutionTimeout.Value.TotalMilliseconds : 0))
             {
                 ensureStop();
                 Trace.WriteLine("Image compression process exceeded execution timeout and was aborted");

@@ -13,35 +13,33 @@ namespace StorybrewCommon.Subtitles.Parsers
         ///<inheritdoc/>
         public SubtitleSet Parse(string path)
         {
-            using (var stream = BrewLib.Util.Misc.WithRetries(() => File.OpenRead(path)))
-                return Parse(stream);
+            using (var stream = BrewLib.Util.Misc.WithRetries(() => File.OpenRead(path))) return Parse(stream);
         }
 
         ///<inheritdoc/>
         public SubtitleSet Parse(Stream stream)
         {
             var lines = new List<SubtitleLine>();
-            using (var reader = new StreamReader(stream, Encoding.UTF8))
-                reader.ParseSections(sectionName =>
+            using (var reader = new StreamReader(stream, Encoding.ASCII)) reader.ParseSections(sectionName =>
+            {
+                switch (sectionName)
                 {
-                    switch (sectionName)
+                    case "Events":
+                        reader.ParseKeyValueSection((key, value) =>
                     {
-                        case "Events":
-                            reader.ParseKeyValueSection((key, value) =>
+                        switch (key)
                         {
-                            switch (key)
-                            {
-                                case "Dialogue":
-                                    var arguments = value.Split(',');
-                                    var startTime = parseTimestamp(arguments[1]);
-                                    var endTime = parseTimestamp(arguments[2]);
-                                    var text = string.Join("\n", string.Join(",", arguments.Skip(9)).Split(new string[] { "\\N" }, StringSplitOptions.None));
-                                    lines.Add(new SubtitleLine(startTime, endTime, text)); break;
-                            }
-                        });
-                            break;
-                    }
-                });
+                            case "Dialogue":
+                                var arguments = value.Split(',');
+                                var startTime = parseTimestamp(arguments[1]);
+                                var endTime = parseTimestamp(arguments[2]);
+                                var text = string.Join("\n", string.Join(",", arguments.Skip(9)).Split(new string[] { "\\N" }, StringSplitOptions.None));
+                                lines.Add(new SubtitleLine(startTime, endTime, text)); break;
+                        }
+                    });
+                        break;
+                }
+            });
             return new SubtitleSet(lines);
         }
 

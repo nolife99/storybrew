@@ -245,13 +245,13 @@ namespace StorybrewCommon.Subtitles
         /// <summary> The format/style of the font texture (for example: bold, italics, etc). </summary>
         public FontStyle FontStyle = FontStyle.Regular;
 
-        ///<summary> <see cref="bool"/> toggle to trim extra transparent space around the texture. Should always be true. </summary>
+        ///<summary> Ttrim extra transparent space around the texture. Should always be <see langword="true"/>. </summary>
         public bool TrimTransparency;
 
-        ///<summary> <see cref="bool"/> toggle to only draw the glow, outline and shadow. </summary>
+        ///<summary> Only draw the glow, outline and shadow. </summary>
         public bool EffectsOnly;
 
-        ///<summary> <see cref="bool"/> toggle to draw a randomly colored background behind the textures. </summary>
+        ///<summary> Draw a randomly colored background behind the textures. </summary>
         public bool Debug;
     }
 
@@ -304,14 +304,14 @@ namespace StorybrewCommon.Subtitles
             int baseWidth, baseHeight, width, height;
 
             using (var graphics = Graphics.FromHwnd(default))
-            using (var stringFormat = new StringFormat(StringFormat.GenericTypographic)) using (var fontCollection = new PrivateFontCollection())
+            using (var format = new StringFormat(StringFormat.GenericTypographic)) using (var fontCollection = new PrivateFontCollection())
             {
                 graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;
                 graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
 
-                stringFormat.Alignment = StringAlignment.Center;
-                stringFormat.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip;
+                format.Alignment = StringAlignment.Center;
+                format.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip;
 
                 FontFamily fontFamily = null;
                 if (File.Exists(fontPath))
@@ -325,7 +325,7 @@ namespace StorybrewCommon.Subtitles
                     new Font(fontFamily, description.FontSize * dpiScale, description.FontStyle) : 
                     new Font(fontPath, description.FontSize * dpiScale, description.FontStyle))
                 {
-                    var measuredSize = graphics.MeasureString(text, font, 0, stringFormat);
+                    var measuredSize = graphics.MeasureString(text, font, 0, format);
                     baseWidth = (int)Math.Ceiling(measuredSize.Width);
                     baseHeight = (int)Math.Ceiling(measuredSize.Height);
 
@@ -341,8 +341,8 @@ namespace StorybrewCommon.Subtitles
 
                     var paddingX = description.Padding.X + effectsWidth * .5f;
                     var paddingY = description.Padding.Y + effectsHeight * .5f;
-                    var textX = paddingX + measuredSize.Width * .5f;
-                    var textY = paddingY;
+                    var x = paddingX + measuredSize.Width * .5f;
+                    var y = paddingY;
 
                     offsetX = -paddingX;
                     offsetY = -paddingY;
@@ -364,15 +364,14 @@ namespace StorybrewCommon.Subtitles
                                 textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
                             }
 
-                            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
-                            if (!description.EffectsOnly) using (var textBrush = new SolidBrush(description.Color)) 
-                                textGraphics.DrawString(text, font, textBrush, textX, textY, stringFormat);
-                            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, stringFormat, text, textX, textY);
+                            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
+                            if (!description.EffectsOnly) using (var draw = new SolidBrush(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
+                            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
 
                             if (description.Debug) using (var pen = new Pen(Color.Red))
                             {
-                                textGraphics.DrawLine(pen, textX, textY, textX, textY + baseHeight);
-                                textGraphics.DrawLine(pen, textX - baseWidth * .5f, textY, textX + baseWidth * .5f, textY);
+                                textGraphics.DrawLine(pen, x, y, x, y + baseHeight);
+                                textGraphics.DrawLine(pen, x - baseWidth * .5f, y, x + baseWidth * .5f, y);
                             }
                         }
 
@@ -380,14 +379,13 @@ namespace StorybrewCommon.Subtitles
                         using (var stream = new FileStream(bitmapPath, FileMode.Create, FileAccess.Write))
                         {
                             if (bounds != default && bounds != new Rectangle(default, bitmap.Size))
-                            using (var trimmedBitmap = new Bitmap(bounds.Width, bounds.Height))
                             {
                                 offsetX += bounds.Left;
                                 offsetY += bounds.Top;
-                                width = trimmedBitmap.Width;
-                                height = trimmedBitmap.Height;
-                                using (var trimGraphics = Graphics.FromImage(trimmedBitmap)) trimGraphics.DrawImage(bitmap, 0, 0, bounds, GraphicsUnit.Pixel);
-                                Misc.WithRetries(() => trimmedBitmap.Save(stream, ImageFormat.Png));
+                                width = bounds.Width;
+                                height = bounds.Height;
+
+                                Misc.WithRetries(() => bitmap.FastCloneSection(bounds).Save(stream, ImageFormat.Png));
                             }
                             else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                         }

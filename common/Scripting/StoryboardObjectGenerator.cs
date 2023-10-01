@@ -15,6 +15,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Tiny;
+using System.IO.Compression;
 
 namespace StorybrewCommon.Scripting
 {
@@ -195,7 +196,7 @@ namespace StorybrewCommon.Scripting
         internal readonly HashSet<string> fontDirectories = new HashSet<string>();
         readonly HashSet<FontGenerator> fontGenerators = new HashSet<FontGenerator>();
 
-        string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache", "font");
+        string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache");
 
         ///<summary> Loads subtitles from a given subtitle file. </summary>
         public SubtitleSet LoadSubtitles(string path)
@@ -236,13 +237,13 @@ namespace StorybrewCommon.Scripting
             var fontGenerator = new FontGenerator(directory, description, effects, context.ProjectPath, assetDirectory);
             fontGenerators.Add(fontGenerator);
 
-            var cachePath = fontCacheDirectory;
-            if (Directory.Exists(cachePath))
+            var cachePath = $"{fontCacheDirectory}/font.dat";
+            if (File.Exists(cachePath)) using (var cache = ZipFile.OpenRead(cachePath))
             {
-                var path = Path.Combine(cachePath, HashHelper.GetMd5(fontGenerator.Directory) + ".yaml");
-                if (File.Exists(path))
+                var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory));
+                if (path != null)
                 {
-                    var cachedFontRoot = Misc.WithRetries(() => TinyToken.Read(path), canThrow: false);
+                    var cachedFontRoot = Misc.WithRetries(() => TinyToken.Read(path.Open(), TinyToken.Yaml), canThrow: false);
                     if (cachedFontRoot != null) fontGenerator.HandleCache(cachedFontRoot);
                 }
             }
@@ -250,21 +251,22 @@ namespace StorybrewCommon.Scripting
         }
         void saveFontCache()
         {
-            var cachePath = fontCacheDirectory;
-            if (!Directory.Exists(cachePath)) Directory.CreateDirectory(cachePath);
+            if (!Directory.Exists(fontCacheDirectory)) Directory.CreateDirectory(fontCacheDirectory);
 
+            var cachePath = $"{fontCacheDirectory}/font.dat";
+            using (var file = new FileStream(cachePath, FileMode.OpenOrCreate, (FileAccess)2, (FileShare)1)) using (var cache = new ZipArchive(file, (ZipArchiveMode)1))
             foreach (var fontGenerator in fontGenerators)
             {
-                var path = Path.Combine(cachePath, HashHelper.GetMd5(fontGenerator.Directory) + ".yaml");
-
                 var fontRoot = fontGenerator.ToTinyObject();
+
+                var path = cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
                 try
                 {
-                    fontRoot.Write(path);
+                    fontRoot.Write(path.Open(), TinyToken.Yaml);
                 }
                 catch (Exception e)
                 {
-                    Trace.WriteLine($"Failed to save font cache for {path} ({e.GetType().FullName})");
+                    Trace.WriteLine($"Failed to save font cache for {path.Name} ({e.GetType().FullName})");
                 }
             }
         }
@@ -394,7 +396,7 @@ namespace StorybrewCommon.Scripting
 
                 Generate();
                 context.Multithreaded = Multithreaded;
-                saveFontCache();
+                if (fontGenerators.Count > 0) saveFontCache();
             }
             finally
             {

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 
@@ -9,7 +8,7 @@ namespace Tiny.Formats.Yaml
     {
         public const string BooleanTrue = "Yes", BooleanFalse = "No";
 
-        static readonly List<RegexTokenizer<YamlTokenType>.Definition> definitions = new List<RegexTokenizer<YamlTokenType>.Definition>
+        static readonly RegexTokenizer<YamlTokenType>.Definition[] definitions =
         {
             new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.Indent, "^(  )+", captureGroup: 0),
 
@@ -54,8 +53,7 @@ namespace Tiny.Formats.Yaml
             var first = true;
             foreach (var property in obj)
             {
-                if (!first || !parentIsArray)
-                    writeIndent(writer, indentLevel);
+                if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
                 var key = property.Key;
                 if (key.Contains(" ") || key.Contains(":") || key.StartsWith("-")) key = "\"" + YamlUtil.EscapeString(key) + "\"";
