@@ -254,7 +254,7 @@ namespace StorybrewCommon.Scripting
             if (!Directory.Exists(fontCacheDirectory)) Directory.CreateDirectory(fontCacheDirectory);
 
             var cachePath = $"{fontCacheDirectory}/font.dat";
-            using (var file = new FileStream(cachePath, FileMode.OpenOrCreate, (FileAccess)2, (FileShare)1)) using (var cache = new ZipArchive(file, (ZipArchiveMode)1))
+            using (var file = new FileStream(cachePath, FileMode.Create, FileAccess.Write, FileShare.Read)) using (var cache = new ZipArchive(file, ZipArchiveMode.Create))
             foreach (var fontGenerator in fontGenerators)
             {
                 var fontRoot = fontGenerator.ToTinyObject();

@@ -283,13 +283,15 @@ namespace StorybrewCommon.Subtitles
         public FontTexture GetTexture(object obj)
         {
             var text = Convert.ToString(obj, CultureInfo.InvariantCulture);
-            if (!textureCache.TryGetValue(text, out FontTexture texture)) textureCache[text] = texture = generateTexture(text);
+            if (!textureCache.TryGetValue(text, out var texture)) textureCache[text] = texture = generateTexture(text);
             return texture;
         }
         FontTexture generateTexture(string text)
         {
-            var filename = text.Length == 1 ?
-                $"{(!PathHelper.IsValidFilename(text[0].ToString()) ? ((int)text[0]).ToString("x4").TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0]) + "_" : text[0].ToString()))}.png" : 
+            string filename;
+            if (description.TrimTransparency && textureCache.TryGetValue(text.Trim(), out var texture)) filename = Path.GetFileName(texture.Path);
+            else filename = text.Length == 1 ?
+                $"{(!PathHelper.IsValidFilename(text[0].ToString()) ? ((int)text[0]).ToString("x4").TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0]) + "_" : text[0].ToString()))}.png" :
                 $"_{textureCache.Count(l => l.Key.Length > 1).ToString("x3").TrimStart('0')}.png";
 
             var bitmapPath = Path.Combine(assetDirectory, Directory, filename);
