@@ -225,7 +225,7 @@ namespace BrewLib.Util
         }
         public static Rectangle FindTransparencyBounds(Bitmap source)
         {
-            if (source is null) return Rectangle.Empty;
+            if (source is null) return default;
 
             var data = source.LockBits(new Rectangle(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             int xMin = data.Width, yMin = data.Height, xMax = -1, yMax = -1;

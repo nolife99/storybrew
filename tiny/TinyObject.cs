@@ -60,7 +60,7 @@ namespace Tiny
 
             if (key is string k)
             {
-                if (keyToIndexMap.TryGetValue(k, out var index)) return items[index].Value.Value<T>();
+                if (keyToIndexMap.TryGetValue(k, out int index)) return items[index].Value.Value<T>();
                 else return default;
             }
             else if (key is int index) return items[index].Value.Value<T>();

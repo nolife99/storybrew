@@ -238,7 +238,8 @@ namespace StorybrewCommon.Scripting
             fontGenerators.Add(fontGenerator);
 
             var cachePath = $"{fontCacheDirectory}/font.dat";
-            if (File.Exists(cachePath)) using (var cache = ZipFile.OpenRead(cachePath))
+            if (File.Exists(cachePath)) using (var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
+            using (var cache = new ZipArchive(file, ZipArchiveMode.Read))
             {
                 var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory));
                 if (path != null)
@@ -253,13 +254,13 @@ namespace StorybrewCommon.Scripting
         {
             if (!Directory.Exists(fontCacheDirectory)) Directory.CreateDirectory(fontCacheDirectory);
 
-            var cachePath = $"{fontCacheDirectory}/font.dat";
-            using (var file = new FileStream(cachePath, FileMode.Create, FileAccess.Write, FileShare.Read)) using (var cache = new ZipArchive(file, ZipArchiveMode.Create))
-            foreach (var fontGenerator in fontGenerators)
+            using (var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) 
+            using (var cache = new ZipArchive(file, ZipArchiveMode.Update)) foreach (var fontGenerator in fontGenerators)
             {
                 var fontRoot = fontGenerator.ToTinyObject();
 
-                var path = cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
+                var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory));
+                if (path is null) path = cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
                 try
                 {
                     fontRoot.Write(path.Open(), TinyToken.Yaml);

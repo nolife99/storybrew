@@ -288,11 +288,16 @@ namespace StorybrewCommon.Subtitles
         }
         FontTexture generateTexture(string text)
         {
-            string filename;
-            if (description.TrimTransparency && textureCache.TryGetValue(text.Trim(), out var texture)) filename = Path.GetFileName(texture.Path);
-            else filename = text.Length == 1 ?
+            var filename = text.Length == 1 ?
                 $"{(!PathHelper.IsValidFilename(text[0].ToString()) ? ((int)text[0]).ToString("x4").TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0]) + "_" : text[0].ToString()))}.png" :
                 $"_{textureCache.Count(l => l.Key.Length > 1).ToString("x3").TrimStart('0')}.png";
+
+            var trimExist = false;
+            if (description.TrimTransparency && textureCache.TryGetValue(text.Trim(), out var texture))
+            {
+                trimExist = true;
+                filename = Path.GetFileName(texture.Path);
+            }
 
             var bitmapPath = Path.Combine(assetDirectory, Directory, filename);
 
@@ -378,24 +383,27 @@ namespace StorybrewCommon.Subtitles
                         }
 
                         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : default;
-                        using (var stream = new FileStream(bitmapPath, FileMode.Create, FileAccess.Write))
+                        var validBounds = bounds != default && bounds != new Rectangle(default, bitmap.Size);
+                        if (validBounds)
                         {
-                            if (bounds != default && bounds != new Rectangle(default, bitmap.Size))
-                            {
-                                offsetX += bounds.Left;
-                                offsetY += bounds.Top;
-                                width = bounds.Width;
-                                height = bounds.Height;
-
-                                Misc.WithRetries(() => bitmap.FastCloneSection(bounds).Save(stream, ImageFormat.Png));
-                            }
-                            else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
+                            offsetX += bounds.Left;
+                            offsetY += bounds.Top;
+                            width = bounds.Width;
+                            height = bounds.Height;
                         }
 
-                        if (File.Exists(bitmapPath) && (bitmapPath.Contains(current.MapsetPath) || bitmapPath.Contains(current.AssetPath)))
+                        if (!trimExist)
                         {
-                            if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(bitmapPath, compressor);
-                            else BitmapHelper.Compress(bitmapPath, compressor);
+                            using (var stream = File.Create(bitmapPath))
+                            {
+                                if (validBounds) using (var trim = bitmap.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
+                                else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
+                            }
+                            if (File.Exists(bitmapPath) && (bitmapPath.Contains(current.MapsetPath) || bitmapPath.Contains(current.AssetPath)))
+                            {
+                                if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(bitmapPath, compressor);
+                                else BitmapHelper.Compress(bitmapPath, compressor);
+                            }
                         }
                     }
                 }
@@ -425,8 +433,7 @@ namespace StorybrewCommon.Subtitles
                 textureCache[text] = new FontTexture(path,
                     cacheEntry.Value<float>("OffsetX"), cacheEntry.Value<float>("OffsetY"),
                     cacheEntry.Value<int>("BaseWidth"), cacheEntry.Value<int>("BaseHeight"),
-                    cacheEntry.Value<int>("Width"), cacheEntry.Value<int>("Height")
-                );
+                    cacheEntry.Value<int>("Width"), cacheEntry.Value<int>("Height"));
             }
         }
         bool matches(TinyToken cachedFontRoot)
