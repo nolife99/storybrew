@@ -1,5 +1,4 @@
 ﻿using System.Drawing;
-using System.Numerics;
 
 namespace StorybrewCommon.Subtitles
 {
@@ -7,16 +6,25 @@ namespace StorybrewCommon.Subtitles
     public class FontShadow : FontEffect
     {
         ///<summary> The thickness of the shadow. </summary>
-        public int Thickness = 1;
+        public readonly int Thickness;
 
         ///<summary> The color tinting of the shadow. </summary>
-        public FontColor Color = new FontColor(0, 0, 0, 100);
+        public readonly FontColor Color;
 
         ///<inheritdoc/>
         public bool Overlay => false;
 
         ///<inheritdoc/>
-        public Vector2 Measure() => new Vector2(Thickness * 2);
+        public SizeF Measure => new Size(Thickness * 2, Thickness * 2);
+
+        ///<summary> Creates a new <see cref="FontShadow"/> descriptor with information about a drop shadow effect. </summary>
+        ///<param name="thickness"> The thickness of the shadow. </param>
+        ///<param name="color"> The color tinting of the shadow. </param>
+        public FontShadow(int thickness = 1, FontColor color = default)
+        {
+            Thickness = thickness;
+            Color = color;
+        }
 
         ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)

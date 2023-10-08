@@ -4,6 +4,7 @@
     <TargetFramework>net481</TargetFramework>
     <Version>1.2.0</Version>
     <PackageId>Damnae.Tiny</PackageId>
+	<AssemblyName>Tiny</AssemblyName>
     <Authors>Damnae</Authors>
     <Description>Lightweight yaml subset parser/writer.</Description>
     <Copyright>Damnae 2021</Copyright>
@@ -11,6 +12,9 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <RootNamespace>Tiny</RootNamespace>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 	
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">

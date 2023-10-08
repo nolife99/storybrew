@@ -16,6 +16,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Tiny;
 using System.IO.Compression;
+using System.Globalization;
 
 namespace StorybrewCommon.Scripting
 {
@@ -30,7 +31,7 @@ namespace StorybrewCommon.Scripting
 
         ///<summary> Set to true if this script uses multiple threads. </summary>
         ///<remarks> It will prevent other effects from updating in parallel to this one. </remarks>
-        protected bool Multithreaded = false;
+        protected bool Multithreaded;
 
         internal PngCompressor Compressor { get; private set; }
 
@@ -67,9 +68,9 @@ namespace StorybrewCommon.Scripting
         ///<param name="condition"> The condition to be asserted. </param>
         ///<param name="message"> The message to display if assertion fails. </param>
         ///<param name="line"> The line at which the condition should be taken into account. </param>
-        public void Assert(bool condition, string message = null, [CallerLineNumber] int line = -1)
+        public static void Assert(bool condition, string message = null, [CallerLineNumber] int line = -1)
         {
-            if (!condition) throw new Exception(message != null ? $"Assertion failed line {line}: {message}" : $"Assertion failed line {line}");
+            if (!condition) throw new ArgumentException(message != null ? $"Assertion failed line {line}: {message}" : $"Assertion failed line {line}");
         }
 
         #region File loading
@@ -300,7 +301,7 @@ namespace StorybrewCommon.Scripting
                         allowedValues[i] = new NamedValue
                         {
                             Name = value.ToString(),
-                            Value = Convert.ChangeType(value, fieldType)
+                            Value = Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture)
                         };
                     }
                 }
@@ -308,7 +309,7 @@ namespace StorybrewCommon.Scripting
                 try
                 {
                     var displayName = configurableField.Attribute.DisplayName;
-                    var initialValue = Convert.ChangeType(configurableField.InitialValue, fieldType);
+                    var initialValue = Convert.ChangeType(configurableField.InitialValue, fieldType, CultureInfo.InvariantCulture);
                     config.UpdateField(field.Name, displayName, configurableField.Description, configurableField.Order, fieldType, initialValue, allowedValues, configurableField.BeginsGroup);
 
                     var value = config.GetValue(field.Name);
@@ -345,20 +346,17 @@ namespace StorybrewCommon.Scripting
         }
         void initializeConfigurableFields()
         {
-            configurableFields = new List<ConfigurableField>();
-            var order = 0;
-            var type = GetType();
+            var fields = GetType().GetFields();
+            configurableFields = new List<ConfigurableField>(fields.Length);
 
-            foreach (var field in type.GetFields())
+            for (int i = 0, order = 0; i < fields.Length; ++i)
             {
+                var field = fields[i];
                 var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-                if (configurable == null) continue;
-                if (!field.FieldType.IsEnum && !ObjectSerializer.Supports(field.FieldType.FullName)) continue;
+                if (!field.FieldType.IsEnum && !ObjectSerializer.Supports(field.FieldType.FullName) || configurable is null) continue;
 
-                var group = field.GetCustomAttribute<GroupAttribute>(true);
-                var description = field.GetCustomAttribute<DescriptionAttribute>(true);
-
-                configurableFields.Add(new ConfigurableField(field, configurable, field.GetValue(this), group?.Name?.Trim(), description?.Content?.Trim(), order++));
+                configurableFields.Add(new ConfigurableField(field, configurable, field.GetValue(this),
+                    field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(), field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order++));
             }
         }
         struct ConfigurableField

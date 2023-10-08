@@ -30,8 +30,9 @@
   	<Title>storybrew editor</Title>
   	<Copyright>Copyright © Damnae 2016</Copyright>
   	<PackageLicenseFile>LICENSE</PackageLicenseFile>
-  	<AnalysisLevel>6.0-all</AnalysisLevel>
+  	<AnalysisLevel>latest-recommended</AnalysisLevel>
   	<PackageReadmeFile>README.md</PackageReadmeFile>
+  	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -101,9 +102,8 @@
 
   <ItemGroup>
   	<PackageReference Include="ManagedBass" Version="3.1.1" />
-	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.6.0" />
+	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
   	<PackageReference Include="OpenTK" Version="3.3.3" />
-  	<PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
   <ItemGroup>
   	<ProjectReference Include="..\brewlib\brewlib.csproj" />

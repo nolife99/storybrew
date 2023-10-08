@@ -20,33 +20,33 @@ using System.Globalization;
 namespace StorybrewCommon.Subtitles
 {
     ///<summary> Stores information about a font image. </summary>
-    public struct FontTexture
+    public class FontTexture
     {
         ///<summary> The path to the font texture. </summary>
-        public string Path;
+        public readonly string Path;
 
-        ///<returns> True if the path does not exist, else returns false. </returns>
+        ///<returns> If the texture does not exist. </returns>
         public bool IsEmpty => Path is null;
 
         ///<summary> The texture offset in X-units. </summary>
-        public float OffsetX;
+        public readonly float OffsetX;
 
         ///<summary> The texture offset in Y-units. </summary>
-        public float OffsetY;
+        public readonly float OffsetY;
 
-        ///<summary> The base width of the texture in pixels. </summary>
-        public int BaseWidth;
+        ///<summary> The original width of the texture in pixels. </summary>
+        public readonly int BaseWidth;
 
-        ///<summary> The base height of the texture in pixels. </summary>
-        public int BaseHeight;
-
-        ///<summary> The actual width of the texture in pixels. </summary>
-        public int Width;
+        ///<summary> The original height of the texture in pixels. </summary>
+        public readonly int BaseHeight;
 
         ///<summary> The actual width of the texture in pixels. </summary>
-        public int Height;
+        public readonly int Width;
 
-        ///<summary> Creates a new <see cref="FontTexture"/> storing information of the font. </summary>
+        ///<summary> The actual width of the texture in pixels. </summary>
+        public readonly int Height;
+
+        ///<summary> Creates a new <see cref="FontTexture"/> storing information of the texture. </summary>
         ///<param name="path"> The path to the font texture. </param>
         ///<param name="offsetX"> The texture offset in X-units. </param>
         ///<param name="offsetY"> The texture offset in Y-units. </param>
@@ -134,11 +134,11 @@ namespace StorybrewCommon.Subtitles
         ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
         public bool Equals(FontColor other) => r == other.r && g == other.g && b == other.b;
 
-        ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
-        public override bool Equals(object other)
+        ///<summary> Returns whether or not this instance and <paramref name="obj"/> are equal to each other. </summary>
+        public override bool Equals(object obj)
         {
-            if (other is null) return false;
-            return other is CommandColor color && Equals(color);
+            if (obj is null) return false;
+            return obj is CommandColor color && Equals(color);
         }
 
         ///<summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
@@ -201,7 +201,7 @@ namespace StorybrewCommon.Subtitles
         }
 
         ///<summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
-        public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith("#") ? htmlColor : "#" + htmlColor);
+        public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith("#", StringComparison.InvariantCulture) ? htmlColor : "#" + htmlColor);
 
         static byte toByte(double x)
         {
@@ -217,6 +217,7 @@ namespace StorybrewCommon.Subtitles
         public static implicit operator FontColor(Color obj) => new FontColor(obj.R / 255f, obj.G / 255f, obj.B / 255f, obj.A / 255f);
         public static implicit operator Color(FontColor obj) => Color.FromArgb(obj.A, obj.R, obj.G, obj.B);
         public static implicit operator FontColor(string hexCode) => FromHtml(hexCode);
+        public static implicit operator FontColor(int channel) => FromHashCode(channel);
         public static bool operator ==(FontColor left, FontColor right) => left.Equals(right);
         public static bool operator !=(FontColor left, FontColor right) => !left.Equals(right);
         public static FontColor operator +(FontColor left, FontColor right) => new FontColor(left.r + right.r, left.g + right.g, left.b + right.b, left.a + right.a);
@@ -231,35 +232,59 @@ namespace StorybrewCommon.Subtitles
     public class FontDescription
     {
         ///<summary> The path to the font texture. </summary>
-        public string FontPath;
+        public readonly string FontPath;
 
         ///<summary> The relative size of the font texture. </summary>
-        public int FontSize = 76;
+        public readonly int FontSize;
 
         ///<summary> The coloring tint of the font texture. </summary>
-        public FontColor Color = FontColor.FromRgba(0, 0, 0, 100);
+        public readonly FontColor Color;
 
         ///<summary> How much extra space is allocated around the text when generating it. </summary>
-        public Vector2 Padding = Vector2.Zero;
+        public readonly Vector2 Padding;
 
-        /// <summary> The format/style of the font texture (for example: bold, italics, etc). </summary>
-        public FontStyle FontStyle = FontStyle.Regular;
+        ///<summary> The format/style of the font texture (for example: bold, italics, etc). </summary>
+        public readonly FontStyle FontStyle;
 
-        ///<summary> Ttrim extra transparent space around the texture. Should always be <see langword="true"/>. </summary>
-        public bool TrimTransparency;
+        ///<summary> Trim transparent space around the texture. Should always be <see langword="true"/>. </summary>
+        public readonly bool TrimTransparency;
 
-        ///<summary> Only draw the glow, outline and shadow. </summary>
-        public bool EffectsOnly;
+        ///<summary> Leave out the original texture and keep the effects. </summary>
+        public readonly bool EffectsOnly;
 
         ///<summary> Draw a randomly colored background behind the textures. </summary>
-        public bool Debug;
+        public readonly bool Debug;
+
+        ///<summary> Creates a new <see cref="FontDescription"/> storing a descriptor for <see cref="FontGenerator"/>. </summary>
+        ///<param name="fontPath"> The path to the font texture. </param>
+        ///<param name="fontSize"> The relative size of the font texture. </param>
+        ///<param name="color"> The coloring tint of the font texture. </param>
+        ///<param name="padding"> Allocate extra space around the text when generating it. </param>
+        ///<param name="fontStyle"> Format/style of the font texture. </param>
+        ///<param name="trimTransparency"> Trim transparent space around the texture. </param>
+        ///<param name="effectsOnly"> Leave out the original texture and keep the effects. </param>
+        ///<param name="debug"> Draw a randomly colored background behind the textures. </param>
+        public FontDescription(
+            string fontPath, int fontSize = 76, FontColor color = default, Vector2 padding = default, 
+            FontStyle fontStyle = default, bool trimTransparency = true, bool effectsOnly = false, bool debug = false)
+        {
+            FontPath = fontPath;
+            FontSize = fontSize;
+            Color = color;
+            Padding = padding;
+            FontStyle = fontStyle;
+            TrimTransparency = trimTransparency;
+            EffectsOnly = effectsOnly;
+            Debug = debug;
+        }
     }
 
     ///<summary> A class that generates and manages font textures. </summary>
     public class FontGenerator
     {
         /// <summary> The directory to the font textures. </summary>
-        public string Directory { get; }
+        public readonly string Directory;
+
         readonly FontDescription description;
         readonly FontEffect[] effects;
         readonly string projectDirectory, assetDirectory;
@@ -288,9 +313,10 @@ namespace StorybrewCommon.Subtitles
         }
         FontTexture generateTexture(string text)
         {
+            // wtf is this
             var filename = text.Length == 1 ?
-                $"{(!PathHelper.IsValidFilename(text[0].ToString()) ? ((int)text[0]).ToString("x4").TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0]) + "_" : text[0].ToString()))}.png" :
-                $"_{textureCache.Count(l => l.Key.Length > 1).ToString("x3").TrimStart('0')}.png";
+                $"{(!PathHelper.IsValidFilename(text[0].ToString(CultureInfo.InvariantCulture)) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + "_" : text[0].ToString(CultureInfo.InvariantCulture)))}.png" :
+                $"_{textureCache.Count(l => l.Key.Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
             var trimExist = false;
             if (description.TrimTransparency && textureCache.TryGetValue(text.Trim(), out var texture))
@@ -299,9 +325,9 @@ namespace StorybrewCommon.Subtitles
                 filename = Path.GetFileName(texture.Path);
             }
 
-            var bitmapPath = Path.Combine(assetDirectory, Directory, filename);
+            var path = Path.Combine(assetDirectory, Directory, filename);
 
-            var dir = Path.GetDirectoryName(bitmapPath);
+            var dir = Path.GetDirectoryName(path);
             if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
 
             var fontPath = Path.Combine(projectDirectory, description.FontPath);
@@ -339,16 +365,16 @@ namespace StorybrewCommon.Subtitles
                     float effectsWidth = 0, effectsHeight = 0;
                     for (var i = 0; i < effects.Length; ++i)
                     {
-                        var effectSize = effects[i].Measure();
-                        effectsWidth = Math.Max(effectsWidth, effectSize.X);
-                        effectsHeight = Math.Max(effectsHeight, effectSize.Y);
+                        var effectSize = effects[i].Measure;
+                        effectsWidth = Math.Max(effectsWidth, effectSize.Width);
+                        effectsHeight = Math.Max(effectsHeight, effectSize.Height);
                     }
                     width = (int)Math.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
                     height = (int)Math.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
 
-                    var paddingX = description.Padding.X + effectsWidth * .5f;
-                    var paddingY = description.Padding.Y + effectsHeight * .5f;
-                    var x = paddingX + measuredSize.Width * .5f;
+                    var paddingX = description.Padding.X + effectsWidth / 2;
+                    var paddingY = description.Padding.Y + effectsHeight / 2;
+                    var x = paddingX + measuredSize.Width / 2;
                     var y = paddingY;
 
                     offsetX = -paddingX;
@@ -394,15 +420,15 @@ namespace StorybrewCommon.Subtitles
 
                         if (!trimExist)
                         {
-                            using (var stream = File.Create(bitmapPath))
+                            using (var stream = File.Create(path))
                             {
                                 if (validBounds) using (var trim = bitmap.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
                                 else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                             }
-                            if (File.Exists(bitmapPath) && (bitmapPath.Contains(current.MapsetPath) || bitmapPath.Contains(current.AssetPath)))
+                            if (File.Exists(path) && (path.Contains(current.MapsetPath) || path.Contains(current.AssetPath)))
                             {
-                                if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(bitmapPath, compressor);
-                                else BitmapHelper.Compress(bitmapPath, compressor);
+                                if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(path, compressor);
+                                else BitmapHelper.Compress(path, compressor);
                             }
                         }
                     }
@@ -461,7 +487,8 @@ namespace StorybrewCommon.Subtitles
             }
             return false;
         }
-        bool matches(FontEffect fontEffect, TinyToken cache)
+
+        static bool matches(FontEffect fontEffect, TinyToken cache)
         {
             var effectType = fontEffect.GetType();
             if (cache.Value<string>("Type") != effectType.FullName) return false;
@@ -544,7 +571,8 @@ namespace StorybrewCommon.Subtitles
             { "Width", letterEntry.Value.Width },
             { "Height", letterEntry.Value.Height }
         };
-        TinyObject fontEffectToTinyObject(FontEffect fontEffect)
+
+        static TinyObject fontEffectToTinyObject(FontEffect fontEffect)
         {
             var effectType = fontEffect.GetType();
             var cache = new TinyObject

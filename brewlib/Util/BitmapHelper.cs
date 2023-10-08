@@ -9,6 +9,7 @@ namespace BrewLib.Util
     public static class BitmapHelper
     {
         public static PinnedBitmap Blur(Bitmap source, int radius, double power) => Convolute(source, CalculateGaussianKernel(radius, power));
+        public static PinnedBitmap BlurAlpha(Bitmap source, int radius, double power, Color color) => ConvoluteAlpha(source, CalculateGaussianKernel(radius, power), color);
 
         public static void LosslessCompress(string path, PngCompressor compressor = null)
             => (compressor ?? new PngCompressor()).LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level7 });
@@ -20,6 +21,7 @@ namespace BrewLib.Util
             MinQuality = 75,
             MaxQuality = 100
         });
+
         public static PinnedBitmap Premultiply(Bitmap source)
         {
             var result = new PinnedBitmap(source);
@@ -44,29 +46,29 @@ namespace BrewLib.Util
 
             return result;
         }
-        public static double[,] CalculateGaussianKernel(int radius, double weight)
+        public static float[,] CalculateGaussianKernel(int radius, double weight)
         {
             var length = radius * 2 + 1;
-            var kernel = new double[length, length];
-            var total = 0d;
+            var kernel = new float[length, length];
+            var total = 0f;
 
             var scale = 1 / (weight * weight * 2 * Math.PI);
             for (var y = -radius; y <= radius; ++y) for (var x = -radius; x <= radius; ++x)
             {
                 var distance = (x * x + y * y) / (2 * weight * weight);
-                var value = kernel[y + radius, x + radius] = scale * Math.Exp(-distance);
+                var value = kernel[y + radius, x + radius] = (float)(scale * Math.Exp(-distance));
                 total += value;
             }
 
             for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] = kernel[y, x] / total;
             return kernel;
         }
-        public static PinnedBitmap Convolute(Bitmap source, double[,] kernel)
+        public static PinnedBitmap Convolute(Bitmap source, float[,] kernel)
         {
             var kernelHeight = kernel.GetUpperBound(0) + 1;
             var kernelWidth = kernel.GetUpperBound(1) + 1;
 
-            if (kernelWidth % 2 == 0 || kernelHeight % 2 == 0) throw new InvalidOperationException("Invalid kernel size");
+            if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
             using (var pinnedSource = new PinnedBitmap(source))
             {
@@ -75,30 +77,30 @@ namespace BrewLib.Util
                 var result = new PinnedBitmap(width, height);
 
                 var index = 0;
-                var halfKernelWidth = kernelWidth >> 1;
-                var halfKernelHeight = kernelHeight >> 1;
+                var halfWidth = kernelWidth >> 1;
+                var halfHeight = kernelHeight >> 1;
 
                 for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
-                    var a = 0d;
-                    var r = 0d;
-                    var g = 0d;
-                    var b = 0d;
+                    var a = 0f;
+                    var r = 0f;
+                    var g = 0f;
+                    var b = 0f;
 
-                    for (var kernelX = -halfKernelWidth; kernelX <= halfKernelWidth; ++kernelX)
+                    for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                     {
                         var pixelX = kernelX + x;
                         if (pixelX < 0) pixelX = 0;
                         else if (pixelX >= width) pixelX = width - 1;
 
-                        for (var kernelY = -halfKernelHeight; kernelY <= halfKernelHeight; ++kernelY)
+                        for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                         {
                             var pixelY = kernelY + y;
                             if (pixelY < 0) pixelY = 0;
                             else if (pixelY >= height) pixelY = height - 1;
 
                             var col = pinnedSource.Data[pixelY * width + pixelX];
-                            var k = kernel[kernelY + halfKernelWidth, kernelX + halfKernelHeight];
+                            var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
                             a += ((col >> 24) & 0xFF) * k;
                             r += ((col >> 16) & 0xFF) * k;
                             g += ((col >> 8) & 0xFF) * k;
@@ -115,16 +117,15 @@ namespace BrewLib.Util
 
                     result.Data[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
                 }
-
                 return result;
             }
         }
-        public static PinnedBitmap ConvoluteAlpha(Bitmap source, double[,] kernel, Color color)
+        public static PinnedBitmap ConvoluteAlpha(Bitmap source, float[,] kernel, Color color)
         {
             var kernelHeight = kernel.GetUpperBound(0) + 1;
             var kernelWidth = kernel.GetUpperBound(1) + 1;
 
-            if (kernelWidth % 2 == 0 || kernelHeight % 2 == 0) throw new InvalidOperationException("Invalid kernel size");
+            if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
             using (var pinnedSource = new PinnedBitmap(source))
             {
@@ -133,29 +134,27 @@ namespace BrewLib.Util
                 var result = new PinnedBitmap(width, height);
 
                 var index = 0;
-                var halfKernelWidth = kernelWidth >> 1;
-                var halfKernelHeight = kernelHeight >> 1;
+                var halfWidth = kernelWidth >> 1;
+                var halfHeight = kernelHeight >> 1;
 
                 var colorRgb = (color.R << 16) | (color.G << 8) | color.B;
-
                 for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
-                    var a = 0d;
-
-                    for (var kernelX = -halfKernelWidth; kernelX <= halfKernelWidth; ++kernelX)
+                    var a = 0f;
+                    for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                     {
                         var pixelX = kernelX + x;
                         if (pixelX < 0) pixelX = 0;
                         else if (pixelX >= width) pixelX = width - 1;
 
-                        for (var kernelY = -halfKernelHeight; kernelY <= halfKernelHeight; ++kernelY)
+                        for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                         {
                             var pixelY = kernelY + y;
                             if (pixelY < 0) pixelY = 0;
                             else if (pixelY >= height) pixelY = height - 1;
 
                             var col = pinnedSource.Data[pixelY * width + pixelX];
-                            var k = kernel[kernelY + halfKernelWidth, kernelX + halfKernelHeight];
+                            var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
                             a += ((col >> 24) & 0xFF) * k;
                         }
                     }
@@ -163,7 +162,6 @@ namespace BrewLib.Util
                     var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
                     result.Data[index++] = (alpha << 24) | colorRgb;
                 }
-
                 return result;
             }
         }
@@ -256,7 +254,7 @@ namespace BrewLib.Util
             return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
         }
 
-        public class PinnedBitmap : IDisposable
+        public sealed class PinnedBitmap : IDisposable
         {
             public readonly Bitmap Bitmap;
             public readonly int[] Data;

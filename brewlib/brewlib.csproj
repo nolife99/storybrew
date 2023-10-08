@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <RootNamespace>brewlib</RootNamespace>
+    <RootNamespace>BrewLib</RootNamespace>
     <AssemblyName>BrewLib</AssemblyName>
     <TargetFramework>net481</TargetFramework>
     <Copyright>Copyright © Damnae 2016</Copyright>
@@ -13,6 +13,8 @@
     <Company>storybrew</Company>
     <Platforms>AnyCPU;x86</Platforms>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -42,7 +44,6 @@
     <PackageReference Include="OpenTK" Version="3.3.3" />
     <PackageReference Include="ManagedBass" Version="3.1.1" />
     <PackageReference Include="ManagedBass.Fx" Version="3.1.1" />
-    <PackageReference Include="System.Memory" Version="4.5.5" />
   </ItemGroup>
 	
   <ItemGroup>
@@ -52,6 +53,12 @@
   <ItemGroup>
     <Reference Include="System.Management" />
 	<Reference Include="System.Web" />
+  </ItemGroup>
+	
+  <ItemGroup>
+    <None Update="C:\Users\die lin\.nuget\packages\magick.net-q8-anycpu\13.3.0\build\netstandard20\..\..\runtimes\win-arm64\native\Magick.Native-Q8-arm64.dll">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

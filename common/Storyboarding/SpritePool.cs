@@ -16,7 +16,7 @@ namespace StorybrewCommon.Storyboarding
         readonly HashSet<PooledSprite> pooledSprites = new HashSet<PooledSprite>();
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
-        public int MaxPoolDuration = 0;
+        public int MaxPoolDuration;
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -143,7 +143,7 @@ namespace StorybrewCommon.Storyboarding
             }
         }
 
-        bool disposed = false;
+        bool disposed;
         void Dispose(bool dispose)
         {
             if (!disposed)
@@ -386,11 +386,11 @@ namespace StorybrewCommon.Storyboarding
             return pool;
         }
 
-        string getKey(string path, OsbOrigin origin, Action<OsbSprite, double, double> action, int group)
-            => $"{path}#{origin}#{action?.Target}.{action?.Method.Name}#{group}";
+        static string getKey(string path, OsbOrigin origin, Action<OsbSprite, double, double> action, int group)
+            => $"{path}#{(int)origin}#{action?.Target}.{action?.Method.Name}#{group}";
 
-        string getKey(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> action, int group)
-            => $"{path}#{frameCount}#{frameDelay}#{loopType}#{origin}#{action?.Target}.{action?.Method.Name}#{group}";
+        static string getKey(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> action, int group)
+            => $"{path}#{frameCount}#{frameDelay}#{(int)loopType}#{(int)origin}#{action?.Target}.{action?.Method.Name}#{group}";
 
         void Clear()
         {
@@ -398,7 +398,7 @@ namespace StorybrewCommon.Storyboarding
             animationPools.Dispose();
         }
 
-        bool disposed = false;
+        bool disposed;
         void Dispose(bool dispose)
         {
             if (!disposed)
