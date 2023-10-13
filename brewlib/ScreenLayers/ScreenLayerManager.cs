@@ -23,7 +23,7 @@ namespace BrewLib.ScreenLayers
         readonly InputDispatcher inputDispatcher = new InputDispatcher();
         public InputHandler InputHandler => inputDispatcher;
 
-        public Color4 BackgroundColor => Color4.Black;
+        public static Color4 BackgroundColor => Color4.Black;
         public event Action<ScreenLayer> LayerAdded;
 
         public ScreenLayerManager(GameWindow window, FrameTimeSource timeSource, object context)

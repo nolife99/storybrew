@@ -10,7 +10,7 @@ namespace BrewLib.UserInterface
     public class FlowLayout : Widget
     {
         Vector2 preferredSize;
-        float flowWidth = 0;
+        float flowWidth;
         List<LayoutLine> lines;
         bool invalidSizes = true;
 

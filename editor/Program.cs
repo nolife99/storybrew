@@ -1,6 +1,4 @@
 ﻿using BrewLib.Audio;
-using BrewLib.Util;
-using Microsoft.Win32;
 using OpenTK;
 using OpenTK.Graphics;
 using StorybrewEditor.Processes;

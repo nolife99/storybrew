@@ -40,7 +40,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public IEnumerable<CommandGenerator> CommandGenerators { get { yield return Generator0; yield return Generator1; } }
 
-        int edgeIndex = 0;
+        int edgeIndex;
 
         ///<summary> The index of a vertex/edge to be fixed. </summary>
         public int FixedEdge = -1;
@@ -67,23 +67,23 @@ namespace StorybrewCommon.Storyboarding3d
             {
                 case 0:
                 {
-                    vector0 = cameraState.ToScreen(wvp, Position0.ValueAt(time));
-                    vector1 = cameraState.ToScreen(wvp, Position1.ValueAt(time));
-                    vector2 = cameraState.ToScreen(wvp, Position2.ValueAt(time));
+                    vector0 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector1 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector2 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
                     break;
                 }
                 case 1:
                 {
-                    vector2 = cameraState.ToScreen(wvp, Position0.ValueAt(time));
-                    vector0 = cameraState.ToScreen(wvp, Position1.ValueAt(time));
-                    vector1 = cameraState.ToScreen(wvp, Position2.ValueAt(time));
+                    vector2 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector0 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector1 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
                     break;
                 }
                 case 2:
                 {
-                    vector1 = cameraState.ToScreen(wvp, Position0.ValueAt(time));
-                    vector2 = cameraState.ToScreen(wvp, Position1.ValueAt(time));
-                    vector0 = cameraState.ToScreen(wvp, Position2.ValueAt(time));
+                    vector1 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector2 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector0 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
                     break;
                 }
                 default: throw new InvalidOperationException();

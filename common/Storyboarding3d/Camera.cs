@@ -31,7 +31,7 @@ namespace StorybrewCommon.Storyboarding3d
             FarFade = farFade;
             FarClip = farClip;
         }
-        public Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
+        public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
         {
             var offset = (OsuHitObject.WidescreenStoryboardSize.X - OsuHitObject.StoryboardSize.X) * .5f;
 

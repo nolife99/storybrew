@@ -157,7 +157,7 @@ namespace BrewLib.Graphics.Text
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
         void Dispose(bool disposing)
         {
             if (!disposed)

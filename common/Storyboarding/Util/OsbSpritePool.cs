@@ -80,7 +80,7 @@ namespace StorybrewCommon.Storyboarding.Util
 
         #region IDisposable Support
 
-        bool disposed = false;
+        bool disposed;
 
         protected virtual void Dispose(bool dispose)
         {

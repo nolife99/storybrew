@@ -25,7 +25,7 @@ namespace StorybrewCommon.Storyboarding
 
         ///<summary> If the sprite has more commands than <see cref="CommandSplitThreshold"/>, they will be split between multiple sprites. </summary>
         ///<remarks> Does not apply when the sprite has triggers. </remarks>
-        public int CommandSplitThreshold = 0;
+        public int CommandSplitThreshold;
 
         string texturePath = "";
         ///<returns> The path to the image of the <see cref="OsbSprite"/>. </returns>

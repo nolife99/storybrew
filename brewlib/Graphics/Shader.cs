@@ -184,7 +184,8 @@ namespace BrewLib.Graphics
                 uniforms[name] = new Property<ActiveUniformType>(name, size, type, location);
             }
         }
-        string addLineExtracts(string log, string code)
+
+        static string addLineExtracts(string log, string code)
         {
             var errorRegex = new Regex(@"^ERROR: (\d+):(\d+): ", RegexOptions.IgnoreCase);
             var splitCode = code.Replace("\r\n", "\n").Split('\n');

@@ -118,7 +118,7 @@ namespace BrewLib.Audio
             }
         }
 
-        float pan = 0;
+        float pan;
         public float Pan
         {
             get => pan;
@@ -186,7 +186,7 @@ namespace BrewLib.Audio
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

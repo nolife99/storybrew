@@ -36,7 +36,7 @@ namespace Tiny.Formats.Yaml
 
         abstract class MultilineParser : Parser<YamlTokenType>
         {
-            int? indent = null;
+            int? indent;
             protected abstract int ResultCount { get; }
 
             public MultilineParser(Action<TinyToken> callback, int virtualIndent) : base(callback, virtualIndent) { }

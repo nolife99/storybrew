@@ -75,7 +75,7 @@ namespace StorybrewCommon.Storyboarding.Util
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {

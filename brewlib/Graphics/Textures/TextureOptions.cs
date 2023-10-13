@@ -16,10 +16,10 @@ namespace BrewLib.Graphics.Textures
         public static readonly TextureOptions Default = new TextureOptions();
 
         // Settings
-        public bool Srgb = true, PreMultiply = false, GenerateMipmaps = false;
+        public bool Srgb = true, PreMultiply, GenerateMipmaps;
 
         // Parameters
-        public int TextureLodBias = 0;
+        public int TextureLodBias;
         public TextureMinFilter TextureMinFilter = TextureMinFilter.Linear;
         public TextureMagFilter TextureMagFilter = TextureMagFilter.Linear;
         public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge, TextureWrapT = TextureWrapMode.ClampToEdge;

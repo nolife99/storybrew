@@ -9,7 +9,7 @@ namespace BrewLib.ScreenLayers
     {
         public ScreenLayerManager Manager { get; set; }
 
-        protected double TransitionInDuration = .25, TransitionOutDuration = .25, TransitionProgress = 0;
+        protected double TransitionInDuration = .25, TransitionOutDuration = .25, TransitionProgress;
         public double MinTween;
 
         public State CurrentState = State.Hidden;
@@ -138,7 +138,7 @@ namespace BrewLib.ScreenLayers
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         public bool IsDisposed => disposedValue;
 
         protected virtual void Dispose(bool disposing)

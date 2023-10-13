@@ -36,25 +36,25 @@ namespace BrewLib.Util
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)]
-        public static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, IntPtr lParam);
+        static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, IntPtr lParam);
 
         public delegate bool EnumThreadWndProc(IntPtr hWnd, IntPtr lParam);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)] 
-        public static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+        [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Unicode)] 
+        static unsafe extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)] 
-        public static extern int GetWindowTextLength(IntPtr hWnd);
+        static extern int GetWindowTextLength(IntPtr hWnd);
 
-        public static string GetWindowText(IntPtr hWnd)
+        public static unsafe string GetWindowText(IntPtr hWnd)
         {
             var length = GetWindowTextLength(hWnd);
             if (length == 0) return "";
 
             var sb = new StringBuilder(length);
-            GetWindowText(hWnd, sb, length + 1);
+            _ = GetWindowText(hWnd, sb, length + 1);
             return sb.ToString();
         }
         public static IntPtr FindProcessWindow(string title)

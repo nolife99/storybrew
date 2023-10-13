@@ -47,7 +47,7 @@ namespace StorybrewEditor.ScreenLayers
             base.Draw(drawContext, tween);
             WidgetManager.Draw(drawContext);
         }
-        protected void MakeTabs(Button[] buttons, Widget[] widgets)
+        protected static void MakeTabs(Button[] buttons, Widget[] widgets)
         {
             for (var i = 0; i < buttons.Length; ++i)
             {

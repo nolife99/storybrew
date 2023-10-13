@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace BrewLib.Util
 {
@@ -28,14 +27,14 @@ namespace BrewLib.Util
             folder = WithStandardSeparators(Path.GetFullPath(folder)).TrimEnd('/');
             path = WithStandardSeparators(Path.GetFullPath(path)).TrimEnd('/');
 
-            return path.Length >= folder.Length + 1 && path[folder.Length] == '/' && path.StartsWith(folder);
+            return path.Length >= folder.Length + 1 && path[folder.Length] == '/' && path.StartsWith(folder, StringComparison.InvariantCulture);
         }
         public static string GetRelativePath(string folder, string path)
         {
             folder = WithStandardSeparators(Path.GetFullPath(folder)).TrimEnd('/');
             path = WithStandardSeparators(Path.GetFullPath(path)).TrimEnd('/');
 
-            if (path.Length < folder.Length + 1 || path[folder.Length] != '/' || !path.StartsWith(folder))
+            if (path.Length < folder.Length + 1 || path[folder.Length] != '/' || !path.StartsWith(folder, StringComparison.InvariantCulture))
                 throw new ArgumentException(path + " isn't contained in " + folder);
 
             return path.Substring(folder.Length + 1);

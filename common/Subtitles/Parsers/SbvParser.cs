@@ -31,7 +31,8 @@ namespace StorybrewCommon.Subtitles.Parsers
             }
             return new SubtitleSet(lines);
         }
-        IEnumerable<string> parseBlocks(Stream stream)
+
+        static IEnumerable<string> parseBlocks(Stream stream)
         {
             using (var reader = new StreamReader(stream))
             {
@@ -54,6 +55,6 @@ namespace StorybrewCommon.Subtitles.Parsers
             }
         }
 
-        double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp).TotalMilliseconds;
+        static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp).TotalMilliseconds;
     }
 }

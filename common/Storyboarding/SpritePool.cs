@@ -168,7 +168,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
         public SpritePools(StoryboardSegment segment) => this.segment = segment;
 
-        int maxPoolDuration = 0;
+        int maxPoolDuration;
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
         public int MaxPoolDuration

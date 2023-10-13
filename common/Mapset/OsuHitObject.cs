@@ -67,7 +67,7 @@ namespace StorybrewCommon.Mapset
         public int ComboIndex = 1; 
 
         ///<summary> Represents the combo color index of this hit object. </summary>
-        public int ColorIndex = 0;
+        public int ColorIndex;
 
         ///<summary> Represents the volume of this hit object. </summary>
         public float Volume;

@@ -60,7 +60,7 @@ namespace BrewLib.Audio
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         protected override void Dispose(bool disposing)
         {
             if (!disposedValue)

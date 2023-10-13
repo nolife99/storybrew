@@ -48,7 +48,7 @@ namespace BrewLib.Graphics.Textures
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         public bool Disposed => disposedValue;
 
         protected virtual void Dispose(bool disposing)

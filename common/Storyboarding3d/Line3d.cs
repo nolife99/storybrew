@@ -60,8 +60,8 @@ namespace StorybrewCommon.Storyboarding3d
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
         {
             var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
-            var startVector = cameraState.ToScreen(wvp, StartPosition.ValueAt(time));
-            var endVector = cameraState.ToScreen(wvp, EndPosition.ValueAt(time));
+            var startVector = CameraState.ToScreen(wvp, StartPosition.ValueAt(time));
+            var endVector = CameraState.ToScreen(wvp, EndPosition.ValueAt(time));
 
             var delta = new Vector2(endVector.X, endVector.Y) - new Vector2(startVector.X, startVector.Y);
             if (delta.LengthSquared() == 0) return;
@@ -190,8 +190,8 @@ namespace StorybrewCommon.Storyboarding3d
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
         {
             var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
-            var startVector = cameraState.ToScreen(wvp, StartPosition.ValueAt(time));
-            var endVector = cameraState.ToScreen(wvp, EndPosition.ValueAt(time));
+            var startVector = CameraState.ToScreen(wvp, StartPosition.ValueAt(time));
+            var endVector = CameraState.ToScreen(wvp, EndPosition.ValueAt(time));
 
             var delta = new Vector2(endVector.X, endVector.Y) - new Vector2(startVector.X, startVector.Y);
             if (delta.LengthSquared() == 0) return;

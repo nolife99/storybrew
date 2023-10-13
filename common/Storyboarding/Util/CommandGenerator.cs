@@ -254,10 +254,10 @@ namespace StorybrewCommon.Storyboarding.Util
         public double Time;
 
         ///<summary> Represents the rotation, in radians, of this state. </summary>
-        public double Rotation = 0;
+        public double Rotation;
 
         ///<summary> Represents the opacity, from 0 to 1, of this state. </summary>
-        public double Opacity = 0;
+        public double Opacity;
 
         ///<summary> Represents the position, in osu!pixels, of this state. </summary>
         public CommandPosition Position = new Vector2(320, 240);

@@ -19,7 +19,7 @@ namespace StorybrewCommon.Mapset
         public SampleSet SampleSet = SampleSet.Normal;
 
         ///<summary> The custom sample set index of this control point. </summary>
-        public int CustomSampleSet = 0;
+        public int CustomSampleSet;
 
         ///<summary> The object volume of this control point. </summary>
         public float Volume = 100;

@@ -18,7 +18,7 @@ namespace StorybrewEditor.Processes
             Worker = retrieveWorker(pipeServer);
         }
 
-        RemoteProcessWorker retrieveWorker(NamedPipeServerStream pipeServer)
+        static RemoteProcessWorker retrieveWorker(NamedPipeServerStream pipeServer)
         {
             var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
 

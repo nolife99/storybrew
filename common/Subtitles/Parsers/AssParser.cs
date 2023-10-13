@@ -43,6 +43,6 @@ namespace StorybrewCommon.Subtitles.Parsers
             return new SubtitleSet(lines);
         }
 
-        double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp).TotalMilliseconds;
+        static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp).TotalMilliseconds;
     }
 }

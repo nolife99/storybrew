@@ -98,7 +98,7 @@ namespace Tiny.Formats.Yaml
             }
         }
 
-        void writeValue(TextWriter writer, TinyValue valueToken, TinyToken parent, int indentLevel)
+        static void writeValue(TextWriter writer, TinyValue valueToken, TinyToken parent, int indentLevel)
         {
             if (indentLevel != 0) throw new InvalidOperationException();
 

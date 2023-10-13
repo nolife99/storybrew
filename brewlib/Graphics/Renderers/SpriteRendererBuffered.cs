@@ -180,7 +180,7 @@ namespace BrewLib.Graphics.Renderers
             rendering = false;
         }
 
-        bool lastFlushWasBuffered = false;
+        bool lastFlushWasBuffered;
         public void Flush(bool canBuffer = false)
         {
             if (spritesInBatch == 0)

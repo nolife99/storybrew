@@ -3,7 +3,7 @@ using System;
 
 namespace StorybrewCommon.Curves
 {
-    ///<summary> Represents any <see cref="StorybrewCommon.Curves.Curve"/> that has been transformed. </summary>
+    ///<summary> Represents any <see cref="Curves.Curve"/> that has been transformed. </summary>
     [Serializable] public class TransformedCurve : Curve
     {
         readonly Curve curve;

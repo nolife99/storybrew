@@ -34,7 +34,7 @@ namespace StorybrewEditor.Scripting
         FileSystemWatcher scriptWatcher;
         readonly FileSystemWatcher libraryWatcher;
         ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
-        DisposableNativeDictionary<string, ScriptContainer<TScript>> scriptContainers = new DisposableNativeDictionary<string, ScriptContainer<TScript>>();
+        readonly DisposableNativeDictionary<string, ScriptContainer<TScript>> scriptContainers = new DisposableNativeDictionary<string, ScriptContainer<TScript>>();
 
         public string ScriptsPath { get; }
 
@@ -168,20 +168,24 @@ namespace StorybrewEditor.Scripting
                 document.DocumentElement.AppendChild(referencedAssembliesGroup);
                 foreach (var path in referencedAssemblies) if (!Project.DefaultAssemblies.Contains(path))
                 {
-                    var relativePath = PathHelper.GetRelativePath(ScriptsPath, path);
+                    var isSystem = path.StartsWith("System.", StringComparison.InvariantCulture);
+                    var relativePath = isSystem ? path : PathHelper.GetRelativePath(ScriptsPath, path);
 
                     var compileNode = document.CreateElement("Reference", xmlns);
-                    compileNode.SetAttribute("Include", AssemblyName.GetAssemblyName(path).Name);
-                    var hintPath = document.CreateElement("HintPath", xmlns);
-                    hintPath.AppendChild(document.CreateTextNode(relativePath));
-                    compileNode.AppendChild(hintPath);
+                    compileNode.SetAttribute("Include", isSystem ? path : AssemblyName.GetAssemblyName(path).Name);
+                    if (!isSystem)
+                    { 
+                        var hintPath = document.CreateElement("HintPath", xmlns);
+                        hintPath.AppendChild(document.CreateTextNode(relativePath));
+                        compileNode.AppendChild(hintPath);
+                    }
                     referencedAssembliesGroup.AppendChild(compileNode);
                 }
                 document.Save(csProjPath);
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Failed to update scripts.csproj: {e}");
+                throw;
             }
         }
 

@@ -15,7 +15,7 @@ namespace BrewLib.Graphics
         public string Name;
         public VertexAttribPointerType Type = VertexAttribPointerType.Float;
         public int ComponentSize = 4, ComponentCount = 1;
-        public bool Normalized = false;
+        public bool Normalized;
         public int Offset;
         public AttributeUsage Usage = AttributeUsage.Undefined;
 

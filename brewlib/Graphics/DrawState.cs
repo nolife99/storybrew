@@ -35,7 +35,7 @@ namespace BrewLib.Graphics
             if (UseSrgb && HasCapabilities(3, 0, "GL_ARB_framebuffer_object"))
             {
                 GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer, FramebufferAttachment.BackLeft, FramebufferParameterName.FramebufferAttachmentColorEncoding, out int defaultFramebufferColorEncoding);
-                if (defaultFramebufferColorEncoding == (int)0x8C40)
+                if (defaultFramebufferColorEncoding == 0x8C40)
                 {
                     SetCapability(EnableCap.FramebufferSrgb, true);
                     ColorCorrected = true;
@@ -138,7 +138,7 @@ namespace BrewLib.Graphics
         static Texture2d normalPixel;
         public static Texture2d NormalPixel => normalPixel;
 
-        static int activeTextureUnit = 0;
+        static int activeTextureUnit;
         public static int ActiveTextureUnit
         {
             get => activeTextureUnit;

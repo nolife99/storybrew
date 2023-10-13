@@ -15,7 +15,7 @@ namespace StorybrewEditor.Scripting
 
         ScriptProvider<TScript> scriptProvider;
 
-        volatile int currentVersion = 0, targetVersion = 1;
+        volatile int currentVersion, targetVersion = 1;
 
         public string Name
         {
@@ -101,7 +101,7 @@ namespace StorybrewEditor.Scripting
 
         #region IDisposable Support
 
-        bool disposedValue = false;
+        bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)

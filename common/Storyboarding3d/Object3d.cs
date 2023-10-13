@@ -31,7 +31,7 @@ namespace StorybrewCommon.Storyboarding3d
         public bool InheritsOpacity = true;
 
         ///<summary> Whether or not this object's children should draw below it. </summary>
-        public bool DrawBelowParent = false;
+        public bool DrawBelowParent;
 
         ///<summary> Whether or not this object's children should inherit its segment. </summary>
         public bool ChildrenInheritLayer = true;

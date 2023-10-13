@@ -78,7 +78,7 @@ namespace StorybrewCommon.Storyboarding
         }
         public object GetValue(string name) => fields[name].Value;
 
-        object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)
+        static object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)
         {
             if (newType.IsAssignableFrom(oldType)) return value;
             try

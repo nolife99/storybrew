@@ -32,7 +32,7 @@ namespace StorybrewCommon.Storyboarding3d
         public bool UseDistanceFade = true;
 
         ///<summary> If this value is not <see langword="null"/>, scales sprites based on this vector instead of distance from the <see cref="Camera"/>. </summary>
-        public Vector2? UseDefaultScale = null;
+        public Vector2? UseDefaultScale;
 
         ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
         public readonly KeyframedValue<Vector2> SpriteScale = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2, Vector2.One);
@@ -58,20 +58,20 @@ namespace StorybrewCommon.Storyboarding3d
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
         {
             var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
-            var screenPosition = cameraState.ToScreen(wvp, Vector3.Zero);
+            var screenPosition = CameraState.ToScreen(wvp, Vector3.Zero);
 
             var angle = 0d;
             switch (RotationMode)
             {
                 case RotationMode.UnitX:
                 {
-                    var delta = cameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
+                    var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
                     angle += Math.Atan2(delta.Y, delta.X);
                     break;
                 }
                 case RotationMode.UnitY:
                 {
-                    var delta = cameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
+                    var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
                     angle += Math.Atan2(delta.Y, delta.X) - Math.PI * .5;
                     break;
                 }
