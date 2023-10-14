@@ -13,7 +13,7 @@ namespace StorybrewCommon.Storyboarding3d
     ///<summary> Represents a basic 3D object. </summary>
     public class Object3d
     {
-        readonly IList<Object3d> children = new List<Object3d>();
+        readonly List<Object3d> children = new List<Object3d>();
 
         ///<summary> A keyframed value representing this instance's color keyframes. </summary>
         public readonly KeyframedValue<CommandColor> Coloring = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor, CommandColor.White);
@@ -38,6 +38,9 @@ namespace StorybrewCommon.Storyboarding3d
 
         ///<summary> Adds a 3D sub-object to this instance. </summary>
         public void Add(Object3d child) => children.Add(child);
+
+        ///<summary> Adds 3D sub-objects to this instance. </summary>
+        public void AddRange(IEnumerable<Object3d> child) => children.AddRange(child);
 
         ///<summary> Gets this instance's 3D-world transform at <paramref name="time"/>. </summary>
         public virtual Matrix4x4 WorldTransformAt(double time) => Matrix4x4.Identity;

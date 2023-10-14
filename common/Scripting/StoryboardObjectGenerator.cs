@@ -245,7 +245,10 @@ namespace StorybrewCommon.Scripting
                 var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory));
                 if (path != null)
                 {
-                    var cachedFontRoot = Misc.WithRetries(() => TinyToken.Read(path.Open(), TinyToken.Yaml), canThrow: false);
+                    var cachedFontRoot = Misc.WithRetries(() =>
+                    {
+                        using (var stream = path.Open()) return TinyToken.Read(stream, TinyToken.Yaml);
+                    }, canThrow: false);
                     if (cachedFontRoot != null) fontGenerator.HandleCache(cachedFontRoot);
                 }
             }
@@ -264,7 +267,7 @@ namespace StorybrewCommon.Scripting
                 if (path is null) path = cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
                 try
                 {
-                    fontRoot.Write(path.Open(), TinyToken.Yaml);
+                    using (var stream = path.Open()) fontRoot.Write(stream, TinyToken.Yaml);
                 }
                 catch (Exception e)
                 {

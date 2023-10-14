@@ -1,5 +1,6 @@
 ﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding.CommandValues;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -62,6 +63,7 @@ namespace StorybrewCommon.Storyboarding.Commands
         }
 
         public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
+        public override int GetHashCode() => ToString().GetHashCode();
 
         public virtual string ToOsbString(ExportSettings exportSettings)
         {
@@ -70,7 +72,7 @@ namespace StorybrewCommon.Storyboarding.Commands
             var startValueString = StartValue.ToOsbString(exportSettings);
             var endValueString = (ExportEndValue ? EndValue : StartValue).ToOsbString(exportSettings);
 
-            if (startTimeString == endTimeString) endTimeString = string.Empty;
+            if (startTimeString.Equals(endTimeString, StringComparison.Ordinal)) endTimeString = string.Empty;
 
             string[] parameters =
             {
