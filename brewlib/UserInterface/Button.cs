@@ -98,7 +98,6 @@ namespace BrewLib.UserInterface
         }
 
         protected override WidgetStyle Style => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(clickBehavior.Disabled ? "disabled" : null, clickBehavior.Hovered ? "hover" : null, clickBehavior.Pressed || isChecked ? "pressed" : null));
-
         protected override void ApplyStyle(WidgetStyle style)
         {
             base.ApplyStyle(style);

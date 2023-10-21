@@ -5,5 +5,6 @@ namespace StorybrewCommon.Storyboarding.CommandValues
     {
         float DistanceFrom(object obj);
         string ToOsbString(ExportSettings exportSettings);
+        int GetHashCode();
     }
 }

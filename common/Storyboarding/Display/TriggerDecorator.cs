@@ -11,14 +11,14 @@ namespace StorybrewCommon.Storyboarding.Display
         readonly ITypedCommand<TValue> command;
         double triggerTime;
 
-        public OsbEasing Easing { get { throw new InvalidOperationException(); } }
+        public OsbEasing Easing => throw new NotImplementedException();
         public double StartTime => triggerTime + command.StartTime;
         public double EndTime => triggerTime + command.EndTime;
         public TValue StartValue => command.StartValue;
         public TValue EndValue => command.EndValue;
         public double Duration => EndTime - StartTime;
         public bool Active { get; set; }
-        public int Cost => throw new InvalidOperationException();
+        public int Cost => throw new NotImplementedException();
 
         public event EventHandler OnStateChanged;
 
@@ -50,10 +50,7 @@ namespace StorybrewCommon.Storyboarding.Display
         }
         public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-        public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation)
-        {
-            throw new InvalidOperationException();
-        }
+        public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation) => throw new NotImplementedException();
         public override string ToString() => $"triggerable ({StartTime}s - {EndTime}s active:{Active})";
     }
 }

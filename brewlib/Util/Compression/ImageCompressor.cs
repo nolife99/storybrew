@@ -11,25 +11,24 @@ namespace BrewLib.Util.Compression
         protected Process process;
         protected ResourceContainer container;
 
-        public string UtilityPath { get; set; }
-        public string UtilityName { get; set; }
+        public string UtilityPath, UtilityName;
 
-        internal TimeSpan? ExecutionTimeout { get; set; }
-        internal UserCredential ProcessUser { get; set; }
+        internal TimeSpan? ExecutionTimeout;
+        internal UserCredential ProcessUser;
 
         public ImageCompressor(string utilityPath = null)
             => UtilityPath = utilityPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/cache";
 
         public void LosslessCompress(string path) => compress(path, "", null, null);
         public void Compress(string path) => compress(path, "lossy", null, null);
-        public void LosslessCompress(string path, LosslessInputSettings inputSettings) => compress(path, "", null, inputSettings);
-        public void Compress(string path, LossyInputSettings inputSettings) => compress(path, "lossy", inputSettings, null);
-        public void LosslessCompress(string path, LosslessInputSettings inputSettings, InputFormat inputFormat) => compress(path, "", null, inputSettings, inputFormat);
-        public void Compress(string path, LossyInputSettings inputSettings, InputFormat inputFormat) => compress(path, "lossy", inputSettings, null, inputFormat);
+        public void LosslessCompress(string path, LosslessInputSettings settings) => compress(path, "", null, settings);
+        public void Compress(string path, LossyInputSettings settings) => compress(path, "lossy", settings, null);
+        public void LosslessCompress(string path, LosslessInputSettings settings, InputFormat inputFormat) => compress(path, "", null, settings, inputFormat);
+        public void Compress(string path, LossyInputSettings settings, InputFormat inputFormat) => compress(path, "lossy", settings, null, inputFormat);
 
-        protected abstract void compress(string path, string compressionType, LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings, InputFormat inputFormat = null);
+        protected abstract void compress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null);
         protected abstract void waitForExit();
-        protected abstract string appendArgs(string path, string compressionType, LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings);
+        protected abstract string appendArgs(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless);
         protected abstract void ensureTool();
 
         protected void ensureStop()

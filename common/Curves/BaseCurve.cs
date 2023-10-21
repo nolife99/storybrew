@@ -1,4 +1,4 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
 
@@ -8,12 +8,12 @@ namespace StorybrewCommon.Curves
     [Serializable] public abstract class BaseCurve : Curve
     {
         ///<inheritdoc/>
-        public abstract Vector2 EndPosition { get; }
+        public abstract CommandPosition EndPosition { get; }
 
         ///<inheritdoc/>
-        public abstract Vector2 StartPosition { get; }
+        public abstract CommandPosition StartPosition { get; }
 
-        List<ValueTuple<float, Vector2>> distancePosition;
+        List<ValueTuple<float, CommandPosition>> distancePosition;
 
         double length;
 
@@ -29,15 +29,15 @@ namespace StorybrewCommon.Curves
 
         void initialize()
         {
-            distancePosition = new List<ValueTuple<float, Vector2>>();
+            distancePosition = new List<ValueTuple<float, CommandPosition>>();
             Initialize(distancePosition, out length);
         }
 
         ///<summary/>
-        protected abstract void Initialize(List<ValueTuple<float, Vector2>> distancePosition, out double length);
+        protected abstract void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length);
 
         ///<inheritdoc/>
-        public Vector2 PositionAtDistance(double distance)
+        public CommandPosition PositionAtDistance(double distance)
         {
             if (distancePosition == null) initialize();
 
@@ -72,6 +72,6 @@ namespace StorybrewCommon.Curves
         }
 
         ///<inheritdoc/>
-        public Vector2 PositionAtDelta(double delta) => PositionAtDistance(delta * Length);
+        public CommandPosition PositionAtDelta(double delta) => PositionAtDistance(delta * Length);
     }
 }

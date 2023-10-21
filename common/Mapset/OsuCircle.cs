@@ -1,6 +1,7 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace StorybrewCommon.Mapset
 {
@@ -34,7 +35,7 @@ namespace StorybrewCommon.Mapset
             }
             return new OsuCircle
             {
-                PlayfieldPosition = new Vector2(x, y),
+                PlayfieldPosition = new CommandPosition(x, y),
                 StartTime = startTime,
                 Flags = flags,
                 Additions = additions,
@@ -45,5 +46,8 @@ namespace StorybrewCommon.Mapset
                 SamplePath = samplePath
             };
         }
+
+        internal OsuCircle() { }
+        protected OsuCircle(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

@@ -10,9 +10,7 @@ namespace StorybrewCommon.Storyboarding.Display
     public class AnimatedValue<TValue> where TValue : CommandValue
     {
         public TValue DefaultValue;
-
-        readonly IList<ITypedCommand<TValue>> commands = new List<ITypedCommand<TValue>>();
-        public IEnumerable<ITypedCommand<TValue>> Commands => commands;
+        readonly List<ITypedCommand<TValue>> commands = new List<ITypedCommand<TValue>>();
 
         public bool HasCommands => commands.Count > 0;
         public bool HasOverlap { get; private set; }
@@ -32,7 +30,7 @@ namespace StorybrewCommon.Storyboarding.Display
             {
                 if (command.EndTime < command.StartTime) Trace.TraceWarning($"'{command}' ends before it starts");
 
-                findCommandIndex(command.StartTime, out int index);
+                var found = findCommandIndex(command.StartTime, out int index);
                 while (index < commands.Count)
                 {
                     if (commands[index].CompareTo(command) < 0) ++index;
@@ -71,6 +69,7 @@ namespace StorybrewCommon.Storyboarding.Display
         {
             var left = 0;
             var right = commands.Count - 1;
+
             while (left <= right)
             {
                 index = left + ((right - left) >> 1);

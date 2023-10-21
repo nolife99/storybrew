@@ -1,15 +1,26 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace StorybrewCommon.Mapset
 {
 #pragma warning disable CS1591
-    [Serializable]
-    public class OsuSpinner : OsuHitObject
+    [Serializable] public class OsuSpinner : OsuHitObject
     {
         public double endTime;
         public override double EndTime => endTime;
+
+        internal OsuSpinner() { }
+        protected OsuSpinner(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            endTime = info.GetDouble("endTime");
+        }
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("endTime", endTime);
+        }
 
         public static OsuSpinner Parse(string[] values, int x, int y, double startTime, HitObjectFlag flags, HitSoundAddition additions, ControlPoint timingPoint, ControlPoint controlPoint, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
         {
@@ -40,7 +51,7 @@ namespace StorybrewCommon.Mapset
             }
             return new OsuSpinner
             {
-                PlayfieldPosition = new Vector2(x, y),
+                PlayfieldPosition = new CommandPosition(x, y),
                 StartTime = startTime,
                 Flags = flags,
                 Additions = additions,

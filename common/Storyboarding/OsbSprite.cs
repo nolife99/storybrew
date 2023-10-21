@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
+using System.Numerics;
 
 namespace StorybrewCommon.Storyboarding
 {
@@ -65,6 +67,9 @@ namespace StorybrewCommon.Storyboarding
         ///<returns> The total amount of commands being run on this instance of the <see cref="OsbSprite"/>. </returns>
         public int CommandCount => commands.Count;
 
+        ///<returns> The total amount of commands, including loops, being run on this instance of the <see cref="OsbSprite"/>. </returns>
+        public int CommandCost => commands.Sum(c => c.Cost);
+
         ///<returns> True if the <see cref="OsbSprite"/> has incompatible commands, else returns false. </returns>
         public bool HasIncompatibleCommands =>
             (moveTimeline.HasCommands && (moveXTimeline.HasCommands || moveYTimeline.HasCommands)) ||
@@ -103,9 +108,8 @@ namespace StorybrewCommon.Storyboarding
         void refreshStartEndTimes()
         {
             clearStartEndTimes();
-            foreach (var command in commands)
+            foreach (var command in commands) if (command.Active)
             {
-                if (!command.Active) continue;
                 commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
                 commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
             }
@@ -593,12 +597,7 @@ namespace StorybrewCommon.Storyboarding
                 currentCommandGroup = commandGroup;
                 commands.Add(commandGroup);
             }
-            else
-            {
-                if (currentCommandGroup != null) currentCommandGroup.Add(command);
-                else commands.Add(command);
-                addDisplayCommand(command);
-            }
+            else if (currentCommandGroup != null ? currentCommandGroup.Add(command) : commands.Add(command)) addDisplayCommand(command);
             clearStartEndTimes();
         }
 
@@ -633,12 +632,11 @@ namespace StorybrewCommon.Storyboarding
         #region Display 
 
         readonly List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>> displayValueBuilders = new List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>>();
-
         readonly AnimatedValue<CommandPosition> moveTimeline = new AnimatedValue<CommandPosition>();
         readonly AnimatedValue<CommandDecimal> moveXTimeline = new AnimatedValue<CommandDecimal>();
         readonly AnimatedValue<CommandDecimal> moveYTimeline = new AnimatedValue<CommandDecimal>();
         readonly AnimatedValue<CommandDecimal> scaleTimeline = new AnimatedValue<CommandDecimal>(1);
-        readonly AnimatedValue<CommandScale> scaleVecTimeline = new AnimatedValue<CommandScale>(System.Numerics.Vector2.One);
+        readonly AnimatedValue<CommandScale> scaleVecTimeline = new AnimatedValue<CommandScale>(Vector2.One);
         readonly AnimatedValue<CommandDecimal> rotateTimeline = new AnimatedValue<CommandDecimal>();
         readonly AnimatedValue<CommandDecimal> fadeTimeline = new AnimatedValue<CommandDecimal>(1);
         readonly AnimatedValue<CommandColor> colorTimeline = new AnimatedValue<CommandColor>(CommandColor.White);
@@ -714,7 +712,7 @@ namespace StorybrewCommon.Storyboarding
         ///<summary> Writes this sprite's data to a stream. </summary>
         public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
         {
-            if (CommandCount == 0) return;
+            if (commands.Count == 0) return;
             var osbSpriteWriter = OsbWriterFactory.CreateWriter(this,
                 moveTimeline, moveXTimeline, moveYTimeline,
                 scaleTimeline, scaleVecTimeline,
@@ -731,9 +729,8 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="size"> The image dimensions of the sprite texture. </param>
         ///<param name="rotation"> The rotation, in radians, of the sprite. </param>
         ///<param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
-        public static bool InScreenBounds(CommandPosition position, SizeF size, double rotation, OsbOrigin origin)
-            => new OrientedBoundingBox(position, GetOriginVector(origin, size.Width, size.Height), size.Width, size.Height, rotation)
-                           .Intersects(OsuHitObject.WidescreenStoryboardBounds);
+        public static bool InScreenBounds(CommandPosition position, CommandScale size, double rotation, OsbOrigin origin)
+            => new OrientedBoundingBox(position, GetOriginVector(origin, size.X, size.Y), size.X, size.Y, rotation).Intersects(OsuHitObject.WidescreenStoryboardBounds);
 
         ///<summary> Gets the <see cref="CommandPosition"/> origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
         ///<param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>

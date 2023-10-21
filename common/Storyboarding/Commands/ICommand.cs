@@ -12,5 +12,6 @@ namespace StorybrewCommon.Storyboarding.Commands
         int Cost { get; }
 
         void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation);
+        int GetHashCode();
     }
 }

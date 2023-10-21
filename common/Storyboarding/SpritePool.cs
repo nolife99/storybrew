@@ -13,7 +13,7 @@ namespace StorybrewCommon.Storyboarding
         readonly OsbOrigin origin;
         readonly CommandPosition position;
         readonly Action<OsbSprite, double, double> attributes;
-        readonly HashSet<PooledSprite> pooledSprites = new HashSet<PooledSprite>();
+        readonly List<PooledSprite> pooled;
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
         public int MaxPoolDuration;
@@ -31,6 +31,7 @@ namespace StorybrewCommon.Storyboarding
             this.origin = origin;
             this.position = position;
             this.attributes = attributes;
+            pooled = new List<PooledSprite>();
         }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
@@ -96,38 +97,38 @@ namespace StorybrewCommon.Storyboarding
         public OsbSprite Get(double startTime, double endTime)
         {
             PooledSprite result = null;
+            for (var i = 0; i < pooled.Count; ++i) if (validateDur(startTime, pooled[i]) && (result is null || pooled[i].StartTime < result.StartTime))
+            { 
+                result = pooled[i];
+                break;
+            }
 
-            foreach (var pooledSprite in pooledSprites)
-                if (getPoolDuration(startTime, MaxPoolDuration, pooledSprite) &&
-                (result == null || pooledSprite.StartTime < result.StartTime)) 
-                    result = pooledSprite;
-
-            if (result != null)
+            if (!(result is null))
             {
                 result.EndTime = endTime;
                 return result.Sprite;
             }
 
             var sprite = CreateSprite(segment, path, origin, position);
-            pooledSprites.Add(new PooledSprite(sprite, startTime, endTime));
+            pooled.Add(new PooledSprite(sprite, startTime, endTime));
 
             return sprite;
         }
-
-        static bool getPoolDuration(double startTime, int value, PooledSprite sprite) => value > 0 ?
-            sprite.EndTime <= startTime && startTime < sprite.StartTime + value : sprite.EndTime <= startTime;
+        bool validateDur(double startTime, PooledSprite sprite) => MaxPoolDuration > 0 ? sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration : sprite.EndTime <= startTime;
 
         internal void Clear()
         {
-            if (attributes != null) foreach (var pooledSprite in pooledSprites)
+            if (attributes != null) foreach (var pooledSprite in pooled)
             {
                 var sprite = pooledSprite.Sprite;
                 attributes(sprite, sprite.CommandsStartTime, pooledSprite.EndTime);
             }
-            pooledSprites.Clear();
+            pooled.Clear();
         }
 
-        internal virtual OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
+#pragma warning disable CS1591
+        protected virtual OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
+#pragma warning restore CS1591
             => segment.CreateSprite(path, origin, position);
 
         class PooledSprite
@@ -158,11 +159,11 @@ namespace StorybrewCommon.Storyboarding
 
     ///<summary> Provides a way to optimize filesize and creates a way for sprites to be reused at a minor cost of performance. </summary>
     ///<remarks> Includes support for animation pools. </remarks>
-    public class SpritePools : IDisposable
+    public sealed class SpritePools : IDisposable
     {
         readonly StoryboardSegment segment;
-        readonly DisposableNativeDictionary<string, SpritePool> pools = new DisposableNativeDictionary<string, SpritePool>();
-        readonly DisposableNativeDictionary<string, AnimationPool> animationPools = new DisposableNativeDictionary<string, AnimationPool>();
+        readonly IDictionary<string, SpritePool> pools = new DisposableNativeDictionary<string, SpritePool>();
+        readonly IDictionary<string, AnimationPool> animationPools = new DisposableNativeDictionary<string, AnimationPool>();
 
         ///<summary> Constructs a <see cref="SpritePools"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
@@ -380,8 +381,7 @@ namespace StorybrewCommon.Storyboarding
         {
             var key = getKey(path, frameCount, frameDelay, loopType, origin, attributes, group);
             if (!animationPools.TryGetValue(key, out AnimationPool pool)) animationPools[key] = 
-                pool = new AnimationPool(segment, path, frameCount, frameDelay, loopType, origin, position, attributes) 
-            { MaxPoolDuration = maxPoolDuration };
+                pool = new AnimationPool(segment, path, frameCount, frameDelay, loopType, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
 
             return pool;
         }
@@ -394,8 +394,8 @@ namespace StorybrewCommon.Storyboarding
 
         void Clear()
         {
-            pools.Dispose();
-            animationPools.Dispose();
+            ((IDisposable)pools).Dispose();
+            ((IDisposable)animationPools).Dispose();
         }
 
         bool disposed;
@@ -513,7 +513,9 @@ namespace StorybrewCommon.Storyboarding
         public AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, bool additive)
             : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive) { }
 
-        internal override OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
+#pragma warning disable CS1591
+        protected override OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
+#pragma warning restore CS1591
             => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);
     }
 }

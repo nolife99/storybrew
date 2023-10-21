@@ -8,8 +8,7 @@ namespace StorybrewCommon.Util
 #pragma warning disable CS1591
     public class OrientedBoundingBox
     {
-        readonly CommandPosition[] corners = new CommandPosition[4];
-        readonly CommandPosition[] axis = new CommandPosition[2];
+        readonly CommandPosition[] corners = new CommandPosition[4], axis = new CommandPosition[2];
         readonly double[] origins = new double[2];
 
         public OrientedBoundingBox(CommandPosition position, CommandPosition origin, double width, double height, double angle)
@@ -30,7 +29,7 @@ namespace StorybrewCommon.Util
             axis[1] = corners[3] - corners[0];
             for (var a = 0; a < 2; ++a)
             {
-                axis[a] /= ((Vector2)axis[a]).LengthSquared();
+                axis[a] /= Vector2.Dot(axis[a], axis[a]);
                 origins[a] = Vector2.Dot(corners[0], axis[a]);
             }
         }
@@ -56,7 +55,7 @@ namespace StorybrewCommon.Util
                 minY = Math.Min(minY, corner.Y);
                 maxY = Math.Max(maxY, corner.Y);
             }
-            return new RectangleF(minX, minY, maxX, maxY);
+            return RectangleF.FromLTRB(minX, minY, maxX, maxY);
         }
 
         public bool Intersects(OrientedBoundingBox other) => intersects1Way(other) && other.intersects1Way(this);
@@ -69,6 +68,7 @@ namespace StorybrewCommon.Util
                 var t = Vector2.Dot(other.corners[0], axis[a]);
                 var tMin = t;
                 var tMax = t;
+
                 for (var c = 1; c < 4; ++c)
                 {
                     t = Vector2.Dot(other.corners[c], axis[a]);

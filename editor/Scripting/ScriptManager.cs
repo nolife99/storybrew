@@ -168,7 +168,7 @@ namespace StorybrewEditor.Scripting
                 document.DocumentElement.AppendChild(referencedAssembliesGroup);
                 foreach (var path in referencedAssemblies) if (!Project.DefaultAssemblies.Contains(path))
                 {
-                    var isSystem = path.StartsWith("System.", StringComparison.InvariantCulture);
+                    var isSystem = path.StartsWith("System.", StringComparison.Ordinal);
                     var relativePath = isSystem ? path : PathHelper.GetRelativePath(ScriptsPath, path);
 
                     var compileNode = document.CreateElement("Reference", xmlns);
@@ -183,7 +183,7 @@ namespace StorybrewEditor.Scripting
                 }
                 document.Save(csProjPath);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 throw;
             }

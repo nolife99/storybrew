@@ -188,7 +188,7 @@ namespace StorybrewScripts
             }
         }
 
-        string removeQuotes(string path) => path.StartsWith("\"", StringComparison.InvariantCulture) && path.EndsWith("\"", StringComparison.InvariantCulture) ? 
+        string removeQuotes(string path) => path.StartsWith("\"", StringComparison.Ordinal) && path.EndsWith("\"", StringComparison.Ordinal) ? 
             path.Substring(1, path.Length - 2) : path;
 
         string applyVariables(string line)

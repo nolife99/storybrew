@@ -1,6 +1,7 @@
 ﻿using OpenTK.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 namespace StorybrewCommon.Mapset
 {
@@ -56,7 +57,7 @@ namespace StorybrewCommon.Mapset
         public abstract IEnumerable<ControlPoint> TimingPoints { get; }
 
         ///<summary> Returns the hit circle combo colors of this difficulty. </summary>
-        public abstract IEnumerable<Color4> ComboColors { get; }
+        public abstract IEnumerable<Color> ComboColors { get; }
 
         ///<summary> Returns the breaks of this difficulty. </summary>
         public abstract IEnumerable<OsuBreak> Breaks { get; }

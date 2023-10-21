@@ -17,7 +17,7 @@ namespace StorybrewEditor.UserInterface.Components
 
         public SettingsMenu(WidgetManager manager, Project project) : base(manager)
         {
-            Button referencedAssemblyButton, floatingPointTimeButton, helpButton, displayWarningbutton;
+            Button referencedAssemblyButton, floatingPointTimeButton, helpButton, displayWarningbutton, hitObjectsButton;
             Label dimLabel;
             Slider dimSlider;
 
@@ -90,7 +90,16 @@ namespace StorybrewEditor.UserInterface.Components
                                 AnchorTo = BoxAlignment.Centre,
                                 Checkable = true,
                                 Checked = project.DisplayDebugWarning,
-                                Tooltip = "Toggle to display debug diagnostics about\nyour storyboard."
+                                Tooltip = "Display debug diagnostics about your storyboard."
+                            },
+                            hitObjectsButton = new Button(manager)
+                            {
+                                Text = "Toggle hit objects",
+                                AnchorFrom = BoxAlignment.Centre,
+                                AnchorTo = BoxAlignment.Centre,
+                                Checkable = true,
+                                Checked = project.ShowHitObjects,
+                                Tooltip = "Displays hit objects of the current beatmap on\nthe timeline."
                             }
                         }
                     }
@@ -106,6 +115,7 @@ namespace StorybrewEditor.UserInterface.Components
             };
             floatingPointTimeButton.OnValueChanged += (sender, e) => project.ExportSettings.UseFloatForTime = floatingPointTimeButton.Checked;
             displayWarningbutton.OnValueChanged += (sender, e) => project.DisplayDebugWarning = displayWarningbutton.Checked;
+            hitObjectsButton.OnValueChanged += (sender, e) => project.ShowHitObjects = hitObjectsButton.Checked;
         }
 
         protected override void Dispose(bool disposing) => base.Dispose(disposing);

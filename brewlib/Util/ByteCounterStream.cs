@@ -26,8 +26,8 @@ namespace BrewLib.Util
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (offset + count > buffer.Length) throw new OverflowException("Sum of offset and count is greater than buffer size");
-            if (buffer == null) throw new ArgumentNullException("Buffer cannot be null");
-            if (offset < 0 || count < 0) throw new ArgumentOutOfRangeException("Offset or count should be greater than zero");
+            if (buffer is null) throw new ArgumentNullException("Buffer cannot be null");
+            if (offset < 0 || count < 0) throw new ArgumentOutOfRangeException("Offset/count should be greater than zero");
 
             length += count;
         }

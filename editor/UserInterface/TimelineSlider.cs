@@ -34,7 +34,6 @@ namespace StorybrewEditor.UserInterface
         float timeSpan;
 
         public int SnapDivisor = 4;
-        public bool ShowHitObjects;
 
         float dragStart;
 
@@ -78,7 +77,7 @@ namespace StorybrewEditor.UserInterface
 
             var bounds = Bounds;
             var offset = new Vector2(bounds.Left, bounds.Top);
-            var lineBottomY = ShowHitObjects ? bounds.Height * .7f : bounds.Height * .6f;
+            var lineBottomY = project.ShowHitObjects ? bounds.Height * .7f : bounds.Height * .6f;
             var hitObjectsY = bounds.Height * .6f;
             var pixelSize = Manager.PixelSize;
 
@@ -169,15 +168,15 @@ namespace StorybrewEditor.UserInterface
             });
 
             // HitObjects
-            if (ShowHitObjects) foreach (var hitObject in project.MainBeatmap.HitObjects) if (leftTime < hitObject.EndTime && hitObject.StartTime < rightTime)
-                    {
-                        var left = Math.Max(0, (hitObject.StartTime - leftTime) * timeScale);
-                        var right = Math.Min((hitObject.EndTime - leftTime) * timeScale, bounds.Width);
-                        var height = Math.Max(bounds.Height * .1f - pixelSize, pixelSize);
+            if (project.ShowHitObjects) foreach (var hitObject in project.MainBeatmap.HitObjects) if (leftTime < hitObject.EndTime && hitObject.StartTime < rightTime)
+            {
+                var left = Math.Max(0, (hitObject.StartTime - leftTime) * timeScale);
+                var right = Math.Min((hitObject.EndTime - leftTime) * timeScale, bounds.Width);
+                var height = Math.Max(bounds.Height * .1f - pixelSize, pixelSize);
 
-                        drawLine(drawContext, offset + new Vector2((float)Manager.SnapToPixel(left - height / 2), hitObjectsY),
-                            new Vector2((float)Manager.SnapToPixel(right - left + height), height), hitObject.Color, actualOpacity);
-                    }
+                drawLine(drawContext, offset + new Vector2((float)Manager.SnapToPixel(left - height / 2), hitObjectsY),
+                    new Vector2((float)Manager.SnapToPixel(right - left + height), height), hitObject.Color, actualOpacity);
+            }
 
             // Bookmarks
             foreach (var bookmark in project.MainBeatmap.Bookmarks)
@@ -193,10 +192,9 @@ namespace StorybrewEditor.UserInterface
             }
 
             // Current time (top)
+            var x = timeToXTop(Value);
             {
-                var x = timeToXTop(Value);
                 var lineSize = new Vector2(pixelSize, bounds.Height * .4f);
-
                 if (RepeatStart != RepeatEnd)
                 {
                     drawLine(drawContext, new Vector2(timeToXTop(RepeatStart) - pixelSize, offset.Y), lineSize, Color4.White, actualOpacity);
@@ -208,12 +206,10 @@ namespace StorybrewEditor.UserInterface
                     drawLine(drawContext, new Vector2(x - pixelSize, offset.Y), lineSize, Color4.White, actualOpacity);
                     drawLine(drawContext, new Vector2(x + pixelSize, offset.Y), lineSize, Color4.White, actualOpacity);
                 }
-            }
 
-            // Current time (bottom)
-            {
+                // Current time (bottom)
                 var centerX = (float)Math.Round(bounds.Width * .5);
-                var lineSize = new Vector2(pixelSize, bounds.Height * .4f);
+                lineSize = new Vector2(pixelSize, bounds.Height * .4f);
                 drawLine(drawContext, offset + new Vector2(centerX - pixelSize, lineBottomY), lineSize, Color4.White, actualOpacity);
                 drawLine(drawContext, offset + new Vector2(centerX + pixelSize, lineBottomY), lineSize, Color4.White, actualOpacity);
             }

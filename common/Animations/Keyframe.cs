@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace StorybrewCommon.Animations
 {
     /// <summary> Represents a basic keyframe with a time and value. </summary>
     /// <typeparam name="TValue"> A type that represents the value of this keyframe. </typeparam>
-    public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, IComparable<Keyframe<TValue>>
+    public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, IComparable<Keyframe<TValue>>, IComparer<Keyframe<TValue>>
     {
         ///<summary> Time of this keyframe. </summary>
         public readonly double Time;
@@ -53,6 +54,7 @@ namespace StorybrewCommon.Animations
         ///<param name="other"> The other keyframe to be compared. </param>
         ///<returns> A relative value of the comparison. </returns>
         public int CompareTo(Keyframe<TValue> other) => Math.Sign(Time - other.Time);
+        int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Math.Sign(x.Time - y.Time);
 
         ///<summary> Creates a formatted string containing this <see cref="Keyframe{TValue}"/>'s time and value. </summary>
         public override string ToString() => $"{Time:0.000}s {typeof(TValue)}:{Value}";

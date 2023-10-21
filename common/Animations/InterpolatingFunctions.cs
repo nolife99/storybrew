@@ -35,8 +35,8 @@ namespace StorybrewCommon.Animations
         ///<summary> Represents a function that performs spherical linear interpolation on 2 <see cref="Quaternion"/>s. </summary>
         public static Func<Quaternion, Quaternion, double, Quaternion> QuaternionSlerp = (from, to, progress) =>
         {
-            var zeroTo = Quaternion.Dot(to, to) == 0;
-            if (Quaternion.Dot(from, from) == 0)
+            var zeroTo = to.LengthSquared() == 0;
+            if (from.LengthSquared() == 0)
             {
                 if (zeroTo) return Quaternion.Identity;
                 return to;
@@ -67,14 +67,10 @@ namespace StorybrewCommon.Animations
                 s2 = Math.Sin(progress * omega) * invSinOmega;
             }
 
-            return new Quaternion(
-                (float)(s1 * from.X + s2 * to.X),
-                (float)(s1 * from.Y + s2 * to.Y),
-                (float)(s1 * from.Z + s2 * to.Z),
-                (float)(s1 * from.W + s2 * to.W));
+            return new Quaternion((float)(s1 * from.X + s2 * to.X), (float)(s1 * from.Y + s2 * to.Y), (float)(s1 * from.Z + s2 * to.Z), (float)(s1 * from.W + s2 * to.W));
         };
 
-        ///<summary/>
+        ///<summary> Interpolates  </summary>
         public static Func<bool, bool, double, bool> BoolFrom = (from, to, progress) => from;
 
         ///<summary/>

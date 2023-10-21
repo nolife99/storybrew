@@ -26,8 +26,9 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public override string ToString() => ToOsbString(ExportSettings.Default);
 
         public float DistanceFrom(object obj) => ((CommandParameter)obj).Type != Type ? 1 : 0;
+        public bool Equals(CommandParameter obj) => Type == obj.Type;
         public override bool Equals(object obj) => obj is CommandParameter parameter && Equals(parameter);
-        public override int GetHashCode() => ToOsbString(ExportSettings.Default).GetHashCode();
+        public override int GetHashCode() => ToOsbString(ExportSettings.Default)[0].GetHashCode();
 
         public static bool operator ==(CommandParameter left, CommandParameter right) => left.Equals(right);
         public static bool operator !=(CommandParameter left, CommandParameter right) => !left.Equals(right);

@@ -234,11 +234,11 @@ namespace StorybrewCommon.Animations
 
         ///<summary> Returns an enumerator that iterates through the keyframed value. </summary>
         public IEnumerator<Keyframe<TValue>> GetEnumerator() => keyframes.GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => keyframes.GetEnumerator();
 
         int indexFor(Keyframe<TValue> keyframe, bool before)
         {
-            var i = keyframes.BinarySearch(keyframe);
+            var i = keyframes.BinarySearch(keyframe, keyframe);
             if (i >= 0)
             {
                 if (before) while (i > 0 && keyframes[i].Time >= keyframe.Time) --i;

@@ -40,7 +40,7 @@ namespace StorybrewEditor.Storyboarding
         public string ProjectFolderPath => Path.GetDirectoryName(projectPath);
         public string ProjectAssetFolderPath => Path.Combine(ProjectFolderPath, "assetlibrary");
 
-        internal bool DisplayDebugWarning;
+        internal bool DisplayDebugWarning, ShowHitObjects;
 
         public string ScriptsPath { get; }
         public string CommonScriptsPath { get; }
@@ -437,7 +437,7 @@ namespace StorybrewEditor.Storyboarding
         public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
         {
             var project = new Project(projectPath, withCommonScripts, resourceContainer);
-            if (projectPath.EndsWith(BinaryExtension, StringComparison.InvariantCulture)) project.loadBinary(projectPath);
+            if (projectPath.EndsWith(BinaryExtension, StringComparison.Ordinal)) project.loadBinary(projectPath);
             else project.loadText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
             return project;
         }
@@ -640,7 +640,7 @@ namespace StorybrewEditor.Storyboarding
                     var layersRoot = new TinyObject();
                     effectRoot.Add("Layers", layersRoot);
 
-                    foreach (var layer in LayerManager.Layers.Where(l => l.Effect == effect))
+                    foreach (var layer in LayerManager.Layers) if (layer.Effect == effect)
                     {
                         var layerRoot = new TinyObject
                         {
@@ -821,7 +821,7 @@ namespace StorybrewEditor.Storyboarding
 
                         if (inEvents)
                         {
-                            if (trimmedLine.StartsWith("//Storyboard Layer", StringComparison.InvariantCulture))
+                            if (trimmedLine.StartsWith("//Storyboard Layer", StringComparison.Ordinal))
                             {
                                 if (!inStoryboard)
                                 {
@@ -835,7 +835,7 @@ namespace StorybrewEditor.Storyboarding
                                     inStoryboard = true;
                                 }
                             }
-                            else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.InvariantCulture)) inStoryboard = false;
+                            else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.Ordinal)) inStoryboard = false;
 
                             if (inStoryboard) continue;
                         }

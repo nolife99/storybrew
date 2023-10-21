@@ -1,11 +1,11 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using StorybrewCommon.Mapset;
+﻿using StorybrewCommon.Mapset;
+using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 using StorybrewEditor.Storyboarding;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 
@@ -27,7 +27,7 @@ namespace StorybrewEditor.Mapset
         double stackLeniency = 0.7;
         public override double StackLeniency => stackLeniency;
 
-        readonly List<int> bookmarks = new List<int>();
+        readonly HashSet<int> bookmarks = new HashSet<int>();
         public override IEnumerable<int> Bookmarks => bookmarks;
 
         double hpDrainRate = 5;
@@ -59,15 +59,15 @@ namespace StorybrewEditor.Mapset
             }
         }
 
-        static readonly Color4[] defaultComboColors =
+        static readonly Color[] defaultComboColors =
         {
-            new Color4(255, 192, 0, 255),
-            new Color4(0, 202, 0, 255),
-            new Color4(18, 124, 255, 255),
-            new Color4(242, 24, 57, 255)
+            Color.FromArgb(255, 192, 0),
+            Color.FromArgb(0, 202, 0),
+            Color.FromArgb(18, 124, 255),
+            Color.FromArgb(242, 24, 57)
         };
-        readonly List<Color4> comboColors = new List<Color4>(defaultComboColors);
-        public override IEnumerable<Color4> ComboColors => comboColors;
+        readonly List<Color> comboColors = new List<Color>(defaultComboColors);
+        public override IEnumerable<Color> ComboColors => comboColors;
 
         string backgroundPath;
         public override string BackgroundPath => backgroundPath;
@@ -120,8 +120,7 @@ namespace StorybrewEditor.Mapset
             try
             {
                 var beatmap = new EditorBeatmap(path);
-                using (var stream = File.OpenRead(path))
-                using (var reader = new StreamReader(stream, Project.Encoding)) reader.ParseSections(section =>
+                using (var stream = File.OpenRead(path)) using (var reader = new StreamReader(stream, Project.Encoding)) reader.ParseSections(section =>
                 {
                     switch (section)
                     {
@@ -172,8 +171,8 @@ namespace StorybrewEditor.Mapset
 
                         case "Events": reader.ParseSectionLines(line =>
                         {
-                            if (line.StartsWith("//", StringComparison.InvariantCulture)) return;
-                            if (line.StartsWith(" ", StringComparison.InvariantCulture)) return;
+                            if (line.StartsWith("//", StringComparison.Ordinal)) return;
+                            if (line.StartsWith(" ", StringComparison.Ordinal)) return;
 
                             var values = line.Split(',');
                             switch (values[0])
@@ -195,10 +194,10 @@ namespace StorybrewEditor.Mapset
                             beatmap.comboColors.Clear();
                             reader.ParseKeyValueSection((key, value) =>
                             {
-                                if (!key.StartsWith("Combo", StringComparison.InvariantCulture)) return;
+                                if (!key.StartsWith("Combo", StringComparison.Ordinal)) return;
 
                                 var rgb = value.Split(',');
-                                beatmap.comboColors.Add(new Color4(byte.Parse(rgb[0], CultureInfo.InvariantCulture), byte.Parse(rgb[1], CultureInfo.InvariantCulture), byte.Parse(rgb[2], CultureInfo.InvariantCulture), 255));
+                                beatmap.comboColors.Add(Color.FromArgb(byte.Parse(rgb[0], CultureInfo.InvariantCulture), byte.Parse(rgb[1], CultureInfo.InvariantCulture), byte.Parse(rgb[2], CultureInfo.InvariantCulture)));
                             });
 
                             if (beatmap.comboColors.Count == 0) beatmap.comboColors.AddRange(defaultComboColors);
@@ -231,7 +230,8 @@ namespace StorybrewEditor.Mapset
 
                                 beatmap.hitObjects.Add(hitobject);
                                 previousHitObject = hitobject;
-                            });
+                            }, false);
+
                             break;
                         }
                     }
@@ -287,10 +287,9 @@ namespace StorybrewEditor.Mapset
                     var objectN = hitObjects[n];
                     if (objectN is OsuSpinner) continue;
 
-                    if (objectI.StartTime - (preemtTime * StackLeniency) > objectN.StartTime) break;
+                    if (objectI.StartTime - preemtTime * StackLeniency > objectN.StartTime) break;
 
-                    var spanN = objectN as OsuSlider;
-                    if (((spanN?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
+                    if ((((objectN as OsuSlider)?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
                     {
                         objectN.StackIndex = objectI.StackIndex + 1;
                         objectI = objectN;
@@ -300,12 +299,12 @@ namespace StorybrewEditor.Mapset
 
             var hitobjectScale = (1 - .7 * (CircleSize - 5) / 5) / 2;
             var hitObjectRadius = 64 * hitobjectScale;
-            var stackOffset = (float)hitObjectRadius / 10;
+            var stackOffset = hitObjectRadius / 10;
 
-            hitObjects.ForEach(h => h.StackOffset = new Vector2(-stackOffset, -stackOffset) * h.StackIndex);
+            hitObjects.ForEach(h => h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex);
         }
 
-        static string removePathQuotes(string path) => path.StartsWith("\"", StringComparison.InvariantCulture) && path.EndsWith("\"", StringComparison.InvariantCulture) ?
+        static string removePathQuotes(string path) => path.StartsWith("\"", StringComparison.Ordinal) && path.EndsWith("\"", StringComparison.Ordinal) ?
             path.Substring(1, path.Length - 2) : path;
 
         #endregion

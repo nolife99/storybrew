@@ -2,17 +2,18 @@
 using StorybrewCommon.Mapset;
 using System.Numerics;
 using System;
+using System.Drawing;
 
 namespace StorybrewCommon.Storyboarding3d
 {
 #pragma warning disable CS1591
     public abstract class Camera
     {
-        public Vector2 Resolution = new Vector2(1366, 768);
-        public double ResolutionScale => OsuHitObject.StoryboardSize.Y / Resolution.Y;
-        public double AspectRatio => Resolution.X / Resolution.Y;
-        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.X * .5 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) * .5));
-        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Y * .5 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) * .5));
+        public static SizeF Resolution = new Size(1366, 768);
+        public static double ResolutionScale = OsuHitObject.StoryboardSize.Height / Resolution.Height;
+        public static double AspectRatio = Resolution.Width / Resolution.Height;
+        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.Width / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
+        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Height / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
         public abstract CameraState StateAt(double time);
     }
     public class CameraState
@@ -33,12 +34,12 @@ namespace StorybrewCommon.Storyboarding3d
         }
         public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
         {
-            var offset = (OsuHitObject.WidescreenStoryboardSize.X - OsuHitObject.StoryboardSize.X) * .5f;
+            var offset = (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) * .5f;
 
             var transformedPoint = Vector4.Transform(new Vector4(point, 1), transform);
-            var ndc = new OpenTK.Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W);
+            var ndc = new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W);
 
-            var screenPosition = (ndc + OpenTK.Vector2.One) * .5f * OsuHitObject.WidescreenStoryboardSize;
+            var screenPosition = (ndc + Vector2.One) / 2 * new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
             var depth = transformedPoint.Z / transformedPoint.W;
 
             return new Vector4(screenPosition.X - offset, screenPosition.Y, depth, transformedPoint.W);
@@ -101,16 +102,16 @@ namespace StorybrewCommon.Storyboarding3d
             if (HorizontalFov.Count > 0)
             {
                 var fovX = OpenTK.MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
-                fovY = 2 * Math.Atan(Math.Tan(fovX * .5) / aspectRatio);
+                fovY = 2 * Math.Atan(Math.Tan(fovX / 2) / aspectRatio);
             }
             else
             {
                 fovY = VerticalFov.Count > 0 ? OpenTK.MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
-                2 * Math.Atan(Resolution.Y / 2D / Math.Max(.0001, (cameraPosition - targetPosition).Length()));
+                2 * Math.Atan(Resolution.Height / 2f / Math.Max(.0001, (cameraPosition - targetPosition).Length()));
             }
 
-            var focusDistance = Resolution.Y * .5 / Math.Tan(fovY * .5);
-            var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance * .5, 1);
+            var focusDistance = Resolution.Height / 2 / Math.Tan(fovY / 2);
+            var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance / 2, 1);
             var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5;
 
             var nearFade = NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip;

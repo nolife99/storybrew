@@ -52,9 +52,9 @@ namespace StorybrewCommon.Storyboarding3d
             var layer = Segment ?? parentSegment;
             var childrenLayer = ChildrenInheritLayer ? layer : parentSegment;
 
-            foreach (var child in children.Where(c => c.DrawBelowParent)) child.GenerateTreeSprite(childrenLayer);
+            foreach (var child in children) if (child.DrawBelowParent) child.GenerateTreeSprite(childrenLayer);
             GenerateSprite(layer);
-            foreach (var child in children.Where(c => !c.DrawBelowParent)) child.GenerateTreeSprite(childrenLayer);
+            foreach (var child in children) if (!child.DrawBelowParent) child.GenerateTreeSprite(childrenLayer);
         }
 
         ///<summary> Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given <see cref="Camera"/>'s state. </summary>

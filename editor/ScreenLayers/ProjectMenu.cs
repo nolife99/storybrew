@@ -411,10 +411,10 @@ namespace StorybrewEditor.ScreenLayers
             base.OnMouseMove(e);
 
             var bounds = storyboardContainer.Bounds;
-            var scale = OsuHitObject.StoryboardSize.Y / bounds.Height;
+            var scale = OsuHitObject.StoryboardSize.Height / bounds.Height;
 
             storyboardPosition = (WidgetManager.MousePosition - new Vector2(bounds.Left, bounds.Top)) * scale;
-            storyboardPosition.X -= (bounds.Width * scale - OsuHitObject.StoryboardSize.X) / 2;
+            storyboardPosition.X -= (bounds.Width * scale - OsuHitObject.StoryboardSize.Width) / 2;
         }
         public override bool OnMouseWheel(MouseWheelEventArgs e)
         {

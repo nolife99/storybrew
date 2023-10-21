@@ -15,11 +15,11 @@ namespace StorybrewCommon.Util
             Math.Max(box2.Left, other.Left), Math.Max(box2.Top, other.Top),
             Math.Min(box2.Right, other.Right), Math.Min(box2.Bottom, other.Bottom));
 
-        public static RectangleF IntersectWith(this RectangleF box2, RectangleF other) => new RectangleF(
+        public static RectangleF IntersectWith(this RectangleF box2, RectangleF other) => RectangleF.FromLTRB(
             Math.Max(box2.Left, other.Left), Math.Max(box2.Top, other.Top),
             Math.Min(box2.Right, other.Right), Math.Min(box2.Bottom, other.Bottom));
 
-        public static RectangleF IntersectWith(this RectangleF box2, Box2 other) => new RectangleF(
+        public static RectangleF IntersectWith(this RectangleF box2, Box2 other) => RectangleF.FromLTRB(
             Math.Max(box2.Left, other.Left), Math.Max(box2.Top, other.Top),
             Math.Min(box2.Right, other.Right), Math.Min(box2.Bottom, other.Bottom));
 

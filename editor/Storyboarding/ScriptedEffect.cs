@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Remoting;
+using System.Runtime.Serialization;
 
 namespace StorybrewEditor.Storyboarding
 {
@@ -133,6 +134,7 @@ namespace StorybrewEditor.Storyboarding
                 }
                 context.Dispose();
             }
+
             changeStatus(EffectStatus.Ready, null, context.Log);
 
             Program.Schedule(() =>

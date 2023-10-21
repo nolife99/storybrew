@@ -4,6 +4,7 @@ using StorybrewCommon.Storyboarding.Util;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -32,7 +33,7 @@ namespace StorybrewCommon.Storyboarding3d
         public bool UseDistanceFade = true;
 
         ///<summary> If this value is not <see langword="null"/>, scales sprites based on this vector instead of distance from the <see cref="Camera"/>. </summary>
-        public Vector2? UseDefaultScale;
+        public CommandScale? UseDefaultScale;
 
         ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
         public readonly KeyframedValue<Vector2> SpriteScale = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2, Vector2.One);

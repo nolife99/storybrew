@@ -36,7 +36,7 @@ namespace StorybrewCommon.Storyboarding.Util
             flipV = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom),
             additive = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom);
 
-        readonly List<State> states = new List<State>();
+        List<State> states = new List<State>();
 
         ///<summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
         public State StartState => states.Count == 0 ? null : states[0];
@@ -71,9 +71,7 @@ namespace StorybrewCommon.Storyboarding.Util
         ///<summary> The amount of decimal digits for opacity keyframes. </summary>
         public int OpacityDecimals = 1;
 
-        /// <summary>
-        /// Adds a <see cref="State"/> to this instance that will be automatically sorted.
-        /// </summary>
+        ///<summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
         public void Add(State state)
         {
             var count = states.Count;
@@ -109,23 +107,23 @@ namespace StorybrewCommon.Storyboarding.Util
                 var time = state.Time + timeOffset;
                 var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
 
-                if (isVisible && everVisible != true) everVisible = true;
+                if (isVisible && !everVisible) everVisible = true;
                 if (!wasVisible && isVisible)
                 {
                     if (!stateAdded && previousState != null) addKeyframes(previousState, loopable ? time : (previousState.Time + timeOffset));
                     addKeyframes(state, time);
-                    if (stateAdded != true) stateAdded = true;
+                    if (!stateAdded) stateAdded = true;
                 }
                 else if (wasVisible && !isVisible)
                 {
                     addKeyframes(state, time);
                     commitKeyframes(imageSize);
-                    if (stateAdded != true) stateAdded = true;
+                    if (!stateAdded) stateAdded = true;
                 }
                 else if (isVisible)
                 {
                     addKeyframes(state, time);
-                    if (stateAdded != true) stateAdded = true;
+                    if (!stateAdded) stateAdded = true;
                 }
                 else stateAdded = false;
 
@@ -191,7 +189,7 @@ namespace StorybrewCommon.Storyboarding.Util
             }, new Vector2(320, 240), p => new CommandPosition(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, endState, loopable);
 
             int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
-            var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) >= 1);
+            var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) > 1);
             finalScales.ForEachPair((s, e) =>
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -201,7 +199,7 @@ namespace StorybrewCommon.Storyboarding.Util
             finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
                 0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
 
-            finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState, endState, loopable);
+            finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), Color.White, null, startState, endState, loopable);
             finalfades.ForEachPair((s, e) =>
             {
                 // what the hell???
@@ -241,7 +239,7 @@ namespace StorybrewCommon.Storyboarding.Util
             flipV.Clear(true);
             additive.Clear(true);
             states.Clear();
-            states.TrimExcess();
+            states = null;
         }
         internal static SizeF BitmapDimensions(OsbSprite sprite) => 
             StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath, StoryboardObjectGenerator.Current.fontDirectories.Count == 0).PhysicalDimension;
@@ -278,25 +276,27 @@ namespace StorybrewCommon.Storyboarding.Util
         public bool Additive;
 
         /// <summary> 
-        /// Returns the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and <see cref="OsbOrigin"/>. 
+        /// Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and <see cref="OsbOrigin"/>. 
         /// </summary>
         /// <returns> <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>. </returns>
         public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
         {
+            var noGen = generator is null;
+            var scale = new CommandScale(
+                noGen ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals), 
+                noGen ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals));
+
             if (Additive && Color == CommandColor.Black ||
-                (generator is null ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) == 0 ||
-                (generator is null ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals)) <= 0 ||
-                (generator is null ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals)) <= 0)
+                (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
+                scale.X <= 0 || scale.Y <= 0)
                 return false;
 
-            var rounded = new CommandPosition(
-                generator is null ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
-                generator is null ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals));
-
-            return OsbSprite.InScreenBounds(rounded, new SizeF(imageSize.Width * Scale.X, imageSize.Height * Scale.Y), 
-                generator is null ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
+            return OsbSprite.InScreenBounds(new CommandPosition(
+                noGen ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
+                noGen ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals)),
+                imageSize * scale, noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
         }
 
-        int IComparer<State>.Compare(State x, State y) => x.Time.CompareTo(y.Time);
+        int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
     }
 }

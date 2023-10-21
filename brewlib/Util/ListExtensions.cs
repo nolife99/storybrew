@@ -1,8 +1,8 @@
+using System;
+using System.Collections.Generic;
+
 namespace BrewLib.Util
 {
-    using System;
-    using System.Collections.Generic;
-
     public static class ListExtensions
     {
         public static void Move<T>(this List<T> list, int from, int to)
@@ -14,10 +14,11 @@ namespace BrewLib.Util
             else for (var index = from; index > to; --index) list[index] = list[index - 1];
             list[to] = item;
         }
-        public static bool ForEach<T>(this List<T> list, Action<T> action, Predicate<T> condition)
+        public static bool ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
         {
             try
             {
+                list.TrimExcess();
                 list.ForEach(obj =>
                 {
                     if (condition(obj)) action(obj);

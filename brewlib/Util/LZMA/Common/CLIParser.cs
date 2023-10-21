@@ -170,7 +170,7 @@ namespace SevenZip.CommandLineParser
                 var id = commandForms[i].IDString;
 				if (commandForms[i].PostStringMode)
 				{
-					if (commandString.IndexOf(id, StringComparison.InvariantCulture) == 0)
+					if (commandString.IndexOf(id, StringComparison.Ordinal) == 0)
 					{
 						postString = commandString.Substring(id.Length);
 						return i;

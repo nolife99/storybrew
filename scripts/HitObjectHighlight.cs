@@ -21,8 +21,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            using (var pool = new SpritePool(GetLayer(""), SpritePath, Additive))
-            foreach (var hitobject in Beatmap.HitObjects)
+            using (var pool = new SpritePool(GetLayer(""), SpritePath, Additive)) foreach (var hitobject in Beatmap.HitObjects)
             {
                 if ((StartTime != 0 || EndTime != 0) && (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime))
                     continue;
@@ -30,11 +29,10 @@ namespace StorybrewScripts
                 var hSprite = pool.Get(hitobject.StartTime, hitobject.EndTime + FadeDuration);
 
                 var pos = hitobject.Position + hitobject.StackOffset;
-                if (hSprite.PositionAt(hitobject.StartTime) != (CommandPosition)pos && !(hitobject is OsuSlider)) 
-                    hSprite.Move(hitobject.StartTime, pos);
+                if (hSprite.PositionAt(hitobject.StartTime) != pos && !(hitobject is OsuSlider)) hSprite.Move(hitobject.StartTime, pos);
                 hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale / 5);
                 hSprite.Fade(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, 1, 0);
-                if (hSprite.ColorAt(hitobject.StartTime) != (CommandColor)hitobject.Color) hSprite.Color(hitobject.StartTime, hitobject.Color);
+                if (hSprite.ColorAt(hitobject.StartTime) != hitobject.Color) hSprite.Color(hitobject.StartTime, hitobject.Color);
 
                 if (hitobject is OsuSlider)
                 {

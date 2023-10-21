@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace StorybrewCommon.Storyboarding.Commands
 {
@@ -13,9 +12,9 @@ namespace StorybrewCommon.Storyboarding.Commands
         public double StartTime { get; set; }
         public virtual double EndTime { get; set; }
         public virtual bool Active => true;
-        public int Cost => commands.Sum(c => c.Cost);
+        public int Cost => commands.Count;
 
-        readonly List<ICommand> commands = new List<ICommand>();
+        protected readonly HashSet<ICommand> commands = new HashSet<ICommand>();
         public IEnumerable<ICommand> Commands => commands;
 
         public double CommandsStartTime
@@ -23,7 +22,7 @@ namespace StorybrewCommon.Storyboarding.Commands
             get
             {
                 var commandsStartTime = double.MaxValue;
-                foreach (ICommand command in Commands) commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
+                foreach (var command in commands) commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
                 return commandsStartTime;
             }
         }
@@ -32,7 +31,7 @@ namespace StorybrewCommon.Storyboarding.Commands
             get
             {
                 var commandsEndTime = double.MinValue;
-                foreach (ICommand command in Commands) commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
+                foreach (var command in commands) commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
                 return commandsEndTime;
             }
         }
@@ -42,7 +41,8 @@ namespace StorybrewCommon.Storyboarding.Commands
             {
                 var commandsStartTime = double.MaxValue;
                 var commandsEndTime = double.MinValue;
-                foreach (ICommand command in Commands)
+
+                foreach (var command in commands)
                 {
                     commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
                     commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
@@ -50,10 +50,10 @@ namespace StorybrewCommon.Storyboarding.Commands
                 return commandsEndTime - commandsStartTime;
             }
         }
-        public void Add(ICommand command)
+        public bool Add(ICommand command)
         {
             if (ended) throw new InvalidOperationException("Cannot add commands to a group after it ended");
-            commands.Add(command);
+            return commands.Add(command);
         }
         public virtual void EndGroup() => ended = true;
         public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);

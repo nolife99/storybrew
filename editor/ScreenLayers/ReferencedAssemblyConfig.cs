@@ -17,12 +17,12 @@ namespace StorybrewEditor.ScreenLayers
         public override bool IsPopup => true;
 
         readonly Project project;
-        readonly List<string> selectedAssemblies;
+        readonly HashSet<string> selectedAssemblies;
 
         public ReferencedAssemblyConfig(Project project)
         {
             this.project = project;
-            selectedAssemblies = new List<string>(project.ImportedAssemblies);
+            selectedAssemblies = new HashSet<string>(project.ImportedAssemblies);
         }
         public override void Load()
         {
@@ -220,13 +220,9 @@ namespace StorybrewEditor.ScreenLayers
             return true;
         }
 
-        static bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies
-            .Select(ass => getAssemblyName(ass))
-            .Contains(getAssemblyName(assembly));
-
+        static bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies.Select(ass => getAssemblyName(ass)).Contains(getAssemblyName(assembly));
         static bool isDefaultAssembly(string assembly) => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
-        static bool isSystemAssembly(string assemblyId) => getAssemblyName(assemblyId).StartsWith("System.");
-
+        static bool isSystemAssembly(string assemblyId) => getAssemblyName(assemblyId).StartsWith("System.", StringComparison.Ordinal);
         static bool validateAssembly(string assembly, IEnumerable<string> assemblies) => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));
         bool validateAssembly(string assembly) => validateAssembly(assembly, selectedAssemblies);
 
@@ -235,24 +231,21 @@ namespace StorybrewEditor.ScreenLayers
             var assemblyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET\\assembly");
             var badSystemAssemblySuffixes = new[] { "resources", "Resources", "Printing", "Speech", "VisualStudio.11.0" };
 
-            var systemAssemblies = new List<string>();
-            foreach (var gacFolder in Directory.GetDirectories(assemblyDirectory))
+            var systemAssemblies = new HashSet<string>();
+            foreach (var gacFolder in Directory.GetDirectories(assemblyDirectory)) foreach (var assemblyFolder in Directory.GetDirectories(gacFolder))
             {
-                foreach (var assemblyFolder in Directory.GetDirectories(gacFolder))
-                {
-                    var assembly = PathHelper.GetRelativePath(gacFolder, assemblyFolder);
+                var assembly = PathHelper.GetRelativePath(gacFolder, assemblyFolder);
 
-                    if (!assembly.StartsWith("System.")) continue;
-                    if (badSystemAssemblySuffixes.Any(suffix => assembly.EndsWith(suffix))) continue;
+                if (!assembly.StartsWith("System.", StringComparison.Ordinal)) continue;
+                if (badSystemAssemblySuffixes.Any(suffix => assembly.EndsWith(suffix, StringComparison.Ordinal))) continue;
 
-                    var filename = $"{assembly}.dll";
-                    if (Project.DefaultAssemblies.Contains(filename)) continue;
-                    if (selectedAssemblies.Contains(filename)) continue;
+                var filename = $"{assembly}.dll";
+                if (Project.DefaultAssemblies.Contains(filename)) continue;
+                if (selectedAssemblies.Contains(filename)) continue;
 
-                    systemAssemblies.Add(assembly);
-                }
+                systemAssemblies.Add(assembly);
             }
-            return systemAssemblies.Distinct().OrderBy(e => e);
+            return systemAssemblies.OrderBy(e => e);
         }
         string copyReferencedAssembly(string assembly)
         {
@@ -272,48 +265,42 @@ namespace StorybrewEditor.ScreenLayers
         }
         void changeReferencedAssembly(string assembly)
         {
-            if (isSystemAssembly(assembly))
+            if (isSystemAssembly(assembly)) tryCatchSystemAssemblies(() =>
             {
-                tryCatchSystemAssemblies(() =>
+                var systemAssemblies = getAvailableSystemAssemblies();
+                WidgetManager.ScreenLayerManager.ShowContextMenu<string>("Select Assembly", result =>
                 {
-                    var systemAssemblies = getAvailableSystemAssemblies();
-                    WidgetManager.ScreenLayerManager.ShowContextMenu<string>("Select Assembly", result =>
+                    var newPath = $"{result}.dll";
+                    var assemblies = selectedAssemblies.Where(ass => ass != assembly);
+                    if (validateAssembly(newPath, assemblies))
                     {
-                        var newPath = $"{result}.dll";
-                        var assemblies = selectedAssemblies.Where(ass => ass != assembly).ToList();
-                        if (validateAssembly(newPath, assemblies))
-                        {
-                            selectedAssemblies.Remove(assembly);
-                            selectedAssemblies.Add(newPath);
-                            refreshAssemblies();
-                        }
-                    }, systemAssemblies);
-                });
-            }
-            else
-            {
-                WidgetManager.ScreenLayerManager.OpenFilePicker("", "", Path.GetDirectoryName(assembly), ".NET Assemblies (*.dll)|*.dll", path =>
-                {
-                    if (!isValidAssembly(path))
-                    {
-                        WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is intended for .NET?");
-                        return;
-                    }
-
-                    var assemblies = selectedAssemblies.Where(ass => ass != assembly).ToList();
-
-                    if (validateAssembly(path, assemblies))
-                    {
-                        var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
-
-                        if (path == assembly) return;
-
                         selectedAssemblies.Remove(assembly);
                         selectedAssemblies.Add(newPath);
                         refreshAssemblies();
                     }
-                });
-            }
+                }, systemAssemblies);
+            });
+            else WidgetManager.ScreenLayerManager.OpenFilePicker("", "", Path.GetDirectoryName(assembly), ".NET Assemblies (*.dll)|*.dll", path =>
+            {
+                if (!isValidAssembly(path))
+                {
+                    WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is intended for .NET?");
+                    return;
+                }
+
+                var assemblies = selectedAssemblies.Where(ass => ass != assembly).ToList();
+
+                if (validateAssembly(path, assemblies))
+                {
+                    var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
+
+                    if (path == assembly) return;
+
+                    selectedAssemblies.Remove(assembly);
+                    selectedAssemblies.Add(newPath);
+                    refreshAssemblies();
+                }
+            });
         }
         void tryCatchSystemAssemblies(Action action)
         {

@@ -122,8 +122,9 @@ namespace StorybrewCommon.Subtitles
             if (float.IsNaN(r) || float.IsInfinity(r) ||
                 float.IsNaN(g) || float.IsInfinity(g) ||
                 float.IsNaN(b) || float.IsInfinity(b) ||
-                float.IsNaN(a) || float.IsInfinity(a))
-                throw new InvalidDataException($"Invalid font color {r}, {g}, {b}");
+                float.IsNaN(a) || float.IsInfinity(a) ||
+                r > 1 || g > 1 || b > 1 || a > 1)
+                throw new ArgumentException($"Invalid font color {r}, {g}, {b}");
 
             this.r = r;
             this.g = g;
@@ -201,7 +202,7 @@ namespace StorybrewCommon.Subtitles
         }
 
         ///<summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
-        public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith("#", StringComparison.InvariantCulture) ? htmlColor : "#" + htmlColor);
+        public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith("#", StringComparison.Ordinal) ? htmlColor : "#" + htmlColor);
 
         static byte toByte(double x)
         {

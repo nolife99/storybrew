@@ -155,7 +155,7 @@ namespace Tiny.Formats.Yaml
                         Match match;
                         if ((match = floatRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Float));
                         else if ((match = integerRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
-                        else if ((match = boolRegex.Match(value)).Success) Callback(new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.InvariantCultureIgnoreCase)));
+                        else if ((match = boolRegex.Match(value)).Success) Callback(new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.OrdinalIgnoreCase)));
                         else Callback(new TinyValue(value));
                         context.ConsumeToken();
                         context.PopParser();

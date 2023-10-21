@@ -1,15 +1,26 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace StorybrewCommon.Mapset
 {
 #pragma warning disable CS1591
-    [Serializable]
-    public class OsuHold : OsuHitObject
+    [Serializable] public class OsuHold : OsuHitObject
     {
-        public double endTime;
+        double endTime;
         public override double EndTime => endTime;
+
+        internal OsuHold() { }
+        protected OsuHold(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            endTime = info.GetDouble("endTime");
+        }
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("endTime", endTime);
+        }
 
         public static OsuHold Parse(string[] values, int x, int y, double startTime, HitObjectFlag flags, HitSoundAddition additions, ControlPoint timingPoint, ControlPoint controlPoint, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
         {
@@ -37,7 +48,7 @@ namespace StorybrewCommon.Mapset
 
             return new OsuHold
             {
-                PlayfieldPosition = new Vector2(x, y),
+                PlayfieldPosition = new CommandPosition(x, y),
                 StartTime = startTime,
                 Flags = flags,
                 Additions = additions,

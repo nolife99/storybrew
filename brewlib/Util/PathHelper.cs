@@ -27,14 +27,14 @@ namespace BrewLib.Util
             folder = WithStandardSeparators(Path.GetFullPath(folder)).TrimEnd('/');
             path = WithStandardSeparators(Path.GetFullPath(path)).TrimEnd('/');
 
-            return path.Length >= folder.Length + 1 && path[folder.Length] == '/' && path.StartsWith(folder, StringComparison.InvariantCulture);
+            return path.Length >= folder.Length + 1 && path[folder.Length] == '/' && path.StartsWith(folder, StringComparison.Ordinal);
         }
         public static string GetRelativePath(string folder, string path)
         {
             folder = WithStandardSeparators(Path.GetFullPath(folder)).TrimEnd('/');
             path = WithStandardSeparators(Path.GetFullPath(path)).TrimEnd('/');
 
-            if (path.Length < folder.Length + 1 || path[folder.Length] != '/' || !path.StartsWith(folder, StringComparison.InvariantCulture))
+            if (path.Length < folder.Length + 1 || path[folder.Length] != '/' || !path.StartsWith(folder, StringComparison.Ordinal))
                 throw new ArgumentException(path + " isn't contained in " + folder);
 
             return path.Substring(folder.Length + 1);

@@ -30,7 +30,6 @@ namespace StorybrewCommon.Storyboarding
         {
             if (animation.LoopType == OsbLoopType.LoopOnce && segment.Min(c => c.StartTime) >= animation.AnimationEndTime)
             {
-                //this shouldn't loop again so we need a sprite instead
                 var sprite = new OsbSprite
                 {
                     InitialPosition = animation.InitialPosition,

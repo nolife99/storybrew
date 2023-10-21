@@ -281,7 +281,7 @@ namespace SevenZip
 				decoder.SetDecoderProperties(properties);
 
 				if (trainStream != null) if (!decoder.Train(trainStream)) throw new NotSupportedException("can't train");
-				var outSize = 0l;
+				var outSize = 0L;
 				for (var i = 0; i < 8; ++i)
 				{
                     var v = inStream.ReadByte();

@@ -39,7 +39,7 @@ namespace StorybrewEditor.Storyboarding
         }
 
         public int GetActiveSpriteCount(double time) => storyboardObjects.Count(o => ((OsbSprite)o)?.IsActive(time) ?? false);
-        public int GetCommandCost(double time) => storyboardObjects.Select(o => (OsbSprite)o).Where(s => s?.IsActive(time) ?? false).Sum(s => s.CommandCount);
+        public int GetCommandCost(double time) => storyboardObjects.Select(o => (OsbSprite)o).Where(s => s?.IsActive(time) ?? false).Sum(s => s.CommandCost);
 
         public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
         {

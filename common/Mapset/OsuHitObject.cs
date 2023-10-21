@@ -1,46 +1,47 @@
 ﻿using OpenTK;
-using OpenTK.Graphics;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Drawing;
 using System.Globalization;
+using System.Runtime.Serialization;
 
 namespace StorybrewCommon.Mapset
 {
     ///<summary> Represents a hit object in osu!. </summary>
-    [Serializable] public class OsuHitObject
+    [Serializable] public class OsuHitObject : ISerializable
     {
         ///<summary> Represents the playfield size in osu!. </summary>
-        public static readonly Vector2 PlayfieldSize = new Vector2(512, 384), StoryboardSize = new Vector2(640, 480);
+        public static readonly SizeF PlayfieldSize = new Size(512, 384), StoryboardSize = new Size(640, 480);
 
         ///<summary> Represents the offset between the playfield and the storyboard field in osu!. </summary>
-        public static readonly Vector2 PlayfieldToStoryboardOffset = new Vector2((StoryboardSize.X - PlayfieldSize.X) / 2, (StoryboardSize.Y - PlayfieldSize.Y) * .75f - 16);
+        public static readonly CommandPosition PlayfieldToStoryboardOffset = new Vector2((StoryboardSize.Width - PlayfieldSize.Width) / 2, (StoryboardSize.Height - PlayfieldSize.Height) * .75f - 16);
         
         ///<summary> Represents the widescreen storyboard size in osu!. </summary>
-        public static readonly Vector2 WidescreenStoryboardSize = new Vector2(StoryboardSize.X * 4 / 3, StoryboardSize.Y);
+        public static readonly SizeF WidescreenStoryboardSize = new SizeF(StoryboardSize.Width * 4 / 3, StoryboardSize.Height);
 
         ///<summary> Represents the area of the widescreen storyboard size in osu!. </summary>
-        public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.X * WidescreenStoryboardSize.Y;
+        public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.Width * WidescreenStoryboardSize.Height;
 
         ///<summary> Represents the bounds of the storyboard size in osu!. </summary>
-        public static readonly RectangleF StoryboardBounds = new RectangleF(0, 0, StoryboardSize.X, StoryboardSize.Y);
+        public static readonly RectangleF StoryboardBounds = new RectangleF(0, 0, StoryboardSize.Width, StoryboardSize.Height);
 
         ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
-        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF((StoryboardSize.X - WidescreenStoryboardSize.X) / 2, 0, WidescreenStoryboardSize.X, StoryboardSize.Y);
+        public static readonly RectangleF WidescreenStoryboardBounds = new RectangleF((StoryboardSize.Width - WidescreenStoryboardSize.Width) / 2, 0, WidescreenStoryboardSize.Width, StoryboardSize.Height);
 
         ///<summary> Represents the hit object's position in osu!. </summary>
-        public Vector2 PlayfieldPosition;
+        public CommandPosition PlayfieldPosition;
 
         ///<summary> Represents this hit object's stacking offset in osu!. </summary>
-        public Vector2 StackOffset;
+        public CommandPosition StackOffset;
 
         ///<summary> Represents this hit object's storyboard position in osu!. </summary>
-        public Vector2 Position => PlayfieldPosition + PlayfieldToStoryboardOffset;
+        public CommandPosition Position => PlayfieldPosition + PlayfieldToStoryboardOffset;
 
         ///<summary> Represents this hit object's end position in osu!. </summary>
-        public virtual Vector2 PlayfieldEndPosition => PlayfieldPositionAtTime(EndTime);
+        public virtual CommandPosition PlayfieldEndPosition => PlayfieldPositionAtTime(EndTime);
 
         ///<summary> Represents this hit object's storyboard end position in osu!. </summary>
-        public Vector2 EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;
+        public CommandPosition EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;
 
         ///<summary> Represents the start time of this hit object. </summary>
         public double StartTime;
@@ -76,7 +77,7 @@ namespace StorybrewCommon.Mapset
         public string SamplePath;
 
         ///<summary> Represents the combo color of this hit object. </summary>
-        public Color4 Color = Color4.White;
+        public CommandColor Color = CommandColor.White;
 
         ///<returns> Whether or not this hit object is a new combo. </returns>
         public bool NewCombo => (Flags & HitObjectFlag.NewCombo) > 0;
@@ -85,10 +86,10 @@ namespace StorybrewCommon.Mapset
         public int ComboOffset => ((int)Flags >> 4) & 7;
 
         ///<returns> This hit object's position at <paramref name="time"/>. </returns>
-        public virtual Vector2 PlayfieldPositionAtTime(double time) => PlayfieldPosition;
+        public virtual CommandPosition PlayfieldPositionAtTime(double time) => PlayfieldPosition;
 
         ///<returns> This hit object's storyboard position at <paramref name="time"/>. </returns>
-        public Vector2 PositionAtTime(double time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
+        public CommandPosition PositionAtTime(double time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
 
         ///<inheritdoc/>
         public override string ToString() => $"{(int)StartTime}, {Flags}";
@@ -117,6 +118,42 @@ namespace StorybrewCommon.Mapset
             else if (flags.HasFlag(HitObjectFlag.Hold)) return OsuHold.Parse(values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet, additionsSampleSet, customSampleSet, volume);
             else if (flags.HasFlag(HitObjectFlag.Spinner)) return OsuSpinner.Parse(values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet, additionsSampleSet, customSampleSet, volume);
             throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line}");
+        }
+
+        internal OsuHitObject() { }
+
+        ///<summary/>
+        protected OsuHitObject(SerializationInfo info, StreamingContext context)
+        {
+            PlayfieldPosition = new Vector2(info.GetSingle("PlayfieldX"), info.GetSingle("PlayfieldY"));
+            StackOffset = new Vector2(info.GetSingle("StackX"), info.GetSingle("StackY"));
+            StartTime = info.GetInt32("Start");
+            Flags = (HitObjectFlag)info.GetInt32("Flags");
+            Additions = (HitSoundAddition)info.GetInt32("Additions");
+            SampleSet = (SampleSet)info.GetInt32("SampleSet");
+            AdditionsSampleSet = (SampleSet)info.GetInt32("AdditionsSamples");
+            StackIndex = info.GetInt32("StackIndex");
+            ComboIndex = info.GetInt32("ComboIndex");
+            Volume = info.GetSingle("Volume");
+            SamplePath = info.GetString("SamplePath");
+            Color = new CommandColor(info.GetByte("ColorR") / 255f, info.GetByte("ColorG") / 255f, info.GetByte("ColorB") / 255f);
+        }
+
+        ///<inheritdoc/>
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            info.AddValue("PlayfieldX", PlayfieldPosition.X); info.AddValue("PlayfieldY", PlayfieldPosition.Y);
+            info.AddValue("StackX", StackOffset.X); info.AddValue("StackY", StackOffset.Y);
+            info.AddValue("Start", StartTime);
+            info.AddValue("Flags", (int)Flags);
+            info.AddValue("Additions", (int)Additions);
+            info.AddValue("SampleSet", (int)SampleSet);
+            info.AddValue("AdditionsSamples", (int)AdditionsSampleSet);
+            info.AddValue("StackIndex", StackIndex);
+            info.AddValue("ComboIndex", ComboIndex);
+            info.AddValue("Volume", Volume);
+            info.AddValue("SamplePath", SamplePath);
+            info.AddValue("ColorR", Color.R); info.AddValue("ColorG", Color.G); info.AddValue("ColorB", Color.B);
         }
     }
 

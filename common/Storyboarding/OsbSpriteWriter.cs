@@ -46,7 +46,7 @@ namespace StorybrewCommon.Storyboarding
         {
             if (ExportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 && sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
             {
-                var commands = sprite.Commands.Select(c => (IFragmentableCommand)c).ToList();
+                var commands = sprite.Commands.Select(c => (IFragmentableCommand)c).ToHashSet();
                 var fragmentationTimes = GetFragmentationTimes(commands);
 
                 while (commands.Count > 0)
@@ -85,7 +85,7 @@ namespace StorybrewCommon.Storyboarding
         }
         protected virtual bool IsFragmentable()
         {
-            // if there are commands with non-deterministic results (aka triggercommands) the sprite can't reliably be split
+            // if there are commands with nondeterministic results (aka triggercommands) the sprite can't reliably be split
             if (sprite.Commands.Any(c => !(c is IFragmentableCommand))) return false;
 
             return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap ||
@@ -100,28 +100,24 @@ namespace StorybrewCommon.Storyboarding
             foreach (var command in fragCommands) fragTimes.ExceptWith(command.GetNonFragmentableTimes());
             return fragTimes;
         }
-        ICollection<IFragmentableCommand> getNextSegment(HashSet<int> fragmentationTimes, List<IFragmentableCommand> commands)
+        ICollection<IFragmentableCommand> getNextSegment(HashSet<int> fragmentationTimes, HashSet<IFragmentableCommand> commands)
         {
             var segment = new HashSet<IFragmentableCommand>();
 
             var startTime = fragmentationTimes.Min();
             var endTime = getSegmentEndTime(fragmentationTimes, commands);
 
-            foreach (var cmd in commands.Where(c => c.StartTime < endTime))
+            foreach (var cmd in commands) if (cmd.StartTime < endTime)
             {
                 var sTime = Math.Max(startTime, (int)Math.Round(cmd.StartTime));
                 var eTime = Math.Min(endTime, (int)Math.Round(cmd.EndTime));
 
-                IFragmentableCommand command;
-                if (sTime != (int)Math.Round(cmd.StartTime) || eTime != (int)Math.Round(cmd.EndTime)) command = cmd.GetFragment(sTime, eTime);
-                else command = cmd;
-
-                segment.Add(command);
+                segment.Add(sTime != (int)Math.Round(cmd.StartTime) || eTime != (int)Math.Round(cmd.EndTime) ? cmd.GetFragment(sTime, eTime) : cmd);
             }
             addStaticCommands(segment, startTime);
 
             fragmentationTimes.RemoveWhere(t => t < endTime);
-            commands.RemoveAll(c => c.EndTime <= endTime);
+            commands.RemoveWhere(c => c.EndTime <= endTime);
             return segment;
         }
         int getSegmentEndTime(HashSet<int> fragmentationTimes, ICollection<IFragmentableCommand> commands)
@@ -130,8 +126,7 @@ namespace StorybrewCommon.Storyboarding
             int endTime;
             var maxCommandCount = sprite.CommandSplitThreshold;
 
-            // split the last 2 segments evenly so we don't have weird 5 command leftovers
-            if (commands.Count < sprite.CommandSplitThreshold * 2 && commands.Count > sprite.CommandSplitThreshold) maxCommandCount = (int)Math.Ceiling(commands.Count / 2d);
+            if (commands.Count < sprite.CommandSplitThreshold * 2 && commands.Count > sprite.CommandSplitThreshold) maxCommandCount = (int)Math.Ceiling(commands.Count / 2f);
             if (commands.Count < maxCommandCount) endTime = fragmentationTimes.Max() + 1;
             else
             {

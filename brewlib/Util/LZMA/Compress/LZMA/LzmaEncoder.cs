@@ -399,7 +399,6 @@ namespace SevenZip.Compression.LZMA
 			++_additionalOffset;
 		}
 
-
 		void MovePos(uint num)
 		{
 			if (num > 0)

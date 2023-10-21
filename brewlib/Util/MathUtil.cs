@@ -1,8 +1,7 @@
+using System;
+
 namespace BrewLib.Util
 {
-    using System;
-    using System.Numerics;
-
     public static class MathUtil
     {
         public static bool FloatEquals(float a, float b, float epsilon) => Math.Abs(a - b) < epsilon;
@@ -20,14 +19,10 @@ namespace BrewLib.Util
         }
         public static double ShortestAngleDelta(double from, double to)
         {
-            if (from == to) return 0;
-            if (from == 0) return to;
-            if (to == 0) return -from;
-            if (Math.Abs(from - to) == Math.Abs(to - from)) return to - from;
-
-            return -Math.Atan2(Math.Sin(to - from), Math.Cos(to - from));
+            var diff = to - from;
+            var delta = OpenTK.MathHelper.Clamp(diff - Math.Floor(diff / Math.PI * 2) * Math.PI * 2, 0, Math.PI * 2);
+            if (delta > Math.PI) return delta - Math.PI * 2;
+            return delta;
         }
-
-        public static float DotLength(this Quaternion q1) => Quaternion.Dot(q1, q1);
     }
 }

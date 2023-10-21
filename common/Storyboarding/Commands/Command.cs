@@ -1,9 +1,7 @@
 ﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding.CommandValues;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace StorybrewCommon.Storyboarding.Commands
 {
@@ -57,13 +55,18 @@ namespace StorybrewCommon.Storyboarding.Commands
         public IEnumerable<int> GetNonFragmentableTimes()
         {
             var nonFragmentableTimes = new HashSet<int>();
-            if (!IsFragmentable) nonFragmentableTimes.UnionWith(Enumerable.Range((int)StartTime + 1, (int)(EndTime - StartTime - 1)));
+            if (!IsFragmentable) for (var i = 0; i < EndTime - StartTime - 1; ++i) nonFragmentableTimes.Add((int)(StartTime + 1 + i));
 
             return nonFragmentableTimes;
         }
 
         public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
-        public override int GetHashCode() => ToString().GetHashCode();
+        public override int GetHashCode() => (Identifier.Length > 1 ? Identifier[0].GetHashCode() : Identifier.GetHashCode()) ^
+            StartTime.GetHashCode() ^ EndTime.GetHashCode() ^ StartValue.GetHashCode() ^ EndValue.GetHashCode();
+
+        public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
+        public bool Equals(Command<TValue> obj) => Identifier == obj.Identifier && Easing == obj.Easing && 
+            StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) && EndValue.Equals(obj.EndValue);
 
         public virtual string ToOsbString(ExportSettings exportSettings)
         {
@@ -72,7 +75,7 @@ namespace StorybrewCommon.Storyboarding.Commands
             var startValueString = StartValue.ToOsbString(exportSettings);
             var endValueString = (ExportEndValue ? EndValue : StartValue).ToOsbString(exportSettings);
 
-            if (startTimeString.Equals(endTimeString, StringComparison.Ordinal)) endTimeString = string.Empty;
+            if (startTimeString == endTimeString) endTimeString = "";
 
             string[] parameters =
             {

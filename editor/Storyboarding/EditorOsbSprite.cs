@@ -36,7 +36,7 @@ namespace StorybrewEditor.Storyboarding
             if (frameStats != null)
             {
                 ++frameStats.SpriteCount;
-                frameStats.CommandCount += sprite.CommandCount;
+                frameStats.CommandCount += sprite.CommandCost;
                 frameStats.IncompatibleCommands |= sprite.HasIncompatibleCommands;
                 frameStats.OverlappedCommands |= sprite.HasOverlappedCommands;
             }
@@ -80,9 +80,9 @@ namespace StorybrewEditor.Storyboarding
                 var spriteBox = new OrientedBoundingBox(position, origin * (CommandPosition)scale, size.X, size.Y, rotation);
                 if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
                 {
-                    frameStats.EffectiveCommandCount += sprite.CommandCount;
+                    frameStats.EffectiveCommandCount += sprite.CommandCost;
 
-                    var _sprite = spriteBox.GetAABBBox();
+                    var _sprite = spriteBox.GetAABB();
                     frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, size.Area() * _sprite.IntersectWith(
                         OsuHitObject.WidescreenStoryboardBounds).Area() / _sprite.Area()) / OsuHitObject.WidescreenStoryboardArea;
                 }

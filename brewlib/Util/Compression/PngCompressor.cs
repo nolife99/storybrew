@@ -12,21 +12,20 @@ namespace BrewLib.Util.Compression
     {
         readonly static bool is64bit = Environment.Is64BitOperatingSystem;
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
-            => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(PngCompressor)), "brewlib");
+            => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(PngCompressor)), "BrewLib");
 
-        protected override void compress(string path, string compressionType, 
-            LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings, InputFormat inputFormat = null)
+        protected override void compress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null)
         {
             if (!File.Exists(path)) throw new FileNotFoundException(nameof(path));
-            if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat)))
+            if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat, CultureInfo.InvariantCulture)))
                 throw new ArgumentException("Input format is required for file without extension");
 
             try
             {
-                UtilityName = is64bit ? compressionType != "lossy" ? "oxipng.exe" : "pngquant.exe" : "truepng.exe";
+                UtilityName = is64bit ? type != "lossy" ? "oxipng.exe" : "pngquant.exe" : "truepng.exe";
                 ensureTool();
 
-                var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(path, compressionType, lossyInputSettings, losslessInputSettings))
+                var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(path, type, lossy, lossless))
                 {
                     WindowStyle = ProcessWindowStyle.Hidden,
                     CreateNoWindow = true,
@@ -40,7 +39,7 @@ namespace BrewLib.Util.Compression
 
                 if (process is null) process = Process.Start(startInfo);
                 var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new ApplicationException($"The image compression closed with code {process.ExitCode}: {error}");
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"The image compression closed with code {process.ExitCode}: {error}");
             }
             finally
             {
@@ -50,23 +49,23 @@ namespace BrewLib.Util.Compression
         protected override string appendArgs(string path, string compressionType, 
             LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings)
         {
-            var input = string.Format("\"{0}\"", path);
+            var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
             var str = new StringBuilder();
 
             if (is64bit)
             {
                 if (compressionType == "lossy")
                 {
-                    str.AppendFormat("{0} -o {0} -f --skip-if-larger --strip", input);
+                    str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
                     if (lossyInputSettings != null)
                     {
                         if (lossyInputSettings.MinQuality >= 0 && lossyInputSettings.MaxQuality > 0 && lossyInputSettings.MaxQuality <= 100)
-                            str.AppendFormat(" --quality {0}-{1} ", lossyInputSettings.MinQuality, lossyInputSettings.MaxQuality);
+                            str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossyInputSettings.MinQuality, lossyInputSettings.MaxQuality);
 
                         if (lossyInputSettings.Speed > 0 && lossyInputSettings.Speed <= 10)
-                            str.AppendFormat(" -s{0} ", lossyInputSettings.Speed);
+                            str.AppendFormat(CultureInfo.InvariantCulture, " -s{0} ", lossyInputSettings.Speed);
 
-                        str.AppendFormat(" {0} ", lossyInputSettings.CustomInputArgs);
+                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossyInputSettings.CustomInputArgs);
                     }
                 }
                 else
@@ -74,10 +73,10 @@ namespace BrewLib.Util.Compression
                     if (losslessInputSettings != null)
                     {
                         var lvl = (byte)losslessInputSettings.OptimizationLevel;
-                        str.AppendFormat(" -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
-                        str.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
+                        str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
+                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", losslessInputSettings.CustomInputArgs);
                     }
-                    str.AppendFormat("−s -a {0}", input);
+                    str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
                 }
             }
             else
@@ -85,10 +84,10 @@ namespace BrewLib.Util.Compression
                 if (losslessInputSettings != null)
                 {
                     var lvl = (byte)losslessInputSettings.OptimizationLevel;
-                    str.AppendFormat(" /o{0} ", lvl > 4 ? 4 : lvl);
-                    str.AppendFormat(" {0} ", losslessInputSettings.CustomInputArgs);
+                    str.AppendFormat(CultureInfo.InvariantCulture, " /o{0} ", lvl > 4 ? 4 : lvl);
+                    str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", losslessInputSettings.CustomInputArgs);
                 }
-                str.AppendFormat("/md remove all /a1 -Z /y /out {0} {0}", input);
+                str.AppendFormat(CultureInfo.InvariantCulture, "/md remove all /a1 -Z /y /out {0} {0}", input);
             }
             return str.ToString();
         }
