@@ -232,39 +232,39 @@ namespace StorybrewCommon.Subtitles
     /// <summary> Stores information about a font's appearance. </summary>
     public class FontDescription
     {
-        ///<summary> The path to the font texture. </summary>
+        ///<summary> The path to the font file. </summary>
         public readonly string FontPath;
 
-        ///<summary> The relative size of the font texture. </summary>
+        ///<summary> The relative size of the font. </summary>
         public readonly int FontSize;
 
-        ///<summary> The coloring tint of the font texture. </summary>
+        ///<summary> The coloring tint of the font. </summary>
         public readonly FontColor Color;
 
-        ///<summary> How much extra space is allocated around the text when generating it. </summary>
+        ///<summary> How much extra space is allocated around the font when generating it. </summary>
         public readonly Vector2 Padding;
 
-        ///<summary> The format/style of the font texture (for example: bold, italics, etc). </summary>
+        ///<summary> The format/style of the font (for example: bold, italics, etc). </summary>
         public readonly FontStyle FontStyle;
 
-        ///<summary> Trim transparent space around the texture. Should always be <see langword="true"/>. </summary>
+        ///<summary> Trim transparent space around the font. Should always be <see langword="true"/>. </summary>
         public readonly bool TrimTransparency;
 
-        ///<summary> Leave out the original texture and keep the effects. </summary>
+        ///<summary> Leave out the original font and keep the effects. </summary>
         public readonly bool EffectsOnly;
 
-        ///<summary> Draw a randomly colored background behind the textures. </summary>
+        ///<summary> Draw a randomly colored background behind the font. </summary>
         public readonly bool Debug;
 
         ///<summary> Creates a new <see cref="FontDescription"/> storing a descriptor for <see cref="FontGenerator"/>. </summary>
-        ///<param name="fontPath"> The path to the font texture. </param>
-        ///<param name="fontSize"> The relative size of the font texture. </param>
-        ///<param name="color"> The coloring tint of the font texture. </param>
-        ///<param name="padding"> Allocate extra space around the text when generating it. </param>
-        ///<param name="fontStyle"> Format/style of the font texture. </param>
-        ///<param name="trimTransparency"> Trim transparent space around the texture. </param>
-        ///<param name="effectsOnly"> Leave out the original texture and keep the effects. </param>
-        ///<param name="debug"> Draw a randomly colored background behind the textures. </param>
+        ///<param name="fontPath"> The path to the font file. </param>
+        ///<param name="fontSize"> The relative size of the font. </param>
+        ///<param name="color"> The coloring tint of the font. </param>
+        ///<param name="padding"> Allocate extra space around the font when generating it. </param>
+        ///<param name="fontStyle"> Format/style of the font. </param>
+        ///<param name="trimTransparency"> Trim transparent space around the font. </param>
+        ///<param name="effectsOnly"> Leave out the original font and keep the effects. </param>
+        ///<param name="debug"> Draw a randomly colored background behind the font. </param>
         public FontDescription(
             string fontPath, int fontSize = 76, FontColor color = default, Vector2 padding = default, 
             FontStyle fontStyle = default, bool trimTransparency = true, bool effectsOnly = false, bool debug = false)
@@ -290,9 +290,7 @@ namespace StorybrewCommon.Subtitles
         readonly FontEffect[] effects;
         readonly string projectDirectory, assetDirectory;
         readonly PngCompressor compressor;
-        readonly StoryboardObjectGenerator current;
-
-        readonly Dictionary<string, FontTexture> textureCache = new Dictionary<string, FontTexture>();
+        internal readonly Dictionary<string, FontTexture> cache;
 
         internal FontGenerator(string directory, FontDescription description, FontEffect[] effects, string projectDirectory, string assetDirectory)
         {
@@ -301,15 +299,15 @@ namespace StorybrewCommon.Subtitles
             this.effects = effects;
             this.projectDirectory = projectDirectory;
             this.assetDirectory = assetDirectory;
-            current = StoryboardObjectGenerator.Current;
-            compressor = current.Compressor;
+            compressor = StoryboardObjectGenerator.Current.Compressor;
+            cache = new Dictionary<string, FontTexture>();
         }
 
         ///<summary> Gets the texture path of the matching item's string representation. </summary>
         public FontTexture GetTexture(object obj)
         {
             var text = Convert.ToString(obj, CultureInfo.InvariantCulture);
-            if (!textureCache.TryGetValue(text, out var texture)) textureCache[text] = texture = generateTexture(text);
+            if (!cache.TryGetValue(text, out var texture)) cache[text] = texture = generateTexture(text);
             return texture;
         }
         FontTexture generateTexture(string text)
@@ -317,10 +315,10 @@ namespace StorybrewCommon.Subtitles
             // wtf is this
             var filename = text.Length == 1 ?
                 $"{(!PathHelper.IsValidFilename(text[0].ToString(CultureInfo.InvariantCulture)) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + "_" : text[0].ToString(CultureInfo.InvariantCulture)))}.png" :
-                $"_{textureCache.Count(l => l.Key.Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
+                $"_{cache.Count(l => l.Key.Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
             var trimExist = false;
-            if (description.TrimTransparency && textureCache.TryGetValue(text.Trim(), out var texture))
+            if (description.TrimTransparency && cache.TryGetValue(text.Trim(), out var texture))
             {
                 trimExist = true;
                 filename = Path.GetFileName(texture.Path);
@@ -394,7 +392,7 @@ namespace StorybrewCommon.Subtitles
 
                             if (description.Debug)
                             {
-                                var r = new Random(textureCache.Count);
+                                var r = new FastRandom(cache.Count);
                                 textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
                             }
 
@@ -426,7 +424,7 @@ namespace StorybrewCommon.Subtitles
                                 if (validBounds) using (var trim = bitmap.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
                                 else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                             }
-                            if (File.Exists(path) && (path.Contains(current.MapsetPath) || path.Contains(current.AssetPath)))
+                            if (File.Exists(path) && (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath)))
                             {
                                 if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(path, compressor);
                                 else BitmapHelper.Compress(path, compressor);
@@ -435,7 +433,7 @@ namespace StorybrewCommon.Subtitles
                     }
                 }
             }
-            return new FontTexture(Path.Combine(Directory, filename), offsetX, offsetY, baseWidth, baseHeight, width, height);
+            return new FontTexture(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);
         }
         internal void HandleCache(TinyToken cachedFontRoot)
         {
@@ -455,9 +453,9 @@ namespace StorybrewCommon.Subtitles
                     Trace.WriteLine($"Ignoring invalid font texture \"{text}\" ({path})");
                     continue;
                 }
-                if (textureCache.ContainsKey(text)) throw new InvalidDataException($"The font texture for \"{text}\" ({path}) has been cached multiple times");
+                if (cache.ContainsKey(text)) throw new InvalidDataException($"The font texture for \"{text}\" ({path}) has been cached multiple times");
 
-                textureCache[text] = new FontTexture(path,
+                cache[text] = new FontTexture(path,
                     cacheEntry.Value<float>("OffsetX"), cacheEntry.Value<float>("OffsetY"),
                     cacheEntry.Value<int>("BaseWidth"), cacheEntry.Value<int>("BaseHeight"),
                     cacheEntry.Value<int>("Width"), cacheEntry.Value<int>("Height"));
@@ -558,7 +556,7 @@ namespace StorybrewCommon.Subtitles
             { "EffectsOnly", description.EffectsOnly },
             { "Debug", description.Debug },
             { "Effects", effects.Select(e => fontEffectToTinyObject(e))},
-            { "Cache", textureCache.Where(l => !l.Value.IsEmpty).Select(l => letterToTinyObject(l))}
+            { "Cache", cache.Where(l => !l.Value.IsEmpty).Select(l => letterToTinyObject(l))}
         };
         TinyObject letterToTinyObject(KeyValuePair<string, FontTexture> letterEntry) => new TinyObject
         {

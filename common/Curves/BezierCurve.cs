@@ -1,34 +1,35 @@
 ﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StorybrewCommon.Curves
 {
 #pragma warning disable CS1591
     [Serializable] public class BezierCurve : BaseCurve
     {
-        readonly IList<CommandPosition> points;
+        readonly CommandPosition[] points;
         readonly int precision;
 
         ///<summary> The start position (the head) of the bézier curve. </summary>
         public override CommandPosition StartPosition => points[0];
 
         ///<summary> The end position (the tail) of the bézier curve. </summary>
-        public override CommandPosition EndPosition => points[points.Count - 1];
+        public override CommandPosition EndPosition => points[points.Length - 1];
 
         ///<summary> Whether the bézier curve is straight (linear). </summary>
-        public bool IsLinear => points.Count < 3;
+        public bool IsLinear => points.Length < 3;
 
         ///<summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
-        public BezierCurve(IList<CommandPosition> points, int precision)
+        public BezierCurve(IEnumerable<CommandPosition> points, int precision)
         {
-            this.points = points;
+            this.points = points as CommandPosition[] ?? points.ToArray();
             this.precision = precision;
         }
 
         protected override void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length)
         {
-            var precision = points.Count > 2 ? this.precision : 0;
+            var precision = points.Length > 2 ? this.precision : 0;
 
             var distance = 0f;
             var previousPosition = StartPosition;
@@ -50,7 +51,7 @@ namespace StorybrewCommon.Curves
         [ThreadStatic] static CommandPosition[] intermediatePoints;
         CommandPosition positionAtDelta(float delta)
         {
-            var pointsCount = points.Count;
+            var pointsCount = points.Length;
 
             if (intermediatePoints == null || intermediatePoints.Length < pointsCount) intermediatePoints = new CommandPosition[pointsCount];
 

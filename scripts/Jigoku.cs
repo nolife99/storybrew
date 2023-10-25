@@ -230,7 +230,7 @@ namespace StorybrewScripts
                 var t1 = t0 + BeatDuration * 3 / 2;
 
                 var bg = mainLayer.CreateSprite("sb/jt" + i + ".png", OsbOrigin.Centre);
-                bg.Scale(OsbEasing.Out, t0, t1, i % 2 == 0 ? 0.7 : 0.65, i % 2 == 0 ? 0.65 : 0.7);
+                bg.Scale(OsbEasing.Out, t0, t1, (i & 1) == 0 ? 0.7 : 0.65, (i & 1) == 0 ? 0.65 : 0.7);
                 bg.Fade(OsbEasing.In, t0, t1, 1, 0);
             }
         }

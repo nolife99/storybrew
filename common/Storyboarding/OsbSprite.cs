@@ -1,14 +1,17 @@
-﻿using StorybrewCommon.Mapset;
+﻿using BrewLib.Util;
+using StorybrewCommon.Mapset;
+using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Display;
+using StorybrewCommon.Subtitles;
 using StorybrewCommon.Util;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace StorybrewCommon.Storyboarding
 {
@@ -35,10 +38,11 @@ namespace StorybrewCommon.Storyboarding
             get => texturePath;
             set
             {
-                if (texturePath == value) return;
-                texturePath = value;
+                var path = PathHelper.WithStandardSeparators(value);
+                if (texturePath != path) texturePath = path;
             }
         }
+
         ///<returns> Image of the sprite at <paramref name="time"/>. </returns>
         public virtual string GetTexturePathAt(double time) => texturePath;
 
@@ -135,6 +139,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
         ///<param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(OsbEasing easing, double startTime, double endTime, CommandPosition startPosition, CommandPosition endPosition) => addCommand(new MoveCommand(easing, startTime, endTime, startPosition, endPosition));
 
         ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
@@ -145,7 +150,19 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
         ///<param name="endX"> End-X value of the command. </param>
         ///<param name="endY"> End-Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(OsbEasing easing, double startTime, double endTime, CommandPosition startPosition, double endX, double endY) => Move(easing, startTime, endTime, startPosition, new CommandPosition(endX, endY));
+
+        ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
+        ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
+        ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
+        ///<param name="startTime"> Start time of the command. </param>
+        ///<param name="endTime"> End time of the command. </param>
+        ///<param name="startX"> Start-X value of the command. </param>
+        ///<param name="startY"> Start-Y value of the command. </param>
+        ///<param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Move(OsbEasing easing, double startTime, double endTime, double startX, double startY, CommandPosition endPosition) => Move(easing, startTime, endTime, new CommandPosition(startX, startY), endPosition);
 
         ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
         ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
@@ -156,6 +173,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startY"> Start-Y value of the command. </param>
         ///<param name="endX"> End-X value of the command. </param>
         ///<param name="endY"> End-Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(OsbEasing easing, double startTime, double endTime, double startX, double startY, double endX, double endY) => Move(easing, startTime, endTime, new CommandPosition(startX, startY), new CommandPosition(endX, endY));
 
         ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
@@ -164,6 +182,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
         ///<param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(double startTime, double endTime, CommandPosition startPosition, CommandPosition endPosition) => Move(default, startTime, endTime, startPosition, endPosition);
 
         ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
@@ -173,6 +192,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
         ///<param name="endX"> End-X value of the command. </param>
         ///<param name="endY"> End-Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(double startTime, double endTime, CommandPosition startPosition, double endX, double endY) => Move(default, startTime, endTime, startPosition, endX, endY);
 
         ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
@@ -183,12 +203,14 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startY"> Start-Y value of the command. </param>
         ///<param name="endX"> End-X value of the command. </param>
         ///<param name="endY"> End-Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(double startTime, double endTime, double startX, double startY, double endX, double endY) => Move(default, startTime, endTime, startX, startY, endX, endY);
 
         ///<summary> Sets the position of an <see cref="OsbSprite"/>. Commands similar to MoveX are available for MoveY. </summary>
         ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
         ///<param name="time"> Time of the command. </param>
         ///<param name="position"> <see cref="CommandPosition"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(double time, CommandPosition position) => Move(default, time, time, position, position);
 
         ///<summary> Sets the position of an <see cref="OsbSprite"/>. Commands similar to MoveX are available for MoveY. </summary>
@@ -196,6 +218,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="time"> Time of the command. </param>
         ///<param name="x"> X value of the command. </param>
         ///<param name="y"> Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Move(double time, double x, double y) => Move(default, time, time, x, y, x, y);
 
         //==========MX==========//
@@ -206,6 +229,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startX"> Start-X value of the command. </param>
         ///<param name="endX"> End-X value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveX(OsbEasing easing, double startTime, double endTime, CommandDecimal startX, CommandDecimal endX) => addCommand(new MoveXCommand(easing, startTime, endTime, startX, endX));
 
         ///<summary> Change the x-position of a <see cref="OsbSprite"/> over time. Commands are also available for MoveY.</summary>
@@ -214,12 +238,14 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startX"> Start-X value of the command. </param>
         ///<param name="endX"> End-X value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveX(double startTime, double endTime, CommandDecimal startX, CommandDecimal endX) => MoveX(default, startTime, endTime, startX, endX);
 
         ///<summary> Sets the X-Position of an <see cref="OsbSprite"/>. Commands are also available for MoveY.</summary>
         ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
         ///<param name="time"> Time of the command. </param>
         ///<param name="x"> X value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveX(double time, CommandDecimal x) => MoveX(default, time, time, x, x);
 
         //==========MY==========//
@@ -230,6 +256,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startY"> Start-Y value of the command. </param>
         ///<param name="endY"> End-Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveY(OsbEasing easing, double startTime, double endTime, CommandDecimal startY, CommandDecimal endY) => addCommand(new MoveYCommand(easing, startTime, endTime, startY, endY));
 
         ///<summary> Change the Y-Position of an <see cref="OsbSprite"/> over time. Commands are also available for MoveX. </summary>
@@ -238,12 +265,14 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startY"> Start-Y value of the command. </param>
         ///<param name="endY"> End-Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveY(double startTime, double endTime, CommandDecimal startY, CommandDecimal endY) => MoveY(default, startTime, endTime, startY, endY);
 
         ///<summary> Sets the Y-Position of an <see cref="OsbSprite"/>. Commands are also available for MoveX. </summary>
         ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
         ///<param name="time"> Time of the command. </param>
         ///<param name="y"> Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveY(double time, CommandDecimal y) => MoveY(default, time, time, y, y);
 
         //==========S==========//
@@ -254,6 +283,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startScale"> Start scale of the command. </param>
         ///<param name="endScale"> End scale of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Scale(OsbEasing easing, double startTime, double endTime, CommandDecimal startScale, CommandDecimal endScale) => addCommand(new ScaleCommand(easing, startTime, endTime, startScale, endScale));
 
         ///<summary> Change the size of a sprite over time. </summary>
@@ -262,12 +292,14 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startScale"> Start scale of the command. </param>
         ///<param name="endScale"> End scale of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Scale(double startTime, double endTime, CommandDecimal startScale, CommandDecimal endScale) => Scale(default, startTime, endTime, startScale, endScale);
 
         ///<summary> Sets the size of a sprite. </summary>
         ///<remarks> Cannot be used with <see cref="VScaleCommand"/>. </remarks>
         ///<param name="time"> Time of the command. </param>
         ///<param name="scale"> Scale of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Scale(double time, CommandDecimal scale) => Scale(default, time, time, scale, scale);
 
         //==========V==========//
@@ -278,6 +310,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
         ///<param name="endScale"> End <see cref="CommandScale"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(OsbEasing easing, double startTime, double endTime, CommandScale startScale, CommandScale endScale) => addCommand(new VScaleCommand(easing, startTime, endTime, startScale, endScale));
 
         ///<summary> Change the vector scale of a sprite over time. </summary>
@@ -288,6 +321,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
         ///<param name="endX"> End X-Scale value of the command. </param>
         ///<param name="endY"> End Y-Scale value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(OsbEasing easing, double startTime, double endTime, CommandScale startScale, double endX, double endY) => ScaleVec(easing, startTime, endTime, startScale, new CommandScale(endX, endY));
 
         ///<summary> Change the vector scale of a sprite over time. </summary>
@@ -299,6 +333,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startY"> Start Y-Scale value of the command. </param>
         ///<param name="endX"> End X-Scale value of the command. </param>
         ///<param name="endY"> End Y-Scale value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(OsbEasing easing, double startTime, double endTime, double startX, double startY, double endX, double endY) => ScaleVec(easing, startTime, endTime, new CommandScale(startX, startY), new CommandScale(endX, endY));
 
         ///<summary> Change the vector scale of a sprite over time. </summary>
@@ -307,6 +342,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
         ///<param name="endScale"> End <see cref="CommandScale"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(double startTime, double endTime, CommandScale startScale, CommandScale endScale) => ScaleVec(default, startTime, endTime, startScale, endScale);
 
         ///<summary> Change the vector scale of a sprite over time. </summary>
@@ -316,6 +352,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
         ///<param name="endX"> End X-Scale value of the command. </param>
         ///<param name="endY"> End Y-Scale value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(double startTime, double endTime, CommandScale startScale, double endX, double endY) => ScaleVec(default, startTime, endTime, startScale, endX, endY);
 
         ///<summary> Change the vector scale of a sprite over time. </summary>
@@ -326,12 +363,14 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startY"> Start Y-Scale value of the command. </param>
         ///<param name="endX"> End X-Scale value of the command. </param>
         ///<param name="endY"> End Y-Scale value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(double startTime, double endTime, double startX, double startY, double endX, double endY) => ScaleVec(default, startTime, endTime, startX, startY, endX, endY);
 
         ///<summary> Sets the vector scale of a sprite. </summary>
         ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
         ///<param name="time"> Time of the command. </param>
         ///<param name="scale"> <see cref="CommandScale"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(double time, CommandScale scale) => ScaleVec(default, time, time, scale, scale);
 
         ///<summary> Sets the vector scale of a sprite. </summary>
@@ -339,6 +378,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="time"> Time of the command. </param>
         ///<param name="x"> Scale-X value of the command. </param>
         ///<param name="y"> Scale-Y value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ScaleVec(double time, double x, double y) => ScaleVec(default, time, time, x, y, x, y);
 
         //==========R==========//
@@ -348,6 +388,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startRotation"> Start radians of the command. </param>
         ///<param name="endRotation"> End radians of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rotate(OsbEasing easing, double startTime, double endTime, CommandDecimal startRotation, CommandDecimal endRotation) => addCommand(new RotateCommand(easing, startTime, endTime, startRotation, endRotation));
 
         ///<summary> Change the rotation of an <see cref="OsbSprite"/> over time. Angles are in radians. </summary>
@@ -355,11 +396,13 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startRotation"> Start radians of the command. </param>
         ///<param name="endRotation"> End radians of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rotate(double startTime, double endTime, CommandDecimal startRotation, CommandDecimal endRotation) => Rotate(default, startTime, endTime, startRotation, endRotation);
 
         ///<summary> Sets the rotation of an <see cref="OsbSprite"/>. Angles are in radians. </summary>
         ///<param name="time"> Time of the command. </param>
         ///<param name="rotation"> Radians of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rotate(double time, CommandDecimal rotation) => Rotate(default, time, time, rotation, rotation);
 
         //==========F==========//
@@ -369,6 +412,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startFade"> Start fade value of the command. </param>
         ///<param name="endFade"> End fade value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Fade(OsbEasing easing, double startTime, double endTime, CommandDecimal startFade, CommandDecimal endFade) => addCommand(new FadeCommand(easing, startTime, endTime, startFade, endFade));
 
         ///<summary> Change the opacity of an <see cref="OsbSprite"/> over time. </summary>
@@ -376,11 +420,13 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startFade"> Start fade value of the command. </param>
         ///<param name="endFade"> End fade value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Fade(double startTime, double endTime, CommandDecimal startFade, CommandDecimal endFade) => Fade(default, startTime, endTime, startFade, endFade);
 
         ///<summary> Sets the opacity of an <see cref="OsbSprite"/>. </summary>
         ///<param name="time"> Time of the command. </param>
         ///<param name="fade"> Fade value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Fade(double time, CommandDecimal fade) => Fade(default, time, time, fade, fade);
 
         //==========C==========//
@@ -390,6 +436,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
         ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(OsbEasing easing, double startTime, double endTime, CommandColor startColor, CommandColor endColor) => addCommand(new ColorCommand(easing, startTime, endTime, startColor, endColor));
 
         ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
@@ -400,6 +447,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endR"> End red value of the command. </param>
         ///<param name="endG"> End green value of the command. </param>
         ///<param name="endB"> End blue value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(OsbEasing easing, double startTime, double endTime, CommandColor startColor, double endR, double endG, double endB) => Color(easing, startTime, endTime, startColor, new CommandColor(endR, endG, endB));
 
         ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
@@ -412,6 +460,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endR"> End red value of the command. </param>
         ///<param name="endG"> End green value of the command. </param>
         ///<param name="endB"> End blue value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(OsbEasing easing, double startTime, double endTime, double startR, double startG, double startB, double endR, double endG, double endB) => Color(easing, startTime, endTime, new CommandColor(startR, startG, startB), new CommandColor(endR, endG, endB));
 
         ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
@@ -419,6 +468,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
         ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(double startTime, double endTime, CommandColor startColor, CommandColor endColor) => Color(default, startTime, endTime, startColor, endColor);
 
         ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
@@ -428,6 +478,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endR"> End red value of the command. </param>
         ///<param name="endG"> End green value of the command. </param>
         ///<param name="endB"> End blue value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(double startTime, double endTime, CommandColor startColor, double endR, double endG, double endB) => Color(default, startTime, endTime, startColor, endR, endG, endB);
 
         ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
@@ -439,11 +490,13 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endR"> End red value of the command. </param>
         ///<param name="endG"> End green value of the command. </param>
         ///<param name="endB"> End blue value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(double startTime, double endTime, double startR, double startG, double startB, double endR, double endG, double endB) => Color(default, startTime, endTime, startR, startG, startB, endR, endG, endB);
 
         ///<summary> Sets the RGB color of an <see cref="OsbSprite"/>. </summary>
         ///<param name="time"> Time of the command. </param>
         ///<param name="color"> The <see cref="CommandColor"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(double time, CommandColor color) => Color(default, time, time, color, color);
 
         ///<summary> Sets the RGB color of an <see cref="OsbSprite"/>. </summary>
@@ -451,9 +504,10 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="r"> Red value of the command. </param>
         ///<param name="g"> Green value of the command. </param>
         ///<param name="b"> Blue value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Color(double time, double r, double g, double b) => Color(default, time, time, r, g, b, r, g, b);
 
-        ///<summary> Changes the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
+        ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
         ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
@@ -461,9 +515,10 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endH"> End hue value (in degrees) of the command. </param>
         ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
         ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ColorHsb(OsbEasing easing, double startTime, double endTime, CommandColor startColor, double endH, double endS, double endB) => Color(easing, startTime, endTime, startColor, CommandColor.FromHsb(endH, endS, endB));
 
-        ///<summary> Changes the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
+        ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
         ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
@@ -471,9 +526,10 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
         ///<param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
         ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ColorHsb(OsbEasing easing, double startTime, double endTime, double startH, double startS, double startB, CommandColor endColor) => Color(easing, startTime, endTime, CommandColor.FromHsb(startH, startS, startB), endColor);
 
-        ///<summary> Changes the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
+        ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
         ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
@@ -483,27 +539,30 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endH"> End hue value (in degrees) of the command. </param>
         ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
         ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
-        public void ColorHsb(OsbEasing easing, double startTime, double endTime, double startH, double startS, double startB, double endH, double endS, double endB) => Color(default, startTime, endTime, CommandColor.FromHsb(startH, startS, startB), CommandColor.FromHsb(endH, endS, endB));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ColorHsb(OsbEasing easing, double startTime, double endTime, double startH, double startS, double startB, double endH, double endS, double endB) => Color(easing, startTime, endTime, CommandColor.FromHsb(startH, startS, startB), CommandColor.FromHsb(endH, endS, endB));
 
-        ///<summary> Changes the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
+        ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startH"> Start hue value (in degrees) of the command. </param>
         ///<param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
         ///<param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
         ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ColorHsb(double startTime, double endTime, double startH, double startS, double startB, CommandColor endColor) => ColorHsb(default, startTime, endTime, startH, startS, startB, endColor);
 
-        ///<summary> Changes the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
+        ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
         ///<param name="endH"> End hue value (in degrees) of the command. </param>
         ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
         ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ColorHsb(double startTime, double endTime, CommandColor startColor, double endH, double endS, double endB) => ColorHsb(default, startTime, endTime, startColor, endH, endS, endB);
 
-        ///<summary> Changes the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
+        ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="startH"> Start hue value (in degrees) of the command. </param>
@@ -512,6 +571,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="endH"> End hue value (in degrees) of the command. </param>
         ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
         ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ColorHsb(double startTime, double endTime, double startH, double startS, double startB, double endH, double endS, double endB) => ColorHsb(default, startTime, endTime, startH, startS, startB, endH, endS, endB);
 
         ///<summary> Sets the hue, saturation, and brightness of an <see cref="OsbSprite"/>. </summary>
@@ -519,46 +579,55 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="h"> Hue value (in degrees) of the command. </param>
         ///<param name="s"> Saturation value (from 0 to 1) of the command. </param>
         ///<param name="b"> Brightness level (from 0 to 1) of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ColorHsb(double time, double h, double s, double b) => ColorHsb(default, time, time, h, s, b, h, s, b);
 
         //==========P==========//
-        ///<summary> Applies a parameter to an <see cref="OsbSprite"/> over a given duration. </summary>
+        ///<summary> Apply a parameter to an <see cref="OsbSprite"/> for a given duration. </summary>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
         ///<param name="param"> The <see cref="CommandParameter"/> type to be applied. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Parameter(double startTime, double endTime, CommandParameter param) => addCommand(new ParameterCommand(startTime, endTime, param));
 
-        ///<summary> Flips an <see cref="OsbSprite"/> horizontally over a given duration. </summary>
+        ///<summary> Flip an <see cref="OsbSprite"/> horizontally for a given duration. </summary>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FlipH(double startTime, double endTime) => Parameter(startTime, endTime, CommandParameter.FlipHorizontal);
 
         ///<summary> Flips an <see cref="OsbSprite"/> horizontally. </summary>
         ///<param name="time"> Time of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FlipH(double time) => FlipH(time, time);
 
-        ///<summary> Flips an <see cref="OsbSprite"/> vertically over a given duration. </summary>
+        ///<summary> Flip an <see cref="OsbSprite"/> vertically for a given duration. </summary>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FlipV(double startTime, double endTime) => Parameter(startTime, endTime, CommandParameter.FlipVertical);
 
         ///<summary> Flips an <see cref="OsbSprite"/> horizontally. </summary>
         ///<param name="time"> Time of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FlipV(double time) => FlipV(time, time);
 
-        ///<summary> Applies additive blending to an <see cref="OsbSprite"/> over a given duration. </summary>
+        ///<summary> Apply additive blending to an <see cref="OsbSprite"/> for a given duration. </summary>
         ///<param name="startTime"> Start time of the command. </param>
         ///<param name="endTime"> End time of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Additive(double startTime, double endTime) => Parameter(startTime, endTime, CommandParameter.AdditiveBlending);
 
         ///<summary> Applies additive blending to an <see cref="OsbSprite"/>. </summary>
         ///<param name="time"> Time of the command. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Additive(double time) => Additive(time, time);
 
         ///<summary> Repeat commands <paramref name="loopCount"/> times until <see cref="EndGroup"/> is called. </summary>
         ///<remarks> Command times inside the loop are relative to the <paramref name="startTime"/> of the loop. </remarks>
         ///<param name="startTime"> Start time of the loop. </param>
         ///<param name="loopCount"> How many times the loop should repeat. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public LoopCommand StartLoopGroup(double startTime, int loopCount)
         {
             var loopCommand = new LoopCommand(startTime, loopCount);
@@ -573,6 +642,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="startTime"> Start time of the loop. </param>
         ///<param name="endTime"> End time of the loop. </param>
         ///<param name="group"> Group number of the loop. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TriggerCommand StartTriggerGroup(string triggerName, double startTime, double endTime, int group = 0)
         {
             var triggerCommand = new TriggerCommand(triggerName, startTime, endTime, group);
@@ -590,6 +660,7 @@ namespace StorybrewCommon.Storyboarding
             endDisplayComposites();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void addCommand(ICommand command)
         {
             if (command is CommandGroup commandGroup)
@@ -603,6 +674,7 @@ namespace StorybrewCommon.Storyboarding
 
         ///<summary> Adds a command to be run on the sprite. </summary>
         ///<param name="command"> The command type to be run. </param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void AddCommand(ICommand command)
         {
             if (command is ColorCommand color) Color(color.Easing, color.StartTime, color.EndTime, color.StartValue, color.EndValue);

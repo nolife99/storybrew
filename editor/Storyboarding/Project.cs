@@ -392,7 +392,7 @@ namespace StorybrewEditor.Storyboarding
         };
         public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
 
-        HashSet<string> importedAssemblies = new HashSet<string>();
+        List<string> importedAssemblies = new List<string>();
         public IEnumerable<string> ImportedAssemblies
         {
             get => importedAssemblies;
@@ -400,12 +400,12 @@ namespace StorybrewEditor.Storyboarding
             {
                 if (Disposed) throw new ObjectDisposedException(nameof(Project));
 
-                importedAssemblies = new HashSet<string>(value);
+                importedAssemblies = new List<string>(value);
                 scriptManager.ReferencedAssemblies = ReferencedAssemblies;
             }
         }
 
-        public IEnumerable<string> ReferencedAssemblies => defaultAssemblies.Concat(importedAssemblies);
+        public IEnumerable<string> ReferencedAssemblies => defaultAssemblies.Union(importedAssemblies);
 
         #endregion
 

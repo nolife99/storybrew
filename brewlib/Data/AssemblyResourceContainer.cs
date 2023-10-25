@@ -15,7 +15,7 @@ namespace BrewLib.Data
         readonly string baseNamespace, basePath;
 
         public IEnumerable<string> ResourceNames => assembly.GetManifestResourceNames()
-            .Where(name => name.StartsWith($"{baseNamespace}.")).Select(name => name.Substring(baseNamespace.Length + 1));
+            .Where(name => name.StartsWith($"{baseNamespace}.", StringComparison.Ordinal)).Select(name => name.Substring(baseNamespace.Length + 1));
 
         public AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null)
         {

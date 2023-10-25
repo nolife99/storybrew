@@ -10,19 +10,18 @@ namespace BrewLib.Util.Compression
 {
     public class PngCompressor : ImageCompressor
     {
-        readonly static bool is64bit = Environment.Is64BitOperatingSystem;
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(PngCompressor)), "BrewLib");
 
-        protected override void compress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null)
+        protected override void doCompress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null)
         {
-            if (!File.Exists(path)) throw new FileNotFoundException(nameof(path));
+            if (!File.Exists(path)) throw new FileNotFoundException("The path that was specified could not be found.", path);
             if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat, CultureInfo.InvariantCulture)))
-                throw new ArgumentException("Input format is required for file without extension");
+                throw new ArgumentException("Input format is required for file without extension", nameof(inputFormat));
 
             try
             {
-                UtilityName = is64bit ? type != "lossy" ? "oxipng.exe" : "pngquant.exe" : "truepng.exe";
+                UtilityName = Environment.Is64BitOperatingSystem ? type != "lossy" ? "oxipng.exe" : "pngquant.exe" : "truepng.exe";
                 ensureTool();
 
                 var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(path, type, lossy, lossless))
@@ -35,7 +34,6 @@ namespace BrewLib.Util.Compression
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
-                InitStartInfo(startInfo);
 
                 if (process is null) process = Process.Start(startInfo);
                 var error = process.StandardError.ReadToEnd();
@@ -46,59 +44,49 @@ namespace BrewLib.Util.Compression
                 ensureStop();
             }
         }
-        protected override string appendArgs(string path, string compressionType, 
-            LossyInputSettings lossyInputSettings, LosslessInputSettings losslessInputSettings)
+        protected override string appendArgs(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless)
         {
             var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
             var str = new StringBuilder();
 
-            if (is64bit)
+            if (Environment.Is64BitOperatingSystem)
             {
-                if (compressionType == "lossy")
+                if (type == "lossy")
                 {
                     str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
-                    if (lossyInputSettings != null)
+                    if (lossy != null)
                     {
-                        if (lossyInputSettings.MinQuality >= 0 && lossyInputSettings.MaxQuality > 0 && lossyInputSettings.MaxQuality <= 100)
-                            str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossyInputSettings.MinQuality, lossyInputSettings.MaxQuality);
+                        if (lossy.MinQuality >= 0 && lossy.MaxQuality > 0 && lossy.MaxQuality <= 100)
+                            str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossy.MinQuality, lossy.MaxQuality);
 
-                        if (lossyInputSettings.Speed > 0 && lossyInputSettings.Speed <= 10)
-                            str.AppendFormat(CultureInfo.InvariantCulture, " -s{0} ", lossyInputSettings.Speed);
+                        if (lossy.Speed > 0 && lossy.Speed <= 10)
+                            str.AppendFormat(CultureInfo.InvariantCulture, " -s{0} ", lossy.Speed);
 
-                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossyInputSettings.CustomInputArgs);
+                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossy.CustomInputArgs);
                     }
                 }
                 else
                 {
-                    if (losslessInputSettings != null)
+                    if (lossless != null)
                     {
-                        var lvl = (byte)losslessInputSettings.OptimizationLevel;
+                        var lvl = (byte)lossless.OptimizationLevel;
                         str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
-                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", losslessInputSettings.CustomInputArgs);
+                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless.CustomInputArgs);
                     }
                     str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
                 }
             }
             else
             {
-                if (losslessInputSettings != null)
+                if (lossless != null)
                 {
-                    var lvl = (byte)losslessInputSettings.OptimizationLevel;
+                    var lvl = (byte)lossless.OptimizationLevel;
                     str.AppendFormat(CultureInfo.InvariantCulture, " /o{0} ", lvl > 4 ? 4 : lvl);
-                    str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", losslessInputSettings.CustomInputArgs);
+                    str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless.CustomInputArgs);
                 }
                 str.AppendFormat(CultureInfo.InvariantCulture, "/md remove all /a1 -Z /y /out {0} {0}", input);
             }
             return str.ToString();
-        }
-        protected override void waitForExit()
-        {
-            if (process is null) return;
-            if (!process.HasExited && !process.WaitForExit(ExecutionTimeout.HasValue ? (int)ExecutionTimeout.Value.TotalMilliseconds : 0))
-            {
-                ensureStop();
-                Trace.WriteLine("Image compression process exceeded execution timeout and was aborted");
-            }
         }
         protected override void ensureTool()
         {

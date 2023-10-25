@@ -19,15 +19,14 @@ namespace BrewLib.Util.Compression
         public ImageCompressor(string utilityPath = null)
             => UtilityPath = utilityPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/cache";
 
-        public void LosslessCompress(string path) => compress(path, "", null, null);
-        public void Compress(string path) => compress(path, "lossy", null, null);
-        public void LosslessCompress(string path, LosslessInputSettings settings) => compress(path, "", null, settings);
-        public void Compress(string path, LossyInputSettings settings) => compress(path, "lossy", settings, null);
-        public void LosslessCompress(string path, LosslessInputSettings settings, InputFormat inputFormat) => compress(path, "", null, settings, inputFormat);
-        public void Compress(string path, LossyInputSettings settings, InputFormat inputFormat) => compress(path, "lossy", settings, null, inputFormat);
+        public void LosslessCompress(string path) => doCompress(path, "", null, null);
+        public void Compress(string path) => doCompress(path, "lossy", null, null);
+        public void LosslessCompress(string path, LosslessInputSettings settings) => doCompress(path, "", null, settings);
+        public void Compress(string path, LossyInputSettings settings) => doCompress(path, "lossy", settings, null);
+        public void LosslessCompress(string path, LosslessInputSettings settings, InputFormat inputFormat) => doCompress(path, "", null, settings, inputFormat);
+        public void Compress(string path, LossyInputSettings settings, InputFormat inputFormat) => doCompress(path, "lossy", settings, null, inputFormat);
 
-        protected abstract void compress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null);
-        protected abstract void waitForExit();
+        protected abstract void doCompress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null);
         protected abstract string appendArgs(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless);
         protected abstract void ensureTool();
 
@@ -39,13 +38,5 @@ namespace BrewLib.Util.Compression
         }
 
         internal string GetUtility() => Path.Combine(UtilityPath, UtilityName);
-        internal void InitStartInfo(ProcessStartInfo startInfo)
-        {
-            if (ProcessUser == null) return;
-            if (ProcessUser.Domain != null) startInfo.Domain = ProcessUser.Domain;
-            if (ProcessUser.UserName != null) startInfo.UserName = ProcessUser.UserName;
-            if (ProcessUser.Password == null) return;
-            startInfo.Password = ProcessUser.Password;
-        }
     }
 }

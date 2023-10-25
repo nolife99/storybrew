@@ -127,10 +127,10 @@ namespace StorybrewCommon.Scripting
         #region Random
 
         ///<summary/>
-        [Group("Common")] [Description("Changes the result of Random(...) calls.")]
+        [Group("Common")][Description("Changes the result of Random(...) calls.")]
         [Configurable] public int RandomSeed;
 
-        Random rnd;
+        FastRandom rnd;
 
         ///<summary> Gets a pseudo-random integer with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
         public int Random(int minValue, int maxValue) => rnd.Next(minValue, maxValue);
@@ -139,16 +139,32 @@ namespace StorybrewCommon.Scripting
         public int Random(int maxValue) => rnd.Next(maxValue);
 
         ///<summary> Gets a pseudo-random number with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
-        public double Random(double minValue, double maxValue) => minValue + rnd.NextDouble() * (maxValue - minValue);
+        public double Random(double minValue, double maxValue)
+        {
+            if (minValue == maxValue) return minValue;
+            return minValue + (maxValue - minValue) * rnd.NextDouble();
+        }
 
         ///<summary> Gets a pseudo-random number with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
-        public double Random(double maxValue) => rnd.NextDouble() * maxValue;
+        public double Random(double maxValue)
+        {
+            if (maxValue == 0) return 0;
+            return rnd.NextDouble() * maxValue;
+        }
 
         ///<summary> Gets a pseudo-random float with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
-        public float Random(float minValue, float maxValue) => (float)(minValue + rnd.NextDouble() * (maxValue - minValue));
+        public float Random(float minValue, float maxValue)
+        {
+            if (minValue == maxValue) return minValue;
+            return (float)(minValue + (maxValue - minValue) * rnd.NextDouble());
+        }
 
         ///<summary> Gets a pseudo-random float with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
-        public float Random(float maxValue) => (float)(rnd.NextDouble() * maxValue);
+        public float Random(float maxValue)
+        {
+            if (maxValue == 0) return 0;
+            return (float)(rnd.NextDouble() * maxValue);
+        }
 
         #endregion
 
@@ -194,9 +210,7 @@ namespace StorybrewCommon.Scripting
 
         static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
 
-        internal readonly HashSet<string> fontDirectories = new HashSet<string>();
-        readonly HashSet<FontGenerator> fontGenerators = new HashSet<FontGenerator>();
-
+        internal readonly Dictionary<string, FontGenerator> fonts = new Dictionary<string, FontGenerator>();
         string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache");
 
         ///<summary> Loads subtitles from a given subtitle file. </summary>
@@ -223,7 +237,7 @@ namespace StorybrewCommon.Scripting
             => LoadFont(directory, false, description, effects);
 
         ///<summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
-        ///<param name="directory"> The path to the font file. </param>
+        ///<param name="directory"> The relative path to place the font textures. </param>
         ///<param name="asAsset"> Whether to place textures in the asset library directory or the beatmap's storyboard directory. </param>
         ///<param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
         ///<param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
@@ -232,23 +246,19 @@ namespace StorybrewCommon.Scripting
         {
             var assetDirectory = asAsset ? context.ProjectAssetPath : context.MapsetPath;
             var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
-            if (fontDirectories.Contains(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
-            fontDirectories.Add(fontDirectory);
+            if (fonts.ContainsKey(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
 
             var fontGenerator = new FontGenerator(directory, description, effects, context.ProjectPath, assetDirectory);
-            fontGenerators.Add(fontGenerator);
+            fonts.Add(fontDirectory, fontGenerator);
 
             var cachePath = $"{fontCacheDirectory}/font.dat";
             if (File.Exists(cachePath)) using (var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
             using (var cache = new ZipArchive(file, ZipArchiveMode.Read))
             {
-                var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory));
+                var path = cache.GetEntry(HashHelper.GetMd5(directory));
                 if (path != null)
                 {
-                    var cachedFontRoot = Misc.WithRetries(() =>
-                    {
-                        using (var stream = path.Open()) return TinyToken.Read(stream, TinyToken.Yaml);
-                    }, canThrow: false);
+                    var cachedFontRoot = Misc.WithRetries(() => TinyToken.Read(path.Open(), TinyToken.Yaml), canThrow: false);
                     if (cachedFontRoot != null) fontGenerator.HandleCache(cachedFontRoot);
                 }
             }
@@ -258,16 +268,14 @@ namespace StorybrewCommon.Scripting
         {
             if (!Directory.Exists(fontCacheDirectory)) Directory.CreateDirectory(fontCacheDirectory);
 
-            using (var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read)) 
-            using (var cache = new ZipArchive(file, ZipArchiveMode.Update)) foreach (var fontGenerator in fontGenerators)
+            using (var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read))
+            using (var cache = new ZipArchive(file, ZipArchiveMode.Update)) foreach (var fontGenerator in fonts.Values)
             {
                 var fontRoot = fontGenerator.ToTinyObject();
-
-                var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory));
-                if (path is null) path = cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
+                var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory)) ?? cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
                 try
                 {
-                    using (var stream = path.Open()) fontRoot.Write(stream, TinyToken.Yaml);
+                    fontRoot.Write(path.Open(), TinyToken.Yaml);
                 }
                 catch (Exception e)
                 {
@@ -392,20 +400,20 @@ namespace StorybrewCommon.Scripting
             try
             {
                 this.context = context;
-                rnd = new Random(RandomSeed);
+                rnd = new FastRandom(RandomSeed);
                 Current = this;
                 Compressor = new PngCompressor();
 
                 Generate();
                 context.Multithreaded = Multithreaded;
-                if (fontGenerators.Count > 0) saveFontCache();
+                if (fonts.Count > 0) saveFontCache();
             }
             finally
             {
                 this.context = null;
                 Current = null;
 
-                fontGenerators.Clear();
+                fonts.Clear();
                 bitmaps.Dispose();
             }
         }

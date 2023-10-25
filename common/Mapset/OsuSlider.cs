@@ -81,8 +81,8 @@ namespace StorybrewCommon.Mapset
             }
 
             var progress = progressDuration / TravelDuration;
-            var reversed = repeatAtTime % 2 == 0;
-            if (reversed) progress = 1.0 - progress;
+            var reversed = (repeatAtTime & 1) == 0;
+            if (reversed) progress = 1 - progress;
 
             if (curve == null) generateCurve();
             return curve.PositionAtDistance(Length * progress);
@@ -159,7 +159,7 @@ namespace StorybrewCommon.Mapset
             var previousPoint = PlayfieldPosition;
             for (var i = 0; i < controlPoints.Length; ++i)
             {
-                curves[i] = new BezierCurve(new List<CommandPosition>
+                curves[i] = new BezierCurve(new CommandPosition[]
                 {
                     previousPoint,
                     controlPoints[i].PlayfieldPosition

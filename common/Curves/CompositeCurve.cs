@@ -24,8 +24,8 @@ namespace StorybrewCommon.Curves
         {
             get
             {
-                var length = 0d;
-                for (var i = 0; i < curves.Length; ++i) length += curves[i].Length;
+                var length = curves[0].Length;
+                for (var i = 1; i < curves.Length; ++i) length += curves[i].Length;
                 return length;
             }
         }

@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
+using StorybrewCommon.Subtitles;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
@@ -241,8 +242,14 @@ namespace StorybrewCommon.Storyboarding.Util
             states.Clear();
             states = null;
         }
-        internal static SizeF BitmapDimensions(OsbSprite sprite) => 
-            StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath, StoryboardObjectGenerator.Current.fontDirectories.Count == 0).PhysicalDimension;
+        internal static SizeF BitmapDimensions(OsbSprite sprite)
+        {
+            // try to reduce the amount of Bitmap in memory
+            var font = StoryboardObjectGenerator.Current.fonts.Values.SelectMany(gen => gen.cache.Values).FirstOrDefault(texture => texture.Path == sprite.TexturePath);
+
+            if (font == default(FontTexture)) return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
+            return new Size(font.Width, font.Height);
+        }
     }
 
     ///<summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>

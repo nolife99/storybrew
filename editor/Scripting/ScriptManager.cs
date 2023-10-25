@@ -19,13 +19,13 @@ namespace StorybrewEditor.Scripting
         readonly ResourceContainer resourceContainer;
         readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
 
-        HashSet<string> referencedAssemblies = new HashSet<string>();
+        List<string> referencedAssemblies = new List<string>();
         public IEnumerable<string> ReferencedAssemblies
         {
             get => referencedAssemblies;
             set
             {
-                referencedAssemblies = new HashSet<string>(value);
+                referencedAssemblies = (value as List<string>) ?? value.ToList();
                 foreach (var scriptContainer in scriptContainers.Values) scriptContainer.ReferencedAssemblies = referencedAssemblies;
                 updateSolutionFiles();
             }
@@ -156,11 +156,11 @@ namespace StorybrewEditor.Scripting
             File.WriteAllBytes(slnPath, resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative));
 
             var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
-            var document = new XmlDocument();
+            var document = new XmlDocument() { PreserveWhitespace = false };
             try
             {
                 using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
-                    document.Load(stream);
+                using (var sr = new XmlTextReader(stream) { DtdProcessing = default, XmlResolver = null }) document.Load(sr);
 
                 var xmlns = document.DocumentElement.GetAttribute("xmlns");
 
@@ -183,9 +183,9 @@ namespace StorybrewEditor.Scripting
                 }
                 document.Save(csProjPath);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                throw;
+                Trace.TraceError($"Failed to update scripts.csproj: {e}");
             }
         }
 
