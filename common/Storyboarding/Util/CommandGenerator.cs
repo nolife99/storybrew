@@ -171,13 +171,8 @@ namespace StorybrewCommon.Storyboarding.Util
             var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
 
             double checkPos(double value) => Math.Round(value, PositionDecimals);
-            bool moveX = false, moveY = false;
-
-            foreach (var k in finalPositions)
-            {
-                if (moveX) moveX = checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y);
-                if (moveY) moveY = checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X);
-            }
+            bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
+                 moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
             finalPositions.ForEachPair((s, e) =>
             {
