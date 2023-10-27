@@ -63,7 +63,7 @@ namespace StorybrewCommon.Storyboarding3d
             var startVector = CameraState.ToScreen(wvp, StartPosition.ValueAt(time));
             var endVector = CameraState.ToScreen(wvp, EndPosition.ValueAt(time));
 
-            var delta = new Vector2(endVector.X, endVector.Y) - new Vector2(startVector.X, startVector.Y);
+            var delta = new Vector2(endVector.X - startVector.X, endVector.Y - startVector.Y);
             if (delta.LengthSquared() == 0) return;
 
             var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
@@ -76,7 +76,7 @@ namespace StorybrewCommon.Storyboarding3d
                 case OsbOrigin.TopLeft:
                 case OsbOrigin.CentreLeft:
                 case OsbOrigin.BottomLeft: position = new Vector2(startVector.X, startVector.Y); break;
-                case OsbOrigin.TopCentre: case OsbOrigin.Centre: case OsbOrigin.BottomCentre: position = new Vector2(startVector.X, startVector.Y) + delta * .5f; break;
+                case OsbOrigin.TopCentre: case OsbOrigin.Centre: case OsbOrigin.BottomCentre: position = new Vector2(startVector.X, startVector.Y) + delta / 2; break;
                 case OsbOrigin.TopRight: case OsbOrigin.CentreRight: case OsbOrigin.BottomRight: position = new Vector2(endVector.X, endVector.Y); break;
             }
             gen.Add(new State

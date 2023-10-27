@@ -78,10 +78,6 @@ namespace StorybrewCommon.Storyboarding3d
                 }
             }
 
-            var previousState = gen.EndState;
-            var rotation = InterpolatingFunctions.DoubleAngle(
-                previousState?.Rotation ?? -SpriteRotation.ValueAt(previousState?.Time ?? time), angle, 1) + SpriteRotation.ValueAt(time);
-
             var scale = SpriteScale.ValueAt(time) * new Vector2(
                 new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13).Length(),
                 new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length()) *
@@ -96,7 +92,7 @@ namespace StorybrewCommon.Storyboarding3d
                 Time = time,
                 Position = new Vector2(screenPosition.X, screenPosition.Y),
                 Scale = UseDefaultScale ?? scale,
-                Rotation = rotation,
+                Rotation = angle + SpriteRotation.ValueAt(time),
                 Color = object3dState.Color,
                 Opacity = opacity,
                 Additive = Additive

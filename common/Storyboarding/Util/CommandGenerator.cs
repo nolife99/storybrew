@@ -144,26 +144,26 @@ namespace StorybrewCommon.Storyboarding.Util
         }
         void commitKeyframes(SizeF imageSize)
         {
-            positions.Simplify2dKeyframes(PositionTolerance, s => s);
-            if (finalPositions.EndTime != int.MinValue) finalPositions.DebugUntil(positions.StartTime);
-            positions.TransferKeyframes(finalPositions);
-
-            scales.Simplify2dKeyframes(ScaleTolerance, v => new Vector2(v.X * imageSize.Width, v.Y * imageSize.Height));
-            if (finalScales.EndTime != int.MinValue) finalScales.DebugUntil(scales.StartTime);
-            scales.TransferKeyframes(finalScales);
-
-            rotations.Simplify1dKeyframes(RotationTolerance, r => (float)r);
-            if (finalRotations.EndTime != int.MinValue) finalRotations.DebugUntil(rotations.StartTime);
-            rotations.TransferKeyframes(finalRotations);
-
-            colors.Simplify3dKeyframes(ColorTolerance, c => new Vector3(c.R, c.G, c.B));
-            if (finalColors.EndTime != int.MinValue) finalColors.DebugUntil(colors.StartTime);
-            colors.TransferKeyframes(finalColors);
-
             fades.Simplify1dKeyframes(OpacityTolerance, f => (float)f);
             if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
             if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
             fades.TransferKeyframes(finalfades);
+
+            positions.Simplify2dKeyframes(PositionTolerance, s => s);
+            if (finalPositions.EndTime > int.MinValue) finalPositions.DebugUntil(positions.StartTime);
+            positions.TransferKeyframes(finalPositions);
+
+            scales.Simplify2dKeyframes(ScaleTolerance, v => v * imageSize);
+            if (finalScales.EndTime > int.MinValue) finalScales.DebugUntil(scales.StartTime);
+            scales.TransferKeyframes(finalScales);
+
+            rotations.Simplify1dKeyframes(RotationTolerance, r => (float)r);
+            if (finalRotations.EndTime > int.MinValue) finalRotations.DebugUntil(rotations.StartTime);
+            rotations.TransferKeyframes(finalRotations);
+
+            colors.Simplify3dKeyframes(ColorTolerance, c => new Vector3(c.R, c.G, c.B));
+            if (finalColors.EndTime > int.MinValue) finalColors.DebugUntil(colors.StartTime);
+            colors.TransferKeyframes(finalColors);
         }
         void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)
         {
@@ -171,8 +171,13 @@ namespace StorybrewCommon.Storyboarding.Util
             var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
 
             double checkPos(double value) => Math.Round(value, PositionDecimals);
-            bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
-                 moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
+            bool moveX = false, moveY = false;
+
+            foreach (var k in finalPositions)
+            {
+                if (moveX) moveX = checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y);
+                if (moveY) moveY = checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X);
+            }
 
             finalPositions.ForEachPair((s, e) =>
             {
@@ -197,9 +202,7 @@ namespace StorybrewCommon.Storyboarding.Util
                 else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
             }, Vector2.One, s => new CommandScale(Math.Round(s.X, ScaleDecimals), Math.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
 
-            finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
-                0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
-
+            finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
             finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), Color.White, null, startState, endState, loopable);
             finalfades.ForEachPair((s, e) =>
             {

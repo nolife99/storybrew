@@ -89,13 +89,13 @@ namespace StorybrewCommon.Animations
             if (keyframes.Count == 0) return null;
 
             var index = indexAt(time, false);
-            return Add(time, keyframes[index == keyframes.Count ? keyframes.Count - 1 : index].Value);
+            return Add(time, EndValue);
         }
 
         internal KeyframedValue<TValue> DebugUntil(double time)
         {
             var index = indexAt(time, false);
-            return Add(new Keyframe<TValue>(time, keyframes[index == keyframes.Count ? keyframes.Count - 1 : index].Value, null, true));
+            return Add(new Keyframe<TValue>(time, EndValue, null, true));
         }
 
         ///<summary> Transfers the keyframes in this instance to another keyframed value. </summary>
@@ -164,10 +164,10 @@ namespace StorybrewCommon.Animations
                     }
                     else if (stepStart.HasValue)
                     {
-                        if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time)
+                        if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time && !stepStart.Value.Until)
                         {
                             var initialPair = stepStart.Value.WithTime(startTime);
-                            if (!stepStart.Value.Until) pair(initialPair, loopable ? stepStart.Value : initialPair);
+                            pair(initialPair, loopable ? stepStart.Value : initialPair);
                         }
 
                         if (!stepStart.Value.Until) pair(stepStart.Value, startKeyframe);
@@ -250,63 +250,6 @@ namespace StorybrewCommon.Animations
         internal int indexAt(double time, bool before) => indexFor(new Keyframe<TValue>(time), before);
 
         #region Manipulation
-
-        ///<summary/>
-        public void Linearize(double timestep)
-        {
-            var linearKeyframes = new List<Keyframe<TValue>>();
-
-            var previousKeyframe = (Keyframe<TValue>?)null;
-            keyframes.ForEach(keyframe =>
-            {
-                if (previousKeyframe.HasValue)
-                {
-                    var startKeyFrame = previousKeyframe.Value;
-
-                    var duration = keyframe.Time - startKeyFrame.Time;
-                    var steps = (int)(duration / timestep);
-                    var actualTimestep = duration / steps;
-
-                    for (var i = 0; i < steps; ++i)
-                    {
-                        var time = startKeyFrame.Time + i * actualTimestep;
-                        linearKeyframes.Add(new Keyframe<TValue>(time, ValueAt(time)));
-                    }
-                }
-                previousKeyframe = keyframe;
-            });
-            var endTime = keyframes[keyframes.Count - 1].Time;
-            linearKeyframes.Add(new Keyframe<TValue>(endTime, ValueAt(endTime)));
-
-            linearKeyframes.TrimExcess();
-            keyframes = linearKeyframes;
-        }
-
-        ///<summary> Simplifies keyframes with equal values.  </summary>
-        public void SimplifyEqualKeyframes()
-        {
-            var simplifiedKeyframes = new List<Keyframe<TValue>>();
-            for (int i = 0, count = keyframes.Count; i < count; ++i)
-            {
-                var startKeyframe = keyframes[i];
-                simplifiedKeyframes.Add(startKeyframe);
-
-                for (var j = i + 1; j < count; ++j)
-                {
-                    var endKeyframe = keyframes[j];
-                    if (!startKeyframe.Value.Equals(endKeyframe.Value))
-                    {
-                        if (i < j - 1) simplifiedKeyframes.Add(keyframes[j - 1]);
-                        simplifiedKeyframes.Add(endKeyframe);
-                        i = j;
-                        break;
-                    }
-                    else if (j == count - 1) i = j;
-                }
-            }
-            simplifiedKeyframes.TrimExcess();
-            keyframes = simplifiedKeyframes;
-        }
 
         ///<summary> Simplifies keyframes on 1-parameter commands. </summary>
         ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
@@ -401,7 +344,7 @@ namespace StorybrewCommon.Animations
                     indexFarthest = i;
                 }
             }
-            if (maxDistance > tolerance && indexFarthest != 0)
+            if (maxDistance > tolerance && indexFarthest > 0)
             {
                 keyframesToKeep.Add(indexFarthest);
                 getSimplifiedKeyframeIndexes(ref keyframesToKeep, firstPoint, indexFarthest, tolerance, getDistance);

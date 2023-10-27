@@ -19,10 +19,13 @@ namespace BrewLib.Util
         }
         public static double ShortestAngleDelta(double from, double to)
         {
-            var diff = to - from;
-            var delta = OpenTK.MathHelper.Clamp(diff - Math.Floor(diff / Math.PI * 2) * Math.PI * 2, 0, Math.PI * 2);
-            if (delta > Math.PI) return delta - Math.PI * 2;
-            return delta;
+            if (from == to) return 0;
+            else if (from == 0) return to;
+            else if (to == 0) return -from;
+            else if (Math.Abs(from) == Math.Abs(to)) return Math.Abs(from) + Math.Abs(to);
+
+            var diff = (to - from) % (Math.PI * 2);
+            return 2 * diff % (Math.PI * 2) - diff;
         }
     }
 }

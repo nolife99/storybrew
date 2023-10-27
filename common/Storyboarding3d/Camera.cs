@@ -10,7 +10,7 @@ namespace StorybrewCommon.Storyboarding3d
     public abstract class Camera
     {
         public static SizeF Resolution = new Size(1366, 768);
-        public static double ResolutionScale = OsuHitObject.StoryboardSize.Height / Resolution.Height;
+        public static double ResolutionScale = OsuHitObject.WidescreenStoryboardSize.Height / Resolution.Height;
         public static double AspectRatio = Resolution.Width / Resolution.Height;
         public float DistanceForHorizontalFov(double fov) => (float)(Resolution.Width / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
         public float DistanceForVerticalFov(double fov) => (float)(Resolution.Height / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
@@ -34,7 +34,7 @@ namespace StorybrewCommon.Storyboarding3d
         }
         public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
         {
-            var offset = (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) * .5f;
+            var offset = (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2;
 
             var transformedPoint = Vector4.Transform(new Vector4(point, 1), transform);
             var ndc = new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W);
@@ -107,7 +107,7 @@ namespace StorybrewCommon.Storyboarding3d
             else
             {
                 fovY = VerticalFov.Count > 0 ? OpenTK.MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
-                2 * Math.Atan(Resolution.Height / 2f / Math.Max(.0001, (cameraPosition - targetPosition).Length()));
+                2 * Math.Atan(Resolution.Height / 2 / Math.Max(.0001, (cameraPosition - targetPosition).Length()));
             }
 
             var focusDistance = Resolution.Height / 2 / Math.Tan(fovY / 2);
