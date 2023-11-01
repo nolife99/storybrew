@@ -36,11 +36,7 @@ namespace BrewLib.Graphics
         public Shader(string vertexShaderCode, string fragmentShaderCode)
         {
             initialize(vertexShaderCode, fragmentShaderCode);
-
-            if (isInitialized) Trace.WriteLine(string.IsNullOrWhiteSpace(log) ?
-                $"Shader {programId} initialized" : $"Shader {programId} initialized:\n{log}");
-
-            else
+            if (!isInitialized)
             {
                 Dispose(true);
                 throw new Exception($"Failed to initialize shader:\n\n{log}");

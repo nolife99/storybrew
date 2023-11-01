@@ -87,16 +87,10 @@ namespace StorybrewCommon.Animations
         public KeyframedValue<TValue> Until(double time)
         {
             if (keyframes.Count == 0) return null;
-
-            var index = indexAt(time, false);
             return Add(time, EndValue);
         }
 
-        internal KeyframedValue<TValue> DebugUntil(double time)
-        {
-            var index = indexAt(time, false);
-            return Add(new Keyframe<TValue>(time, EndValue, null, true));
-        }
+        internal KeyframedValue<TValue> DebugUntil(double time) => Add(new Keyframe<TValue>(time, EndValue, null, true));
 
         ///<summary> Transfers the keyframes in this instance to another keyframed value. </summary>
         ///<param name="to"> The keyframed value to transfer to. </param>
@@ -304,30 +298,60 @@ namespace StorybrewCommon.Animations
             return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / Vector4.Dot(startToEnd, startToEnd) * startToEnd).Length();
         });
 
+        void SimplifyEqualKeyframes()
+        {
+            var simplifiedKeyframes = new List<Keyframe<TValue>>();
+            for (int i = 0, count = keyframes.Count; i < count; i++)
+            {
+                var startKeyframe = keyframes[i];
+                simplifiedKeyframes.Add(startKeyframe);
+
+                for (var j = i + 1; j < count; j++)
+                {
+                    var endKeyframe = keyframes[j];
+                    if (!startKeyframe.Value.Equals(endKeyframe.Value))
+                    {
+                        if (i < j - 1) simplifiedKeyframes.Add(keyframes[j - 1]);
+                        simplifiedKeyframes.Add(endKeyframe);
+                        i = j;
+                        break;
+                    }
+                    else if (j == count - 1) i = j;
+                }
+            }
+
+            simplifiedKeyframes.TrimExcess();
+            keyframes = simplifiedKeyframes;
+        }
+
         ///<summary> Simplifies keyframes on commands. </summary>
         ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
         ///<param name="getDistance"> A function that gets the distance between three specific keyframes. </param>
         public void SimplifyKeyframes(double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
         {
+            if (tolerance <= 0)
+            {
+                SimplifyEqualKeyframes();
+                return;
+            }
             if (keyframes.Count < 3) return;
 
             var firstPoint = 0;
             var lastPoint = keyframes.Count - 1;
-            var keyframesToKeep = new List<int> { firstPoint, lastPoint };
+            var keyframesToKeep = new SortedSet<int> { firstPoint, lastPoint };
             getSimplifiedKeyframeIndexes(ref keyframesToKeep, firstPoint, lastPoint, tolerance, getDistance);
 
             if (keyframesToKeep.Count == keyframes.Count) return;
 
-            keyframesToKeep.Sort();
             var simplifiedKeyframes = new List<Keyframe<TValue>>(keyframesToKeep.Count);
-            for (var i = 0; i < keyframesToKeep.Count; ++i)
+            foreach (var keep in keyframesToKeep)
             {
-                var keyframe = keyframes[keyframesToKeep[i]];
+                var keyframe = keyframes[keep];
                 simplifiedKeyframes.Add(new Keyframe<TValue>(keyframe.Time, keyframe.Value));
             }
             keyframes = simplifiedKeyframes;
         }
-        void getSimplifiedKeyframeIndexes(ref List<int> keyframesToKeep, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
+        void getSimplifiedKeyframeIndexes(ref SortedSet<int> keyframesToKeep, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
         {
             var start = keyframes[firstPoint];
             var end = keyframes[lastPoint];

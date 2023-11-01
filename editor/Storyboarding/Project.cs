@@ -41,10 +41,7 @@ namespace StorybrewEditor.Storyboarding
         public string ProjectAssetFolderPath => Path.Combine(ProjectFolderPath, "assetlibrary");
 
         internal bool DisplayDebugWarning, ShowHitObjects;
-
-        public string ScriptsPath { get; }
-        public string CommonScriptsPath { get; }
-        public string ScriptsLibraryPath { get; }
+        public readonly string ScriptsPath, CommonScriptsPath, ScriptsLibraryPath;
 
         public string AudioPath
         {
@@ -71,13 +68,10 @@ namespace StorybrewEditor.Storyboarding
                 if (!MapsetPathIsValid) return Path.Combine(ProjectFolderPath, "storyboard.osb");
 
                 var regex = new Regex(@"^(.+ - .+ \(.+\)) \[.+\].osu$");
-                foreach (var osuFilePath in Directory.GetFiles(MapsetPath, "*.osu", SearchOption.TopDirectoryOnly))
-                {
-                    var osuFilename = Path.GetFileName(osuFilePath);
+                var osuFilename = Path.GetFileName(MainBeatmap.Path);
 
-                    Match match;
-                    if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, $"{match.Groups[1].Value}.osb");
-                }
+                Match match;
+                if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, $"{match.Groups[1].Value}.osb");
 
                 foreach (var osbFilePath in Directory.GetFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly)) return osbFilePath;
 
@@ -852,6 +846,7 @@ namespace StorybrewEditor.Storyboarding
                 {
                     writer.WriteLine("[Events]");
                     writer.WriteLine("//Background and Video events");
+
                     foreach (var osbLayer in OsbLayers)
                     {
                         if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
@@ -860,6 +855,7 @@ namespace StorybrewEditor.Storyboarding
                         foreach (var layer in localLayers) if (layer.OsbLayer == osbLayer && !layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
                     }
                     writer.WriteLine("//Storyboard Sound Samples");
+
                     stream.Commit();
                 }
             }

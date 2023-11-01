@@ -8,8 +8,6 @@ using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers
 {
@@ -41,9 +39,7 @@ namespace BrewLib.Graphics.Renderers
                 new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
                 new Assign(sb.GlPosition, () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name}, 0, 1)")
             );
-            sb.FragmentShader = new Sequence(
-                new Assign(sb.GlFragColor, () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})")
-            );
+            sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
 
             return sb.Build();
         }
@@ -137,7 +133,6 @@ namespace BrewLib.Graphics.Renderers
             primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
             spriteArray = new SpritePrimitive[maxSpritesPerBatch];
-            Trace.WriteLine($"Initialized {nameof(SpriteRenderer)} using {primitiveStreamer.GetType().Name}");
         }
 
         public void Dispose()
@@ -226,15 +221,14 @@ namespace BrewLib.Graphics.Renderers
         public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color4 color, float textureX0, float textureY0, float textureX1, float textureY1)
         {
             if (!rendering) throw new InvalidOperationException("Not rendering");
-            if (texture == null) throw new ArgumentNullException(nameof(texture));
+            if (texture is null) throw new ArgumentNullException(nameof(texture));
 
             if (currentTexture != texture.BindableTexture)
             {
                 DrawState.FlushRenderer();
                 currentTexture = texture.BindableTexture;
             }
-            else if (spritesInBatch == maxSpritesPerBatch)
-                DrawState.FlushRenderer(true);
+            else if (spritesInBatch == maxSpritesPerBatch) DrawState.FlushRenderer(true);
 
             var width = textureX1 - textureX0;
             var height = textureY1 - textureY0;
@@ -297,7 +291,7 @@ namespace BrewLib.Graphics.Renderers
                 y4 = p4y;
             }
 
-            var spritePrimitive = default(SpritePrimitive);
+            SpritePrimitive spritePrimitive = default;
             spritePrimitive.x1 = x1 + x;
             spritePrimitive.y1 = y1 + y;
             spritePrimitive.x2 = x2 + x;
@@ -353,14 +347,5 @@ namespace BrewLib.Graphics.Renderers
             ++RenderedSpriteCount;
             ++spritesInBatch;
         }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SpritePrimitive
-    {
-        public float x1, y1, u1, v1; public int color1;
-        public float x2, y2, u2, v2; public int color2;
-        public float x3, y3, u3, v3; public int color3;
-        public float x4, y4, u4, v4; public int color4;
     }
 }

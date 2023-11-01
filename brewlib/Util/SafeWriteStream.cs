@@ -7,7 +7,7 @@ namespace BrewLib.Util
         readonly string temporaryPath, path;
         bool commited, disposed;
 
-        public SafeWriteStream(string path) : base(prepare(path), FileMode.OpenOrCreate)
+        public SafeWriteStream(string path) : base(prepare(path), FileMode.OpenOrCreate, FileAccess.Write)
         {
             this.path = path;
             temporaryPath = Name;

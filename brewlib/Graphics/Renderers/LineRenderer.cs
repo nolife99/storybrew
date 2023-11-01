@@ -1,6 +1,7 @@
 ﻿using OpenTK;
 using OpenTK.Graphics;
 using System;
+using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers
 {
@@ -17,5 +18,11 @@ namespace BrewLib.Graphics.Renderers
 
         void Draw(Vector3 start, Vector3 end, Color4 color);
         void Draw(Vector3 start, Vector3 end, Color4 startColor, Color4 endColor);
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct LinePrimitive
+    {
+        public float x1, y1, z1; public int color1;
+        public float x2, y2, z2; public int color2;
     }
 }

@@ -14,10 +14,10 @@ namespace BrewLib.Graphics.Renderers
 
         public static void DrawCircle(this LineRenderer line, Vector3 center, float radius, Color4 color, float precision = 1)
         {
-            var circumference = MathHelper.TwoPi * radius;
+            var circumference = Math.PI * 2 * radius;
             var lineCount = Math.Max(16, (int)Math.Round(circumference * precision));
 
-            var angleStep = MathHelper.TwoPi / lineCount;
+            var angleStep = Math.PI * 2 / lineCount;
             var previousPosition = new Vector3(center.X + radius, center.Y, center.Z);
             for (var i = 1; i <= lineCount; ++i)
             {

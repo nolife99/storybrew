@@ -6,6 +6,7 @@ using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 
@@ -109,14 +110,14 @@ namespace StorybrewEditor.Storyboarding
             });
             segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
         }
-        public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, Project project, FrameStats frameStats)
+        public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats)
         {
             var displayTime = project.DisplayTime * 1000;
             if (displayTime < StartTime || EndTime < displayTime) return;
 
             if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Cos(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) / 2);
 
-            displayableObjects.ForEach(obj => obj.Draw(drawContext, camera, bounds, opacity, project, frameStats));
+            for (var i = 0; i < displayableObjects.Count; ++i) displayableObjects[i].Draw(drawContext, camera, bounds, opacity, project, frameStats);
         }
         public void PostProcess()
         {

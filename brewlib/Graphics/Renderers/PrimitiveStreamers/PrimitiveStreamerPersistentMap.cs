@@ -45,7 +45,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             if (!Bound) throw new InvalidOperationException("Not bound");
 
             Debug.Assert(primitiveCount <= primitives.Length);
-            Debug.Assert(drawCount % primitiveCount == 0);
+            Debug.Assert((drawCount & primitiveCount) == 0);
 
             var vertexDataSize = primitiveCount * PrimitiveSize;
             Debug.Assert(vertexDataSize <= vertexBufferSize);
@@ -62,14 +62,8 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             }
 
             var pinnedVertexData = GCHandle.Alloc(primitives, GCHandleType.Pinned);
-            try
-            {
-                Native.CopyMemory(Marshal.UnsafeAddrOfPinnedArrayElement(primitives, 0), bufferPointer + bufferOffset, (uint)vertexDataSize);
-            }
-            finally
-            {
-                pinnedVertexData.Free();
-            }
+            Native.CopyMemory(pinnedVertexData.AddrOfPinnedObject(), bufferPointer + bufferOffset, (uint)vertexDataSize);
+            pinnedVertexData.Free();
 
             if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));
             else GL.DrawArrays(primitiveType, drawOffset, drawCount);
@@ -108,8 +102,6 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             var previousShader = CurrentShader;
             CurrentShader = null;
             Bind(previousShader);
-
-            Debug.WriteLine("Expanded the vertex buffer to " + MinRenderableVertexCount + " vertices (" + (vertexBufferSize / 1024) + "kb)");
 
             bufferOffset = 0;
             drawOffset = 0;

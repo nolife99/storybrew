@@ -5,6 +5,7 @@ using OpenTK;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;
+using System.Drawing;
 using System.IO;
 
 namespace StorybrewEditor.Storyboarding
@@ -115,7 +116,7 @@ namespace StorybrewEditor.Storyboarding
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, FrameStats frameStats)
         {
             if (!Visible) return;
-            segment.Draw(drawContext, camera, bounds, opacity, Effect.Project, frameStats);
+            segment.Draw(drawContext, camera, RectangleF.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom), opacity, Effect.Project, frameStats);
         }
         public void PostProcess()
         {

@@ -150,19 +150,19 @@ namespace StorybrewCommon.Storyboarding.Util
             fades.TransferKeyframes(finalfades);
 
             positions.Simplify2dKeyframes(PositionTolerance, s => s);
-            if (finalPositions.EndTime > int.MinValue) finalPositions.DebugUntil(positions.StartTime);
+            finalPositions.Until(positions.StartTime);
             positions.TransferKeyframes(finalPositions);
 
             scales.Simplify2dKeyframes(ScaleTolerance, v => v * imageSize);
-            if (finalScales.EndTime > int.MinValue) finalScales.DebugUntil(scales.StartTime);
+            finalScales.Until(scales.StartTime);
             scales.TransferKeyframes(finalScales);
 
             rotations.Simplify1dKeyframes(RotationTolerance, r => (float)r);
-            if (finalRotations.EndTime > int.MinValue) finalRotations.DebugUntil(rotations.StartTime);
+            finalRotations.Until(rotations.StartTime);
             rotations.TransferKeyframes(finalRotations);
 
             colors.Simplify3dKeyframes(ColorTolerance, c => new Vector3(c.R, c.G, c.B));
-            if (finalColors.EndTime > int.MinValue) finalColors.DebugUntil(colors.StartTime);
+            finalColors.Until(colors.StartTime);
             colors.TransferKeyframes(finalColors);
         }
         void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)

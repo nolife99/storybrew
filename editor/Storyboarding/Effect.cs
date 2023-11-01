@@ -87,6 +87,7 @@ namespace StorybrewEditor.Storyboarding
             layers = newLayers;
             refreshLayerNames();
             refreshEstimatedSize();
+            RaiseChanged();
         }
 
         ///<summary> Queues an update call. </summary>
@@ -99,15 +100,11 @@ namespace StorybrewEditor.Storyboarding
         ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate(Effect)"/>. Doesn't run on the main thread. </summary>
         public abstract void Update();
 
-        void refreshLayerNames()
-        {
-            foreach (var layer in layers) layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})";
-        }
+        void refreshLayerNames() => layers.ForEach(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
         void refreshEstimatedSize()
         {
             EstimatedSize = 0;
             layers.ForEach(layer => EstimatedSize += layer.EstimatedSize);
-            RaiseChanged();
         }
 
         #region IDisposable Support

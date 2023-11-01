@@ -14,7 +14,6 @@ namespace StorybrewCommon.Storyboarding
             set
             {
                 if (audioPath == value) return;
-                new FileInfo(value);
                 audioPath = value;
             }
         }

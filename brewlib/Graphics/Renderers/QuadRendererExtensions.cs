@@ -76,7 +76,7 @@ namespace BrewLib.Graphics.Renderers
                 y4 = p4y;
             }
 
-            var primitive = default(QuadPrimitive);
+            QuadPrimitive primitive = default;
 
             primitive.x1 = x1 + x;
             primitive.y1 = y1 + y;

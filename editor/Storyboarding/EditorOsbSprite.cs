@@ -3,15 +3,15 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK;
 using OpenTK.Graphics;
-using StorybrewCommon.Animations;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 using System;
+using System.Numerics;
 using System.IO;
+using System.Drawing;
 
 namespace StorybrewEditor.Storyboarding
 {
@@ -20,14 +20,14 @@ namespace StorybrewEditor.Storyboarding
         public readonly static RenderStates AlphaBlendStates = new RenderStates();
         public readonly static RenderStates AdditiveStates = new RenderStates { BlendingFactor = new BlendingFactorState(BlendingMode.Additive) };
 
-        public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, Project project, FrameStats frameStats) => Draw(
+        public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats) => Draw(
             drawContext, camera, bounds, opacity, project, frameStats, this);
 
         public void PostProcess()
         {
             if (InGroup) EndGroup();
         }
-        public static void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, Project project, FrameStats frameStats, OsbSprite sprite)
+        public static void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats, OsbSprite sprite)
         {
             var time = project.DisplayTime * 1000;
             var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
@@ -42,7 +42,7 @@ namespace StorybrewEditor.Storyboarding
             }
 
             var fade = sprite.OpacityAt(time);
-            if (fade < .00001) return;
+            if (fade < .00001f) return;
 
             var scale = (Vector2)sprite.ScaleAt(time);
             if (scale == Vector2.Zero) return;
@@ -75,7 +75,7 @@ namespace StorybrewEditor.Storyboarding
 
             if (frameStats != null)
             {
-                var size = texture.Size * scale;
+                var size = (CommandScale)texture.Size * (CommandScale)scale;
 
                 var spriteBox = new OrientedBoundingBox(position, origin * (CommandPosition)scale, size.X, size.Y, rotation);
                 if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
@@ -83,7 +83,7 @@ namespace StorybrewEditor.Storyboarding
                     frameStats.EffectiveCommandCount += sprite.CommandCost;
 
                     var _sprite = spriteBox.GetAABB();
-                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, size.Area() * _sprite.IntersectWith(
+                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, size.X * size.Y * _sprite.IntersectWith(
                         OsuHitObject.WidescreenStoryboardBounds).Area() / _sprite.Area()) / OsuHitObject.WidescreenStoryboardArea;
                 }
             }

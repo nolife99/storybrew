@@ -195,7 +195,7 @@ namespace BrewLib.Graphics.Renderers
         public void Draw(ref QuadPrimitive quad, Texture2dRegion texture)
         {
             if (!rendering) throw new InvalidOperationException("Not rendering");
-            if (texture == null) throw new ArgumentNullException(nameof(texture));
+            if (texture is null) throw new ArgumentNullException(nameof(texture));
 
             if (currentTexture != texture.BindableTexture)
             {

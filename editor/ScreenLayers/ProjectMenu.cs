@@ -17,8 +17,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using StorybrewEditor.Scripting;
-using StorybrewEditor.Mapset;
-using System.Drawing;
 
 namespace StorybrewEditor.ScreenLayers
 {

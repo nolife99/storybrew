@@ -7,8 +7,6 @@ using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
 using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers
 {
@@ -57,8 +55,7 @@ namespace BrewLib.Graphics.Renderers
             get => camera;
             set
             {
-                if (camera == value)
-                    return;
+                if (camera == value) return;
 
                 if (rendering) DrawState.FlushRenderer();
                 camera = value;
@@ -71,8 +68,7 @@ namespace BrewLib.Graphics.Renderers
             get => transformMatrix;
             set
             {
-                if (transformMatrix.Equals(value))
-                    return;
+                if (transformMatrix.Equals(value)) return;
 
                 DrawState.FlushRenderer();
                 transformMatrix = value;
@@ -107,7 +103,7 @@ namespace BrewLib.Graphics.Renderers
 
         public LineRendererBuffered(CreatePrimitiveStreamerDelegate<LinePrimitive> createPrimitiveStreamer, Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
         {
-            if (shader == null)
+            if (shader is null)
             {
                 shader = CreateDefaultShader();
                 ownsShader = true;
@@ -122,7 +118,6 @@ namespace BrewLib.Graphics.Renderers
             primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerLine);
 
             primitives = new LinePrimitive[maxLinesPerBatch];
-            Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
         }
         public void Dispose()
         {
@@ -196,7 +191,7 @@ namespace BrewLib.Graphics.Renderers
             if (!rendering) throw new InvalidOperationException("Not rendering");
             if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-            var linePrimitive = default(LinePrimitive);
+            LinePrimitive linePrimitive = default;
 
             linePrimitive.x1 = start.X;
             linePrimitive.y1 = start.Y;
@@ -213,11 +208,5 @@ namespace BrewLib.Graphics.Renderers
             ++RenderedLineCount;
             ++linesInBatch;
         }
-    }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct LinePrimitive
-    {
-        public float x1, y1, z1; public int color1;
-        public float x2, y2, z2; public int color2;
     }
 }

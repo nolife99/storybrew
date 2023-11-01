@@ -12,7 +12,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         public override void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
         {
             Debug.Assert(primitiveCount <= primitives.Length);
-            Debug.Assert(drawCount % primitiveCount == 0);
+            Debug.Assert((drawCount & primitiveCount) == 0);
 
             GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(primitiveCount * PrimitiveSize), primitives, BufferUsageHint.StreamDraw);
             ++DiscardedBufferCount;

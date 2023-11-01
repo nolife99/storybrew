@@ -69,13 +69,12 @@ namespace BrewLib.Graphics.Textures
 
         public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
         {
-            if (File.Exists(filename)) using (var stream = File.OpenRead(filename))
-                    return new Bitmap(stream, false);
+            if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) return new Bitmap(stream, false);
 
-            if (resourceContainer == null) return null;
+            if (resourceContainer is null) return null;
             using (var stream = resourceContainer.GetStream(filename, ResourceSource.Embedded))
             {
-                if (stream == null)
+                if (stream is null)
                 {
                     Trace.TraceError($"Texture not found: {filename}");
                     return null;
