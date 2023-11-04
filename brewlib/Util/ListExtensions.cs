@@ -19,10 +19,7 @@ namespace BrewLib.Util
             try
             {
                 list.TrimExcess();
-                list.ForEach(obj =>
-                {
-                    if (condition(obj)) action(obj);
-                });
+                for (var i = 0; i < list.Count; ++i) if (condition(list[i])) action(list[i]);
             }
             catch
             {

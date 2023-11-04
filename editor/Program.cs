@@ -191,8 +191,7 @@ namespace StorybrewEditor
                     editor.Update(currentTime, false);
 
                 if (!window.Exists || window.IsExiting) return;
-
-                window.VSync = VSyncMode.On;
+                
                 if (window.WindowState != WindowState.Minimized)
                 {
                     var tween = Math.Min((currentTime - fixedRateTime) / fixedRateUpdateDuration, 1);

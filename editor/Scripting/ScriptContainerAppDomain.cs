@@ -18,7 +18,7 @@ namespace StorybrewEditor.Scripting
 
         protected override ScriptProvider<TScript> LoadScript()
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(ScriptContainerAppDomain<TScript>));
+            if (disposed) return null;
 
             try
             {
@@ -74,10 +74,10 @@ namespace StorybrewEditor.Scripting
 
         #region IDisposable Support
 
-        bool disposedValue;
+        bool disposed;
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!disposed)
             {
                 if (appDomain != null) AppDomain.Unload(appDomain);
                 appDomain = null;
@@ -89,7 +89,7 @@ namespace StorybrewEditor.Scripting
                 }
                 catch (UnauthorizedAccessException) { }
 
-                disposedValue = true;
+                disposed = true;
             }
             base.Dispose(disposing);
         }

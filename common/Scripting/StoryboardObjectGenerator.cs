@@ -401,8 +401,8 @@ namespace StorybrewCommon.Scripting
             {
                 this.context = context;
                 rnd = new FastRandom(RandomSeed);
-                Current = this;
                 Compressor = new PngCompressor();
+                Current = this;
 
                 Generate();
                 context.Multithreaded = Multithreaded;
@@ -413,8 +413,8 @@ namespace StorybrewCommon.Scripting
                 this.context = null;
                 Current = null;
 
-                fonts.Clear();
                 bitmaps.Dispose();
+                fonts.Clear();
                 Compressor.Dispose();
             }
         }

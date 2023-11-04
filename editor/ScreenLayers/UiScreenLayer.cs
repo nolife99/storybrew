@@ -60,7 +60,7 @@ namespace StorybrewEditor.ScreenLayers
                 button.OnValueChanged += (sender, e) =>
                 {
                     if (widget.Displayed = button.Checked) foreach (var otherButton in buttons)
-                        if (sender != otherButton && otherButton.Checked != false) otherButton.Checked = false;
+                        if (sender != otherButton && otherButton.Checked) otherButton.Checked = false;
                 };
             }
         }

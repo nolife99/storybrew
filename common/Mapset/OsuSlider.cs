@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace StorybrewCommon.Mapset
 {
 #pragma warning disable CS1591
-    [Serializable] public class OsuSlider : OsuHitObject, ISerializable
+    [Serializable] public class OsuSlider : OsuHitObject
     {
         readonly OsuSliderNode[] nodes;
         public IEnumerable<OsuSliderNode> Nodes => nodes;
@@ -291,36 +291,6 @@ namespace StorybrewCommon.Mapset
                 default: return SliderCurveType.Unknown;
             }
         }
-
-        protected OsuSlider(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            nodes = (OsuSliderNode[])info.GetValue("Nodes", typeof(OsuSliderNode[]));
-
-            controlPoints = new OsuSliderControlPoint[info.GetInt32("ControlCount")];
-            for (var i = 0; i < controlPoints.Length; ++i) controlPoints[i] = (OsuSliderControlPoint)info.GetValue($"Control{i}", typeof(OsuSliderControlPoint));
-
-            curve = (Curve)info.GetValue("Curve", typeof(Curve));
-            playfieldTipPosition = new CommandPosition(info.GetSingle("PlayfieldTipX"), info.GetSingle("PlayfieldTipY"));
-            Length = info.GetDouble("Length");
-            TravelDurationBeats = info.GetDouble("TravelDurBeats");
-            TravelDuration = info.GetDouble("TravelDur");
-            CurveType = (SliderCurveType)info.GetInt32("CurveType");
-        }
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-            info.AddValue("Nodes", nodes);
-
-            info.AddValue("ControlCount", controlPoints.Length);
-            for (var i = 0; i < controlPoints.Length; ++i) info.AddValue($"Control{i}", controlPoints[i]);
-
-            info.AddValue("Curve", curve);
-            info.AddValue("PlayfieldTipX", playfieldTipPosition.X); info.AddValue("PlayfieldTipY", playfieldTipPosition.Y);
-            info.AddValue("Length", Length);
-            info.AddValue("TravelDurBeats", TravelDurationBeats);
-            info.AddValue("TravelDur", TravelDuration);
-            info.AddValue("CurveType", (int)CurveType);
-        }
     }
     [Serializable] public class OsuSliderNode
     {
@@ -330,17 +300,12 @@ namespace StorybrewCommon.Mapset
         public int CustomSampleSet;
         public float Volume;
     }
-    [Serializable] public class OsuSliderControlPoint : ISerializable
+    [Serializable] public class OsuSliderControlPoint
     {
         public CommandPosition PlayfieldPosition;
         public CommandPosition Position => PlayfieldPosition + OsuHitObject.PlayfieldToStoryboardOffset;
 
         public OsuSliderControlPoint(CommandPosition position) => PlayfieldPosition = position;
-        protected OsuSliderControlPoint(SerializationInfo info, StreamingContext context) => PlayfieldPosition = new CommandPosition(info.GetSingle("X"), info.GetSingle("Y"));
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("X", PlayfieldPosition.X); info.AddValue("Y", PlayfieldPosition.Y);
-        }
 
         public static implicit operator OsuSliderControlPoint(CommandPosition position) => new OsuSliderControlPoint(position);
     }

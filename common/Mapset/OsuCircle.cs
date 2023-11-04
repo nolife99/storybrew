@@ -46,8 +46,5 @@ namespace StorybrewCommon.Mapset
                 SamplePath = samplePath
             };
         }
-
-        internal OsuCircle() { }
-        protected OsuCircle(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

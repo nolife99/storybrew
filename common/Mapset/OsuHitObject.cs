@@ -3,12 +3,11 @@ using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Drawing;
 using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace StorybrewCommon.Mapset
 {
     ///<summary> Represents a hit object in osu!. </summary>
-    [Serializable] public class OsuHitObject : ISerializable
+    [Serializable] public class OsuHitObject
     {
         ///<summary> Represents the playfield size in osu!. </summary>
         public static readonly SizeF PlayfieldSize = new Size(512, 384), StoryboardSize = new Size(640, 480);
@@ -118,42 +117,6 @@ namespace StorybrewCommon.Mapset
             else if (flags.HasFlag(HitObjectFlag.Hold)) return OsuHold.Parse(values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet, additionsSampleSet, customSampleSet, volume);
             else if (flags.HasFlag(HitObjectFlag.Spinner)) return OsuSpinner.Parse(values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet, additionsSampleSet, customSampleSet, volume);
             throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line}");
-        }
-
-        internal OsuHitObject() { }
-
-        ///<summary/>
-        protected OsuHitObject(SerializationInfo info, StreamingContext context)
-        {
-            PlayfieldPosition = new Vector2(info.GetSingle("PlayfieldX"), info.GetSingle("PlayfieldY"));
-            StackOffset = new Vector2(info.GetSingle("StackX"), info.GetSingle("StackY"));
-            StartTime = info.GetInt32("Start");
-            Flags = (HitObjectFlag)info.GetInt32("Flags");
-            Additions = (HitSoundAddition)info.GetInt32("Additions");
-            SampleSet = (SampleSet)info.GetInt32("SampleSet");
-            AdditionsSampleSet = (SampleSet)info.GetInt32("AdditionsSamples");
-            StackIndex = info.GetInt32("StackIndex");
-            ComboIndex = info.GetInt32("ComboIndex");
-            Volume = info.GetSingle("Volume");
-            SamplePath = info.GetString("SamplePath");
-            Color = new CommandColor(info.GetByte("ColorR") / 255f, info.GetByte("ColorG") / 255f, info.GetByte("ColorB") / 255f);
-        }
-
-        ///<inheritdoc/>
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("PlayfieldX", PlayfieldPosition.X); info.AddValue("PlayfieldY", PlayfieldPosition.Y);
-            info.AddValue("StackX", StackOffset.X); info.AddValue("StackY", StackOffset.Y);
-            info.AddValue("Start", StartTime);
-            info.AddValue("Flags", (int)Flags);
-            info.AddValue("Additions", (int)Additions);
-            info.AddValue("SampleSet", (int)SampleSet);
-            info.AddValue("AdditionsSamples", (int)AdditionsSampleSet);
-            info.AddValue("StackIndex", StackIndex);
-            info.AddValue("ComboIndex", ComboIndex);
-            info.AddValue("Volume", Volume);
-            info.AddValue("SamplePath", SamplePath);
-            info.AddValue("ColorR", Color.R); info.AddValue("ColorG", Color.G); info.AddValue("ColorB", Color.B);
         }
     }
 

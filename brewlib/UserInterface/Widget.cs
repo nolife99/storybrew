@@ -582,7 +582,7 @@ namespace BrewLib.UserInterface
                     ClearWidgets();
                 }
                 children.Clear();
-                children.TrimExcess();
+                children.Capacity = 0;
 
                 disposedValue = true;
                 if (disposing) OnDisposed?.Invoke(this, EventArgs.Empty);

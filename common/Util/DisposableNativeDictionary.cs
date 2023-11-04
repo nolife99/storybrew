@@ -127,7 +127,7 @@ namespace StorybrewCommon.Util
         {
             get
             {
-                if (syncRoot == null) Interlocked.CompareExchange<object>(ref syncRoot, new object(), null);
+                if (syncRoot is null) Interlocked.CompareExchange<object>(ref syncRoot, new object(), null);
                 return syncRoot;
             }
         }
@@ -149,14 +149,14 @@ namespace StorybrewCommon.Util
         }
 
         ///<inheritdoc/>
-        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
         {
-            if (array == null) throw new ArgumentNullException("'array' cannot be 'null'.");
-            if (arrayIndex < 0) throw new ArgumentOutOfRangeException("'arrayIndex' cannot be negative.");
-            if (array.Length - arrayIndex < count) throw new ArgumentException("'array' does not have enough space to fit this collection's elements.");
+            if (array is null) throw new ArgumentNullException(nameof(array));
+            if (index < 0) throw new ArgumentOutOfRangeException(nameof(index));
+            if (array.Length - index < count) throw new ArgumentException("'array' does not have enough space to fit this collection's elements.");
 
             for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
-                array[arrayIndex++] = new KeyValuePair<TKey, TValue>(node.Key, (TValue)node.Handle.Target);
+                array[index++] = new KeyValuePair<TKey, TValue>(node.Key, (TValue)node.Handle.Target);
         }
 
         ///<inheritdoc/>
@@ -168,7 +168,7 @@ namespace StorybrewCommon.Util
         ///<inheritdoc/>
         public void Dispose()
         {
-            if (count == 0 || disposed) return;
+            if (count == 0 || table.Length == 0 || disposed) return;
 
             for (var i = 0; i < table.Length; ++i) for (var node = table[i]; node != null; node = node.Next)
             {
@@ -197,7 +197,7 @@ namespace StorybrewCommon.Util
         ///<inheritdoc/>
         public void Add(TKey key, TValue value)
         {
-            if (value == null) throw new ArgumentNullException("Cannot allocate a value with type 'null'.");
+            if (value == null) throw new ArgumentNullException(nameof(value));
             if (count / (float)table.Length >= 1)
             {
                 var oldTable = table;
@@ -251,7 +251,7 @@ namespace StorybrewCommon.Util
         ///<inheritdoc/>
         public bool Remove(KeyValuePair<TKey, TValue> item)
         {
-            if (item.Value == null) throw new ArgumentNullException("Value inside 'item' cannot be 'null'.");
+            if (item.Value.Equals(null)) throw new ArgumentNullException(nameof(item));
             for (var node = table[getIndex(item.Key)]; node != null; node = node.Next) if (node.Key.Equals(item.Key))
             {
                 if (!node.Handle.Target.Equals(item.Value)) return false;
@@ -280,7 +280,7 @@ namespace StorybrewCommon.Util
         readonly struct Enumerator : IDictionaryEnumerator
         {
             readonly IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
-            internal Enumerator(IDictionary<TKey, TValue> dictionary) => enumerator = dictionary.GetEnumerator();
+            internal Enumerator(DisposableNativeDictionary<TKey, TValue> dictionary) => enumerator = dictionary.GetEnumerator();
 
             public DictionaryEntry Entry => new DictionaryEntry(enumerator.Current.Key, enumerator.Current.Value);
             public object Key => enumerator.Current.Key;
@@ -288,7 +288,6 @@ namespace StorybrewCommon.Util
             public object Current => Entry;
 
             public bool MoveNext() => enumerator.MoveNext();
-
             public void Reset() => enumerator.Reset();
         }
     }

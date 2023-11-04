@@ -223,7 +223,7 @@ namespace StorybrewCommon.Animations
         public void Clear(bool trim = false)
         {
             keyframes.Clear();
-            if (trim) keyframes.TrimExcess();
+            if (trim) keyframes.Capacity = 0;
         }
 
         ///<summary> Returns an enumerator that iterates through the keyframed value. </summary>
