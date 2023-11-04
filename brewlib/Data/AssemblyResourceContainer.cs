@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -25,13 +26,13 @@ namespace BrewLib.Data
         }
         public Stream GetStream(string path, ResourceSource sources)
         {
-            if (path == null) return null;
+            if (path is null) return null;
 
             if (Path.IsPathRooted(path))
             {
                 if (sources.HasFlag(ResourceSource.Absolute))
                 {
-                    if (File.Exists(path)) return File.OpenRead(path);
+                    if (File.Exists(path)) using (var mem = MemoryMappedFile.CreateFromFile(path)) return mem.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
                 }
                 else throw new InvalidOperationException($"Resource paths must be relative ({path})");
             }
@@ -40,12 +41,11 @@ namespace BrewLib.Data
                 if (sources.HasFlag(ResourceSource.Relative))
                 {
                     var combinedPath = basePath != null ? Path.Combine(basePath, path) : path;
-                    if (File.Exists(combinedPath)) return File.OpenRead(combinedPath);
+                    if (File.Exists(combinedPath)) using (var mem = MemoryMappedFile.CreateFromFile(combinedPath)) return mem.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
                 }
                 if (sources.HasFlag(ResourceSource.Embedded))
                 {
-                    var resourceName = $"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}";
-                    var stream = assembly.GetManifestResourceStream(resourceName);
+                    var stream = assembly.GetManifestResourceStream($"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
                     if (stream != null) return stream;
                 }
             }
@@ -57,7 +57,7 @@ namespace BrewLib.Data
         {
             using (var stream = GetStream(path, sources))
             {
-                if (stream == null) return null;
+                if (stream is null) return null;
 
                 var buffer = new byte[stream.Length];
                 stream.Read(buffer, 0, buffer.Length);
@@ -71,10 +71,8 @@ namespace BrewLib.Data
         }
         public SafeWriteStream GetWriteStream(string path)
         {
-            if (Path.IsPathRooted(path)) throw new InvalidOperationException($"Resource paths must be relative ({path})");
-
-            var combinedPath = basePath != null ? Path.Combine(basePath, path) : path;
-            return new SafeWriteStream(combinedPath);
+            if (Path.IsPathRooted(path)) throw new ArgumentException($"Resource paths must be relative", path);
+            return new SafeWriteStream(basePath != null ? Path.Combine(basePath, path) : path);
         }
     }
 }

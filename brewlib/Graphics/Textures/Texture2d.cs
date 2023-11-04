@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 
 namespace BrewLib.Graphics.Textures
 {
@@ -97,16 +98,12 @@ namespace BrewLib.Graphics.Textures
 
             textureOptions = textureOptions ?? TextureOptions.Default;
             if (textureOptions.PreMultiply) color = color.Premultiply();
-
-            var rgba = color.ToArgb();
-            var data = new int[width * height];
-            for (var i = 0; i < width * height; ++i) data[i] = rgba;
-
+            
             var textureId = GL.GenTexture();
             try
             {
                 DrawState.BindTexture(textureId);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, Enumerable.Repeat(color.ToArgb(), width * height).ToArray());
                 if (textureOptions.GenerateMipmaps)
                 {
                     GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);

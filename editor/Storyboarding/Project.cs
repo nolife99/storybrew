@@ -786,10 +786,10 @@ namespace StorybrewEditor.Storyboarding
             List<EditorStoryboardLayer> localLayers = null;
             Program.RunMainThread(() =>
             {
-                osuPath = MainBeatmap.Path;
-                osbPath = OsbPath;
+                if (osuPath != MainBeatmap.Path) osuPath = MainBeatmap.Path;
+                if (osbPath != OsbPath) osbPath = OsbPath;
 
-                if (!OwnsOsb && File.Exists(osbPath)) File.Copy(osbPath, $"{osbPath}.bak");
+                if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
                 if (!OwnsOsb) OwnsOsb = true;
 
                 localLayers = new List<EditorStoryboardLayer>(LayerManager.FindLayers(l => l.Visible));
@@ -800,8 +800,7 @@ namespace StorybrewEditor.Storyboarding
             if (!string.IsNullOrEmpty(osuPath))
             {
                 Trace.WriteLine($"Exporting diff specific events to {osuPath}");
-                using (var stream = new SafeWriteStream(osuPath)) using (var writer = new StreamWriter(stream, Encoding))
-                using (var fileStream = File.OpenRead(osuPath)) using (var reader = new StreamReader(fileStream, Encoding))
+                using (var stream = new SafeWriteStream(osuPath)) using (var writer = new StreamWriter(stream, Encoding)) using (var reader = new StreamReader(osuPath, Encoding))
                 {
                     string line;
                     var inEvents = false;
@@ -842,7 +841,7 @@ namespace StorybrewEditor.Storyboarding
             if (exportOsb)
             {
                 Trace.WriteLine($"Exporting osb to {osbPath}");
-                using (var stream = new SafeWriteStream(osbPath)) using (var writer = new StreamWriter(stream, Encoding))
+                using (var writer = new StreamWriter(osbPath, false))
                 {
                     writer.WriteLine("[Events]");
                     writer.WriteLine("//Background and Video events");
@@ -855,8 +854,6 @@ namespace StorybrewEditor.Storyboarding
                         foreach (var layer in localLayers) if (layer.OsbLayer == osbLayer && !layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
                     }
                     writer.WriteLine("//Storyboard Sound Samples");
-
-                    stream.Commit();
                 }
             }
         }
@@ -865,7 +862,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region IDisposable Support
 
-        public bool Disposed { get; set; }
+        public bool Disposed { get; private set; }
         public void Dispose()
         {
             if (!Disposed)

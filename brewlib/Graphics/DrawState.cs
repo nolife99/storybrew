@@ -64,7 +64,7 @@ namespace BrewLib.Graphics
             CheckError("initializing openGL context");
 
             whitePixel = Texture2d.Create(Color4.White, "whitepixel");
-            normalPixel = Texture2d.Create(new Color4(.5f, .5f, 1, 1), "normalpixel", 1, 1, new TextureOptions { Srgb = false, });
+            normalPixel = Texture2d.Create(new Color4(.5f, .5f, 1, 1), "normalpixel", 1, 1, new TextureOptions { Srgb = false });
             textGenerator = new TextGenerator(resourceContainer);
             textFontManager = new TextFontManager();
 

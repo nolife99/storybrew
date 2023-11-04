@@ -23,7 +23,7 @@ namespace StorybrewCommon.Scripting
     ///<summary> Base abstract class for all storyboarding scripts. </summary>
     public abstract class StoryboardObjectGenerator : Script
     {
-        ///<summary> A storyboard generator for non-inherited types.<para/>This value will change according to what <see cref="AppDomain"/> is accessing it. </summary>
+        ///<summary> Gets the currently active <see cref="StoryboardObjectGenerator"/>. </summary>
         public static StoryboardObjectGenerator Current { get; private set; }
 
         List<ConfigurableField> configurableFields;
@@ -31,9 +31,10 @@ namespace StorybrewCommon.Scripting
 
         ///<summary> Set to true if this script uses multiple threads. </summary>
         ///<remarks> It will prevent other effects from updating in parallel to this one. </remarks>
-        protected bool Multithreaded;
-
-        internal PngCompressor Compressor { get; private set; }
+        public bool Multithreaded { get; protected set; }
+        
+        ///<summary> Gets the texture and image compressor for this instance. </summary>
+        protected internal PngCompressor Compressor { get; private set; }
 
         ///<summary> Creates or retrieves a layer. </summary>
         ///<remarks> The identifier will be shown in the editor as "Effect name (Identifier)". </remarks>
@@ -127,18 +128,22 @@ namespace StorybrewCommon.Scripting
         #region Random
 
         ///<summary/>
+        ///<summary/>
         [Group("Common")][Description("Changes the result of Random(...) calls.")]
         [Configurable] public int RandomSeed;
 
         FastRandom rnd;
 
         ///<summary> Gets a pseudo-random integer with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Random(int minValue, int maxValue) => rnd.Next(minValue, maxValue);
 
         ///<summary> Gets a pseudo-random integer with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Random(int maxValue) => rnd.Next(maxValue);
 
         ///<summary> Gets a pseudo-random number with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double Random(double minValue, double maxValue)
         {
             if (minValue == maxValue) return minValue;
@@ -146,6 +151,7 @@ namespace StorybrewCommon.Scripting
         }
 
         ///<summary> Gets a pseudo-random number with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public double Random(double maxValue)
         {
             if (maxValue == 0) return 0;
@@ -153,18 +159,12 @@ namespace StorybrewCommon.Scripting
         }
 
         ///<summary> Gets a pseudo-random float with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
-        public float Random(float minValue, float maxValue)
-        {
-            if (minValue == maxValue) return minValue;
-            return (float)(minValue + (maxValue - minValue) * rnd.NextDouble());
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float Random(float minValue, float maxValue) => (float)Random((double)minValue, maxValue);
 
         ///<summary> Gets a pseudo-random float with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
-        public float Random(float maxValue)
-        {
-            if (maxValue == 0) return 0;
-            return (float)(rnd.NextDouble() * maxValue);
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float Random(float maxValue) => (float)Random((double)maxValue);
 
         #endregion
 
@@ -193,7 +193,7 @@ namespace StorybrewCommon.Scripting
             for (var i = 0; i < magnitudes; ++i)
             {
                 var progress = EasingFunctions.Ease(easing, (double)i / magnitudes);
-                var index = (int)Math.Min(Math.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
+                var index = Math.Min((int)Math.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
 
                 var value = 0f;
                 for (var v = baseIndex; v < index; ++v) value = Math.Max(value, fft[index]);
@@ -415,6 +415,7 @@ namespace StorybrewCommon.Scripting
 
                 fonts.Clear();
                 bitmaps.Dispose();
+                Compressor.Dispose();
             }
         }
         ///<summary> Main body for storyboard generation. </summary>

@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Remoting;
-using System.Runtime.Serialization;
 
 namespace StorybrewEditor.Storyboarding
 {

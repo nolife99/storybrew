@@ -33,7 +33,7 @@ namespace StorybrewEditor.Scripting
         {
             get
             {
-                if (LibraryFolder == null || !Directory.Exists(LibraryFolder)) return new[] { MainSourcePath };
+                if (LibraryFolder is null || !Directory.Exists(LibraryFolder)) return new[] { MainSourcePath };
                 return Directory.GetFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Concat(new[] { MainSourcePath }).ToArray();
             }
         }

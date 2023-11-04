@@ -26,8 +26,7 @@ namespace BrewLib.Graphics.Textures
             filename = PathHelper.WithStandardSeparators(filename);
             if (!textures.TryGetValue(filename, out Texture2d texture))
             {
-                texture = Texture2d.Load(filename, resourceContainer, textureOptions);
-                textures.Add(filename, texture);
+                textures.Add(filename, texture = Texture2d.Load(filename, resourceContainer, textureOptions));
                 ResourceLoaded?.Invoke(filename, texture);
             }
             return texture;
@@ -42,7 +41,7 @@ namespace BrewLib.Graphics.Textures
             {
                 if (disposing)
                 {
-                    foreach (var entry in textures) entry.Value?.Dispose();
+                    foreach (var entry in textures.Values) entry?.Dispose();
                     textures.Clear();
                 }
                 textures = null;

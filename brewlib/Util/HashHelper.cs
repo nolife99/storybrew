@@ -23,24 +23,5 @@ namespace BrewLib.Util
         {
             using (var md5 = MD5.Create()) using (var stream = File.OpenRead(path)) return md5.ComputeHash(stream);
         }
-
-        ///<summary> Obfuscates a <see cref="string"/>; or deobfuscates a <see cref="string"/> that was obfuscated by this method. </summary>
-        ///<param name="input"> The <see cref="string"/> to obfuscate, or an obfuscated string. </param>
-        ///<returns> The obfuscated <see cref="string"/>; or if <paramref name="input"/> was obfuscated, the deobfuscated <see cref="string"/>. </returns>
-        public static string EncodeDecodeString(this string input)
-        {
-            var result = new char[input.Length];
-            for (var i = 0; i < input.Length; ++i) result[i] = (char)(input[i] ^ input.Length);
-            return new string(result);
-        }
-
-        ///<summary> Encodes a <see cref="string"/> and writes it to a <see cref="BinaryWriter"/>. </summary>
-        ///<inheritdoc cref="BinaryWriter.Write(string)"/>
-        public static void WriteEncodedString(this BinaryWriter writer, string input) => writer.Write(EncodeDecodeString(input));
-
-        ///<summary> Reads an encoded <see cref="string"/> from a <see cref="BinaryReader"/> and returns the decoded <see cref="string"/>. </summary>
-        ///<returns> The decoded <see cref="string"/> that was read. </returns>
-        ///<inheritdoc cref="BinaryReader.ReadString"/>
-        public static string ReadEncodedString(this BinaryReader reader) => EncodeDecodeString(reader.ReadString());
     }
 }

@@ -9,11 +9,11 @@ namespace BrewLib.Data
     {
         IEnumerable<string> ResourceNames { get; }
 
-        Stream GetStream(string filename, ResourceSource sources);
-        byte[] GetBytes(string filename, ResourceSource sources);
-        string GetString(string filename, ResourceSource sources);
+        Stream GetStream(string path, ResourceSource sources);
+        byte[] GetBytes(string path, ResourceSource sources);
+        string GetString(string path, ResourceSource sources);
 
-        SafeWriteStream GetWriteStream(string filename);
+        SafeWriteStream GetWriteStream(string path);
     }
     [Flags] public enum ResourceSource
     {

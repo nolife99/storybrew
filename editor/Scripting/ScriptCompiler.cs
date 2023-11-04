@@ -48,14 +48,14 @@ namespace StorybrewEditor.Scripting
 
         static void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            var trees = new DisposableNativeDictionary<SyntaxTree, KeyValuePair<string, SourceText>>();
-            foreach (var sourcePath in sourcePaths) using (var sourceStream = File.OpenRead(sourcePath))
+            var trees = new Dictionary<SyntaxTree, KeyValuePair<string, SourceText>>();
+            for (var i = 0; i < sourcePaths.Length; ++i) using (var sourceStream = File.OpenRead(sourcePaths[i]))
             {
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
                 var parseOptions = new CSharpParseOptions(LanguageVersion.CSharp7_3);
 
                 var syntaxTree = SyntaxFactory.ParseSyntaxTree(sourceText, parseOptions);
-                trees[syntaxTree] = new KeyValuePair<string, SourceText>(sourcePath, sourceText);
+                trees[syntaxTree] = new KeyValuePair<string, SourceText>(sourcePaths[i], sourceText);
             }
             var references = new HashSet<MetadataReference>
             {
@@ -95,30 +95,30 @@ namespace StorybrewEditor.Scripting
 
             var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references,
                 new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                    allowUnsafe: true, platform: Platform.AnyCpu, optimizationLevel: 
-                    OptimizationLevel.Release, assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default));
+                    allowUnsafe: true, platform: Environment.Is64BitOperatingSystem ? Platform.X64 : Platform.AnyCpu32BitPreferred, optimizationLevel: 
+                    OptimizationLevel.Debug, assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default));
 
             using (var assemblyStream = File.Create(outputPath))
             {
-                var emitOptions = new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded);
-                var embeddedTexts = trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value));
-                var result = compilation.Emit(assemblyStream, embeddedTexts: embeddedTexts, options: emitOptions);
+                var result = compilation.Emit(assemblyStream, 
+                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
+                    options: new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded));
 
                 if (result.Success)
                 {
-                    trees.Dispose();
+                    trees.Clear();
                     return;
                 }
 
-                var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity == DiagnosticSeverity.Error)
+                var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity is DiagnosticSeverity.Error)
                     .Reverse().GroupBy(k =>
                 {
-                    if (k.Location.SourceTree == null) return "";
+                    if (k.Location.SourceTree is null) return "";
                     if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
                     return "";
                 }).ToDictionary(k => k.Key, k => k);
 
-                trees.Dispose();
+                trees.Clear();
 
                 var message = new StringBuilder("Compilation error\n\n");
                 foreach (var kvp in failureGroup)

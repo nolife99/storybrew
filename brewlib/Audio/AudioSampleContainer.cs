@@ -39,7 +39,7 @@ namespace BrewLib.Audio
             {
                 if (disposing)
                 {
-                    foreach (var entry in samples) entry.Value?.Dispose();
+                    foreach (var entry in samples.Values) entry?.Dispose();
                     samples.Clear();
                 }
                 samples = null;

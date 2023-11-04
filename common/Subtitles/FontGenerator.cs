@@ -419,16 +419,28 @@ namespace StorybrewCommon.Subtitles
 
                         if (!trimExist)
                         {
-                            using (var stream = File.Create(path))
+                            using (var stream = File.Create(path, bitmap.Width * bitmap.Height))
                             {
                                 if (validBounds) using (var trim = bitmap.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
                                 else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                             }
-                            if (File.Exists(path) && (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath)))
+                            if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath))
                             {
-                                if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) BitmapHelper.LosslessCompress(path, compressor);
-                                else BitmapHelper.Compress(path, compressor);
+                                if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
+                                {
+                                    OptimizationLevel = OptimizationLevel.Level7
+                                });
+                                else StoryboardObjectGenerator.Current.Compressor.Compress(path, new LossyInputSettings
+                                {
+                                    Speed = 1,
+                                    MinQuality = 75,
+                                    MaxQuality = 100
+                                });
                             }
+                            else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
+                            {
+                                OptimizationLevel = OptimizationLevel.Level4
+                            });
                         }
                     }
                 }

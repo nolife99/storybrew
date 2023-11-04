@@ -22,7 +22,7 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + DateTime.Now.Ticks)}.dll";
+                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount)}.dll";
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 var setup = new AppDomainSetup
@@ -34,10 +34,8 @@ namespace StorybrewEditor.Scripting
                     DisallowBindingRedirects = true
                 };
 
-                var permissions = new PermissionSet(PermissionState.Unrestricted);
-
                 Debug.Print($"{nameof(Scripting)}: Loading domain {setup.ApplicationName}");
-                var scriptDomain = AppDomain.CreateDomain(setup.ApplicationName, null, setup, permissions);
+                var scriptDomain = AppDomain.CreateDomain(setup.ApplicationName, null, setup, new PermissionSet(PermissionState.Unrestricted));
 
                 ScriptProvider<TScript> scriptProvider;
                 try
@@ -83,12 +81,14 @@ namespace StorybrewEditor.Scripting
             {
                 if (appDomain != null) AppDomain.Unload(appDomain);
                 appDomain = null;
+
                 foreach (var item in Directory.GetFiles(CompiledScriptsPath))
                 try
                 {
                     File.Delete(item);
                 }
                 catch (UnauthorizedAccessException) { }
+
                 disposedValue = true;
             }
             base.Dispose(disposing);

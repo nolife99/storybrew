@@ -13,45 +13,57 @@ namespace BrewLib.Util.Compression
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(PngCompressor)), "BrewLib");
 
-        protected override void doCompress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null)
+        protected override void doCompress()
         {
-            if (!File.Exists(path)) throw new FileNotFoundException("The path that was specified could not be found.", path);
-            if (File.Exists(path) && string.IsNullOrEmpty(Path.GetExtension(path)) && string.IsNullOrEmpty(Convert.ToString(inputFormat, CultureInfo.InvariantCulture)))
-                throw new ArgumentException("Input format is required for file without extension", nameof(inputFormat));
+            UtilityName = Environment.Is64BitOperatingSystem ? "oxipng.exe" : "truepng.exe";
+            ensureTool();
 
-            try
+            var startInfo = new ProcessStartInfo(GetUtility())
             {
-                UtilityName = Environment.Is64BitOperatingSystem ? type != "lossy" ? "oxipng.exe" : "pngquant.exe" : "truepng.exe";
-                ensureTool();
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(UtilityPath),
+                RedirectStandardInput = true,
+                RedirectStandardError = true,
+            };
 
-                var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(path, type, lossy, lossless))
-                {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    WorkingDirectory = Path.GetDirectoryName(UtilityPath),
-                    RedirectStandardInput = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
-
+            foreach (var arg in toCompress) if (File.Exists(arg.path)) try
+            {
+                startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
                 if (process is null) process = Process.Start(startInfo);
                 var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"The image compression closed with code {process.ExitCode}: {error}");
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
+            }
+            finally
+            {
+                ensureStop();
+            }
+
+            UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "truepng.exe";
+            ensureTool();
+            startInfo.FileName = GetUtility();
+
+            foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
+            {
+                startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
+                if (process is null) process = Process.Start(startInfo);
+                var error = process.StandardError.ReadToEnd();
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
             }
             finally
             {
                 ensureStop();
             }
         }
-        protected override string appendArgs(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless)
+        protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
         {
             var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
             var str = new StringBuilder();
 
             if (Environment.Is64BitOperatingSystem)
             {
-                if (type == "lossy")
+                if (useLossy)
                 {
                     str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
                     if (lossy != null)
@@ -90,11 +102,10 @@ namespace BrewLib.Util.Compression
         }
         protected override void ensureTool()
         {
-            var path = GetUtility();
-            if (File.Exists(path)) return;
-
-            using (var stream = container.GetStream(UtilityName, ResourceSource.Embedded | ResourceSource.Relative)) 
-            using (var dest = File.OpenWrite(path)) stream.CopyTo(dest);
+            if (disposed) throw new ObjectDisposedException(nameof(PngCompressor));
+            var exe = container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative);
+            File.WriteAllBytes(GetUtility(), exe);
+            toCleanup.Add(GetUtility());
         }
     }
 }

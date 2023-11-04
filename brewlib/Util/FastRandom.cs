@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util
 {
+    ///<inheritdoc cref="Random"/>
     public class FastRandom
     {
         const double UNIT_INT = 4.65661287307739E-10, UNIT_UINT = 2.3283064365387E-10;
@@ -15,7 +16,7 @@ namespace BrewLib.Util
 
         ///<summary> Initializes a new instance of the <see cref="FastRandom"/> class, using the specified seed value. </summary>
         public FastRandom(int seed) => Reinitialise(seed);
-        
+
         ///<summary> Resets this instance with a new seed value. </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public void Reinitialise(int seed)
         {
@@ -155,7 +156,7 @@ namespace BrewLib.Util
         }
 
         ///<summary> Returns a random unsigned integer. </summary>
-        ///<returns> A 32-bit unsigned integer that is greater than/equal to 0 and less than/equal to <see cref="uint.MaxValue"/>. </returns>
+        ///<returns> A 32-bit unsigned integer that is ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public uint NextUInt()
         {
             var t = x ^ (x << 11);
@@ -166,7 +167,7 @@ namespace BrewLib.Util
         }
 
         ///<summary> Returns a non-negative random integer. </summary>
-        ///<returns> A 32-bit signed integer that is greater than/equal to 0 and less than/equal to <see cref="uint.MaxValue"/>. </returns>
+        ///<returns> A 32-bit signed integer that is ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public int NextInt()
         {
             var t = x ^ (x << 11);
@@ -178,8 +179,8 @@ namespace BrewLib.Util
 
         uint bitBuffer, bitMask = 1;
 
-        ///<summary> Returns a single random bit. </summary>
-        ///<returns> A random bit value that is <see langword="true"/> or <see langword="false"/>. </returns>
+        ///<summary> Returns a random bit. </summary>
+        ///<returns> A random bit that is equal to <see langword="true"/> or <see langword="false"/>. </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public bool NextBool()
         {
             if (bitMask == 1)

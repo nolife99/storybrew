@@ -13,7 +13,7 @@ namespace StorybrewEditor.Util
         readonly List<ActionRunner> actionRunners = new List<ActionRunner>();
         readonly bool allowDuplicates;
 
-        readonly static SemaphoreSlim semaphore = new SemaphoreSlim(Environment.ProcessorCount - 1);
+        readonly SemaphoreSlim semaphore = new SemaphoreSlim(Environment.ProcessorCount - 1);
 
         public delegate void ActionFailedEventHandler(T target, Exception e);
         public event ActionFailedEventHandler OnActionFailed
@@ -67,9 +67,15 @@ namespace StorybrewEditor.Util
         }
         public void CancelQueuedActions(bool stopThreads)
         {
-            semaphore.Wait(); 
-            context.Queue.Clear();
-            semaphore.Release();
+            semaphore.Wait();
+            try
+            {
+                context.Queue.Clear();
+            }
+            finally
+            {
+                semaphore.Release();
+            }
 
             if (stopThreads)
             {
@@ -113,7 +119,7 @@ namespace StorybrewEditor.Util
             internal event ActionFailedEventHandler OnActionFailed;
             internal bool TriggerActionFailed(T target, Exception e)
             {
-                if (OnActionFailed == null) return false;
+                if (OnActionFailed is null) return false;
 
                 OnActionFailed.Invoke(target, e);
                 return true;
@@ -185,7 +191,7 @@ namespace StorybrewEditor.Util
                                     task = context.Queue.FirstOrDefault(t => !context.Running.Contains(t.UniqueKey)
                                         && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
 
-                                    if (task.Action == null && task.UniqueKey == null)
+                                    if (task.Action is null && task.UniqueKey is null)
                                     {
                                         mustSleep = true;
                                         continue;
@@ -237,11 +243,10 @@ namespace StorybrewEditor.Util
 
                 using (var cancellationTokenSource = new CancellationTokenSource(millisecondsTimeout))
                 {
-                    var cancellationToken = cancellationTokenSource.Token;
                     var completed = false;
 
                     if (!completed) Trace.WriteLine($"Canceling thread {localThread.Name}");
-                    while (!completed && !cancellationToken.IsCancellationRequested) completed = localThread.Join(10);
+                    while (!completed && !cancellationTokenSource.Token.IsCancellationRequested) completed = localThread.Join(10);
                     if (completed) Trace.WriteLine($"Canceled thread {localThread.Name}");
                 }
             }

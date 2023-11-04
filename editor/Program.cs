@@ -4,11 +4,13 @@ using OpenTK.Graphics;
 using StorybrewEditor.Processes;
 using StorybrewEditor.Util;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -232,7 +234,7 @@ namespace StorybrewEditor
         #region Scheduling
 
         public static bool SchedulingEnabled { get; set; }
-        static readonly Queue<Action> scheduledActions = new Queue<Action>();
+        static readonly List<Action> scheduledActions = new List<Action>();
 
         public static void enableScheduling() => SchedulingEnabled = true;
 
@@ -242,7 +244,7 @@ namespace StorybrewEditor
         /// </summary>
         public static void Schedule(Action action)
         {
-            if (SchedulingEnabled) lock (scheduledActions) scheduledActions.Enqueue(action);
+            if (SchedulingEnabled) lock (scheduledActions) scheduledActions.Add(action);
             else throw new InvalidOperationException("Scheduling isn't enabled!");
         }
 
@@ -291,22 +293,15 @@ namespace StorybrewEditor
         {
             CheckMainThread();
 
-            Action[] actionsToRun;
-            lock (scheduledActions)
+            for (var i = 0; i < scheduledActions.Count; ++i) try
             {
-                actionsToRun = new Action[scheduledActions.Count];
-                scheduledActions.CopyTo(actionsToRun, 0);
-                scheduledActions.Clear();
-            }
-
-            foreach (var action in actionsToRun) try
-            {
-                action();
+                scheduledActions[i]();
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Scheduled task {action.Method} failed:\n{e}");
+                Trace.WriteLine($"Scheduled task {scheduledActions[i].Method} failed:\n{e}");
             }
+            scheduledActions.Clear();
         }
 
         #endregion
@@ -411,7 +406,7 @@ namespace StorybrewEditor
                             try
                             {
                                 trace = new StackTrace(true);
-                                action(new Exception(trace.ToString()));
+                                action(new ApplicationException(trace.ToString()));
                             }
                             catch (ThreadStateException e)
                             {

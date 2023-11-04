@@ -1,42 +1,102 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using BrewLib.Data;
 
 namespace BrewLib.Util.Compression
 {
-    public abstract class ImageCompressor
+    public abstract class ImageCompressor : IDisposable
     {
+        public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
+        protected List<Argument> toCompress, lossyCompress;
+        protected List<string> toCleanup = new List<string>();
+
         protected Process process;
         protected ResourceContainer container;
 
-        public string UtilityPath, UtilityName;
+        public string UtilityPath { get; protected set; }
 
-        internal TimeSpan? ExecutionTimeout;
-        internal UserCredential ProcessUser;
+        protected string utilName;
+        public string UtilityName
+        {
+            get => HashHelper.GetMd5(utilName + Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture));
+            protected set => utilName = value;
+        }
 
         public ImageCompressor(string utilityPath = null)
-            => UtilityPath = utilityPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/cache";
+        {
+            UtilityPath = utilityPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/cache/scripts";
+            toCompress = new List<Argument>();
+            lossyCompress = new List<Argument>();
+        }
 
-        public void LosslessCompress(string path) => doCompress(path, "", null, null);
-        public void Compress(string path) => doCompress(path, "lossy", null, null);
-        public void LosslessCompress(string path, LosslessInputSettings settings) => doCompress(path, "", null, settings);
-        public void Compress(string path, LossyInputSettings settings) => doCompress(path, "lossy", settings, null);
-        public void LosslessCompress(string path, LosslessInputSettings settings, InputFormat inputFormat) => doCompress(path, "", null, settings, inputFormat);
-        public void Compress(string path, LossyInputSettings settings, InputFormat inputFormat) => doCompress(path, "lossy", settings, null, inputFormat);
+        public void LosslessCompress(string path) => toCompress.Add(new Argument(path));
+        public void Compress(string path) => lossyCompress.Add(new Argument(path));
+        public void LosslessCompress(string path, LosslessInputSettings settings) => toCompress.Add(new Argument(path, settings));
+        public void Compress(string path, LossyInputSettings settings) => lossyCompress.Add(new Argument(path, null, settings));
+        public void LosslessCompress(string path, LosslessInputSettings settings, InputFormat inputFormat) => toCompress.Add(new Argument(path, settings, null, inputFormat));
+        public void Compress(string path, LossyInputSettings settings, InputFormat inputFormat) => lossyCompress.Add(new Argument(path, null, settings, inputFormat));
 
-        protected abstract void doCompress(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless, InputFormat inputFormat = null);
-        protected abstract string appendArgs(string path, string type, LossyInputSettings lossy, LosslessInputSettings lossless);
+        protected abstract void doCompress();
+        protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
         protected abstract void ensureTool();
 
         protected void ensureStop()
         {
             if (process is null) return;
-            process.Close();
+            process.Dispose();
             process = null;
         }
 
-        internal string GetUtility() => Path.Combine(UtilityPath, UtilityName);
+        internal string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
+
+        protected bool disposed;
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (toCompress.Count > 0 && lossyCompress.Count > 0) try
+                {
+                    doCompress();
+                }
+                finally
+                {
+                    if (disposing) ensureStop();
+                    for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) File.Delete(toCleanup[i]);
+
+                    toCleanup.Clear();
+                    toCompress.Clear();
+                    lossyCompress.Clear();
+                    toCleanup = null;
+                    toCompress = null;
+                    lossyCompress = null;
+
+                    container = null;
+                }
+                disposed = true;
+            }
+        }
+
+        public void Dispose() => Dispose(true);
+
+        protected class Argument
+        {
+            internal readonly string path;
+            internal readonly LosslessInputSettings lossless;
+            internal readonly LossyInputSettings lossy;
+            internal readonly InputFormat format;
+
+            internal Argument(string path, LosslessInputSettings lossless = null, LossyInputSettings lossy = null, InputFormat format = null)
+            {
+                this.path = path;
+                this.lossless = lossless;
+                this.lossy = lossy;
+                this.format = format;
+            }
+        }
     }
 }

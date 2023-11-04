@@ -12,15 +12,32 @@ namespace BrewLib.Util
         public static PinnedBitmap BlurAlpha(Bitmap source, int radius, double power, Color color) => ConvoluteAlpha(source, CalculateGaussianKernel(radius, power), color);
 
         public static void LosslessCompress(string path, PngCompressor compressor = null)
-            => (compressor ?? new PngCompressor()).LosslessCompress(path, new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level7 });
+        {
+            if (compressor is null) using (compressor = new PngCompressor()) compressor.LosslessCompress(path, new LosslessInputSettings
+            {
+                OptimizationLevel = OptimizationLevel.Level7
+            });
+            else compressor.LosslessCompress(path, new LosslessInputSettings
+            {
+                OptimizationLevel = OptimizationLevel.Level7
+            });
+        }
 
         public static void Compress(string path, PngCompressor compressor = null)
-            => (compressor ?? new PngCompressor()).Compress(path, new LossyInputSettings
         {
-            Speed = 1,
-            MinQuality = 75,
-            MaxQuality = 100
-        });
+            if (compressor is null) using (compressor = new PngCompressor()) compressor.Compress(path, new LossyInputSettings
+            {
+                Speed = 1,
+                MinQuality = 75,
+                MaxQuality = 100
+            });
+            else compressor.Compress(path, new LossyInputSettings
+            {
+                Speed = 1,
+                MinQuality = 75,
+                MaxQuality = 100
+            });
+        }
 
         public static PinnedBitmap Premultiply(Bitmap source)
         {

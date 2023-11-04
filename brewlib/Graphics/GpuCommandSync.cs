@@ -91,18 +91,18 @@ namespace BrewLib.Graphics
 
         class SyncRange : IDisposable
         {
-            public int Index, Length;
-            public IntPtr Fence;
+            internal int Index, Length;
+            internal IntPtr Fence;
             bool expired;
 
-            public SyncRange(int index, int length)
+            internal SyncRange(int index, int length)
             {
                 Index = index;
                 Length = length;
                 Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
             }
 
-            public bool Wait(bool canBlock = true)
+            internal bool Wait(bool canBlock = true)
             {
                 if (expired || Fence == default) return false;
 
@@ -132,7 +132,6 @@ namespace BrewLib.Graphics
                     }
                 }
             }
-            public override string ToString() => $"{Index} - {Index + Length - 1} ({Length}){(expired ? " Expired" : "")}";
 
             #region IDisposable Support
 
