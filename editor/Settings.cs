@@ -16,7 +16,7 @@ namespace StorybrewEditor
         public readonly Setting<string> Id = new Setting<string>(Guid.NewGuid().ToString("N")), TimeCopyFormat = new Setting<string>(@"h\:mm\:ss\.ff");
         public readonly Setting<int> FrameRate = new Setting<int>(0), UpdateRate = new Setting<int>(60), EffectThreads = new Setting<int>(0);
         public readonly Setting<float> Volume = new Setting<float>(.5f);
-        public readonly Setting<bool> FitStoryboard = new Setting<bool>(false), ShowStats = new Setting<bool>(false),
+        public readonly Setting<bool> FitStoryboard = new Setting<bool>(false), ShowStats = new Setting<bool>(true),
             VerboseVsCode = new Setting<bool>(false), UseRoslyn = new Setting<bool>(false);
 
         readonly string path;
@@ -36,12 +36,10 @@ namespace StorybrewEditor
             var type = GetType();
             try
             {
-                using (var stream = File.OpenRead(path)) using (var reader = new StreamReader(stream, Project.Encoding))
-                reader.ParseKeyValueSection((key, value) =>
+                using (var reader = File.OpenText(path)) reader.ParseKeyValueSection((key, value) =>
                 {
                     var field = type.GetField(key);
-                    if (field == null || !field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
-                        return;
+                    if (field is null || !field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
 
                     try
                     {
@@ -68,8 +66,7 @@ namespace StorybrewEditor
             {
                 foreach (var field in GetType().GetFields())
                 {
-                    if (!field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
-                        continue;
+                    if (!field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) continue;
 
                     var setting = (Setting)field.GetValue(this);
                     writer.WriteLine($"{field.Name}: {setting}");

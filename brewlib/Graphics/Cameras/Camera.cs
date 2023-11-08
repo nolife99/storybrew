@@ -1,6 +1,6 @@
-﻿using OpenTK;
-using System;
+﻿using System;
 using System.Drawing;
+using System.Numerics;
 
 namespace BrewLib.Graphics.Cameras
 {
@@ -17,18 +17,18 @@ namespace BrewLib.Graphics.Cameras
 
         // Outputs
 
-        Matrix4 Projection { get; }
-        Matrix4 View { get; }
-        Matrix4 ProjectionView { get; }
-        Matrix4 InvertedProjectionView { get; }
+        Matrix4x4 Projection { get; }
+        Matrix4x4 View { get; }
+        Matrix4x4 ProjectionView { get; }
+        Matrix4x4 InvertedProjectionView { get; }
         Rectangle InternalViewport { get; }
         Rectangle ExtendedViewport { get; }
 
         Vector3 FromScreen(Vector2 screenCoords);
-        Box2 FromScreen(Box2 screenBox2);
+        RectangleF FromScreen(RectangleF screenBox2);
         Vector3 ToScreen(Vector3 worldCoords);
         Vector3 ToScreen(Vector2 worldCoords);
-        Box2 ToScreen(Box2 worldBox2);
+        RectangleF ToScreen(RectangleF worldBox2);
 
         event EventHandler Changed;
     }

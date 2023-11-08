@@ -22,7 +22,7 @@ namespace StorybrewEditor.Processes
         {
             var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
 
-            using (var wait = new ManualResetEventSlim()) while (true)
+            while (true)
             {
                 try
                 {
@@ -40,7 +40,7 @@ namespace StorybrewEditor.Processes
                     Trace.WriteLine($"Couldn't start pipe: {e}");
                 }
 
-                wait.Wait(250);
+                Thread.Sleep(250);
             }
         }
 

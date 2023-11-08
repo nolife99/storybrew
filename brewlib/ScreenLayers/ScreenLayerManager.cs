@@ -18,7 +18,9 @@ namespace BrewLib.ScreenLayers
         readonly object context;
         public T GetContext<T>() => (T)context;
 
-        readonly List<ScreenLayer> layers = new List<ScreenLayer>(), updateQueue = new List<ScreenLayer>(), removedLayers = new List<ScreenLayer>();
+        readonly List<ScreenLayer> layers = new List<ScreenLayer>(), removedLayers = new List<ScreenLayer>();
+        readonly List<ScreenLayer> updateQueue = new List<ScreenLayer>();
+
         ScreenLayer focusedLayer;
         readonly InputDispatcher inputDispatcher = new InputDispatcher();
         public InputHandler InputHandler => inputDispatcher;
@@ -49,8 +51,7 @@ namespace BrewLib.ScreenLayers
         }
         public void Set(ScreenLayer layer)
         {
-            var layersToExit = new List<ScreenLayer>(layers);
-            for (var i = layersToExit.Count - 1; i >= 0; --i) layersToExit[i].Exit();
+            for (var i = layers.Count - 1; i >= 0; --i) layers[i].Exit();
             Add(layer);
         }
         public void Remove(ScreenLayer layer)
@@ -75,8 +76,8 @@ namespace BrewLib.ScreenLayers
         }
         public void Exit()
         {
-            var snapshot = new List<ScreenLayer>(layers);
-            for (var i = snapshot.Count - 1; i >= 0; --i)
+            var snapshot = layers.ToArray();
+            for (var i = snapshot.Length - 1; i >= 0; --i)
             {
                 var layer = snapshot[i];
                 if (layer.IsExiting) continue;
@@ -90,7 +91,7 @@ namespace BrewLib.ScreenLayers
             if (!active) changeFocus(null);
 
             updateQueue.Clear();
-            updateQueue.AddRange(layers);
+            for (var i = 0; i < layers.Count; ++i) updateQueue.Add(layers[i]);
 
             bool covered = false, top = true, hasFocus = active;
             while (updateQueue.Count > 0)
@@ -122,8 +123,11 @@ namespace BrewLib.ScreenLayers
                 top = false;
             }
 
-            removedLayers.ForEach(layer => layer.Dispose());
-            removedLayers.Clear();
+            if (removedLayers.Count > 0)
+            {
+                for (var i = 0; i < removedLayers.Count; ++i) removedLayers[i].Dispose();
+                removedLayers.Clear();
+            }
 
             if (layers.Count == 0) window.Exit();
         }

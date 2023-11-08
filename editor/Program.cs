@@ -1,16 +1,15 @@
 ﻿using BrewLib.Audio;
+using BrewLib.Util;
 using OpenTK;
 using OpenTK.Graphics;
 using StorybrewEditor.Processes;
 using StorybrewEditor.Util;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -42,9 +41,14 @@ namespace StorybrewEditor
             mainThreadId = Environment.CurrentManagedThreadId;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.SystemDefault;
 
+            NetHelper.Client = new System.Net.Http.HttpClient();
+            NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
+
             if (args.Length != 0 && handleArguments(args)) return;
             setupLogging(checkFrozen: false);
+
             startEditor();
+            NetHelper.Client.Dispose();
         }
         static bool handleArguments(string[] args)
         {
@@ -98,7 +102,7 @@ namespace StorybrewEditor
                 };
 
                 editor.Initialize();
-                runMainLoop(window, editor, 1d / Settings.UpdateRate, 1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
+                runMainLoop(window, editor, 1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate), 1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
 
                 Settings.Save();
             }
@@ -128,7 +132,6 @@ namespace StorybrewEditor
         }
         static GameWindow createWindow(DisplayDevice displayDevice)
         {
-            var graphicsMode = new GraphicsMode(32, 24, 8, 0, ColorFormat.Empty, 2, false);
             var primaryScreenArea = Screen.PrimaryScreen.WorkingArea;
 
             int windowWidth = 1366, windowHeight = 768;
@@ -138,7 +141,7 @@ namespace StorybrewEditor
                 windowHeight = 600;
                 if (windowWidth >= primaryScreenArea.Width) windowWidth = 800;
             }
-            var window = new GameWindow(windowWidth, windowHeight, graphicsMode, Name, GameWindowFlags.Default, displayDevice, 2, 0, GraphicsContextFlags.ForwardCompatible);
+            var window = new GameWindow(windowWidth, windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 2, 0, GraphicsContextFlags.ForwardCompatible);
             Trace.WriteLine($"Window dpi scale: {window.Height / (float)windowHeight}");
 
             window.Location = new Point(
@@ -156,7 +159,7 @@ namespace StorybrewEditor
         }
         static AudioManager createAudioManager(GameWindow window)
         {
-            var audioManager = new AudioManager(window.WindowInfo.Handle)
+            var audioManager = new AudioManager(window.GetWindowHandle())
             {
                 Volume = Settings.Volume
             };
@@ -168,10 +171,10 @@ namespace StorybrewEditor
         {
             double previousTime = 0, fixedRateTime = 0, averageFrameTime = 0, averageActiveTime = 0, longestFrameTime = 0, lastStatTime = 0;
             var windowDisplayed = false;
-            var watch = new Stopwatch();
+            var watch = Stopwatch.StartNew();
 
-            watch.Start();
-            using (var wait = new ManualResetEventSlim()) while (window.Exists && !window.IsExiting)
+            window.VSync = VSyncMode.Adaptive;
+            using (var reset = new ManualResetEventSlim()) while (window.Exists && !window.IsExiting)
             {
                 var focused = window.Focused;
                 var currentTime = watch.Elapsed.TotalSeconds;
@@ -187,11 +190,9 @@ namespace StorybrewEditor
 
                     editor.Update(fixedRateTime, true);
                 }
-                if (focused && fixedUpdates == 0 && fixedRateTime < currentTime && currentTime < fixedRateTime + fixedRateUpdateDuration)
-                    editor.Update(currentTime, false);
+                if (focused && fixedUpdates == 0 && fixedRateTime < currentTime && currentTime < fixedRateTime + fixedRateUpdateDuration) editor.Update(currentTime, false);
 
                 if (!window.Exists || window.IsExiting) return;
-                
                 if (window.WindowState != WindowState.Minimized)
                 {
                     var tween = Math.Min((currentTime - fixedRateTime) / fixedRateUpdateDuration, 1);
@@ -208,17 +209,20 @@ namespace StorybrewEditor
                 RunScheduledTasks();
 
                 var activeDuration = watch.Elapsed.TotalSeconds - currentTime;
-                var sleepMs = Math.Max(0, (int)(((focused ? targetFrameDuration : fixedRateUpdateDuration) - activeDuration) * 1000));
-                wait.Wait(sleepMs);
+                if (window.VSync is VSyncMode.Off && window.WindowState != WindowState.Minimized)
+                {
+                    var sleepTime = (focused ? targetFrameDuration : fixedRateUpdateDuration) - activeDuration;
+                    if (sleepTime > 0) reset.Wait(TimeSpan.FromSeconds(sleepTime));
+                }
 
                 var frameTime = currentTime - previousTime;
                 previousTime = currentTime;
 
-                averageFrameTime = (frameTime + averageFrameTime) / 2;
-                averageActiveTime = (activeDuration + averageActiveTime) / 2;
+                averageFrameTime = (frameTime + averageFrameTime) * .5;
+                averageActiveTime = (activeDuration + averageActiveTime) * .5;
                 longestFrameTime = Math.Max(frameTime, longestFrameTime);
 
-                if (lastStatTime + 1 < currentTime)
+                if (lastStatTime + .2 < currentTime)
                 {
                     Stats = $"fps:{1 / averageFrameTime:0}/{1 / averageActiveTime:0} (act:{averageActiveTime * 1000:0} avg:{averageFrameTime * 1000:0} hi:{longestFrameTime * 1000:0})";
 
@@ -233,7 +237,7 @@ namespace StorybrewEditor
         #region Scheduling
 
         public static bool SchedulingEnabled { get; set; }
-        static readonly List<Action> scheduledActions = new List<Action>();
+        static readonly ConcurrentQueue<Action> scheduledActions = new ConcurrentQueue<Action>();
 
         public static void enableScheduling() => SchedulingEnabled = true;
 
@@ -243,7 +247,7 @@ namespace StorybrewEditor
         /// </summary>
         public static void Schedule(Action action)
         {
-            if (SchedulingEnabled) lock (scheduledActions) scheduledActions.Add(action);
+            if (SchedulingEnabled) scheduledActions.Enqueue(action);
             else throw new InvalidOperationException("Scheduling isn't enabled!");
         }
 
@@ -292,15 +296,16 @@ namespace StorybrewEditor
         {
             CheckMainThread();
 
+            Action action = null;
             for (var i = 0; i < scheduledActions.Count; ++i) try
             {
-                scheduledActions[i]();
+                if (scheduledActions.TryDequeue(out action)) action();
+                else throw new InvalidOperationException("Retrieving task failed");
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Scheduled task {scheduledActions[i].Method} failed:\n{e}");
+                Trace.WriteLine($"Scheduled task {action.Method} failed:\n{e}");
             }
-            scheduledActions.Clear();
         }
 
         #endregion
@@ -323,10 +328,11 @@ namespace StorybrewEditor
             if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
             else
             {
-                if (File.Exists(tracePath)) File.Delete(tracePath);
+                if (File.Exists(tracePath) && new FileInfo(tracePath).Length > 1000000) File.Delete(tracePath);
                 if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
             }
 
+            Trace.Listeners.Add(new TextWriterTraceListener(new StreamWriter(tracePath, true)));
             Trace.WriteLine($"{FullName}\n");
 
             AppDomain.CurrentDomain.FirstChanceException += (sender, e) => logError(e.Exception, exceptionPath, null, false);
@@ -375,6 +381,8 @@ namespace StorybrewEditor
             ["version"] = Version.ToString(),
             ["content"] = e.ToString()
         }, (r, ex) => { });
+
+        readonly static CancellationTokenSource cancel = new CancellationTokenSource();
         static void setupFreezeCheck(Action<Exception> action)
         {
             var mainThread = Thread.CurrentThread;
@@ -382,55 +390,44 @@ namespace StorybrewEditor
             {
                 var answered = false;
                 var frozen = 0;
+                var cancellationToken = cancel.Token;
 
-                using (var wait = new ManualResetEventSlim())
+                while (!SchedulingEnabled) Thread.Sleep(1000);
+
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    while (!SchedulingEnabled) wait.Wait(1000);
-                    while (true)
+                    answered = false;
+                    Schedule(() => answered = true);
+
+                    Thread.Sleep(1000);
+
+                    if (!answered) frozen++;
+
+                    if (frozen >= 3)
                     {
-                        answered = false;
-                        Schedule(() => answered = true);
+                        frozen = 0;
+                        cancel.Cancel();
 
-                        wait.Wait(1000);
-
-                        if (!answered) ++frozen;
-                        if (frozen >= 3)
+                        try
                         {
-                            frozen = 0;
-
-                            var reset = new AutoResetEvent(false);
-                            reset.WaitOne();
-
-                            StackTrace trace = null;
-                            try
-                            {
-                                trace = new StackTrace(true);
-                                action(new ApplicationException(trace.ToString()));
-                            }
-                            catch (ThreadStateException e)
-                            {
-                                action(e);
-                            }
-                            try
-                            {
-                                wait.Set();
-                            }
-                            catch (ThreadStateException e)
-                            {
-                                action(e);
-                            }
+                            var trace = new StackTrace(mainThread, true);
+                            action(new ThreadStateException(trace.ToString()));
+                        }
+                        catch (ThreadStateException e)
+                        {
+                            action(e);
                         }
                     }
                 }
+
+                cancel.Dispose();
             })
-            {
-                Name = "Freeze Checker",
-                IsBackground = true
-            };
+            { Name = "Freeze Checker", IsBackground = true };
 
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
         }
+
 
         #endregion
     }

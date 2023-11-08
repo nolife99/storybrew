@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 namespace BrewLib.Input
 {
-    public class InputManager : IDisposable
+    public sealed class InputManager : IDisposable
     {
         readonly InputHandler handler;
         readonly GameWindow window;
@@ -18,7 +18,7 @@ namespace BrewLib.Input
         public IEnumerable<GamepadManager> GamepadManagers => gamepadManagers.Values;
         public GamepadManager GetGamepadManager(int gamepadIndex = 0) => gamepadManagers[gamepadIndex];
 
-        public Vector2 MousePosition { get; private set; }
+        public System.Numerics.Vector2 MousePosition { get; private set; }
 
         public bool Control { get; private set; }
         public bool Shift { get; private set; }
@@ -110,7 +110,7 @@ namespace BrewLib.Input
         void window_MouseUp(object sender, MouseButtonEventArgs e) => handler.OnClickUp(e);
         void window_MouseMove(object sender, MouseMoveEventArgs e)
         {
-            MousePosition = new Vector2(e.X, e.Y);
+            MousePosition = new System.Numerics.Vector2(e.X, e.Y);
             handler.OnMouseMove(e);
         }
 

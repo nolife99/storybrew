@@ -1,4 +1,5 @@
-﻿using StorybrewCommon.Animations;
+﻿using BrewLib.Util;
+using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding.CommandValues;
 using System.Collections.Generic;
 using System.IO;
@@ -48,21 +49,15 @@ namespace StorybrewCommon.Storyboarding.Commands
         public abstract TValue ValueAtProgress(double progress);
         public abstract TValue Midpoint(Command<TValue> endCommand, double progress);
 
-        public bool IsFragmentable => StartTime == EndTime || Easing == OsbEasing.None;
-
+        public bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
         public abstract IFragmentableCommand GetFragment(double startTime, double endTime);
-
         public IEnumerable<int> GetNonFragmentableTimes()
         {
-            var nonFragmentableTimes = new HashSet<int>();
-            if (!IsFragmentable) for (var i = 0; i < EndTime - StartTime - 1; ++i) nonFragmentableTimes.Add((int)(StartTime + 1 + i));
-
-            return nonFragmentableTimes;
+            if (!IsFragmentable) for (var i = 0; i < EndTime - StartTime - 1; ++i) yield return (int)(StartTime + 1 + i);
         }
 
         public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
-        public override int GetHashCode() => (Identifier.Length > 1 ? Identifier[0].GetHashCode() : Identifier.GetHashCode()) ^
-            StartTime.GetHashCode() ^ EndTime.GetHashCode() ^ StartValue.GetHashCode() ^ EndValue.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
 
         public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
         public bool Equals(Command<TValue> obj) => Identifier == obj.Identifier && Easing == obj.Easing && 

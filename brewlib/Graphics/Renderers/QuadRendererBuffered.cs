@@ -165,7 +165,7 @@ namespace BrewLib.Graphics.Renderers
             // When the previous flush was bufferable, draw state should stay the same.
             if (!lastFlushWasBuffered)
             {
-                var combinedMatrix = transformMatrix * Camera.ProjectionView;
+                var combinedMatrix = transformMatrix * Camera.ProjectionView.ToGLMatrix();
                 GL.UniformMatrix4(combinedMatrixLocation, false, ref combinedMatrix);
 
                 var samplerUnit = CustomTextureBind != null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
@@ -202,8 +202,7 @@ namespace BrewLib.Graphics.Renderers
                 DrawState.FlushRenderer();
                 currentTexture = texture.BindableTexture;
             }
-            else if (quadsInBatch == maxQuadsPerBatch)
-                DrawState.FlushRenderer(true);
+            else if (quadsInBatch == maxQuadsPerBatch) DrawState.FlushRenderer(true);
 
             primitives[quadsInBatch] = quad;
 

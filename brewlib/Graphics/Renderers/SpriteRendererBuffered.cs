@@ -187,7 +187,7 @@ namespace BrewLib.Graphics.Renderers
             // When the previous flush was bufferable, draw state should stay the same.
             if (!lastFlushWasBuffered)
             {
-                var combinedMatrix = transformMatrix * Camera.ProjectionView;
+                var combinedMatrix = transformMatrix * Camera.ProjectionView.ToGLMatrix();
 
                 var samplerUnit = CustomTextureBind != null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
                 if (currentSamplerUnit != samplerUnit)

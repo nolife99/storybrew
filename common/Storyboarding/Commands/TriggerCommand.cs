@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using BrewLib.Util;
+using System.Linq;
 using System.Text;
 
 namespace StorybrewCommon.Storyboarding.Commands
@@ -23,13 +24,13 @@ namespace StorybrewCommon.Storyboarding.Commands
 
         public override int GetHashCode()
         {
-            var header = 'T'.GetHashCode() ^ StartTime.GetHashCode() ^ EndTime.GetHashCode() ^ Group.GetHashCode();
-            foreach (var command in commands) header ^= command.GetHashCode();
-            return header;
+            var header = new HashCode(HashCode.Combine('T', TriggerName, StartTime, EndTime, Group));
+            foreach (var command in commands) header.Add(command);
+            return header.GetHashCode();
         }
 
         public override bool Equals(object obj) => obj is TriggerCommand loop && Equals(loop);
         public bool Equals(TriggerCommand other)
-            => other.GetCommandGroupHeader(ExportSettings.Default) == GetCommandGroupHeader(ExportSettings.Default) && commands.SequenceEqual(other.Commands);
+            => other.TriggerName == TriggerName && other.StartTime == StartTime && other.EndTime == EndTime && other.Group == Group && commands.SequenceEqual(other.commands);
     }
 }

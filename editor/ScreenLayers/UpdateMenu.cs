@@ -51,7 +51,7 @@ namespace StorybrewEditor.ScreenLayers
                     }
                 }
             });
-            NetHelper.Download(downloadUrl, Updater.UpdateArchivePath, (progress) =>
+            NetHelper.Download(downloadUrl, Updater.UpdateArchivePath, progress =>
             {
                 if (IsDisposed) return false;
                 progressBar.Value = progress;

@@ -289,7 +289,6 @@ namespace StorybrewCommon.Subtitles
         readonly FontDescription description;
         readonly FontEffect[] effects;
         readonly string projectDirectory, assetDirectory;
-        readonly PngCompressor compressor;
         internal readonly Dictionary<string, FontTexture> cache;
 
         internal FontGenerator(string directory, FontDescription description, FontEffect[] effects, string projectDirectory, string assetDirectory)
@@ -299,7 +298,6 @@ namespace StorybrewCommon.Subtitles
             this.effects = effects;
             this.projectDirectory = projectDirectory;
             this.assetDirectory = assetDirectory;
-            compressor = StoryboardObjectGenerator.Current.Compressor;
             cache = new Dictionary<string, FontTexture>();
         }
 

@@ -126,7 +126,7 @@ namespace BrewLib.Graphics.Drawables
             var renderer = DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, RenderStates);
 
             var clipRegion = DrawState.GetClipRegion(camera) ?? Box2.FromDimensions(
-                new Vector2(camera.ExtendedViewport.Left, camera.ExtendedViewport.Top) + camera.Position.Xy,
+                new Vector2(camera.ExtendedViewport.Left, camera.ExtendedViewport.Top) + new Vector2(camera.Position.X, camera.Position.Y),
                 new Vector2(camera.ExtendedViewport.Width, camera.ExtendedViewport.Height));
 
             foreach (var layoutGlyph in textLayout.VisibleGlyphs)

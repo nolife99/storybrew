@@ -1,6 +1,5 @@
-﻿using OpenTK;
-using System;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Numerics;
 
 namespace BrewLib.Graphics.Cameras
 {
@@ -23,7 +22,7 @@ namespace BrewLib.Graphics.Cameras
             FarPlane = 1000;
         }
 
-        protected override void Recalculate(out Matrix4 view, out Matrix4 projection, out Rectangle internalViewport, out Rectangle extendedViewport)
+        protected override void Recalculate(out Matrix4x4 view, out Matrix4x4 projection, out Rectangle internalViewport, out Rectangle extendedViewport)
         {
             var screenViewport = Viewport;
 
@@ -33,12 +32,12 @@ namespace BrewLib.Graphics.Cameras
             Up = DefaultUp;
 
             internalViewport = extendedViewport = screenViewport;
-            projection = Matrix4.CreateOrthographicOffCenter(
+            projection = Matrix4x4.CreateOrthographicOffCenter(
                 -screenViewport.Width * .5f, screenViewport.Width * .5f,
                 -(screenViewport.Height * .5f), screenViewport.Height * .5f,
                 NearPlane, FarPlane);
 
-            view = Matrix4.LookAt(Position, Position + Forward, Up);
+            view = Matrix4x4.CreateLookAt(Position, Position + Forward, Up);
         }
     }
 }

@@ -1,7 +1,7 @@
-﻿using System;
+﻿using BrewLib.Util;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace StorybrewCommon.Storyboarding.Commands
 {
@@ -35,14 +35,14 @@ namespace StorybrewCommon.Storyboarding.Commands
 
         public override int GetHashCode()
         {
-            var header = 'L'.GetHashCode() ^ StartTime.GetHashCode() ^ LoopCount.GetHashCode();
-            foreach (var command in commands) header ^= command.GetHashCode();
-            return header;
+            var header = new HashCode(HashCode.Combine('L', StartTime, LoopCount));
+            foreach (var command in commands) header.Add(command);
+            return header.GetHashCode();
         }
 
         public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);
         public bool Equals(LoopCommand other)
-            => other.GetCommandGroupHeader(ExportSettings.Default) == GetCommandGroupHeader(ExportSettings.Default) && commands.SequenceEqual(other.Commands);
+            => other.StartTime == StartTime && other.LoopCount == LoopCount && commands.SequenceEqual(other.commands);
 
         public bool IsFragmentable => LoopCount > 1;
 

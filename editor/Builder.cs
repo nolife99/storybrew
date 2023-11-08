@@ -12,7 +12,7 @@ namespace StorybrewEditor
     public class Builder
     {
         static readonly string mainExecutablePath = "StorybrewEditor.exe";
-        static readonly string[] ignoredPaths = { };
+        static readonly string[] ignoredPaths = Array.Empty<string>();
 
         public static void Build()
         {
@@ -94,22 +94,10 @@ namespace StorybrewEditor
                 if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
                 entryName = Path.Combine(targetPath, entryName);
             }
-            if (ignoredPaths.Contains(entryName))
-            {
-                Trace.WriteLine($"  Skipping {path}");
-                return;
-            }
+            if (ignoredPaths.Contains(entryName)) return;
             if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
 
-            Trace.WriteLine($"  Adding {path} -> {entryName}");
             archive.CreateEntryFromFile(path, entryName, CompressionLevel.Optimal);
-
-            var pathExtension = Path.GetExtension(path);
-            if (pathExtension == ".exe" || pathExtension == ".dll")
-            {
-                var pdbPath = Path.Combine(Path.GetDirectoryName(path), $"{Path.GetFileNameWithoutExtension(path)}.pdb");
-                if (File.Exists(pdbPath)) addFile(archive, pdbPath, sourceDirectory);
-            }
         }
     }
 }

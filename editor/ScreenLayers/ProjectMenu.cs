@@ -438,7 +438,7 @@ namespace StorybrewEditor.ScreenLayers
             var first = true;
             var mainBeatmap = proj.MainBeatmap;
 
-            using (var wait = new ManualResetEventSlim()) foreach (var beatmap in proj.MapsetManager.Beatmaps)
+            foreach (var beatmap in proj.MapsetManager.Beatmaps)
             {
                 Program.RunMainThread(() => proj.MainBeatmap = beatmap);
                 while (proj.EffectsStatus != EffectStatus.Ready)

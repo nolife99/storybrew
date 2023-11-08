@@ -1,10 +1,8 @@
 ﻿using BrewLib.Util;
 using StorybrewCommon.Mapset;
-using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Display;
-using StorybrewCommon.Subtitles;
 using StorybrewCommon.Util;
 using System;
 using System.Collections.Generic;

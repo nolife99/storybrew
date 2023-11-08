@@ -1,5 +1,6 @@
 ﻿using ManagedBass;
 using System;
+using System.IO;
 
 namespace BrewLib.Audio
 {
@@ -36,7 +37,7 @@ namespace BrewLib.Audio
             }
 
             var data = new float[size];
-            Bass.ChannelGetData(stream, data, unchecked((int)flags));
+            if (Bass.ChannelGetData(stream, data, unchecked((int)flags)) == -1) throw new InvalidDataException(Bass.LastError.ToString());
             return data;
         }
 

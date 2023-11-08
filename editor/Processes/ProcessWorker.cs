@@ -21,7 +21,7 @@ namespace StorybrewEditor.Processes
                 {
                     var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
 
-                    using (var wait = new ManualResetEventSlim()) while (!exit)
+                    while (!exit)
                     {
                         pipeServer.WaitForConnection();
                         var remoteProcessWorker = new RemoteProcessWorker();
@@ -33,7 +33,7 @@ namespace StorybrewEditor.Processes
 
                         pipeServer.Disconnect();
                         Program.RunScheduledTasks();
-                        wait.Wait(100);
+                        Thread.Sleep(100);
                     }
                 }
                 finally

@@ -97,8 +97,8 @@ namespace BrewLib.UserInterface
         {
             if (camera != null && InputManager.HasMouseFocus)
             {
-                mousePosition = camera.FromScreen(InputManager.MousePosition).Xy;
-                changeHoveredWidget(rootContainer.GetWidgetAt(mousePosition.X, mousePosition.Y));
+                var fromScreen = camera.FromScreen(InputManager.MousePosition);
+                changeHoveredWidget(rootContainer.GetWidgetAt(fromScreen.X, fromScreen.Y));
                 updateHoveredDraggable();
             }
             else changeHoveredWidget(null);
@@ -109,17 +109,13 @@ namespace BrewLib.UserInterface
             if (keyboardFocus == widget) keyboardFocus = null;
 
             DisableGamepadEvents(widget);
-
-            var clickKeys = new List<MouseButton>(clickTargets.Keys);
-            foreach (var key in clickKeys) if (clickTargets[key] == widget) clickTargets[key] = null;
-
-            var gamepadKeys = new List<GamepadButton>(gamepadButtonTargets.Keys);
-            foreach (var key in gamepadKeys) if (gamepadButtonTargets[key] == widget) gamepadButtonTargets[key] = null;
+            
+            foreach (var key in clickTargets.Keys) if (clickTargets[key] == widget) clickTargets.Remove(key);
+            foreach (var key in gamepadButtonTargets.Keys) if (gamepadButtonTargets[key] == widget) gamepadButtonTargets.Remove(key);
         }
         public void Draw(DrawContext drawContext)
         {
             if (rootContainer.Visible) rootContainer.Draw(drawContext, 1);
-
             drawDragIndicator(drawContext);
         }
         void camera_Changed(object sender, EventArgs e) => InvalidateAnchors();

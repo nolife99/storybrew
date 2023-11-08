@@ -22,7 +22,7 @@ namespace StorybrewEditor.ScreenLayers
                 ShowNewFolderButton = true,
                 SelectedPath = initialValue
             })
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
             {
                 var path = dialog.SelectedPath;
                 Program.Schedule(() => callback(path));
@@ -39,7 +39,7 @@ namespace StorybrewEditor.ScreenLayers
                 Filter = filter,
                 InitialDirectory = initialDirectory != null ? Path.GetFullPath(initialDirectory) : ""
             })
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK) Program.Schedule(() => callback(dialog.FileName));
+            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK) Program.Schedule(() => callback(dialog.FileName));
         });
         public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer, string description, string initialValue, string extension, string filter, Action<string> callback)
             => screenLayer.AsyncLoading("Select a location", () =>
@@ -91,7 +91,7 @@ namespace StorybrewEditor.ScreenLayers
         {
             if (!Directory.Exists(Project.ProjectsFolder)) Directory.CreateDirectory(Project.ProjectsFolder);
 
-            screenLayer.OpenFilePicker("", "", Project.ProjectsFolder, Project.FileFilter, (projectPath) =>
+            screenLayer.OpenFilePicker("", "", Project.ProjectsFolder, Project.FileFilter, projectPath =>
             {
                 if (!PathHelper.FolderContainsPath(Project.ProjectsFolder, projectPath) || PathHelper.GetRelativePath(
                     Project.ProjectsFolder, projectPath).Count(c => c == '/') != 1)

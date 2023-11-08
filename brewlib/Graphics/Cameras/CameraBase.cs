@@ -1,6 +1,6 @@
-﻿using OpenTK;
-using System;
+﻿using System;
 using System.Drawing;
+using System.Numerics;
 
 namespace BrewLib.Graphics.Cameras
 {
@@ -12,11 +12,11 @@ namespace BrewLib.Graphics.Cameras
         public Rectangle InternalViewport { get { Validate(); return internalViewport; } }
         public Rectangle ExtendedViewport { get { Validate(); return extendedViewport; } }
 
-        Matrix4 projection, view, projectionView, invertedProjectionView;
-        public Matrix4 Projection { get { Validate(); return projection; } }
-        public Matrix4 View { get { Validate(); return view; } }
-        public Matrix4 ProjectionView { get { Validate(); return projectionView; } }
-        public Matrix4 InvertedProjectionView { get { Validate(); return invertedProjectionView; } }
+        Matrix4x4 projection, view, projectionView, invertedProjectionView;
+        public Matrix4x4 Projection { get { Validate(); return projection; } }
+        public Matrix4x4 View { get { Validate(); return view; } }
+        public Matrix4x4 ProjectionView { get { Validate(); return projectionView; } }
+        public Matrix4x4 InvertedProjectionView { get { Validate(); return invertedProjectionView; } }
 
         public event EventHandler Changed;
 
@@ -109,15 +109,22 @@ namespace BrewLib.Graphics.Cameras
             var deviceX = 2 * (screenCoords.X / viewport.Width) - 1;
             var deviceY = -2 * (screenCoords.Y / viewport.Height) + 1;
 
-            var near = Vector4.Transform(new Vector4(deviceX, deviceY, NearPlane, 1), invertedProjectionView).Xyz;
-            var far = Vector4.Transform(new Vector4(deviceX, deviceY, FarPlane, 1), invertedProjectionView).Xyz;
-            var direction = Vector3.Normalize(far - near);
+            var nearBase = Vector4.Transform(new Vector4(deviceX, deviceY, NearPlane, 1), invertedProjectionView);
+            var near = new Vector3(nearBase.X, nearBase.Y, nearBase.Z);
 
+            var farBase = Vector4.Transform(new Vector4(deviceX, deviceY, FarPlane, 1), invertedProjectionView);
+            var far = new Vector3(farBase.X, farBase.Y, farBase.Z);
+
+            var direction = Vector3.Normalize(far - near);
             if (direction.Z == 0) return Vector3.Zero;
             return near - direction * (near.Z / direction.Z);
         }
-        public Box2 FromScreen(Box2 screenBox2) => new Box2(
-            FromScreen(new Vector2(screenBox2.Left, screenBox2.Top)).Xy, FromScreen(new Vector2(screenBox2.Right, screenBox2.Bottom)).Xy);
+        public RectangleF FromScreen(RectangleF screenBox2)
+        {
+            var topLeft = FromScreen(new Vector2(screenBox2.Left, screenBox2.Top));
+            var bottomRight = FromScreen(new Vector2(screenBox2.Right, screenBox2.Bottom));
+            return RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
+        }
 
         public Vector3 ToScreen(Vector3 worldCoords)
         {
@@ -125,18 +132,22 @@ namespace BrewLib.Graphics.Cameras
             // TODO Vector3.Project() ?
 
             var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
-            var devicePosition = transformedPosition.Xyz / Math.Abs(transformedPosition.W);
+            var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) / Math.Abs(transformedPosition.W);
 
             return new Vector3((devicePosition.X + 1) * .5f * viewport.Width, (-devicePosition.Y + 1) * .5f * viewport.Height, devicePosition.Z);
         }
 
-        public Vector3 ToScreen(Vector2 worldCoords) => ToScreen(new Vector3(worldCoords));
-        public Box2 ToScreen(Box2 worldBox2) => new Box2(
-            ToScreen(new Vector2(worldBox2.Left, worldBox2.Top)).Xy, ToScreen(new Vector2(worldBox2.Right, worldBox2.Bottom)).Xy);
+        public Vector3 ToScreen(Vector2 worldCoords) => ToScreen(new Vector3(worldCoords.X, worldCoords.Y, 0));
+        public RectangleF ToScreen(RectangleF worldBox2)
+        {
+            var topLeft = ToScreen(new Vector2(worldBox2.Left, worldBox2.Top));
+            var bottomRight = ToScreen(new Vector2(worldBox2.Right, worldBox2.Bottom));
+            return RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
+        }
 
         public void LookAt(Vector3 target)
         {
-            var newForward = (target - position).Normalized();
+            var newForward = Vector3.Normalize(target - position);
             if (newForward != Vector3.Zero)
             {
                 var dot = Vector3.Dot(newForward, up);
@@ -144,16 +155,16 @@ namespace BrewLib.Graphics.Cameras
                 else if (Math.Abs(dot + 1) < .000000001) up = forward;
 
                 forward = newForward;
-                up = Vector3.Cross(Vector3.Cross(forward, up).Normalized(), forward).Normalized();
+                up = Vector3.Normalize(Vector3.Cross(Vector3.Normalize(Vector3.Cross(forward, up)), forward));
 
                 Invalidate();
             }
         }
         public void Rotate(Vector3 axis, float angle)
         {
-            var rotation = Matrix3.CreateFromAxisAngle(axis, angle);
-            Vector3.Transform(ref up, ref rotation, out up);
-            Vector3.Transform(ref forward, ref rotation, out forward);
+            var rotation = Quaternion.CreateFromAxisAngle(axis, angle);
+            up = Vector3.Transform(up, rotation);
+            forward = Vector3.Transform(forward, rotation);
             Invalidate();
         }
 
@@ -166,7 +177,7 @@ namespace BrewLib.Graphics.Cameras
             needsUpdate = false;
 
             projectionView = view * projection;
-            invertedProjectionView = projectionView.Inverted();
+            Matrix4x4.Invert(projectionView, out invertedProjectionView);
         }
         protected void Invalidate()
         {
@@ -175,6 +186,6 @@ namespace BrewLib.Graphics.Cameras
         }
         void drawState_ViewportChanged() => Viewport = DrawState.Viewport;
 
-        protected abstract void Recalculate(out Matrix4 view, out Matrix4 projection, out Rectangle internalViewport, out Rectangle extendedViewport);
+        protected abstract void Recalculate(out Matrix4x4 view, out Matrix4x4 projection, out Rectangle internalViewport, out Rectangle extendedViewport);
     }
 }

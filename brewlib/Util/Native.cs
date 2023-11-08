@@ -48,7 +48,7 @@ namespace BrewLib.Util
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)] 
         static extern int GetWindowTextLength(IntPtr hWnd);
 
-        public static unsafe string GetWindowText(IntPtr hWnd)
+        public static string GetWindowText(IntPtr hWnd)
         {
             var length = GetWindowTextLength(hWnd);
             if (length == 0) return "";

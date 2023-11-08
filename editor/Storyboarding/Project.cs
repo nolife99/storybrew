@@ -424,10 +424,10 @@ namespace StorybrewEditor.Storyboarding
 
         public void Save()
         {
-            if (File.Exists(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename))) saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
-            if (File.Exists(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename))) saveText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
+            var text = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
+            if (File.Exists(text)) saveText(text);
+            else saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
         }
-
         public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
         {
             var project = new Project(projectPath, withCommonScripts, resourceContainer);

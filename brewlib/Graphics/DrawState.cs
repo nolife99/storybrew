@@ -168,8 +168,6 @@ namespace BrewLib.Graphics
             if (previousMode == mode) return;
 
             if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
-
-            // Only matters for the fixed pipeline
             if (samplerIndex < maxFpTextureUnits)
             {
                 ActiveTextureUnit = samplerIndex;
@@ -180,9 +178,7 @@ namespace BrewLib.Graphics
             samplerTexturingModes[samplerIndex] = mode;
         }
 
-        public static void BindPrimaryTexture(int textureId, TexturingModes mode = TexturingModes.Texturing2d)
-            => BindTexture(textureId, 0, mode);
-
+        public static void BindPrimaryTexture(int textureId, TexturingModes mode = TexturingModes.Texturing2d) => BindTexture(textureId, 0, mode);
         public static void BindTexture(int textureId, int samplerIndex = 0, TexturingModes mode = TexturingModes.Texturing2d)
         {
             if (textureId == 0) throw new ArgumentException("Use UnbindTexture instead");
@@ -195,7 +191,6 @@ namespace BrewLib.Graphics
                 GL.BindTexture(ToTextureTarget(mode), textureId);
                 samplerTextureIds[samplerIndex] = textureId;
 
-                //Debug.Print("Bound texture " + textureId + " (" + mode + ") to unit " + samplerIndex);
                 ++TextureBinds;
             }
         }
@@ -209,38 +204,31 @@ namespace BrewLib.Graphics
         public static void UnbindTexture(BindableTexture texture) => UnbindTexture(texture.TextureId);
         public static void UnbindTexture(int textureId)
         {
-            for (int samplerIndex = 0, samplerCount = samplerTextureIds.Length; samplerIndex < samplerCount; samplerIndex++)
+            for (int samplerIndex = 0, samplerCount = samplerTextureIds.Length; samplerIndex < samplerCount; ++samplerIndex) if (samplerTextureIds[samplerIndex] == textureId)
             {
-                if (samplerTextureIds[samplerIndex] == textureId)
-                {
-                    ActiveTextureUnit = samplerIndex;
-                    GL.BindTexture(ToTextureTarget(samplerTexturingModes[samplerIndex]), 0);
-                    samplerTextureIds[samplerIndex] = 0;
-                }
+                ActiveTextureUnit = samplerIndex;
+                GL.BindTexture(ToTextureTarget(samplerTexturingModes[samplerIndex]), 0);
+                samplerTextureIds[samplerIndex] = 0;
             }
         }
 
         public static int[] BindTextures(params BindableTexture[] textures)
         {
-            int[] samplerIndexes = new int[textures.Length];
-            int samplerCount = samplerTextureIds.Length;
+            var samplerIndexes = new int[textures.Length];
+            var samplerCount = samplerTextureIds.Length;
 
-            // Find already bound textures
-            for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; textureIndex++)
+            for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
             {
-                int textureId = textures[textureIndex].TextureId;
+                var textureId = textures[textureIndex].TextureId;
 
                 samplerIndexes[textureIndex] = -1;
-                for (int samplerIndex = 0; samplerIndex < samplerCount; samplerIndex++)
+                for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex) if (samplerTextureIds[samplerIndex] == textureId)
                 {
-                    if (samplerTextureIds[samplerIndex] == textureId)
-                    {
-                        samplerIndexes[textureIndex] = samplerIndex;
-                        break;
-                    }
+                    samplerIndexes[textureIndex] = samplerIndex;
+                    break;
                 }
             }
-            for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; textureIndex++)
+            for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
             {
                 if (samplerIndexes[textureIndex] != -1) continue;
 
@@ -249,18 +237,15 @@ namespace BrewLib.Graphics
 
                 var first = true;
                 var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
-                for (int samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex; samplerIndex = (samplerIndex + 1) % samplerCount)
+                for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex; samplerIndex = (samplerIndex + 1) % samplerCount)
                 {
                     first = false;
 
                     bool isFreeSamplerUnit = true;
-                    foreach (var usedIndex in samplerIndexes)
+                    for (var i = 0; i < samplerIndexes.Length; ++i) if (samplerIndexes[i] == samplerIndex)
                     {
-                        if (usedIndex == samplerIndex)
-                        {
-                            isFreeSamplerUnit = false;
-                            break;
-                        }
+                        isFreeSamplerUnit = false;
+                        break;
                     }
 
                     if (isFreeSamplerUnit)
@@ -293,8 +278,8 @@ namespace BrewLib.Graphics
                 ViewportChanged?.Invoke();
             }
         }
-        public delegate void ViewportChangedEventHandler();
-        public static event ViewportChangedEventHandler ViewportChanged;
+        public delegate void ViewportChangedEvent();
+        public static event ViewportChangedEvent ViewportChanged;
 
         static Rectangle? clipRegion;
         public static Rectangle? ClipRegion
@@ -324,7 +309,7 @@ namespace BrewLib.Graphics
         }
         public static IDisposable Clip(Box2 bounds, Camera camera)
         {
-            var screenBounds = camera.ToScreen(bounds);
+            var screenBounds = camera.ToScreen(RectangleF.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
             var clipRectangle = new Rectangle(
                 (int)Math.Round(screenBounds.Left),
                 viewport.Height - (int)Math.Round(screenBounds.Top + screenBounds.Height),
@@ -337,7 +322,7 @@ namespace BrewLib.Graphics
         {
             if (!clipRegion.HasValue) return null;
 
-            var bounds = camera.FromScreen(new Box2(clipRegion.Value.Left, clipRegion.Value.Top, clipRegion.Value.Right, clipRegion.Value.Bottom));
+            var bounds = camera.FromScreen(RectangleF.FromLTRB(clipRegion.Value.Left, clipRegion.Value.Top, clipRegion.Value.Right, clipRegion.Value.Bottom));
             var clipRectangle = new Box2(
                 bounds.Left, camera.ExtendedViewport.Height - bounds.Bottom,
                 bounds.Right, camera.ExtendedViewport.Height - bounds.Top);

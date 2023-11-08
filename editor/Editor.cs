@@ -40,7 +40,7 @@ namespace StorybrewEditor
         public Editor(GameWindow window)
         {
             Window = window;
-            FormsWindow = new FormsWindow(window.WindowInfo.Handle);
+            FormsWindow = new FormsWindow(window.GetWindowHandle());
         }
 
         public void Initialize(ScreenLayer initialLayer = null)
@@ -128,7 +128,8 @@ namespace StorybrewEditor
                     statsLabel = new Label(overlay)
                     {
                         StyleName = "small",
-                        AnchorTo = BoxAlignment.Centre,
+                        AnchorTarget = overlay.Root,
+                        AnchorTo = BoxAlignment.TopLeft,
                         Displayed = Program.Settings.ShowStats
                     }
                 }

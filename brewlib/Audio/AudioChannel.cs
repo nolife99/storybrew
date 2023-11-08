@@ -148,21 +148,6 @@ namespace BrewLib.Audio
             Channel = channel;
             Temporary = temporary;
         }
-        public float[] GetFft(bool complex = false)
-        {
-            var length = 2048;
-            var flags = DataFlags.FFT4096;
-
-            if (complex)
-            {
-                flags |= DataFlags.FFTComplex;
-                length *= 4;
-            }
-
-            var data = new float[length];
-            Bass.ChannelGetData(channel, data, (int)flags);
-            return data;
-        }
         internal void UpdateVolume()
         {
             if (channel == 0) return;

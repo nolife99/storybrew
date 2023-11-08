@@ -155,6 +155,86 @@ namespace BrewLib.Util
             }
         }
 
+        ///<inheritdoc cref="Random.NextBytes"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe byte[] NextBytes(int length)
+        {
+            uint x = this.x, y = this.y, z = this.z, w = this.w;
+            var buffer = new byte[length];
+
+            if ((length & 7) != 0)
+            {
+                var i = 0;
+                uint t;
+
+                for (var bound = length - 3; i < bound;)
+                {
+                    t = x ^ (x << 11);
+                    x = y;
+                    y = z;
+                    z = w;
+                    w = w ^ (w >> 19) ^ t ^ (t >> 8);
+
+                    buffer[i++] = (byte)w;
+                    buffer[i++] = (byte)(w >> 8);
+                    buffer[i++] = (byte)(w >> 16);
+                    buffer[i++] = (byte)(w >> 24);
+                }
+
+                while (i < length)
+                {
+                    t = x ^ (x << 11);
+                    x = y;
+                    y = z;
+                    z = w;
+                    w = w ^ (w >> 19) ^ t ^ (t >> 8);
+
+                    buffer[i++] = (byte)w;
+                    if (i >= length) break;
+
+                    buffer[i++] = (byte)(w >> 8);
+                    if (i >= length) break;
+
+                    buffer[i++] = (byte)(w >> 16);
+                    if (i >= length) break;
+
+                    buffer[i++] = (byte)(w >> 24);
+                }
+
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.w = w;
+            }
+            else
+            {
+                fixed (byte* pByte0 = buffer)
+                {
+                    var pDWord = (uint*)pByte0;
+                    for (int i = 0, len = length >> 2; i < len; i += 2)
+                    {
+                        var t = x ^ (x << 11);
+                        x = y;
+                        y = z;
+                        z = w;
+                        pDWord[i] = w = w ^ (w >> 19) ^ t ^ (t >> 8);
+
+                        t = x ^ (x << 11);
+                        x = y;
+                        y = z;
+                        z = w;
+                        pDWord[i + 1] = w = w ^ (w >> 19) ^ t ^ (t >> 8);
+                    }
+                }
+
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.w = w;
+            }
+            return buffer;
+        }
+
         ///<summary> Returns a random unsigned integer. </summary>
         ///<returns> A 32-bit unsigned integer that is ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] public uint NextUInt()

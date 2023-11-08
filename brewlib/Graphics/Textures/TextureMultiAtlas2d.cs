@@ -63,7 +63,7 @@ namespace BrewLib.Graphics.Textures
                 if (disposing)
                 {
                     while (atlases.Count > 0) atlases.Pop().Dispose();
-                    if (oversizeTextures != null) oversizeTextures.ForEach(texture => texture.Dispose());
+                    oversizeTextures?.ForEach(texture => texture.Dispose());
                 }
                 atlases = null;
                 oversizeTextures = null;
