@@ -49,8 +49,7 @@ namespace StorybrewCommon.Subtitles
                     graphics.DrawString(text, font, brush, x, y, stringFormat);
                 }
 
-                using (var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5, Color))
-                    textGraphics.DrawImage(blur.Bitmap, 0, 0);
+                using (var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5, Color)) textGraphics.DrawImage(blur.Bitmap, 0, 0);
             }
         }
     }

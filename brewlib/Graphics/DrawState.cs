@@ -365,7 +365,7 @@ namespace BrewLib.Graphics
         public static TextFontManager TextFontManager => textFontManager;
 
         static Version openGlVersion, glslVersion;
-        static string[] supportedExtensions;
+        static readonly string[] supportedExtensions;
         static string rendererName, rendererVendor;
 
         static void retrieveRendererInfo()
@@ -389,10 +389,10 @@ namespace BrewLib.Graphics
             CheckError("retrieving glsl version");
             Trace.WriteLine($"glsl version: {glslVersionString}");
 
-            var extensionsString = GL.GetString(StringName.Extensions);
+            /* var extensionsString = GL.GetString(StringName.Extensions);
             supportedExtensions = extensionsString.Split(' ');
             CheckError("retrieving extensions");
-            Trace.WriteLine($"extensions: {extensionsString}");
+            Trace.WriteLine($"extensions: {extensionsString}"); */
         }
         static void setupDebugOutput()
         {
@@ -440,7 +440,7 @@ namespace BrewLib.Graphics
         public static void CheckError(string context = null, bool alwaysThrow = false)
         {
             var error = GL.GetError();
-            if (alwaysThrow || error != ErrorCode.NoError) throw new Exception(
+            if (alwaysThrow || error != ErrorCode.NoError) throw new GraphicsErrorException(
                 (context != null ? "openGL error while " + context : "openGL error") +
                 (error != ErrorCode.NoError ? ": " + error.ToString() : string.Empty));
         }

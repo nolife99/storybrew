@@ -1,7 +1,7 @@
-﻿using BrewLib.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using StorybrewCommon.Util;
 
 namespace StorybrewCommon.Storyboarding.Commands
 {
@@ -37,7 +37,7 @@ namespace StorybrewCommon.Storyboarding.Commands
         {
             var header = new HashCode(HashCode.Combine('L', StartTime, LoopCount));
             foreach (var command in commands) header.Add(command);
-            return header.GetHashCode();
+            return header.ToHashCode();
         }
 
         public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);

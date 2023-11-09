@@ -792,12 +792,19 @@ namespace StorybrewEditor.Storyboarding
                 if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
                 if (!OwnsOsb) OwnsOsb = true;
 
-                localLayers = new List<EditorStoryboardLayer>(LayerManager.FindLayers(l => l.Visible));
+                localLayers = LayerManager.FindLayers(l => l.Visible);
             });
-
             var usesOverlayLayer = localLayers.Any(l => l.OsbLayer == OsbLayer.Overlay);
 
-            if (!string.IsNullOrEmpty(osuPath))
+            var diffSpecific = new List<EditorStoryboardLayer>(); 
+            var sbLayer = new List<EditorStoryboardLayer>();
+            foreach (var local in localLayers)
+            {
+                if (local.DiffSpecific) diffSpecific.Add(local);
+                else sbLayer.Add(local);
+            }
+
+            if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count > 0)
             {
                 Trace.WriteLine($"Exporting diff specific events to {osuPath}");
                 using (var stream = new SafeWriteStream(osuPath)) using (var writer = new StreamWriter(stream, Encoding)) using (var reader = new StreamReader(osuPath, Encoding))
@@ -823,7 +830,7 @@ namespace StorybrewEditor.Storyboarding
                                         if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
                                         writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
-                                        foreach (var layer in localLayers) if (layer.OsbLayer == osbLayer && layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
+                                        foreach (var layer in diffSpecific) if (layer.OsbLayer == osbLayer) layer.WriteOsb(writer, ExportSettings);
                                     }
                                     inStoryboard = true;
                                 }
@@ -838,7 +845,7 @@ namespace StorybrewEditor.Storyboarding
                 }
             }
 
-            if (exportOsb)
+            if (exportOsb && sbLayer.Count > 0)
             {
                 Trace.WriteLine($"Exporting osb to {osbPath}");
                 using (var writer = new StreamWriter(osbPath, false))
@@ -851,7 +858,7 @@ namespace StorybrewEditor.Storyboarding
                         if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
                         writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
-                        foreach (var layer in localLayers) if (layer.OsbLayer == osbLayer && !layer.DiffSpecific) layer.WriteOsb(writer, ExportSettings);
+                        foreach (var layer in sbLayer) if (layer.OsbLayer == osbLayer) layer.WriteOsb(writer, ExportSettings);
                     }
                     writer.WriteLine("//Storyboard Sound Samples");
                 }

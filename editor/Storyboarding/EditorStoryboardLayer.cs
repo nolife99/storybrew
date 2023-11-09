@@ -132,7 +132,7 @@ namespace StorybrewEditor.Storyboarding
         }
 
         public void WriteOsb(TextWriter writer, ExportSettings exportSettings) => WriteOsb(writer, exportSettings, osbLayer);
-        public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer) => segment.WriteOsb(writer, exportSettings, osbLayer);
+        public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer) => segment.WriteOsb(writer, exportSettings, layer);
 
         public void CopySettings(EditorStoryboardLayer other, bool copyGuid = false)
         {

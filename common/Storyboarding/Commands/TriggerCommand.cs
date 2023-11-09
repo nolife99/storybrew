@@ -1,6 +1,5 @@
-﻿using BrewLib.Util;
+﻿using StorybrewCommon.Util;
 using System.Linq;
-using System.Text;
 
 namespace StorybrewCommon.Storyboarding.Commands
 {
@@ -26,7 +25,7 @@ namespace StorybrewCommon.Storyboarding.Commands
         {
             var header = new HashCode(HashCode.Combine('T', TriggerName, StartTime, EndTime, Group));
             foreach (var command in commands) header.Add(command);
-            return header.GetHashCode();
+            return header.ToHashCode();
         }
 
         public override bool Equals(object obj) => obj is TriggerCommand loop && Equals(loop);

@@ -13,30 +13,20 @@ namespace BrewLib.Util
 
         public static void LosslessCompress(string path, PngCompressor compressor = null)
         {
-            if (compressor is null) using (compressor = new PngCompressor()) compressor.LosslessCompress(path, new LosslessInputSettings
-            {
-                OptimizationLevel = OptimizationLevel.Level7
-            });
-            else compressor.LosslessCompress(path, new LosslessInputSettings
-            {
-                OptimizationLevel = OptimizationLevel.Level7
-            });
+            var defaultSettings = new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level7 };
+            if (compressor is null) using (compressor = new PngCompressor()) compressor.LosslessCompress(path, defaultSettings);
+            else compressor.LosslessCompress(path, defaultSettings);
         }
-
         public static void Compress(string path, PngCompressor compressor = null)
         {
-            if (compressor is null) using (compressor = new PngCompressor()) compressor.Compress(path, new LossyInputSettings
+            var defaultSettings = new LossyInputSettings
             {
                 Speed = 1,
                 MinQuality = 75,
                 MaxQuality = 100
-            });
-            else compressor.Compress(path, new LossyInputSettings
-            {
-                Speed = 1,
-                MinQuality = 75,
-                MaxQuality = 100
-            });
+            };
+            if (compressor is null) using (compressor = new PngCompressor()) compressor.Compress(path, defaultSettings);
+            else compressor.Compress(path, defaultSettings);
         }
 
         public static PinnedBitmap Premultiply(Bitmap source)
@@ -187,7 +177,7 @@ namespace BrewLib.Util
         {
             if (src is null) throw new ArgumentNullException(nameof(src));
             if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
-                throw new ArgumentOutOfRangeException(nameof(sect) + " has invalid dimensions.");
+                throw new ArgumentOutOfRangeException(nameof(sect), "Invalid dimensions");
 
             if (sect.Size == src.PhysicalDimension && sect.Location == default) return src;
 

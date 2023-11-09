@@ -14,7 +14,7 @@ using System.Linq;
 
 namespace BrewLib.UserInterface
 {
-    public class WidgetManager : InputHandler, IDisposable
+    public sealed class WidgetManager : InputHandler, IDisposable
     {
         public InputManager InputManager { get; }
         public ScreenLayerManager ScreenLayerManager { get; }
@@ -98,6 +98,7 @@ namespace BrewLib.UserInterface
             if (camera != null && InputManager.HasMouseFocus)
             {
                 var fromScreen = camera.FromScreen(InputManager.MousePosition);
+                mousePosition = new Vector2(fromScreen.X, fromScreen.Y);
                 changeHoveredWidget(rootContainer.GetWidgetAt(fromScreen.X, fromScreen.Y));
                 updateHoveredDraggable();
             }
@@ -417,7 +418,7 @@ namespace BrewLib.UserInterface
 
         #region IDisposable Support
 
-        protected virtual void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (disposing)
             {

@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 
 namespace StorybrewEditor.Util
@@ -11,7 +10,7 @@ namespace StorybrewEditor.Util
     {
         internal static HttpClient Client;
 
-        public static void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action)
+        public static void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action = null)
         {
             try
             {
@@ -21,7 +20,7 @@ namespace StorybrewEditor.Util
                 if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
                 else if (File.Exists(cachePath) && File.GetLastWriteTimeUtc(cachePath).AddSeconds(cacheDuration) > DateTime.UtcNow)
                 {
-                    action(File.ReadAllText(cachePath), null);
+                    action?.Invoke(File.ReadAllText(cachePath), null);
                     return;
                 }
 
@@ -29,51 +28,51 @@ namespace StorybrewEditor.Util
 
                 var result = Client.GetStringAsync(url).Result;
                 File.WriteAllText(cachePath, result);
-                action(result, null);
+                action?.Invoke(result, null);
             }
             catch (Exception e)
             {
-                action(null, e);
+                action?.Invoke(null, e);
             }
         }
-        public static void Post(string url, NameValueCollection data, Action<string, Exception> action)
+        public static void Post(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
         {
             try
             {
                 Trace.WriteLine($"Post {url}");
 
-                var content = new FormUrlEncodedContent(data.AllKeys.ToDictionary(k => k, k => data[k]));
+                var content = new FormUrlEncodedContent(data);
                 using (var response = Client.PostAsync(url, content).Result)
                 {
                     response.EnsureSuccessStatusCode();
                     var responseContent = response.Content.ReadAsStringAsync().Result;
-                    action(responseContent, null);
+                    action?.Invoke(responseContent, null);
                 }
             }
             catch (Exception e)
             {
-                action(null, e);
+                action?.Invoke(null, e);
             }
         }
-        public static void BlockingPost(string url, NameValueCollection data, Action<string, Exception> action)
+        public static void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
         {
             try
             {
                 Trace.WriteLine($"Post {url}");
 
-                var content = new FormUrlEncodedContent(data.AllKeys.ToDictionary(k => k, k => data[k]));
+                var content = new FormUrlEncodedContent(data);
                 var response = Client.PostAsync(url, content).Result;
                 response.EnsureSuccessStatusCode();
 
                 var responseContent = response.Content.ReadAsStringAsync().Result;
-                action(responseContent, null);
+                action?.Invoke(responseContent, null);
             }
             catch (Exception e)
             {
-                action(null, e);
+                action?.Invoke(null, e);
             }
         }
-        public static void Download(string url, string filename, Func<float, bool> progressFunc, Action<Exception> completedAction)
+        public static void Download(string url, string filename, Func<float, bool> progressFunc, Action<Exception> completedAction = null)
         {
             try
             {
@@ -117,11 +116,11 @@ namespace StorybrewEditor.Util
                         while (isMoreToRead);
                     }
                 }
-                completedAction(null);
+                completedAction?.Invoke(null);
             }
             catch (Exception e)
             {
-                completedAction(e);
+                completedAction?.Invoke(e);
             }
         }
     }

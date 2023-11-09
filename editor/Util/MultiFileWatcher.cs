@@ -6,7 +6,7 @@ using System.IO;
 
 namespace StorybrewEditor.Util
 {
-    public class MultiFileWatcher : IDisposable
+    public sealed class MultiFileWatcher : IDisposable
     {
         readonly DisposableNativeDictionary<string, FileSystemWatcher> folderWatchers = new DisposableNativeDictionary<string, FileSystemWatcher>(),
             recursiveFolderWatchers = new DisposableNativeDictionary<string, FileSystemWatcher>();
@@ -48,7 +48,6 @@ namespace StorybrewEditor.Util
                     watcher.NotifyFilter = NotifyFilters.Attributes
                         | NotifyFilters.DirectoryName
                         | NotifyFilters.FileName
-                        | NotifyFilters.LastWrite
                         | NotifyFilters.Size;
 
                     watcher.Created += watcher_Changed;
@@ -123,7 +122,7 @@ namespace StorybrewEditor.Util
         #region IDisposable Support
 
         bool disposed;
-        protected virtual void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (!disposed)
             {

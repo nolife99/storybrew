@@ -56,7 +56,7 @@ namespace StorybrewEditor.ScreenLayers
                 if (IsDisposed) return false;
                 progressBar.Value = progress;
                 return true;
-            }, (exception) =>
+            }, exception =>
             {
                 if (IsDisposed) return;
                 if (exception != null)

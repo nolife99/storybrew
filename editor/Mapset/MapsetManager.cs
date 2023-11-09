@@ -61,7 +61,8 @@ namespace StorybrewEditor.Mapset
             fileWatcher = new FileSystemWatcher
             {
                 Path = path,
-                IncludeSubdirectories = true
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.Size
             };
 
             fileWatcher.Created += mapsetFileWatcher_Changed;
@@ -71,10 +72,8 @@ namespace StorybrewEditor.Mapset
             fileWatcher.EnableRaisingEvents = true;
             Trace.WriteLine($"Watching (mapset): {path}");
         }
-        void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath, (key) =>
+        void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath, key =>
         {
-            if (disposed) return;
-
             if (Path.GetExtension(e.Name) == ".osu") Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
             OnFileChanged?.Invoke(sender, e);
         });

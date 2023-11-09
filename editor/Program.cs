@@ -6,7 +6,7 @@ using StorybrewEditor.Processes;
 using StorybrewEditor.Util;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -45,10 +45,12 @@ namespace StorybrewEditor
             NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
 
             if (args.Length != 0 && handleArguments(args)) return;
-            setupLogging(checkFrozen: false);
 
+            setupLogging();
             startEditor();
-            NetHelper.Client.Dispose();
+
+            NetHelper.Client?.Dispose();
+            foreach (TraceListener listener in Trace.Listeners) listener.Dispose();
         }
         static bool handleArguments(string[] args)
         {
@@ -169,7 +171,7 @@ namespace StorybrewEditor
         }
         static void runMainLoop(GameWindow window, Editor editor, double fixedRateUpdateDuration, double targetFrameDuration)
         {
-            double previousTime = 0, fixedRateTime = 0, averageFrameTime = 0, averageActiveTime = 0, longestFrameTime = 0, lastStatTime = 0;
+            double previousTime = 0, fixedRateTime = 0, averageFrame = 0, averageActive = 0, longestFrame = 0, lastStatTime = 0;
             var windowDisplayed = false;
             var watch = Stopwatch.StartNew();
 
@@ -218,15 +220,15 @@ namespace StorybrewEditor
                 var frameTime = currentTime - previousTime;
                 previousTime = currentTime;
 
-                averageFrameTime = (frameTime + averageFrameTime) * .5;
-                averageActiveTime = (activeDuration + averageActiveTime) * .5;
-                longestFrameTime = Math.Max(frameTime, longestFrameTime);
+                averageFrame = (frameTime + averageFrame) / 2;
+                averageActive = (activeDuration + averageActive) / 2;
+                longestFrame = Math.Max(frameTime, longestFrame);
 
                 if (lastStatTime + .2 < currentTime)
                 {
-                    Stats = $"fps:{1 / averageFrameTime:0}/{1 / averageActiveTime:0} (act:{averageActiveTime * 1000:0} avg:{averageFrameTime * 1000:0} hi:{longestFrameTime * 1000:0})";
+                    Stats = $"fps:{1 / averageFrame:f}/{1 / averageActive:f} (act:{averageActive * 1000:f} avg:{averageFrame * 1000:f} hi:{longestFrame * 1000:f})";
 
-                    longestFrameTime = 0;
+                    longestFrame = 0;
                     lastStatTime = currentTime;
                 }
             }
@@ -326,19 +328,17 @@ namespace StorybrewEditor
             var freezePath = Path.Combine(logsPath, commonLogFilename ?? "freeze.log");
 
             if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
-            else
-            {
-                if (File.Exists(tracePath) && new FileInfo(tracePath).Length > 1000000) File.Delete(tracePath);
-                if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
-            }
+            else if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
 
-            Trace.Listeners.Add(new TextWriterTraceListener(new StreamWriter(tracePath, true)));
+            Trace.Listeners.Add(new TextWriterTraceListener(File.CreateText(tracePath), Name));
             Trace.WriteLine($"{FullName}\n");
 
             AppDomain.CurrentDomain.FirstChanceException += (sender, e) => logError(e.Exception, exceptionPath, null, false);
             AppDomain.CurrentDomain.UnhandledException += (sender, e) => logError((Exception)e.ExceptionObject, crashPath, "crash", true);
 
             if (checkFrozen) setupFreezeCheck(e => logError(e, freezePath, null, false));
+
+            Trace.AutoFlush = true;
         }
         static void logError(Exception e, string filename, string reportType, bool show)
         {
@@ -374,18 +374,19 @@ namespace StorybrewEditor
                 }
             }
         }
-        public static void Report(string type, Exception e) => NetHelper.BlockingPost("http://a-damnae.rhcloud.com/storybrew/report.php", new NameValueCollection
+        public static void Report(string type, Exception e) => NetHelper.BlockingPost("http://a-damnae.rhcloud.com/storybrew/report.php", new Dictionary<string, string>
         {
-            ["reporttype"] = type,
-            ["source"] = Settings?.Id ?? "-",
-            ["version"] = Version.ToString(),
-            ["content"] = e.ToString()
-        }, (r, ex) => { });
+            {"reporttype", type},
+            {"source", Settings?.Id ?? "-"},
+            {"version", Version.ToString()},
+            {"content", e.ToString()}
+        });
 
-        readonly static CancellationTokenSource cancel = new CancellationTokenSource();
         static void setupFreezeCheck(Action<Exception> action)
         {
             var mainThread = Thread.CurrentThread;
+
+            var cancel = new CancellationTokenSource();
             var thread = new Thread(() =>
             {
                 var answered = false;
@@ -427,7 +428,6 @@ namespace StorybrewEditor
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
         }
-
 
         #endregion
     }

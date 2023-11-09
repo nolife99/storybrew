@@ -29,7 +29,7 @@ namespace StorybrewCommon.Util
             axis[1] = corners[3] - corners[0];
             for (var a = 0; a < 2; ++a)
             {
-                axis[a] /= Vector2.Dot(axis[a], axis[a]);
+                axis[a] /= axis[a].LengthSquared;
                 origins[a] = Vector2.Dot(corners[0], axis[a]);
             }
         }
