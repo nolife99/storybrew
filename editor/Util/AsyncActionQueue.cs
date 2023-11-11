@@ -8,8 +8,8 @@ namespace StorybrewEditor.Util
 {
     public class AsyncActionQueue<T> : IDisposable
     {
-        readonly ActionQueueContext context = new ActionQueueContext();
-        readonly List<ActionRunner> actionRunners = new List<ActionRunner>();
+        readonly ActionQueueContext context = new();
+        readonly List<ActionRunner> actionRunners = new();
         readonly bool allowDuplicates;
 
         public delegate void ActionFailedEventHandler(T target, Exception e);
@@ -105,8 +105,8 @@ namespace StorybrewEditor.Util
 
         class ActionQueueContext
         {
-            public readonly List<ActionContainer> Queue = new List<ActionContainer>();
-            public readonly HashSet<string> Running = new HashSet<string>();
+            public readonly List<ActionContainer> Queue = new();
+            public readonly HashSet<string> Running = new();
             public bool RunningLoneTask;
 
             public event ActionFailedEventHandler OnActionFailed;
@@ -137,6 +137,9 @@ namespace StorybrewEditor.Util
             readonly ActionQueueContext context;
             readonly string threadName;
 
+            CancellationTokenSource cancellationTokenSource;
+            CancellationToken cancellationToken;
+
             Thread thread;
 
             public ActionRunner(ActionQueueContext context, string threadName)
@@ -147,8 +150,12 @@ namespace StorybrewEditor.Util
 
             public void EnsureThreadAlive()
             {
-                if (thread is null || !thread.IsAlive)
+                if (cancellationTokenSource is null || cancellationTokenSource.IsCancellationRequested)
                 {
+                    cancellationTokenSource?.Dispose();
+                    cancellationTokenSource = new CancellationTokenSource();
+                    cancellationToken = cancellationTokenSource.Token;
+
                     Thread localThread = null;
                     thread = localThread = new Thread(() =>
                     {
@@ -157,7 +164,7 @@ namespace StorybrewEditor.Util
                         {
                             if (mustSleep)
                             {
-                                Thread.Sleep(200);
+                                cancellationToken.WaitHandle.WaitOne(200);
                                 mustSleep = false;
                             }
 
@@ -182,9 +189,7 @@ namespace StorybrewEditor.Util
                                         continue;
                                     }
 
-                                    task = context.Queue.FirstOrDefault(t => !context.Running.Contains(t.UniqueKey)
-                                        && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
-
+                                    task = context.Queue.FirstOrDefault(t => !context.Running.Contains(t.UniqueKey) && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
                                     if (task is null)
                                     {
                                         mustSleep = true;
@@ -217,7 +222,7 @@ namespace StorybrewEditor.Util
                             }
                         }
                     })
-                    { Name = threadName, IsBackground = true, };
+                    { Name = threadName, IsBackground = true };
 
                     Trace.WriteLine($"Starting thread {thread.Name}.");
                     thread.Start();
@@ -236,7 +241,8 @@ namespace StorybrewEditor.Util
                 if (!localThread.Join(millisecondsTimeout))
                 {
                     Trace.WriteLine($"Aborting thread {localThread.Name}.");
-                    localThread.Abort();
+                    cancellationTokenSource?.Cancel();
+                    cancellationTokenSource?.Dispose();
                 }
             }
         }

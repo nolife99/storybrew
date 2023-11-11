@@ -4,14 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Security;
-using System.Security.Permissions;
+using System.Runtime.Loader;
 
 namespace StorybrewEditor.Scripting
 {
     public class ScriptContainerAppDomain<TScript> : ScriptContainerBase<TScript> where TScript : Script
     {
-        AppDomain appDomain;
+        AssemblyLoadContext context;
 
         public ScriptContainerAppDomain(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
             : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) { }
@@ -25,42 +24,30 @@ namespace StorybrewEditor.Scripting
                 var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount)}.dll";
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
-                var setup = new AppDomainSetup
-                {
-                    ApplicationName = $"{Name} {Id}",
-                    ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
-                    DisallowCodeDownload = true,
-                    DisallowPublisherPolicy = true,
-                    DisallowBindingRedirects = true
-                };
+                Debug.Print($"{nameof(Scripting)}: Loading domain {$"{Name} {Id}"}");
+                var scriptContext = new AssemblyLoadContext($"{Name} {Id}", true);
 
-                Debug.Print($"{nameof(Scripting)}: Loading domain {setup.ApplicationName}");
-                var scriptDomain = AppDomain.CreateDomain(setup.ApplicationName, null, setup, new PermissionSet(PermissionState.Unrestricted));
-
-                ScriptProvider<TScript> scriptProvider;
+                IProvider<TScript> scriptProvider;
                 try
                 {
-                    var scriptProviderHandle = Activator.CreateInstanceFrom(scriptDomain,
-                        typeof(ScriptProvider<TScript>).Assembly.ManifestModule.FullyQualifiedName,
-                        typeof(ScriptProvider<TScript>).FullName);
-
-                    scriptProvider = (ScriptProvider<TScript>)scriptProviderHandle.Unwrap();
+                    var assembly = scriptContext.LoadFromAssemblyName(typeof(ScriptProvider<TScript>).Assembly.GetName());
+                    scriptProvider = (IProvider<TScript>)assembly.CreateInstance(typeof(ScriptProvider<TScript>).FullName);
                     scriptProvider.Initialize(assemblyPath, ScriptTypeName);
                 }
                 catch
                 {
-                    AppDomain.Unload(scriptDomain);
+                    scriptContext.Unload();
                     throw;
                 }
 
-                if (appDomain != null)
+                if (context != null)
                 {
-                    Debug.Print($"{nameof(Scripting)}: Unloading domain {appDomain.FriendlyName}");
-                    AppDomain.Unload(appDomain);
+                    Debug.Print($"{nameof(Scripting)}: Unloading domain {$"{Name} {Id}"}");
+                    scriptContext.Unload();
                 }
-                appDomain = scriptDomain;
+                context = scriptContext;
 
-                return scriptProvider;
+                return (ScriptProvider<TScript>)scriptProvider;
             }
             catch (ScriptCompilationException)
             {
@@ -79,15 +66,11 @@ namespace StorybrewEditor.Scripting
         {
             if (!disposed)
             {
-                if (appDomain != null) AppDomain.Unload(appDomain);
-                appDomain = null;
-
-                foreach (var item in Directory.GetFiles(CompiledScriptsPath))
-                try
+                if (context != null)
                 {
-                    File.Delete(item);
+                    context.Unload();
+                    context = null;
                 }
-                catch (UnauthorizedAccessException) { }
 
                 disposed = true;
             }

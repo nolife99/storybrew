@@ -5,7 +5,7 @@ namespace BrewLib.Util
 {
     public static class DateTimeExtensions
     {
-        static readonly Dictionary<long, string> thresholds = new Dictionary<long, string>()
+        static readonly Dictionary<long, string> thresholds = new()
         {
             [60] = "{0} seconds ago",
             [120] = "a minute ago",

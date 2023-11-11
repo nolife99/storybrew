@@ -5,7 +5,7 @@ namespace StorybrewCommon.Storyboarding
 #pragma warning disable CS1591
     public class ExportSettings
     {
-        public static readonly ExportSettings Default = new ExportSettings();
+        public static readonly ExportSettings Default = new();
 
         public bool UseFloatForMove = true;
         public bool UseFloatForTime;

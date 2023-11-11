@@ -30,7 +30,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => left.value + right.value;
         public static bool operator ==(CommandDecimal left, CommandDecimal right) => left.Equals(right);
         public static bool operator !=(CommandDecimal left, CommandDecimal right) => !left.Equals(right);
-        public static implicit operator CommandDecimal(double value) => new CommandDecimal(value);
+        public static implicit operator CommandDecimal(double value) => new(value);
         public static implicit operator double(CommandDecimal obj) => obj.value;
         public static implicit operator float(CommandDecimal obj) => (float)obj.value;
     }

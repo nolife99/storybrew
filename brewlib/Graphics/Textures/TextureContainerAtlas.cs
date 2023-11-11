@@ -12,8 +12,8 @@ namespace BrewLib.Graphics.Textures
         readonly int width, height, padding;
         readonly string description;
 
-        Dictionary<string, Texture2dRegion> textures = new Dictionary<string, Texture2dRegion>();
-        readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = new Dictionary<TextureOptions, TextureMultiAtlas2d>();
+        Dictionary<string, Texture2dRegion> textures = new();
+        readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = new();
 
         public IEnumerable<string> ResourceNames => textures.Where(e => e.Value != null).Select(e => e.Key);
         public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;

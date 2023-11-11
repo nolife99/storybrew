@@ -7,7 +7,7 @@ namespace StorybrewCommon.Mapset
     [Serializable] public class ControlPoint : IComparable<ControlPoint>
     {
         ///<summary> Returns a control point with default values. </summary>
-        public static readonly ControlPoint Default = new ControlPoint();
+        public static readonly ControlPoint Default = new();
 
         ///<summary> The offset, or time, of this control point. </summary>
         public double Offset;

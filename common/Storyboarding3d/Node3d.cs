@@ -7,25 +7,25 @@ namespace StorybrewCommon.Storyboarding3d
     public class Node3d : Object3d
     {
         ///<summary> Represents the node's X-position in the 3D world. </summary>
-        public readonly KeyframedValue<double> PositionX = new KeyframedValue<double>(InterpolatingFunctions.Double);
+        public readonly KeyframedValue<double> PositionX = new(InterpolatingFunctions.Double);
 
         ///<summary> Represents the node's Y-position in the 3D world. </summary>
-        public readonly KeyframedValue<double> PositionY = new KeyframedValue<double>(InterpolatingFunctions.Double);
+        public readonly KeyframedValue<double> PositionY = new(InterpolatingFunctions.Double);
 
         ///<summary> Represents the node's Z-position in the 3D world. </summary>
-        public readonly KeyframedValue<double> PositionZ = new KeyframedValue<double>(InterpolatingFunctions.Double);
+        public readonly KeyframedValue<double> PositionZ = new(InterpolatingFunctions.Double);
 
         ///<summary> Represents the node's relative X-scale of children objects. </summary>
-        public readonly KeyframedValue<double> ScaleX = new KeyframedValue<double>(InterpolatingFunctions.Double, 1);
+        public readonly KeyframedValue<double> ScaleX = new(InterpolatingFunctions.Double, 1);
 
         ///<summary> Represents the node's relative Y-scale of children objects. </summary>
-        public readonly KeyframedValue<double> ScaleY = new KeyframedValue<double>(InterpolatingFunctions.Double, 1);
+        public readonly KeyframedValue<double> ScaleY = new(InterpolatingFunctions.Double, 1);
 
         ///<summary> Represents the node's relative Z-scale of children objects. </summary>
-        public readonly KeyframedValue<double> ScaleZ = new KeyframedValue<double>(InterpolatingFunctions.Double, 1);
+        public readonly KeyframedValue<double> ScaleZ = new(InterpolatingFunctions.Double, 1);
 
         ///<summary> Represents the node's quaternion rotation about the origin. </summary>
-        public readonly KeyframedValue<Quaternion> Rotation = new KeyframedValue<Quaternion>(InterpolatingFunctions.QuaternionSlerp, Quaternion.Identity);
+        public readonly KeyframedValue<Quaternion> Rotation = new(InterpolatingFunctions.QuaternionSlerp, Quaternion.Identity);
 
         ///<inheritdoc/>
         public override Matrix4x4 WorldTransformAt(double time) 

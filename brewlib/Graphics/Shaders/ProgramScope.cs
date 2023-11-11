@@ -6,8 +6,8 @@ namespace BrewLib.Graphics.Shaders
 {
     public class ProgramScope
     {
-        readonly List<ShaderType> types = new List<ShaderType>();
-        readonly List<ShaderVariable> varyings = new List<ShaderVariable>(), uniforms = new List<ShaderVariable>();
+        readonly List<ShaderType> types = new();
+        readonly List<ShaderVariable> varyings = new(), uniforms = new();
 
         int lastId;
         string nextGenericTypeName => $"t_{lastId++:000}";

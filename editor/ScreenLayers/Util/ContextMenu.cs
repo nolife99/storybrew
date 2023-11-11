@@ -10,7 +10,7 @@ namespace StorybrewEditor.ScreenLayers
     {
         readonly string title;
         readonly Action<T> callback;
-        readonly List<Option> options = new List<Option>();
+        readonly List<Option> options = new();
 
         LinearLayout mainLayout, optionsLayout;
         Textbox searchTextbox;

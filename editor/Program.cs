@@ -239,7 +239,7 @@ namespace StorybrewEditor
         #region Scheduling
 
         public static bool SchedulingEnabled { get; set; }
-        static readonly ConcurrentQueue<Action> scheduledActions = new ConcurrentQueue<Action>();
+        static readonly ConcurrentQueue<Action> scheduledActions = new();
 
         public static void enableScheduling() => SchedulingEnabled = true;
 
@@ -316,7 +316,7 @@ namespace StorybrewEditor
 
         public const string DefaultLogPath = "logs";
 
-        static readonly object errorHandlerLock = new object();
+        static readonly object errorHandlerLock = new();
         static volatile bool insideErrorHandler;
 
         static void setupLogging(string logsPath = null, string commonLogFilename = null, bool checkFrozen = false)
@@ -361,7 +361,7 @@ namespace StorybrewEditor
                     if (show)
                     {
                         var result = MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButtons.OKCancel);
-                        if (result == DialogResult.OK) Process.Start(DiscordUrl);
+                        if (result == DialogResult.OK) NetHelper.OpenUrl(DiscordUrl);
                     }
                 }
                 catch (Exception e2)
@@ -411,7 +411,7 @@ namespace StorybrewEditor
 
                         try
                         {
-                            var trace = new StackTrace(mainThread, true);
+                            var trace = new StackTrace(true);
                             action(new ThreadStateException(trace.ToString()));
                         }
                         catch (ThreadStateException e)

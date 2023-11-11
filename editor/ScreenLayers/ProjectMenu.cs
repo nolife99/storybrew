@@ -333,13 +333,13 @@ namespace StorybrewEditor.ScreenLayers
             projFolderB.OnClick += (sender, e) =>
             {
                 var path = Path.GetFullPath(proj.ProjectFolderPath);
-                if (Directory.Exists(path)) Process.Start(path);
+                if (Directory.Exists(path)) PathHelper.OpenExplorer(path);
             };
             mapFolderB.OnClick += (sender, e) =>
             {
                 var path = Path.GetFullPath(proj.MapsetPath);
                 if (e == MouseButton.Right || !Directory.Exists(path)) changeMapsetFolder();
-                else Process.Start(path);
+                else PathHelper.OpenExplorer(path);
             };
             saveB.OnClick += (sender, e) => saveProject();
             exportB.OnClick += (sender, e) =>

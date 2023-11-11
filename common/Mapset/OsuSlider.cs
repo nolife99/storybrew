@@ -307,7 +307,7 @@ namespace StorybrewCommon.Mapset
 
         public OsuSliderControlPoint(CommandPosition position) => PlayfieldPosition = position;
 
-        public static implicit operator OsuSliderControlPoint(CommandPosition position) => new OsuSliderControlPoint(position);
+        public static implicit operator OsuSliderControlPoint(CommandPosition position) => new(position);
     }
     public enum SliderCurveType
     {

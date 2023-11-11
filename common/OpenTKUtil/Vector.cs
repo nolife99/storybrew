@@ -68,22 +68,22 @@ namespace StorybrewCommon.OpenTKUtil
         public float EuclideanLength => (float)Math.Sqrt(X * X + Y * Y);
 
         ///<summary> Gets the perpendicular vector on the right side of this vector. </summary>
-        public Vector2i PerpendicularRight => new Vector2i(Y, -X);
+        public Vector2i PerpendicularRight => new(Y, -X);
 
         ///<summary> Gets the perpendicular vector on the left side of this vector. </summary>
-        public Vector2i PerpendicularLeft => new Vector2i(-Y, X);
+        public Vector2i PerpendicularLeft => new(-Y, X);
 
         ///<summary> Defines a unit-length <see cref="Vector2i"/> that points towards the X-axis. </summary>
-        public static readonly Vector2i UnitX = new Vector2i(1, 0);
+        public static readonly Vector2i UnitX = new(1, 0);
 
         ///<summary> Defines a unit-length <see cref="Vector2i"/> that points towards the Y-axis. </summary>
-        public static readonly Vector2i UnitY = new Vector2i(0, 1);
+        public static readonly Vector2i UnitY = new(0, 1);
 
         ///<summary> Defines an instance with all components set to 0. </summary>
-        public static readonly Vector2i Zero = new Vector2i(0, 0);
+        public static readonly Vector2i Zero = new(0, 0);
 
         ///<summary> Defines an instance with all components set to 1. </summary>
-        public static readonly Vector2i One = new Vector2i(1, 1);
+        public static readonly Vector2i One = new(1, 1);
 
         ///<summary> Adds two vectors. </summary>
         ///<param name="a">Left operand.</param>
@@ -275,7 +275,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Y and X components of this instance. </summary>
         [XmlIgnore] public Vector2i Yx
         {
-            get => new Vector2i(Y, X);
+            get => new(Y, X);
             set
             {
                 Y = value.X;
@@ -285,7 +285,7 @@ namespace StorybrewCommon.OpenTKUtil
 
         ///<summary> Gets a <see cref="Vector2"/> object with the same component values as the <see cref="Vector2i"/> instance. </summary>
         ///<returns>The resulting <see cref="Vector3"/> instance.</returns>
-        public Vector2 ToVector2() => new Vector2(X, Y);
+        public Vector2 ToVector2() => new(X, Y);
 
         ///<summary> Gets a <see cref="Vector2"/> object with the same component values as the <see cref="Vector2i"/> instance. </summary>
         ///<param name="input">The given <see cref="Vector2i"/> to convert.</param>
@@ -364,13 +364,13 @@ namespace StorybrewCommon.OpenTKUtil
         [Pure] public static implicit operator Vector2(Vector2i vec) => vec.ToVector2();
 
         ///<summary/>
-        [Pure] public static implicit operator Vector2d(Vector2i vec) => new Vector2d(vec.X, vec.Y);
+        [Pure] public static implicit operator Vector2d(Vector2i vec) => new(vec.X, vec.Y);
 
         ///<summary/>
-        [Pure] public static explicit operator Vector2h(Vector2i vec) => new Vector2h(vec.X, vec.Y);
+        [Pure] public static explicit operator Vector2h(Vector2i vec) => new(vec.X, vec.Y);
 
         ///<summary/>
-        [Pure] public static implicit operator Vector2i((int X, int Y) values) => new Vector2i(values.X, values.Y);
+        [Pure] public static implicit operator Vector2i((int X, int Y) values) => new(values.X, values.Y);
 
         ///<inheritdoc/>
         public override bool Equals(object obj) => obj is Vector2i i && Equals(i);
@@ -479,19 +479,19 @@ namespace StorybrewCommon.OpenTKUtil
         public float EuclideanLength => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
 
         ///<summary> Defines a unit-length Vector3i that points towards the X-axis. </summary>
-        public static readonly Vector3i UnitX = new Vector3i(1, 0, 0);
+        public static readonly Vector3i UnitX = new(1, 0, 0);
 
         ///<summary> Defines a unit-length Vector3i that points towards the Y-axis. </summary>
-        public static readonly Vector3i UnitY = new Vector3i(0, 1, 0);
+        public static readonly Vector3i UnitY = new(0, 1, 0);
 
         ///<summary> Defines a unit-length Vector3i that points towards the Z-axis. </summary>
-        public static readonly Vector3i UnitZ = new Vector3i(0, 0, 1);
+        public static readonly Vector3i UnitZ = new(0, 0, 1);
 
         ///<summary> Defines an instance with all components set to 0. </summary>
-        public static readonly Vector3i Zero = new Vector3i(0, 0, 0);
+        public static readonly Vector3i Zero = new(0, 0, 0);
 
         ///<summary> Defines an instance with all components set to 1. </summary>
-        public static readonly Vector3i One = new Vector3i(1, 1, 1);
+        public static readonly Vector3i One = new(1, 1, 1);
 
         ///<summary> Adds two vectors. </summary>
         ///<param name="a">Left operand.</param>
@@ -696,7 +696,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the X and Y components of this instance. </summary>
         [XmlIgnore] public Vector2i Xy
         {
-            get => new Vector2i(X, Y);
+            get => new(X, Y);
             set
             {
                 X = value.X;
@@ -707,7 +707,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the X and Z components of this instance. </summary>
         [XmlIgnore] public Vector2i Xz
         {
-            get => new Vector2i(X, Z);
+            get => new(X, Z);
             set
             {
                 X = value.X;
@@ -718,7 +718,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Y and X components of this instance. </summary>
         [XmlIgnore] public Vector2i Yx
         {
-            get => new Vector2i(Y, X);
+            get => new(Y, X);
             set
             {
                 Y = value.X;
@@ -729,7 +729,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Y and Z components of this instance. </summary>
         [XmlIgnore] public Vector2i Yz
         {
-            get => new Vector2i(Y, Z);
+            get => new(Y, Z);
             set
             {
                 Y = value.X;
@@ -740,7 +740,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Z and X components of this instance. </summary>
         [XmlIgnore] public Vector2i Zx
         {
-            get => new Vector2i(Z, X);
+            get => new(Z, X);
             set
             {
                 Z = value.X;
@@ -751,7 +751,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Z and Y components of this instance. </summary>
         [XmlIgnore] public Vector2i Zy
         {
-            get => new Vector2i(Z, Y);
+            get => new(Z, Y);
             set
             {
                 Z = value.X;
@@ -762,7 +762,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the X, Z, and Y components of this instance. </summary>
         [XmlIgnore] public Vector3i Xzy
         {
-            get => new Vector3i(X, Z, Y);
+            get => new(X, Z, Y);
             set
             {
                 X = value.X;
@@ -774,7 +774,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Y, X, and Z components of this instance. </summary>
         [XmlIgnore] public Vector3i Yxz
         {
-            get => new Vector3i(Y, X, Z);
+            get => new(Y, X, Z);
             set
             {
                 Y = value.X;
@@ -786,7 +786,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Y, Z, and X components of this instance. </summary>
         [XmlIgnore] public Vector3i Yzx
         {
-            get => new Vector3i(Y, Z, X);
+            get => new(Y, Z, X);
             set
             {
                 Y = value.X;
@@ -798,7 +798,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Z, X, and Y components of this instance. </summary>
         [XmlIgnore] public Vector3i Zxy
         {
-            get => new Vector3i(Z, X, Y);
+            get => new(Z, X, Y);
             set
             {
                 Z = value.X;
@@ -810,7 +810,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Z, Y, and X components of this instance. </summary>
         [XmlIgnore] public Vector3i Zyx
         {
-            get => new Vector3i(Z, Y, X);
+            get => new(Z, Y, X);
             set
             {
                 Z = value.X;
@@ -821,7 +821,7 @@ namespace StorybrewCommon.OpenTKUtil
 
         ///<summary> Gets a <see cref="Vector3"/> object with the same component values as the <see cref="Vector3i"/> instance. </summary>
         ///<returns>The resulting <see cref="Vector3"/> instance.</returns>
-        public Vector3 ToVector3() => new Vector3(X, Y, Z);
+        public Vector3 ToVector3() => new(X, Y, Z);
 
         ///<summary> Gets a <see cref="Vector3"/> object with the same component values as the <see cref="Vector3i"/> instance. </summary>
         ///<param name="input">The given <see cref="Vector3i"/> to convert.</param>
@@ -899,16 +899,16 @@ namespace StorybrewCommon.OpenTKUtil
         public static bool operator !=(Vector3i left, Vector3i right) => !(left == right);
 
         ///<summary/>
-        [Pure] public static implicit operator Vector3(Vector3i vec) => new Vector3(vec.X, vec.Y, vec.Z);
+        [Pure] public static implicit operator Vector3(Vector3i vec) => new(vec.X, vec.Y, vec.Z);
 
         ///<summary/>
-        [Pure] public static implicit operator Vector3d(Vector3i vec) => new Vector3d(vec.X, vec.Y, vec.Z);
+        [Pure] public static implicit operator Vector3d(Vector3i vec) => new(vec.X, vec.Y, vec.Z);
 
         ///<summary/>
-        [Pure] public static explicit operator Vector3h(Vector3i vec) => new Vector3h(vec.X, vec.Y, vec.Z);
+        [Pure] public static explicit operator Vector3h(Vector3i vec) => new(vec.X, vec.Y, vec.Z);
 
         ///<summary/>
-        [Pure] public static implicit operator Vector3i((int X, int Y, int Z) values) => new Vector3i(values.X, values.Y, values.Z);
+        [Pure] public static implicit operator Vector3i((int X, int Y, int Z) values) => new(values.X, values.Y, values.Z);
 
         ///<inheritdoc/>
         public override bool Equals(object obj) => obj is Vector3i i && Equals(i);

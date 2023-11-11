@@ -10,9 +10,9 @@ namespace BrewLib.UserInterface
 {
     public class Label : Widget
     {
-        TextDrawable textDrawable = new TextDrawable();
+        TextDrawable textDrawable = new();
 
-        public override Vector2 MinSize => new Vector2(0, PreferredSize.Y);
+        public override Vector2 MinSize => new(0, PreferredSize.Y);
         public override Vector2 PreferredSize => textDrawable.Size;
 
         public string Text

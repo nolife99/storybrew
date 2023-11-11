@@ -30,7 +30,7 @@ namespace StorybrewEditor
             }
 
             Trace.WriteLine($"\nOpening {appDirectory}");
-            Process.Start(appDirectory);
+            PathHelper.OpenExplorer(appDirectory);
         }
         static void buildReleaseZip(string archiveName, string appDirectory)
         {

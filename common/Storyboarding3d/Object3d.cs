@@ -13,13 +13,13 @@ namespace StorybrewCommon.Storyboarding3d
     ///<summary> Represents a basic 3D object. </summary>
     public class Object3d
     {
-        readonly List<Object3d> children = new List<Object3d>();
+        readonly List<Object3d> children = new();
 
         ///<summary> A keyframed value representing this instance's color keyframes. </summary>
-        public readonly KeyframedValue<CommandColor> Coloring = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor, CommandColor.White);
+        public readonly KeyframedValue<CommandColor> Coloring = new(InterpolatingFunctions.CommandColor, CommandColor.White);
 
         ///<summary> A keyframed value representing this instance's opacity/fade keyframes. </summary>
-        public readonly KeyframedValue<float> Opacity = new KeyframedValue<float>(InterpolatingFunctions.Float, 1);
+        public readonly KeyframedValue<float> Opacity = new(InterpolatingFunctions.Float, 1);
 
         ///<summary> Represents the instance's segment. </summary>
         public StoryboardSegment Segment;
@@ -119,7 +119,7 @@ namespace StorybrewCommon.Storyboarding3d
 #pragma warning disable CS1591
     public class Object3dState
     {
-        public static readonly Object3dState InitialState = new Object3dState(Matrix4x4.Identity, CommandColor.White, 1);
+        public static readonly Object3dState InitialState = new(Matrix4x4.Identity, CommandColor.White, 1);
         public readonly Matrix4x4 WorldTransform;
         public readonly CommandColor Color;
         public readonly float Opacity;

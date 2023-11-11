@@ -17,9 +17,9 @@ namespace StorybrewCommon.Storyboarding
     public class OsbSprite : StoryboardObject
     {
         ///<summary> Default position of sprites, unless modified elsewhere. </summary>
-        public static readonly CommandPosition DefaultPosition = new CommandPosition(320, 240);
+        public static readonly CommandPosition DefaultPosition = new(320, 240);
 
-        readonly HashSet<ICommand> commands = new HashSet<ICommand>();
+        readonly HashSet<ICommand> commands = new();
         CommandGroup currentCommandGroup;
 
         ///<returns> True if the sprite is in a command group, else returns false. </returns>
@@ -701,18 +701,18 @@ namespace StorybrewCommon.Storyboarding
 
         #region Display 
 
-        readonly List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>> displayValueBuilders = new List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>>();
-        readonly AnimatedValue<CommandPosition> moveTimeline = new AnimatedValue<CommandPosition>();
-        readonly AnimatedValue<CommandDecimal> moveXTimeline = new AnimatedValue<CommandDecimal>();
-        readonly AnimatedValue<CommandDecimal> moveYTimeline = new AnimatedValue<CommandDecimal>();
-        readonly AnimatedValue<CommandDecimal> scaleTimeline = new AnimatedValue<CommandDecimal>(1);
-        readonly AnimatedValue<CommandScale> scaleVecTimeline = new AnimatedValue<CommandScale>(Vector2.One);
-        readonly AnimatedValue<CommandDecimal> rotateTimeline = new AnimatedValue<CommandDecimal>();
-        readonly AnimatedValue<CommandDecimal> fadeTimeline = new AnimatedValue<CommandDecimal>(1);
-        readonly AnimatedValue<CommandColor> colorTimeline = new AnimatedValue<CommandColor>(CommandColor.White);
-        readonly AnimatedValue<CommandParameter> additiveTimeline = new AnimatedValue<CommandParameter>(CommandParameter.None);
-        readonly AnimatedValue<CommandParameter> flipHTimeline = new AnimatedValue<CommandParameter>(CommandParameter.None);
-        readonly AnimatedValue<CommandParameter> flipVTimeline = new AnimatedValue<CommandParameter>(CommandParameter.None);
+        readonly List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>> displayValueBuilders = new();
+        readonly AnimatedValue<CommandPosition> moveTimeline = new();
+        readonly AnimatedValue<CommandDecimal> moveXTimeline = new();
+        readonly AnimatedValue<CommandDecimal> moveYTimeline = new();
+        readonly AnimatedValue<CommandDecimal> scaleTimeline = new(1);
+        readonly AnimatedValue<CommandScale> scaleVecTimeline = new(Vector2.One);
+        readonly AnimatedValue<CommandDecimal> rotateTimeline = new();
+        readonly AnimatedValue<CommandDecimal> fadeTimeline = new(1);
+        readonly AnimatedValue<CommandColor> colorTimeline = new(CommandColor.White);
+        readonly AnimatedValue<CommandParameter> additiveTimeline = new(CommandParameter.None);
+        readonly AnimatedValue<CommandParameter> flipHTimeline = new(CommandParameter.None);
+        readonly AnimatedValue<CommandParameter> flipVTimeline = new(CommandParameter.None);
 
         ///<summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
         ///<param name="time"> Time to retrieve the information at. </param>

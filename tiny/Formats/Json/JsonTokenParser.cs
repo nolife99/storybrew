@@ -24,7 +24,7 @@ namespace Tiny.Formats.Json
 
         class ObjectParser : Parser<JsonTokenType>
         {
-            readonly TinyObject result = new TinyObject();
+            readonly TinyObject result = new();
             bool expectingSeparator;
 
             public ObjectParser(Action<TinyToken> callback) : base(callback, 0) => callback(result);
@@ -78,7 +78,7 @@ namespace Tiny.Formats.Json
 
         class ArrayParser : Parser<JsonTokenType>
         {
-            readonly TinyArray result = new TinyArray();
+            readonly TinyArray result = new();
             bool expectingSeparator;
 
             public ArrayParser(Action<TinyToken> callback) : base(callback, 0) => callback(result);
@@ -112,9 +112,9 @@ namespace Tiny.Formats.Json
 
         class ValueParser : Parser<JsonTokenType>
         {
-            static readonly Regex floatRegex = new Regex("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-                integerRegex = new Regex("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-                boolRegex = new Regex($"^{bool.TrueString}|{bool.FalseString}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                boolRegex = new($"^{bool.TrueString}|{bool.FalseString}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
             public ValueParser(Action<TinyToken> callback) : base(callback, 0) { }
 

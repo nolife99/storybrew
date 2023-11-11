@@ -18,9 +18,9 @@ namespace StorybrewEditor.UserInterface
         readonly Slider hueSlider, saturationSlider, brightnessSlider, alphaSlider;
         readonly Textbox htmlTextbox;
 
-        public override Vector2 MinSize => new Vector2(layout.MinSize.X, layout.MinSize.Y + previewHeight);
+        public override Vector2 MinSize => new(layout.MinSize.X, layout.MinSize.Y + previewHeight);
         public override Vector2 MaxSize => Vector2.Zero;
-        public override Vector2 PreferredSize => new Vector2(layout.PreferredSize.X, layout.PreferredSize.Y + previewHeight);
+        public override Vector2 PreferredSize => new(layout.PreferredSize.X, layout.PreferredSize.Y + previewHeight);
 
         Color4 value;
         public Color4 Value

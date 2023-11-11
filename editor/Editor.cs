@@ -26,7 +26,7 @@ namespace StorybrewEditor
         public GameWindow Window { get; }
         public readonly FormsWindow FormsWindow;
 
-        readonly FrameClock clock = new FrameClock();
+        readonly FrameClock clock = new();
         public FrameTimeSource TimeSource => clock;
 
         public bool IsFixedRateUpdate { get; set; }

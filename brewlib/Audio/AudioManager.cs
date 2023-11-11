@@ -7,7 +7,7 @@ namespace BrewLib.Audio
 {
     public class AudioManager : IDisposable
     {
-        readonly List<AudioChannel> audioChannels = new List<AudioChannel>();
+        readonly List<AudioChannel> audioChannels = new();
 
         float volume = 1;
         public float Volume
@@ -61,7 +61,7 @@ namespace BrewLib.Audio
         }
 
         public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null)
-            => new AudioSample(this, path, resourceContainer);
+            => new(this, path, resourceContainer);
 
         internal void RegisterChannel(AudioChannel channel) => audioChannels.Add(channel);
         internal void UnregisterChannel(AudioChannel channel) => audioChannels.Remove(channel);

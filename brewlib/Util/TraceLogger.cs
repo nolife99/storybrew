@@ -6,7 +6,7 @@ namespace BrewLib.Util
     public class TraceLogger : TraceListener
     {
         readonly string path;
-        static readonly object logLock = new object();
+        static readonly object logLock = new();
 
         public TraceLogger(string path)
         {

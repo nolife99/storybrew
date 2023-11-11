@@ -11,7 +11,7 @@ namespace StorybrewEditor.Storyboarding
 {
     public class LayerManager
     {
-        readonly List<EditorStoryboardLayer> layers = new List<EditorStoryboardLayer>();
+        readonly List<EditorStoryboardLayer> layers = new();
 
         public int LayersCount => layers.Count;
         public IEnumerable<EditorStoryboardLayer> Layers => layers;

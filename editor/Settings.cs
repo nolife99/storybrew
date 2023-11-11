@@ -13,11 +13,11 @@ namespace StorybrewEditor
     {
         public const string DefaultPath = "settings.cfg";
 
-        public readonly Setting<string> Id = new Setting<string>(Guid.NewGuid().ToString("N")), TimeCopyFormat = new Setting<string>(@"h\:mm\:ss\.ff");
-        public readonly Setting<int> FrameRate = new Setting<int>(0), UpdateRate = new Setting<int>(60), EffectThreads = new Setting<int>(0);
-        public readonly Setting<float> Volume = new Setting<float>(.5f);
-        public readonly Setting<bool> FitStoryboard = new Setting<bool>(false), ShowStats = new Setting<bool>(true),
-            VerboseVsCode = new Setting<bool>(false), UseRoslyn = new Setting<bool>(false);
+        public readonly Setting<string> Id = new(Guid.NewGuid().ToString("N")), TimeCopyFormat = new(@"h\:mm\:ss\.ff");
+        public readonly Setting<int> FrameRate = new(0), UpdateRate = new(60), EffectThreads = new(0);
+        public readonly Setting<float> Volume = new(.5f);
+        public readonly Setting<bool> FitStoryboard = new(false), ShowStats = new(true),
+            VerboseVsCode = new(false), UseRoslyn = new(false);
 
         readonly string path;
 

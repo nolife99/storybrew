@@ -7,7 +7,7 @@ namespace BrewLib.Graphics.Textures
 {
     public class TextureMultiAtlas2d : IDisposable
     {
-        Stack<TextureAtlas2d> atlases = new Stack<TextureAtlas2d>();
+        Stack<TextureAtlas2d> atlases = new();
         List<Texture2d> oversizeTextures;
 
         readonly int width, height, padding;

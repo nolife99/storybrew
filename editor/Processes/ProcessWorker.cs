@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Text.Json;
 using System.Threading;
 
 namespace StorybrewEditor.Processes
@@ -19,17 +20,15 @@ namespace StorybrewEditor.Processes
 
                 try
                 {
-                    var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-
                     while (!exit)
                     {
                         pipeServer.WaitForConnection();
                         var remoteProcessWorker = new RemoteProcessWorker();
                         var stream = pipeServer;
-                        remoteProcessWorker = (RemoteProcessWorker)formatter.Deserialize(stream);
+                        remoteProcessWorker = (RemoteProcessWorker)JsonSerializer.Deserialize(stream, typeof(RemoteProcessWorker));
 
                         stream.Position = 0;
-                        formatter.Serialize(stream, remoteProcessWorker);
+                        JsonSerializer.Serialize(stream, remoteProcessWorker);
 
                         pipeServer.Disconnect();
                         Program.RunScheduledTasks();

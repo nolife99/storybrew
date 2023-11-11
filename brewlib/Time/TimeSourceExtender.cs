@@ -4,7 +4,7 @@ namespace BrewLib.Time
 {
     public class TimeSourceExtender : TimeSource
     {
-        readonly Clock clock = new Clock();
+        readonly Clock clock = new();
         readonly TimeSource timeSource;
 
         public double Current => timeSource.Playing ? timeSource.Current : clock.Current;

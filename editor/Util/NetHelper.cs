@@ -3,12 +3,37 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 
 namespace StorybrewEditor.Util
 {
     public static class NetHelper
     {
         internal static HttpClient Client;
+
+        public static void OpenUrl(string url)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                url = url.Replace("&", "^&");
+                Process.Start(new ProcessStartInfo(url)
+                {
+                    UseShellExecute = true
+                });
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Process.Start("xdg-open", url);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Process.Start("open", url);
+            }
+            else
+            {
+                Process.Start(url);
+            }
+        }
 
         public static void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action = null)
         {

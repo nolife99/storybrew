@@ -6,7 +6,7 @@ namespace BrewLib.Graphics.Cameras
 {
     public class CameraOrtho : CameraBase
     {
-        public static CameraOrtho Default = new CameraOrtho();
+        public static CameraOrtho Default = new();
         readonly bool yDown;
 
         int virtualWidth;

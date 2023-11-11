@@ -15,29 +15,29 @@ namespace StorybrewCommon.Storyboarding.Util
     public class CommandGenerator
     {
         readonly KeyframedValue<CommandPosition>
-            positions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Position),
-            finalPositions = new KeyframedValue<CommandPosition>(InterpolatingFunctions.Position);
+            positions = new(InterpolatingFunctions.Position),
+            finalPositions = new(InterpolatingFunctions.Position);
 
         readonly KeyframedValue<CommandScale>
-            scales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale),
-            finalScales = new KeyframedValue<CommandScale>(InterpolatingFunctions.Scale);
+            scales = new(InterpolatingFunctions.Scale),
+            finalScales = new(InterpolatingFunctions.Scale);
 
         readonly KeyframedValue<double>
-            rotations = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle),
-            fades = new KeyframedValue<double>(InterpolatingFunctions.Double),
-            finalRotations = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle),
-            finalfades = new KeyframedValue<double>(InterpolatingFunctions.Double);
+            rotations = new(InterpolatingFunctions.DoubleAngle),
+            fades = new(InterpolatingFunctions.Double),
+            finalRotations = new(InterpolatingFunctions.DoubleAngle),
+            finalfades = new(InterpolatingFunctions.Double);
 
         readonly KeyframedValue<CommandColor>
-            colors = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor),
-            finalColors = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor);
+            colors = new(InterpolatingFunctions.CommandColor),
+            finalColors = new(InterpolatingFunctions.CommandColor);
 
         readonly KeyframedValue<bool>
-            flipH = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom),
-            flipV = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom),
-            additive = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom);
+            flipH = new(InterpolatingFunctions.BoolFrom),
+            flipV = new(InterpolatingFunctions.BoolFrom),
+            additive = new(InterpolatingFunctions.BoolFrom);
 
-        readonly List<State> states = new List<State>();
+        readonly List<State> states = new();
 
         ///<summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
         public State StartState => states.Count == 0 ? null : states[0];

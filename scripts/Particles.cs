@@ -32,7 +32,7 @@ namespace StorybrewScripts
         [Configurable] public int ParticleCount = 32;
         [Configurable] public float Lifetime = 1000;
         [Description("The point around which particles will be created.")]
-        [Configurable] public Vector2 SpawnOrigin = new Vector2(420, 0);
+        [Configurable] public Vector2 SpawnOrigin = new(420, 0);
         [Description("The distance around the Spawn Origin point where particles will be created.")]
         [Configurable] public float SpawnSpread = 360;
 

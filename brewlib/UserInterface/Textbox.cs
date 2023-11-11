@@ -37,8 +37,8 @@ namespace BrewLib.UserInterface
         }
         public int SelectionLength => Math.Abs(cursorPosition - selectionStart);
 
-        public override Vector2 MinSize => new Vector2(0, PreferredSize.Y);
-        public override Vector2 MaxSize => new Vector2(0, PreferredSize.Y);
+        public override Vector2 MinSize => new(0, PreferredSize.Y);
+        public override Vector2 MaxSize => new(0, PreferredSize.Y);
         public override Vector2 PreferredSize
         {
             get

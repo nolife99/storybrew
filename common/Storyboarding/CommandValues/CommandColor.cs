@@ -10,19 +10,19 @@ namespace StorybrewCommon.Storyboarding.CommandValues
     [Serializable] public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
     {
         ///<summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
-        public static readonly CommandColor Black = new CommandColor(0, 0, 0);
+        public static readonly CommandColor Black = new(0, 0, 0);
 
         ///<summary> Represents a <see cref="CommandColor"/> value as the color white. </summary>
-        public static readonly CommandColor White = new CommandColor(1, 1, 1);
+        public static readonly CommandColor White = new(1, 1, 1);
 
         ///<summary> Represents a <see cref="CommandColor"/> value as the color red. </summary>
-        public static readonly CommandColor Red = new CommandColor(1, 0, 0);
+        public static readonly CommandColor Red = new(1, 0, 0);
 
         ///<summary> Represents a <see cref="CommandColor"/> value as the color green. </summary>
-        public static readonly CommandColor Green = new CommandColor(0, 1, 0);
+        public static readonly CommandColor Green = new(0, 1, 0);
 
         ///<summary> Represents a <see cref="CommandColor"/> value as the color blue. </summary>
-        public static readonly CommandColor Blue = new CommandColor(0, 0, 1);
+        public static readonly CommandColor Blue = new(0, 0, 1);
 
         readonly double r, g, b;
 
@@ -84,7 +84,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public static CommandColor FromHashCode(int code) => Color.FromArgb(code);
 
         ///<summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
-        public static CommandColor FromRgb(byte r, byte g, byte b) => new CommandColor(r / 255d, g / 255d, b / 255d);
+        public static CommandColor FromRgb(byte r, byte g, byte b) => new(r / 255d, g / 255d, b / 255d);
 
         ///<summary> Creates a <see cref="CommandColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
         public static CommandColor FromHsb(double hue, double saturation, double brightness)
@@ -117,18 +117,18 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         }
 
 #pragma warning disable CS1591
-        public static implicit operator Color4(CommandColor obj) => new Color4(obj.R, obj.G, obj.B, 255);
-        public static implicit operator CommandColor(Color4 obj) => new CommandColor(obj.R, obj.G, obj.B);
-        public static implicit operator CommandColor(Color obj) => new CommandColor(obj.R / 255d, obj.G / 255d, obj.B / 255d);
+        public static implicit operator Color4(CommandColor obj) => new(obj.R, obj.G, obj.B, 255);
+        public static implicit operator CommandColor(Color4 obj) => new(obj.R, obj.G, obj.B);
+        public static implicit operator CommandColor(Color obj) => new(obj.R / 255d, obj.G / 255d, obj.B / 255d);
         public static implicit operator Color(CommandColor obj) => Color.FromArgb(255, obj.R, obj.G, obj.B);
         public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
         public static bool operator ==(CommandColor left, CommandColor right) => left.Equals(right);
         public static bool operator !=(CommandColor left, CommandColor right) => !left.Equals(right);
-        public static CommandColor operator +(CommandColor left, CommandColor right) => new CommandColor(left.r + right.r, left.g + right.g, left.b + right.b);
-        public static CommandColor operator -(CommandColor left, CommandColor right) => new CommandColor(left.r - right.r, left.g - right.g, left.b - right.b);
-        public static CommandColor operator *(CommandColor left, CommandColor right) => new CommandColor(left.r * right.r, left.g * right.g, left.b * right.b);
-        public static CommandColor operator *(CommandColor left, double right) => new CommandColor(left.r * right, left.g * right, left.b * right);
+        public static CommandColor operator +(CommandColor left, CommandColor right) => new(left.r + right.r, left.g + right.g, left.b + right.b);
+        public static CommandColor operator -(CommandColor left, CommandColor right) => new(left.r - right.r, left.g - right.g, left.b - right.b);
+        public static CommandColor operator *(CommandColor left, CommandColor right) => new(left.r * right.r, left.g * right.g, left.b * right.b);
+        public static CommandColor operator *(CommandColor left, double right) => new(left.r * right, left.g * right, left.b * right);
         public static CommandColor operator *(double left, CommandColor right) => right * left;
-        public static CommandColor operator /(CommandColor left, double right) => new CommandColor(left.r / right, left.g / right, left.b / right);
+        public static CommandColor operator /(CommandColor left, double right) => new(left.r / right, left.g / right, left.b / right);
     }
 }

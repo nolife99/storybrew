@@ -282,7 +282,7 @@ namespace StorybrewCommon.Util
             readonly IEnumerator<KeyValuePair<TKey, TValue>> enumerator;
             internal Enumerator(DisposableNativeDictionary<TKey, TValue> dictionary) => enumerator = dictionary.GetEnumerator();
 
-            public DictionaryEntry Entry => new DictionaryEntry(enumerator.Current.Key, enumerator.Current.Value);
+            public DictionaryEntry Entry => new(enumerator.Current.Key, enumerator.Current.Value);
             public object Key => enumerator.Current.Key;
             public object Value => enumerator.Current.Value;
             public object Current => Entry;

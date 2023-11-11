@@ -9,8 +9,8 @@ namespace BrewLib.Graphics.Shaders
         int lastId;
         string nextGenericName => $"_tmp_{lastId++:000}";
 
-        readonly Dictionary<ShaderVariable, HashSet<ShaderVariable>> dependencies = new Dictionary<ShaderVariable, HashSet<ShaderVariable>>();
-        readonly HashSet<ShaderVariable> usedVariables = new HashSet<ShaderVariable>(), flowVariables = new HashSet<ShaderVariable>();
+        readonly Dictionary<ShaderVariable, HashSet<ShaderVariable>> dependencies = new();
+        readonly HashSet<ShaderVariable> usedVariables = new(), flowVariables = new();
         ShaderVariable[] dependantVariables;
         bool flowDependant, canReceiveCommands;
         StringBuilder code;

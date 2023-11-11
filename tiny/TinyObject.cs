@@ -5,7 +5,7 @@ namespace Tiny
 {
     public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>>
     {
-        readonly Dictionary<string, int> keyToIndexMap = new Dictionary<string, int>();
+        readonly Dictionary<string, int> keyToIndexMap = new();
         readonly IList<KeyValuePair<string, TinyToken>> items = new List<KeyValuePair<string, TinyToken>>();
 
         public override bool IsInline => false;

@@ -4,7 +4,7 @@ namespace BrewLib.Time
 {
     public class Clock : TimeSource
     {
-        readonly Stopwatch stopwatch = new Stopwatch();
+        readonly Stopwatch stopwatch = new();
         double timeOrigin;
 
         public double Current => timeOrigin + stopwatch.Elapsed.TotalSeconds * timeFactor;

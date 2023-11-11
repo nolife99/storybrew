@@ -9,12 +9,12 @@ namespace StorybrewCommon.Util
     public static class Box2Extensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Box2 IntersectWith(this Box2 box2, Box2 other) => new Box2(
+        public static Box2 IntersectWith(this Box2 box2, Box2 other) => new(
             Math.Max(box2.Left, other.Left), Math.Max(box2.Top, other.Top),
             Math.Min(box2.Right, other.Right), Math.Min(box2.Bottom, other.Bottom));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Box2 IntersectWith(this Box2 box2, RectangleF other) => new Box2(
+        public static Box2 IntersectWith(this Box2 box2, RectangleF other) => new(
             Math.Max(box2.Left, other.Left), Math.Max(box2.Top, other.Top),
             Math.Min(box2.Right, other.Right), Math.Min(box2.Bottom, other.Bottom));
 

@@ -21,8 +21,8 @@ namespace StorybrewScripts
         [Configurable] public Color4 Color = Color4.White;
 
         [Group("Grid")]
-        [Configurable] public Vector2 Offset = new Vector2(320, 240);
-        [Configurable] public Vector2 ShadowOffset = new Vector2(4, 4);
+        [Configurable] public Vector2 Offset = new(320, 240);
+        [Configurable] public Vector2 ShadowOffset = new(4, 4);
         [Configurable] public double Rotation = 0;
         [Configurable] public int GridWidth = 10;
         [Configurable] public int GridHeight = 20;

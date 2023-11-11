@@ -16,7 +16,7 @@ namespace StorybrewCommon.Util
         public abstract string ToString(object value);
         public abstract object FromString(string value);
 
-        static readonly HashSet<ObjectSerializer> serializers = new HashSet<ObjectSerializer>
+        static readonly HashSet<ObjectSerializer> serializers = new()
         {
             new SimpleObjectSerializer<int>(r => r.ReadInt32(), (w, v) => w.Write((int)v), v => int.Parse(v), v => ((int)v).ToString()),
             new SimpleObjectSerializer<float>(r => r.ReadSingle(), (w, v) => w.Write((float)v), v => float.Parse(v), v => ((float)v).ToString()),

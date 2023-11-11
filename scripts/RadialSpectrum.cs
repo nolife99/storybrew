@@ -22,7 +22,7 @@ namespace StorybrewScripts
         [Configurable] public Vector2 SpriteScale = Vector2.One;
 
         [Group("Bars")]
-        [Configurable] public Vector2 Position = new Vector2(320, 240);
+        [Configurable] public Vector2 Position = new(320, 240);
         [Configurable] public int BarCount = 20;
         [Configurable] public int Radius = 50;
         [Configurable] public float Scale = 50;

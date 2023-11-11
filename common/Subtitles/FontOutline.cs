@@ -18,7 +18,7 @@ namespace StorybrewCommon.Subtitles
         public bool Overlay => false;
 
         ///<inheritdoc/>
-        public SizeF Measure => new SizeF(Thickness * diagonal * 2, Thickness * diagonal * 2);
+        public SizeF Measure => new(Thickness * diagonal * 2, Thickness * diagonal * 2);
 
         ///<summary> Creates a new <see cref="FontOutline"/> descriptor with information about an outlining effect. </summary>
         ///<param name="thickness"> The thickness of the outline. </param>

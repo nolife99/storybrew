@@ -9,9 +9,9 @@ namespace BrewLib.Graphics.Shaders
     {
         public VertexDeclaration VertexDeclaration;
 
-        readonly ShaderContext Context = new ShaderContext();
-        readonly ProgramScope ProgramScope = new ProgramScope();
-        readonly ShaderPartScope VertexShaderScope = new ShaderPartScope("vs"), FragmentShaderScope = new ShaderPartScope("fs");
+        readonly ShaderContext Context = new();
+        readonly ProgramScope ProgramScope = new();
+        readonly ShaderPartScope VertexShaderScope = new("vs"), FragmentShaderScope = new("fs");
 
         public ShaderSnippet VertexShader, FragmentShader;
         public readonly ShaderVariable GlPosition, GlPointSize, GlPointCoord, GlFragColor, GlFragDepth;

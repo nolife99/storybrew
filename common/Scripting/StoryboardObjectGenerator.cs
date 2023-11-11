@@ -17,6 +17,7 @@ using System.Runtime.CompilerServices;
 using Tiny;
 using System.IO.Compression;
 using System.Globalization;
+using System.Threading;
 
 namespace StorybrewCommon.Scripting
 {
@@ -76,7 +77,7 @@ namespace StorybrewCommon.Scripting
 
         #region File loading
 
-        readonly DisposableNativeDictionary<string, Bitmap> bitmaps = new DisposableNativeDictionary<string, Bitmap>();
+        readonly DisposableNativeDictionary<string, Bitmap> bitmaps = new();
 
         ///<summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
         public Bitmap GetProjectBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
@@ -210,7 +211,7 @@ namespace StorybrewCommon.Scripting
 
         static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
 
-        internal readonly Dictionary<string, FontGenerator> fonts = new Dictionary<string, FontGenerator>();
+        internal readonly Dictionary<string, FontGenerator> fonts = new();
         string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache");
 
         ///<summary> Loads subtitles from a given subtitle file. </summary>
@@ -393,15 +394,18 @@ namespace StorybrewCommon.Scripting
 
         #endregion
 
+        static readonly Mutex instanceSync = new();
+
         ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
         {
-            if (Current != null) throw new InvalidOperationException("A script is already running in this domain");
             try
             {
                 this.context = context;
                 rnd = new FastRandom(RandomSeed);
                 Compressor = new PngCompressor();
+
+                instanceSync.WaitOne();
                 Current = this;
 
                 Generate();
@@ -412,6 +416,7 @@ namespace StorybrewCommon.Scripting
             {
                 this.context = null;
                 Current = null;
+                instanceSync.ReleaseMutex();
 
                 bitmaps.Dispose();
                 fonts.Clear();

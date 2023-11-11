@@ -215,7 +215,7 @@ namespace BrewLib.UserInterface
         Widget parent;
         public Widget Parent => parent;
 
-        readonly List<Widget> children = new List<Widget>();
+        readonly List<Widget> children = new();
         public IEnumerable<Widget> Children
         {
             get => children;
@@ -327,7 +327,7 @@ namespace BrewLib.UserInterface
         }
 
         public Box2 Bounds =>
-            new Box2(AbsolutePosition, AbsolutePosition + Size);
+            new(AbsolutePosition, AbsolutePosition + Size);
 
         Widget anchorTarget;
         public Widget AnchorTarget

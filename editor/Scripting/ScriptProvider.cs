@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptProvider<TScript> : MarshalByRefObject where TScript : Script
+    public class ScriptProvider<TScript> : IProvider<TScript> where TScript : Script
     {
         readonly string identifier = Guid.NewGuid().ToString();
         Type type;

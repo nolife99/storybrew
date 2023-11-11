@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace BrewLib.Util
 {
     public static class PathHelper
     {
+        public static void OpenExplorer(string path) => Process.Start(new ProcessStartInfo(path)
+        {
+            UseShellExecute = true
+        });
+
         public static string WithPlatformSeparators(string path)
         {
             if (Path.DirectorySeparatorChar != '/') path = path.Replace('/', Path.DirectorySeparatorChar);
@@ -40,7 +46,7 @@ namespace BrewLib.Util
             return path.Substring(folder.Length + 1);
         }
 
-        static readonly HashSet<char> invalidChars = new HashSet<char>
+        static readonly HashSet<char> invalidChars = new()
         {
             '"', '<', '>', '|', '\0', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005',
             '\u0006', '\a', '\b', '\t', '\n', '\v', '\f', '\r', '\u000e', '\u000f',

@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>StorybrewCommon</RootNamespace>
     <AssemblyName>StorybrewCommon</AssemblyName>
     <UseWindowsForms>true</UseWindowsForms>
-    <TargetFramework>net481</TargetFramework>
+    <TargetFramework>net7.0-windows</TargetFramework>
     <Company>storybrew</Company>
     <Product>storybrew common</Product>
     <Title>storybrew common</Title>

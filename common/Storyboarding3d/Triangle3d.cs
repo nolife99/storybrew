@@ -27,15 +27,15 @@ namespace StorybrewCommon.Storyboarding3d
         public bool UseDistanceFade = true;
 
         /// <summary> The position of the first vertex of the triangle. </summary>
-        public readonly KeyframedValue<Vector3> Position0 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        public readonly KeyframedValue<Vector3> Position0 = new(InterpolatingFunctions.Vector3);
 
         /// <summary> The position of the second vertex of the triangle. </summary>
-        public readonly KeyframedValue<Vector3> Position1 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        public readonly KeyframedValue<Vector3> Position1 = new(InterpolatingFunctions.Vector3);
 
         /// <summary> The position of the third vertex of the triangle. </summary>
-        public readonly KeyframedValue<Vector3> Position2 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        public readonly KeyframedValue<Vector3> Position2 = new(InterpolatingFunctions.Vector3);
 
-        readonly CommandGenerator Generator0 = new CommandGenerator(), Generator1 = new CommandGenerator();
+        readonly CommandGenerator Generator0 = new(), Generator1 = new();
 
         ///<inheritdoc/>
         public IEnumerable<CommandGenerator> CommandGenerators { get { yield return Generator0; yield return Generator1; } }

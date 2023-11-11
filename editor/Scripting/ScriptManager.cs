@@ -19,7 +19,7 @@ namespace StorybrewEditor.Scripting
         readonly ResourceContainer resourceContainer;
         readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
 
-        List<string> referencedAssemblies = new List<string>();
+        List<string> referencedAssemblies = new();
         public IEnumerable<string> ReferencedAssemblies
         {
             get => referencedAssemblies;
@@ -33,8 +33,8 @@ namespace StorybrewEditor.Scripting
 
         FileSystemWatcher scriptWatcher;
         readonly FileSystemWatcher libraryWatcher;
-        ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
-        readonly DisposableNativeDictionary<string, ScriptContainer<TScript>> scriptContainers = new DisposableNativeDictionary<string, ScriptContainer<TScript>>();
+        ThrottledActionScheduler scheduler = new();
+        readonly DisposableNativeDictionary<string, ScriptContainer<TScript>> scriptContainers = new();
 
         public string ScriptsPath { get; }
 

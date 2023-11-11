@@ -22,7 +22,6 @@ namespace BrewLib.Util.Compression
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
-                UseShellExecute = false,
                 WorkingDirectory = Path.GetDirectoryName(UtilityPath),
                 RedirectStandardInput = true,
                 RedirectStandardError = true,

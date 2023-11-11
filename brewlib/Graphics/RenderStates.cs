@@ -11,7 +11,7 @@ namespace BrewLib.Graphics
     }
     public class RenderStates
     {
-        public static readonly RenderStates Default = new RenderStates();
+        public static readonly RenderStates Default = new();
 
         public BlendingFactorState BlendingFactor = BlendingFactorState.Default;
         public BlendingEquationState BlendingEquation = BlendingEquationState.Default;
@@ -56,7 +56,7 @@ namespace BrewLib.Graphics
         readonly BlendingFactorSrc alphaSrc = BlendingFactorSrc.SrcAlpha;
         readonly BlendingFactorDest alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
 
-        public static BlendingFactorState Default = new BlendingFactorState();
+        public static BlendingFactorState Default = new();
 
         public BlendingFactorState() { }
         public BlendingFactorState(BlendingMode mode)
@@ -128,7 +128,7 @@ namespace BrewLib.Graphics
     public class BlendingEquationState : RenderState, IEquatable<BlendingEquationState>
     {
         readonly BlendEquationMode colorMode = BlendEquationMode.FuncAdd, alphaMode = BlendEquationMode.FuncAdd;
-        public static BlendingEquationState Default = new BlendingEquationState();
+        public static BlendingEquationState Default = new();
 
         public BlendingEquationState() { }
         public BlendingEquationState(BlendEquationMode mode) => colorMode = alphaMode = mode;
@@ -148,9 +148,9 @@ namespace BrewLib.Graphics
         readonly DepthFunction? test;
         readonly bool write;
 
-        public static DepthState Default2d = new DepthState(null, false);
-        public static DepthState Default3dOpaque = new DepthState(DepthFunction.Less, true);
-        public static DepthState Default3dTransparent = new DepthState(DepthFunction.Less, false);
+        public static DepthState Default2d = new(null, false);
+        public static DepthState Default3dOpaque = new(DepthFunction.Less, true);
+        public static DepthState Default3dTransparent = new(DepthFunction.Less, false);
 
         public DepthState(DepthFunction? test, bool write)
         {
@@ -171,7 +171,7 @@ namespace BrewLib.Graphics
     public class CullFaceState : RenderState, IEquatable<CullFaceState>
     {
         readonly CullFaceMode? mode;
-        public static CullFaceState Default2d = new CullFaceState(null), Default3d = new CullFaceState(CullFaceMode.Back);
+        public static CullFaceState Default2d = new(null), Default3d = new(CullFaceMode.Back);
 
         public CullFaceState(CullFaceMode? mode) => this.mode = mode;
 
@@ -188,7 +188,7 @@ namespace BrewLib.Graphics
     {
         readonly bool enabled, sizeEnabled;
 
-        public static readonly PointSpriteState Default = new PointSpriteState(false, false);
+        public static readonly PointSpriteState Default = new(false, false);
 
         public PointSpriteState(bool enabled, bool sizeEnabled)
         {

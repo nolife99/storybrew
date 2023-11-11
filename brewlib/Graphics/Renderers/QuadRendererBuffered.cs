@@ -16,7 +16,7 @@ namespace BrewLib.Graphics.Renderers
         public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
         public static readonly VertexDeclaration VertexDeclaration =
-            new VertexDeclaration(VertexAttribute.CreatePosition2d(), VertexAttribute.CreateDiffuseCoord(0), VertexAttribute.CreateColor(true));
+            new(VertexAttribute.CreatePosition2d(), VertexAttribute.CreateDiffuseCoord(0), VertexAttribute.CreateColor(true));
 
         public delegate int CustomTextureBinder(BindableTexture texture);
         public CustomTextureBinder CustomTextureBind;

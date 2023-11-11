@@ -5,7 +5,7 @@ namespace BrewLib.Graphics.Shaders
 {
     public class ShaderType
     {
-        readonly HashSet<Field> fields = new HashSet<Field>();
+        readonly HashSet<Field> fields = new();
 
         public readonly string Name;
         public IEnumerable<Field> Fields => fields;

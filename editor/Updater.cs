@@ -1,4 +1,5 @@
 ﻿using BrewLib.Util;
+using StorybrewEditor.Util;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -12,9 +13,9 @@ namespace StorybrewEditor
         static readonly string[] ignoredPaths = { ".vscode/", "cache/", "logs/", "settings.cfg" }, readOnlyPaths = { "scripts/" };
         public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update", FirstRunPath = "firstrun";
 
-        static readonly Version readOnlyVersion = new Version(1, 8);
+        static readonly Version readOnlyVersion = new(1, 8);
 
-        public static void OpenLastestReleasePage() => Process.Start($"https://github.com/{Program.Repository}/releases/latest");
+        public static void OpenLastestReleasePage() => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/releases/latest");
         public static void Update(string destinationFolder, Version fromVersion)
         {
             Trace.WriteLine($"Updating from version {fromVersion} to {Program.Version}");
@@ -47,9 +48,9 @@ namespace StorybrewEditor
             var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
             Trace.WriteLine($"\nUpdate complete, starting {processPath}");
-            Process.Start(new ProcessStartInfo
+            Process.Start(new ProcessStartInfo(processPath)
             {
-                FileName = processPath,
+                UseShellExecute = true,
                 WorkingDirectory = destinationFolder
             });
         }

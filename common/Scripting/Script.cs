@@ -18,4 +18,11 @@ namespace StorybrewCommon.Scripting
             }
         }
     }
+
+#pragma warning disable CS1591
+    public interface IProvider<TScript> where TScript : Script
+    {
+        void Initialize(string assemblyPath, string typeName);
+        TScript CreateScript();
+    }
 }

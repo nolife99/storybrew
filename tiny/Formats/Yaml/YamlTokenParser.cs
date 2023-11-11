@@ -58,7 +58,7 @@ namespace Tiny.Formats.Yaml
 
         class ObjectParser : MultilineParser
         {
-            readonly TinyObject result = new TinyObject();
+            readonly TinyObject result = new();
             protected override int ResultCount => result.Count;
 
             public ObjectParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent) => callback(result);
@@ -107,7 +107,7 @@ namespace Tiny.Formats.Yaml
 
         class ArrayParser : MultilineParser
         {
-            readonly TinyArray result = new TinyArray();
+            readonly TinyArray result = new();
             protected override int ResultCount => result.Count;
 
             public ArrayParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent) => callback(result);
@@ -133,9 +133,9 @@ namespace Tiny.Formats.Yaml
 
         class ValueParser : Parser<YamlTokenType>
         {
-            static readonly Regex floatRegex = new Regex("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            static readonly Regex integerRegex = new Regex("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            static readonly Regex boolRegex = new Regex($"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            static readonly Regex integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            static readonly Regex boolRegex = new($"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
             public ValueParser(Action<TinyToken> callback) : base(callback, 0) { }
 

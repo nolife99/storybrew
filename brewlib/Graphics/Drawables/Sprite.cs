@@ -11,7 +11,7 @@ namespace BrewLib.Graphics.Drawables
     public class Sprite : Drawable
     {
         public Texture2dRegion Texture;
-        public readonly RenderStates RenderStates = new RenderStates();
+        public readonly RenderStates RenderStates = new();
         public float Rotation;
         public Color4 Color = Color4.White;
         public ScaleMode ScaleMode = ScaleMode.None;

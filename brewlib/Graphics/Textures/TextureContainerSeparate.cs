@@ -10,7 +10,7 @@ namespace BrewLib.Graphics.Textures
         readonly ResourceContainer resourceContainer;
         readonly TextureOptions textureOptions;
 
-        Dictionary<string, Texture2d> textures = new Dictionary<string, Texture2d>();
+        Dictionary<string, Texture2d> textures = new();
 
         public IEnumerable<string> ResourceNames => textures.Where(e => e.Value != null).Select(e => e.Key);
         public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;

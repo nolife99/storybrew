@@ -8,10 +8,10 @@ namespace BrewLib.Graphics.Text
 {
     public class TextLayout
     {
-        readonly List<string> textLines = new List<string>();
+        readonly List<string> textLines = new();
         public IEnumerable<string> TextLines => textLines;
 
-        readonly List<TextLayoutLine> lines = new List<TextLayoutLine>();
+        readonly List<TextLayoutLine> lines = new();
         public IEnumerable<TextLayoutLine> Lines => lines;
 
         Vector2 size;
@@ -146,7 +146,7 @@ namespace BrewLib.Graphics.Text
     }
     public class TextLayoutLine
     {
-        readonly List<TextLayoutGlyph> glyphs = new List<TextLayoutGlyph>();
+        readonly List<TextLayoutGlyph> glyphs = new();
         public IEnumerable<TextLayoutGlyph> Glyphs => glyphs;
         public int GlyphCount => glyphs.Count;
 
@@ -161,7 +161,7 @@ namespace BrewLib.Graphics.Text
         int height;
         public int Height => height;
 
-        public Vector2 Position => new Vector2((alignment & BoxAlignment.Left) > 0 ? 0 : (alignment & BoxAlignment.Right) > 0 ?
+        public Vector2 Position => new((alignment & BoxAlignment.Left) > 0 ? 0 : (alignment & BoxAlignment.Right) > 0 ?
             layout.Size.X - width : layout.Size.X * .5f - width * .5f, y);
 
         public TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph)
@@ -194,7 +194,7 @@ namespace BrewLib.Graphics.Text
 
         public Vector2 Position
         {
-            get => new Vector2(line.Position.X + x, line.Position.Y);
+            get => new(line.Position.X + x, line.Position.Y);
         }
         public TextLayoutGlyph(TextLayoutLine line, FontGlyph glyph, int index, float x)
         {

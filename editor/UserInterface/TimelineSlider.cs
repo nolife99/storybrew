@@ -13,19 +13,19 @@ namespace StorybrewEditor.UserInterface
 {
     public class TimelineSlider : Slider
     {
-        static readonly Color4 tickBlue = new Color4(50, 128, 255, 225);
-        static readonly Color4 tickYellow = new Color4(255, 255, 0, 225);
-        static readonly Color4 tickRed = new Color4(255, 0, 0, 225);
-        static readonly Color4 tickViolet = new Color4(200, 0, 200, 225);
-        static readonly Color4 tickWhite = new Color4(255, 255, 255, 220);
-        static readonly Color4 tickMagenta = new Color4(144, 64, 144, 225);
-        static readonly Color4 tickGrey = new Color4(160, 160, 160, 225);
+        static readonly Color4 tickBlue = new(50, 128, 255, 225);
+        static readonly Color4 tickYellow = new(255, 255, 0, 225);
+        static readonly Color4 tickRed = new(255, 0, 0, 225);
+        static readonly Color4 tickViolet = new(200, 0, 200, 225);
+        static readonly Color4 tickWhite = new(255, 255, 255, 220);
+        static readonly Color4 tickMagenta = new(144, 64, 144, 225);
+        static readonly Color4 tickGrey = new(160, 160, 160, 225);
 
-        static readonly Color4 kiaiColor = new Color4(255, 146, 18, 140);
-        static readonly Color4 breakColor = new Color4(255, 255, 255, 140);
-        static readonly Color4 bookmarkColor = new Color4(58, 110, 170, 240);
-        static readonly Color4 repeatColor = new Color4(58, 110, 170, 80);
-        static readonly Color4 highlightColor = new Color4(255, 0, 0, 80);
+        static readonly Color4 kiaiColor = new(255, 146, 18, 140);
+        static readonly Color4 breakColor = new(255, 255, 255, 140);
+        static readonly Color4 bookmarkColor = new(58, 110, 170, 240);
+        static readonly Color4 repeatColor = new(58, 110, 170, 80);
+        static readonly Color4 highlightColor = new(255, 0, 0, 80);
 
         Sprite line;
         readonly Label beatmapLabel;

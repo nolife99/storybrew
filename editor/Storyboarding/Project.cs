@@ -21,6 +21,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Tiny;
 
 namespace StorybrewEditor.Storyboarding
@@ -79,8 +80,8 @@ namespace StorybrewEditor.Storyboarding
             }
         }
 
-        public readonly ExportSettings ExportSettings = new ExportSettings();
-        public readonly LayerManager LayerManager = new LayerManager();
+        public readonly ExportSettings ExportSettings = new();
+        public readonly LayerManager LayerManager = new();
 
         public Project(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
         {
@@ -153,7 +154,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region Effects
 
-        readonly List<Effect> effects = new List<Effect>();
+        readonly List<Effect> effects = new();
         public IEnumerable<Effect> Effects => effects;
         public event EventHandler OnEffectsChanged, OnEffectsStatusChanged, OnEffectsContentChanged;
 
@@ -164,7 +165,7 @@ namespace StorybrewEditor.Storyboarding
 
         bool allowEffectUpdates = true;
 
-        AsyncActionQueue<Effect> effectUpdateQueue = new AsyncActionQueue<Effect>("Effect Updates", false, Program.Settings.EffectThreads);
+        AsyncActionQueue<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
         public void QueueEffectUpdate(Effect effect)
         {
             effectUpdateQueue.Queue(effect, effect.Path, e => e.Update(), effect.Multithreaded);
@@ -381,12 +382,13 @@ namespace StorybrewEditor.Storyboarding
 
         static readonly string[] defaultAssemblies = new string[]
         {
-            "System.dll", "System.Core.dll", "System.Drawing.dll", "System.Numerics.dll",
-            "OpenTK.dll", "BrewLib.dll", Assembly.GetAssembly(typeof(Script)).Location
+            "mscorlib.dll", "System.dll", "System.Linq.dll", "System.Runtime.dll", "System.Core.dll", "System.Drawing.dll", "System.Numerics.dll",
+            "OpenTK.dll", "System.Numerics.Vectors.dll", "System.Drawing.Common.dll", "System.Drawing.Primitives.dll", "BrewLib.dll", 
+            Assembly.GetAssembly(typeof(Script)).Location
         };
         public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
 
-        List<string> importedAssemblies = new List<string>();
+        List<string> importedAssemblies = new();
         public IEnumerable<string> ImportedAssemblies
         {
             get => importedAssemblies;
@@ -420,7 +422,7 @@ namespace StorybrewEditor.Storyboarding
             }
         }
 
-        static readonly Regex effectGuidRegex = new Regex("effect\\.([a-z0-9]{32})\\.yaml", RegexOptions.IgnoreCase);
+        static readonly Regex effectGuidRegex = new("effect\\.([a-z0-9]{32})\\.yaml", RegexOptions.IgnoreCase);
 
         public void Save()
         {
@@ -874,7 +876,6 @@ namespace StorybrewEditor.Storyboarding
         {
             if (!Disposed)
             {
-                // Always dispose this first to ensure updates aren't happening while the project is being disposed
                 effectUpdateQueue.Dispose();
                 assetWatcher.Dispose();
                 MapsetManager?.Dispose();
@@ -882,12 +883,23 @@ namespace StorybrewEditor.Storyboarding
                 TextureContainer.Dispose();
                 AudioContainer.Dispose();
 
+                effectUpdateQueue = null;
                 assetWatcher = null;
                 MapsetManager = null;
-                effectUpdateQueue = null;
                 scriptManager = null;
                 TextureContainer = null;
                 AudioContainer = null;
+
+                foreach (var cachedLib in Directory.EnumerateFiles(Path.GetFullPath("cache/scripts")))
+                try
+                {
+                    File.Delete(cachedLib);
+                }
+                catch (UnauthorizedAccessException e)
+                {
+                    Trace.TraceError(e.ToString());
+                }
+
                 Disposed = true;
             }
         }

@@ -16,7 +16,7 @@ namespace BrewLib.Graphics.Renderers
         public const string CombinedMatrixUniformName = "u_combinedMatrix";
 
         public static readonly VertexDeclaration VertexDeclaration =
-            new VertexDeclaration(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
+            new(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
 
         public Action FlushAction;
 

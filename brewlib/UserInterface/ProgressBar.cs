@@ -13,7 +13,7 @@ namespace BrewLib.UserInterface
         int preferredHeight = 32;
 
         public override Vector2 MinSize => bar.MinSize;
-        public override Vector2 PreferredSize => new Vector2(Math.Max(200, bar.PreferredSize.X), Math.Max(preferredHeight, bar.PreferredSize.Y));
+        public override Vector2 PreferredSize => new(Math.Max(200, bar.PreferredSize.X), Math.Max(preferredHeight, bar.PreferredSize.Y));
 
         public float MinValue, MaxValue = 1;
 

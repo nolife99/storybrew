@@ -9,7 +9,7 @@ namespace Tiny.Formats
 
         public Token<TokenType> CurrentToken, LookaheadToken;
 
-        readonly Stack<Parser<TokenType>> parserStack = new Stack<Parser<TokenType>>();
+        readonly Stack<Parser<TokenType>> parserStack = new();
         public Parser<TokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
         public int ParserCount => parserStack.Count;
 

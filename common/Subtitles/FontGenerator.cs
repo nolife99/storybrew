@@ -88,19 +88,19 @@ namespace StorybrewCommon.Subtitles
     [Serializable] public readonly struct FontColor : IEquatable<FontColor>
     {
         ///<summary> Represents a <see cref="FontColor"/> value as the color black. </summary>
-        public static readonly FontColor Black = new FontColor(0, 0, 0);
+        public static readonly FontColor Black = new(0, 0, 0);
 
         ///<summary> Represents a <see cref="FontColor"/> value as the color white. </summary>
-        public static readonly FontColor White = new FontColor(1, 1, 1);
+        public static readonly FontColor White = new(1, 1, 1);
 
         ///<summary> Represents a <see cref="FontColor"/> value as the color red. </summary>
-        public static readonly FontColor Red = new FontColor(1, 0, 0);
+        public static readonly FontColor Red = new(1, 0, 0);
 
         ///<summary> Represents a <see cref="FontColor"/> value as the color green. </summary>
-        public static readonly FontColor Green = new FontColor(0, 1, 0);
+        public static readonly FontColor Green = new(0, 1, 0);
 
         ///<summary> Represents a <see cref="FontColor"/> value as the color blue. </summary>
-        public static readonly FontColor Blue = new FontColor(0, 0, 1);
+        public static readonly FontColor Blue = new(0, 0, 1);
 
         readonly float r, g, b, a;
 
@@ -152,7 +152,7 @@ namespace StorybrewCommon.Subtitles
         public static FontColor FromHashCode(int code) => Color.FromArgb(code);
 
         ///<summary> Creates a <see cref="FontColor"/> from RGB byte values. </summary>
-        public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new FontColor(r / 255f, g / 255f, b / 255f, a / 255f);
+        public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new(r / 255f, g / 255f, b / 255f, a / 255f);
 
         ///<summary> Creates a <see cref="FontColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
         public static FontColor FromHsb(float hue, float saturation, float brightness)
@@ -213,20 +213,20 @@ namespace StorybrewCommon.Subtitles
         }
 
 #pragma warning disable CS1591
-        public static implicit operator Color4(FontColor obj) => new Color4(obj.R, obj.G, obj.B, obj.A);
-        public static implicit operator FontColor(Color4 obj) => new FontColor(obj.R, obj.G, obj.B, obj.A);
-        public static implicit operator FontColor(Color obj) => new FontColor(obj.R / 255f, obj.G / 255f, obj.B / 255f, obj.A / 255f);
+        public static implicit operator Color4(FontColor obj) => new(obj.R, obj.G, obj.B, obj.A);
+        public static implicit operator FontColor(Color4 obj) => new(obj.R, obj.G, obj.B, obj.A);
+        public static implicit operator FontColor(Color obj) => new(obj.R / 255f, obj.G / 255f, obj.B / 255f, obj.A / 255f);
         public static implicit operator Color(FontColor obj) => Color.FromArgb(obj.A, obj.R, obj.G, obj.B);
         public static implicit operator FontColor(string hexCode) => FromHtml(hexCode);
         public static implicit operator FontColor(int channel) => FromHashCode(channel);
         public static bool operator ==(FontColor left, FontColor right) => left.Equals(right);
         public static bool operator !=(FontColor left, FontColor right) => !left.Equals(right);
-        public static FontColor operator +(FontColor left, FontColor right) => new FontColor(left.r + right.r, left.g + right.g, left.b + right.b, left.a + right.a);
-        public static FontColor operator -(FontColor left, FontColor right) => new FontColor(left.r - right.r, left.g - right.g, left.b - right.b, left.a - right.a);
-        public static FontColor operator *(FontColor left, FontColor right) => new FontColor(left.r * right.r, left.g * right.g, left.b * right.b, left.a * right.a);
-        public static FontColor operator *(FontColor left, double right) => new FontColor((float)(left.r * right), (float)(left.g * right), (float)(left.b * right), (float)(left.a * right));
+        public static FontColor operator +(FontColor left, FontColor right) => new(left.r + right.r, left.g + right.g, left.b + right.b, left.a + right.a);
+        public static FontColor operator -(FontColor left, FontColor right) => new(left.r - right.r, left.g - right.g, left.b - right.b, left.a - right.a);
+        public static FontColor operator *(FontColor left, FontColor right) => new(left.r * right.r, left.g * right.g, left.b * right.b, left.a * right.a);
+        public static FontColor operator *(FontColor left, double right) => new((float)(left.r * right), (float)(left.g * right), (float)(left.b * right), (float)(left.a * right));
         public static FontColor operator *(double left, FontColor right) => right * left;
-        public static FontColor operator /(FontColor left, double right) => new FontColor((float)(left.r / right), (float)(left.g / right), (float)(left.b / right), (float)(left.a / right));
+        public static FontColor operator /(FontColor left, double right) => new((float)(left.r / right), (float)(left.g / right), (float)(left.b / right), (float)(left.a / right));
     }
 
     /// <summary> Stores information about a font's appearance. </summary>
@@ -551,7 +551,7 @@ namespace StorybrewCommon.Subtitles
             }
             return true;
         }
-        internal TinyObject ToTinyObject() => new TinyObject
+        internal TinyObject ToTinyObject() => new()
         {
             { "FontPath", PathHelper.WithStandardSeparators(description.FontPath) },
             { "FontSize", description.FontSize },
@@ -568,7 +568,7 @@ namespace StorybrewCommon.Subtitles
             { "Effects", effects.Select(e => fontEffectToTinyObject(e))},
             { "Cache", cache.Where(l => !l.Value.IsEmpty).Select(l => letterToTinyObject(l))}
         };
-        TinyObject letterToTinyObject(KeyValuePair<string, FontTexture> letterEntry) => new TinyObject
+        TinyObject letterToTinyObject(KeyValuePair<string, FontTexture> letterEntry) => new()
         {
             { "Text", letterEntry.Key },
             { "Path", PathHelper.WithStandardSeparators(letterEntry.Value.Path) },

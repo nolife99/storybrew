@@ -58,37 +58,37 @@ namespace StorybrewCommon.Storyboarding3d
     public class PerspectiveCamera : Camera
     {
         ///<summary> Represents the camera's X-position in the 3D world. </summary>
-        public readonly KeyframedValue<float> PositionX = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> PositionX = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the camera's Y-position in the 3D world. </summary>
-        public readonly KeyframedValue<float> PositionY = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> PositionY = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the camera's Z-position in the 3D world. </summary>
-        public readonly KeyframedValue<float> PositionZ = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> PositionZ = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the 3D-position the camera is facing towards. </summary>
-        public readonly KeyframedValue<Vector3> TargetPosition = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        public readonly KeyframedValue<Vector3> TargetPosition = new(InterpolatingFunctions.Vector3);
 
         ///<summary> Represents the camera's up vector. </summary>
-        public readonly KeyframedValue<Vector3> Up = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3, new Vector3(0, 1, 0));
+        public readonly KeyframedValue<Vector3> Up = new(InterpolatingFunctions.Vector3, new Vector3(0, 1, 0));
 
         ///<summary> Represents the distance that close objects disappear at. </summary>
-        public readonly KeyframedValue<float> NearClip = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> NearClip = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the distance that close objects start fading at. </summary>
-        public readonly KeyframedValue<float> NearFade = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> NearFade = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the distance that distant objects start fading at. </summary>
-        public readonly KeyframedValue<float> FarFade = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> FarFade = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the distance that distant objects disappear at. </summary>
-        public readonly KeyframedValue<float> FarClip = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> FarClip = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the camera's horizontal field-of-view. </summary>
-        public readonly KeyframedValue<float> HorizontalFov = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> HorizontalFov = new(InterpolatingFunctions.Float);
 
         ///<summary> Represents the camera's vertical field-of-view. </summary>
-        public readonly KeyframedValue<float> VerticalFov = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        public readonly KeyframedValue<float> VerticalFov = new(InterpolatingFunctions.Float);
 
         ///<summary> Returns the camera's state and information at <paramref name="time"/>. </summary>
         public override CameraState StateAt(double time)

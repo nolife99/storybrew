@@ -5,10 +5,10 @@ namespace StorybrewCommon.Storyboarding.CommandValues
 #pragma warning disable CS1591
     [Serializable] public readonly struct CommandParameter : CommandValue
     {
-        public static readonly CommandParameter None = new CommandParameter(ParameterType.None);
-        public static readonly CommandParameter FlipHorizontal = new CommandParameter(ParameterType.FlipHorizontal);
-        public static readonly CommandParameter FlipVertical = new CommandParameter(ParameterType.FlipVertical);
-        public static readonly CommandParameter AdditiveBlending = new CommandParameter(ParameterType.AdditiveBlending);
+        public static readonly CommandParameter None = new(ParameterType.None);
+        public static readonly CommandParameter FlipHorizontal = new(ParameterType.FlipHorizontal);
+        public static readonly CommandParameter FlipVertical = new(ParameterType.FlipVertical);
+        public static readonly CommandParameter AdditiveBlending = new(ParameterType.AdditiveBlending);
 
         public readonly ParameterType Type;
 

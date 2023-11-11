@@ -2,7 +2,7 @@
 {
     public class ChangedEventArgs
     {
-        public static readonly ChangedEventArgs All = new ChangedEventArgs(null);
+        public static readonly ChangedEventArgs All = new(null);
 
         public readonly string PropertyName;
         public ChangedEventArgs(string propertyName) => PropertyName = propertyName;

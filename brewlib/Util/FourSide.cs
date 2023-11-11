@@ -4,7 +4,7 @@ namespace BrewLib.Util
 {
     public readonly struct FourSide
     {
-        public static readonly FourSide Zero = new FourSide(0);
+        public static readonly FourSide Zero = new(0);
 
         public readonly float Top, Right, Bottom, Left;
         public float Horizontal => Left + Right;
@@ -41,7 +41,7 @@ namespace BrewLib.Util
         public float GetVerticalOffset(BoxAlignment alignment) => (alignment & BoxAlignment.Top) > 0 ?
             Top : (alignment & BoxAlignment.Bottom) > 0 ? -Bottom : 0;
 
-        public Vector2 GetOffset(BoxAlignment alignment) => new Vector2(GetHorizontalOffset(alignment), GetVerticalOffset(alignment));
+        public Vector2 GetOffset(BoxAlignment alignment) => new(GetHorizontalOffset(alignment), GetVerticalOffset(alignment));
 
         public override bool Equals(object other) => this == (FourSide)other;
         public override int GetHashCode() => this.GetHashCode();

@@ -9,7 +9,7 @@ namespace StorybrewCommon.Storyboarding.Commands
             : base("M", easing, startTime, endTime, startValue, endValue) { }
 
         public override CommandPosition ValueAtProgress(double progress) => StartValue + (EndValue - StartValue) * progress;
-        public override CommandPosition Midpoint(Command<CommandPosition> endCommand, double progress) => new CommandPosition(StartValue.X + (endCommand.EndValue.X - StartValue.X) * progress, StartValue.Y + (endCommand.EndValue.Y - StartValue.Y) * progress);
+        public override CommandPosition Midpoint(Command<CommandPosition> endCommand, double progress) => new(StartValue.X + (endCommand.EndValue.X - StartValue.X) * progress, StartValue.Y + (endCommand.EndValue.Y - StartValue.Y) * progress);
 
         public override IFragmentableCommand GetFragment(double startTime, double endTime)
         {

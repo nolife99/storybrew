@@ -113,7 +113,7 @@ namespace BrewLib.Graphics.Drawables
             }
         }
 
-        public readonly RenderStates RenderStates = new RenderStates();
+        public readonly RenderStates RenderStates = new();
         public Color4 Color = Color4.White;
 
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity)

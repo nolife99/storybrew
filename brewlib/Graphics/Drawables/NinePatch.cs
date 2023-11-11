@@ -10,7 +10,7 @@ namespace BrewLib.Graphics.Drawables
     public class NinePatch : Drawable
     {
         public Texture2dRegion Texture;
-        public readonly RenderStates RenderStates = new RenderStates();
+        public readonly RenderStates RenderStates = new();
         public Color4 Color = Color4.White;
         public FourSide Borders, Outset;
         public bool BordersOnly;

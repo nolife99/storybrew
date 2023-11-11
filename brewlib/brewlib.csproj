@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>BrewLib</RootNamespace>
     <AssemblyName>BrewLib</AssemblyName>
-    <TargetFramework>net481</TargetFramework>
+    <TargetFramework>net7.0-windows</TargetFramework>
     <Copyright>Copyright © Damnae 2016</Copyright>
     <UseWindowsForms>true</UseWindowsForms>
     <Product>brewlib</Product>

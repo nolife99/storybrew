@@ -39,11 +39,11 @@ namespace StorybrewCommon.Animations
 
         ///<summary> Overrides a keyframe with a new time. </summary>
         ///<param name="time"> The time to be overriden with. </param>
-        public Keyframe<TValue> WithTime(double time) => new Keyframe<TValue>(time, Value, Ease);
+        public Keyframe<TValue> WithTime(double time) => new(time, Value, Ease);
 
         ///<summary> Overrides a keyframe with a new type value. </summary>
         ///<param name="value"> The type value to be overriden with. </param>
-        public Keyframe<TValue> WithValue(TValue value) => new Keyframe<TValue>(Time, value, Ease);
+        public Keyframe<TValue> WithValue(TValue value) => new(Time, value, Ease);
 
         ///<summary> Compares a keyframe to another keyframe of the same type for equality. </summary>
         ///<param name="other"> The other keyframe to be compared. </param>

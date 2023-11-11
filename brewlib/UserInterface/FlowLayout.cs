@@ -271,7 +271,7 @@ namespace BrewLib.UserInterface
         }
         class LayoutLine
         {
-            public List<LayoutItem> Items = new List<LayoutItem>();
+            public List<LayoutItem> Items = new();
             public float Width, Height;
 
             public float GetTotalWidth(float spacing) => Width + GetTotalSpacing(spacing);

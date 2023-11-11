@@ -36,12 +36,12 @@ namespace StorybrewCommon.Storyboarding3d
         public CommandScale? UseDefaultScale;
 
         ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
-        public readonly KeyframedValue<Vector2> SpriteScale = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2, Vector2.One);
+        public readonly KeyframedValue<Vector2> SpriteScale = new(InterpolatingFunctions.Vector2, Vector2.One);
 
         ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
-        public readonly KeyframedValue<double> SpriteRotation = new KeyframedValue<double>(InterpolatingFunctions.DoubleAngle, 0);
+        public readonly KeyframedValue<double> SpriteRotation = new(InterpolatingFunctions.DoubleAngle, 0);
 
-        readonly CommandGenerator gen = new CommandGenerator();
+        readonly CommandGenerator gen = new();
 
         ///<inheritdoc/>
         public IEnumerable<CommandGenerator> CommandGenerators { get { yield return gen; } }

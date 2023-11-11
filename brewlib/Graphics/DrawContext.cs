@@ -5,8 +5,8 @@ namespace BrewLib.Graphics
 {
     public class DrawContext : IDisposable
     {
-        Dictionary<Type, object> references = new Dictionary<Type, object>();
-        List<IDisposable> disposables = new List<IDisposable>();
+        Dictionary<Type, object> references = new();
+        List<IDisposable> disposables = new();
 
         public T Get<T>() => (T)references[typeof(T)];
 

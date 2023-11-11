@@ -3,6 +3,7 @@ using BrewLib.Util;
 using OpenTK;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.Storyboarding;
+using StorybrewEditor.Util;
 using System.Diagnostics;
 
 namespace StorybrewEditor.UserInterface.Components
@@ -106,7 +107,7 @@ namespace StorybrewEditor.UserInterface.Components
                 }
             });
 
-            helpButton.OnClick += (sender, e) => Process.Start($"https://github.com/{Program.Repository}/wiki");
+            helpButton.OnClick += (sender, e) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");
             referencedAssemblyButton.OnClick += (sender, e) => Manager.ScreenLayerManager.Add(new ReferencedAssemblyConfig(project));
             dimSlider.OnValueChanged += (sender, e) =>
             {

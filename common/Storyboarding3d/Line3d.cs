@@ -31,17 +31,17 @@ namespace StorybrewCommon.Storyboarding3d
         public bool UseDistanceFade = true;
 
         ///<summary> The segment start position of this <see cref="Line3d"/>. </summary>
-        public readonly KeyframedValue<Vector3> StartPosition = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3);
 
         ///<summary> The segment end position of this <see cref="Line3d"/>. </summary>
-        public readonly KeyframedValue<Vector3> EndPosition = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        public readonly KeyframedValue<Vector3> EndPosition = new(InterpolatingFunctions.Vector3);
 
         ///<summary> The thickness of this <see cref="Line3d"/>, in osu!pixels, relative to 3D transformations. </summary>
-        public readonly KeyframedValue<float> Thickness = new KeyframedValue<float>(InterpolatingFunctions.Float, 1);
+        public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1);
 
         SizeF spriteBitmap;
 
-        readonly CommandGenerator gen = new CommandGenerator();
+        readonly CommandGenerator gen = new();
 
         ///<inheritdoc/>
         public IEnumerable<CommandGenerator> CommandGenerators { get { yield return gen; } }
@@ -137,19 +137,19 @@ namespace StorybrewCommon.Storyboarding3d
         public float EdgeOverlap = .5f, CapOverlap = .2f;
 
         public readonly KeyframedValue<Vector3> 
-            StartPosition = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3),
-            EndPosition = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+            StartPosition = new(InterpolatingFunctions.Vector3),
+            EndPosition = new(InterpolatingFunctions.Vector3);
         public readonly KeyframedValue<float> 
-            Thickness = new KeyframedValue<float>(InterpolatingFunctions.Float, 1), 
-            StartThickness = new KeyframedValue<float>(InterpolatingFunctions.Float, 1), 
-            EndThickness = new KeyframedValue<float>(InterpolatingFunctions.Float, 1);
+            Thickness = new(InterpolatingFunctions.Float, 1), 
+            StartThickness = new(InterpolatingFunctions.Float, 1), 
+            EndThickness = new(InterpolatingFunctions.Float, 1);
 
         readonly CommandGenerator 
-            genBody = new CommandGenerator(), 
-            genTopEdge = new CommandGenerator(), 
-            genBottomEdge = new CommandGenerator(),
-            genStartCap = new CommandGenerator(),
-            genEndCap = new CommandGenerator();
+            genBody = new(), 
+            genTopEdge = new(), 
+            genBottomEdge = new(),
+            genStartCap = new(),
+            genEndCap = new();
 
         ///<inheritdoc/>
         public IEnumerable<CommandGenerator> CommandGenerators

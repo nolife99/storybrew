@@ -46,7 +46,7 @@ namespace StorybrewEditor.Storyboarding
         public event EventHandler OnChanged;
         protected void RaiseChanged() => OnChanged?.Invoke(this, EventArgs.Empty);
 
-        public EffectConfig Config = new EffectConfig();
+        public EffectConfig Config = new();
         public event EventHandler OnConfigFieldsChanged;
         protected void RaiseConfigFieldsChanged() => OnConfigFieldsChanged?.Invoke(this, EventArgs.Empty);
 

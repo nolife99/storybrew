@@ -18,10 +18,10 @@ namespace StorybrewScripts
         [Group("Sprite")]
         [Configurable] public string SpritePath = "sb/bar.png";
         [Configurable] public OsbOrigin SpriteOrigin = OsbOrigin.BottomLeft;
-        [Configurable] public Vector2 SpriteScale = new Vector2(1, 100);
+        [Configurable] public Vector2 SpriteScale = new(1, 100);
 
         [Group("Bars")]
-        [Configurable] public Vector2 Position = new Vector2(0, 400);
+        [Configurable] public Vector2 Position = new(0, 400);
         [Configurable] public float Width = 640;
         [Configurable] public int BarCount = 96;
         [Configurable] public int LogScale = 600;

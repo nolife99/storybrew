@@ -24,26 +24,8 @@ namespace StorybrewEditor.Scripting
 
         public static void Compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            var setup = new AppDomainSetup
-            {
-                ApplicationName = $"ScriptCompiler {nextId++}",
-                ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase
-            };
-
             Debug.Print($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths)}");
-            var compilerDomain = AppDomain.CreateDomain(setup.ApplicationName, null, setup);
-            try
-            {
-                var compiler = (ScriptCompiler)compilerDomain.CreateInstanceFromAndUnwrap(
-                    typeof(ScriptCompiler).Assembly.ManifestModule.FullyQualifiedName,
-                    typeof(ScriptCompiler).FullName);
-
-                compile(sourcePaths, outputPath, referencedAssemblies);
-            }
-            finally
-            {
-                AppDomain.Unload(compilerDomain);
-            }
+            compile(sourcePaths, outputPath, referencedAssemblies);
         }
 
         static void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)

@@ -90,8 +90,8 @@ namespace Tiny
             using (var stream = File.Create(path)) Write(stream, GetFormat(path));
         }
 
-        public static YamlFormat Yaml = new YamlFormat();
-        public static JsonFormat Json = new JsonFormat();
+        public static YamlFormat Yaml = new();
+        public static JsonFormat Json = new();
 
         public static Format GetFormat(string path)
         {

@@ -50,10 +50,10 @@ namespace StorybrewEditor.Storyboarding
         public bool BeatmapDependent { get; set; }
         public override bool Multithreaded { get; set; }
 
-        readonly StringBuilder log = new StringBuilder();
+        readonly StringBuilder log = new();
         public string Log => log.ToString();
 
-        public List<EditorStoryboardLayer> EditorLayers = new List<EditorStoryboardLayer>();
+        public List<EditorStoryboardLayer> EditorLayers = new();
 
         public EditorGeneratorContext(Effect effect, string projectPath, string projectAssetPath, string mapsetPath, EditorBeatmap beatmap, IEnumerable<EditorBeatmap> beatmaps, MultiFileWatcher watcher)
         {
@@ -78,7 +78,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region Audio data
 
-        readonly DisposableNativeDictionary<string, FftStream> fftAudioStreams = new DisposableNativeDictionary<string, FftStream>();
+        readonly DisposableNativeDictionary<string, FftStream> fftAudioStreams = new();
         FftStream getFftStream(string path)
         {
             path = Path.GetFullPath(path);

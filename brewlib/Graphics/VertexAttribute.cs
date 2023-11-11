@@ -38,25 +38,25 @@ namespace BrewLib.Graphics
         public override int GetHashCode() => base.GetHashCode();
         public override string ToString() => $"{Name} {ComponentCount}x {Type} (used as {Usage})";
 
-        public static VertexAttribute CreatePosition2d() => new VertexAttribute
+        public static VertexAttribute CreatePosition2d() => new()
         {
             Name = PositionAttributeName,
             ComponentCount = 2,
             Usage = AttributeUsage.Position
         };
-        public static VertexAttribute CreatePosition3d() => new VertexAttribute
+        public static VertexAttribute CreatePosition3d() => new()
         {
             Name = PositionAttributeName,
             ComponentCount = 3,
             Usage = AttributeUsage.Position
         };
-        public static VertexAttribute CreateNormal() => new VertexAttribute
+        public static VertexAttribute CreateNormal() => new()
         {
             Name = NormalAttributeName,
             ComponentCount = 3,
             Usage = AttributeUsage.Normal
         };
-        public static VertexAttribute CreateDiffuseCoord(int index = 0) => new VertexAttribute
+        public static VertexAttribute CreateDiffuseCoord(int index = 0) => new()
         {
             Name = TextureCoordAttributeName + index,
             ComponentCount = 2,
@@ -77,19 +77,19 @@ namespace BrewLib.Graphics
             ComponentCount = 4,
             Usage = AttributeUsage.Color
         };
-        public static VertexAttribute CreateBoneWeight(int index = 0) => new VertexAttribute
+        public static VertexAttribute CreateBoneWeight(int index = 0) => new()
         {
             Name = BoneWeightAttributeName + index,
             ComponentCount = 2,
             Usage = AttributeUsage.BoneWeight
         };
-        public static VertexAttribute CreateScale() => new VertexAttribute
+        public static VertexAttribute CreateScale() => new()
         {
             Name = ScaleAttributeName,
             ComponentCount = 1,
             Usage = AttributeUsage.Scale
         };
-        public static VertexAttribute CreatePresence() => new VertexAttribute
+        public static VertexAttribute CreatePresence() => new()
         {
             Name = PresenceAttributeName,
             ComponentCount = 1,
@@ -110,7 +110,7 @@ namespace BrewLib.Graphics
             ComponentCount = 4,
             Usage = usage
         };
-        public static VertexAttribute CreateFloat(string name, AttributeUsage usage) => new VertexAttribute
+        public static VertexAttribute CreateFloat(string name, AttributeUsage usage) => new()
         {
             Name = name,
             ComponentCount = 1,

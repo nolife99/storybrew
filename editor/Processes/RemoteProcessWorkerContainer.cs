@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Text.Json;
 using System.Threading;
 
 namespace StorybrewEditor.Processes
@@ -20,17 +21,15 @@ namespace StorybrewEditor.Processes
 
         static RemoteProcessWorker retrieveWorker(NamedPipeServerStream pipeServer)
         {
-            var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-
             while (true)
             {
                 try
                 {
                     Trace.WriteLine("Waiting for connection...");
-                    pipeServer.WaitForConnection();
+                    pipeServer.WaitForConnection(); 
                     Trace.WriteLine("Connection established.");
 
-                    var worker = (RemoteProcessWorker)formatter.Deserialize(pipeServer);
+                    var worker = (RemoteProcessWorker)JsonSerializer.Deserialize(pipeServer, typeof(RemoteProcessWorker));
                     Trace.WriteLine("Worker received.");
 
                     return worker;

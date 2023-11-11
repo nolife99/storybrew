@@ -13,7 +13,7 @@ namespace BrewLib.Graphics.Textures
 {
     public class TextureOptions : IEquatable<TextureOptions>
     {
-        public static readonly TextureOptions Default = new TextureOptions();
+        public static readonly TextureOptions Default = new();
 
         // Settings
         public bool Srgb = true, PreMultiply, GenerateMipmaps;
@@ -104,7 +104,7 @@ namespace BrewLib.Graphics.Textures
             }
             return null;
         }
-        static readonly Dictionary<Type, Func<TinyToken, object>> fieldParsers = new Dictionary<Type, Func<TinyToken, object>>
+        static readonly Dictionary<Type, Func<TinyToken, object>> fieldParsers = new()
         {
             [typeof(string)] = data => data.Value<string>(),
             [typeof(float)] = data => data.Value<float>(),

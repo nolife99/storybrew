@@ -13,7 +13,7 @@ namespace BrewLib.Util.Compression
     {
         public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
         protected List<Argument> toCompress, lossyCompress;
-        protected List<string> toCleanup = new List<string>();
+        protected List<string> toCleanup = new();
 
         protected Process process;
         protected ResourceContainer container;

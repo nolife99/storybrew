@@ -343,7 +343,7 @@ namespace BrewLib.Graphics
             }
         }
 
-        static readonly Dictionary<EnableCap, bool> capabilityCache = new Dictionary<EnableCap, bool>();
+        static readonly Dictionary<EnableCap, bool> capabilityCache = new();
         internal static void SetCapability(EnableCap capability, bool enable)
         {
             if (capabilityCache.TryGetValue(capability, out bool isEnabled) && isEnabled == enable) return;

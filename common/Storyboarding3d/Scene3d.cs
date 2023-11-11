@@ -9,7 +9,7 @@ namespace StorybrewCommon.Storyboarding3d
     public class Scene3d
     {
         ///<summary> Represents the scene's base node or root. </summary>
-        public readonly Node3d Root = new Node3d();
+        public readonly Node3d Root = new();
 
         ///<summary> Adds a 3D object to the scene's root. </summary>
         public void Add(Object3d child) => Root.Add(child);

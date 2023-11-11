@@ -17,8 +17,8 @@ namespace StorybrewEditor.Storyboarding
 {
     public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
     {
-        public readonly static RenderStates AlphaBlendStates = new RenderStates();
-        public readonly static RenderStates AdditiveStates = new RenderStates { BlendingFactor = new BlendingFactorState(BlendingMode.Additive) };
+        public readonly static RenderStates AlphaBlendStates = new();
+        public readonly static RenderStates AdditiveStates = new() { BlendingFactor = new BlendingFactorState(BlendingMode.Additive) };
 
         public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats) => Draw(
             drawContext, camera, bounds, opacity, project, frameStats, this);

@@ -51,20 +51,20 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         }
 
 #pragma warning disable CS1591
-        public static CommandPosition operator +(CommandPosition left, CommandPosition right) => new CommandPosition(left.x + right.x, left.y + right.y);
-        public static CommandPosition operator -(CommandPosition left, CommandPosition right) => new CommandPosition(left.x - right.x, left.y - right.y);
-        public static CommandPosition operator -(CommandPosition pos) => new CommandPosition(-pos.x, -pos.y);
-        public static CommandPosition operator *(CommandPosition left, CommandPosition right) => new CommandPosition(left.x * right.x, left.y * right.y);
-        public static CommandPosition operator *(CommandPosition left, double right) => new CommandPosition(left.x * right, left.y * right);
+        public static CommandPosition operator +(CommandPosition left, CommandPosition right) => new(left.x + right.x, left.y + right.y);
+        public static CommandPosition operator -(CommandPosition left, CommandPosition right) => new(left.x - right.x, left.y - right.y);
+        public static CommandPosition operator -(CommandPosition pos) => new(-pos.x, -pos.y);
+        public static CommandPosition operator *(CommandPosition left, CommandPosition right) => new(left.x * right.x, left.y * right.y);
+        public static CommandPosition operator *(CommandPosition left, double right) => new(left.x * right, left.y * right);
         public static CommandPosition operator *(double left, CommandPosition right) => right * left;
-        public static CommandPosition operator /(CommandPosition left, double right) => new CommandPosition(left.x / right, left.y / right);
+        public static CommandPosition operator /(CommandPosition left, double right) => new(left.x / right, left.y / right);
         public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
         public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
-        public static implicit operator OpenTK.Vector2(CommandPosition position) => new OpenTK.Vector2(position.x, position.Y);
-        public static implicit operator Vector2(CommandPosition position) => new Vector2(position.x, position.Y);
-        public static implicit operator PointF(CommandPosition position) => new PointF(position.x, position.Y);
-        public static implicit operator CommandPosition(OpenTK.Vector2 vector) => new CommandPosition(vector.X, vector.Y);
-        public static implicit operator CommandPosition(Vector2 vector) => new CommandPosition(vector.X, vector.Y);
-        public static implicit operator CommandPosition(PointF vector) => new CommandPosition(vector.X, vector.Y);
+        public static implicit operator OpenTK.Vector2(CommandPosition position) => new(position.x, position.Y);
+        public static implicit operator Vector2(CommandPosition position) => new(position.x, position.Y);
+        public static implicit operator PointF(CommandPosition position) => new(position.x, position.Y);
+        public static implicit operator CommandPosition(OpenTK.Vector2 vector) => new(vector.X, vector.Y);
+        public static implicit operator CommandPosition(Vector2 vector) => new(vector.X, vector.Y);
+        public static implicit operator CommandPosition(PointF vector) => new(vector.X, vector.Y);
     }
 }

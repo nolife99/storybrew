@@ -15,11 +15,11 @@ namespace BrewLib.Graphics.Text
 {
     public class TextGenerator : IDisposable
     {
-        SolidBrush textBrush = new SolidBrush(Color.White), shadowBrush = new SolidBrush(Color.FromArgb(220, 0, 0, 0));
-        Dictionary<string, Font> fonts = new Dictionary<string, Font>();
-        Dictionary<string, FontFamily> fontFamilies = new Dictionary<string, FontFamily>();
-        Dictionary<string, PrivateFontCollection> fontCollections = new Dictionary<string, PrivateFontCollection>();
-        readonly LinkedList<string> recentlyUsedFonts = new LinkedList<string>();
+        SolidBrush textBrush = new(Color.White), shadowBrush = new(Color.FromArgb(220, 0, 0, 0));
+        Dictionary<string, Font> fonts = new();
+        Dictionary<string, FontFamily> fontFamilies = new();
+        Dictionary<string, PrivateFontCollection> fontCollections = new();
+        readonly LinkedList<string> recentlyUsedFonts = new();
         readonly ResourceContainer resourceContainer;
         public TextGenerator(ResourceContainer resourceContainer) => this.resourceContainer = resourceContainer;
 

@@ -10,7 +10,7 @@ namespace StorybrewCommon.Storyboarding.Display
     public class AnimatedValue<TValue> where TValue : CommandValue
     {
         public TValue DefaultValue;
-        readonly List<ITypedCommand<TValue>> commands = new List<ITypedCommand<TValue>>();
+        readonly List<ITypedCommand<TValue>> commands = new();
 
         public bool HasCommands => commands.Count > 0;
         public bool HasOverlap { get; private set; }

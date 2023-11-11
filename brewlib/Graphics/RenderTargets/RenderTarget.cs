@@ -118,7 +118,7 @@ namespace BrewLib.Graphics.RenderTargets
             }
         }
 
-        public Color4 ClearColor = new Color4(0, 0, 0, 0);
+        public Color4 ClearColor = new(0, 0, 0, 0);
 
         public RenderTarget(RenderbufferStorage? renderBufferType = null)
             : this(0, 0, renderBufferType) { }

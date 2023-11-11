@@ -341,10 +341,9 @@ namespace StorybrewEditor.UserInterface.Components
                 }
 
                 Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
-                var process = Process.Start(new ProcessStartInfo
+                var process = Process.Start(new ProcessStartInfo(path, arguments)
                 {
-                    FileName = path,
-                    Arguments = arguments,
+                    UseShellExecute = true,
                     WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden,
                 });
                 return;

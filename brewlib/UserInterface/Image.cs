@@ -8,7 +8,7 @@ namespace BrewLib.UserInterface
 {
     public class Image : Widget
     {
-        Sprite sprite = new Sprite();
+        Sprite sprite = new();
 
         public override Vector2 PreferredSize => sprite.Texture?.Size ?? Vector2.Zero;
         public Texture2dRegion Texture

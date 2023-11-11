@@ -9,7 +9,7 @@ namespace StorybrewCommon.Animations
     ///<typeparam name="TValue"> The type value of the keyframed value. </typeparam>
     public class KeyframedValue<TValue> : MarshalByRefObject, IEnumerable<Keyframe<TValue>>
     {
-        List<Keyframe<TValue>> keyframes = new List<Keyframe<TValue>>();
+        List<Keyframe<TValue>> keyframes = new();
         readonly Func<TValue, TValue, double, TValue> interpolate;
         readonly TValue defaultValue;
 

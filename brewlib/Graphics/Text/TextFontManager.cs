@@ -5,8 +5,8 @@ namespace BrewLib.Graphics.Text
 {
     public class TextFontManager : IDisposable
     {
-        Dictionary<string, TextFont> fonts = new Dictionary<string, TextFont>();
-        readonly Dictionary<string, int> references = new Dictionary<string, int>();
+        Dictionary<string, TextFont> fonts = new();
+        readonly Dictionary<string, int> references = new();
 
         public TextFont GetTextFont(string fontName, float fontSize, float scaling)
         {

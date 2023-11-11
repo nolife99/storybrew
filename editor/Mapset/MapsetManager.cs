@@ -11,7 +11,7 @@ namespace StorybrewEditor.Mapset
         readonly string path;
         readonly bool logLoadingExceptions;
 
-        readonly HashSet<EditorBeatmap> beatmaps = new HashSet<EditorBeatmap>();
+        readonly HashSet<EditorBeatmap> beatmaps = new();
         public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
         public int BeatmapCount => beatmaps.Count;
 
@@ -50,7 +50,7 @@ namespace StorybrewEditor.Mapset
         #region Events
 
         FileSystemWatcher fileWatcher;
-        readonly ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
+        readonly ThrottledActionScheduler scheduler = new();
 
         public event FileSystemEventHandler OnFileChanged;
 

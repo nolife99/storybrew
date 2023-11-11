@@ -12,7 +12,7 @@ namespace BrewLib.Graphics.Text
         readonly int width, height;
         public int Width => width;
         public int Height => height;
-        public Vector2 Size => new Vector2(width, height);
+        public Vector2 Size => new(width, height);
 
         public FontGlyph(Texture2dRegion texture, int width, int height)
         {

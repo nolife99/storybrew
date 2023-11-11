@@ -4,7 +4,6 @@ using StorybrewEditor.Util;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.Remoting;
 
 namespace StorybrewEditor.Storyboarding
 {
@@ -12,7 +11,7 @@ namespace StorybrewEditor.Storyboarding
     {
         readonly ScriptContainer<StoryboardObjectGenerator> scriptContainer;
 
-        readonly Stopwatch statusStopwatch = new Stopwatch();
+        readonly Stopwatch statusStopwatch = new();
         string configScriptIdentifier;
         MultiFileWatcher dependencyWatcher;
 
@@ -75,32 +74,11 @@ namespace StorybrewEditor.Storyboarding
                 });
 
                 changeStatus(EffectStatus.Updating);
+
                 script.Generate(context);
                 context.EditorLayers.ForEach(layer => layer.PostProcess());
 
                 success = true;
-            }
-            catch (PipeException e)
-            {
-                Debug.Print($"Script execution failed with pipe-related IOException, reloading {BaseName} ({e.Message})");
-                changeStatus(EffectStatus.ReloadPending);
-                Program.Schedule(() =>
-                {
-                    if (Project.Disposed) return;
-                    scriptContainer.ReloadScript();
-                });
-                return;
-            }
-            catch (RemotingException e)
-            {
-                Debug.Print($"Script execution failed with RemotingException, reloading {BaseName} ({e.Message})");
-                changeStatus(EffectStatus.ReloadPending);
-                Program.Schedule(() =>
-                {
-                    if (Project.Disposed) return;
-                    scriptContainer.ReloadScript();
-                });
-                return;
             }
             catch (ScriptCompilationException e)
             {

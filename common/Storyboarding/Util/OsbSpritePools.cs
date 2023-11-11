@@ -8,8 +8,8 @@ namespace StorybrewCommon.Storyboarding.Util
     public class OsbSpritePools : IDisposable
     {
         readonly StoryboardSegment segment;
-        readonly Dictionary<string, OsbSpritePool> pools = new Dictionary<string, OsbSpritePool>();
-        readonly Dictionary<string, OsbAnimationPool> animationPools = new Dictionary<string, OsbAnimationPool>();
+        readonly Dictionary<string, OsbSpritePool> pools = new();
+        readonly Dictionary<string, OsbAnimationPool> animationPools = new();
 
         int maxPoolDuration = 60000;
         public int MaxPoolDuration

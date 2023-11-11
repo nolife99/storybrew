@@ -11,10 +11,10 @@ namespace StorybrewEditor.UserInterface.Drawables
     public class StoryboardDrawable : Drawable
     {
         public Vector2 MinSize => Vector2.Zero;
-        public Vector2 PreferredSize => new Vector2(854, 480);
+        public Vector2 PreferredSize => new(854, 480);
 
         readonly Project project;
-        readonly RenderStates linesRenderStates = new RenderStates();
+        readonly RenderStates linesRenderStates = new();
 
         public double Time;
         public bool Clip = true, UpdateFrameStats;

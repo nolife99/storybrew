@@ -19,8 +19,8 @@ namespace BrewLib.UserInterface.Skinning
         public readonly TextureContainer TextureContainer;
         public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
 
-        Dictionary<string, Drawable> drawables = new Dictionary<string, Drawable>();
-        readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = new Dictionary<Type, Dictionary<string, WidgetStyle>>();
+        Dictionary<string, Drawable> drawables = new();
+        readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = new();
 
         public Skin(TextureContainer textureContainer) => TextureContainer = textureContainer;
 
@@ -313,8 +313,8 @@ namespace BrewLib.UserInterface.Skinning
             return null;
         }
 
-        static readonly ColorConverter colorConverter = new ColorConverter();
-        static readonly Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
+        static readonly ColorConverter colorConverter = new();
+        static readonly Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new()
         {
             [typeof(string)] = (data, constants, skin) => data.Value<string>(),
             [typeof(float)] = (data, constants, skin) => data.Value<float>(),

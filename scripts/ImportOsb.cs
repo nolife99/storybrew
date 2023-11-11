@@ -14,7 +14,7 @@ namespace StorybrewScripts
     {
         [Description("Path to the .osb to import, relative to the project folder.")]
         [Configurable] public string Path = "storyboard.osb";
-        readonly Dictionary<string, string> vars = new Dictionary<string, string>();
+        readonly Dictionary<string, string> vars = new();
 
         protected override void Generate()
         {

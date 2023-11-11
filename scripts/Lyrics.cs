@@ -29,15 +29,15 @@ namespace StorybrewScripts
 
         [Group("Outline")]
         [Configurable] public int OutlineThickness = 3;
-        [Configurable] public Color4 OutlineColor = new Color4(50, 50, 50, 200);
+        [Configurable] public Color4 OutlineColor = new(50, 50, 50, 200);
 
         [Group("Shadow")]
         [Configurable] public int ShadowThickness = 0;
-        [Configurable] public Color4 ShadowColor = new Color4(0, 0, 0, 100);
+        [Configurable] public Color4 ShadowColor = new(0, 0, 0, 100);
 
         [Group("Glow")]
         [Configurable] public int GlowRadius = 0;
-        [Configurable] public Color4 GlowColor = new Color4(255, 255, 255, 100);
+        [Configurable] public Color4 GlowColor = new(255, 255, 255, 100);
         [Configurable] public bool GlowAdditive = true;
 
         [Group("Misc")]
