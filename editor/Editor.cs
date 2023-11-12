@@ -10,8 +10,8 @@ using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics.OpenGL;
+using osuTK;
+using osuTK.Graphics.OpenGL;
 using StorybrewEditor.ScreenLayers;
 using System;
 using System.ComponentModel;
@@ -56,17 +56,17 @@ namespace StorybrewEditor
 
             try
             {
-                var brewLibAssembly = Assembly.GetAssembly(typeof(Drawable));
+                var brewLibAssembly = typeof(Drawable).Assembly;
                 Skin = new Skin(drawContext.Get<TextureContainer>())
                 {
-                    ResolveDrawableType = (drawableTypeName) => brewLibAssembly.GetType(
+                    ResolveDrawableType = drawableTypeName => brewLibAssembly.GetType(
                         $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}", true, true),
 
-                    ResolveWidgetType = (widgetTypeName) => Type.GetType(
+                    ResolveWidgetType = widgetTypeName => Type.GetType(
                         $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
                         brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true, true),
 
-                    ResolveStyleType = (styleTypeName) => Type.GetType(
+                    ResolveStyleType = styleTypeName => Type.GetType(
                         $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ??
                         brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true),
                 };
@@ -247,7 +247,7 @@ namespace StorybrewEditor
     }
     public class FormsWindow : System.Windows.Forms.IWin32Window
     {
-        public IntPtr Handle { get; }
-        public FormsWindow(IntPtr handle) => Handle = handle;
+        public nint Handle { get; }
+        public FormsWindow(nint handle) => Handle = handle;
     }
 }

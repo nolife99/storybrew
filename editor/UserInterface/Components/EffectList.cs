@@ -1,7 +1,7 @@
 ﻿using BrewLib.Data;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.Storyboarding;
 using System;

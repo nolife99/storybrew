@@ -3,8 +3,8 @@ using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Graphics.Textures;
-using OpenTK;
-using OpenTK.Graphics.OpenGL;
+using osuTK;
+using osuTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
 

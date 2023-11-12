@@ -1,4 +1,4 @@
-﻿using OpenTK;
+﻿using osuTK;
 
 namespace BrewLib.Util
 {

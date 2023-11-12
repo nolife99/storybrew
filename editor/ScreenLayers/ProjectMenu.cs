@@ -2,8 +2,8 @@
 using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Input;
+using osuTK;
+using osuTK.Input;
 using StorybrewCommon.Mapset;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.UserInterface;
@@ -12,11 +12,10 @@ using StorybrewEditor.UserInterface.Drawables;
 using StorybrewEditor.Util;
 using System;
 using System.Globalization;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using StorybrewEditor.Scripting;
+using System.Diagnostics;
 
 namespace StorybrewEditor.ScreenLayers
 {

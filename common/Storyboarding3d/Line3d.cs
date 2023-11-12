@@ -5,7 +5,7 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Drawing;
-using StorybrewCommon.OpenTKUtil;
+using StorybrewCommon.osuTKUtil;
 
 namespace StorybrewCommon.Storyboarding3d
 {

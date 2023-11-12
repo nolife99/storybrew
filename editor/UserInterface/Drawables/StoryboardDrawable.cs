@@ -2,8 +2,8 @@
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Renderers;
-using OpenTK;
-using OpenTK.Graphics;
+using osuTK;
+using osuTK.Graphics;
 using StorybrewEditor.Storyboarding;
 
 namespace StorybrewEditor.UserInterface.Drawables

@@ -1,6 +1,6 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Input;
-using OpenTK.Input;
+using osuTK.Input;
 using System;
 
 namespace BrewLib.ScreenLayers

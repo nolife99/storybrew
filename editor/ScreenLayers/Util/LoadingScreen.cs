@@ -1,6 +1,6 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using System;
 using System.Diagnostics;
 using System.Threading;

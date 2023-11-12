@@ -1,4 +1,4 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using osuTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
 using System.Drawing;

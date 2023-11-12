@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net481</TargetFramework>
+    <TargetFramework>net7.0-windows</TargetFramework>
     <Configurations>Output</Configurations>
     <RootNamespace>StorybrewScripts</RootNamespace>
     <AssemblyName>storyboard</AssemblyName>
@@ -19,14 +19,20 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="OpenTK">
-      <HintPath>..\..\OpenTK.dll</HintPath>
+    <Reference Include="osuTK">
+      <HintPath>..\..\osuTK.dll</HintPath>
     </Reference>
     <Reference Include="BrewLib">
       <HintPath>..\..\BrewLib.dll</HintPath>
     </Reference>
     <Reference Include="StorybrewCommon">
       <HintPath>..\..\StorybrewCommon.dll</HintPath>
+    </Reference>
+    <Reference Include="StorybrewEditor">
+      <HintPath>..\..\StorybrewEditor.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Drawing.Common">
+      <HintPath>..\..\System.Drawing.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

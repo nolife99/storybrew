@@ -65,7 +65,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         public SpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, bool additive)
             : this(segment, path, origin, position, additive ?
-            (pS, sT, eT) => pS.Additive(sT) : (Action<OsbSprite, double, double>)null) { }
+            (pS, sT, eT) => pS.Additive(sT) : null) { }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -233,7 +233,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbSprite Get(double startTime, double endTime, string path, OsbOrigin origin, CommandPosition position, bool additive, int group = 0)
             => Get(startTime, endTime, path, origin, position, additive ?
-            (pS, sT, eT) => pS.Additive(sT) : (Action<OsbSprite, double, double>)null, group);
+            (pS, sT, eT) => pS.Additive(sT) : null, group);
 
         ///<summary> Gets an available sprite from the sprite pools. </summary>
         ///<param name="startTime"> The start time of the available sprite. </param>
@@ -329,7 +329,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="group"> Pool group to get a sprite from. </param>
         public OsbAnimation Get(double startTime, double endTime, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, bool additive, int group = 0)
             => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, position, additive ?
-            (pS, sT, eT) => pS.Additive(sT) : (Action<OsbSprite, double, double>)null, group);
+            (pS, sT, eT) => pS.Additive(sT) : null, group);
 
         ///<summary> Gets an available animation from the pools. </summary>
         ///<param name="startTime"> The start time of the available animation. </param>
@@ -478,7 +478,7 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
         public AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, bool additive)
             : this(segment, path, frameCount, frameDelay, loopType, origin, position, additive ?
-            (pA, sT, eT) => pA.Additive(sT) : (Action<OsbSprite, double, double>)null)
+            (pA, sT, eT) => pA.Additive(sT) : null)
         { }
 
         ///<summary> Constructs a new <see cref="AnimationPool"/>. </summary>

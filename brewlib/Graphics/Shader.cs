@@ -1,7 +1,7 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using osuTK;
+using osuTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -39,7 +39,7 @@ namespace BrewLib.Graphics
             if (!isInitialized)
             {
                 Dispose(true);
-                throw new Exception($"Failed to initialize shader:\n\n{log}");
+                throw new GraphicsException($"Failed to initialize shader:\n\n{log}");
             }
 
             retrieveAttributes();
@@ -112,8 +112,8 @@ namespace BrewLib.Graphics
 
         void initialize(string vertexShaderCode, string fragmentShaderCode)
         {
-            if (string.IsNullOrEmpty(vertexShaderCode)) throw new ArgumentException("vertexShaderCode");
-            if (string.IsNullOrEmpty(fragmentShaderCode)) throw new ArgumentException("fragmentShaderCode");
+            if (string.IsNullOrEmpty(vertexShaderCode)) throw new ArgumentNullException(nameof(vertexShaderCode));
+            if (string.IsNullOrEmpty(fragmentShaderCode)) throw new ArgumentNullException(nameof(fragmentShaderCode));
 
             Dispose(true);
 
@@ -225,7 +225,7 @@ namespace BrewLib.Graphics
                 Type = type;
                 Location = location;
             }
-            public override string ToString() => $"{Size}@{Location} {Type}x{Size}";
+            public override readonly string ToString() => $"{Size}@{Location} {Type}x{Size}";
         }
     }
 }

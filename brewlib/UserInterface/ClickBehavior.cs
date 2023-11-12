@@ -1,4 +1,4 @@
-﻿using OpenTK.Input;
+﻿using osuTK.Input;
 using System;
 
 namespace BrewLib.UserInterface

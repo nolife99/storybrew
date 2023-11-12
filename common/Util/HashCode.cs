@@ -37,7 +37,7 @@ namespace StorybrewCommon.Util
 
         [DllImport("bcrypt.dll", CallingConvention = CallingConvention.Winapi)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static extern unsafe uint BCryptGenRandom(IntPtr hAlgorithm, byte* pbBuffer, int cbBuffer, int dwFlags);
+        static extern unsafe uint BCryptGenRandom(nint hAlgorithm, byte* pbBuffer, int cbBuffer, int dwFlags);
 
         static unsafe uint GenerateGlobalSeed()
         {
@@ -46,7 +46,7 @@ namespace StorybrewCommon.Util
 
             if (code != 0) using (var rng = RandomNumberGenerator.Create())
             {
-                var bytes = new byte[sizeof(uint)];
+                Span<byte> bytes = stackalloc byte[sizeof(uint)];
                 rng.GetBytes(bytes);
 
                 fixed (byte* addr = &bytes[0]) result = *(uint*)addr;

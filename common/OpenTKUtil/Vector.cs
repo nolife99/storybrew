@@ -1,17 +1,17 @@
-using OpenTK;
+using osuTK;
 using System;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
 using System.Xml.Serialization;
 
-// OpenTK 4.2
-namespace StorybrewCommon.OpenTKUtil
+// osuTK 4.2
+namespace StorybrewCommon.osuTKUtil
 {
     ///<summary> Represents a 2D vector using two 32-bit integer numbers. </summary>
     ///<remarks> The Vector2i structure is suitable for interoperation with unmanaged code requiring two consecutive integers. </remarks>
     [Serializable][StructLayout(LayoutKind.Sequential)] public struct Vector2i : IEquatable<Vector2i> 
     {
-        // Original: https://github.com/opentk/opentk/blob/master/src/OpenTK.Mathematics/Vector/Vector2i.cs
+        // Original: https://github.com/osuTK/osuTK/blob/master/src/osuTK.Mathematics/Vector/Vector2i.cs
         
         ///<summary> The X component of the Vector2i. </summary>
         public int X;
@@ -41,7 +41,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<exception cref="IndexOutOfRangeException">Thrown if the index is less than 0 or greater than 1.</exception>
         public int this[int index]
         {
-            get
+            readonly get
             {
                 switch (index)
                 {
@@ -62,16 +62,16 @@ namespace StorybrewCommon.OpenTKUtil
         }
 
         ///<summary> Gets the manhattan length of the vector. </summary>
-        public int ManhattanLength => Math.Abs(X) + Math.Abs(Y);
+        public readonly int ManhattanLength => Math.Abs(X) + Math.Abs(Y);
 
         ///<summary> Gets the euclidian length of the vector. </summary>
-        public float EuclideanLength => (float)Math.Sqrt(X * X + Y * Y);
+        public readonly float EuclideanLength => (float)Math.Sqrt(X * X + Y * Y);
 
         ///<summary> Gets the perpendicular vector on the right side of this vector. </summary>
-        public Vector2i PerpendicularRight => new(Y, -X);
+        public readonly Vector2i PerpendicularRight => new(Y, -X);
 
         ///<summary> Gets the perpendicular vector on the left side of this vector. </summary>
-        public Vector2i PerpendicularLeft => new(-Y, X);
+        public readonly Vector2i PerpendicularLeft => new(-Y, X);
 
         ///<summary> Defines a unit-length <see cref="Vector2i"/> that points towards the X-axis. </summary>
         public static readonly Vector2i UnitX = new(1, 0);
@@ -275,7 +275,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Y and X components of this instance. </summary>
         [XmlIgnore] public Vector2i Yx
         {
-            get => new(Y, X);
+            readonly get => new(Y, X);
             set
             {
                 Y = value.X;
@@ -285,7 +285,7 @@ namespace StorybrewCommon.OpenTKUtil
 
         ///<summary> Gets a <see cref="Vector2"/> object with the same component values as the <see cref="Vector2i"/> instance. </summary>
         ///<returns>The resulting <see cref="Vector3"/> instance.</returns>
-        public Vector2 ToVector2() => new(X, Y);
+        public readonly Vector2 ToVector2() => new(X, Y);
 
         ///<summary> Gets a <see cref="Vector2"/> object with the same component values as the <see cref="Vector2i"/> instance. </summary>
         ///<param name="input">The given <see cref="Vector2i"/> to convert.</param>
@@ -376,15 +376,15 @@ namespace StorybrewCommon.OpenTKUtil
         public override bool Equals(object obj) => obj is Vector2i i && Equals(i);
 
         ///<inheritdoc/>
-        public bool Equals(Vector2i other) => X == other.X && Y == other.Y;
+        public readonly bool Equals(Vector2i other) => X == other.X && Y == other.Y;
 
         ///<inheritdoc/>
-        public override int GetHashCode() => base.GetHashCode();
+        public override readonly int GetHashCode() => base.GetHashCode();
 
         ///<summary> Deconstructs the vector into its individual components. </summary>
         ///<param name="x">The X component of the vector.</param>
         ///<param name="y">The Y component of the vector.</param>
-        [Pure] public void Deconstruct(out int x, out int y)
+        [Pure] public readonly void Deconstruct(out int x, out int y)
         {
             x = X;
             y = Y;
@@ -395,7 +395,7 @@ namespace StorybrewCommon.OpenTKUtil
     ///<remarks> The Vector3i structure is suitable for interoperation with unmanaged code requiring three consecutive integers. </remarks>
     [Serializable] [StructLayout(LayoutKind.Sequential)] public struct Vector3i : IEquatable<Vector3i>
     {
-        // Original: https://github.com/opentk/opentk/blob/master/src/OpenTK.Mathematics/Vector/Vector3i.cs
+        // Original: https://github.com/osuTK/osuTK/blob/master/src/osuTK.Mathematics/Vector/Vector3i.cs
         
         ///<summary> The X component of the Vector3i. </summary>
         public int X;
@@ -450,7 +450,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<exception cref="IndexOutOfRangeException">Thrown if the index is less than 0 or greater than 2.</exception>
         public int this[int index]
         {
-            get
+            readonly get
             {
                 switch (index)
                 {
@@ -473,10 +473,10 @@ namespace StorybrewCommon.OpenTKUtil
         }
 
         ///<summary> Gets the manhattan length of the vector. </summary>
-        public int ManhattanLength => Math.Abs(X) + Math.Abs(Y) + Math.Abs(Z);
+        public readonly int ManhattanLength => Math.Abs(X) + Math.Abs(Y) + Math.Abs(Z);
 
         ///<summary> Gets the euclidian length of the vector. </summary>
-        public float EuclideanLength => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
+        public readonly float EuclideanLength => (float)Math.Sqrt(X * X + Y * Y + Z * Z);
 
         ///<summary> Defines a unit-length Vector3i that points towards the X-axis. </summary>
         public static readonly Vector3i UnitX = new(1, 0, 0);
@@ -696,7 +696,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the X and Y components of this instance. </summary>
         [XmlIgnore] public Vector2i Xy
         {
-            get => new(X, Y);
+            readonly get => new(X, Y);
             set
             {
                 X = value.X;
@@ -707,7 +707,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the X and Z components of this instance. </summary>
         [XmlIgnore] public Vector2i Xz
         {
-            get => new(X, Z);
+            readonly get => new(X, Z);
             set
             {
                 X = value.X;
@@ -718,7 +718,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Y and X components of this instance. </summary>
         [XmlIgnore] public Vector2i Yx
         {
-            get => new(Y, X);
+            readonly get => new(Y, X);
             set
             {
                 Y = value.X;
@@ -729,7 +729,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Y and Z components of this instance. </summary>
         [XmlIgnore] public Vector2i Yz
         {
-            get => new(Y, Z);
+            readonly get => new(Y, Z);
             set
             {
                 Y = value.X;
@@ -740,7 +740,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Z and X components of this instance. </summary>
         [XmlIgnore] public Vector2i Zx
         {
-            get => new(Z, X);
+            readonly get => new(Z, X);
             set
             {
                 Z = value.X;
@@ -751,7 +751,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector2i"/> with the Z and Y components of this instance. </summary>
         [XmlIgnore] public Vector2i Zy
         {
-            get => new(Z, Y);
+            readonly get => new(Z, Y);
             set
             {
                 Z = value.X;
@@ -762,7 +762,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the X, Z, and Y components of this instance. </summary>
         [XmlIgnore] public Vector3i Xzy
         {
-            get => new(X, Z, Y);
+            readonly get => new(X, Z, Y);
             set
             {
                 X = value.X;
@@ -774,7 +774,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Y, X, and Z components of this instance. </summary>
         [XmlIgnore] public Vector3i Yxz
         {
-            get => new(Y, X, Z);
+            readonly get => new(Y, X, Z);
             set
             {
                 Y = value.X;
@@ -786,7 +786,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Y, Z, and X components of this instance. </summary>
         [XmlIgnore] public Vector3i Yzx
         {
-            get => new(Y, Z, X);
+            readonly get => new(Y, Z, X);
             set
             {
                 Y = value.X;
@@ -798,7 +798,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Z, X, and Y components of this instance. </summary>
         [XmlIgnore] public Vector3i Zxy
         {
-            get => new(Z, X, Y);
+            readonly get => new(Z, X, Y);
             set
             {
                 Z = value.X;
@@ -810,7 +810,7 @@ namespace StorybrewCommon.OpenTKUtil
         ///<summary> Gets or sets a <see cref="Vector3i"/> with the Z, Y, and X components of this instance. </summary>
         [XmlIgnore] public Vector3i Zyx
         {
-            get => new(Z, Y, X);
+            readonly get => new(Z, Y, X);
             set
             {
                 Z = value.X;
@@ -821,7 +821,7 @@ namespace StorybrewCommon.OpenTKUtil
 
         ///<summary> Gets a <see cref="Vector3"/> object with the same component values as the <see cref="Vector3i"/> instance. </summary>
         ///<returns>The resulting <see cref="Vector3"/> instance.</returns>
-        public Vector3 ToVector3() => new(X, Y, Z);
+        public readonly Vector3 ToVector3() => new(X, Y, Z);
 
         ///<summary> Gets a <see cref="Vector3"/> object with the same component values as the <see cref="Vector3i"/> instance. </summary>
         ///<param name="input">The given <see cref="Vector3i"/> to convert.</param>
@@ -914,16 +914,16 @@ namespace StorybrewCommon.OpenTKUtil
         public override bool Equals(object obj) => obj is Vector3i i && Equals(i);
 
         ///<inheritdoc/>
-        public bool Equals(Vector3i other) => X == other.X && Y == other.Y && Z == other.Z;
+        public readonly bool Equals(Vector3i other) => X == other.X && Y == other.Y && Z == other.Z;
 
         ///<inheritdoc/>
-        public override int GetHashCode() => base.GetHashCode();
+        public override readonly int GetHashCode() => base.GetHashCode();
 
         ///<summary> Deconstructs the vector into its individual components. </summary>
         ///<param name="x">The X component of the vector.</param>
         ///<param name="y">The Y component of the vector.</param>
         ///<param name="z">The Z component of the vector.</param>
-        [Pure] public void Deconstruct(out int x, out int y, out int z)
+        [Pure] public readonly void Deconstruct(out int x, out int y, out int z)
         {
             x = X;
             y = Y;

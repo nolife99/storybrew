@@ -1,8 +1,8 @@
-﻿using OpenTK.Graphics;
+﻿using osuTK.Graphics;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.OpenTKUtil;
+using StorybrewCommon.osuTKUtil;
 using System.Numerics;
 using System;
 

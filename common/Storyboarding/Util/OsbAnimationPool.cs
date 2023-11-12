@@ -20,7 +20,7 @@ namespace StorybrewCommon.Storyboarding.Util
 
         public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, bool additive)
             : this(segment, path, frameCount, frameDelay, loopType, origin, additive ?
-            (pA, sT, eT) => pA.Additive(sT) : (Action<OsbSprite, double, double>)null)
+            (pA, sT, eT) => pA.Additive(sT) : null)
         { }
 
         protected override OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin)

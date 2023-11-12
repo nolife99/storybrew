@@ -1,6 +1,6 @@
 ﻿using BrewLib.UserInterface;
-using OpenTK;
-using StorybrewCommon.OpenTKUtil;
+using osuTK;
+using StorybrewCommon.osuTKUtil;
 using System;
 using System.Globalization;
 

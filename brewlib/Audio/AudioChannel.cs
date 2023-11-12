@@ -1,5 +1,5 @@
 ﻿using ManagedBass;
-using OpenTK;
+using osuTK;
 using System;
 
 namespace BrewLib.Audio
@@ -137,7 +137,7 @@ namespace BrewLib.Audio
             get
             {
                 if (channel == 0) return 0;
-                return Bass.ChannelGetData(channel, IntPtr.Zero, (int)DataFlags.Available);
+                return Bass.ChannelGetData(channel, nint.Zero, (int)DataFlags.Available);
             }
         }
         public bool Temporary { get; }

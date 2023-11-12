@@ -4,9 +4,9 @@ using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics;
-using OpenTK.Graphics.OpenGL;
+using osuTK;
+using osuTK.Graphics;
+using osuTK.Graphics.OpenGL;
 using System;
 
 namespace BrewLib.Graphics.Renderers

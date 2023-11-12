@@ -1,8 +1,8 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics;
-using StorybrewCommon.OpenTKUtil;
+using osuTK;
+using osuTK.Graphics;
+using StorybrewCommon.osuTKUtil;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
 using StorybrewEditor.Storyboarding;

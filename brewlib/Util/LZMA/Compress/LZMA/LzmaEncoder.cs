@@ -70,12 +70,12 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                 BitEncoder[] m_Encoders;
 
                 public void Create() => m_Encoders = new BitEncoder[768];
-                public void Init()
+                public readonly void Init()
                 {
                     for (int i = 0; i < 768; i++) m_Encoders[i].Init();
                 }
 
-                public void Encode(RangeCoder.Encoder rangeEncoder, byte symbol)
+                public readonly void Encode(RangeCoder.Encoder rangeEncoder, byte symbol)
                 {
                     var context = 1u;
                     for (var i = 7; i >= 0; --i)
@@ -86,7 +86,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                     }
                 }
 
-                public void EncodeMatched(RangeCoder.Encoder rangeEncoder, byte matchByte, byte symbol)
+                public readonly void EncodeMatched(RangeCoder.Encoder rangeEncoder, byte matchByte, byte symbol)
                 {
                     var context = 1u;
                     var same = true;
@@ -105,7 +105,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                     }
                 }
 
-                public uint GetPrice(bool matchMode, byte matchByte, byte symbol)
+                public readonly uint GetPrice(bool matchMode, byte matchByte, byte symbol)
                 {
                     var price = 0u;
                     var context = 1u;

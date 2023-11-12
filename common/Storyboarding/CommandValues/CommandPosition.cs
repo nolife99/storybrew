@@ -10,16 +10,16 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         readonly CommandDecimal x, y;
 
         ///<summary> Gets the X value of this instance. </summary>
-        public CommandDecimal X => x;
+        public readonly CommandDecimal X => x;
 
         ///<summary> Gets the Y value of this instance. </summary>
-        public CommandDecimal Y => y;
+        public readonly CommandDecimal Y => y;
 
         ///<summary> Gets the square of the vector length (magnitude). </summary>
-        public float LengthSquared => x * x + y * y;
+        public readonly float LengthSquared => x * x + y * y;
 
         ///<summary> Gets the vector length (magnitude). </summary>
-        public float Length => (float)Math.Sqrt(x * x + y * y);
+        public readonly float Length => (float)Math.Sqrt(x * x + y * y);
 
         ///<summary> Constructs a <see cref="CommandPosition"/> from X and Y values. </summary>
         public CommandPosition(double x, double y)
@@ -29,13 +29,13 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         }
 
         ///<inheritdoc/>
-        public bool Equals(CommandPosition other) => x.Equals(other.x) && y.Equals(other.y);
+        public readonly bool Equals(CommandPosition other) => x.Equals(other.x) && y.Equals(other.y);
 
         ///<inheritdoc/>
         public override bool Equals(object obj) => obj is CommandPosition position && Equals(position);
 
         ///<inheritdoc/>
-        public override int GetHashCode() => x.GetHashCode() ^ y.GetHashCode();
+        public override readonly int GetHashCode() => x.GetHashCode() ^ y.GetHashCode();
 
         ///<summary> Converts this instance to a .osb string. </summary>
         public string ToOsbString(ExportSettings exportSettings) => exportSettings.UseFloatForMove ? $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}" : $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
@@ -44,7 +44,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public override string ToString() => $"<{X}, {Y}>";
 
         ///<summary> Returns the distance between this instance and point <paramref name="obj"/> on the Cartesian plane. </summary>
-        public float DistanceFrom(object obj)
+        public readonly float DistanceFrom(object obj)
         {
             var vector = this - (CommandPosition)obj;
             return (float)Math.Sqrt(vector.x * vector.x + vector.y * vector.y);
@@ -60,10 +60,10 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public static CommandPosition operator /(CommandPosition left, double right) => new(left.x / right, left.y / right);
         public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
         public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
-        public static implicit operator OpenTK.Vector2(CommandPosition position) => new(position.x, position.Y);
+        public static implicit operator osuTK.Vector2(CommandPosition position) => new(position.x, position.Y);
         public static implicit operator Vector2(CommandPosition position) => new(position.x, position.Y);
         public static implicit operator PointF(CommandPosition position) => new(position.x, position.Y);
-        public static implicit operator CommandPosition(OpenTK.Vector2 vector) => new(vector.X, vector.Y);
+        public static implicit operator CommandPosition(osuTK.Vector2 vector) => new(vector.X, vector.Y);
         public static implicit operator CommandPosition(Vector2 vector) => new(vector.X, vector.Y);
         public static implicit operator CommandPosition(PointF vector) => new(vector.X, vector.Y);
     }

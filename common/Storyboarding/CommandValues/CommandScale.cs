@@ -1,4 +1,4 @@
-using OpenTK;
+using osuTK;
 using System;
 using System.Drawing;
 
@@ -13,10 +13,10 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         readonly CommandDecimal x, y;
 
         ///<summary> Gets the X value of this instance. </summary>
-        public CommandDecimal X => x;
+        public readonly CommandDecimal X => x;
 
         ///<summary> Gets the Y value of this instance. </summary>
-        public CommandDecimal Y => y;
+        public readonly CommandDecimal Y => y;
 
         ///<summary> Constructs a <see cref="CommandScale"/> from X and Y values. </summary>
         public CommandScale(CommandDecimal x, CommandDecimal y)
@@ -35,22 +35,22 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public CommandScale(System.Numerics.Vector2 vector) : this(vector.X, vector.Y) { }
 
         ///<inheritdoc/>
-        public bool Equals(CommandScale other) => x.Equals(other.x) && y.Equals(other.y);
+        public readonly bool Equals(CommandScale other) => x.Equals(other.x) && y.Equals(other.y);
 
         ///<inheritdoc/>
         public override bool Equals(object obj) => obj is CommandScale scale && Equals(scale);
 
         ///<inheritdoc/>
-        public override int GetHashCode() => ((System.Numerics.Vector2)this).GetHashCode();
+        public override readonly int GetHashCode() => ((System.Numerics.Vector2)this).GetHashCode();
 
         ///<summary> Converts this instance to a .osb string. </summary>
         public string ToOsbString(ExportSettings exportSettings) => $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}";
 
         ///<summary> Converts this instance to a string. </summary>
-        public override string ToString() => ((Vector2)this).ToString();
+        public override readonly string ToString() => ((Vector2)this).ToString();
 
         ///<summary> Returns the distance between this instance and point <paramref name="obj"/> on the Cartesian plane. </summary>
-        public float DistanceFrom(object obj) => Vector2.Distance(this, (Vector2)obj);
+        public readonly float DistanceFrom(object obj) => Vector2.Distance(this, (Vector2)obj);
 
 #pragma warning disable CS1591
         public static CommandScale operator +(CommandScale left, CommandScale right) => new(left.x + right.x, left.y + right.y);

@@ -2,9 +2,9 @@
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics;
-using OpenTK.Input;
+using osuTK;
+using osuTK.Graphics;
+using osuTK.Input;
 using System;
 using System.Windows.Forms;
 

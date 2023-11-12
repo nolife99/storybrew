@@ -2,8 +2,8 @@
 using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Textures;
 using BrewLib.UserInterface.Skinning.Styles;
-using OpenTK;
-using OpenTK.Graphics;
+using osuTK;
+using osuTK.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

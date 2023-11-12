@@ -1,6 +1,6 @@
 ﻿using BrewLib.UserInterface.Skinning.Styles;
 using System.Numerics;
-using OpenTK.Input;
+using osuTK.Input;
 using System;
 
 namespace BrewLib.UserInterface

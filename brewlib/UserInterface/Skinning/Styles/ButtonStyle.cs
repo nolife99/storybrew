@@ -1,5 +1,5 @@
 ﻿using BrewLib.Util;
-using OpenTK;
+using osuTK;
 
 namespace BrewLib.UserInterface.Skinning.Styles
 {

@@ -1,5 +1,5 @@
 ﻿using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -9,7 +9,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
     public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive>, PrimitiveStreamer<TPrimitive> where TPrimitive : struct
     {
         GpuCommandSync commandSync;
-        IntPtr bufferPointer;
+        nint bufferPointer;
         int bufferOffset, drawOffset, vertexBufferSize;
 
         public PrimitiveStreamerPersistentMap(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
@@ -21,13 +21,13 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-            GL.BufferStorage(BufferTarget.ArrayBuffer, new IntPtr(vertexBufferSize), default,
+            GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, default,
                 BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
 
-            bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, default, new IntPtr(vertexBufferSize),
+            bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, default, vertexBufferSize,
                 BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
 
-            DrawState.CheckError("mapping vertex buffer", bufferPointer == null);
+            DrawState.CheckError("mapping vertex buffer", bufferPointer == default);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
         }
         protected override void internalDispose()

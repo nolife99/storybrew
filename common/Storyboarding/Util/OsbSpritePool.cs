@@ -24,7 +24,7 @@ namespace StorybrewCommon.Storyboarding.Util
         }
 
         public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive) : this(segment, path, origin, additive ?
-            (pS, sT, e) => pS.Additive(sT) : (Action<OsbSprite, double, double>)null)
+            (pS, sT, e) => pS.Additive(sT) : null)
         { }
 
         public OsbSprite Get(double startTime, double endTime)

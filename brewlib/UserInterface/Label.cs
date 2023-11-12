@@ -3,7 +3,7 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using System;
 
 namespace BrewLib.UserInterface

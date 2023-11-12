@@ -2,8 +2,8 @@ using System;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 
-// OpenTK 4.2
-namespace StorybrewCommon.OpenTKUtil
+// osuTK 4.2
+namespace StorybrewCommon.osuTKUtil
 {
     ///<summary> Contains common mathematical functions and constants. </summary>
     public static class MathHelper

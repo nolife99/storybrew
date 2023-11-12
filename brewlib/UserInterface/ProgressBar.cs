@@ -1,7 +1,7 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface.Skinning.Styles;
-using OpenTK;
+using osuTK;
 using System;
 using System.Globalization;
 

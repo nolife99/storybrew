@@ -1,10 +1,9 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
-using System.Diagnostics;
 
 namespace StorybrewEditor.UserInterface.Components
 {

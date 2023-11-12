@@ -389,7 +389,7 @@ namespace StorybrewCommon.Scripting
                 Order = order;
             }
 
-            public override string ToString() => $"{Field.Name} {InitialValue}";
+            public override readonly string ToString() => $"{Field.Name} {InitialValue}";
         }
 
         #endregion

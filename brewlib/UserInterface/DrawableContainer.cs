@@ -1,6 +1,6 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
-using OpenTK;
+using osuTK;
 
 namespace BrewLib.UserInterface
 {

@@ -1,5 +1,5 @@
 namespace BrewLib.Util
 {
-    using OpenTK;
+    using osuTK;
     public struct Line { public Vector2 Start, End; }
 }

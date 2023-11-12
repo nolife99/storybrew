@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util
 {
@@ -12,8 +13,8 @@ namespace StorybrewEditor.Util
         readonly List<ActionRunner> actionRunners = new();
         readonly bool allowDuplicates;
 
-        public delegate void ActionFailedEventHandler(T target, Exception e);
-        public event ActionFailedEventHandler OnActionFailed
+        public delegate void ActionFailed(T target, Exception e);
+        public event ActionFailed OnActionFailed
         {
             add => context.OnActionFailed += value;
             remove => context.OnActionFailed -= value;
@@ -48,7 +49,7 @@ namespace StorybrewEditor.Util
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(AsyncActionQueue<T>));
 
-            for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].EnsureThreadAlive();
+            Parallel.For(0, actionRunners.Count, i => actionRunners[i].EnsureThreadAlive());
             lock (context.Queue)
             {
                 if (!allowDuplicates && context.Queue.Any(q => q.Target.Equals(target))) return;
@@ -71,7 +72,8 @@ namespace StorybrewEditor.Util
             if (stopThreads)
             {
                 var sw = Stopwatch.StartNew();
-                for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds));
+                Parallel.For(0, actionRunners.Count, i => actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds)));
+                sw.Stop();
             }
         }
 
@@ -109,7 +111,7 @@ namespace StorybrewEditor.Util
             public readonly HashSet<string> Running = new();
             public bool RunningLoneTask;
 
-            public event ActionFailedEventHandler OnActionFailed;
+            public event ActionFailed OnActionFailed;
             public bool TriggerActionFailed(T target, Exception e)
             {
                 if (OnActionFailed is null) return false;
@@ -140,7 +142,7 @@ namespace StorybrewEditor.Util
             CancellationTokenSource cancellationTokenSource;
             CancellationToken cancellationToken;
 
-            Thread thread;
+            Task thread;
 
             public ActionRunner(ActionQueueContext context, string threadName)
             {
@@ -156,26 +158,28 @@ namespace StorybrewEditor.Util
                     cancellationTokenSource = new CancellationTokenSource();
                     cancellationToken = cancellationTokenSource.Token;
 
-                    Thread localThread = null;
-                    thread = localThread = new Thread(() =>
+                    Task localThread = null;
+                    thread = localThread = new Task(async () =>
                     {
                         var mustSleep = false;
                         while (true)
                         {
                             if (mustSleep)
                             {
-                                cancellationToken.WaitHandle.WaitOne(200);
+                                await Task.Delay(200);
                                 mustSleep = false;
                             }
 
                             ActionContainer task;
                             lock (context.Queue)
                             {
+                                // Check if we want to start cancelling
                                 while (!context.Enabled || context.Queue.Count == 0)
                                 {
+                                    // Cancel the thread if the instance's thread is set to null
                                     if (thread != localThread)
                                     {
-                                        Trace.WriteLine($"Exiting thread {localThread.Name}.");
+                                        Trace.WriteLine($"Exiting thread {threadName}.");
                                         return;
                                     }
                                     Monitor.Wait(context.Queue);
@@ -221,10 +225,9 @@ namespace StorybrewEditor.Util
                                 if (task.MustRunAlone) context.RunningLoneTask = false;
                             }
                         }
-                    })
-                    { Name = threadName, IsBackground = true };
+                    }, cancellationToken);
 
-                    Trace.WriteLine($"Starting thread {thread.Name}.");
+                    Trace.WriteLine($"Starting thread {threadName}.");
                     thread.Start();
                 }
             }
@@ -234,16 +237,20 @@ namespace StorybrewEditor.Util
                 if (thread is null) return;
 
                 var localThread = thread;
+
+                // Set the instance's task to null to trigger an exit
                 thread = null;
 
                 lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-                if (!localThread.Join(millisecondsTimeout))
+                // If an exit hasn't happened (for example, the thread is unresponsive) try to force-stop it
+                if (!localThread.Wait(millisecondsTimeout))
                 {
-                    Trace.WriteLine($"Aborting thread {localThread.Name}.");
-                    cancellationTokenSource?.Cancel();
-                    cancellationTokenSource?.Dispose();
+                    Trace.WriteLine($"Aborting thread {threadName}.");
+                    cancellationTokenSource.Cancel();
+                    cancellationTokenSource.Dispose();
                 }
+                localThread.Dispose();
             }
         }
     }

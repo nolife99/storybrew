@@ -1,6 +1,6 @@
 ﻿using BrewLib.Data;
 using BrewLib.Util;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

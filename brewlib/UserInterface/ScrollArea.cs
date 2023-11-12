@@ -1,7 +1,7 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Input;
+using osuTK;
+using osuTK.Input;
 using System;
 
 namespace BrewLib.UserInterface

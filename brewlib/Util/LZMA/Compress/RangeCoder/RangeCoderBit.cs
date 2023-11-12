@@ -1,5 +1,3 @@
-using System;
-
 namespace BrewLib.Util.LZMA.Compress.RangeCoder
 {
     struct BitEncoder
@@ -51,9 +49,9 @@ namespace BrewLib.Util.LZMA.Compress.RangeCoder
             }
         }
 
-        public uint GetPrice(uint symbol) => ProbPrices[((Prob - symbol ^ -(int)symbol) & kBitModelTotal - 1) >> kNumMoveReducingBits];
-        public uint GetPrice0() => ProbPrices[Prob >> kNumMoveReducingBits];
-        public uint GetPrice1() => ProbPrices[kBitModelTotal - Prob >> kNumMoveReducingBits];
+        public readonly uint GetPrice(uint symbol) => ProbPrices[((Prob - symbol ^ -(int)symbol) & kBitModelTotal - 1) >> kNumMoveReducingBits];
+        public readonly uint GetPrice0() => ProbPrices[Prob >> kNumMoveReducingBits];
+        public readonly uint GetPrice1() => ProbPrices[kBitModelTotal - Prob >> kNumMoveReducingBits];
     }
     struct BitDecoder
     {

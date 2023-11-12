@@ -12,7 +12,7 @@
 
   <Target Name="NuGetXmls" AfterTargets="ResolveReferences">
   	<ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->'%(RootDir)%(Directory)OpenTK.xml')" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)'!='' and Exists('%(RootDir)%(Directory)OpenTK.xml')" />
+      <ReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->'%(RootDir)%(Directory)osuTK.xml')" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)'!='' and Exists('%(RootDir)%(Directory)osuTK.xml')" />
   	</ItemGroup>
   </Target>
   <Target Name="DeleteUnusedDLLs" AfterTargets="Build">
@@ -87,14 +87,6 @@
   </ItemGroup>
 
   <ItemGroup>
-  	<BootstrapperPackage Include=".NETFramework,Version=v4.8.1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 4.8.1</ProductName>
-      <Install>true</Install>
-  	</BootstrapperPackage>
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="..\brewlib\bass\$(Platform)\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -103,18 +95,15 @@
   <ItemGroup>
   	<PackageReference Include="ManagedBass" Version="3.1.1" />
 	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0-3.final" />
-  	<PackageReference Include="OpenTK" Version="3.3.3" />
+	<PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />
   	<PackageReference Include="System.Drawing.Common" Version="8.0.0-rc.2.23479.14" />
   	<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
+	
   <ItemGroup>
   	<ProjectReference Include="..\brewlib\brewlib.csproj" />
   	<ProjectReference Include="..\common\common.csproj" />
 	<ProjectReference Include="..\tiny\tiny.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-  	<Reference Include="System.Runtime.Remoting" />
-  	<Reference Include="System.ServiceModel" />
   </ItemGroup>
 
 </Project>

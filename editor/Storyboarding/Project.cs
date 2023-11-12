@@ -4,7 +4,7 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
@@ -21,7 +21,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Tiny;
 
 namespace StorybrewEditor.Storyboarding
@@ -107,6 +106,12 @@ namespace StorybrewEditor.Storyboarding
 
             var compiledScriptsPath = Path.GetFullPath("cache/scripts");
             if (!Directory.Exists(compiledScriptsPath)) Directory.CreateDirectory(compiledScriptsPath);
+            else foreach (var cachedLib in Directory.EnumerateFiles(compiledScriptsPath))
+            try
+            {
+                File.Delete(cachedLib);
+            }
+            catch (SystemException) { }
 
             initializeAssetWatcher();
 
@@ -383,12 +388,12 @@ namespace StorybrewEditor.Storyboarding
         static readonly string[] defaultAssemblies = new string[]
         {
             "mscorlib.dll", "System.dll", "System.Linq.dll", "System.Runtime.dll", "System.Core.dll", "System.Drawing.dll", "System.Numerics.dll",
-            "OpenTK.dll", "System.Numerics.Vectors.dll", "System.Drawing.Common.dll", "System.Drawing.Primitives.dll", "BrewLib.dll", 
-            Assembly.GetAssembly(typeof(Script)).Location
+            "osuTK.dll", "System.Drawing.Common.dll", "System.Numerics.Vectors.dll", "System.Drawing.Primitives.dll", "BrewLib.dll", 
+            Assembly.GetAssembly(typeof(Script)).Location, Assembly.GetExecutingAssembly().Location
         };
         public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
 
-        List<string> importedAssemblies = new();
+        List<string> importedAssemblies = new ();
         public IEnumerable<string> ImportedAssemblies
         {
             get => importedAssemblies;
@@ -396,7 +401,7 @@ namespace StorybrewEditor.Storyboarding
             {
                 if (Disposed) throw new ObjectDisposedException(nameof(Project));
 
-                importedAssemblies = new List<string>(value);
+                importedAssemblies = value as List<string> ?? value.ToList();
                 scriptManager.ReferencedAssemblies = ReferencedAssemblies;
             }
         }
@@ -889,16 +894,6 @@ namespace StorybrewEditor.Storyboarding
                 scriptManager = null;
                 TextureContainer = null;
                 AudioContainer = null;
-
-                foreach (var cachedLib in Directory.EnumerateFiles(Path.GetFullPath("cache/scripts")))
-                try
-                {
-                    File.Delete(cachedLib);
-                }
-                catch (UnauthorizedAccessException e)
-                {
-                    Trace.TraceError(e.ToString());
-                }
 
                 Disposed = true;
             }

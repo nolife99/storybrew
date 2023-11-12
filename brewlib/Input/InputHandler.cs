@@ -1,5 +1,5 @@
-﻿using OpenTK;
-using OpenTK.Input;
+﻿using osuTK;
+using osuTK.Input;
 
 namespace BrewLib.Input
 {

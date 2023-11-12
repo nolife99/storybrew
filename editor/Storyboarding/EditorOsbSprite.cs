@@ -3,7 +3,7 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK.Graphics;
+using osuTK.Graphics;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;

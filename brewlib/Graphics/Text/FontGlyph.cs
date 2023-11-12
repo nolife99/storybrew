@@ -1,5 +1,5 @@
 ﻿using BrewLib.Graphics.Textures;
-using OpenTK;
+using osuTK;
 
 namespace BrewLib.Graphics.Text
 {

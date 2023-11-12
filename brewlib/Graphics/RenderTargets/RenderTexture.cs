@@ -1,5 +1,5 @@
 ﻿using BrewLib.Graphics.Textures;
-using OpenTK.Graphics.OpenGL;
+using osuTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
 
@@ -94,7 +94,7 @@ namespace BrewLib.Graphics.RenderTargets
             GL.TexImage2D(TextureTarget.Texture2D, 0, pixelInternalFormat, Width, Height, 0, pixelFormat, pixelType, default);
             DrawState.CheckError("creating a render texture's texture");
 
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
 
             DrawState.UnbindTexture(textureId);

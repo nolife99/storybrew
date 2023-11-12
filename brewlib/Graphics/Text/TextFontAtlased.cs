@@ -1,6 +1,6 @@
 ﻿using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using System.Collections.Generic;
 using System.Drawing;
 

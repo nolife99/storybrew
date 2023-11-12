@@ -1,6 +1,6 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK.Input;
+using osuTK.Input;
 using System;
 
 namespace StorybrewEditor.ScreenLayers.Util

@@ -1,8 +1,8 @@
 ﻿using BrewLib.Data;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics;
-using OpenTK.Graphics.OpenGL;
+using osuTK;
+using osuTK.Graphics;
+using osuTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -42,7 +42,7 @@ namespace BrewLib.Graphics.Textures
             textureOptions.WithBitmap(bitmap, b =>
             {
                 var data = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, b.PixelFormat);
-                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
                 GL.Finish();
                 b.UnlockBits(data);
             });
@@ -103,7 +103,7 @@ namespace BrewLib.Graphics.Textures
             try
             {
                 DrawState.BindTexture(textureId);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, Enumerable.Repeat(color.ToArgb(), width * height).ToArray());
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, Enumerable.Repeat(color.ToArgb(), width * height).ToArray());
                 if (textureOptions.GenerateMipmaps)
                 {
                     GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
@@ -139,7 +139,7 @@ namespace BrewLib.Graphics.Textures
                 textureOptions.WithBitmap(bitmap, b =>
                 {
                     var bitmapData = b.LockBits(new Rectangle(0, 0, textureWidth, textureHeight), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, bitmapData.Width, bitmapData.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bitmapData.Scan0);
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, bitmapData.Width, bitmapData.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bitmapData.Scan0);
                     if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
                     GL.Finish();
                     b.UnlockBits(bitmapData);

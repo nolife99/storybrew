@@ -1,13 +1,12 @@
 ﻿using ManagedBass;
 using ManagedBass.Fx;
-using System;
 using System.Diagnostics;
 
 namespace BrewLib.Audio
 {
     public class AudioStreamPull : AudioChannel
     {
-        public delegate int CallbackDelegate(IntPtr buffer, int sampleCount);
+        public delegate int CallbackDelegate(nint buffer, int sampleCount);
 
         readonly CallbackDelegate callback;
         readonly int bytesPerSample;
@@ -35,7 +34,7 @@ namespace BrewLib.Audio
 
             Channel = stream;
         }
-        int streamProcedure(int handle, IntPtr buffer, int byteLength, IntPtr user)
+        int streamProcedure(int handle, nint buffer, int byteLength, nint user)
         {
             var samples = byteLength / bytesPerSample;
             var writtenSamples = callback(buffer, samples);

@@ -1,4 +1,4 @@
-﻿using OpenTK;
+﻿using osuTK;
 using System;
 
 namespace StorybrewCommon.Util

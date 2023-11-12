@@ -1,9 +1,9 @@
 ﻿using BrewLib.Data;
 using ManagedBass;
 using ManagedBass.Fx;
+using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace BrewLib.Audio
 {
@@ -14,7 +14,7 @@ namespace BrewLib.Audio
 
         public string Path { get; }
 
-        internal AudioStream(AudioManager manager, string path, ResourceContainer resourceContainer) : base(manager)
+        internal unsafe AudioStream(AudioManager manager, string path, ResourceContainer resourceContainer) : base(manager)
         {
             Path = path;
             var flags = BassFlags.Decode | BassFlags.Prescan;
@@ -25,16 +25,15 @@ namespace BrewLib.Audio
                 var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
                 if (resourceStream != null)
                 {
-                    var readBuffer = new byte[32768];
                     var procedures = new FileProcedures
                     {
                         Read = (buffer, length, user) =>
                         {
-                            if (length > readBuffer.Length) readBuffer = new byte[length];
+                            Span<byte> readBuffer = stackalloc byte[length];
                             if (!resourceStream.CanRead) return 0;
 
-                            var readBytes = resourceStream.Read(readBuffer, 0, length);
-                            Marshal.Copy(readBuffer, 0, buffer, readBytes);
+                            var readBytes = resourceStream.Read(readBuffer);
+                            readBuffer.CopyTo(new Span<byte>(buffer.ToPointer(), length));
                             return readBytes;
                         },
                         Length = user => resourceStream.Length,

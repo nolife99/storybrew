@@ -2,8 +2,8 @@
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics;
+using osuTK;
+using osuTK.Graphics;
 using System;
 
 namespace BrewLib.Graphics.Drawables

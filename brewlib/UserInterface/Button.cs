@@ -1,7 +1,7 @@
 ﻿using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Input;
+using osuTK;
+using osuTK.Input;
 using System;
 using System.Globalization;
 

@@ -1,7 +1,7 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;

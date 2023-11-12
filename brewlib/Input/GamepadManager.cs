@@ -1,5 +1,5 @@
-﻿using OpenTK;
-using OpenTK.Input;
+﻿using osuTK;
+using osuTK.Input;
 using System;
 
 namespace BrewLib.Input
@@ -42,7 +42,7 @@ namespace BrewLib.Input
             previousPressedButtons = pressedButtons;
 
             state = GamePad.GetState(gamepadIndex);
-            keyboardState = gamepadIndex == 0 && !state.IsConnected ? Keyboard.GetState() : (KeyboardState?)null;
+            keyboardState = gamepadIndex == 0 && !state.IsConnected ? Keyboard.GetState() : null;
             pressedButtons = 0;
 
             var buttonsState = state.Buttons;

@@ -12,8 +12,8 @@ namespace StorybrewCommon.Storyboarding3d
         public static SizeF Resolution = new Size(1366, 768);
         public static double ResolutionScale = OsuHitObject.WidescreenStoryboardSize.Height / Resolution.Height;
         public static double AspectRatio = Resolution.Width / Resolution.Height;
-        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.Width / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
-        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Height / 2 / Math.Tan(OpenTK.MathHelper.DegreesToRadians(fov) / 2));
+        public float DistanceForHorizontalFov(double fov) => (float)(Resolution.Width / 2 / Math.Tan(osuTK.MathHelper.DegreesToRadians(fov) / 2));
+        public float DistanceForVerticalFov(double fov) => (float)(Resolution.Height / 2 / Math.Tan(osuTK.MathHelper.DegreesToRadians(fov) / 2));
         public abstract CameraState StateAt(double time);
     }
     public class CameraState
@@ -101,12 +101,12 @@ namespace StorybrewCommon.Storyboarding3d
             double fovY;
             if (HorizontalFov.Count > 0)
             {
-                var fovX = OpenTK.MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
+                var fovX = osuTK.MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
                 fovY = 2 * Math.Atan(Math.Tan(fovX / 2) / aspectRatio);
             }
             else
             {
-                fovY = VerticalFov.Count > 0 ? OpenTK.MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
+                fovY = VerticalFov.Count > 0 ? osuTK.MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
                 2 * Math.Atan(Resolution.Height / 2 / Math.Max(.0001, (cameraPosition - targetPosition).Length()));
             }
 

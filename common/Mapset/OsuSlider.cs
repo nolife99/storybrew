@@ -3,7 +3,6 @@ using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.Serialization;
 
 namespace StorybrewCommon.Mapset
 {

@@ -1,6 +1,6 @@
 ﻿using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using System;
 using System.Collections.Generic;
 

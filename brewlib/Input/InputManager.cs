@@ -1,5 +1,5 @@
-﻿using OpenTK;
-using OpenTK.Input;
+﻿using osuTK;
+using osuTK.Input;
 using System;
 using System.Collections.Generic;
 
@@ -98,7 +98,7 @@ namespace BrewLib.Input
         }
         void window_MouseLeave(object sender, EventArgs e)
         {
-            // https://github.com/opentk/opentk/issues/301
+            // https://github.com/osuTK/osuTK/issues/301
             return;
 
             // hasMouseHover = false;

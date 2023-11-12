@@ -4,7 +4,7 @@ using StorybrewCommon.Storyboarding;
 using System.Numerics;
 using System;
 using System.Linq;
-using StorybrewCommon.OpenTKUtil;
+using StorybrewCommon.osuTKUtil;
 
 namespace StorybrewScripts
 {

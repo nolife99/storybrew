@@ -1,5 +1,4 @@
-﻿using OpenTK;
-using System;
+﻿using osuTK;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,18 +10,18 @@ namespace BrewLib.Util
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("kernel32.dll", EntryPoint = "RtlCopyMemory", CallingConvention = CallingConvention.Winapi)] 
-        static extern void memcpy(IntPtr dest, IntPtr src, uint count);
+        static extern void memcpy(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory", CallingConvention = CallingConvention.Winapi)]
-        static extern void memmove(IntPtr dest, IntPtr src, uint count);
+        static extern void memmove(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CopyMemory(IntPtr source, IntPtr destination, uint count)
+        public static bool CopyMemory(nint source, nint destination, uint count)
         {
             if (source != default && destination != default)
             {
-                if ((long)source < (long)destination + count && (long)source + count > (long)destination)
+                if (source < destination + count && source + count > destination)
                 {
                     memmove(destination, source, count);
                     return false;
@@ -35,19 +34,19 @@ namespace BrewLib.Util
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)]
-        static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, IntPtr lParam);
+        static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
-        public delegate bool EnumThreadWndProc(IntPtr hWnd, IntPtr lParam);
+        public delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Ansi)] 
-        static unsafe extern int GetWindowText(IntPtr hWnd, byte* lpString, int nMaxCount);
+        static unsafe extern int GetWindowText(nint hWnd, byte* lpString, int nMaxCount);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)] 
-        static extern int GetWindowTextLength(IntPtr hWnd);
+        static extern int GetWindowTextLength(nint hWnd);
 
-        public unsafe static string GetWindowText(IntPtr hWnd)
+        public unsafe static string GetWindowText(nint hWnd)
         {
             var length = GetWindowTextLength(hWnd) + 1;
             if (length == 1) return "";
@@ -56,9 +55,9 @@ namespace BrewLib.Util
             _ = GetWindowText(hWnd, buffer, length);
             return new string((sbyte*)buffer);
         }
-        public static IntPtr FindProcessWindow(string title)
+        public static nint FindProcessWindow(string title)
         {
-            var handle = IntPtr.Zero;
+            var handle = nint.Zero;
             var cont = true;
             var threads = Process.GetCurrentProcess().Threads;
 
@@ -74,7 +73,7 @@ namespace BrewLib.Util
 
             return handle;
         }
-        public static IntPtr GetWindowHandle(this GameWindow window)
+        public static nint GetWindowHandle(this GameWindow window)
         {
             var handle = FindProcessWindow(window.Title);
             if (handle != default) return handle;

@@ -1,6 +1,5 @@
 // LzmaBench.cs
 
-using BrewLib.Util.LZMA;
 using BrewLib.Util.LZMA.Common;
 using BrewLib.Util.LZMA.Compress.LZMA;
 using System;

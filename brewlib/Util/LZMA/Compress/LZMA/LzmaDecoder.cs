@@ -62,12 +62,12 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                 BitDecoder[] m_Decoders;
 
                 public void Create() => m_Decoders = new BitDecoder[0x300];
-                public void Init()
+                public readonly void Init()
                 {
                     for (var i = 0; i < 768; ++i) m_Decoders[i].Init();
                 }
 
-                public byte DecodeNormal(RangeCoder.Decoder rangeDecoder)
+                public readonly byte DecodeNormal(RangeCoder.Decoder rangeDecoder)
                 {
                     var symbol = 1u;
                     do symbol = symbol << 1 | m_Decoders[symbol].Decode(rangeDecoder);
@@ -75,7 +75,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                     return (byte)symbol;
                 }
 
-                public byte DecodeWithMatchByte(RangeCoder.Decoder rangeDecoder, byte matchByte)
+                public readonly byte DecodeWithMatchByte(RangeCoder.Decoder rangeDecoder, byte matchByte)
                 {
                     uint symbol = 1;
                     do

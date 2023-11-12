@@ -1,5 +1,4 @@
-﻿using OpenTK.Graphics.OpenGL;
-using System;
+﻿using osuTK.Graphics.OpenGL;
 using System.Diagnostics;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
@@ -14,7 +13,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             Debug.Assert(primitiveCount <= primitives.Length);
             Debug.Assert((drawCount & primitiveCount) == 0);
 
-            GL.BufferData(BufferTarget.ArrayBuffer, new IntPtr(primitiveCount * PrimitiveSize), primitives, BufferUsageHint.StreamDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * PrimitiveSize, primitives, BufferUsageHint.StreamDraw);
             ++DiscardedBufferCount;
 
             if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);
