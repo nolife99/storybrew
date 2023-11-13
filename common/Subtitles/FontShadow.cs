@@ -30,7 +30,7 @@ namespace StorybrewCommon.Subtitles
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
         {
             if (Thickness < 1) return;
-            using (var brush = new SolidBrush(Color)) for (var i = 1; i <= Thickness; ++i) textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
+            using var brush = new SolidBrush(Color); for (var i = 1; i <= Thickness; ++i) textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
         }
     }
 }

@@ -53,7 +53,7 @@ namespace StorybrewCommon.Storyboarding3d
         public void ConfigureGenerators(Action<CommandGenerator> action) => action(gen);
 
         ///<inheritdoc/>
-        public override void GenerateSprite(StoryboardSegment segment) => sprite = sprite ?? segment.CreateSprite(SpritePath, SpriteOrigin);
+        public override void GenerateSprite(StoryboardSegment segment) => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
 
         ///<inheritdoc/>
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)

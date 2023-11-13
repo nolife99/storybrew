@@ -38,20 +38,18 @@ namespace StorybrewEditor
 
             var scriptsDirectory = Path.GetFullPath(Path.Combine(appDirectory, "../../../../../scripts"));
 
-            using (var stream = new FileStream(archiveName, FileMode.Create, FileAccess.ReadWrite))
-            using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
-            {
-                addFile(archive, mainExecutablePath, appDirectory);
-                addFile(archive, "StorybrewEditor.exe.config", appDirectory);
-                foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
-                    addFile(archive, path, appDirectory);
+            using var stream = new FileStream(archiveName, FileMode.Create, FileAccess.ReadWrite);
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
+            addFile(archive, mainExecutablePath, appDirectory);
+            addFile(archive, "StorybrewEditor.exe.config", appDirectory);
+            foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
+                addFile(archive, path, appDirectory);
 
-                foreach (var path in Directory.GetFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly))
-                    addFile(archive, path, appDirectory);
+            foreach (var path in Directory.GetFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly))
+                addFile(archive, path, appDirectory);
 
-                foreach (var path in Directory.GetFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
-                    addFile(archive, path, scriptsDirectory, "scripts");
-            }
+            foreach (var path in Directory.GetFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
+                addFile(archive, path, scriptsDirectory, "scripts");
         }
         /* static void testUpdate(string archiveName)
         {

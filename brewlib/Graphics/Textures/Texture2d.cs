@@ -9,6 +9,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures
 {
@@ -38,7 +39,7 @@ namespace BrewLib.Graphics.Textures
 
             DrawState.BindPrimaryTexture(textureId, TexturingModes.Texturing2d);
 
-            textureOptions = textureOptions ?? TextureOptions.Default;
+            textureOptions ??= TextureOptions.Default;
             textureOptions.WithBitmap(bitmap, b =>
             {
                 var data = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, b.PixelFormat);
@@ -89,14 +90,14 @@ namespace BrewLib.Graphics.Textures
 
         public static Texture2d Load(string filename, ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
         {
-            using (var bitmap = LoadBitmap(filename, resourceContainer)) return bitmap != null ?
+            using var bitmap = LoadBitmap(filename, resourceContainer); return bitmap != null ?
                 Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
         }
         public static Texture2d Create(Color4 color, string description, int width = 1, int height = 1, TextureOptions textureOptions = null)
         {
             if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
 
-            textureOptions = textureOptions ?? TextureOptions.Default;
+            textureOptions ??= TextureOptions.Default;
             if (textureOptions.PreMultiply) color = color.Premultiply();
             
             var textureId = GL.GenTexture();
@@ -125,7 +126,7 @@ namespace BrewLib.Graphics.Textures
         {
             if (bitmap == null) throw new ArgumentNullException(nameof(bitmap));
 
-            textureOptions = textureOptions ?? TextureOptions.Default;
+            textureOptions ??= TextureOptions.Default;
             var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
             var textureWidth = Math.Min(DrawState.MaxTextureSize, bitmap.Width);

@@ -411,7 +411,7 @@ namespace BrewLib.Graphics
 
             openGLDebugDelegate = new DebugProc(openGLDebugCallback);
 
-            GL.DebugMessageCallback(openGLDebugDelegate, IntPtr.Zero);
+            GL.DebugMessageCallback(openGLDebugDelegate, nint.Zero);
             GL.DebugMessageControl(DebugSourceControl.DontCare, DebugTypeControl.DontCare, DebugSeverityControl.DontCare, 0, new int[0], true);
             CheckError("setting up debug output");
 
@@ -430,12 +430,12 @@ namespace BrewLib.Graphics
 
         public static TextureTarget ToTextureTarget(TexturingModes mode)
         {
-            switch (mode)
+            return mode switch
             {
-                case TexturingModes.Texturing2d: return TextureTarget.Texture2D;
-                case TexturingModes.Texturing3d: return TextureTarget.Texture3D;
-                default: throw new InvalidOperationException("Not texture target matches the texturing mode " + mode);
-            }
+                TexturingModes.Texturing2d => TextureTarget.Texture2D,
+                TexturingModes.Texturing3d => TextureTarget.Texture3D,
+                _ => throw new InvalidOperationException("Not texture target matches the texturing mode " + mode),
+            };
         }
         public static void CheckError(string context = null, bool alwaysThrow = false)
         {

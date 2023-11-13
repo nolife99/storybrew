@@ -344,24 +344,22 @@ namespace BrewLib.UserInterface.Skinning
                     var colorMethod = typeof(Color4).GetMethod($"get_{value}");
                     if (colorMethod?.ReturnType == typeof(Color4)) return colorMethod.Invoke(null, null);
                 }
-                if (data is TinyArray tinyArray) switch (tinyArray.Count)
+                if (data is TinyArray tinyArray) return tinyArray.Count switch
                 {
-                    case 3: return new Color4(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), 1f);
-                    default:
-                    case 4: return new Color4(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants));
-                }
+                    3 => new Color4(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), 1f),
+                    _ => (object)new Color4(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants)),
+                };
                 throw new InvalidDataException($"Incorrect color format: {data}");
             },
             [typeof(Util.FourSide)] = (data, constants, skin) =>
             {
-                if (data is TinyArray tinyArray) switch (tinyArray.Count)
+                if (data is TinyArray tinyArray) return tinyArray.Count switch
                 {
-                    case 1: return new Util.FourSide(resolve<float>(tinyArray[0], constants));
-                    case 2: return new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants));
-                    case 3: return new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants));
-                    default:
-                    case 4: return new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants));
-                }
+                    1 => new Util.FourSide(resolve<float>(tinyArray[0], constants)),
+                    2 => new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants)),
+                    3 => new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants)),
+                    _ => (object)new Util.FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants), resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants)),
+                };
                 throw new InvalidDataException($"Incorrect four side format: {data}");
             }
         };

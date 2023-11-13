@@ -68,19 +68,18 @@ namespace StorybrewCommon.Subtitles
         ///<summary> Gets the font offset for the given <see cref="OsbOrigin"/>. </summary>
         public Vector2 OffsetFor(OsbOrigin origin)
         {
-            switch (origin)
+            return origin switch
             {
-                default:
-                case OsbOrigin.TopLeft: return new Vector2(OffsetX, OffsetY);
-                case OsbOrigin.TopCentre: return new Vector2(OffsetX + Width * .5f, OffsetY);
-                case OsbOrigin.TopRight: return new Vector2(OffsetX + Width, OffsetY);
-                case OsbOrigin.CentreLeft: return new Vector2(OffsetX, OffsetY + Height * .5f);
-                case OsbOrigin.Centre: return new Vector2(OffsetX + Width * .5f, OffsetY + Height * .5f);
-                case OsbOrigin.CentreRight: return new Vector2(OffsetX + Width, OffsetY + Height * .5f);
-                case OsbOrigin.BottomLeft: return new Vector2(OffsetX, OffsetY + Height);
-                case OsbOrigin.BottomCentre: return new Vector2(OffsetX + Width * .5f, OffsetY + Height);
-                case OsbOrigin.BottomRight: return new Vector2(OffsetX + Width, OffsetY + Height);
-            }
+                OsbOrigin.TopCentre => new Vector2(OffsetX + Width * .5f, OffsetY),
+                OsbOrigin.TopRight => new Vector2(OffsetX + Width, OffsetY),
+                OsbOrigin.CentreLeft => new Vector2(OffsetX, OffsetY + Height * .5f),
+                OsbOrigin.Centre => new Vector2(OffsetX + Width * .5f, OffsetY + Height * .5f),
+                OsbOrigin.CentreRight => new Vector2(OffsetX + Width, OffsetY + Height * .5f),
+                OsbOrigin.BottomLeft => new Vector2(OffsetX, OffsetY + Height),
+                OsbOrigin.BottomCentre => new Vector2(OffsetX + Width * .5f, OffsetY + Height),
+                OsbOrigin.BottomRight => new Vector2(OffsetX + Width, OffsetY + Height),
+                _ => new Vector2(OffsetX, OffsetY),
+            };
         }
     }
 
@@ -351,96 +350,92 @@ namespace StorybrewCommon.Subtitles
                 }
 
                 var dpiScale = 96 / graphics.DpiY;
-                using (var font = fontFamily != null ? 
-                    new Font(fontFamily, description.FontSize * dpiScale, description.FontStyle) : 
-                    new Font(fontPath, description.FontSize * dpiScale, description.FontStyle))
+                using var font = fontFamily != null ?
+                    new Font(fontFamily, description.FontSize * dpiScale, description.FontStyle) :
+                    new Font(fontPath, description.FontSize * dpiScale, description.FontStyle);
+                var measuredSize = graphics.MeasureString(text, font, 0, format);
+                baseWidth = (int)Math.Ceiling(measuredSize.Width);
+                baseHeight = (int)Math.Ceiling(measuredSize.Height);
+
+                float effectsWidth = 0, effectsHeight = 0;
+                for (var i = 0; i < effects.Length; ++i)
                 {
-                    var measuredSize = graphics.MeasureString(text, font, 0, format);
-                    baseWidth = (int)Math.Ceiling(measuredSize.Width);
-                    baseHeight = (int)Math.Ceiling(measuredSize.Height);
+                    var effectSize = effects[i].Measure;
+                    effectsWidth = Math.Max(effectsWidth, effectSize.Width);
+                    effectsHeight = Math.Max(effectsHeight, effectSize.Height);
+                }
+                width = (int)Math.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
+                height = (int)Math.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
 
-                    float effectsWidth = 0, effectsHeight = 0;
-                    for (var i = 0; i < effects.Length; ++i)
+                var paddingX = description.Padding.X + effectsWidth / 2;
+                var paddingY = description.Padding.Y + effectsHeight / 2;
+                var x = paddingX + measuredSize.Width / 2;
+                var y = paddingY;
+
+                offsetX = -paddingX;
+                offsetY = -paddingY;
+
+                if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0)
+                    return new FontTexture(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
+
+                using var bitmap = new Bitmap(width, height);
+                using (var textGraphics = Graphics.FromImage(bitmap))
+                {
+                    textGraphics.TextRenderingHint = graphics.TextRenderingHint;
+                    textGraphics.SmoothingMode = graphics.SmoothingMode;
+                    textGraphics.InterpolationMode = graphics.InterpolationMode;
+
+                    if (description.Debug)
                     {
-                        var effectSize = effects[i].Measure;
-                        effectsWidth = Math.Max(effectsWidth, effectSize.Width);
-                        effectsHeight = Math.Max(effectsHeight, effectSize.Height);
+                        var r = new FastRandom(cache.Count);
+                        textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
                     }
-                    width = (int)Math.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
-                    height = (int)Math.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
 
-                    var paddingX = description.Padding.X + effectsWidth / 2;
-                    var paddingY = description.Padding.Y + effectsHeight / 2;
-                    var x = paddingX + measuredSize.Width / 2;
-                    var y = paddingY;
+                    for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
+                    if (!description.EffectsOnly) using (var draw = new SolidBrush(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
+                    for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
 
-                    offsetX = -paddingX;
-                    offsetY = -paddingY;
+                    if (description.Debug) using (var pen = new Pen(Color.Red))
+                        {
+                            textGraphics.DrawLine(pen, x, y, x, y + baseHeight);
+                            textGraphics.DrawLine(pen, x - baseWidth * .5f, y, x + baseWidth * .5f, y);
+                        }
+                }
 
-                    if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0) 
-                        return new FontTexture(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
+                var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : default;
+                var validBounds = bounds != default && bounds != new Rectangle(default, bitmap.Size);
+                if (validBounds)
+                {
+                    offsetX += bounds.Left;
+                    offsetY += bounds.Top;
+                    width = bounds.Width;
+                    height = bounds.Height;
+                }
 
-                    using (var bitmap = new Bitmap(width, height))
+                if (!trimExist)
+                {
+                    using (var stream = File.Create(path, bitmap.Width * bitmap.Height))
                     {
-                        using (var textGraphics = Graphics.FromImage(bitmap))
-                        {
-                            textGraphics.TextRenderingHint = graphics.TextRenderingHint;
-                            textGraphics.SmoothingMode = graphics.SmoothingMode;
-                            textGraphics.InterpolationMode = graphics.InterpolationMode;
-
-                            if (description.Debug)
-                            {
-                                var r = new FastRandom(cache.Count);
-                                textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
-                            }
-
-                            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
-                            if (!description.EffectsOnly) using (var draw = new SolidBrush(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
-                            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
-
-                            if (description.Debug) using (var pen = new Pen(Color.Red))
-                            {
-                                textGraphics.DrawLine(pen, x, y, x, y + baseHeight);
-                                textGraphics.DrawLine(pen, x - baseWidth * .5f, y, x + baseWidth * .5f, y);
-                            }
-                        }
-
-                        var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : default;
-                        var validBounds = bounds != default && bounds != new Rectangle(default, bitmap.Size);
-                        if (validBounds)
-                        {
-                            offsetX += bounds.Left;
-                            offsetY += bounds.Top;
-                            width = bounds.Width;
-                            height = bounds.Height;
-                        }
-
-                        if (!trimExist)
-                        {
-                            using (var stream = File.Create(path, bitmap.Width * bitmap.Height))
-                            {
-                                if (validBounds) using (var trim = bitmap.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
-                                else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
-                            }
-                            if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath))
-                            {
-                                if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
-                                {
-                                    OptimizationLevel = OptimizationLevel.Level7
-                                });
-                                else StoryboardObjectGenerator.Current.Compressor.Compress(path, new LossyInputSettings
-                                {
-                                    Speed = 1,
-                                    MinQuality = 75,
-                                    MaxQuality = 100
-                                });
-                            }
-                            else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
-                            {
-                                OptimizationLevel = OptimizationLevel.Level4
-                            });
-                        }
+                        if (validBounds) using (var trim = bitmap.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
+                        else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                     }
+                    if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath))
+                    {
+                        if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
+                        {
+                            OptimizationLevel = OptimizationLevel.Level7
+                        });
+                        else StoryboardObjectGenerator.Current.Compressor.Compress(path, new LossyInputSettings
+                        {
+                            Speed = 1,
+                            MinQuality = 75,
+                            MaxQuality = 100
+                        });
+                    }
+                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
+                    {
+                        OptimizationLevel = OptimizationLevel.Level4
+                    });
                 }
             }
             return new FontTexture(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);

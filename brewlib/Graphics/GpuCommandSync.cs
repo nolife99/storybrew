@@ -92,7 +92,7 @@ namespace BrewLib.Graphics
         class SyncRange : IDisposable
         {
             internal int Index, Length;
-            internal IntPtr Fence;
+            internal nint Fence;
             bool expired;
 
             internal SyncRange(int index, int length)

@@ -50,8 +50,8 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
-            sprite0 = sprite0 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomLeft);
-            sprite1 = sprite1 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomRight);
+            sprite0 ??= segment.CreateSprite(SpritePath, OsbOrigin.BottomLeft);
+            sprite1 ??= segment.CreateSprite(SpritePath, OsbOrigin.BottomRight);
             spriteBitmap = CommandGenerator.BitmapDimensions(sprite0);
         }
 

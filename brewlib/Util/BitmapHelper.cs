@@ -77,17 +77,16 @@ namespace BrewLib.Util
 
             if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
-            using (var pinnedSource = new PinnedBitmap(source))
-            {
-                var width = source.Width;
-                var height = source.Height;
-                var result = new PinnedBitmap(width, height);
+            using var pinnedSource = new PinnedBitmap(source);
+            var width = source.Width;
+            var height = source.Height;
+            var result = new PinnedBitmap(width, height);
 
-                var index = 0;
-                var halfWidth = kernelWidth >> 1;
-                var halfHeight = kernelHeight >> 1;
+            var index = 0;
+            var halfWidth = kernelWidth >> 1;
+            var halfHeight = kernelHeight >> 1;
 
-                for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+            for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
                     var a = 0f;
                     var r = 0f;
@@ -124,8 +123,7 @@ namespace BrewLib.Util
 
                     result.Data[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
                 }
-                return result;
-            }
+            return result;
         }
         public static PinnedBitmap ConvoluteAlpha(Bitmap source, float[,] kernel, Color color)
         {
@@ -134,18 +132,17 @@ namespace BrewLib.Util
 
             if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
-            using (var pinnedSource = new PinnedBitmap(source))
-            {
-                var width = source.Width;
-                var height = source.Height;
-                var result = new PinnedBitmap(width, height);
+            using var pinnedSource = new PinnedBitmap(source);
+            var width = source.Width;
+            var height = source.Height;
+            var result = new PinnedBitmap(width, height);
 
-                var index = 0;
-                var halfWidth = kernelWidth >> 1;
-                var halfHeight = kernelHeight >> 1;
+            var index = 0;
+            var halfWidth = kernelWidth >> 1;
+            var halfHeight = kernelHeight >> 1;
 
-                var colorRgb = (color.R << 16) | (color.G << 8) | color.B;
-                for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+            var colorRgb = (color.R << 16) | (color.G << 8) | color.B;
+            for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
                     var a = 0f;
                     for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
@@ -169,8 +166,7 @@ namespace BrewLib.Util
                     var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
                     result.Data[index++] = (alpha << 24) | colorRgb;
                 }
-                return result;
-            }
+            return result;
         }
 
         public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)

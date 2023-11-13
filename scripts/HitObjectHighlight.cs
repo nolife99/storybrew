@@ -21,7 +21,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            using (var pool = new SpritePool(GetLayer(""), SpritePath, Additive)) foreach (var hitobject in Beatmap.HitObjects)
+            using var pool = new SpritePool(GetLayer(""), SpritePath, Additive); foreach (var hitobject in Beatmap.HitObjects)
             {
                 if ((StartTime != 0 || EndTime != 0) && (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime))
                     continue;
@@ -53,7 +53,7 @@ namespace StorybrewScripts
                         if (complete) break;
                         startTime += timestep;
                     }
-                    
+
                     keyframe.Simplify2dKeyframes(1, v => v);
                     keyframe.ForEachPair((sTime, eTime) => hSprite.Move(sTime.Time, eTime.Time, sTime.Value, eTime.Value));
                 }

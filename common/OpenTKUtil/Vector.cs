@@ -43,12 +43,12 @@ namespace StorybrewCommon.osuTKUtil
         {
             readonly get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0: return X;
-                    case 1: return Y;
-                    default: throw new IndexOutOfRangeException("You tried to access this vector at index: " + index);
-                }
+                    0 => X,
+                    1 => Y,
+                    _ => throw new IndexOutOfRangeException("You tried to access this vector at index: " + index),
+                };
             }
             set
             {
@@ -452,13 +452,13 @@ namespace StorybrewCommon.osuTKUtil
         {
             readonly get
             {
-                switch (index)
+                return index switch
                 {
-                    case 0: return X;
-                    case 1: return Y;
-                    case 2: return Z;
-                    default: throw new IndexOutOfRangeException("You tried to access this vector at index: " + index);
-                }
+                    0 => X,
+                    1 => Y,
+                    2 => Z,
+                    _ => throw new IndexOutOfRangeException("You tried to access this vector at index: " + index),
+                };
             }
             set
             {

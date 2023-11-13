@@ -15,13 +15,13 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         CommandParameter(ParameterType type) => Type = type;
         public string ToOsbString(ExportSettings exportSettings)
         {
-            switch (Type)
+            return Type switch
             {
-                case ParameterType.FlipHorizontal: return "H";
-                case ParameterType.FlipVertical: return "V";
-                case ParameterType.AdditiveBlending: return "A";
-                default: throw new InvalidOperationException($"Parameter command cannot be None.");
-            }
+                ParameterType.FlipHorizontal => "H",
+                ParameterType.FlipVertical => "V",
+                ParameterType.AdditiveBlending => "A",
+                _ => throw new InvalidOperationException($"Parameter command cannot be None."),
+            };
         }
         public override string ToString() => ToOsbString(ExportSettings.Default);
 

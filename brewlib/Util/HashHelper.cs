@@ -29,7 +29,7 @@ namespace BrewLib.Util
         }
         public static byte[] GetFileMd5Bytes(string path)
         {
-            using (var md5 = MD5.Create()) using (var stream = File.OpenRead(path)) return md5.ComputeHash(stream);
+            using var md5 = MD5.Create(); using var stream = File.OpenRead(path); return md5.ComputeHash(stream);
         }
     }
 }

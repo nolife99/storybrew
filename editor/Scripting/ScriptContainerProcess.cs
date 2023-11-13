@@ -13,7 +13,7 @@ namespace StorybrewEditor.Scripting
         public ScriptContainerProcess(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
             : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) { }
 
-        protected override ScriptProvider<TScript> LoadScript()
+        protected override IProvider<TScript> LoadScript()
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(ScriptContainerAppDomain<TScript>));
             try

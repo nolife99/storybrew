@@ -220,14 +220,13 @@ namespace StorybrewCommon.Scripting
             path = Path.Combine(context.ProjectPath, path);
             context.AddDependency(path);
 
-            switch (Path.GetExtension(path))
+            return Path.GetExtension(path) switch
             {
-                case ".srt": return srt.Parse(path);
-                case ".ssa":
-                case ".ass": return ass.Parse(path);
-                case ".sbv": return sbv.Parse(path);
-            }
-            throw new NotSupportedException($"{Path.GetExtension(path)} isn't a supported subtitle format");
+                ".srt" => srt.Parse(path),
+                ".ssa" or ".ass" => ass.Parse(path),
+                ".sbv" => sbv.Parse(path),
+                _ => throw new NotSupportedException($"{Path.GetExtension(path)} isn't a supported subtitle format"),
+            };
         }
 
         ///<summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
@@ -269,8 +268,8 @@ namespace StorybrewCommon.Scripting
         {
             if (!Directory.Exists(fontCacheDirectory)) Directory.CreateDirectory(fontCacheDirectory);
 
-            using (var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read))
-            using (var cache = new ZipArchive(file, ZipArchiveMode.Update)) foreach (var fontGenerator in fonts.Values)
+            using var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
+            using var cache = new ZipArchive(file, ZipArchiveMode.Update); foreach (var fontGenerator in fonts.Values)
             {
                 var fontRoot = fontGenerator.ToTinyObject();
                 var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory)) ?? cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);

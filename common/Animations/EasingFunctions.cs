@@ -107,55 +107,44 @@ namespace StorybrewCommon.Animations
         ///<summary> Converts an <see cref="OsbEasing"/> to one of the corresponding <see cref="EasingFunctions"/>. </summary>
         public static Func<double, double> ToEasingFunction(OsbEasing easing)
         {
-            switch (easing)
+            return easing switch
             {
-                default:
-                case OsbEasing.None: return Linear;
-
-                case OsbEasing.In: return In;
-                case OsbEasing.InQuad: return QuadIn;
-                case OsbEasing.Out: return Out;
-                case OsbEasing.OutQuad: return QuadOut;
-                case OsbEasing.InOutQuad: return QuadInOut;
-
-                case OsbEasing.InCubic: return CubicIn;
-                case OsbEasing.OutCubic: return CubicOut;
-                case OsbEasing.InOutCubic: return CubicInOut;
-
-                case OsbEasing.InQuart: return QuartIn;
-                case OsbEasing.OutQuart: return QuartOut;
-                case OsbEasing.InOutQuart: return QuartInOut;
-
-                case OsbEasing.InQuint: return QuintIn;
-                case OsbEasing.OutQuint: return QuintOut;
-                case OsbEasing.InOutQuint: return QuintInOut;
-
-                case OsbEasing.InSine: return SineIn;
-                case OsbEasing.OutSine: return SineOut;
-                case OsbEasing.InOutSine: return SineInOut;
-
-                case OsbEasing.InExpo: return ExpoIn;
-                case OsbEasing.OutExpo: return ExpoOut;
-                case OsbEasing.InOutExpo: return ExpoInOut;
-
-                case OsbEasing.InCirc: return CircIn;
-                case OsbEasing.OutCirc: return CircOut;
-                case OsbEasing.InOutCirc: return CircInOut;
-
-                case OsbEasing.InElastic: return ElasticIn;
-                case OsbEasing.OutElastic: return ElasticOut;
-                case OsbEasing.OutElasticHalf: return ElasticOutHalf;
-                case OsbEasing.OutElasticQuarter: return ElasticOutQuarter;
-                case OsbEasing.InOutElastic: return ElasticInOut;
-
-                case OsbEasing.InBack: return BackIn;
-                case OsbEasing.OutBack: return BackOut;
-                case OsbEasing.InOutBack: return BackInOut;
-
-                case OsbEasing.InBounce: return BounceIn;
-                case OsbEasing.OutBounce: return BounceOut;
-                case OsbEasing.InOutBounce: return BounceInOut;
-            }
+                OsbEasing.In => In,
+                OsbEasing.InQuad => QuadIn,
+                OsbEasing.Out => Out,
+                OsbEasing.OutQuad => QuadOut,
+                OsbEasing.InOutQuad => QuadInOut,
+                OsbEasing.InCubic => CubicIn,
+                OsbEasing.OutCubic => CubicOut,
+                OsbEasing.InOutCubic => CubicInOut,
+                OsbEasing.InQuart => QuartIn,
+                OsbEasing.OutQuart => QuartOut,
+                OsbEasing.InOutQuart => QuartInOut,
+                OsbEasing.InQuint => QuintIn,
+                OsbEasing.OutQuint => QuintOut,
+                OsbEasing.InOutQuint => QuintInOut,
+                OsbEasing.InSine => SineIn,
+                OsbEasing.OutSine => SineOut,
+                OsbEasing.InOutSine => SineInOut,
+                OsbEasing.InExpo => ExpoIn,
+                OsbEasing.OutExpo => ExpoOut,
+                OsbEasing.InOutExpo => ExpoInOut,
+                OsbEasing.InCirc => CircIn,
+                OsbEasing.OutCirc => CircOut,
+                OsbEasing.InOutCirc => CircInOut,
+                OsbEasing.InElastic => ElasticIn,
+                OsbEasing.OutElastic => ElasticOut,
+                OsbEasing.OutElasticHalf => ElasticOutHalf,
+                OsbEasing.OutElasticQuarter => ElasticOutQuarter,
+                OsbEasing.InOutElastic => ElasticInOut,
+                OsbEasing.InBack => BackIn,
+                OsbEasing.OutBack => BackOut,
+                OsbEasing.InOutBack => BackInOut,
+                OsbEasing.InBounce => BounceIn,
+                OsbEasing.OutBounce => BounceOut,
+                OsbEasing.InOutBounce => BounceInOut,
+                _ => Linear,
+            };
         }
     }
 }

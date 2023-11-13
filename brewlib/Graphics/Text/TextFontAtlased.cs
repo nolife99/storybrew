@@ -40,13 +40,11 @@ namespace BrewLib.Graphics.Text
             }
             else
             {
-                atlas = atlas ?? new TextureMultiAtlas2d(512, 512, $"Font Atlas {name} {size}x");
-                using (var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size,
-                    Vector2.Zero, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false))
-                {
-                    var texture = atlas.AddRegion(bitmap, $"glyph:{c}@{Name}:{Size}");
-                    return new FontGlyph(texture, (int)measuredSize.X, (int)measuredSize.Y);
-                }
+                atlas ??= new TextureMultiAtlas2d(512, 512, $"Font Atlas {name} {size}x");
+                using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size,
+                    Vector2.Zero, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
+                var texture = atlas.AddRegion(bitmap, $"glyph:{c}@{Name}:{Size}");
+                return new FontGlyph(texture, (int)measuredSize.X, (int)measuredSize.Y);
             }
         }
 

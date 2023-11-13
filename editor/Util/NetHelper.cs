@@ -67,12 +67,10 @@ namespace StorybrewEditor.Util
                 Trace.WriteLine($"Post {url}");
 
                 var content = new FormUrlEncodedContent(data);
-                using (var response = Client.PostAsync(url, content).Result)
-                {
-                    response.EnsureSuccessStatusCode();
-                    var responseContent = response.Content.ReadAsStringAsync().Result;
-                    action?.Invoke(responseContent, null);
-                }
+                using var response = Client.PostAsync(url, content).Result;
+                response.EnsureSuccessStatusCode();
+                var responseContent = response.Content.ReadAsStringAsync().Result;
+                action?.Invoke(responseContent, null);
             }
             catch (Exception e)
             {
@@ -113,33 +111,31 @@ namespace StorybrewEditor.Util
                 {
                     response.EnsureSuccessStatusCode();
 
-                    using (var fileStream = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                    using var fileStream = new FileStream(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+                    var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                    var bytesRead = 0L;
+                    var isMoreToRead = true;
+
+                    do
                     {
-                        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                        var bytesRead = 0L;
-                        var isMoreToRead = true;
+                        var read = response.Content.ReadAsByteArrayAsync().Result;
+                        fileStream.Write(read, 0, read.Length);
 
-                        do
+                        bytesRead += read.Length;
+                        isMoreToRead = read.Length != 0;
+
+                        if (totalBytes != -1L)
                         {
-                            var read = response.Content.ReadAsByteArrayAsync().Result;
-                            fileStream.Write(read, 0, read.Length);
-
-                            bytesRead += read.Length;
-                            isMoreToRead = read.Length != 0;
-
-                            if (totalBytes != -1L)
+                            var progressPercentage = (float)bytesRead / totalBytes * 100;
+                            if (!progressFunc(progressPercentage))
                             {
-                                var progressPercentage = (float)bytesRead / totalBytes * 100;
-                                if (!progressFunc(progressPercentage))
-                                {
-                                    isMoreToRead = false;
-                                    completedAction(new HttpRequestException("Download cancelled"));
-                                }
+                                isMoreToRead = false;
+                                completedAction(new HttpRequestException("Download cancelled"));
                             }
+                        }
 
-                        } 
-                        while (isMoreToRead);
                     }
+                    while (isMoreToRead);
                 }
                 completedAction?.Invoke(null);
             }

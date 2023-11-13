@@ -43,7 +43,7 @@ namespace Tiny.Formats.Yaml
 
             protected bool CheckIndent(ParseContext<YamlTokenType> context)
             {
-                indent = indent ?? context.IndentLevel + VirtualIndent;
+                indent ??= context.IndentLevel + VirtualIndent;
                 var lineIndent = ResultCount == 0 ? context.IndentLevel + VirtualIndent : context.IndentLevel;
                 if (lineIndent != indent)
                 {

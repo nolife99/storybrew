@@ -55,14 +55,12 @@ namespace BrewLib.Data
         }
         public byte[] GetBytes(string path, ResourceSource sources = ResourceSource.Embedded)
         {
-            using (var stream = GetStream(path, sources))
-            {
-                if (stream is null) return null;
+            using var stream = GetStream(path, sources);
+            if (stream is null) return null;
 
-                var buffer = new byte[stream.Length];
-                stream.Read(buffer, 0, buffer.Length);
-                return buffer;
-            }
+            var buffer = new byte[stream.Length];
+            stream.Read(buffer, 0, buffer.Length);
+            return buffer;
         }
         public string GetString(string path, ResourceSource sources = ResourceSource.Embedded)
         {

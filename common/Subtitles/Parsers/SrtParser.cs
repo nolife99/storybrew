@@ -12,8 +12,8 @@ namespace StorybrewCommon.Subtitles.Parsers
         ///<inheritdoc/>
         public SubtitleSet Parse(string path)
         {
-            using (var stream = Misc.WithRetries(() => File.OpenRead(path)))
-                return Parse(stream);
+            using var stream = Misc.WithRetries(() => File.OpenRead(path));
+            return Parse(stream);
         }
 
         ///<inheritdoc/>
@@ -34,25 +34,23 @@ namespace StorybrewCommon.Subtitles.Parsers
 
         static IEnumerable<string> parseBlocks(Stream stream)
         {
-            using (var reader = new StreamReader(stream))
+            using var reader = new StreamReader(stream);
+            var sb = new StringBuilder();
+
+            string line;
+            while ((line = reader.ReadLine()) != null)
             {
-                var sb = new StringBuilder();
-
-                string line;
-                while ((line = reader.ReadLine()) != null)
+                if (string.IsNullOrEmpty(line.Trim()))
                 {
-                    if (string.IsNullOrEmpty(line.Trim()))
-                    {
-                        var block = sb.ToString().Trim();
-                        if (block.Length > 0) yield return block;
-                        sb.Clear();
-                    }
-                    else sb.AppendLine(line);
+                    var block = sb.ToString().Trim();
+                    if (block.Length > 0) yield return block;
+                    sb.Clear();
                 }
-
-                var endBlock = sb.ToString().Trim();
-                if (endBlock.Length > 0) yield return endBlock;
+                else sb.AppendLine(line);
             }
+
+            var endBlock = sb.ToString().Trim();
+            if (endBlock.Length > 0) yield return endBlock;
         }
 
         static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp.Replace(',', '.')).TotalMilliseconds;

@@ -39,18 +39,16 @@ namespace StorybrewCommon.Subtitles
         {
             if (Radius < 1) return;
 
-            using (var src = new Bitmap(bitmap.Width, bitmap.Height, bitmap.PixelFormat))
+            using var src = new Bitmap(bitmap.Width, bitmap.Height, bitmap.PixelFormat);
+            using (var brush = new SolidBrush(FontColor.White)) using (var graphics = Graphics.FromImage(src))
             {
-                using (var brush = new SolidBrush(FontColor.White)) using (var graphics = Graphics.FromImage(src))
-                {
-                    graphics.TextRenderingHint = textGraphics.TextRenderingHint;
-                    graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    graphics.DrawString(text, font, brush, x, y, stringFormat);
-                }
-
-                using (var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5, Color)) textGraphics.DrawImage(blur.Bitmap, 0, 0);
+                graphics.TextRenderingHint = textGraphics.TextRenderingHint;
+                graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.DrawString(text, font, brush, x, y, stringFormat);
             }
+
+            using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5, Color); textGraphics.DrawImage(blur.Bitmap, 0, 0);
         }
     }
 }

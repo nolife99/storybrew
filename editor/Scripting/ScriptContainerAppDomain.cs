@@ -14,7 +14,7 @@ namespace StorybrewEditor.Scripting
         public ScriptContainerAppDomain(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
             : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) { }
 
-        protected override ScriptProvider<TScript> LoadScript()
+        protected override IProvider<TScript> LoadScript()
         {
             if (disposed) return null;
 
@@ -46,7 +46,7 @@ namespace StorybrewEditor.Scripting
                 }
                 context = scriptContext;
 
-                return (ScriptProvider<TScript>)scriptProvider;
+                return scriptProvider;
             }
             catch (ScriptCompilationException)
             {

@@ -36,7 +36,7 @@ namespace StorybrewEditor
             var type = GetType();
             try
             {
-                using (var reader = File.OpenText(path)) reader.ParseKeyValueSection((key, value) =>
+                using var reader = File.OpenText(path); reader.ParseKeyValueSection((key, value) =>
                 {
                     var field = type.GetField(key);
                     if (field is null || !field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
@@ -62,17 +62,15 @@ namespace StorybrewEditor
         {
             Trace.WriteLine($"Saving settings at '{path}'");
 
-            using (var stream = new SafeWriteStream(path)) using (var writer = new StreamWriter(stream, Project.Encoding))
+            using var stream = new SafeWriteStream(path); using var writer = new StreamWriter(stream, Project.Encoding);
+            foreach (var field in GetType().GetFields())
             {
-                foreach (var field in GetType().GetFields())
-                {
-                    if (!field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) continue;
+                if (!field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) continue;
 
-                    var setting = (Setting)field.GetValue(this);
-                    writer.WriteLine($"{field.Name}: {setting}");
-                }
-                stream.Commit();
+                var setting = (Setting)field.GetValue(this);
+                writer.WriteLine($"{field.Name}: {setting}");
             }
+            stream.Commit();
         }
     }
     public interface Setting

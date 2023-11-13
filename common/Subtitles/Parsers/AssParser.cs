@@ -13,7 +13,7 @@ namespace StorybrewCommon.Subtitles.Parsers
         ///<inheritdoc/>
         public SubtitleSet Parse(string path)
         {
-            using (var stream = BrewLib.Util.Misc.WithRetries(() => File.OpenRead(path))) return Parse(stream);
+            using var stream = BrewLib.Util.Misc.WithRetries(() => File.OpenRead(path)); return Parse(stream);
         }
 
         ///<inheritdoc/>

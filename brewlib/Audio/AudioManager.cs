@@ -21,7 +21,7 @@ namespace BrewLib.Audio
                 audioChannels.ForEach(audio => audio.UpdateVolume());
             }
         }
-        public AudioManager(IntPtr handle)
+        public AudioManager(nint handle)
         {
             Bass.Init(Win: handle);
             Bass.PlaybackBufferLength = 100;

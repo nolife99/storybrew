@@ -415,15 +415,13 @@ namespace StorybrewEditor.UserInterface.Components
         }
         void copyConfiguration()
         {
-            using (var stream = new MemoryStream()) using (var writer = new BinaryWriter(stream))
+            using var stream = new MemoryStream(); using var writer = new BinaryWriter(stream);
+            writer.Write(effect.Config.FieldCount);
+            foreach (var field in effect.Config.Fields)
             {
-                writer.Write(effect.Config.FieldCount);
-                foreach (var field in effect.Config.Fields)
-                {
-                    writer.Write(field.Name);
-                    ObjectSerializer.Write(writer, field.Value);
-                    ClipboardHelper.SetData(effectConfigFormat, stream);
-                }
+                writer.Write(field.Name);
+                ObjectSerializer.Write(writer, field.Value);
+                ClipboardHelper.SetData(effectConfigFormat, stream);
             }
         }
         void pasteConfiguration()
@@ -431,24 +429,22 @@ namespace StorybrewEditor.UserInterface.Components
             var changed = false;
             try
             {
-                using (var stream = (Stream)ClipboardHelper.GetData(effectConfigFormat)) using (var reader = new BinaryReader(stream))
+                using var stream = (Stream)ClipboardHelper.GetData(effectConfigFormat); using var reader = new BinaryReader(stream);
+                var fieldCount = reader.ReadInt32();
+                for (var i = 0; i < fieldCount; ++i)
                 {
-                    var fieldCount = reader.ReadInt32();
-                    for (var i = 0; i < fieldCount; ++i)
+                    var name = reader.ReadString();
+                    var value = ObjectSerializer.Read(reader);
+                    try
                     {
-                        var name = reader.ReadString();
-                        var value = ObjectSerializer.Read(reader);
-                        try
-                        {
-                            var field = effect.Config.Fields.First(f => f.Name == name);
-                            if (field.Value.Equals(value)) continue;
+                        var field = effect.Config.Fields.First(f => f.Name == name);
+                        if (field.Value.Equals(value)) continue;
 
-                            changed |= effect.Config.SetValue(name, value);
-                        }
-                        catch (Exception ex)
-                        {
-                            Trace.WriteLine($"Cannot paste '{name}': {ex}");
-                        }
+                        changed |= effect.Config.SetValue(name, value);
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.WriteLine($"Cannot paste '{name}': {ex}");
                     }
                 }
             }

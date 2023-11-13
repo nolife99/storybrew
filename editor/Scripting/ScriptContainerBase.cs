@@ -13,7 +13,7 @@ namespace StorybrewEditor.Scripting
 
         public string CompiledScriptsPath { get; }
 
-        ScriptProvider<TScript> scriptProvider;
+        IProvider<TScript> scriptProvider;
 
         volatile int currentVersion, targetVersion = 1;
 
@@ -91,7 +91,7 @@ namespace StorybrewEditor.Scripting
             if (targetVersion > initialTargetVersion) OnScriptChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        protected abstract ScriptProvider<TScript> LoadScript();
+        protected abstract IProvider<TScript> LoadScript();
         protected ScriptLoadingException CreateScriptLoadingException(Exception e)
         {
             var details = "";

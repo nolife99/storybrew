@@ -808,19 +808,19 @@ namespace StorybrewCommon.Storyboarding
         ///<param name="height"> The height of the sprite. </param>
         public static CommandPosition GetOriginVector(OsbOrigin origin, double width, double height)
         {
-            switch (origin)
+            return origin switch
             {
-                default: throw new NotSupportedException(origin.ToString());
-                case OsbOrigin.TopLeft: return default;
-                case OsbOrigin.TopCentre: return new CommandPosition(width * .5, 0);
-                case OsbOrigin.TopRight: return new CommandPosition(width, 0);
-                case OsbOrigin.CentreLeft: return new CommandPosition(0, height * .5);
-                case OsbOrigin.Centre: return new CommandPosition(width * .5, height * .5);
-                case OsbOrigin.CentreRight: return new CommandPosition(width, height * .5);
-                case OsbOrigin.BottomLeft: return new CommandPosition(0, height);
-                case OsbOrigin.BottomCentre: return new CommandPosition(width * .5, height);
-                case OsbOrigin.BottomRight: return new CommandPosition(width, height);
-            }
+                OsbOrigin.TopLeft => default,
+                OsbOrigin.TopCentre => new CommandPosition(width * .5, 0),
+                OsbOrigin.TopRight => new CommandPosition(width, 0),
+                OsbOrigin.CentreLeft => new CommandPosition(0, height * .5),
+                OsbOrigin.Centre => new CommandPosition(width * .5, height * .5),
+                OsbOrigin.CentreRight => new CommandPosition(width, height * .5),
+                OsbOrigin.BottomLeft => new CommandPosition(0, height),
+                OsbOrigin.BottomCentre => new CommandPosition(width * .5, height),
+                OsbOrigin.BottomRight => new CommandPosition(width, height),
+                _ => throw new NotSupportedException(origin.ToString()),
+            };
         }
     }
 

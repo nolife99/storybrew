@@ -158,6 +158,9 @@ namespace StorybrewEditor.Util
                     cancellationTokenSource = new CancellationTokenSource();
                     cancellationToken = cancellationTokenSource.Token;
 
+                    // Drawbacks with deprecating Thread.Abort:
+                    // Tasks take a WHILE to completely stop executing, so they tend to only stop after the app was terminated.
+
                     Task localThread = null;
                     thread = localThread = new Task(async () =>
                     {
@@ -176,7 +179,7 @@ namespace StorybrewEditor.Util
                                 // Check if we want to start cancelling
                                 while (!context.Enabled || context.Queue.Count == 0)
                                 {
-                                    // Cancel the thread if the instance's thread is set to null
+                                    // Cancel the thread if the instance's thread is invalidated
                                     if (thread != localThread)
                                     {
                                         Trace.WriteLine($"Exiting thread {threadName}.");
@@ -225,9 +228,9 @@ namespace StorybrewEditor.Util
                                 if (task.MustRunAlone) context.RunningLoneTask = false;
                             }
                         }
-                    }, cancellationToken);
+                    }, cancellationToken, TaskCreationOptions.PreferFairness);
 
-                    Trace.WriteLine($"Starting thread {threadName}.");
+                    Trace.WriteLine($"Starting thread {threadName}");
                     thread.Start();
                 }
             }
@@ -235,21 +238,21 @@ namespace StorybrewEditor.Util
             public void JoinOrAbort(int millisecondsTimeout)
             {
                 if (thread is null) return;
-
                 var localThread = thread;
 
-                // Set the instance's task to null to trigger an exit
+                // Invalidate the instance's task to trigger an exit
                 thread = null;
 
                 lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-                // If an exit hasn't happened (for example, the thread is unresponsive) try to force-stop it
+                // If an exit hasn't happened (e.g. the thread is unresponsive) try to force-stop it
                 if (!localThread.Wait(millisecondsTimeout))
                 {
                     Trace.WriteLine($"Aborting thread {threadName}.");
                     cancellationTokenSource.Cancel();
-                    cancellationTokenSource.Dispose();
                 }
+
+                cancellationTokenSource.Dispose();
                 localThread.Dispose();
             }
         }

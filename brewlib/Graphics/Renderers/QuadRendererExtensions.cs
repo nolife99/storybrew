@@ -135,7 +135,7 @@ namespace BrewLib.Graphics.Renderers
 
         public static void DrawArc(this QuadRenderer renderer, Vector2 center, float innerRadius, float outerRadius, float startAngle, float angleLength, Texture2dRegion texture, Color4 innerColor, Color4 outerColor, float precision = 1)
         {
-            texture = texture ?? DrawState.WhitePixel;
+            texture ??= DrawState.WhitePixel;
             var uMin = texture.UvBounds.Left;
             var uMax = texture.UvBounds.Right;
             var vMin = texture.UvBounds.Top;

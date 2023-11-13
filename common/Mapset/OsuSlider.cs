@@ -281,14 +281,14 @@ namespace StorybrewCommon.Mapset
         }
         public static SliderCurveType LetterToCurveType(string letter)
         {
-            switch (letter)
+            return letter switch
             {
-                case "L": return SliderCurveType.Linear;
-                case "C": return SliderCurveType.Catmull;
-                case "B": return SliderCurveType.Bezier;
-                case "P": return SliderCurveType.Perfect;
-                default: return SliderCurveType.Unknown;
-            }
+                "L" => SliderCurveType.Linear,
+                "C" => SliderCurveType.Catmull,
+                "B" => SliderCurveType.Bezier,
+                "P" => SliderCurveType.Perfect,
+                _ => SliderCurveType.Unknown,
+            };
         }
     }
     [Serializable] public class OsuSliderNode

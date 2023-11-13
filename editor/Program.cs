@@ -12,7 +12,9 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -85,18 +87,20 @@ namespace StorybrewEditor
         {
             enableScheduling();
 
-            Settings = new Settings();
+            Settings = new();
             Updater.NotifyEditorRun();
 
             var displayDevice = findDisplayDevice();
 
             using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager(window))
-            using (var editor = new Editor(window))
+            using (Editor editor = new(window)) using (System.Drawing.Icon icon = new(typeof(Program), "icon.ico"))
             {
                 Trace.WriteLine($"{Environment.OSVersion} / {window.WindowInfo}");
                 Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
-                window.Icon = new Icon(typeof(Program), "icon.ico");
+                SendMessage(editor.FormsWindow.Handle, 0x0080, 0, icon.Handle);
+                SendMessage(editor.FormsWindow.Handle, 0x0080, 1, icon.Handle);
+
                 window.Resize += (sender, e) =>
                 {
                     editor.Draw(1);
@@ -104,11 +108,18 @@ namespace StorybrewEditor
                 };
 
                 editor.Initialize();
-                runMainLoop(window, editor, 1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate), 1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
+
+                runMainLoop(window, editor, 
+                    1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate), 
+                    1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
 
                 Settings.Save();
             }
         }
+
+        [DllImport("user32.dll")]
+        static extern nint SendMessage(nint hWnd, int msg, nint wParam, nint lParam);
+
         static DisplayDevice findDisplayDevice()
         {
             try
@@ -176,7 +187,7 @@ namespace StorybrewEditor
             var watch = Stopwatch.StartNew();
 
             window.VSync = VSyncMode.Adaptive;
-            using (var reset = new ManualResetEventSlim()) while (window.Exists && !window.IsExiting)
+            using var reset = new ManualResetEventSlim(); while (window.Exists && !window.IsExiting)
             {
                 var focused = window.Focused;
                 var currentTime = watch.Elapsed.TotalSeconds;
@@ -274,25 +285,23 @@ namespace StorybrewEditor
                 action();
                 return;
             }
-            using (var completed = new ManualResetEvent(false))
+            using var completed = new ManualResetEvent(false);
+            Exception exception = null;
+            Schedule(() =>
             {
-                Exception exception = null;
-                Schedule(() =>
+                try
                 {
-                    try
-                    {
-                        action();
-                    }
-                    catch (Exception e)
-                    {
-                        exception = e;
-                    }
-                    completed.Set();
-                });
-                completed.WaitOne();
+                    action();
+                }
+                catch (Exception e)
+                {
+                    exception = e;
+                }
+                completed.Set();
+            });
+            completed.WaitOne();
 
-                if (exception != null) throw exception;
-            }
+            if (exception != null) throw exception;
         }
         public static void RunScheduledTasks()
         {
@@ -321,7 +330,7 @@ namespace StorybrewEditor
 
         static void setupLogging(string logsPath = null, string commonLogFilename = null, bool checkFrozen = false)
         {
-            logsPath = logsPath ?? DefaultLogPath;
+            logsPath ??= DefaultLogPath;
             var tracePath = Path.Combine(logsPath, commonLogFilename ?? "trace.log");
             var exceptionPath = Path.Combine(logsPath, commonLogFilename ?? "exception.log");
             var crashPath = Path.Combine(logsPath, commonLogFilename ?? "crash.log");

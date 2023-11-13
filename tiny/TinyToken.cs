@@ -68,26 +68,26 @@ namespace Tiny
 
         public static TinyToken Read(Stream stream, Format format)
         {
-            using (var reader = new StreamReader(stream, Encoding.ASCII)) return format.Read(reader);
+            using var reader = new StreamReader(stream, Encoding.ASCII); return format.Read(reader);
         }
         public static TinyToken Read(string path)
         {
-            using (var stream = File.OpenRead(path)) return Read(stream, GetFormat(path));
+            using var stream = File.OpenRead(path); return Read(stream, GetFormat(path));
         }
 
         public static TinyToken ReadString(string data, Format format)
         {
-            using (var reader = new StringReader(data)) return format.Read(reader);
+            using var reader = new StringReader(data); return format.Read(reader);
         }
         public static TinyToken ReadString<F>(string data) where F : Format, new() => ReadString(data, new F());
 
         public void Write(Stream stream, Format format)
         {
-            using (var writer = new StreamWriter(stream, Encoding.ASCII) { NewLine = "\n" }) format.Write(writer, this);
+            using var writer = new StreamWriter(stream, Encoding.ASCII) { NewLine = "\n" }; format.Write(writer, this);
         }
         public void Write(string path)
         {
-            using (var stream = File.Create(path)) Write(stream, GetFormat(path));
+            using var stream = File.Create(path); Write(stream, GetFormat(path));
         }
 
         public static YamlFormat Yaml = new();
@@ -96,12 +96,12 @@ namespace Tiny
         public static Format GetFormat(string path)
         {
             var extension = Path.GetExtension(path);
-            switch (Path.GetExtension(path))
+            return Path.GetExtension(path) switch
             {
-                case ".yml": case ".yaml": return Yaml;
-                case ".json": return Json;
-            }
-            throw new NotImplementedException($"No format matches extension '{extension}'.");
+                ".yml" or ".yaml" => Yaml,
+                ".json" => Json,
+                _ => throw new NotImplementedException($"No format matches extension '{extension}'."),
+            };
         }
     }
 }

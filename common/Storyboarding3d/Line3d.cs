@@ -52,7 +52,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
-            sprite = sprite ?? segment.CreateSprite(SpritePath, SpriteOrigin);
+            sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
             spriteBitmap = CommandGenerator.BitmapDimensions(sprite);
         }
 
@@ -68,17 +68,12 @@ namespace StorybrewCommon.Storyboarding3d
 
             var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
-
-            Vector2 position;
-            switch (sprite.Origin)
+            var position = sprite.Origin switch
             {
-                default:
-                case OsbOrigin.TopLeft:
-                case OsbOrigin.CentreLeft:
-                case OsbOrigin.BottomLeft: position = new Vector2(startVector.X, startVector.Y); break;
-                case OsbOrigin.TopCentre: case OsbOrigin.Centre: case OsbOrigin.BottomCentre: position = new Vector2(startVector.X, startVector.Y) + delta / 2; break;
-                case OsbOrigin.TopRight: case OsbOrigin.CentreRight: case OsbOrigin.BottomRight: position = new Vector2(endVector.X, endVector.Y); break;
-            }
+                OsbOrigin.TopCentre or OsbOrigin.Centre or OsbOrigin.BottomCentre => new Vector2(startVector.X, startVector.Y) + delta / 2,
+                OsbOrigin.TopRight or OsbOrigin.CentreRight or OsbOrigin.BottomRight => new Vector2(endVector.X, endVector.Y),
+                _ => new Vector2(startVector.X, startVector.Y),
+            };
             gen.Add(new State
             {
                 Time = time,
@@ -169,19 +164,19 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
-            spriteBody = spriteBody ?? segment.CreateSprite(SpritePathBody, OsbOrigin.Centre);
+            spriteBody ??= segment.CreateSprite(SpritePathBody, OsbOrigin.Centre);
             spriteBitmaps[0] = CommandGenerator.BitmapDimensions(spriteBody);
 
             if (SpritePathEdge != null)
             {
-                spriteTopEdge = spriteTopEdge ?? segment.CreateSprite(SpritePathEdge, OsbOrigin.BottomCentre);
-                spriteBottomEdge = spriteBottomEdge ?? segment.CreateSprite(SpritePathEdge, OsbOrigin.TopCentre);
+                spriteTopEdge ??= segment.CreateSprite(SpritePathEdge, OsbOrigin.BottomCentre);
+                spriteBottomEdge ??= segment.CreateSprite(SpritePathEdge, OsbOrigin.TopCentre);
                 spriteBitmaps[1] = CommandGenerator.BitmapDimensions(spriteTopEdge);
             }
             if (SpritePathCap != null)
             {
-                spriteStartCap = spriteStartCap ?? segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
-                spriteEndCap = spriteEndCap ?? segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
+                spriteStartCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
+                spriteEndCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
                 spriteBitmaps[2] = CommandGenerator.BitmapDimensions(spriteEndCap);
             }
         }

@@ -12,12 +12,15 @@ using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics.OpenGL;
+using osuTK.Platform;
 using StorybrewEditor.ScreenLayers;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace StorybrewEditor
 {
