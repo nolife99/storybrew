@@ -16,10 +16,10 @@ namespace StorybrewCommon.Storyboarding.Display
         public bool HasOverlap { get; private set; }
 
         public double StartTime => commands.Count > 0 ? commands[0].StartTime : 0;
-        public double EndTime => commands.Count > 0 ? commands[commands.Count - 1].EndTime : 0;
+        public double EndTime => commands.Count > 0 ? commands[^1].EndTime : 0;
         public double Duration => EndTime - StartTime;
         public TValue StartValue => commands.Count > 0 ? commands[0].StartValue : DefaultValue;
-        public TValue EndValue => commands.Count > 0 ? commands[commands.Count - 1].EndValue : DefaultValue;
+        public TValue EndValue => commands.Count > 0 ? commands[^1].EndValue : DefaultValue;
 
         public AnimatedValue() { }
         public AnimatedValue(TValue defaultValue) => DefaultValue = defaultValue;

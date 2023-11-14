@@ -12,12 +12,7 @@ namespace BrewLib.Graphics
     public class RenderStates
     {
         public static readonly RenderStates Default = new();
-
         public BlendingFactorState BlendingFactor = BlendingFactorState.Default;
-        public BlendingEquationState BlendingEquation = BlendingEquationState.Default;
-        public CullFaceState CullFace = CullFaceState.Default2d;
-        public DepthState Depth = DepthState.Default2d;
-        public PointSpriteState PointSprite = PointSpriteState.Default;
 
         static readonly IEnumerable<FieldInfo> fields = new HashSet<FieldInfo>(typeof(RenderStates).GetFields());
         static readonly IDictionary<Type, RenderState> currentStates = new Dictionary<Type, RenderState>();
@@ -56,7 +51,7 @@ namespace BrewLib.Graphics
         readonly BlendingFactorSrc alphaSrc = BlendingFactorSrc.SrcAlpha;
         readonly BlendingFactorDest alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
 
-        public static BlendingFactorState Default = new();
+        public readonly static BlendingFactorState Default = new();
 
         public BlendingFactorState() { }
         public BlendingFactorState(BlendingMode mode)
@@ -116,6 +111,8 @@ namespace BrewLib.Graphics
             DrawState.SetCapability(EnableCap.Blend, enabled);
             if (enabled) GL.BlendFuncSeparate(src, dest, alphaSrc, alphaDest);
         }
+
+        public override bool Equals(object obj) => Equals(obj as BlendingFactorState);
         public bool Equals(BlendingFactorState other)
         {
             if (!enabled && !other.enabled) return true;
@@ -124,85 +121,6 @@ namespace BrewLib.Graphics
         }
 
         public override string ToString() => $"BlendingFactor src:{src}, dest:{dest}, alphaSrc:{alphaSrc}, alphaDest:{alphaDest}";
-    }
-    public class BlendingEquationState : RenderState, IEquatable<BlendingEquationState>
-    {
-        readonly BlendEquationMode colorMode = BlendEquationMode.FuncAdd, alphaMode = BlendEquationMode.FuncAdd;
-        public static BlendingEquationState Default = new();
-
-        public BlendingEquationState() { }
-        public BlendingEquationState(BlendEquationMode mode) => colorMode = alphaMode = mode;
-        public BlendingEquationState(BlendEquationMode colorMode, BlendEquationMode alphaMode)
-        {
-            this.colorMode = colorMode;
-            this.alphaMode = alphaMode;
-        }
-
-        public void Apply() => GL.BlendEquationSeparate(colorMode, alphaMode);
-        public bool Equals(BlendingEquationState other) => colorMode == other.colorMode && alphaMode == other.alphaMode;
-
-        public override string ToString() => $"BlendingEquation colorMode:{colorMode}, alphaMode:{alphaMode}";
-    }
-    public class DepthState : RenderState, IEquatable<DepthState>
-    {
-        readonly DepthFunction? test;
-        readonly bool write;
-
-        public static DepthState Default2d = new(null, false);
-        public static DepthState Default3dOpaque = new(DepthFunction.Less, true);
-        public static DepthState Default3dTransparent = new(DepthFunction.Less, false);
-
-        public DepthState(DepthFunction? test, bool write)
-        {
-            this.test = test;
-            this.write = write;
-        }
-
-        public void Apply()
-        {
-            DrawState.SetCapability(EnableCap.DepthTest, test.HasValue);
-            if (test.HasValue) GL.DepthFunc(test.Value);
-            GL.DepthMask(write);
-        }
-        public bool Equals(DepthState other) => test == other.test && write == other.write && test == other.test;
-
-        public override string ToString() => $"Depth test:{test}, write:{write}";
-    }
-    public class CullFaceState : RenderState, IEquatable<CullFaceState>
-    {
-        readonly CullFaceMode? mode;
-        public static CullFaceState Default2d = new(null), Default3d = new(CullFaceMode.Back);
-
-        public CullFaceState(CullFaceMode? mode) => this.mode = mode;
-
-        public void Apply()
-        {
-            DrawState.SetCapability(EnableCap.CullFace, mode.HasValue);
-            if (mode.HasValue) GL.CullFace(mode.Value);
-        }
-        public bool Equals(CullFaceState other) => mode == other.mode;
-
-        public override string ToString() => $"CullFace mode:{mode}";
-    }
-    public class PointSpriteState : RenderState, IEquatable<PointSpriteState>
-    {
-        readonly bool enabled, sizeEnabled;
-
-        public static readonly PointSpriteState Default = new(false, false);
-
-        public PointSpriteState(bool enabled, bool sizeEnabled)
-        {
-            this.enabled = enabled;
-            this.sizeEnabled = sizeEnabled;
-        }
-
-        public void Apply()
-        {
-            DrawState.SetCapability(EnableCap.PointSprite, enabled);
-            DrawState.SetCapability(EnableCap.ProgramPointSize, sizeEnabled);
-        }
-        public bool Equals(PointSpriteState other) => enabled == other.enabled;
-
-        public override string ToString() => $"PointSize mode:{enabled}, size:{sizeEnabled}";
+        public override int GetHashCode() => HashCode.Combine(src, dest, alphaSrc, alphaDest, enabled);
     }
 }

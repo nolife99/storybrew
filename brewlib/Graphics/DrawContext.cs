@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BrewLib.Graphics
 {
-    public class DrawContext : IDisposable
+    public sealed class DrawContext : IDisposable
     {
         Dictionary<Type, object> references = new();
         List<IDisposable> disposables = new();
@@ -19,11 +19,11 @@ namespace BrewLib.Graphics
         #region IDisposable Support
 
         bool disposedValue;
-        protected virtual void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                if (disposing) foreach (var disposable in disposables) disposable.Dispose();
+                if (disposing) for (int i = 0; i < disposables.Count; i++) disposables[i].Dispose();
                 references = null;
                 disposables = null;
                 disposedValue = true;

@@ -393,7 +393,7 @@ namespace BrewLib.UserInterface
                 var widgetEvent = fire(notify, targets[i], relatedTarget, bubbles);
                 if (widgetEvent.Handled) return widgetEvent;
             }
-            return new WidgetEvent(targets.Count > 0 ? targets[targets.Count - 1] : null, relatedTarget);
+            return new WidgetEvent(targets.Count > 0 ? targets[^1] : null, relatedTarget);
         }
         static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, Widget target, Widget relatedTarget = null, bool bubbles = true)
         {

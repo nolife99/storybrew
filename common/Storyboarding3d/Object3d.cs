@@ -6,6 +6,7 @@ using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Numerics;
 using System.Collections.Generic;
+using BrewLib.Util;
 
 namespace StorybrewCommon.Storyboarding3d
 {
@@ -51,14 +52,13 @@ namespace StorybrewCommon.Storyboarding3d
             var layer = Segment ?? parentSegment;
             var childrenLayer = ChildrenInheritLayer ? layer : parentSegment;
 
-            foreach (var child in children) if (child.DrawBelowParent) child.GenerateTreeSprite(childrenLayer);
+            children.ForEach(child => child.GenerateTreeSprite(childrenLayer), child => child.DrawBelowParent);
             GenerateSprite(layer);
-            foreach (var child in children) if (!child.DrawBelowParent) child.GenerateTreeSprite(childrenLayer);
+            children.ForEach(child => child.GenerateTreeSprite(childrenLayer), child => !child.DrawBelowParent);
         }
 
         ///<summary> Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given <see cref="Camera"/>'s state. </summary>
-        public void GenerateTreeStates(double time, Camera camera)
-            => GenerateTreeStates(time, camera.StateAt(time), Object3dState.InitialState);
+        public void GenerateTreeStates(double time, Camera camera) => GenerateTreeStates(time, camera.StateAt(time), Object3dState.InitialState);
 
         ///<summary> Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given <see cref="CameraState"/> and <see cref="Object3dState"/>. </summary>
         public void GenerateTreeStates(double time, CameraState cameraState, Object3dState parent3dState)

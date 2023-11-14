@@ -17,7 +17,7 @@ namespace StorybrewCommon.Curves
         public CommandPosition StartPosition => curves[0].StartPosition;
 
         ///<inheritdoc/>
-        public CommandPosition EndPosition => curves[curves.Length - 1].EndPosition;
+        public CommandPosition EndPosition => curves[^1].EndPosition;
 
         ///<inheritdoc/>
         public double Length
@@ -42,7 +42,7 @@ namespace StorybrewCommon.Curves
                 if (distance < curve.Length) return curve.PositionAtDistance(distance);
                 distance -= curve.Length;
             }
-            return curves[curves.Length - 1].EndPosition;
+            return curves[^1].EndPosition;
         }
 
         ///<inheritdoc/>

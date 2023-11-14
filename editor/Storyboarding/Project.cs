@@ -14,11 +14,12 @@ using StorybrewEditor.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Reflection;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Tiny;
@@ -387,13 +388,13 @@ namespace StorybrewEditor.Storyboarding
 
         static readonly string[] defaultAssemblies = new string[]
         {
-            "mscorlib.dll", "System.dll", "System.Linq.dll", "System.Runtime.dll", "System.Core.dll", "System.Drawing.dll", "System.Numerics.dll",
-            "osuTK.dll", "System.Drawing.Common.dll", "System.Numerics.Vectors.dll", "System.Drawing.Primitives.dll", "BrewLib.dll", "netstandard.dll",
-            Assembly.GetAssembly(typeof(Script)).Location, Assembly.GetExecutingAssembly().Location
+            "System.Runtime.dll", "System.Drawing.Common.dll", "System.Numerics.Vectors.dll", "netstandard.dll",
+            typeof(Script).Assembly.Location, typeof(Program).Assembly.Location, typeof(Shader).Assembly.Location, typeof(Vector).Assembly.Location,
+            typeof(Box2).Assembly.Location, typeof(Rectangle).Assembly.Location, typeof(Enumerable).Assembly.Location
         };
         public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
 
-        List<string> importedAssemblies = new ();
+        List<string> importedAssemblies = new();
         public IEnumerable<string> ImportedAssemblies
         {
             get => importedAssemblies;
@@ -780,7 +781,7 @@ namespace StorybrewEditor.Storyboarding
             if (Disposed) throw new ObjectDisposedException(nameof(Project));
 
             string osuPath = null, osbPath = null;
-            List<EditorStoryboardLayer> localLayers = null;
+            IEnumerable<EditorStoryboardLayer> localLayers = null, diffSpecific = null, sbLayer;
             Program.RunMainThread(() =>
             {
                 if (osuPath != MainBeatmap.Path) osuPath = MainBeatmap.Path;
@@ -790,18 +791,13 @@ namespace StorybrewEditor.Storyboarding
                 if (!OwnsOsb) OwnsOsb = true;
 
                 localLayers = LayerManager.FindLayers(l => l.Visible);
+                diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
             });
+
             var usesOverlayLayer = localLayers.Any(l => l.OsbLayer == OsbLayer.Overlay);
+            sbLayer = localLayers.Where(l => !l.DiffSpecific);
 
-            var diffSpecific = new List<EditorStoryboardLayer>(); 
-            var sbLayer = new List<EditorStoryboardLayer>();
-            foreach (var local in localLayers)
-            {
-                if (local.DiffSpecific) diffSpecific.Add(local);
-                else sbLayer.Add(local);
-            }
-
-            if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count > 0)
+            if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Any())
             {
                 Trace.WriteLine($"Exporting diff specific events to {osuPath}");
                 using var stream = new SafeWriteStream(osuPath); using var writer = new StreamWriter(stream, Encoding); using var reader = new StreamReader(osuPath, Encoding);
@@ -826,7 +822,7 @@ namespace StorybrewEditor.Storyboarding
                                     if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
                                     writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
-                                    foreach (var layer in diffSpecific) if (layer.OsbLayer == osbLayer) layer.WriteOsb(writer, ExportSettings);
+                                    foreach (var layer in diffSpecific) if (layer.OsbLayer == osbLayer && layer.Visible) layer.WriteOsb(writer, ExportSettings);
                                 }
                                 inStoryboard = true;
                             }
@@ -840,7 +836,7 @@ namespace StorybrewEditor.Storyboarding
                 stream.Commit();
             }
 
-            if (exportOsb && sbLayer.Count > 0)
+            if (exportOsb && sbLayer.Any())
             {
                 Trace.WriteLine($"Exporting osb to {osbPath}");
                 using var writer = new StreamWriter(osbPath, false);

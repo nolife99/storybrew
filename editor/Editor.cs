@@ -12,15 +12,11 @@ using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics.OpenGL;
-using osuTK.Platform;
 using StorybrewEditor.ScreenLayers;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace StorybrewEditor
 {
@@ -48,7 +44,7 @@ namespace StorybrewEditor
 
         public void Initialize(ScreenLayer initialLayer = null)
         {
-            ResourceContainer = new AssemblyResourceContainer(Assembly.GetEntryAssembly(), $"{nameof(StorybrewEditor)}.Resources", "resources");
+            ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
             DrawState.Initialize(ResourceContainer, Window.Width, Window.Height);
 
             drawContext = new DrawContext();

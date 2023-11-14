@@ -11,10 +11,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Net;
-using System.Reflection;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -24,7 +21,7 @@ namespace StorybrewEditor
     public static class Program
     {
         public const string Name = "storybrew editor", Repository = "Damnae/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
-        public readonly static Version Version = Assembly.GetExecutingAssembly().GetName().Version;
+        public readonly static Version Version = typeof(Editor).Assembly.GetName().Version;
         public readonly static string FullName = $"{Name} {Version} ({Repository})";
 
         public static AudioManager AudioManager { get; set; }
@@ -93,14 +90,12 @@ namespace StorybrewEditor
             var displayDevice = findDisplayDevice();
 
             using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager(window))
-            using (Editor editor = new(window)) using (System.Drawing.Icon icon = new(typeof(Program), "icon.ico"))
+            using (Editor editor = new(window)) using (System.Drawing.Icon icon = new(typeof(Editor), "icon.ico"))
             {
                 Trace.WriteLine($"{Environment.OSVersion} / {window.WindowInfo}");
                 Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
-                SendMessage(editor.FormsWindow.Handle, 0x0080, 0, icon.Handle);
-                SendMessage(editor.FormsWindow.Handle, 0x0080, 1, icon.Handle);
-
+                Native.SetWindowIcon(editor.FormsWindow, icon);
                 window.Resize += (sender, e) =>
                 {
                     editor.Draw(1);
@@ -116,9 +111,6 @@ namespace StorybrewEditor
                 Settings.Save();
             }
         }
-
-        [DllImport("user32.dll")]
-        static extern nint SendMessage(nint hWnd, int msg, nint wParam, nint lParam);
 
         static DisplayDevice findDisplayDevice()
         {
@@ -225,7 +217,7 @@ namespace StorybrewEditor
                 if (window.VSync is VSyncMode.Off && window.WindowState != WindowState.Minimized)
                 {
                     var sleepTime = (focused ? targetFrameDuration : fixedRateUpdateDuration) - activeDuration;
-                    if (sleepTime > 0) reset.Wait(TimeSpan.FromSeconds(sleepTime));
+                    if (sleepTime > 0) reset.WaitHandle.WaitOne(TimeSpan.FromSeconds(sleepTime));
                 }
 
                 var frameTime = currentTime - previousTime;
@@ -285,33 +277,42 @@ namespace StorybrewEditor
                 action();
                 return;
             }
-            using var completed = new ManualResetEvent(false);
-            Exception exception = null;
-            Schedule(() =>
-            {
-                try
-                {
-                    action();
-                }
-                catch (Exception e)
-                {
-                    exception = e;
-                }
-                completed.Set();
-            });
-            completed.WaitOne();
 
-            if (exception != null) throw exception;
+            using (ManualResetEvent completed = new(false))
+            {
+                Exception exception = null;
+                Schedule(() =>
+                {
+                    try
+                    {
+                        action();
+                    }
+                    catch (Exception e)
+                    {
+                        exception = e;
+                    }
+                    completed.Set();
+                });
+                completed.WaitOne();
+
+                if (exception != null) throw exception;
+            }
         }
         public static void RunScheduledTasks()
         {
             CheckMainThread();
 
-            Action action = null;
-            for (var i = 0; i < scheduledActions.Count; ++i) try
+            Action[] actionsToRun;
+            lock (scheduledActions)
             {
-                if (scheduledActions.TryDequeue(out action)) action();
-                else throw new InvalidOperationException("Retrieving task failed");
+                actionsToRun = new Action[scheduledActions.Count];
+                scheduledActions.CopyTo(actionsToRun, 0);
+                scheduledActions.Clear();
+            }
+
+            foreach (var action in actionsToRun) try
+            {
+                action();
             }
             catch (Exception e)
             {

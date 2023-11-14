@@ -237,7 +237,7 @@ namespace BrewLib.UserInterface
             children.Add(widget);
             widget.parent = this;
 
-            if (widget.StyleName == null) widget.StyleName = "default";
+            widget.StyleName ??= "default";
 
             InvalidateAncestorLayout();
         }

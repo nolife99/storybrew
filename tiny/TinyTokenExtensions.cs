@@ -17,7 +17,7 @@ namespace Tiny
         public static T Value<T>(this TinyToken token, params object[] keys)
         {
             for (var i = 0; i < keys.Length - 1; ++i) token = token.Value<TinyToken>(keys[i]);
-            return token.Value<T>(keys[keys.Length - 1]);
+            return token.Value<T>(keys[^1]);
         }
 
         public static void Merge(this TinyToken into, TinyToken token)

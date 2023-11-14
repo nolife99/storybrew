@@ -47,7 +47,7 @@ namespace BrewLib.Graphics.Text
             }
 
             if (lines.Count == 0) lines.Add(new TextLayoutLine(this, 0, alignment, true));
-            var lastLine = lines[lines.Count - 1];
+            var lastLine = lines[^1];
             if (lastLine.GlyphCount == 0) height += font.LineHeight;
             lastLine.Add(new FontGlyph(null, 0, font.LineHeight), glyphIndex++);
 
@@ -140,7 +140,7 @@ namespace BrewLib.Graphics.Text
         }
         TextLayoutGlyph getLastGlyph()
         {
-            var lastLine = lines[lines.Count - 1];
+            var lastLine = lines[^1];
             return lastLine.GetGlyph(lastLine.GlyphCount - 1);
         }
     }

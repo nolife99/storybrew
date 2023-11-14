@@ -14,7 +14,7 @@ namespace StorybrewCommon.Curves
         public override CommandPosition StartPosition => points[0];
 
         ///<inheritdoc/>
-        public override CommandPosition EndPosition => points[points.Length - 1];
+        public override CommandPosition EndPosition => points[^1];
 
         ///<summary> Whether the curve is straight (linear). </summary>
         public bool IsLinear => points.Length < 3;

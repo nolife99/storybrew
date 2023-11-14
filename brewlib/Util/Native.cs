@@ -1,9 +1,9 @@
 ﻿using osuTK;
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Windows.Forms;
 
 namespace BrewLib.Util
 {
@@ -16,9 +16,6 @@ namespace BrewLib.Util
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory", CallingConvention = CallingConvention.Winapi)]
         static extern void memmove(nint dest, nint src, uint count);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public static extern nint SendMessage(nint hWnd, int msg, nint wParam, nint lParam);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CopyMemory(nint source, nint destination, uint count)
@@ -34,6 +31,15 @@ namespace BrewLib.Util
                 return true;
             }
             return false;
+        }
+
+        [DllImport("user32.dll")]
+        static extern nint SendMessage(nint hWnd, int msg, nint wParam, nint lParam);
+
+        public static void SetWindowIcon(IWin32Window window, System.Drawing.Icon icon)
+        {
+            SendMessage(window.Handle, 0x0080, 0, icon.Handle);
+            SendMessage(window.Handle, 0x0080, 1, icon.Handle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

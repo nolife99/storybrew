@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util
 {
     public static class ListExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Move<T>(this List<T> list, int from, int to)
         {
             if (from == to) return;
@@ -14,11 +16,12 @@ namespace BrewLib.Util
             else for (var index = from; index > to; --index) list[index] = list[index - 1];
             list[to] = item;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
         {
             try
             {
-                list.TrimExcess();
                 for (var i = 0; i < list.Count; ++i) if (condition(list[i])) action(list[i]);
             }
             catch

@@ -15,7 +15,7 @@ namespace StorybrewCommon.Curves
         public override CommandPosition StartPosition => points[0];
 
         ///<summary> The end position (the tail) of the bézier curve. </summary>
-        public override CommandPosition EndPosition => points[points.Length - 1];
+        public override CommandPosition EndPosition => points[^1];
 
         ///<summary> Whether the bézier curve is straight (linear). </summary>
         public bool IsLinear => points.Length < 3;

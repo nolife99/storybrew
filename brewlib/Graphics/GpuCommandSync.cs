@@ -1,13 +1,14 @@
 ﻿using osuTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace BrewLib.Graphics
 {
     /// <summary>
     /// [requires: v3.2 or ARB_sync|VERSION_3_2]
     /// </summary>
-    public class GpuCommandSync : IDisposable
+    public sealed class GpuCommandSync : IDisposable
     {
         List<SyncRange> syncRanges = new();
 
@@ -17,7 +18,7 @@ namespace BrewLib.Graphics
         {
             if (syncRanges.Count == 0) return false;
 
-            var blocked = syncRanges[syncRanges.Count - 1].Wait();
+            var blocked = syncRanges[^1].Wait();
 
             for (var i = 0; i < syncRanges.Count; ++i) syncRanges[i].Dispose();
             syncRanges.Clear();
@@ -70,7 +71,7 @@ namespace BrewLib.Graphics
         #region IDisposable Support
 
         bool disposedValue;
-        protected virtual void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -122,7 +123,7 @@ namespace BrewLib.Graphics
                             expired = true;
                             return true;
 
-                        case WaitSyncStatus.WaitFailed: throw new Exception("ClientWaitSync failed");
+                        case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
                         case WaitSyncStatus.TimeoutExpired:
                             if (!canBlock) return true;
                             blocked = true;

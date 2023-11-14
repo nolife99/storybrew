@@ -30,10 +30,10 @@ namespace BrewLib.Audio
                         Read = (buffer, length, user) =>
                         {
                             Span<byte> readBuffer = stackalloc byte[length];
-                            if (!resourceStream.CanRead) return 0;
-
                             var readBytes = resourceStream.Read(readBuffer);
                             readBuffer.CopyTo(new Span<byte>(buffer.ToPointer(), length));
+
+                            readBuffer.Clear();
                             return readBytes;
                         },
                         Length = user => resourceStream.Length,

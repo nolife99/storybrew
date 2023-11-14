@@ -47,18 +47,6 @@ namespace BrewLib.Audio
             RegisterChannel(audio);
             return audio;
         }
-        public AudioStreamPush CreateStream(int frequency, int channels)
-        {
-            var audio = new AudioStreamPush(this, frequency, channels);
-            RegisterChannel(audio);
-            return audio;
-        }
-        public AudioStreamPull CreateStream(int frequency, int channels, AudioStreamPull.CallbackDelegate callback)
-        {
-            var audio = new AudioStreamPull(this, frequency, channels, callback);
-            RegisterChannel(audio);
-            return audio;
-        }
 
         public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null)
             => new(this, path, resourceContainer);

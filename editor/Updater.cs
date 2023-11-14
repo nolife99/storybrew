@@ -3,7 +3,6 @@ using StorybrewEditor.Util;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Windows.Forms;
 
 namespace StorybrewEditor
@@ -19,7 +18,7 @@ namespace StorybrewEditor
         public static void Update(string destinationFolder, Version fromVersion)
         {
             Trace.WriteLine($"Updating from version {fromVersion} to {Program.Version}");
-            var updaterPath = Assembly.GetEntryAssembly().Location;
+            var updaterPath = typeof(Editor).Assembly.Location;
             var sourceFolder = Path.GetDirectoryName(updaterPath);
             try
             {
@@ -95,7 +94,7 @@ namespace StorybrewEditor
         {
             Trace.WriteLine("First run\n");
 
-            var localPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            var localPath = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
             foreach (var exeFilename in Directory.GetFiles(localPath, "*.exe_", SearchOption.AllDirectories))
             {
                 var newFilename = Path.ChangeExtension(exeFilename, ".exe");

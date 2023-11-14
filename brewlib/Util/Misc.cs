@@ -14,6 +14,8 @@ namespace BrewLib.Util
         public static T WithRetries<T>(Func<T> action, int timeout = 1500, bool canThrow = true)
         {
             var sleepTime = 0;
+
+            using ManualResetEventSlim reset = new(); 
             while (true)
             {
                 try
@@ -34,7 +36,7 @@ namespace BrewLib.Util
 
                     var retryDelay = timeout / 10;
                     sleepTime += retryDelay;
-                    Thread.Sleep(retryDelay);
+                    reset.WaitHandle.WaitOne(retryDelay);
                 }
             }
         }

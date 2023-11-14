@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Reflection;
 
 namespace StorybrewEditor.ScreenLayers
 {
@@ -98,7 +97,7 @@ namespace StorybrewEditor.ScreenLayers
 
                     actionLabel.Text = "Updating";
 
-                    var localPath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+                    var localPath = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
                     var process = new Process
                     {
                         StartInfo = new ProcessStartInfo(executablePath, $"update \"{localPath}\" {Program.Version}")

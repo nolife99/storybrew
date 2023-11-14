@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using BrewLib.Data;
 
 namespace BrewLib.Util.Compression
@@ -29,7 +28,7 @@ namespace BrewLib.Util.Compression
 
         public ImageCompressor(string utilityPath = null)
         {
-            UtilityPath = utilityPath ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/cache/scripts";
+            UtilityPath = utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
             toCompress = new List<Argument>();
             lossyCompress = new List<Argument>();
         }
@@ -48,7 +47,7 @@ namespace BrewLib.Util.Compression
         protected void ensureStop()
         {
             if (process is null) return;
-            process.Dispose();
+            process.Close();
             process = null;
         }
 

@@ -1,7 +1,6 @@
 ﻿using osuTK;
 using osuTK.Graphics;
 using System;
-using System.Drawing;
 using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures

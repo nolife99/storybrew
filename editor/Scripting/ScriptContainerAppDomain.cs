@@ -23,8 +23,9 @@ namespace StorybrewEditor.Scripting
                 var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount)}.dll";
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
-                Debug.Print($"{nameof(Scripting)}: Loading domain {$"{Name} {Id}"}");
-                var scriptContext = new AssemblyLoadContext($"{Name} {Id}", true);
+                var id = $"{Name} {Id}";
+                Trace.WriteLine($"{nameof(Scripting)}: Loading domain {id}");
+                var scriptContext = new AssemblyLoadContext(id, true);
 
                 IProvider<TScript> scriptProvider;
                 try

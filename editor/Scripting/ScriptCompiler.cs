@@ -29,14 +29,11 @@ namespace StorybrewEditor.Scripting
 
         static void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            var trees = new Dictionary<SyntaxTree, KeyValuePair<string, SourceText>>();
+            Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = new();
             for (var i = 0; i < sourcePaths.Length; ++i) using (var sourceStream = File.OpenRead(sourcePaths[i]))
             {
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-                var parseOptions = new CSharpParseOptions(LanguageVersion.CSharp7_3);
-
-                var syntaxTree = SyntaxFactory.ParseSyntaxTree(sourceText, parseOptions);
-                trees[syntaxTree] = new KeyValuePair<string, SourceText>(sourcePaths[i], sourceText);
+                trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(sourcePaths[i], sourceText);
             }
             var references = new HashSet<MetadataReference>
             {

@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Reflection;
 using System.Windows.Forms;
 
 namespace StorybrewEditor
@@ -17,7 +16,7 @@ namespace StorybrewEditor
         public static void Build()
         {
             var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}.zip";
-            var appDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
 
             try
             {

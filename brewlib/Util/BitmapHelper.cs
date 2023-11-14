@@ -87,42 +87,42 @@ namespace BrewLib.Util
             var halfHeight = kernelHeight >> 1;
 
             for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+            {
+                var a = 0f;
+                var r = 0f;
+                var g = 0f;
+                var b = 0f;
+
+                for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
-                    var a = 0f;
-                    var r = 0f;
-                    var g = 0f;
-                    var b = 0f;
+                    var pixelX = kernelX + x;
+                    if (pixelX < 0) pixelX = 0;
+                    else if (pixelX >= width) pixelX = width - 1;
 
-                    for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
+                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                     {
-                        var pixelX = kernelX + x;
-                        if (pixelX < 0) pixelX = 0;
-                        else if (pixelX >= width) pixelX = width - 1;
+                        var pixelY = kernelY + y;
+                        if (pixelY < 0) pixelY = 0;
+                        else if (pixelY >= height) pixelY = height - 1;
 
-                        for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
-                        {
-                            var pixelY = kernelY + y;
-                            if (pixelY < 0) pixelY = 0;
-                            else if (pixelY >= height) pixelY = height - 1;
-
-                            var col = pinnedSource.Data[pixelY * width + pixelX];
-                            var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
-                            a += ((col >> 24) & 0xFF) * k;
-                            r += ((col >> 16) & 0xFF) * k;
-                            g += ((col >> 8) & 0xFF) * k;
-                            b += ((col) & 0xFF) * k;
-                        }
+                        var col = pinnedSource.Data[pixelY * width + pixelX];
+                        var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
+                        a += ((col >> 24) & 0xFF) * k;
+                        r += ((col >> 16) & 0xFF) * k;
+                        g += ((col >> 8) & 0xFF) * k;
+                        b += ((col) & 0xFF) * k;
                     }
-
-                    var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
-                    if (alpha == 1) alpha = 0;
-
-                    var red = (byte)(r > 255 ? 255 : (r < 0 ? 0 : r));
-                    var green = (byte)(g > 255 ? 255 : (g < 0 ? 0 : g));
-                    var blue = (byte)(b > 255 ? 255 : (b < 0 ? 0 : b));
-
-                    result.Data[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
                 }
+
+                var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
+                if (alpha == 1) alpha = 0;
+
+                var red = (byte)(r > 255 ? 255 : (r < 0 ? 0 : r));
+                var green = (byte)(g > 255 ? 255 : (g < 0 ? 0 : g));
+                var blue = (byte)(b > 255 ? 255 : (b < 0 ? 0 : b));
+
+                result.Data[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
+            }
             return result;
         }
         public static PinnedBitmap ConvoluteAlpha(Bitmap source, float[,] kernel, Color color)
@@ -143,29 +143,29 @@ namespace BrewLib.Util
 
             var colorRgb = (color.R << 16) | (color.G << 8) | color.B;
             for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+            {
+                var a = 0f;
+                for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
-                    var a = 0f;
-                    for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
+                    var pixelX = kernelX + x;
+                    if (pixelX < 0) pixelX = 0;
+                    else if (pixelX >= width) pixelX = width - 1;
+
+                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                     {
-                        var pixelX = kernelX + x;
-                        if (pixelX < 0) pixelX = 0;
-                        else if (pixelX >= width) pixelX = width - 1;
+                        var pixelY = kernelY + y;
+                        if (pixelY < 0) pixelY = 0;
+                        else if (pixelY >= height) pixelY = height - 1;
 
-                        for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
-                        {
-                            var pixelY = kernelY + y;
-                            if (pixelY < 0) pixelY = 0;
-                            else if (pixelY >= height) pixelY = height - 1;
-
-                            var col = pinnedSource.Data[pixelY * width + pixelX];
-                            var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
-                            a += ((col >> 24) & 0xFF) * k;
-                        }
+                        var col = pinnedSource.Data[pixelY * width + pixelX];
+                        var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
+                        a += ((col >> 24) & 0xFF) * k;
                     }
-
-                    var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
-                    result.Data[index++] = (alpha << 24) | colorRgb;
                 }
+
+                var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
+                result.Data[index++] = (alpha << 24) | colorRgb;
+            }
             return result;
         }
 

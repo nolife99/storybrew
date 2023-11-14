@@ -33,7 +33,7 @@ namespace BrewLib.UserInterface.Skinning
         public T GetStyle<T>(string name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
         public WidgetStyle GetStyle(Type type, string name)
         {
-            if (name == null) name = "default";
+            name ??= "default";
             if (!stylesPerType.TryGetValue(type, out Dictionary<string, WidgetStyle> styles)) return null;
 
             var n = name;

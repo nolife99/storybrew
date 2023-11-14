@@ -17,13 +17,13 @@ namespace StorybrewCommon.Animations
         public double StartTime => keyframes.Count == 0 ? int.MinValue : keyframes[0].Time;
 
         ///<summary> Returns the end time of the last keyframe in the keyframed value. </summary>
-        public double EndTime => keyframes.Count == 0 ? int.MinValue : keyframes[keyframes.Count - 1].Time;
+        public double EndTime => keyframes.Count == 0 ? int.MinValue : keyframes[^1].Time;
 
         ///<summary> Returns the start value of the first keyframe in the keyframed value. </summary>
         public TValue StartValue => keyframes.Count == 0 ? defaultValue : keyframes[0].Value;
 
         ///<summary> Returns the end value of the last keyframe in the keyframed value. </summary>
-        public TValue EndValue => keyframes.Count == 0 ? defaultValue : keyframes[keyframes.Count - 1].Value;
+        public TValue EndValue => keyframes.Count == 0 ? defaultValue : keyframes[^1].Value;
 
         ///<summary> Gets or sets the <see cref="Keyframe{TValue}"/> at the current index. </summary>
         public Keyframe<TValue> this[int index]
@@ -49,7 +49,7 @@ namespace StorybrewCommon.Animations
         ///<param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, places new one before existing one. </param>
         public KeyframedValue<TValue> Add(Keyframe<TValue> keyframe, bool before = false)
         {
-            if (keyframes.Count == 0 || keyframes[keyframes.Count - 1].Time < keyframe.Time) keyframes.Add(keyframe);
+            if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
             else keyframes.Insert(indexFor(keyframe, before), keyframe);
             return this;
         }
@@ -137,7 +137,7 @@ namespace StorybrewCommon.Animations
             if (keyframes.Count == 0) return;
 
             var startTime = explicitStartTime ?? keyframes[0].Time;
-            var endTime = explicitEndTime ?? keyframes[keyframes.Count - 1].Time;
+            var endTime = explicitEndTime ?? keyframes[^1].Time;
 
             bool hasPair = false, forceNextFlat = loopable;
             Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;

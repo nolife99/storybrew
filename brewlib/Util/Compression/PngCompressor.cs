@@ -3,7 +3,6 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Reflection;
 using System.Text;
 
 namespace BrewLib.Util.Compression
@@ -11,7 +10,7 @@ namespace BrewLib.Util.Compression
     public class PngCompressor : ImageCompressor
     {
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
-            => container = new AssemblyResourceContainer(Assembly.GetAssembly(typeof(PngCompressor)), "BrewLib");
+            => container = new AssemblyResourceContainer(typeof(PngCompressor).Assembly, "BrewLib");
 
         protected override void doCompress()
         {
@@ -30,7 +29,7 @@ namespace BrewLib.Util.Compression
             foreach (var arg in toCompress) if (File.Exists(arg.path)) try
             {
                 startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
-                if (process is null) process = Process.Start(startInfo);
+                process ??= Process.Start(startInfo);
                 var error = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
             }
@@ -46,7 +45,7 @@ namespace BrewLib.Util.Compression
             foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
             {
                 startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
-                if (process is null) process = Process.Start(startInfo);
+                process ??= Process.Start(startInfo);
                 var error = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
             }

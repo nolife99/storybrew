@@ -43,7 +43,7 @@ namespace StorybrewCommon.Storyboarding.Util
         public State StartState => states.Count == 0 ? null : states[0];
 
         ///<summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
-        public State EndState => states.Count == 0 ? null : states[states.Count - 1];
+        public State EndState => states.Count == 0 ? null : states[^1];
 
         ///<summary> The tolerance threshold for position keyframe simplification. </summary>
         public double PositionTolerance = 1;
