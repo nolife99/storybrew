@@ -115,7 +115,7 @@ namespace BrewLib.Graphics.Text
                         if (!fontCollections.TryGetValue(name, out PrivateFontCollection fontCollection))
                             fontCollections.Add(name, fontCollection = new PrivateFontCollection());
 
-                        fontCollection.AddMemoryFont(Marshal.UnsafeAddrOfPinnedArrayElement(bytes, 0), bytes.Length);
+                        fontCollection.AddMemoryFont(bytes.AddrOfPinnedArray(), bytes.Length);
 
                         if (fontCollection.Families.Length == 1)
                         {

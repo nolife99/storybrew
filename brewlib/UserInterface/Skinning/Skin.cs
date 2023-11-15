@@ -274,7 +274,7 @@ namespace BrewLib.UserInterface.Skinning
                 var fieldString = fieldData.Value<string>();
                 if (fieldString.StartsWith("@"))
                 {
-                    fieldData = constants?[fieldString.Substring(1)];
+                    fieldData = constants?[fieldString[1..]];
                     if (fieldData == null) throw new InvalidDataException($"Missing skin constant: {fieldString}");
                 }
                 else break;
@@ -287,7 +287,7 @@ namespace BrewLib.UserInterface.Skinning
         {
             var index = styleName.IndexOf(' ');
             if (index == -1) return styleName;
-            return styleName.Substring(0, index);
+            return styleName[..index];
         }
         static string getStyleFlags(string styleName)
         {
@@ -299,7 +299,7 @@ namespace BrewLib.UserInterface.Skinning
         {
             var index = styleName.LastIndexOf(' ');
             if (index == -1) return null;
-            return styleName.Substring(0, index);
+            return styleName[..index];
         }
         static Func<TinyToken, TinyObject, Skin, object> getFieldParser(Type fieldType)
         {

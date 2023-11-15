@@ -1,5 +1,6 @@
 ﻿using osuTK.Graphics.OpenGL;
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
@@ -22,7 +23,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
 
             MinRenderableVertexCount = minRenderableVertexCount;
             VertexDeclaration = vertexDeclaration;
-            PrimitiveSize = Marshal.SizeOf(default(TPrimitive));
+            PrimitiveSize = Unsafe.SizeOf<TPrimitive>();
 
             initializeVertexBuffer();
             if (indexes != null) initializeIndexBuffer(indexes);

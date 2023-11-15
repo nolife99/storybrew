@@ -95,19 +95,19 @@ namespace StorybrewEditor
             Trace.WriteLine("First run\n");
 
             var localPath = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
-            foreach (var exeFilename in Directory.GetFiles(localPath, "*.exe_", SearchOption.AllDirectories))
+            foreach (var exeFilename in Directory.EnumerateFiles(localPath, "*.exe_", SearchOption.AllDirectories))
             {
                 var newFilename = Path.ChangeExtension(exeFilename, ".exe");
                 Trace.WriteLine($"Renaming {exeFilename} to {newFilename}");
                 Misc.WithRetries(() => File.Move(exeFilename, newFilename), canThrow: false);
             }
-            foreach (var scriptFilename in Directory.GetFiles("scripts", "*.cs", SearchOption.TopDirectoryOnly))
+            foreach (var scriptFilename in Directory.EnumerateFiles("scripts", "*.cs", SearchOption.TopDirectoryOnly))
                 File.SetAttributes(scriptFilename, FileAttributes.ReadOnly);
         }
         static void replaceFiles(string sourceFolder, string destinationFolder, Version fromVersion)
         {
             Trace.WriteLine($"\nCopying files from {sourceFolder} to {destinationFolder}");
-            foreach (var sourceFilename in Directory.GetFiles(sourceFolder, "*", SearchOption.AllDirectories))
+            foreach (var sourceFilename in Directory.EnumerateFiles(sourceFolder, "*", SearchOption.AllDirectories))
             {
                 var relativeFilename = PathHelper.GetRelativePath(sourceFolder, sourceFilename);
 
@@ -150,7 +150,7 @@ namespace StorybrewEditor
         }
         static bool matchFilter(string filename, string[] filters)
         {
-            foreach (var filter in filters) if (filename.StartsWith(filter)) return true;
+            foreach (var filter in filters) if (filename.StartsWith(filter, StringComparison.Ordinal)) return true;
             return false;
         }
     }

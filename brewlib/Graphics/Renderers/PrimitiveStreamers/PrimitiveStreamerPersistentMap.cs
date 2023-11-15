@@ -62,7 +62,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             }
 
             var pinnedVertexData = GCHandle.Alloc(primitives, GCHandleType.Pinned);
-            Native.CopyMemory(pinnedVertexData.AddrOfPinnedObject(), bufferPointer + bufferOffset, (uint)vertexDataSize);
+            Native.CopyMemory(primitives.AddrOfPinnedArray(), bufferPointer + bufferOffset, (uint)vertexDataSize);
             pinnedVertexData.Free();
 
             if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));

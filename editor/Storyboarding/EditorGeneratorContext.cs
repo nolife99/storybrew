@@ -1,4 +1,5 @@
 ﻿using BrewLib.Audio;
+using BrewLib.Util;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
@@ -78,7 +79,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region Audio data
 
-        readonly DisposableNativeDictionary<string, FftStream> fftAudioStreams = new();
+        readonly Dictionary<string, FftStream> fftAudioStreams = new();
         FftStream getFftStream(string path)
         {
             path = Path.GetFullPath(path);

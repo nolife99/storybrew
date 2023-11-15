@@ -50,58 +50,24 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            var font = LoadFont(SpritesPath, new FontDescription
-            {
-                FontPath = FontName,
-                FontSize = FontSize,
-                Color = FontColor,
-                Padding = Padding,
-                FontStyle = FontStyle,
-                TrimTransparency = TrimTransparency,
-                EffectsOnly = EffectsOnly
-            },
-            new FontGlow
-            {
-                Radius = GlowAdditive ? 0 : GlowRadius,
-                Color = GlowColor
-            },
-            new FontOutline
-            {
-                Thickness = OutlineThickness,
-                Color = OutlineColor
-            },
-            new FontShadow
-            {
-                Thickness = ShadowThickness,
-                Color = ShadowColor
-            });
+            var font = LoadFont(SpritesPath, new FontDescription(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
+                new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor),
+                new FontOutline(OutlineThickness, OutlineColor),
+                new FontShadow(ShadowThickness, ShadowColor));
 
             var subtitles = LoadSubtitles(SubtitlesPath);
 
             if (GlowRadius > 0 && GlowAdditive)
             {
-                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new FontDescription
-                {
-                    FontPath = FontName,
-                    FontSize = FontSize,
-                    Color = FontColor,
-                    Padding = Padding,
-                    FontStyle = FontStyle,
-                    TrimTransparency = TrimTransparency,
-                    EffectsOnly = true
-                },
-                new FontGlow()
-                {
-                    Radius = GlowRadius,
-                    Color = GlowColor
-                });
+                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new FontDescription(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true),
+                    new FontGlow(GlowRadius, 0, GlowColor));
                 generateLyrics(glowFont, subtitles, "glow", true);
             }
             generateLyrics(font, subtitles, "", false);
         }
         void generateLyrics(FontGenerator font, SubtitleSet subtitles, string layerName, bool additive)
         {
-            var regex = new Regex(@"({\\k(\d+)})?([^{]+)");
+            Regex regex = new(@"({\\k(\d+)})?([^{]+)");
 
             var layer = GetLayer(layerName);
             foreach (var subtitleLine in subtitles.Lines)

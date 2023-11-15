@@ -1,4 +1,5 @@
 ﻿using StorybrewCommon.Util;
+using System;
 using System.Linq;
 
 namespace StorybrewCommon.Storyboarding.Commands
@@ -23,7 +24,8 @@ namespace StorybrewCommon.Storyboarding.Commands
 
         public override int GetHashCode()
         {
-            var header = new HashCode(HashCode.Combine('T', TriggerName, StartTime, EndTime, Group));
+            var header = new HashCode();
+            header.Add('T'); header.Add(TriggerName); header.Add(StartTime); header.Add(EndTime); header.Add(Group);
             foreach (var command in commands) header.Add(command);
             return header.ToHashCode();
         }

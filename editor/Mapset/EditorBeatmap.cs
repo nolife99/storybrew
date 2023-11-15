@@ -305,7 +305,7 @@ namespace StorybrewEditor.Mapset
         }
 
         static string removePathQuotes(string path) => path.StartsWith("\"", StringComparison.Ordinal) && path.EndsWith("\"", StringComparison.Ordinal) ?
-            path.Substring(1, path.Length - 2) : path;
+            path[1..^1] : path;
 
         #endregion
     }

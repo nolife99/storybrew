@@ -22,7 +22,7 @@ namespace StorybrewEditor.Scripting
             get
             {
                 var name = ScriptTypeName;
-                if (name.Contains(".")) name = name.Substring(name.LastIndexOf('.') + 1);
+                if (name.Contains('.')) name = name[(name.LastIndexOf('.') + 1)..];
                 return name;
             }
         }
@@ -34,7 +34,7 @@ namespace StorybrewEditor.Scripting
             get
             {
                 if (LibraryFolder is null || !Directory.Exists(LibraryFolder)) return new[] { MainSourcePath };
-                return Directory.GetFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Concat(new[] { MainSourcePath }).ToArray();
+                return Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union(new[] { MainSourcePath }).ToArray();
             }
         }
 

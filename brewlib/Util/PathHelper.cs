@@ -43,7 +43,7 @@ namespace BrewLib.Util
             if (path.Length < folder.Length + 1 || path[folder.Length] != '/' || !path.StartsWith(folder, StringComparison.Ordinal))
                 throw new ArgumentException(path + " isn't contained in " + folder);
 
-            return path.Substring(folder.Length + 1);
+            return path[(folder.Length + 1)..];
         }
 
         static readonly HashSet<char> invalidChars = new()

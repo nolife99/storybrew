@@ -34,7 +34,8 @@ namespace StorybrewCommon.Storyboarding.Commands
 
         public override int GetHashCode()
         {
-            var header = new StorybrewCommon.Util.HashCode(StorybrewCommon.Util.HashCode.Combine('L', StartTime, LoopCount));
+            var header = new HashCode();
+            header.Add('L'); header.Add(StartTime); header.Add(LoopCount);
             foreach (var command in commands) header.Add(command);
             return header.ToHashCode();
         }

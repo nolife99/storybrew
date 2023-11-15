@@ -127,7 +127,7 @@ namespace BrewLib.Util.LZMA.Common
                             if (tailSize < minLen) throw new ArgumentException("switch is not full");
                             if (type is SwitchType.UnLimitedPostString)
                             {
-                                matchedSwitch.PostStrings.Add(srcString.Substring(pos));
+                                matchedSwitch.PostStrings.Add(srcString[pos..]);
                                 return true;
                             }
                             var stringSwitch = srcString.Substring(pos, minLen);
@@ -172,7 +172,7 @@ namespace BrewLib.Util.LZMA.Common
                 {
                     if (commandString.IndexOf(id, StringComparison.Ordinal) == 0)
                     {
-                        postString = commandString.Substring(id.Length);
+                        postString = commandString[id.Length..];
                         return i;
                     }
                 }

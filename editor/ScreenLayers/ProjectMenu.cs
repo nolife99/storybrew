@@ -448,7 +448,7 @@ namespace StorybrewEditor.ScreenLayers
                         case EffectStatus.ExecutionFailed:
                         case EffectStatus.LoadingFailed: throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
                     }
-                    Thread.Sleep(200);
+                    wait.WaitHandle.WaitOne(200);
                 }
 
                 proj.ExportToOsb(first);

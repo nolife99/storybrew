@@ -1,7 +1,6 @@
 ﻿using BrewLib.Data;
 using BrewLib.Util;
 using StorybrewCommon.Scripting;
-using StorybrewCommon.Util;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
 using System;
@@ -14,7 +13,7 @@ using System.Xml;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptManager<TScript> : IDisposable where TScript : Script
+    public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     {
         readonly ResourceContainer resourceContainer;
         readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
@@ -34,7 +33,7 @@ namespace StorybrewEditor.Scripting
         FileSystemWatcher scriptWatcher;
         readonly FileSystemWatcher libraryWatcher;
         ThrottledActionScheduler scheduler = new();
-        readonly DisposableNativeDictionary<string, ScriptContainer<TScript>> scriptContainers = new();
+        readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = new();
 
         public string ScriptsPath { get; }
 
@@ -53,7 +52,8 @@ namespace StorybrewEditor.Scripting
             {
                 Filter = "*.cs",
                 Path = scriptsSourcePath,
-                IncludeSubdirectories = false
+                IncludeSubdirectories = false,
+                NotifyFilter = NotifyFilters.LastWrite
             };
 
             scriptWatcher.Created += scriptWatcher_Changed;
@@ -68,7 +68,8 @@ namespace StorybrewEditor.Scripting
             {
                 Filter = "*.cs",
                 Path = scriptsLibraryPath,
-                IncludeSubdirectories = true
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.LastWrite
             };
 
             libraryWatcher.Created += libraryWatcher_Changed;
@@ -189,27 +190,20 @@ namespace StorybrewEditor.Scripting
             }
         }
 
-        #region IDisposable Support
-
         bool disposedValue;
-        protected virtual void Dispose(bool disposing)
+        public void Dispose()
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                    scriptWatcher.Dispose();
-                    libraryWatcher.Dispose();
-                    scriptContainers.Dispose();
-                }
+                scriptWatcher.Dispose();
+                libraryWatcher.Dispose();
+                scriptContainers.Dispose();
+
                 scheduler = null;
                 scriptWatcher = null;
 
                 disposedValue = true;
             }
         }
-        public void Dispose() => Dispose(true);
-
-        #endregion
     }
 }

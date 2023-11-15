@@ -77,7 +77,7 @@ namespace StorybrewCommon.Scripting
 
         #region File loading
 
-        readonly DisposableNativeDictionary<string, Bitmap> bitmaps = new();
+        readonly Dictionary<string, Bitmap> bitmaps = new();
 
         ///<summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
         public Bitmap GetProjectBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
@@ -129,7 +129,6 @@ namespace StorybrewCommon.Scripting
         #region Random
 
         ///<summary/>
-        ///<summary/>
         [Group("Common")][Description("Changes the result of Random(...) calls.")]
         [Configurable] public int RandomSeed;
 
@@ -177,7 +176,7 @@ namespace StorybrewCommon.Scripting
         ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with default magnitudes. </summary>
         public float[] GetFft(double time, string path = null, bool splitChannels = false)
         {
-            if (!(path is null)) AddDependency(path);
+            if (path is not null) AddDependency(path);
             return context.GetFft(time, path, splitChannels);
         }
 

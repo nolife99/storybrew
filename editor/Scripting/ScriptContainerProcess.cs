@@ -25,7 +25,7 @@ namespace StorybrewEditor.Scripting
                 workerProcess = new RemoteProcessWorkerContainer();
 
                 var scriptProvider = RemoteProcessWorker.CreateScriptProvider<TScript>();
-                scriptProvider.Initialize(assemblyPath, ScriptTypeName);
+                scriptProvider.Initialize(null, assemblyPath, ScriptTypeName);
 
                 return scriptProvider;
             }

@@ -1261,7 +1261,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                 {
                     case CoderPropID.NumFastBytes:
                         {
-                            if (!(prop is int)) throw new ArgumentException(nameof(properties));
+                            if (prop is not int) throw new ArgumentException(nameof(properties));
                             var numFastBytes = (int)prop;
                             if (numFastBytes < 5 || numFastBytes > Base.kMatchMaxLen) throw new ArgumentException(nameof(properties));
                             _numFastBytes = (uint)numFastBytes;
@@ -1270,7 +1270,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                     case CoderPropID.Algorithm: break;
                     case CoderPropID.MatchFinder:
                         {
-                            if (!(prop is string)) throw new ArgumentException(nameof(properties));
+                            if (prop is not string) throw new ArgumentException(nameof(properties));
 
                             var matchFinderIndexPrev = _matchFinderType;
                             var m = FindMatchFinder(((string)prop).ToUpper(CultureInfo.InvariantCulture));
@@ -1287,7 +1287,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                     case CoderPropID.DictionarySize:
                         {
                             const int kDicLogSizeMaxCompress = 30;
-                            if (!(prop is int)) throw new ArgumentException(nameof(properties));
+                            if (prop is not int) throw new ArgumentException(nameof(properties));
 
                             var dictionarySize = (int)prop;
                             if (dictionarySize < (uint)(1 << Base.kDicLogSizeMin) || dictionarySize > (uint)(1 << kDicLogSizeMaxCompress)) throw new ArgumentException(nameof(properties));
@@ -1300,7 +1300,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                         }
                     case CoderPropID.PosStateBits:
                         {
-                            if (!(prop is int)) throw new ArgumentException(nameof(properties));
+                            if (prop is not int) throw new ArgumentException(nameof(properties));
 
                             var v = (int)prop;
                             if (v < 0 || v > (uint)Base.kNumPosStatesBitsEncodingMax) throw new ArgumentException(nameof(properties));
@@ -1310,7 +1310,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                         }
                     case CoderPropID.LitPosBits:
                         {
-                            if (!(prop is int)) throw new ArgumentException(nameof(properties));
+                            if (prop is not int) throw new ArgumentException(nameof(properties));
                             var v = (int)prop;
                             if (v < 0 || v > Base.kNumLitPosStatesBitsEncodingMax) throw new ArgumentException(nameof(properties));
                             _numLiteralPosStateBits = v;
@@ -1318,7 +1318,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                         }
                     case CoderPropID.LitContextBits:
                         {
-                            if (!(prop is int)) throw new ArgumentException(nameof(properties));
+                            if (prop is not int) throw new ArgumentException(nameof(properties));
                             var v = (int)prop;
                             if (v < 0 || v > Base.kNumLitContextBitsMax) throw new ArgumentException(nameof(properties));
                             _numLiteralContextBits = v;
@@ -1326,7 +1326,7 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
                         }
                     case CoderPropID.EndMarker:
                         {
-                            if (!(prop is bool)) throw new ArgumentException(nameof(properties));
+                            if (prop is not bool) throw new ArgumentException(nameof(properties));
                             SetWriteEndMarkerMode((bool)prop);
                             break;
                         }

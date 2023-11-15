@@ -59,7 +59,7 @@ namespace StorybrewEditor.Storyboarding
 
                     return path;
                 }
-                return Directory.GetFiles(MapsetPath, "*.mp3", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                return Directory.EnumerateFiles(MapsetPath, "*.mp3", SearchOption.TopDirectoryOnly).FirstOrDefault();
             }
         }
         public string OsbPath
@@ -68,13 +68,13 @@ namespace StorybrewEditor.Storyboarding
             {
                 if (!MapsetPathIsValid) return Path.Combine(ProjectFolderPath, "storyboard.osb");
 
-                var regex = new Regex(@"^(.+ - .+ \(.+\)) \[.+\].osu$");
+                Regex regex = new(@"^(.+ - .+ \(.+\)) \[.+\].osu$");
                 var osuFilename = Path.GetFileName(MainBeatmap.Path);
 
                 Match match;
                 if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, $"{match.Groups[1].Value}.osb");
 
-                foreach (var osbFilePath in Directory.GetFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly)) return osbFilePath;
+                foreach (var osbFilePath in Directory.EnumerateFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly)) return osbFilePath;
 
                 return Path.Combine(MapsetPath, "storyboard.osb");
             }
@@ -107,12 +107,6 @@ namespace StorybrewEditor.Storyboarding
 
             var compiledScriptsPath = Path.GetFullPath("cache/scripts");
             if (!Directory.Exists(compiledScriptsPath)) Directory.CreateDirectory(compiledScriptsPath);
-            else foreach (var cachedLib in Directory.EnumerateFiles(compiledScriptsPath))
-            try
-            {
-                File.Delete(cachedLib);
-            }
-            catch (SystemException) { }
 
             initializeAssetWatcher();
 
@@ -364,7 +358,8 @@ namespace StorybrewEditor.Storyboarding
             assetWatcher = new FileSystemWatcher
             {
                 Path = assetsFolderPath,
-                IncludeSubdirectories = true
+                IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.Size
             };
             assetWatcher.Created += assetWatcher_OnFileChanged;
             assetWatcher.Changed += assetWatcher_OnFileChanged;
@@ -688,7 +683,7 @@ namespace StorybrewEditor.Storyboarding
             ImportedAssemblies = indexRoot.Values<string>("Assemblies");
 
             // Load effects
-            using var layerInserters = new DisposableNativeDictionary<string, Action>();
+            var layerInserters = new Dictionary<string, Action>();
             foreach (var effectPath in Directory.GetFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
             {
                 var guidMatch = effectGuidRegex.Match(effectPath);
@@ -739,12 +734,11 @@ namespace StorybrewEditor.Storyboarding
 
             if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
 
-            var layersOrder = indexRoot.Values<string>("Layers");
-            if (layersOrder != null) foreach (var layerGuid in layersOrder.Distinct())
-                    if (layerInserters.TryGetValue(layerGuid, out var insertLayer)) insertLayer();
+            var layersOrder = indexRoot.Values<string>("Layers").Distinct();
+            if (layersOrder != null) foreach (var layerGuid in layersOrder) if (layerInserters.TryGetValue(layerGuid, out var insertLayer)) insertLayer();
 
             // Insert all remaining layers
-            foreach (var key in layersOrder == null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
+            foreach (var key in layersOrder is null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
             {
                 var insertLayer = layerInserters[key];
                 insertLayer();
@@ -755,7 +749,7 @@ namespace StorybrewEditor.Storyboarding
             if (!Directory.Exists(ProjectsFolder)) Directory.CreateDirectory(ProjectsFolder);
 
             var hasInvalidCharacters = false;
-            foreach (var character in Path.GetInvalidFileNameChars()) if (projectFolderName.Contains(character.ToString()))
+            foreach (var character in Path.GetInvalidFileNameChars()) if (projectFolderName.Contains(character))
             {
                 hasInvalidCharacters = true;
                 break;

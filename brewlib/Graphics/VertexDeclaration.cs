@@ -53,7 +53,7 @@ namespace BrewLib.Graphics
         {
             if (other == this) return true;
 
-            if (!(other is VertexDeclaration otherDeclaration)) return false;
+            if (other is not VertexDeclaration otherDeclaration) return false;
             if (AttributeCount != otherDeclaration.AttributeCount) return false;
             for (var i = 0; i < AttributeCount; i++) if (!this[i].Equals(otherDeclaration[i])) return false;
 

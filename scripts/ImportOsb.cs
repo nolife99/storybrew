@@ -42,7 +42,7 @@ namespace StorybrewScripts
                 if (line.StartsWith("//")) return;
 
                 var depth = 0;
-                while (line.Substring(depth).StartsWith(" ")) ++depth;
+                while (line[depth..].StartsWith(" ")) ++depth;
 
                 var trim = applyVariables(line.Trim());
                 var v = trim.Split(',');
@@ -189,11 +189,11 @@ namespace StorybrewScripts
         }
 
         string removeQuotes(string path) => path.StartsWith("\"", StringComparison.Ordinal) && path.EndsWith("\"", StringComparison.Ordinal) ? 
-            path.Substring(1, path.Length - 2) : path;
+            path[1..^1] : path;
 
         string applyVariables(string line)
         {
-            if (!line.Contains("$")) return line;
+            if (!line.Contains('$')) return line;
             foreach (var entry in vars) line = line.Replace(entry.Key, entry.Value);
             return line;
         }

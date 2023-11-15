@@ -13,9 +13,9 @@ namespace StorybrewCommon.Util
             while ((line = reader.ReadLine()) != null)
             {
                 line = line.Trim();
-                if (line.StartsWith("[") && line.EndsWith("]"))
+                if (line.StartsWith('[') && line.EndsWith(']'))
                 {
-                    var sectionName = line.Substring(1, line.Length - 2);
+                    var sectionName = line[1..^1];
                     action(sectionName);
                 }
             }
@@ -44,10 +44,10 @@ namespace StorybrewCommon.Util
         ///<summary> Calls <paramref name="action"/> with key and value, until it finds a blank line or reaches the end of the file. </summary>
         public static void ParseKeyValueSection(this StreamReader reader, Action<string, string> action) => reader.ParseSectionLines(line =>
         {
-            var separatorIndex = line.IndexOf(":");
+            var separatorIndex = line.IndexOf(':');
             if (separatorIndex == -1) throw new InvalidDataException($"{line} is not a key/value");
 
-            var key = line.Substring(0, separatorIndex).Trim();
+            var key = line[..separatorIndex].Trim();
             var value = line.Substring(separatorIndex + 1, line.Length - 1 - separatorIndex).Trim();
 
             action(key, value);

@@ -163,7 +163,7 @@ namespace StorybrewEditor.ScreenLayers
                         var authorName = release.Value<string>("author", "login");
 
                         var body = release.Value<string>("body");
-                        if (body.Contains("---")) body = body.Substring(0, body.IndexOf("---", StringComparison.Ordinal));
+                        if (body.Contains("---")) body = body[..body.IndexOf("---", StringComparison.Ordinal)];
                         body = body.Replace("\r\n", "\n").Trim(' ', '\n');
                         body = $"v{version} - {authorName}, {publishDate.ToTimeAgo()}\n{body}\n\n";
 

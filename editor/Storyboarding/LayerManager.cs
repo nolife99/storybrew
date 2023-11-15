@@ -15,7 +15,7 @@ namespace StorybrewEditor.Storyboarding
 
         public int LayersCount => layers.Count;
         public IEnumerable<EditorStoryboardLayer> Layers => layers;
-        public List<EditorStoryboardLayer> FindLayers(Predicate<EditorStoryboardLayer> predicate) => layers.FindAll(predicate);
+        public IEnumerable<EditorStoryboardLayer> FindLayers(Func<EditorStoryboardLayer, bool> predicate) => layers.Where(predicate);
 
         public event EventHandler OnLayersChanged;
 

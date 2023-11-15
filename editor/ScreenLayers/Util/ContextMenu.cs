@@ -91,8 +91,7 @@ namespace StorybrewEditor.ScreenLayers
             optionsLayout.ClearWidgets();
             foreach (var option in options)
             {
-                if (!string.IsNullOrEmpty(searchTextbox.Value) && !option.Name.ToLowerInvariant().Contains(
-                    searchTextbox.Value.ToLowerInvariant())) continue;
+                if (!string.IsNullOrEmpty(searchTextbox.Value) && !option.Name.ToLowerInvariant().Contains(searchTextbox.Value.ToLowerInvariant())) continue;
 
                 Button button;
                 optionsLayout.Add(button = new Button(WidgetManager)

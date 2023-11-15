@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Loader;
 
 namespace StorybrewCommon.Scripting
 {
@@ -22,7 +23,7 @@ namespace StorybrewCommon.Scripting
 #pragma warning disable CS1591
     public interface IProvider<TScript> where TScript : Script
     {
-        void Initialize(string assemblyPath, string typeName);
+        void Initialize(AssemblyLoadContext context, string assemblyPath, string typeName);
         TScript CreateScript();
     }
 }

@@ -10,6 +10,7 @@ namespace StorybrewEditor.Scripting
     public class ScriptContainerAppDomain<TScript> : ScriptContainerBase<TScript> where TScript : Script
     {
         AssemblyLoadContext context;
+        string assemblyPath;
 
         public ScriptContainerAppDomain(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
             : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) { }
@@ -20,19 +21,18 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount)}.dll";
+                assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount64)}.dll";
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
-                var id = $"{Name} {Id}";
-                Trace.WriteLine($"{nameof(Scripting)}: Loading domain {id}");
-                var scriptContext = new AssemblyLoadContext(id, true);
+                Trace.WriteLine($"{nameof(Scripting)}: Loading domain {$"{Name} {Id}"}");
+                var scriptContext = new AssemblyLoadContext($"{Name} {Id}", true);
 
                 IProvider<TScript> scriptProvider;
                 try
                 {
                     var assembly = scriptContext.LoadFromAssemblyName(typeof(ScriptProvider<TScript>).Assembly.GetName());
-                    scriptProvider = (IProvider<TScript>)assembly.CreateInstance(typeof(ScriptProvider<TScript>).FullName);
-                    scriptProvider.Initialize(assemblyPath, ScriptTypeName);
+                    scriptProvider = (IProvider<TScript>)Activator.CreateInstance(assembly.GetType(typeof(ScriptProvider<TScript>).FullName));
+                    scriptProvider.Initialize(scriptContext, assemblyPath, ScriptTypeName);
                 }
                 catch
                 {
@@ -71,7 +71,6 @@ namespace StorybrewEditor.Scripting
                     context.Unload();
                     context = null;
                 }
-
                 disposed = true;
             }
             base.Dispose(disposing);

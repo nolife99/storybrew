@@ -252,8 +252,8 @@ namespace StorybrewEditor.Util
                     cancellationTokenSource.Cancel();
                 }
 
-                cancellationTokenSource.Dispose();
                 localThread.Dispose();
+                cancellationTokenSource.Dispose();
             }
         }
     }

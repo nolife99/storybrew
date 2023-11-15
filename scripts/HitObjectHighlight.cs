@@ -2,7 +2,7 @@
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Animations;
-using StorybrewCommon.Storyboarding.CommandValues;
+using System.Numerics;
 
 namespace StorybrewScripts
 {
@@ -29,14 +29,14 @@ namespace StorybrewScripts
                 var hSprite = pool.Get(hitobject.StartTime, hitobject.EndTime + FadeDuration);
 
                 var pos = hitobject.Position + hitobject.StackOffset;
-                if (hSprite.PositionAt(hitobject.StartTime) != pos && !(hitobject is OsuSlider)) hSprite.Move(hitobject.StartTime, pos);
+                if (hSprite.PositionAt(hitobject.StartTime) != pos && hitobject is not OsuSlider) hSprite.Move(hitobject.StartTime, pos);
                 hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale / 5);
                 hSprite.Fade(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, 1, 0);
                 if (hSprite.ColorAt(hitobject.StartTime) != hitobject.Color) hSprite.Color(hitobject.StartTime, hitobject.Color);
 
                 if (hitobject is OsuSlider)
                 {
-                    var keyframe = new KeyframedValue<CommandPosition>();
+                    var keyframe = new KeyframedValue<Vector2>();
                     var timestep = Beatmap.GetTimingPointAt((int)hitobject.StartTime).BeatDuration / BeatDivisor;
                     var startTime = hitobject.StartTime;
 

@@ -30,5 +30,12 @@ namespace BrewLib.Util
             }
             return true;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Dispose<TKey, TValue>(this Dictionary<TKey, TValue> disposable) where TValue : IDisposable
+        {
+            foreach (var reference in disposable.Values) reference.Dispose();
+            disposable.Clear();
+        }
     }
 }

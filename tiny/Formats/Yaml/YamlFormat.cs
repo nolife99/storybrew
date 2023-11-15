@@ -56,7 +56,7 @@ namespace Tiny.Formats.Yaml
                 if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
                 var key = property.Key;
-                if (key.Contains(" ") || key.Contains(":") || key.StartsWith("-")) key = "\"" + YamlUtil.EscapeString(key) + "\"";
+                if (key.Contains(' ') || key.Contains(':') || key.StartsWith("-")) key = "\"" + YamlUtil.EscapeString(key) + "\"";
 
                 var value = property.Value;
                 if (value.IsEmpty) writer.WriteLine(key + ":");

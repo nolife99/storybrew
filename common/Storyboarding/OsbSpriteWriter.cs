@@ -86,7 +86,7 @@ namespace StorybrewCommon.Storyboarding
         protected virtual bool IsFragmentable()
         {
             // if there are commands with nondeterministic results (aka triggercommands) the sprite can't reliably be split
-            if (sprite.Commands.Any(c => !(c is IFragmentableCommand))) return false;
+            if (sprite.Commands.Any(c => c is not IFragmentableCommand)) return false;
 
             return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap ||
                 rotate.HasOverlap ||

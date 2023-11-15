@@ -6,7 +6,7 @@ using System.IO;
 
 namespace StorybrewEditor.Mapset
 {
-    public class MapsetManager : IDisposable
+    public sealed class MapsetManager : IDisposable
     {
         readonly string path;
         readonly bool logLoadingExceptions;
@@ -80,21 +80,16 @@ namespace StorybrewEditor.Mapset
 
         #endregion
 
-        #region IDisposable Support
-
         bool disposed;
-        protected virtual void Dispose(bool disposing)
+        public void Dispose()
         {
             if (!disposed)
             {
-                if (disposing) fileWatcher?.Dispose();
+                fileWatcher?.Dispose();
                 beatmaps.Clear();
                 fileWatcher = null;
                 disposed = true;
             }
         }
-        public void Dispose() => Dispose(true);
-
-        #endregion
     }
 }

@@ -92,7 +92,7 @@ namespace StorybrewEditor.UserInterface.Components
             var layers = layerManager.FindLayers(l => l.OsbLayer == osbLayer && l.DiffSpecific == diffSpecific);
 
             var index = 0;
-            layers.ForEach(layer =>
+            foreach (var layer in layers)
             {
                 var effect = layer.Effect;
 
@@ -218,7 +218,7 @@ namespace StorybrewEditor.UserInterface.Components
                 diffSpecificButton.OnClick += (sender, e) => la.DiffSpecific = !la.DiffSpecific;
                 showHideButton.OnValueChanged += (sender, e) => la.Visible = showHideButton.Checked;
                 ++index;
-            });
+            }
         }
 
         static string getLayerDetails(EditorStoryboardLayer layer, Effect effect) => layer.EstimatedSize > 40960 ?

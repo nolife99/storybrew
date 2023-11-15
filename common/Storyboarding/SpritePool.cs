@@ -2,6 +2,7 @@ using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
 using StorybrewCommon.Util;
+using BrewLib.Util;
 
 namespace StorybrewCommon.Storyboarding
 {
@@ -103,7 +104,7 @@ namespace StorybrewCommon.Storyboarding
                 break;
             }
 
-            if (!(result is null))
+            if (result is not null)
             {
                 result.EndTime = endTime;
                 return result.Sprite;
@@ -116,16 +117,6 @@ namespace StorybrewCommon.Storyboarding
         }
         bool validateDur(double startTime, PooledSprite sprite) => MaxPoolDuration > 0 ? sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration : sprite.EndTime <= startTime;
 
-        internal void Clear()
-        {
-            if (attributes != null) foreach (var pooledSprite in pooled)
-            {
-                var sprite = pooledSprite.Sprite;
-                attributes(sprite, sprite.CommandsStartTime, pooledSprite.EndTime);
-            }
-            pooled.Clear();
-        }
-
 #pragma warning disable CS1591
         protected virtual OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
 #pragma warning restore CS1591
@@ -133,10 +124,10 @@ namespace StorybrewCommon.Storyboarding
 
         class PooledSprite
         {
-            public OsbSprite Sprite;
-            public double StartTime, EndTime;
+            internal OsbSprite Sprite;
+            internal double StartTime, EndTime;
 
-            public PooledSprite(OsbSprite sprite, double startTime, double endTime)
+            internal PooledSprite(OsbSprite sprite, double startTime, double endTime)
             {
                 Sprite = sprite;
                 StartTime = startTime;
@@ -149,10 +140,19 @@ namespace StorybrewCommon.Storyboarding
         {
             if (!disposed)
             {
-                if (dispose) Clear();
+                if (dispose)
+                {
+                    if (attributes != null) pooled.ForEach(pooledSprite =>
+                    {
+                        var sprite = pooledSprite.Sprite;
+                        attributes(sprite, sprite.CommandsStartTime, pooledSprite.EndTime);
+                    });
+                    pooled.Clear();
+                }
                 disposed = true;
             }
         }
+
         ///<summary/>
         public void Dispose() => Dispose(true);
     }
@@ -162,8 +162,8 @@ namespace StorybrewCommon.Storyboarding
     public sealed class SpritePools : IDisposable
     {
         readonly StoryboardSegment segment;
-        readonly IDictionary<string, SpritePool> pools = new DisposableNativeDictionary<string, SpritePool>();
-        readonly IDictionary<string, AnimationPool> animationPools = new DisposableNativeDictionary<string, AnimationPool>();
+        readonly Dictionary<string, SpritePool> pools = new();
+        readonly Dictionary<string, AnimationPool> animationPools = new();
 
         ///<summary> Constructs a <see cref="SpritePools"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
@@ -394,8 +394,8 @@ namespace StorybrewCommon.Storyboarding
 
         void Clear()
         {
-            ((IDisposable)pools).Dispose();
-            ((IDisposable)animationPools).Dispose();
+            pools.Dispose();
+            animationPools.Dispose();
         }
 
         bool disposed;

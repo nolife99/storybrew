@@ -26,7 +26,7 @@ namespace StorybrewCommon.Storyboarding.Display
 
         public void Add(ITypedCommand<TValue> command)
         {
-            if (!(command is TriggerDecorator<TValue> triggerable))
+            if (command is not TriggerDecorator<TValue> triggerable)
             {
                 if (command.EndTime < command.StartTime) Trace.TraceWarning($"'{command}' ends before it starts");
 
@@ -47,7 +47,7 @@ namespace StorybrewCommon.Storyboarding.Display
         }
         public void Remove(ITypedCommand<TValue> command)
         {
-            if (!(command is TriggerDecorator<TValue> triggerable)) commands.Remove(command);
+            if (command is not TriggerDecorator<TValue> triggerable) commands.Remove(command);
             else triggerable.OnStateChanged -= triggerable_OnStateChanged;
         }
 

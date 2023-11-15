@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util
 {
@@ -267,14 +268,17 @@ namespace BrewLib.Util
             {
                 Data = new int[width * height];
                 handle = GCHandle.Alloc(Data, GCHandleType.Pinned);
-                Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, Marshal.UnsafeAddrOfPinnedArrayElement(Data, 0));
+                Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppArgb, Data.AddrOfPinnedArray());
             }
             public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
             {
                 var data = bitmap.LockBits(new Rectangle(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
                 try
                 {
-                    Marshal.Copy(data.Scan0, Data, 0, Data.Length);
+                    unsafe
+                    {
+                        Data = new Span<int>(data.Scan0.ToPointer(), Data.Length).ToArray();
+                    }
                 }
                 finally
                 {

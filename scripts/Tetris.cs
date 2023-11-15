@@ -17,12 +17,12 @@ namespace StorybrewScripts
 
         [Group("Sprite")]
         [Configurable] public string SpritePath = "sb/sq.png";
-        [Configurable] public double SpriteScale = 0.625;
+        [Configurable] public double SpriteScale = .625;
         [Configurable] public Color4 Color = Color4.White;
 
         [Group("Grid")]
         [Configurable] public Vector2 Offset = new(320, 240);
-        [Configurable] public Vector2 ShadowOffset = new(4, 4);
+        [Configurable] public Vector2 ShadowOffset = new(4);
         [Configurable] public double Rotation = 0;
         [Configurable] public int GridWidth = 10;
         [Configurable] public int GridHeight = 20;
@@ -94,10 +94,10 @@ namespace StorybrewScripts
 
                     switch (option)
                     {
-                        case 0: nextDropX++; break;
-                        case 1: nextDropY++; break;
-                        case 2: nextDropX--; break;
-                        case 3: nextDropY--; break;
+                        case 0: ++nextDropX; break;
+                        case 1: ++nextDropY; break;
+                        case 2: --nextDropX; break;
+                        case 3: --nextDropY; break;
                     }
 
                     if (nextDropX < 0 || nextDropX >= GridWidth || nextDropY < 0 || nextDropY >= GridHeight) continue;

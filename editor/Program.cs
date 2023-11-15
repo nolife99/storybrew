@@ -89,13 +89,13 @@ namespace StorybrewEditor
 
             var displayDevice = findDisplayDevice();
 
-            using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager(window))
+            using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager())
             using (Editor editor = new(window)) using (System.Drawing.Icon icon = new(typeof(Editor), "icon.ico"))
             {
                 Trace.WriteLine($"{Environment.OSVersion} / {window.WindowInfo}");
                 Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
-                Native.SetWindowIcon(editor.FormsWindow, icon);
+                Native.SetWindowIcon(icon.Handle);
                 window.Resize += (sender, e) =>
                 {
                     editor.Draw(1);
@@ -159,12 +159,13 @@ namespace StorybrewEditor
                 window.Size = primaryScreenArea.Size;
                 window.WindowState = WindowState.Maximized;
             }
+            window.InitializeHandle();
 
             return window;
         }
-        static AudioManager createAudioManager(GameWindow window)
+        static AudioManager createAudioManager()
         {
-            var audioManager = new AudioManager(window.GetWindowHandle())
+            var audioManager = new AudioManager(Native.MainWindowHandle)
             {
                 Volume = Settings.Volume
             };
@@ -278,41 +279,33 @@ namespace StorybrewEditor
                 return;
             }
 
-            using (ManualResetEvent completed = new(false))
+            using ManualResetEvent completed = new(false);
+            Exception exception = null;
+            Schedule(() =>
             {
-                Exception exception = null;
-                Schedule(() =>
+                try
                 {
-                    try
-                    {
-                        action();
-                    }
-                    catch (Exception e)
-                    {
-                        exception = e;
-                    }
-                    completed.Set();
-                });
-                completed.WaitOne();
+                    action();
+                }
+                catch (Exception e)
+                {
+                    exception = e;
+                }
+                completed.Set();
+            });
+            completed.WaitOne();
 
-                if (exception != null) throw exception;
-            }
+            if (exception != null) throw exception;
         }
         public static void RunScheduledTasks()
         {
             CheckMainThread();
 
-            Action[] actionsToRun;
-            lock (scheduledActions)
+            Action action = null;
+            for (var i = 0; i < scheduledActions.Count; ++i) try
             {
-                actionsToRun = new Action[scheduledActions.Count];
-                scheduledActions.CopyTo(actionsToRun, 0);
-                scheduledActions.Clear();
-            }
-
-            foreach (var action in actionsToRun) try
-            {
-                action();
+                if (scheduledActions.TryDequeue(out action)) action();
+                else throw new InvalidOperationException("Retrieving task failed");
             }
             catch (Exception e)
             {
