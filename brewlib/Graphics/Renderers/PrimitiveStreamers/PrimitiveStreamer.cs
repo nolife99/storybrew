@@ -13,6 +13,4 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
 
         void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false);
     }
-    public delegate PrimitiveStreamer<TPrimitive> CreatePrimitiveStreamerDelegate<TPrimitive>(VertexDeclaration vertexDeclaration, int minRenderableVertexCount)
-        where TPrimitive : struct;
 }

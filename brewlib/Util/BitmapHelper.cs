@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util
 {
@@ -277,7 +276,7 @@ namespace BrewLib.Util
                 {
                     unsafe
                     {
-                        Data = new Span<int>(data.Scan0.ToPointer(), Data.Length).ToArray();
+                        new Span<int>(data.Scan0.ToPointer(), Data.Length).CopyTo(Data);
                     }
                 }
                 finally

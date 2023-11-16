@@ -120,7 +120,7 @@ namespace Tiny.Formats.Yaml
                 switch (context.CurrentToken.Type)
                 {
                     case YamlTokenType.ArrayIndicator:
-                        context.PushParser(new AnyParser(r => result.Add(r), result.Count == 0 ? VirtualIndent + 1 : 1));
+                        context.PushParser(new AnyParser(result.Add, result.Count == 0 ? VirtualIndent + 1 : 1));
                         context.ConsumeToken();
                         return;
                 }

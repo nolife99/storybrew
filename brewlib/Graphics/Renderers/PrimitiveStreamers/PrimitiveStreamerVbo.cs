@@ -2,7 +2,6 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
 {
@@ -70,7 +69,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         }
         public void Bind(Shader shader)
         {
-            if (shader == null) throw new ArgumentNullException(nameof(shader));
+            if (shader is null) throw new ArgumentNullException(nameof(shader));
             if (bound) throw new InvalidOperationException("Already bound");
 
             internalBind(shader);

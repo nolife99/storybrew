@@ -1,5 +1,4 @@
-﻿using osuTK;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -52,23 +51,23 @@ namespace BrewLib.Util
         /// <returns>The return value specifies the result of the message processing; it depends on the message sent.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [LibraryImport("user32.dll", EntryPoint = "SendMessageA")]
-        public static partial nint SendMessage(nint hWnd, Win32Message msg, int wParam, nint lParam);
+        internal static partial nint SendMessage(nint hWnd, Message msg, nint wParam, nint lParam);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetWindowIcon(nint iconHandle)
         {
-            SendMessage(MainWindowHandle, Win32Message.SetIcon, 0, iconHandle);
-            SendMessage(MainWindowHandle, Win32Message.SetIcon, 1, iconHandle);
+            SendMessage(MainWindowHandle, Message.SetIcon, 0, iconHandle);
+            SendMessage(MainWindowHandle, Message.SetIcon, 1, iconHandle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetWindowText(nint hWnd)
         {
-            var length = SendMessage(hWnd, Win32Message.GetTextLength, 0, 0).ToInt32();
+            var length = (int)SendMessage(hWnd, Message.GetTextLength, 0, 0);
             if (length == 0) return "";
 
             var buffer = Marshal.AllocCoTaskMem(length * 2 + 1);
-            SendMessage(hWnd, Win32Message.GetText, length + 1, buffer);
+            SendMessage(hWnd, Message.GetText, length + 1, buffer);
 
             var result = Marshal.PtrToStringAnsi(buffer);
             Marshal.FreeCoTaskMem(buffer);
@@ -93,7 +92,7 @@ namespace BrewLib.Util
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void InitializeHandle(this GameWindow window)
+        public static void InitializeHandle(string windowTitle, nint hWndFallback)
         {
             var handle = nint.Zero;
             var cont = true;
@@ -101,7 +100,7 @@ namespace BrewLib.Util
 
             for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, lParam) =>
             {
-                if (GetWindowText(hWnd) == window.Title)
+                if (GetWindowText(hWnd) == windowTitle)
                 {
                     handle = hWnd;
                     cont = false;
@@ -109,13 +108,13 @@ namespace BrewLib.Util
                 return cont;
             }, default);
 
-            hWnd = handle != nint.Zero ? handle : window.WindowInfo.Handle;
+            hWnd = handle != nint.Zero ? handle : hWndFallback;
         }
 
         #endregion
 
         ///<summary><see href="https://learn.microsoft.com/en-us/windows/win32/winmsg/window-reference"/></summary>
-        public enum Win32Message : uint
+        internal enum Message : uint
         {
             // Messages
 
@@ -130,8 +129,9 @@ namespace BrewLib.Util
             ///   <term>lParam</term>
             ///   <description>This parameter is not used.</description>
             ///  </item>
-            /// </list> 
+            /// </list>
             ///</remarks>
+            ///<returns>If successful, the menu handle for the current window; otherwise <see cref="nint.Zero"/>.</returns>
             GetHMenu = 0x01E1,
 
             ///<summary> 
@@ -150,6 +150,7 @@ namespace BrewLib.Util
             ///  </item>
             /// </list> 
             ///</remarks>
+            ///<returns>Nonzero if it erases the background; otherwise <see cref="nint.Zero"/>.</returns>
             EraseBG = 0x0014,
 
             ///<summary>Retrieves the font with which the control is currently drawing its text.</summary>
@@ -165,6 +166,7 @@ namespace BrewLib.Util
             ///  </item>
             /// </list> 
             ///</remarks>
+            ///<returns>A handle to the font used by the control, or <see cref="nint.Zero"/> if the control is using the system font.</returns>
             GetFont = 0x0031,
 
             ///<summary>Copies the text that corresponds to a window into a buffer provided by the caller.</summary>
@@ -183,10 +185,11 @@ namespace BrewLib.Util
             ///  </item>
             /// </list> 
             ///</remarks>
+            ///<returns>The number of characters copied, not including the terminating null character.</returns>
             GetText = 0x000D,
 
             ///<summary>Determines the length, in characters, of the text associated with a window.</summary>
-            ///<remarks> 
+            ///<remarks>
             /// <list type="bullet">
             ///  <item>
             ///   <term>wParam</term>
@@ -198,6 +201,7 @@ namespace BrewLib.Util
             ///  </item>
             /// </list> 
             ///</remarks>
+            ///<returns>The length of the text in characters, not including the terminating null character.</returns>
             GetTextLength = 0x000E,
 
             ///<summary>Sets the font that a control is to use when drawing text.</summary>
@@ -205,13 +209,13 @@ namespace BrewLib.Util
             /// <list type="bullet">
             ///  <item>
             ///   <term>wParam</term>
-            ///   <description>A handle to the font. If this parameter is <see langword="null"/>, the control uses the default system font to draw text.</description>
+            ///   <description>A handle to the font. If left <see langword="null"/>, the control uses the default system font to draw text.</description>
             ///  </item>
             ///  <item>
             ///   <term>lParam</term>
             ///   <description>
-            ///    The low-order word of <b>lParam</b> specifies whether the control should be redrawn immediately upon setting the font. 
-            ///    If this parameter is <see langword="true"/>, the control redraws itself.
+            ///    The low-order word of <c>lParam</c> specifies whether the control should be redrawn immediately upon setting the font. 
+            ///    If <see langword="true"/>, the control redraws itself.
             ///   </description>
             ///  </item>
             /// </list> 
@@ -220,7 +224,7 @@ namespace BrewLib.Util
 
             ///<summary>
             /// Associates a new large or small icon with a window. 
-            /// The system displays the large icon in the ALT+TAB dialog box, and the small icon in the window caption.
+            /// The system displays the large icon in the <c>ALT+TAB</c> dialog box, and the small icon in the window caption.
             ///</summary>
             ///<remarks> 
             /// <list type="bullet">
@@ -242,7 +246,7 @@ namespace BrewLib.Util
             ///  </item>
             ///  <item>
             ///   <term>lParam</term>
-            ///   <description>A handle to the new large or small icon. If this parameter is <see langword="null"/>, the icon indicated by <b>wParam</b> is removed.</description>
+            ///   <description>A handle to the new large or small icon. If left <see langword="null"/>, the icon indicated by <c>wParam</c> is removed.</description>
             ///  </item>
             /// </list> 
             ///</remarks>
@@ -263,7 +267,7 @@ namespace BrewLib.Util
             ///</remarks>
             SetText = 0x000C,
 
-            // Notifications
+            /* Notifications
             ActivateApp = 0x001C,
             CancelMode = 0x001F,
             ChildActivate = 0x0022,
@@ -299,7 +303,7 @@ namespace BrewLib.Util
             UserChanged = 0x0054,
 
             WindowPosChanged = 0x0047,
-            WindowPosChanging = 0x0046
+            WindowPosChanging = 0x0046 */
         }
     }
 }

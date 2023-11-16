@@ -26,15 +26,17 @@ namespace StorybrewEditor.Scripting
                 return name;
             }
         }
+
         public string ScriptTypeName { get; }
         public string MainSourcePath { get; }
         public string LibraryFolder { get; }
-        public string[] SourcePaths
+
+        public IEnumerable<string> SourcePaths
         {
             get
             {
                 if (LibraryFolder is null || !Directory.Exists(LibraryFolder)) return new[] { MainSourcePath };
-                return Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union(new[] { MainSourcePath }).ToArray();
+                return Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union(new[] { MainSourcePath });
             }
         }
 
@@ -44,9 +46,8 @@ namespace StorybrewEditor.Scripting
             get => referencedAssemblies;
             set
             {
-                var newReferencedAssemblies = new List<string>(value);
-                if (newReferencedAssemblies.Count == referencedAssemblies.Count &&
-                    newReferencedAssemblies.All(ass => referencedAssemblies.Contains(ass))) return;
+                List<string> newReferencedAssemblies = value as List<string> ?? value.ToList();
+                if (newReferencedAssemblies.Count == referencedAssemblies.Count && newReferencedAssemblies.All(referencedAssemblies.Contains)) return;
 
                 referencedAssemblies = newReferencedAssemblies;
                 ReloadScript();

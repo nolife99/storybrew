@@ -105,19 +105,15 @@ namespace BrewLib.Graphics.Renderers
 
         public SpriteRendererBuffered(Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0) :
             this((vertexDeclaration, minRenderableVertexCount) =>
-            {
-                if (PrimitiveStreamerPersistentMap<SpritePrimitive>.HasCapabilities())
-                    return new PrimitiveStreamerPersistentMap<SpritePrimitive>(vertexDeclaration, minRenderableVertexCount);
-                else if (PrimitiveStreamerBufferData<SpritePrimitive>.HasCapabilities())
-                    return new PrimitiveStreamerBufferData<SpritePrimitive>(vertexDeclaration, minRenderableVertexCount);
-                else if (PrimitiveStreamerVbo<SpritePrimitive>.HasCapabilities())
-                    return new PrimitiveStreamerVbo<SpritePrimitive>(vertexDeclaration);
-                throw new NotSupportedException();
+        {
+            if (PrimitiveStreamerPersistentMap<SpritePrimitive>.HasCapabilities()) return new PrimitiveStreamerPersistentMap<SpritePrimitive>(vertexDeclaration, minRenderableVertexCount);
+            else if (PrimitiveStreamerBufferData<SpritePrimitive>.HasCapabilities()) return new PrimitiveStreamerBufferData<SpritePrimitive>(vertexDeclaration, minRenderableVertexCount);
+            else if (PrimitiveStreamerVbo<SpritePrimitive>.HasCapabilities()) return new PrimitiveStreamerVbo<SpritePrimitive>(vertexDeclaration);
+            throw new NotSupportedException();
 
-            }, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize)
-        {}
+        }, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize) {}
 
-        public SpriteRendererBuffered(CreatePrimitiveStreamerDelegate<SpritePrimitive> createPrimitiveStreamer, Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0)
+        public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<SpritePrimitive>> createPrimitiveStreamer, Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0)
         {
             if (shader == null)
             {
@@ -178,11 +174,8 @@ namespace BrewLib.Graphics.Renderers
         bool lastFlushWasBuffered;
         public void Flush(bool canBuffer = false)
         {
-            if (spritesInBatch == 0)
-                return;
-
-            if (currentTexture == null)
-                throw new InvalidOperationException("currentTexture is null");
+            if (spritesInBatch == 0) return;
+            if (currentTexture is null) throw new InvalidOperationException("currentTexture is null");
 
             // When the previous flush was bufferable, draw state should stay the same.
             if (!lastFlushWasBuffered)

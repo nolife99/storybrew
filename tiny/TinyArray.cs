@@ -101,7 +101,7 @@ namespace Tiny
             if (key is null) return (T)(object)this;
             if (key is int index) return this[index].Value<T>();
 
-            throw new ArgumentException($"Key must be an integer, was {key}", "key");
+            throw new ArgumentException($"Key must be an integer, was {key}", nameof(key));
         }
 
         public override string ToString() => string.Join(", ", tokens, 0, count);

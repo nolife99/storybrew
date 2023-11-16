@@ -98,7 +98,7 @@ namespace BrewLib.Graphics.Renderers
         public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
             : this(PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, maxQuadsPerBatch, primitiveBufferSize) { }
 
-        public QuadRendererBuffered(CreatePrimitiveStreamerDelegate<QuadPrimitive> createPrimitiveStreamer, Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
+        public QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<QuadPrimitive>> createPrimitiveStreamer, Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
         {
             if (shader == null)
             {

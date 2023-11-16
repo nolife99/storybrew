@@ -159,7 +159,7 @@ namespace StorybrewEditor
                 window.Size = primaryScreenArea.Size;
                 window.WindowState = WindowState.Maximized;
             }
-            window.InitializeHandle();
+            Native.InitializeHandle(Name, window.WindowInfo.Handle);
 
             return window;
         }

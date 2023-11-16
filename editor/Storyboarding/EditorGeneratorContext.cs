@@ -2,7 +2,6 @@
 using BrewLib.Util;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Util;
 using StorybrewEditor.Mapset;
 using StorybrewEditor.Util;
 using System;

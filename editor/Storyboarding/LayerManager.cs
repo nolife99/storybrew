@@ -40,7 +40,7 @@ namespace StorybrewEditor.Storyboarding
         }
         public void Replace(List<EditorStoryboardLayer> oldLayers, List<EditorStoryboardLayer> newLayers)
         {
-            oldLayers = new List<EditorStoryboardLayer>(oldLayers);
+            oldLayers = new(oldLayers);
             newLayers.ForEach(newLayer =>
             {
                 var oldLayer = oldLayers.Find(l => l.Name == newLayer.Name);

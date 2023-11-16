@@ -207,9 +207,9 @@ namespace StorybrewCommon.Storyboarding.Util
                     sprite.Fade(s.Time, e.Time, s.Value, e.Value);
             }, -1, o => Math.Round(o, OpacityDecimals), startState, endState, loopable);
 
-            flipH.ForEachFlag((f, t) => sprite.FlipH(f, t));
-            flipV.ForEachFlag((f, t) => sprite.FlipV(f, t));
-            additive.ForEachFlag((f, t) => sprite.Additive(f, t));
+            flipH.ForEachFlag(sprite.FlipH);
+            flipV.ForEachFlag(sprite.FlipV);
+            additive.ForEachFlag(sprite.Additive);
         }
         void addKeyframes(State state, double time)
         {

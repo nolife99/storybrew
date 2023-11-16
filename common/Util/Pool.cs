@@ -20,7 +20,7 @@ namespace StorybrewCommon.Util
             this.disposer = disposer;
 
             PoolCapacity = poolCapacity;
-            queue = new Queue<T>(poolCapacity);
+            queue = new(poolCapacity);
         }
         public void PreAllocate()
         {

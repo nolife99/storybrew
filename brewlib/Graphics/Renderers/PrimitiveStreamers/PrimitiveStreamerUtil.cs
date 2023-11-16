@@ -4,7 +4,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
 {
     public static class PrimitiveStreamerUtil<TPrimitive> where TPrimitive : struct
     {
-        public static readonly CreatePrimitiveStreamerDelegate<TPrimitive> DefaultCreatePrimitiveStreamer = (vertexDeclaration, minRenderableVertexCount) =>
+        public static readonly Func<VertexDeclaration, int, PrimitiveStreamer<TPrimitive>> DefaultCreatePrimitiveStreamer = (vertexDeclaration, minRenderableVertexCount) =>
         {
             if (PrimitiveStreamerPersistentMap<TPrimitive>.HasCapabilities())
                 return new PrimitiveStreamerPersistentMap<TPrimitive>(vertexDeclaration, minRenderableVertexCount);

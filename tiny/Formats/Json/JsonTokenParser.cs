@@ -89,7 +89,7 @@ namespace Tiny.Formats.Json
                 {
                     case JsonTokenType.ObjectStart: case JsonTokenType.ArrayStart: case JsonTokenType.Word: case JsonTokenType.WordQuoted:
                         if (expectingSeparator) throw new InvalidDataException("Unexpected token: " + context.CurrentToken);
-                        context.PushParser(new AnyParser(r => result.Add(r)));
+                        context.PushParser(new AnyParser(result.Add));
                         expectingSeparator = true;
                         return;
 

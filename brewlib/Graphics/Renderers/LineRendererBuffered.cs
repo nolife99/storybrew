@@ -101,7 +101,7 @@ namespace BrewLib.Graphics.Renderers
 
         }, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
-        public LineRendererBuffered(CreatePrimitiveStreamerDelegate<LinePrimitive> createPrimitiveStreamer, Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
+        public LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<LinePrimitive>> createPrimitiveStreamer, Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
         {
             if (shader is null)
             {

@@ -220,7 +220,7 @@ namespace StorybrewEditor.ScreenLayers
             return true;
         }
 
-        static bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies.Select(ass => getAssemblyName(ass)).Contains(getAssemblyName(assembly));
+        static bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies.Select(getAssemblyName).Contains(getAssemblyName(assembly));
         static bool isDefaultAssembly(string assembly) => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
         static bool isSystemAssembly(string assemblyId) => getAssemblyName(assemblyId).StartsWith("System.", StringComparison.Ordinal);
         static bool validateAssembly(string assembly, IEnumerable<string> assemblies) => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));

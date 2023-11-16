@@ -21,19 +21,19 @@ namespace StorybrewEditor.Scripting
         };
         static int nextId;
 
-        public static void Compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             Debug.Print($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths)}");
             compile(sourcePaths, outputPath, referencedAssemblies);
         }
 
-        static void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        static void compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = new();
-            for (var i = 0; i < sourcePaths.Length; ++i) using (var sourceStream = File.OpenRead(sourcePaths[i]))
+            foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
             {
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-                trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(sourcePaths[i], sourceText);
+                trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(src, sourceText);
             }
             var references = new HashSet<MetadataReference>
             {

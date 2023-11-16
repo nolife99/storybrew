@@ -14,7 +14,7 @@ namespace BrewLib.Graphics.Shaders.Snippets
             this.expression = expression;
             this.components = components;
         }
-        public Assign(ShaderVariable result, ShaderVariable value, string components = null) : this(result, () => value.Ref.ToString(), components) { }
+        public Assign(ShaderVariable result, ShaderVariable value, string components = null) : this(result, value.Ref.ToString, components) { }
         public Assign(ShaderVariable result, VertexAttribute value, string components = null) : this(result, () => value.Name, components) { }
 
         public override void Generate(ShaderContext context)

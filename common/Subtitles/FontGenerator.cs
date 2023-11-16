@@ -332,8 +332,7 @@ namespace StorybrewCommon.Subtitles
             float offsetX = 0, offsetY = 0;
             int baseWidth, baseHeight, width, height;
 
-            using (var graphics = Graphics.FromHwnd(default))
-            using (var format = new StringFormat(StringFormat.GenericTypographic)) using (var fontCollection = new PrivateFontCollection())
+            using (StringFormat format = new(StringFormat.GenericTypographic)) using (PrivateFontCollection fontCollection = new()) using (var graphics = Graphics.FromHwnd(default))
             {
                 graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -526,13 +525,11 @@ namespace StorybrewCommon.Subtitles
                 }
                 else if (fieldType == typeof(double))
                 {
-                    if (!MathUtil.DoubleEquals(cache.Value<double>(field.Name), (double)field.GetValue(fontEffect), .00001))
-                        return false;
+                    if (!MathUtil.DoubleEquals(cache.Value<double>(field.Name), (double)field.GetValue(fontEffect), .00001)) return false;
                 }
                 else if (fieldType == typeof(float))
                 {
-                    if (!MathUtil.FloatEquals(cache.Value<float>(field.Name), (float)field.GetValue(fontEffect), .00001f))
-                        return false;
+                    if (!MathUtil.FloatEquals(cache.Value<float>(field.Name), (float)field.GetValue(fontEffect), .00001f)) return false;
                 }
                 else if (fieldType == typeof(int) || fieldType.IsEnum)
                 {
@@ -560,8 +557,8 @@ namespace StorybrewCommon.Subtitles
             { "TrimTransparency", description.TrimTransparency },
             { "EffectsOnly", description.EffectsOnly },
             { "Debug", description.Debug },
-            { "Effects", effects.Select(e => fontEffectToTinyObject(e))},
-            { "Cache", cache.Where(l => !l.Value.IsEmpty).Select(l => letterToTinyObject(l))}
+            { "Effects", effects.Select(fontEffectToTinyObject)},
+            { "Cache", cache.Where(l => !l.Value.IsEmpty).Select(letterToTinyObject)}
         };
         TinyObject letterToTinyObject(KeyValuePair<string, FontTexture> letterEntry) => new()
         {

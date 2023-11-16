@@ -292,7 +292,7 @@ namespace StorybrewEditor.ScreenLayers
                     proj.SelectBeatmap(beatmap.Id, beatmap.Name), proj.MapsetManager.Beatmaps);
                 else proj.SwitchMainBeatmap();
             };
-            Program.Settings.FitStoryboard.Bind(fitB, () => resizeStoryboard());
+            Program.Settings.FitStoryboard.Bind(fitB, resizeStoryboard);
             playB.OnClick += (sender, e) => timeSource.Playing = !timeSource.Playing;
 
             divisorB.OnClick += (sender, e) =>
@@ -352,7 +352,7 @@ namespace StorybrewEditor.ScreenLayers
             proj.OnEffectsStatusChanged += project_OnEffectsStatusChanged;
 
             if (!proj.MapsetPathIsValid) Manager.ShowMessage(
-                $"The mapset folder cannot be found.\n{proj.MapsetPath}\n\nPlease select a new one.", () => changeMapsetFolder(), true);
+                $"The mapset folder cannot be found.\n{proj.MapsetPath}\n\nPlease select a new one.", changeMapsetFolder, true);
         }
         public override bool OnKeyDown(KeyboardKeyEventArgs e)
         {
@@ -382,7 +382,7 @@ namespace StorybrewEditor.ScreenLayers
                 switch (e.Key)
                 {
                     case Key.Space: playB.Click(); return true;
-                    case Key.O: withSavePrompt(() => Manager.ShowOpenProject()); return true;
+                    case Key.O: withSavePrompt(Manager.ShowOpenProject); return true;
                     case Key.S:
                         if (e.Control)
                         {

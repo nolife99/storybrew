@@ -69,11 +69,11 @@ namespace BrewLib.Graphics.Shaders
             assign(variable, expression, true, null);
             return variable;
         }
-        public ShaderVariable Declare(string shaderTypeName, ShaderVariable value) => Declare(shaderTypeName, () => value.Ref.ToString());
+        public ShaderVariable Declare(string shaderTypeName, ShaderVariable value) => Declare(shaderTypeName, value.Ref.ToString);
         public ShaderVariable Declare(string shaderTypeName, VertexAttribute value) => Declare(shaderTypeName, () => value.Name);
 
         public void Assign(ShaderVariable result, Func<string> expression, string components = null) => assign(result, expression, false, components);
-        public void Assign(ShaderVariable result, ShaderVariable value, string components = null) => assign(result, () => value.Ref.ToString(), false, components);
+        public void Assign(ShaderVariable result, ShaderVariable value, string components = null) => assign(result, value.Ref.ToString, false, components);
         public void Assign(ShaderVariable result, VertexAttribute value, string components = null) => assign(result, () => value.Name, false, components);
 
         public void Condition(Func<string> expression, ShaderSnippet trueSnippet, ShaderSnippet falseSnippet)

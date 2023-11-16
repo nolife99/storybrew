@@ -332,7 +332,7 @@ namespace StorybrewCommon.Scripting
                     Trace.WriteLine($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
                 }
             });
-            remainingFieldNames.ForEach(name => config.RemoveField(name));
+            remainingFieldNames.ForEach(config.RemoveField);
         }
 
         ///<summary/>

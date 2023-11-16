@@ -48,7 +48,7 @@ namespace BrewLib.Graphics.Shaders
             code.Append($"varying {varying.ShaderTypeName} {varying.Name}");
             if (varying.ArrayCount != -1) code.Append($"[{varying.ArrayCount}]");
             code.AppendLine(";");
-        }, varying => context.Uses(varying));
+        }, context.Uses);
         public void DeclareUnusedVaryingsAsVariables(StringBuilder code, ShaderContext context) => varyings.ForEach(varying =>
         {
             code.Append($"{varying.ShaderTypeName} {varying.Name}");

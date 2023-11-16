@@ -6,7 +6,7 @@ namespace Tiny
     public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>>
     {
         readonly Dictionary<string, int> keyToIndexMap = new();
-        readonly IList<KeyValuePair<string, TinyToken>> items = new List<KeyValuePair<string, TinyToken>>();
+        readonly List<KeyValuePair<string, TinyToken>> items = new();
 
         public override bool IsInline => false;
         public override bool IsEmpty => items.Count == 0;
@@ -65,7 +65,7 @@ namespace Tiny
             }
             else if (key is int index) return items[index].Value.Value<T>();
 
-            throw new ArgumentException($"Key must be an integer or a string, was {key}", "key");
+            throw new ArgumentException($"Key must be an integer or a string, was {key}", nameof(key));
         }
 
         public override string ToString() => string.Join(", ", items);
