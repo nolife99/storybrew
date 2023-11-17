@@ -10,11 +10,11 @@ namespace BrewLib.Util
     {
         #region Memory
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32", EntryPoint = "RtlCopyMemory")] 
-        private static partial void memcpy(nint dest, nint src, uint count);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")] 
+        private static partial void RtlCopyMemory(nint dest, nint src, uint count);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32", EntryPoint = "RtlMoveMemory")]
-        private static partial void memmove(nint dest, nint src, uint count);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")]
+        private static partial void RtlMoveMemory(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CopyMemory(nint source, nint destination, uint count)
@@ -23,11 +23,15 @@ namespace BrewLib.Util
             {
                 if (source < destination + count && source + count > destination)
                 {
-                    memmove(destination, source, count);
+                    RtlMoveMemory(destination, source, count);
                     return false;
                 }
-                memcpy(destination, source, count);
-                return true;
+                if (Environment.Is64BitProcess)
+                {
+                    RtlCopyMemory(destination, source, count);
+                    return true;
+                }
+                RtlMoveMemory(destination, source, count);
             }
             return false;
         }

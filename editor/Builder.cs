@@ -11,7 +11,7 @@ namespace StorybrewEditor
     public class Builder
     {
         static readonly string mainExecutablePath = "StorybrewEditor.exe";
-        static readonly string[] ignoredPaths = Array.Empty<string>();
+        static readonly string[] ignoredPaths = [];
 
         public static void Build()
         {
@@ -40,7 +40,7 @@ namespace StorybrewEditor
             using var stream = new FileStream(archiveName, FileMode.Create, FileAccess.ReadWrite);
             using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
             addFile(archive, mainExecutablePath, appDirectory);
-            addFile(archive, "StorybrewEditor.exe.config", appDirectory);
+            addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
             foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
                 addFile(archive, path, appDirectory);
 

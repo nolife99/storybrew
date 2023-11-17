@@ -1,6 +1,6 @@
 # Changes
 * update to new Roslyn version and script compiler
-* port to .NET 7
+* upgrade to .NET 8
     - Faster single-threaded script loading
     - Less support for multithreaded script generation
 * code formatting and optimization
