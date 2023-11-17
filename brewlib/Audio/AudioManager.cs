@@ -7,7 +7,7 @@ namespace BrewLib.Audio
 {
     public class AudioManager : IDisposable
     {
-        readonly List<AudioChannel> audioChannels = new();
+        readonly List<AudioChannel> audioChannels = [];
 
         float volume = 1;
         public float Volume

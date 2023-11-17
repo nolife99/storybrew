@@ -9,7 +9,7 @@ namespace BrewLib.Graphics.Shaders
         string nextGenericName => $"_{variablePrefix}_{lastId++:000}";
 
         readonly string variablePrefix;
-        readonly List<ShaderVariable> variables = new();
+        readonly List<ShaderVariable> variables = [];
 
         public ShaderPartScope(string variablePrefix) => this.variablePrefix = variablePrefix;
 

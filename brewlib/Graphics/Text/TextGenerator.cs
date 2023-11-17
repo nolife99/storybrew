@@ -17,9 +17,9 @@ namespace BrewLib.Graphics.Text
     public class TextGenerator : IDisposable
     {
         SolidBrush textBrush = new(Color.White), shadowBrush = new(Color.FromArgb(220, 0, 0, 0));
-        Dictionary<string, Font> fonts = new();
-        Dictionary<string, FontFamily> fontFamilies = new();
-        Dictionary<string, PrivateFontCollection> fontCollections = new();
+        Dictionary<string, Font> fonts = [];
+        Dictionary<string, FontFamily> fontFamilies = [];
+        Dictionary<string, PrivateFontCollection> fontCollections = [];
         readonly LinkedList<string> recentlyUsedFonts = new();
         readonly ResourceContainer resourceContainer;
         public TextGenerator(ResourceContainer resourceContainer) => this.resourceContainer = resourceContainer;

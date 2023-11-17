@@ -31,7 +31,7 @@ namespace StorybrewCommon.Storyboarding
             this.origin = origin;
             this.position = position;
             this.attributes = attributes;
-            pooled = new List<PooledSprite>();
+            pooled = [];
         }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
@@ -161,8 +161,8 @@ namespace StorybrewCommon.Storyboarding
     public sealed class SpritePools : IDisposable
     {
         readonly StoryboardSegment segment;
-        readonly Dictionary<string, SpritePool> pools = new();
-        readonly Dictionary<string, AnimationPool> animationPools = new();
+        readonly Dictionary<string, SpritePool> pools = [];
+        readonly Dictionary<string, AnimationPool> animationPools = [];
 
         ///<summary> Constructs a <see cref="SpritePools"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>

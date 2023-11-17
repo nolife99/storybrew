@@ -29,7 +29,7 @@ namespace StorybrewCommon.Curves
 
         void initialize()
         {
-            distancePosition = new List<ValueTuple<float, CommandPosition>>();
+            distancePosition = [];
             Initialize(distancePosition, out length);
         }
 

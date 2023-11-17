@@ -11,7 +11,7 @@ namespace StorybrewEditor.Mapset
         readonly string path;
         readonly bool logLoadingExceptions;
 
-        readonly HashSet<EditorBeatmap> beatmaps = new();
+        readonly HashSet<EditorBeatmap> beatmaps = [];
         public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
         public int BeatmapCount => beatmaps.Count;
 

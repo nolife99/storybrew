@@ -9,7 +9,7 @@ namespace StorybrewCommon.Storyboarding
 #pragma warning disable CS1591
     public class EffectConfig : MarshalByRefObject
     {
-        readonly Dictionary<string, ConfigField> fields = new();
+        readonly Dictionary<string, ConfigField> fields = [];
 
         public int FieldCount => fields.Count;
         public IEnumerable<ConfigField> Fields => fields.Values;

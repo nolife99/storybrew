@@ -32,10 +32,10 @@ namespace BrewLib.Graphics.Textures
         public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
         {
             if (bitmap.Width < 1 || bitmap.Height < 1)
-                throw new InvalidOperationException($"Invalid bitmap size: {bitmap.Width}x{bitmap.Height}");
+                throw new InvalidOperationException($"Invalid bitmap size: {bitmap.Size}");
 
             if (x < 0 || y < 0 || x + bitmap.Width > Width || y + bitmap.Height > Height)
-                throw new InvalidOperationException($"Invalid update bounds: {bitmap.Width}x{bitmap.Height} at {x},{y} overflows {Width}x{Height}");
+                throw new InvalidOperationException($"Invalid update bounds: {bitmap.Size} at {x},{y} overflows {Width}x{Height}");
 
             DrawState.BindPrimaryTexture(textureId, TexturingModes.Texturing2d);
 

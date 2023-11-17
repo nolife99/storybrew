@@ -68,7 +68,7 @@ namespace BrewLib.Util
         // CM SG ZWJ HY CB and everything after
 
         static readonly int[] breakOpportunityAfter =
-        {
+        [
             0x200B, // ZERO WIDTH SPACE
             0x0020, // SPACE
             0x2014, // EM DASH
@@ -175,9 +175,9 @@ namespace BrewLib.Util
             0x10A53, // KHAROSHTHI PUNCTUATION CRESCENT BAR
             0x10A54, // KHAROSHTHI PUNCTUATION MANGALAM
             0x10A55 // KHAROSHTHI PUNCTUATION LOTUS
-        };
+        ];
         static readonly int[] breakOpportunityBefore =
-        {
+        [
             0x200B, // ZERO WIDTH SPACE
             0x0020, // SPACE
             0x2014, // EM DASH
@@ -201,9 +201,9 @@ namespace BrewLib.Util
             0xA874, // PHAGS-PA SINGLE HEAD MARK
             0xA875, // PHAGS-PA DOUBLE HEAD MARK
             0x1806 // MONGOLIAN TODO SOFT HYPHEN
-        };
+        ];
         static readonly int[] breakProhibitedAfter =
-        {
+        [
             0x2060, // WORD JOINER
             0xFEFF, // ZERO WIDTH NO-BREAK SPACE
             0x00A0, // NO-BREAK SPACE
@@ -215,9 +215,9 @@ namespace BrewLib.Util
             0x0F08, // TIBETAN MARK SBRUL SHAD
             0x0F0C, // TIBETAN MARK DELIMITER TSHEG BSTAR
             0x0F12 // TIBETAN MARK RGYA GRAM SHAD
-        };
+        ];
         static readonly int[] breakProhibitedBefore =
-        {
+        [
             0x2060, // WORD JOINER
             0xFEFF, // ZERO WIDTH NO-BREAK SPACE
             0x00A0, // NO-BREAK SPACE
@@ -229,16 +229,16 @@ namespace BrewLib.Util
             0x0F08, // TIBETAN MARK SBRUL SHAD
             0x0F0C, // TIBETAN MARK DELIMITER TSHEG BSTAR
             0x0F12 // TIBETAN MARK RGYA GRAM SHAD
-        };
+        ];
         static readonly int[] causesBreakAfter =
-        {
+        [
             0x000C, // FORM FEED
             0x000B, // LINE TABULATION
             0x2028, // LINE SEPARATOR
             0x2029, // PARAGRAPH SEPARATOR
             0x000A, // LINE FEED
             0x0085 // NEXT LINE
-        };
+        ];
         static Breakability getBreakability(string text, int index)
         {
             if (index == 0) return Breakability.Prohibited;

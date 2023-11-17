@@ -14,7 +14,7 @@ namespace StorybrewCommon.Storyboarding.Commands
         public virtual bool Active => true;
         public int Cost => commands.Count;
 
-        protected readonly HashSet<ICommand> commands = new();
+        protected readonly HashSet<ICommand> commands = [];
         public IEnumerable<ICommand> Commands => commands;
 
         public double CommandsStartTime

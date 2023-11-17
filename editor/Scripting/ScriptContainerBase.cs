@@ -40,7 +40,7 @@ namespace StorybrewEditor.Scripting
             }
         }
 
-        List<string> referencedAssemblies = new();
+        List<string> referencedAssemblies = [];
         public IEnumerable<string> ReferencedAssemblies
         {
             get => referencedAssemblies;

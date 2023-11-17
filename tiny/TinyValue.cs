@@ -12,7 +12,7 @@ namespace Tiny
         String,
         Object,
         Array,
-        Invalid,
+        Invalid
     }
 
     public class TinyValue : TinyToken

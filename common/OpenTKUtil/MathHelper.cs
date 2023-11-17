@@ -93,7 +93,7 @@ namespace StorybrewCommon.osuTKUtil
         ///<inheritdoc cref="Math.Atan2"/>
         [Pure] public static double Atan2(double y, double x) => Math.Atan2(y, x);
 
-        ///<inheritdoc cref="Math.BigMul"/>
+        ///<inheritdoc cref="Math.BigMul(int, int)"/>
         [Pure] public static long BigMul(int a, int b) => Math.BigMul(a, b);
 
         ///<inheritdoc cref="Math.Sqrt"/>

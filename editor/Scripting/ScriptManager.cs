@@ -18,7 +18,7 @@ namespace StorybrewEditor.Scripting
         readonly ResourceContainer resourceContainer;
         readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
 
-        List<string> referencedAssemblies = new();
+        List<string> referencedAssemblies = [];
         public IEnumerable<string> ReferencedAssemblies
         {
             get => referencedAssemblies;
@@ -33,7 +33,7 @@ namespace StorybrewEditor.Scripting
         FileSystemWatcher scriptWatcher;
         readonly FileSystemWatcher libraryWatcher;
         ThrottledActionScheduler scheduler = new();
-        readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = new();
+        readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
 
         public string ScriptsPath { get; }
 

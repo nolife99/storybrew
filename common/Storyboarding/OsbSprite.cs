@@ -19,7 +19,7 @@ namespace StorybrewCommon.Storyboarding
         ///<summary> Default position of sprites, unless modified elsewhere. </summary>
         public static readonly CommandPosition DefaultPosition = new(320, 240);
 
-        readonly HashSet<ICommand> commands = new();
+        readonly HashSet<ICommand> commands = [];
         CommandGroup currentCommandGroup;
 
         ///<returns> True if the sprite is in a command group, else returns false. </returns>
@@ -701,7 +701,7 @@ namespace StorybrewCommon.Storyboarding
 
         #region Display 
 
-        readonly List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>> displayValueBuilders = new();
+        readonly List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>> displayValueBuilders = [];
         readonly AnimatedValue<CommandPosition> moveTimeline = new();
         readonly AnimatedValue<CommandDecimal> moveXTimeline = new();
         readonly AnimatedValue<CommandDecimal> moveYTimeline = new();

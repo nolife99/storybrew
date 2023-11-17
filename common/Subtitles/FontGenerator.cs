@@ -297,7 +297,7 @@ namespace StorybrewCommon.Subtitles
             this.effects = effects;
             this.projectDirectory = projectDirectory;
             this.assetDirectory = assetDirectory;
-            cache = new Dictionary<string, FontTexture>();
+            cache = [];
         }
 
         ///<summary> Gets the texture path of the matching item's string representation. </summary>

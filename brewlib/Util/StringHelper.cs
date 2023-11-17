@@ -4,7 +4,7 @@ namespace BrewLib.Util
 {
     public static class StringHelper
     {
-        static readonly string[] sizeOrders = { "b", "kb", "mb", "gb", "tb" };
+        static readonly string[] sizeOrders = ["b", "kb", "mb", "gb", "tb"];
 
         public static string ToByteSize(double byteCount, string format = "{0:0.##} {1}")
         {

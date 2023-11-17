@@ -84,7 +84,7 @@ namespace StorybrewScripts
             fillCell(startTime, endTime, dropX, dropY, color);
             for (var i = 1; i < BlockLength; ++i)
             {
-                int[] options = { 0, 1, 2, 3 };
+                int[] options = [0, 1, 2, 3];
                 shuffle(options);
 
                 foreach (var option in options)

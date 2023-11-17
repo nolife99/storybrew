@@ -7,7 +7,7 @@ namespace BrewLib.Input
     public class InputDispatcher : InputHandler
     {
         readonly List<InputHandler> handlers;
-        public InputDispatcher() => handlers = new List<InputHandler>();
+        public InputDispatcher() => handlers = [];
 
         public void Add(InputHandler handler) => handlers.Add(handler);
         public void Remove(InputHandler handler) => handlers.Remove(handler);

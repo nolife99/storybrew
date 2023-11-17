@@ -10,7 +10,7 @@ namespace BrewLib.Graphics
     /// </summary>
     public sealed class GpuCommandSync : IDisposable
     {
-        List<SyncRange> syncRanges = new();
+        List<SyncRange> syncRanges = [];
 
         public int RangeCount => syncRanges.Count;
 

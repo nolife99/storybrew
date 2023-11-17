@@ -3,6 +3,7 @@ using BrewLib.Util;
 using StorybrewEditor.Storyboarding;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -228,13 +229,16 @@ namespace StorybrewEditor.ScreenLayers
 
         IEnumerable<string> getAvailableSystemAssemblies()
         {
-            var assemblyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET\\assembly");
-            var badSystemAssemblySuffixes = new[] { "resources", "Resources", "Printing", "Speech", "VisualStudio.11.0" };
+            var coreDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            var formsDir = Path.GetDirectoryName(typeof(Brush).Assembly.Location);
+            var badSystemAssemblySuffixes = new[] { "xml" };
 
-            var systemAssemblies = new HashSet<string>();
-            foreach (var gacFolder in Directory.GetDirectories(assemblyDirectory)) foreach (var assemblyFolder in Directory.GetDirectories(gacFolder))
+            var allFiles = Directory.EnumerateFiles(formsDir).Union(Directory.EnumerateFiles(coreDir));
+
+            List<string> systemAssemblies = [];
+            foreach (var file in allFiles)
             {
-                var assembly = PathHelper.GetRelativePath(gacFolder, assemblyFolder);
+                var assembly = Path.GetFileNameWithoutExtension(file);
 
                 if (!assembly.StartsWith("System.", StringComparison.Ordinal)) continue;
                 if (badSystemAssemblySuffixes.Any(suffix => assembly.EndsWith(suffix, StringComparison.Ordinal))) continue;

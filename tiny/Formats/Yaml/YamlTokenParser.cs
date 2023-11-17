@@ -58,7 +58,7 @@ namespace Tiny.Formats.Yaml
 
         class ObjectParser : MultilineParser
         {
-            readonly TinyObject result = new();
+            readonly TinyObject result = [];
             protected override int ResultCount => result.Count;
 
             public ObjectParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent) => callback(result);
@@ -107,7 +107,7 @@ namespace Tiny.Formats.Yaml
 
         class ArrayParser : MultilineParser
         {
-            readonly TinyArray result = new();
+            readonly TinyArray result = [];
             protected override int ResultCount => result.Count;
 
             public ArrayParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent) => callback(result);

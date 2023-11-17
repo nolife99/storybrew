@@ -11,7 +11,7 @@ namespace StorybrewCommon.Storyboarding.Util
         readonly string path;
         readonly OsbOrigin origin;
         readonly Action<OsbSprite, double, double> finalizeSprite;
-        readonly List<PooledSprite> pooledSprites = new();
+        readonly List<PooledSprite> pooledSprites = [];
 
         public int MaxPoolDuration = 60000;
 

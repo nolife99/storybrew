@@ -7,7 +7,7 @@ namespace Tiny.Formats.Json
         public const string BooleanTrue = "true", BooleanFalse = "false";
 
         static readonly RegexTokenizer<JsonTokenType>.Definition[] definitions =
-        {
+        [
             new RegexTokenizer<JsonTokenType>.Definition(JsonTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
             new RegexTokenizer<JsonTokenType>.Definition(JsonTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),
 
@@ -20,7 +20,7 @@ namespace Tiny.Formats.Json
 
             new RegexTokenizer<JsonTokenType>.Definition(JsonTokenType.Property, "([^\\s:,{}\\[\\]]*) *:"),
             new RegexTokenizer<JsonTokenType>.Definition(JsonTokenType.Word, "[^\\s:,{}\\[\\]]+"),
-        };
+        ];
 
         protected override Tokenizer<JsonTokenType> Tokenizer { get; } = new RegexTokenizer<JsonTokenType>(definitions, null);
         protected override TokenParser<JsonTokenType> TokenParser { get; } = new JsonTokenParser();

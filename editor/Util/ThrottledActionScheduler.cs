@@ -6,7 +6,7 @@ namespace StorybrewEditor.Util
     ///<summary> Schedules an action on the main thread until it succeeds. Actions come with a key that prevents queuing the same one multiple times. </summary>
     public class ThrottledActionScheduler
     {
-        readonly HashSet<string> scheduled = new();
+        readonly HashSet<string> scheduled = [];
 
         public int Delay = 100;
 

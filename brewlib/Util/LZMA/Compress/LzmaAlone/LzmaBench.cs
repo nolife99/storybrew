@@ -255,13 +255,13 @@ namespace BrewLib.Util.LZMA.Compress.LzmaAlone
             Decoder decoder = new();
 
             CoderPropID[] propIDs =
-            {
+            [
                 CoderPropID.DictionarySize,
-            };
+            ];
             object[] properties =
-            {
+            [
                 (int)dictionarySize,
-            };
+            ];
 
             uint kBufferSize = dictionarySize + kAdditionalSize;
             uint kCompressedBufferSize = kBufferSize / 2 + kCompressedAdditionalSize;

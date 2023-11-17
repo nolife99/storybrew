@@ -8,7 +8,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -104,9 +103,9 @@ namespace StorybrewEditor
 
                 editor.Initialize();
 
-                runMainLoop(window, editor, 
-                    1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate), 
-                    1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
+                runMainLoop(window, editor,
+                    1000d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
+                    1000d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
 
                 Settings.Save();
             }
@@ -139,20 +138,29 @@ namespace StorybrewEditor
         {
             var primaryScreenArea = Screen.PrimaryScreen.WorkingArea;
 
-            int windowWidth = 1366, windowHeight = 768;
+            var ratio = primaryScreenArea.Width / (float)Screen.PrimaryScreen.Bounds.Height;
+            float windowWidth = 1366, windowHeight = windowWidth / ratio;
             if (windowHeight >= primaryScreenArea.Height)
             {
                 windowWidth = 1024;
-                windowHeight = 600;
-                if (windowWidth >= primaryScreenArea.Width) windowWidth = 800;
-            }
-            var window = new GameWindow(windowWidth, windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 2, 0, GraphicsContextFlags.ForwardCompatible);
-            Trace.WriteLine($"Window dpi scale: {window.Height / (float)windowHeight}");
+                windowHeight = windowWidth / ratio;
 
-            window.Location = new Point(
-                (int)(primaryScreenArea.Left + (primaryScreenArea.Width - window.Size.Width) * .5f),
-                (int)(primaryScreenArea.Top + (primaryScreenArea.Height - window.Size.Height) * .5f)
-            );
+                if (windowWidth >= primaryScreenArea.Width)
+                {
+                    windowWidth = 800;
+                    windowHeight = windowWidth / ratio;
+                }
+            }
+
+            var window = new GameWindow((int)Math.Round(windowWidth), (int)Math.Round(windowHeight), null, Name, GameWindowFlags.Default, displayDevice, 4, 6, GraphicsContextFlags.Debug)
+            {
+                VSync = VSyncMode.Off
+            };
+            Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
+
+            window.X = (int)Math.Round(primaryScreenArea.X + (primaryScreenArea.Width - window.Width) * .5f);
+            window.Y = (int)Math.Round(primaryScreenArea.Y + (primaryScreenArea.Height - window.Size.Height) * .5f);
+
             if (window.Location.X < 0 || window.Location.Y < 0)
             {
                 window.Location = primaryScreenArea.Location;
@@ -179,11 +187,10 @@ namespace StorybrewEditor
             var windowDisplayed = false;
             var watch = Stopwatch.StartNew();
 
-            window.VSync = VSyncMode.Adaptive;
-            using var reset = new ManualResetEventSlim(); while (window.Exists && !window.IsExiting)
+            while (window.Exists && !window.IsExiting)
             {
                 var focused = window.Focused;
-                var currentTime = watch.Elapsed.TotalSeconds;
+                var currentTime = watch.Elapsed.TotalMilliseconds;
                 var fixedUpdates = 0;
 
                 AudioManager.Update();
@@ -194,9 +201,9 @@ namespace StorybrewEditor
                     fixedRateTime += fixedRateUpdateDuration;
                     ++fixedUpdates;
 
-                    editor.Update(fixedRateTime, true);
+                    editor.Update(fixedRateTime * 1E-3, true);
                 }
-                if (focused && fixedUpdates == 0 && fixedRateTime < currentTime && currentTime < fixedRateTime + fixedRateUpdateDuration) editor.Update(currentTime, false);
+                if (focused && fixedUpdates == 0 && fixedRateTime < currentTime && currentTime < fixedRateTime + fixedRateUpdateDuration) editor.Update(currentTime * 1E-3, false);
 
                 if (!window.Exists || window.IsExiting) return;
                 if (window.WindowState != WindowState.Minimized)
@@ -214,23 +221,23 @@ namespace StorybrewEditor
 
                 RunScheduledTasks();
 
-                var activeDuration = watch.Elapsed.TotalSeconds - currentTime;
-                if (window.VSync is VSyncMode.Off && window.WindowState != WindowState.Minimized)
+                var activeDuration = watch.Elapsed.TotalMilliseconds - currentTime;
+                if (window.WindowState != WindowState.Minimized)
                 {
                     var sleepTime = (focused ? targetFrameDuration : fixedRateUpdateDuration) - activeDuration;
-                    if (sleepTime > 0) reset.WaitHandle.WaitOne(TimeSpan.FromSeconds(sleepTime));
+                    if (sleepTime > 0) using (var wait = Task.Delay((int)sleepTime)) wait.Wait();
                 }
 
                 var frameTime = currentTime - previousTime;
                 previousTime = currentTime;
 
-                averageFrame = (frameTime + averageFrame) / 2;
-                averageActive = (activeDuration + averageActive) / 2;
+                averageFrame = (frameTime + averageFrame) * .5;
+                averageActive = (activeDuration + averageActive) * .5;
                 longestFrame = Math.Max(frameTime, longestFrame);
 
-                if (lastStatTime + .2 < currentTime)
+                if (lastStatTime + 150 < currentTime)
                 {
-                    Stats = $"fps:{1 / averageFrame:f}/{1 / averageActive:f} (act:{averageActive * 1000:f} avg:{averageFrame * 1000:f} hi:{longestFrame * 1000:f})";
+                    Stats = $"fps:{1000 / averageFrame:0}/{1000 / averageActive:0} (act:{averageActive:0} avg:{averageFrame:0} hi:{longestFrame:0})";
 
                     longestFrame = 0;
                     lastStatTime = currentTime;

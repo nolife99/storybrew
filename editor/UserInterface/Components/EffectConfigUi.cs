@@ -204,11 +204,11 @@ namespace StorybrewEditor.UserInterface.Components
                 var widget = new Selectbox(Manager)
                 {
                     Value = field.Value,
-                    Options = new NamedValue[]
-                    {
+                    Options =
+                    [
                         new NamedValue{ Name = bool.TrueString, Value = true },
                         new NamedValue{ Name = bool.FalseString, Value = false }
-                    },
+                    ],
                     AnchorFrom = BoxAlignment.Right,
                     AnchorTo = BoxAlignment.Right,
                     CanGrow = false

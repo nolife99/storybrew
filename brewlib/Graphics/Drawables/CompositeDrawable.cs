@@ -7,7 +7,7 @@ namespace BrewLib.Graphics.Drawables
 {
     public class CompositeDrawable : Drawable
     {
-        public readonly List<Drawable> Drawables = new();
+        public readonly List<Drawable> Drawables = [];
 
         public Vector2 MinSize
         {

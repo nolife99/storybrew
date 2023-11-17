@@ -27,7 +27,7 @@ namespace StorybrewEditor.Mapset
         double stackLeniency = 0.7;
         public override double StackLeniency => stackLeniency;
 
-        readonly HashSet<int> bookmarks = new();
+        readonly HashSet<int> bookmarks = [];
         public override IEnumerable<int> Bookmarks => bookmarks;
 
         double hpDrainRate = 5;
@@ -49,7 +49,7 @@ namespace StorybrewEditor.Mapset
         public override double SliderTickRate => sliderTickRate;
 
         bool hitObjectsPostProcessed;
-        readonly List<OsuHitObject> hitObjects = new();
+        readonly List<OsuHitObject> hitObjects = [];
         public override IEnumerable<OsuHitObject> HitObjects
         {
             get
@@ -60,19 +60,19 @@ namespace StorybrewEditor.Mapset
         }
 
         static readonly Color[] defaultComboColors =
-        {
+        [
             Color.FromArgb(255, 192, 0),
             Color.FromArgb(0, 202, 0),
             Color.FromArgb(18, 124, 255),
             Color.FromArgb(242, 24, 57)
-        };
+        ];
         readonly List<Color> comboColors = new(defaultComboColors);
         public override IEnumerable<Color> ComboColors => comboColors;
 
         string backgroundPath;
         public override string BackgroundPath => backgroundPath;
 
-        readonly List<OsuBreak> breaks = new();
+        readonly List<OsuBreak> breaks = [];
         public override IEnumerable<OsuBreak> Breaks => breaks;
 
         public EditorBeatmap(string path) => Path = path;
@@ -81,7 +81,7 @@ namespace StorybrewEditor.Mapset
 
         #region Timing
 
-        readonly List<ControlPoint> controlPoints = new();
+        readonly List<ControlPoint> controlPoints = [];
 
         public override IEnumerable<ControlPoint> ControlPoints => controlPoints;
         public override IEnumerable<ControlPoint> TimingPoints

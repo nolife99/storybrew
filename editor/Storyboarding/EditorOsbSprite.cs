@@ -82,9 +82,9 @@ namespace StorybrewEditor.Storyboarding
                 {
                     frameStats.EffectiveCommandCount += sprite.CommandCost;
 
-                    var _sprite = spriteBox.GetAABB();
-                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, size.X * size.Y * _sprite.IntersectWith(
-                        OsuHitObject.WidescreenStoryboardBounds).Area() / _sprite.Area()) / OsuHitObject.WidescreenStoryboardArea;
+                    var sBounds = spriteBox.GetAABB();
+                    var intersect = RectangleF.Intersect(sBounds, OsuHitObject.WidescreenStoryboardBounds);
+                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, size.X * size.Y * intersect.X * intersect.Y / (sBounds.X * sBounds.Y)) / OsuHitObject.WidescreenStoryboardArea;
                 }
             }
 

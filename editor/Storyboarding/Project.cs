@@ -19,7 +19,6 @@ using System.IO;
 using System.IO.Compression;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Tiny;
@@ -154,7 +153,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region Effects
 
-        readonly List<Effect> effects = new();
+        readonly List<Effect> effects = [];
         public IEnumerable<Effect> Effects => effects;
         public event EventHandler OnEffectsChanged, OnEffectsStatusChanged, OnEffectsContentChanged;
 
@@ -183,7 +182,7 @@ namespace StorybrewEditor.Storyboarding
 
         public Effect AddScriptedEffect(string scriptName, bool multithreaded = false)
         {
-            if (Disposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
             var effect = new ScriptedEffect(this, scriptManager.Get(scriptName), multithreaded)
             {
@@ -202,7 +201,7 @@ namespace StorybrewEditor.Storyboarding
         }
         public void Remove(Effect effect)
         {
-            if (Disposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
             effects.Remove(effect);
             effect?.Dispose();
@@ -381,21 +380,28 @@ namespace StorybrewEditor.Storyboarding
 
         #region Assemblies
 
-        static readonly string[] defaultAssemblies = new string[]
-        {
-            "System.Runtime.dll", "System.Drawing.Common.dll", "System.Numerics.Vectors.dll", "netstandard.dll",
-            typeof(Script).Assembly.Location, typeof(Program).Assembly.Location, typeof(Shader).Assembly.Location, typeof(Vector).Assembly.Location,
-            typeof(Box2).Assembly.Location, typeof(Rectangle).Assembly.Location, typeof(Enumerable).Assembly.Location
-        };
+        static readonly string[] defaultAssemblies =
+        [
+            "System.Runtime.dll",
+            "System.Numerics.Vectors.dll",
+            "netstandard.dll",
+            typeof(Line).Assembly.Location,
+            typeof(Enumerable).Assembly.Location,
+            typeof(object).Assembly.Location,
+            typeof(Box2).Assembly.Location,
+            typeof(Script).Assembly.Location,
+            typeof(Brush).Assembly.Location,
+            typeof(Size).Assembly.Location
+        ];
         public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
 
-        List<string> importedAssemblies = new();
+        List<string> importedAssemblies = [];
         public IEnumerable<string> ImportedAssemblies
         {
             get => importedAssemblies;
             set
             {
-                if (Disposed) throw new ObjectDisposedException(nameof(Project));
+                ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
                 importedAssemblies = value as List<string> ?? value.ToList();
                 scriptManager.ReferencedAssemblies = ReferencedAssemblies;
@@ -440,7 +446,7 @@ namespace StorybrewEditor.Storyboarding
         }
         void saveBinary(string path)
         {
-            if (Disposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
             using var file = File.Create(path); using var dfl = new DeflateStream(file, CompressionLevel.Optimal); using var w = new BinaryWriter(dfl, Encoding);
             w.Write(Version);
 
@@ -560,7 +566,7 @@ namespace StorybrewEditor.Storyboarding
         }
         void saveText(string path)
         {
-            if (Disposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
             if (!File.Exists(path)) File.WriteAllText(path, "# This file is used to open the project\n# Project data is contained in /.sbrew");
 
@@ -772,7 +778,7 @@ namespace StorybrewEditor.Storyboarding
 
         public void ExportToOsb(bool exportOsb = true)
         {
-            if (Disposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
             string osuPath = null, osbPath = null;
             IEnumerable<EditorStoryboardLayer> localLayers = null, diffSpecific = null, sbLayer;

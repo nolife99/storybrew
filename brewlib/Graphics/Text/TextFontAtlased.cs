@@ -8,7 +8,7 @@ namespace BrewLib.Graphics.Text
 {
     public class TextFontAtlased : TextFont
     {
-        Dictionary<char, FontGlyph> glyphs = new();
+        Dictionary<char, FontGlyph> glyphs = [];
         TextureMultiAtlas2d atlas;
         readonly string name;
         public string Name => name;

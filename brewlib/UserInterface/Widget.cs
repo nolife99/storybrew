@@ -215,7 +215,7 @@ namespace BrewLib.UserInterface
         Widget parent;
         public Widget Parent => parent;
 
-        readonly List<Widget> children = new();
+        readonly List<Widget> children = [];
         public IEnumerable<Widget> Children
         {
             get => children;

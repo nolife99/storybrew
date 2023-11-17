@@ -53,7 +53,7 @@ namespace StorybrewEditor.Storyboarding
         readonly StringBuilder log = new();
         public string Log => log.ToString();
 
-        public List<EditorStoryboardLayer> EditorLayers = new();
+        public List<EditorStoryboardLayer> EditorLayers = [];
 
         public EditorGeneratorContext(Effect effect, string projectPath, string projectAssetPath, string mapsetPath, EditorBeatmap beatmap, IEnumerable<EditorBeatmap> beatmaps, MultiFileWatcher watcher)
         {
@@ -78,7 +78,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region Audio data
 
-        readonly Dictionary<string, FftStream> fftAudioStreams = new();
+        readonly Dictionary<string, FftStream> fftAudioStreams = [];
         FftStream getFftStream(string path)
         {
             path = Path.GetFullPath(path);

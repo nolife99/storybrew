@@ -132,7 +132,7 @@ namespace StorybrewCommon.Mapset
                 if (controlPoint.PlayfieldPosition == previousPosition)
                 {
                     if (curvePoints.Count > 1) curves.Add(new BezierCurve(curvePoints, precision));
-                    curvePoints = new List<CommandPosition>();
+                    curvePoints = [];
                 }
 
                 curvePoints.Add(controlPoint.PlayfieldPosition);

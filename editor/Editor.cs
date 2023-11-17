@@ -77,10 +77,10 @@ namespace StorybrewEditor
                 Skin = new Skin(drawContext.Get<TextureContainer>());
             }
 
-            var inputDispatcher = new InputDispatcher();
-            InputManager = new InputManager(Window, inputDispatcher);
+            InputDispatcher inputDispatcher = new();
+            InputManager = new(Window, inputDispatcher);
 
-            ScreenLayerManager = new ScreenLayerManager(Window, clock, this);
+            ScreenLayerManager = new(Window, clock, this);
             inputDispatcher.Add(createOverlay(ScreenLayerManager));
             inputDispatcher.Add(ScreenLayerManager.InputHandler);
 

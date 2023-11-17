@@ -47,7 +47,7 @@ namespace StorybrewScripts
             var bitmap = GetMapsetBitmap(SpritePath);
 
             var positionKeyframes = new KeyframedValue<Vector2>[BarCount];
-            for (var i = 0; i < BarCount; ++i) positionKeyframes[i] = new KeyframedValue<Vector2>();
+            for (var i = 0; i < BarCount; ++i) positionKeyframes[i] = [];
 
             var timeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
             var offset = timeStep * .2;

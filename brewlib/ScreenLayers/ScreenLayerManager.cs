@@ -18,7 +18,7 @@ namespace BrewLib.ScreenLayers
         readonly object context;
         public T GetContext<T>() => (T)context;
 
-        readonly List<ScreenLayer> layers = new(), removedLayers = new(), updateQueue = new();
+        readonly List<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
         ScreenLayer focusedLayer;
 
         readonly InputDispatcher inputDispatcher = new();

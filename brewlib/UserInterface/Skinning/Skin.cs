@@ -19,8 +19,8 @@ namespace BrewLib.UserInterface.Skinning
         public readonly TextureContainer TextureContainer;
         public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
 
-        Dictionary<string, Drawable> drawables = new();
-        readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = new();
+        Dictionary<string, Drawable> drawables = [];
+        readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = [];
 
         public Skin(TextureContainer textureContainer) => TextureContainer = textureContainer;
 
@@ -186,7 +186,7 @@ namespace BrewLib.UserInterface.Skinning
                     var styleType = ResolveStyleType($"{styleTypeName}Style");
 
                     if (!stylesPerType.TryGetValue(styleType, out Dictionary<string, WidgetStyle> styles))
-                        stylesPerType.Add(styleType, styles = new Dictionary<string, WidgetStyle>());
+                        stylesPerType.Add(styleType, styles = []);
 
                     WidgetStyle defaultStyle = null;
                     foreach (var styleEntry in styleTypeObject)

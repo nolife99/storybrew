@@ -9,7 +9,7 @@ namespace Tiny.Formats.Yaml
         public const string BooleanTrue = "Yes", BooleanFalse = "No";
 
         static readonly RegexTokenizer<YamlTokenType>.Definition[] definitions =
-        {
+        [
             new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.Indent, "^(  )+", captureGroup: 0),
 
             new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
@@ -21,7 +21,7 @@ namespace Tiny.Formats.Yaml
             new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.Word, "[^\\s:]+"),
 
             new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.EndLine, "\n"),
-        };
+        ];
 
         protected override Tokenizer<YamlTokenType> Tokenizer { get; } = new RegexTokenizer<YamlTokenType>(definitions, YamlTokenType.EndLine);
         protected override TokenParser<YamlTokenType> TokenParser { get; } = new YamlTokenParser();

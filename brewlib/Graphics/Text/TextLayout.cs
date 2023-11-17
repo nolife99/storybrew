@@ -8,10 +8,10 @@ namespace BrewLib.Graphics.Text
 {
     public class TextLayout
     {
-        readonly List<string> textLines = new();
+        readonly List<string> textLines = [];
         public IEnumerable<string> TextLines => textLines;
 
-        readonly List<TextLayoutLine> lines = new();
+        readonly List<TextLayoutLine> lines = [];
         public IEnumerable<TextLayoutLine> Lines => lines;
 
         Vector2 size;
@@ -146,7 +146,7 @@ namespace BrewLib.Graphics.Text
     }
     public class TextLayoutLine
     {
-        readonly List<TextLayoutGlyph> glyphs = new();
+        readonly List<TextLayoutGlyph> glyphs = [];
         public IEnumerable<TextLayoutGlyph> Glyphs => glyphs;
         public int GlyphCount => glyphs.Count;
 

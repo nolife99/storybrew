@@ -104,14 +104,7 @@ namespace BrewLib.Graphics.Renderers
         public int LargestBatch { get; private set; }
 
         public SpriteRendererBuffered(Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0) :
-            this((vertexDeclaration, minRenderableVertexCount) =>
-        {
-            if (PrimitiveStreamerPersistentMap<SpritePrimitive>.HasCapabilities()) return new PrimitiveStreamerPersistentMap<SpritePrimitive>(vertexDeclaration, minRenderableVertexCount);
-            else if (PrimitiveStreamerBufferData<SpritePrimitive>.HasCapabilities()) return new PrimitiveStreamerBufferData<SpritePrimitive>(vertexDeclaration, minRenderableVertexCount);
-            else if (PrimitiveStreamerVbo<SpritePrimitive>.HasCapabilities()) return new PrimitiveStreamerVbo<SpritePrimitive>(vertexDeclaration);
-            throw new NotSupportedException();
-
-        }, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize) {}
+            this(PrimitiveStreamerUtil<SpritePrimitive>.DefaultCreatePrimitiveStreamer, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize) {}
 
         public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<SpritePrimitive>> createPrimitiveStreamer, Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0)
         {

@@ -24,8 +24,8 @@ namespace BrewLib.UserInterface
 
         Widget rootContainer;
         readonly Widget tooltipOverlay;
-        readonly Dictionary<MouseButton, Widget> clickTargets = new();
-        readonly Dictionary<GamepadButton, Widget> gamepadButtonTargets = new();
+        readonly Dictionary<MouseButton, Widget> clickTargets = [];
+        readonly Dictionary<GamepadButton, Widget> gamepadButtonTargets = [];
 
         public Vector2 Size
         {
@@ -123,7 +123,7 @@ namespace BrewLib.UserInterface
 
         #region Tooltip
 
-        readonly Dictionary<Widget, Widget> tooltips = new();
+        readonly Dictionary<Widget, Widget> tooltips = [];
 
         public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget, new Label(this)
         {
@@ -257,7 +257,7 @@ namespace BrewLib.UserInterface
         Drawable dragDrawable;
         Vector2 dragOffset, dragSize;
         Widget hoveredDraggableWidget;
-        readonly Dictionary<MouseButton, object> dragData = new();
+        readonly Dictionary<MouseButton, object> dragData = [];
         public bool CanDrag => hoveredDraggableWidget != null;
         public bool IsDragging => dragData.Values.Any(v => v != null);
 
@@ -302,7 +302,7 @@ namespace BrewLib.UserInterface
 
         #region Input events
 
-        readonly List<Widget> gamepadTargets = new();
+        readonly List<Widget> gamepadTargets = [];
 
         public void EnableGamepadEvents(Widget widget) => gamepadTargets.Insert(0, widget);
         public void DisableGamepadEvents(Widget widget) => gamepadTargets.Remove(widget);

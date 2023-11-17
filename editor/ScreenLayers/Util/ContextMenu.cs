@@ -10,7 +10,7 @@ namespace StorybrewEditor.ScreenLayers
     {
         readonly string title;
         readonly Action<T> callback;
-        readonly List<Option> options = new();
+        readonly List<Option> options = [];
 
         LinearLayout mainLayout, optionsLayout;
         Textbox searchTextbox;
@@ -91,7 +91,7 @@ namespace StorybrewEditor.ScreenLayers
             optionsLayout.ClearWidgets();
             foreach (var option in options)
             {
-                if (!string.IsNullOrEmpty(searchTextbox.Value) && !option.Name.ToLowerInvariant().Contains(searchTextbox.Value.ToLowerInvariant())) continue;
+                if (!string.IsNullOrEmpty(searchTextbox.Value) && !option.Name.Contains(searchTextbox.Value, StringComparison.InvariantCultureIgnoreCase)) continue;
 
                 Button button;
                 optionsLayout.Add(button = new Button(WidgetManager)

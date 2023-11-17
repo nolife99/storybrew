@@ -27,10 +27,10 @@ namespace StorybrewEditor.Storyboarding
         public event ChangedHandler OnChanged;
         protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new ChangedEventArgs(propertyName)));
 
-        readonly List<StoryboardObject> storyboardObjects = new();
-        readonly List<DisplayableObject> displayableObjects = new();
-        readonly List<EventObject> eventObjects = new();
-        readonly List<EditorStoryboardSegment> segments = new();
+        readonly List<StoryboardObject> storyboardObjects = [];
+        readonly List<DisplayableObject> displayableObjects = [];
+        readonly List<EventObject> eventObjects = [];
+        readonly List<EditorStoryboardSegment> segments = [];
 
         public EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
         {

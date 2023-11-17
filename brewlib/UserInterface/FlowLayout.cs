@@ -196,7 +196,7 @@ namespace BrewLib.UserInterface
             // Prepare preferred lengths
 
             var innerSizeWidth = flowWidth - padding.Horizontal;
-            lines = new List<LayoutLine>();
+            lines = [];
             {
                 LayoutLine line = null;
                 foreach (var child in Children)
@@ -271,7 +271,7 @@ namespace BrewLib.UserInterface
         }
         class LayoutLine
         {
-            public List<LayoutItem> Items = new();
+            public List<LayoutItem> Items = [];
             public float Width, Height;
 
             public float GetTotalWidth(float spacing) => Width + GetTotalSpacing(spacing);

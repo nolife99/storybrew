@@ -73,10 +73,10 @@ namespace StorybrewCommon.Storyboarding.Commands
             if (startTimeString == endTimeString) endTimeString = "";
 
             string[] parameters =
-            {
+            [
                 Identifier, ((int)Easing).ToString(exportSettings.NumberFormat),
                 startTimeString, endTimeString, startValueString
-            };
+            ];
 
             var result = string.Join(",", parameters);
             if (startValueString != endValueString) result += "," + endValueString;

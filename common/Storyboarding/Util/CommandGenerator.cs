@@ -37,7 +37,7 @@ namespace StorybrewCommon.Storyboarding.Util
             flipV = new(InterpolatingFunctions.BoolFrom),
             additive = new(InterpolatingFunctions.BoolFrom);
 
-        readonly List<State> states = new();
+        readonly List<State> states = [];
 
         ///<summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
         public State StartState => states.Count == 0 ? null : states[0];

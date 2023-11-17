@@ -14,7 +14,7 @@ namespace BrewLib.Input
         public bool HasMouseFocus => window.Focused && hasMouseHover;
         public bool HasWindowFocus => window.Focused;
 
-        readonly Dictionary<int, GamepadManager> gamepadManagers = new();
+        readonly Dictionary<int, GamepadManager> gamepadManagers = [];
         public IEnumerable<GamepadManager> GamepadManagers => gamepadManagers.Values;
         public GamepadManager GetGamepadManager(int gamepadIndex = 0) => gamepadManagers[gamepadIndex];
 

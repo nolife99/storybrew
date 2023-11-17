@@ -10,7 +10,7 @@ namespace StorybrewEditor.Util
     public class AsyncActionQueue<T> : IDisposable
     {
         readonly ActionQueueContext context = new();
-        readonly List<ActionRunner> actionRunners = new();
+        readonly List<ActionRunner> actionRunners = [];
         readonly bool allowDuplicates;
 
         public delegate void ActionFailed(T target, Exception e);
@@ -107,8 +107,8 @@ namespace StorybrewEditor.Util
 
         class ActionQueueContext
         {
-            public readonly List<ActionContainer> Queue = new();
-            public readonly HashSet<string> Running = new();
+            public readonly List<ActionContainer> Queue = [];
+            public readonly HashSet<string> Running = [];
             public bool RunningLoneTask;
 
             public event ActionFailed OnActionFailed;

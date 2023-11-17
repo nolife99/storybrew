@@ -5,8 +5,8 @@ namespace Tiny
 {
     public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>>
     {
-        readonly Dictionary<string, int> keyToIndexMap = new();
-        readonly List<KeyValuePair<string, TinyToken>> items = new();
+        readonly Dictionary<string, int> keyToIndexMap = [];
+        readonly List<KeyValuePair<string, TinyToken>> items = [];
 
         public override bool IsInline => false;
         public override bool IsEmpty => items.Count == 0;

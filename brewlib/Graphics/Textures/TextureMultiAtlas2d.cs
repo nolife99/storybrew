@@ -31,7 +31,7 @@ namespace BrewLib.Graphics.Textures
                 Trace.WriteLine($"Bitmap \"{description}\" doesn't fit in this atlas");
 
                 var texture = Texture2d.Load(bitmap, description, textureOptions);
-                (oversizeTextures ??= new List<Texture2d>()).Add(texture);
+                (oversizeTextures ??= []).Add(texture);
                 return texture;
             }
 

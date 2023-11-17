@@ -328,7 +328,7 @@ namespace StorybrewEditor.ScreenLayers
                 audioTimeB.Text = $"{timeSource.TimeFactor:P0}";
             };
 
-            MakeTabs(new Button[] { settingB, effectB, layerB }, new Widget[] { settings, effects, layers });
+            MakeTabs([settingB, effectB, layerB], [settings, effects, layers]);
             projFolderB.OnClick += (sender, e) =>
             {
                 var path = Path.GetFullPath(proj.ProjectFolderPath);

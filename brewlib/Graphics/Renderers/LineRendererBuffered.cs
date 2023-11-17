@@ -7,6 +7,7 @@ using osuTK;
 using osuTK.Graphics;
 using osuTK.Graphics.OpenGL;
 using System;
+using System.Diagnostics;
 
 namespace BrewLib.Graphics.Renderers
 {
@@ -86,20 +87,7 @@ namespace BrewLib.Graphics.Renderers
         public int LargestBatch { get; set; }
 
         public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
-            : this((vertexDeclaration, minRenderableVertexCount) =>
-        {
-            if (PrimitiveStreamerPersistentMap<LinePrimitive>.HasCapabilities())
-                return new PrimitiveStreamerPersistentMap<LinePrimitive>(vertexDeclaration, minRenderableVertexCount);
-
-            else if (PrimitiveStreamerBufferData<LinePrimitive>.HasCapabilities())
-                return new PrimitiveStreamerBufferData<LinePrimitive>(vertexDeclaration, minRenderableVertexCount);
-
-            else if (PrimitiveStreamerVbo<LinePrimitive>.HasCapabilities())
-                return new PrimitiveStreamerVbo<LinePrimitive>(vertexDeclaration);
-
-            throw new NotSupportedException();
-
-        }, shader, maxLinesPerBatch, primitiveBufferSize) { }
+            : this(PrimitiveStreamerUtil<LinePrimitive>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
         public LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<LinePrimitive>> createPrimitiveStreamer, Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
         {
@@ -118,6 +106,7 @@ namespace BrewLib.Graphics.Renderers
             primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerLine);
 
             primitives = new LinePrimitive[maxLinesPerBatch];
+            Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
         }
         public void Dispose()
         {

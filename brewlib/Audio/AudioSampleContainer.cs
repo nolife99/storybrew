@@ -11,7 +11,7 @@ namespace BrewLib.Audio
         readonly AudioManager audioManager;
         readonly ResourceContainer resourceContainer;
 
-        Dictionary<string, AudioSample> samples = new();
+        Dictionary<string, AudioSample> samples = [];
         public IEnumerable<string> ResourceNames => samples.Where(e => e.Value != null).Select(e => e.Key);
 
         public AudioSampleContainer(AudioManager audioManager, ResourceContainer resourceContainer = null)

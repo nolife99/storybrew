@@ -1241,10 +1241,10 @@ namespace BrewLib.Util.LZMA.Compress.LZMA
         }
 
         static readonly string[] kMatchFinderIDs =
-        {
+        [
             "BT2",
             "BT4"
-        };
+        ];
 
         static int FindMatchFinder(string s)
         {

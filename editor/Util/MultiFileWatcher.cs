@@ -8,8 +8,8 @@ namespace StorybrewEditor.Util
 {
     public sealed class MultiFileWatcher : IDisposable
     {
-        readonly Dictionary<string, FileSystemWatcher> folderWatchers = new(), recursiveFolderWatchers = new();
-        HashSet<string> watchedFilenames = new();
+        readonly Dictionary<string, FileSystemWatcher> folderWatchers = [], recursiveFolderWatchers = [];
+        HashSet<string> watchedFilenames = [];
         readonly ThrottledActionScheduler scheduler = new();
 
         public IEnumerable<string> WatchedFilenames => watchedFilenames;

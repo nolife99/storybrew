@@ -77,7 +77,7 @@ namespace StorybrewCommon.Scripting
 
         #region File loading
 
-        readonly Dictionary<string, Bitmap> bitmaps = new();
+        readonly Dictionary<string, Bitmap> bitmaps = [];
 
         ///<summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
         public Bitmap GetProjectBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
@@ -210,7 +210,7 @@ namespace StorybrewCommon.Scripting
 
         static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
 
-        internal readonly Dictionary<string, FontGenerator> fonts = new();
+        internal readonly Dictionary<string, FontGenerator> fonts = [];
         string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache");
 
         ///<summary> Loads subtitles from a given subtitle file. </summary>

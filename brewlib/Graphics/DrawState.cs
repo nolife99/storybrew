@@ -343,7 +343,7 @@ namespace BrewLib.Graphics
             }
         }
 
-        static readonly Dictionary<EnableCap, bool> capabilityCache = new();
+        static readonly Dictionary<EnableCap, bool> capabilityCache = [];
         internal static void SetCapability(EnableCap capability, bool enable)
         {
             if (capabilityCache.TryGetValue(capability, out bool isEnabled) && isEnabled == enable) return;
@@ -428,15 +428,12 @@ namespace BrewLib.Graphics
         }
         public static bool HasShaderCapabilities(int major, int minor) => glslVersion >= new Version(major, minor);
 
-        public static TextureTarget ToTextureTarget(TexturingModes mode)
+        public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
         {
-            return mode switch
-            {
-                TexturingModes.Texturing2d => TextureTarget.Texture2D,
-                TexturingModes.Texturing3d => TextureTarget.Texture3D,
-                _ => throw new InvalidOperationException("Not texture target matches the texturing mode " + mode),
-            };
-        }
+            TexturingModes.Texturing2d => TextureTarget.Texture2D,
+            TexturingModes.Texturing3d => TextureTarget.Texture3D,
+            _ => throw new InvalidOperationException("Not texture target matches the texturing mode " + mode),
+        };
         public static void CheckError(string context = null, bool alwaysThrow = false)
         {
             var error = GL.GetError();

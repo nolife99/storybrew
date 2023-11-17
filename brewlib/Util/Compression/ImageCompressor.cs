@@ -12,7 +12,7 @@ namespace BrewLib.Util.Compression
     {
         public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
         protected List<Argument> toCompress, lossyCompress;
-        protected List<string> toCleanup = new();
+        protected List<string> toCleanup = [];
 
         protected Process process;
         protected ResourceContainer container;
@@ -29,8 +29,8 @@ namespace BrewLib.Util.Compression
         public ImageCompressor(string utilityPath = null)
         {
             UtilityPath = utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
-            toCompress = new List<Argument>();
-            lossyCompress = new List<Argument>();
+            toCompress = [];
+            lossyCompress = [];
         }
 
         public void LosslessCompress(string path) => toCompress.Add(new Argument(path));

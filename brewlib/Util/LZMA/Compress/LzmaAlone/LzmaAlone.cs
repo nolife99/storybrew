@@ -115,7 +115,7 @@ namespace BrewLib.Util.LZMA.Compress.LzmaAlone
             }
 
             SwitchForm[] kSwitchForms =
-            {
+            [
                 new SwitchForm("?", SwitchType.Simple, false),
                 new SwitchForm("H", SwitchType.Simple, false),
                 new SwitchForm("A", SwitchType.UnLimitedPostString, false, 1),
@@ -129,7 +129,7 @@ namespace BrewLib.Util.LZMA.Compress.LzmaAlone
                 new SwitchForm("SI", SwitchType.Simple, false),
                 new SwitchForm("SO", SwitchType.Simple, false),
                 new SwitchForm("T", SwitchType.UnLimitedPostString, false, 1)
-            };
+            ];
 
             Parser parser = new(kSwitchForms.Length);
             try
@@ -226,7 +226,7 @@ namespace BrewLib.Util.LZMA.Compress.LzmaAlone
                 if (parser[(int)Key.PosBits].ThereIs) if (!GetNumber(parser[(int)Key.PosBits].PostStrings[0], out posStateBits)) IncorrectCommand();
 
                 CoderPropID[] propIDs =
-                {
+                [
                     CoderPropID.DictionarySize,
                     CoderPropID.PosStateBits,
                     CoderPropID.LitContextBits,
@@ -235,9 +235,9 @@ namespace BrewLib.Util.LZMA.Compress.LzmaAlone
                     CoderPropID.NumFastBytes,
                     CoderPropID.MatchFinder,
                     CoderPropID.EndMarker
-                };
+                ];
                 object[] properties =
-                {
+                [
                     dictionary,
                     posStateBits,
                     litContextBits,
@@ -246,7 +246,7 @@ namespace BrewLib.Util.LZMA.Compress.LzmaAlone
                     numFastBytes,
                     mf,
                     eos
-                };
+                ];
 
                 var encoder = new Encoder();
                 encoder.SetCoderProperties(propIDs, properties);

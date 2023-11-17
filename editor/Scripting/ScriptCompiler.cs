@@ -5,6 +5,8 @@ using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,12 +16,13 @@ namespace StorybrewEditor.Scripting
     public class ScriptCompiler : MarshalByRefObject
     {
         static readonly string[] environmentDirectories =
-        {
+        [
             Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "WPF"),
             Path.GetDirectoryName(typeof(object).Assembly.Location),
+            Path.GetDirectoryName(typeof(Brush).Assembly.Location),
             Environment.CurrentDirectory
-        };
-        static int nextId;
+        ];
+        static readonly int nextId;
 
         public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
@@ -29,7 +32,7 @@ namespace StorybrewEditor.Scripting
 
         static void compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = new();
+            Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
             foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
             {
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
@@ -103,8 +106,8 @@ namespace StorybrewEditor.Scripting
                 {
                     var file = kvp.Key;
                     var diagnostics = kvp.Value;
-                    message.AppendLine($"{Path.GetFileName(file)}:");
-                    foreach (var diagnostic in diagnostics) message.AppendLine($"--{diagnostic}");
+                    message.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)}:");
+                    foreach (var diagnostic in diagnostics) message.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
                 }
 
                 throw new ScriptCompilationException(message.ToString());

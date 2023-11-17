@@ -9,7 +9,7 @@ namespace StorybrewEditor
 {
     public static class Updater
     {
-        static readonly string[] ignoredPaths = { ".vscode/", "cache/", "logs/", "settings.cfg" }, readOnlyPaths = { "scripts/" };
+        static readonly string[] ignoredPaths = [".vscode/", "cache/", "logs/", "settings.cfg"], readOnlyPaths = ["scripts/"];
         public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update", FirstRunPath = "firstrun";
 
         static readonly Version readOnlyVersion = new(1, 8);

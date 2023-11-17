@@ -13,7 +13,7 @@ namespace BrewLib.Graphics
 
         public VertexAttribute this[int index] => vertexAttributes[index];
         public int AttributeCount => vertexAttributes.Length;
-        public int VertexSize { get; set; }
+        public int VertexSize;
 
         public VertexDeclaration(params VertexAttribute[] vertexAttributes)
         {
@@ -43,17 +43,17 @@ namespace BrewLib.Graphics
         }
         public void DeactivateAttributes(Shader shader)
         {
-            foreach (var attribute in vertexAttributes)
+            for (var i = 0; i < vertexAttributes.Length; ++i)
             {
-                var attributeLocation = shader.GetAttributeLocation(attribute.Name);
+                var attributeLocation = shader.GetAttributeLocation(vertexAttributes[i].Name);
                 if (attributeLocation >= 0) GL.DisableVertexAttribArray(attributeLocation);
             }
         }
-        public override bool Equals(object other)
+        public override bool Equals(object obj)
         {
-            if (other == this) return true;
+            if (obj == this) return true;
 
-            if (other is not VertexDeclaration otherDeclaration) return false;
+            if (obj is not VertexDeclaration otherDeclaration) return false;
             if (AttributeCount != otherDeclaration.AttributeCount) return false;
             for (var i = 0; i < AttributeCount; i++) if (!this[i].Equals(otherDeclaration[i])) return false;
 

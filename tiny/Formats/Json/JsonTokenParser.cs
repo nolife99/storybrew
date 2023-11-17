@@ -24,7 +24,7 @@ namespace Tiny.Formats.Json
 
         class ObjectParser : Parser<JsonTokenType>
         {
-            readonly TinyObject result = new();
+            readonly TinyObject result = [];
             bool expectingSeparator;
 
             public ObjectParser(Action<TinyToken> callback) : base(callback, 0) => callback(result);
@@ -78,7 +78,7 @@ namespace Tiny.Formats.Json
 
         class ArrayParser : Parser<JsonTokenType>
         {
-            readonly TinyArray result = new();
+            readonly TinyArray result = [];
             bool expectingSeparator;
 
             public ArrayParser(Action<TinyToken> callback) : base(callback, 0) => callback(result);

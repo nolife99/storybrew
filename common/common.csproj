@@ -5,7 +5,7 @@
     <RootNamespace>StorybrewCommon</RootNamespace>
     <AssemblyName>StorybrewCommon</AssemblyName>
     <UseWindowsForms>true</UseWindowsForms>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Company>storybrew</Company>
     <Product>storybrew common</Product>
     <Title>storybrew common</Title>
@@ -40,7 +40,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

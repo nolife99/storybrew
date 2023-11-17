@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -9,12 +10,10 @@ namespace BrewLib.Util
     {
         #region Memory
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [LibraryImport("kernel32.dll", EntryPoint = "RtlCopyMemory")] 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32", EntryPoint = "RtlCopyMemory")] 
         private static partial void memcpy(nint dest, nint src, uint count);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [LibraryImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32", EntryPoint = "RtlMoveMemory")]
         private static partial void memmove(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,34 +39,38 @@ namespace BrewLib.Util
 
         #region Win32
 
-        /// <summary>
-        /// Sends the specified message to a window or windows. <para/> 
-        /// The <see cref="SendMessage"/> function calls the window procedure for the specified window and does not return until the window procedure has processed the message.
-        /// </summary>
-        /// <param name="hWnd">A handle to the window whose window procedure will receive the message.</param>
-        /// <param name="msg">The message to be sent.</param>
-        /// <param name="wParam">Additional message-specific information.</param>
-        /// <param name="lParam">Additional message-specific information.</param>
-        /// <returns>The return value specifies the result of the message processing; it depends on the message sent.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [LibraryImport("user32.dll", EntryPoint = "SendMessageA")]
-        internal static partial nint SendMessage(nint hWnd, Message msg, nint wParam, nint lParam);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("user32")]
+        private static partial nint SendMessageA(nint hWnd, uint msg, nuint wParam, nint lParam);
+
+        ///<summary> Sends the specified message to a window or windows. </summary>
+        ///<remarks> Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage"/></remarks>
+        ///<typeparam name="T1"> The type of the first parameter, which is casted to <see cref="nint"/>. </typeparam>
+        ///<typeparam name="T2"> The type of the second parameter, which is casted to <see cref="nint"/>. </typeparam>
+        ///<typeparam name="TResult"> The return type, which is casted from <see cref="nint"/>. </typeparam>
+        ///<param name="windowHandle"> The window to send the message to. </param>
+        ///<param name="winMsg"> The type of message to send. </param>
+        ///<param name="param1"> The first value to wrap within the message. </param>
+        ///<param name="param2"> The second value to wrap within the message. </param>
+        ///<returns> The result from the call procedure. </returns>
+        ///<exception cref="NotSupportedException"> One of the types was unable to be casted to or from <see cref="nint"/>. </exception>
+        public static TResult SendMessage<T1, T2, TResult>(nint windowHandle, Message winMsg, T1 param1, T2 param2) where T1 : INumber<T1> where T2 : INumber<T2> where TResult : INumber<TResult>
+            => TResult.CreateChecked(SendMessageA(windowHandle, (uint)winMsg, nuint.CreateChecked(param1), nint.CreateChecked(param2)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetWindowIcon(nint iconHandle)
         {
-            SendMessage(MainWindowHandle, Message.SetIcon, 0, iconHandle);
-            SendMessage(MainWindowHandle, Message.SetIcon, 1, iconHandle);
+            SendMessage<int, nint, int>(MainWindowHandle, Message.SetIcon, 0, iconHandle);
+            SendMessage<int, nint, int>(MainWindowHandle, Message.SetIcon, 1, iconHandle);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string GetWindowText(nint hWnd)
         {
-            var length = (int)SendMessage(hWnd, Message.GetTextLength, 0, 0);
+            var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
             if (length == 0) return "";
 
             var buffer = Marshal.AllocCoTaskMem(length * 2 + 1);
-            SendMessage(hWnd, Message.GetText, length + 1, buffer);
+            SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, buffer);
 
             var result = Marshal.PtrToStringAnsi(buffer);
             Marshal.FreeCoTaskMem(buffer);
@@ -76,9 +79,7 @@ namespace BrewLib.Util
 
         delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [LibraryImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
         static nint hWnd;
@@ -114,7 +115,7 @@ namespace BrewLib.Util
         #endregion
 
         ///<summary><see href="https://learn.microsoft.com/en-us/windows/win32/winmsg/window-reference"/></summary>
-        internal enum Message : uint
+        public enum Message : uint
         {
             // Messages
 
@@ -150,7 +151,7 @@ namespace BrewLib.Util
             ///  </item>
             /// </list> 
             ///</remarks>
-            ///<returns>Nonzero if it erases the background; otherwise <see cref="nint.Zero"/>.</returns>
+            ///<returns>Nonzero if it erases the background; otherwise 0.</returns>
             EraseBG = 0x0014,
 
             ///<summary>Retrieves the font with which the control is currently drawing its text.</summary>
@@ -209,7 +210,7 @@ namespace BrewLib.Util
             /// <list type="bullet">
             ///  <item>
             ///   <term>wParam</term>
-            ///   <description>A handle to the font. If left <see langword="null"/>, the control uses the default system font to draw text.</description>
+            ///   <description>A handle to the font. If <see langword="null"/>, the control uses the default system font to draw text.</description>
             ///  </item>
             ///  <item>
             ///   <term>lParam</term>
@@ -220,6 +221,7 @@ namespace BrewLib.Util
             ///  </item>
             /// </list> 
             ///</remarks>
+            ///<returns>Nothing.</returns>
             SetFont = 0x0030,
 
             ///<summary>
@@ -246,10 +248,14 @@ namespace BrewLib.Util
             ///  </item>
             ///  <item>
             ///   <term>lParam</term>
-            ///   <description>A handle to the new large or small icon. If left <see langword="null"/>, the icon indicated by <c>wParam</c> is removed.</description>
+            ///   <description>A handle to the new large or small icon. If <see langword="null"/>, the icon indicated by <c>wParam</c> is removed.</description>
             ///  </item>
             /// </list> 
             ///</remarks>
+            ///<returns>
+            /// A handle to the previous large or small icon, depending on the value of <c>wParam</c>. 
+            /// It is <see cref="nint.Zero"/> if the window previously had no icon of the type indicated by <c>wParam</c>.
+            ///</returns>
             SetIcon = 0x0080,
 
             ///<summary>Sets the text of a window.</summary>
@@ -265,6 +271,7 @@ namespace BrewLib.Util
             ///  </item>
             /// </list> 
             ///</remarks>
+            ///<returns> 1 if the text is set. </returns>
             SetText = 0x000C,
 
             /* Notifications

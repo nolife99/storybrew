@@ -1,10 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Configurations>Output</Configurations>
     <RootNamespace>StorybrewScripts</RootNamespace>
     <AssemblyName>storyboard</AssemblyName>
+	<UseWindowsForms>true</UseWindowsForms>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>AnyCPU;x86</Platforms>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -30,9 +31,6 @@
     </Reference>
     <Reference Include="StorybrewEditor">
       <HintPath>..\..\StorybrewEditor.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Drawing.Common">
-      <HintPath>..\..\System.Drawing.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>

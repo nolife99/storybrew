@@ -54,10 +54,10 @@ namespace StorybrewEditor.Storyboarding
         {
             Project = project;
 
-            layers = new List<EditorStoryboardLayer>
-            {
+            layers =
+            [
                 (placeHolderLayer = new EditorStoryboardLayer(string.Empty, this))
-            };
+            ];
             refreshLayerNames();
             Project.LayerManager.Add(placeHolderLayer);
         }
