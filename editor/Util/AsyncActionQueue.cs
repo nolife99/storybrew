@@ -216,7 +216,7 @@ namespace StorybrewEditor.Util
                                 if (task.MustRunAlone) context.RunningLoneTask = false;
                             }
                         }
-                    }, tokenSrc.Token), tokenSrc.Token);
+                    }, tokenSrc.Token), tokenSrc.Token, TaskCreationOptions.LongRunning);
 #pragma warning restore SYSLIB0046
 
                     Trace.WriteLine($"Starting thread {threadName}");

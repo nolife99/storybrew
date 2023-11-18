@@ -53,7 +53,7 @@ namespace BrewLib.Util.Compression
                     startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
                     process ??= Process.Start(startInfo);
                     var error = process.StandardError.ReadToEnd();
-                    if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
+                    if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
                 }
                 finally
                 {
