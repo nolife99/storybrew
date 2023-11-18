@@ -77,12 +77,10 @@ namespace StorybrewEditor
     {
         void Set(object value);
     }
-    public class Setting<T> : Setting
+    public class Setting<T>(T defaultValue) : Setting
     {
-        T value;
+        T value = defaultValue;
         public event EventHandler OnValueChanged;
-
-        public Setting(T defaultValue) => value = defaultValue;
 
         public void Set(T value)
         {

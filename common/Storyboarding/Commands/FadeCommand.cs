@@ -3,11 +3,8 @@
 namespace StorybrewCommon.Storyboarding.Commands
 {
 #pragma warning disable CS1591
-    public class FadeCommand : Command<CommandDecimal>
+    public class FadeCommand(OsbEasing easing, double startTime, double endTime, CommandDecimal startValue, CommandDecimal endValue) : Command<CommandDecimal>("F", easing, startTime, endTime, startValue, endValue)
     {
-        public FadeCommand(OsbEasing easing, double startTime, double endTime, CommandDecimal startValue, CommandDecimal endValue)
-            : base("F", easing, startTime, endTime, startValue, endValue) { }
-
         public override CommandDecimal ValueAtProgress(double progress) => StartValue + (EndValue - StartValue) * progress;
         public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, double progress) => StartValue + (endCommand.EndValue - StartValue) * progress;
 

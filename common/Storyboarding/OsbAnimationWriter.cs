@@ -8,23 +8,21 @@ using System.Linq;
 namespace StorybrewCommon.Storyboarding
 {
     ///<summary> Base class for writing and exporting an <see cref="OsbAnimation"/>. </summary>
-    public class OsbAnimationWriter : OsbSpriteWriter
+    public class OsbAnimationWriter(OsbAnimation animation,
+        AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX, AnimatedValue<CommandDecimal> moveY,
+        AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
+        AnimatedValue<CommandDecimal> rotate,
+        AnimatedValue<CommandDecimal> fade,
+        AnimatedValue<CommandColor> color,
+        TextWriter writer, ExportSettings exportSettings, OsbLayer layer) : OsbSpriteWriter(animation,
+            move, moveX, moveY,
+            scale, scaleVec,
+            rotate,
+            fade,
+            color,
+            writer, exportSettings, layer)
     {
-        readonly OsbAnimation animation;
-#pragma warning disable CS1591
-        public OsbAnimationWriter(OsbAnimation animation,
-            AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX, AnimatedValue<CommandDecimal> moveY,
-            AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
-            AnimatedValue<CommandDecimal> rotate,
-            AnimatedValue<CommandDecimal> fade,
-            AnimatedValue<CommandColor> color,
-            TextWriter writer, ExportSettings exportSettings, OsbLayer layer) : base(animation,
-                move, moveX, moveY,
-                scale, scaleVec,
-                rotate,
-                fade,
-                color,
-                writer, exportSettings, layer) => this.animation = animation;
+        readonly OsbAnimation animation = animation;
 
         protected override OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
         {
@@ -65,12 +63,12 @@ namespace StorybrewCommon.Storyboarding
             }
             else base.WriteHeader(sprite);
         }
-        protected override HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragmentableCommands)
+        protected override HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
         {
-            var fragmentationTimes = base.GetFragmentationTimes(fragmentableCommands);
+            var fragmentationTimes = base.GetFragmentationTimes(fragCommands);
 
             var tMax = fragmentationTimes.Max();
-            var nonFragmentableTimes = new HashSet<int>();
+            HashSet<int> nonFragmentableTimes = [];
 
             for (var d = animation.StartTime; d < animation.AnimationEndTime; d += animation.LoopDuration)
             {

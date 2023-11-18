@@ -11,12 +11,12 @@ using System.Text;
 
 namespace StorybrewEditor.Storyboarding
 {
-    public sealed class EditorGeneratorContext : GeneratorContext, IDisposable
+    public sealed class EditorGeneratorContext(Effect effect, string projectPath, string projectAssetPath, string mapsetPath, EditorBeatmap beatmap, IEnumerable<EditorBeatmap> beatmaps, MultiFileWatcher watcher) : GeneratorContext, IDisposable
     {
-        readonly Effect effect;
-        readonly MultiFileWatcher watcher;
+        readonly Effect effect = effect;
+        readonly MultiFileWatcher watcher = watcher;
 
-        readonly string projectPath, projectAssetPath, mapsetPath;
+        readonly string projectPath = projectPath, projectAssetPath = projectAssetPath, mapsetPath = mapsetPath;
         public override string ProjectPath => projectPath;
         public override string ProjectAssetPath => projectAssetPath;
         public override string MapsetPath
@@ -28,7 +28,7 @@ namespace StorybrewEditor.Storyboarding
             }
         }
 
-        readonly EditorBeatmap beatmap;
+        readonly EditorBeatmap beatmap = beatmap;
         public override Beatmap Beatmap
         {
             get
@@ -37,7 +37,7 @@ namespace StorybrewEditor.Storyboarding
                 return beatmap;
             }
         }
-        readonly IEnumerable<EditorBeatmap> beatmaps;
+        readonly IEnumerable<EditorBeatmap> beatmaps = beatmaps;
         public override IEnumerable<Beatmap> Beatmaps
         {
             get
@@ -54,17 +54,6 @@ namespace StorybrewEditor.Storyboarding
         public string Log => log.ToString();
 
         public List<EditorStoryboardLayer> EditorLayers = [];
-
-        public EditorGeneratorContext(Effect effect, string projectPath, string projectAssetPath, string mapsetPath, EditorBeatmap beatmap, IEnumerable<EditorBeatmap> beatmaps, MultiFileWatcher watcher)
-        {
-            this.projectPath = projectPath;
-            this.projectAssetPath = projectAssetPath;
-            this.mapsetPath = mapsetPath;
-            this.effect = effect;
-            this.beatmap = beatmap;
-            this.beatmaps = beatmaps;
-            this.watcher = watcher;
-        }
 
         public override StoryboardLayer GetLayer(string name)
         {

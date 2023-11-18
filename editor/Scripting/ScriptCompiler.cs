@@ -10,27 +10,39 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Runtime.Loader;
+using StorybrewCommon.Scripting;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptCompiler : MarshalByRefObject
+    public class ScriptCompiler : ICompiler
     {
         static readonly string[] environmentDirectories =
         [
-            Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "WPF"),
             Path.GetDirectoryName(typeof(object).Assembly.Location),
             Path.GetDirectoryName(typeof(Brush).Assembly.Location),
             Environment.CurrentDirectory
         ];
-        static readonly int nextId;
 
+        static int nextId;
         public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            Debug.Print($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths)}");
-            compile(sourcePaths, outputPath, referencedAssemblies);
+            var domain = new AssemblyLoadContext($"ScriptCompiler {nextId++}", true);
+            Trace.WriteLine($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths)}");
+
+            try
+            {
+                var compiler = (ICompiler)Activator.CreateInstance(domain.LoadFromAssemblyName(typeof(ScriptCompiler).Assembly.GetName())
+                    .GetType(typeof(ScriptCompiler).FullName));
+                compiler.Compile(sourcePaths, outputPath, referencedAssemblies);
+            }
+            finally
+            {
+                domain.Unload();
+            }
         }
 
-        static void compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        void ICompiler.Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
             foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
@@ -38,10 +50,7 @@ namespace StorybrewEditor.Scripting
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
                 trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(src, sourceText);
             }
-            var references = new HashSet<MetadataReference>
-            {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location)
-            };
+            HashSet<MetadataReference> references = [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)];
 
             foreach (var referencedAssembly in referencedAssemblies)
             {
@@ -74,15 +83,12 @@ namespace StorybrewEditor.Scripting
                 }
             }
 
-            var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references,
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                    allowUnsafe: true, platform: Environment.Is64BitOperatingSystem ? Platform.X64 : Platform.AnyCpu32BitPreferred, optimizationLevel: 
-                    OptimizationLevel.Debug, assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default));
+            var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references, 
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
 
             using (var assemblyStream = File.Create(outputPath))
             {
-                var result = compilation.Emit(assemblyStream, 
-                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
+                var result = compilation.Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
                     options: new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded));
 
                 if (result.Success)
@@ -91,8 +97,7 @@ namespace StorybrewEditor.Scripting
                     return;
                 }
 
-                var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.IsWarningAsError || diagnostic.Severity is DiagnosticSeverity.Error)
-                    .Reverse().GroupBy(k =>
+                var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
                 {
                     if (k.Location.SourceTree is null) return "";
                     if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;

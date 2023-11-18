@@ -7,20 +7,15 @@ using System.Threading;
 
 namespace StorybrewEditor.ScreenLayers.Util
 {
-    public class LoadingScreen : UiScreenLayer
+    public class LoadingScreen(string title, Action action) : UiScreenLayer
     {
-        readonly string title;
-        readonly Action action;
+        readonly string title = title;
+        readonly Action action = action;
 
         LinearLayout mainLayout;
 
         public override bool IsPopup => true;
 
-        public LoadingScreen(string title, Action action)
-        {
-            this.title = title;
-            this.action = action;
-        }
         public override void Load()
         {
             var thread = new Thread(() =>

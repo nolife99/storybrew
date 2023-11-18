@@ -9,39 +9,24 @@ using System.Linq;
 namespace StorybrewCommon.Storyboarding
 {
     ///<summary> A helper class for writing and exporting a storyboard. </summary>
-    public class OsbSpriteWriter
+    public class OsbSpriteWriter(OsbSprite sprite,
+        AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX, AnimatedValue<CommandDecimal> moveY,
+        AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
+        AnimatedValue<CommandDecimal> rotate,
+        AnimatedValue<CommandDecimal> fade,
+        AnimatedValue<CommandColor> color,
+        TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
     {
-        readonly OsbSprite sprite;
-        readonly AnimatedValue<CommandPosition> move;
-        readonly AnimatedValue<CommandDecimal> moveX, moveY, scale, rotate, fade;
-        readonly AnimatedValue<CommandScale> scaleVec;
-        readonly AnimatedValue<CommandColor> color;
+        readonly OsbSprite sprite = sprite;
+        readonly AnimatedValue<CommandPosition> move = move;
+        readonly AnimatedValue<CommandDecimal> moveX = moveX, moveY = moveY, scale = scale, rotate = rotate, fade = fade;
+        readonly AnimatedValue<CommandScale> scaleVec = scaleVec;
+        readonly AnimatedValue<CommandColor> color = color;
 #pragma warning disable CS1591
-        protected readonly TextWriter TextWriter;
-        protected readonly ExportSettings ExportSettings;
-        protected readonly OsbLayer Layer;
+        protected readonly TextWriter TextWriter = writer;
+        protected readonly ExportSettings ExportSettings = exportSettings;
+        protected readonly OsbLayer Layer = layer;
 
-        public OsbSpriteWriter(OsbSprite sprite,
-            AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX, AnimatedValue<CommandDecimal> moveY,
-            AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
-            AnimatedValue<CommandDecimal> rotate,
-            AnimatedValue<CommandDecimal> fade,
-            AnimatedValue<CommandColor> color,
-            TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
-        {
-            this.sprite = sprite;
-            this.move = move;
-            this.moveX = moveX;
-            this.moveY = moveY;
-            this.scale = scale;
-            this.scaleVec = scaleVec;
-            this.rotate = rotate;
-            this.fade = fade;
-            this.color = color;
-            TextWriter = writer;
-            ExportSettings = exportSettings;
-            Layer = layer;
-        }
         public void WriteOsb()
         {
             if (ExportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 && sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
@@ -100,9 +85,9 @@ namespace StorybrewCommon.Storyboarding
             foreach (var command in fragCommands) fragTimes.ExceptWith(command.GetNonFragmentableTimes());
             return fragTimes;
         }
-        ICollection<IFragmentableCommand> getNextSegment(HashSet<int> fragmentationTimes, HashSet<IFragmentableCommand> commands)
+        HashSet<IFragmentableCommand> getNextSegment(HashSet<int> fragmentationTimes, HashSet<IFragmentableCommand> commands)
         {
-            var segment = new HashSet<IFragmentableCommand>();
+            HashSet<IFragmentableCommand> segment = [];
 
             var startTime = fragmentationTimes.Min();
             var endTime = getSegmentEndTime(fragmentationTimes, commands);

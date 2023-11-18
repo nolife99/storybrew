@@ -5,16 +5,10 @@ using System.Text.RegularExpressions;
 
 namespace Tiny.Formats
 {
-    public class RegexTokenizer<TokenType> : Tokenizer<TokenType> where TokenType : struct
+    public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Definition> definitions, TokenType? endLineToken) : Tokenizer<TokenType> where TokenType : struct
     {
-        readonly IEnumerable<Definition> definitions;
-        readonly TokenType? endLineToken;
-
-        public RegexTokenizer(IEnumerable<Definition> definitions, TokenType? endLineToken)
-        {
-            this.definitions = definitions;
-            this.endLineToken = endLineToken;
-        }
+        readonly IEnumerable<Definition> definitions = definitions;
+        readonly TokenType? endLineToken = endLineToken;
 
         public IEnumerable<Token<TokenType>> Tokenize(TextReader reader)
         {
@@ -56,18 +50,11 @@ namespace Tiny.Formats
             if (endLineToken.HasValue) yield return new Token<TokenType>(endLineToken.Value);
         }
 
-        public class Definition
+        public class Definition(TokenType matchType, string regexPattern, int captureGroup = 1)
         {
-            readonly Regex regex;
-            readonly TokenType matchType;
-            readonly int captureGroup;
-
-            public Definition(TokenType matchType, string regexPattern, int captureGroup = 1)
-            {
-                regex = new Regex(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-                this.matchType = matchType;
-                this.captureGroup = captureGroup;
-            }
+            readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            readonly TokenType matchType = matchType;
+            readonly int captureGroup = captureGroup;
 
             public IEnumerable<Match> FindMatches(string input, int priority)
             {

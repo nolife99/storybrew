@@ -4,19 +4,11 @@ namespace StorybrewCommon.Storyboarding.Util
 {
 #pragma warning disable CS1591
     [Obsolete("Use StorybrewCommon.Storyboarding.AnimationPool instead for better support.")]
-    public class OsbAnimationPool : OsbSpritePool
+    public class OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> finalizeSprite = null) : OsbSpritePool(segment, path, origin, finalizeSprite)
     {
-        readonly int frameCount;
-        readonly double frameDelay;
-        readonly OsbLoopType loopType;
-
-        public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> finalizeSprite = null)
-            : base(segment, path, origin, finalizeSprite)
-        {
-            this.frameCount = frameCount;
-            this.frameDelay = frameDelay;
-            this.loopType = loopType;
-        }
+        readonly int frameCount = frameCount;
+        readonly double frameDelay = frameDelay;
+        readonly OsbLoopType loopType = loopType;
 
         public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, bool additive)
             : this(segment, path, frameCount, frameDelay, loopType, origin, additive ?

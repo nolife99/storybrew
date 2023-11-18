@@ -6,22 +6,16 @@ using System.Drawing;
 
 namespace BrewLib.Graphics.Text
 {
-    public class TextFontAtlased : TextFont
+    public class TextFontAtlased(string name, float size) : TextFont
     {
         Dictionary<char, FontGlyph> glyphs = [];
         TextureMultiAtlas2d atlas;
-        readonly string name;
+        readonly string name = name;
         public string Name => name;
 
-        readonly float size;
+        readonly float size = size;
         public float Size => size;
         public int LineHeight => GetGlyph(' ').Height;
-
-        public TextFontAtlased(string name, float size)
-        {
-            this.name = name;
-            this.size = size;
-        }
 
         public FontGlyph GetGlyph(char c)
         {

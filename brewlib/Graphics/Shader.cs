@@ -13,7 +13,7 @@ namespace BrewLib.Graphics
         int vertexShaderId = -1, fragmentShaderId = -1, programId = -1;
 
         bool isInitialized, started;
-        string log = string.Empty;
+        string log = "";
 
         Dictionary<string, Property<ActiveAttribType>> attributes;
         Dictionary<string, Property<ActiveUniformType>> uniforms;
@@ -22,12 +22,8 @@ namespace BrewLib.Graphics
         {
             get
             {
-                if (!isInitialized)
-                    return log;
-
-                if (log == string.Empty)
-                    log = GL.GetProgramInfoLog(programId);
-
+                if (!isInitialized) return log;
+                if (string.IsNullOrEmpty(log)) log = GL.GetProgramInfoLog(programId);
                 return log;
             }
         }
@@ -212,19 +208,12 @@ namespace BrewLib.Graphics
         }
         public override string ToString() => $"program:{programId} vs:{vertexShaderId} fs:{fragmentShaderId}";
 
-        struct Property<TType>
+        struct Property<TType>(string name, int size, TType type, int location)
         {
-            public string Name;
-            public int Size, Location;
-            public TType Type;
+            public string Name = name;
+            public int Size = size, Location = location;
+            public TType Type = type;
 
-            public Property(string name, int size, TType type, int location)
-            {
-                Name = name;
-                Size = size;
-                Type = type;
-                Location = location;
-            }
             public override readonly string ToString() => $"{Size}@{Location} {Type}x{Size}";
         }
     }

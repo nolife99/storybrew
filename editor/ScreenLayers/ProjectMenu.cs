@@ -19,9 +19,9 @@ using System.Threading;
 
 namespace StorybrewEditor.ScreenLayers
 {
-    public class ProjectMenu : UiScreenLayer
+    public class ProjectMenu(Project project) : UiScreenLayer
     {
-        Project proj;
+        Project proj = project;
 
         DrawableContainer storyboardContainer, previewContainer;
         StoryboardDrawable storyboardDrawable, previewDrawable;
@@ -45,8 +45,6 @@ namespace StorybrewEditor.ScreenLayers
 
         int defaultDiv = 4;
         Vector2 storyboardPosition;
-
-        public ProjectMenu(Project project) => proj = project;
 
         public override void Load()
         {

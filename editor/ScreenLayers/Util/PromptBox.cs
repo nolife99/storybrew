@@ -4,24 +4,16 @@ using System;
 
 namespace StorybrewEditor.ScreenLayers.Util
 {
-    public class PromptBox : UiScreenLayer
+    public class PromptBox(string title, string description, string initialText, Action<string> action) : UiScreenLayer
     {
-        readonly string title, description, initialText;
-        readonly Action<string> action;
+        readonly string title = title, description = description, initialText = initialText;
+        readonly Action<string> action = action;
 
         LinearLayout mainLayout;
         Textbox textbox;
         Button okButton, cancelButton;
 
         public override bool IsPopup => true;
-
-        public PromptBox(string title, string description, string initialText, Action<string> action)
-        {
-            this.title = title;
-            this.description = description;
-            this.initialText = initialText;
-            this.action = action;
-        }
 
         public override void Load()
         {

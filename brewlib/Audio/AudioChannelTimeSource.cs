@@ -2,9 +2,9 @@
 
 namespace BrewLib.Audio
 {
-    public class AudioChannelTimeSource : TimeSource
+    public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
     {
-        readonly AudioChannel channel;
+        readonly AudioChannel channel = channel;
 
         public double Current => channel.Time;
         public bool Playing
@@ -17,7 +17,6 @@ namespace BrewLib.Audio
             get => channel.TimeFactor;
             set => channel.TimeFactor = value;
         }
-        public AudioChannelTimeSource(AudioChannel channel) => this.channel = channel;
 
         public bool Seek(double time)
         {

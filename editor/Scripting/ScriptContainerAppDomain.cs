@@ -7,13 +7,10 @@ using System.Runtime.Loader;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptContainerAppDomain<TScript> : ScriptContainerBase<TScript> where TScript : Script
+    public class ScriptContainerAppDomain<TScript>(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies) : ScriptContainerBase<TScript>(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) where TScript : Script
     {
         AssemblyLoadContext context;
         string assemblyPath;
-
-        public ScriptContainerAppDomain(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
-            : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) { }
 
         protected override IProvider<TScript> LoadScript()
         {
@@ -25,27 +22,27 @@ namespace StorybrewEditor.Scripting
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 Trace.WriteLine($"{nameof(Scripting)}: Loading domain {$"{Name} {Id}"}");
-                var scriptContext = new AssemblyLoadContext($"{Name} {Id}", true);
+                var context = new AssemblyLoadContext($"{Name} {Id}", true);
 
                 IProvider<TScript> scriptProvider;
                 try
                 {
-                    var assembly = scriptContext.LoadFromAssemblyName(typeof(ScriptProvider<TScript>).Assembly.GetName());
-                    scriptProvider = (IProvider<TScript>)Activator.CreateInstance(assembly.GetType(typeof(ScriptProvider<TScript>).FullName));
-                    scriptProvider.Initialize(scriptContext, assemblyPath, ScriptTypeName);
+                    scriptProvider = (IProvider<TScript>)Activator.CreateInstance(context.LoadFromAssemblyName(typeof(ScriptProvider<TScript>).Assembly.GetName())
+                        .GetType(typeof(ScriptProvider<TScript>).FullName));
+                    scriptProvider.Initialize(context, assemblyPath, ScriptTypeName);
                 }
                 catch
                 {
-                    scriptContext.Unload();
+                    context.Unload();
                     throw;
                 }
 
                 if (context != null)
                 {
                     Debug.Print($"{nameof(Scripting)}: Unloading domain {$"{Name} {Id}"}");
-                    scriptContext.Unload();
+                    context.Unload();
                 }
-                context = scriptContext;
+                this.context = context;
 
                 return scriptProvider;
             }

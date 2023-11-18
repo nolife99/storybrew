@@ -2,18 +2,16 @@
 using osuTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
 {
-    public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive>, PrimitiveStreamer<TPrimitive> where TPrimitive : struct
+    public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes), PrimitiveStreamer<TPrimitive> where TPrimitive : struct
     {
-        GpuCommandSync commandSync;
+        GpuCommandSync commandSync = new();
         nint bufferPointer;
         int bufferOffset, drawOffset, vertexBufferSize;
-
-        public PrimitiveStreamerPersistentMap(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
-            : base(vertexDeclaration, minRenderableVertexCount, indexes) => commandSync = new GpuCommandSync();
 
         protected override void initializeVertexBuffer()
         {
@@ -62,7 +60,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             }
 
             var pinnedVertexData = GCHandle.Alloc(primitives, GCHandleType.Pinned);
-            Native.CopyMemory(primitives.AddrOfPinnedArray(), bufferPointer + bufferOffset, (uint)vertexDataSize);
+            Native.CopyMemory(primitives.AddrOfPinnedArray(), bufferPointer + bufferOffset, vertexDataSize);
             pinnedVertexData.Free();
 
             if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));

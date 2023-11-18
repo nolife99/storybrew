@@ -7,7 +7,7 @@ using System.Globalization;
 
 namespace BrewLib.UserInterface
 {
-    public class ProgressBar : Widget, Field
+    public class ProgressBar(WidgetManager manager) : Widget(manager), Field
     {
         Drawable bar = NullDrawable.Instance;
         int preferredHeight = 32;
@@ -38,8 +38,6 @@ namespace BrewLib.UserInterface
 
         public void SetValueSilent(float value) => this.value = Math.Min(Math.Max(MinValue, value), MaxValue);
         public event EventHandler OnValueChanged;
-
-        public ProgressBar(WidgetManager manager) : base(manager) { }
 
         protected override void Dispose(bool disposing)
         {

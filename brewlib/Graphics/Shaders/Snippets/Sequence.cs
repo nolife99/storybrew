@@ -3,9 +3,9 @@ using System.Text;
 
 namespace BrewLib.Graphics.Shaders.Snippets
 {
-    public class Sequence : ShaderSnippet
+    public class Sequence(params ShaderSnippet[] snippets) : ShaderSnippet
     {
-        readonly ShaderSnippet[] snippets;
+        readonly ShaderSnippet[] snippets = snippets;
 
         public override IEnumerable<string> RequiredExtensions
         {
@@ -26,7 +26,6 @@ namespace BrewLib.Graphics.Shaders.Snippets
                 return minVersion;
             }
         }
-        public Sequence(params ShaderSnippet[] snippets) => this.snippets = snippets;
 
         public override void GenerateFunctions(StringBuilder code)
         {

@@ -39,7 +39,7 @@ namespace StorybrewEditor
             mainThreadId = Environment.CurrentManagedThreadId;
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.SystemDefault;
 
-            NetHelper.Client = new System.Net.Http.HttpClient();
+            NetHelper.Client = new();
             NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
 
             if (args.Length != 0 && handleArguments(args)) return;
@@ -48,7 +48,7 @@ namespace StorybrewEditor
             startEditor();
 
             NetHelper.Client?.Dispose();
-            foreach (TraceListener listener in Trace.Listeners) listener.Dispose();
+            foreach (IDisposable listener in Trace.Listeners) listener.Dispose();
         }
         static bool handleArguments(string[] args)
         {
@@ -68,7 +68,7 @@ namespace StorybrewEditor
                 case "worker":
                     if (args.Length < 2) return false;
                     setupLogging(null, $"worker-{DateTime.UtcNow:yyyyMMddHHmmssfff}.log");
-                    enableScheduling();
+                    SchedulingEnabled = true;
                     ProcessWorker.Run(args[1]);
                     return true;
             }
@@ -81,8 +81,7 @@ namespace StorybrewEditor
 
         static void startEditor()
         {
-            enableScheduling();
-
+            SchedulingEnabled = true;
             Settings = new();
             Updater.NotifyEditorRun();
 
@@ -152,14 +151,14 @@ namespace StorybrewEditor
                 }
             }
 
-            var window = new GameWindow((int)Math.Round(windowWidth), (int)Math.Round(windowHeight), null, Name, GameWindowFlags.Default, displayDevice, 4, 6, GraphicsContextFlags.Debug)
+            var window = new GameWindow((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 4, 6, GraphicsContextFlags.Debug)
             {
                 VSync = VSyncMode.Off
             };
             Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
-            window.X = (int)Math.Round(primaryScreenArea.X + (primaryScreenArea.Width - window.Width) * .5f);
-            window.Y = (int)Math.Round(primaryScreenArea.Y + (primaryScreenArea.Height - window.Size.Height) * .5f);
+            window.X = (int)(primaryScreenArea.X + (primaryScreenArea.Width - window.Width) * .5f);
+            window.Y = (int)(primaryScreenArea.Y + (primaryScreenArea.Height - window.Size.Height) * .5f);
 
             if (window.Location.X < 0 || window.Location.Y < 0)
             {
@@ -249,10 +248,8 @@ namespace StorybrewEditor
 
         #region Scheduling
 
-        public static bool SchedulingEnabled { get; set; }
+        public static bool SchedulingEnabled { get; internal set; }
         static readonly ConcurrentQueue<Action> scheduledActions = new();
-
-        public static void enableScheduling() => SchedulingEnabled = true;
 
         /// <summary>
         /// Schedule the action to run in the main thread.
@@ -268,11 +265,11 @@ namespace StorybrewEditor
         /// Schedule the action to run in the main thread after a delay (in milliseconds).
         /// Exceptions will be logged.
         /// </summary>
-        public static void Schedule(Action action, int delay) => Task.Run(async () =>
+        public static void Schedule(Action action, int delay) => Task.Factory.StartNew(async () =>
         {
-            await Task.Delay(delay);
+            using (var wait = Task.Delay(delay)) await wait;
             Schedule(action);
-        });
+        }, TaskCreationOptions.AttachedToParent);
 
         /// <summary>
         /// Run the action synchronously in the main thread.
@@ -397,23 +394,21 @@ namespace StorybrewEditor
             var mainThread = Thread.CurrentThread;
 
             var cancel = new CancellationTokenSource();
-            var thread = new Thread(() =>
+            var thread = new Task(async () =>
             {
                 var answered = false;
                 var frozen = 0;
                 var cancellationToken = cancel.Token;
 
-                while (!SchedulingEnabled) Thread.Sleep(1000);
-
+                while (!SchedulingEnabled) using (var wait = Task.Delay(1000)) await wait;
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     answered = false;
                     Schedule(() => answered = true);
 
-                    Thread.Sleep(1000);
+                    using (var wait = Task.Delay(1000)) await wait;
 
-                    if (!answered) frozen++;
-
+                    if (!answered) ++frozen;
                     if (frozen >= 3)
                     {
                         frozen = 0;
@@ -432,10 +427,7 @@ namespace StorybrewEditor
                 }
 
                 cancel.Dispose();
-            })
-            { Name = "Freeze Checker", IsBackground = true };
-
-            thread.SetApartmentState(ApartmentState.STA);
+            }, cancel.Token);
             thread.Start();
         }
 

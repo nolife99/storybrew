@@ -3,11 +3,8 @@ using System.Diagnostics;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
 {
-    public class PrimitiveStreamerBufferData<TPrimitive> : PrimitiveStreamerVao<TPrimitive> where TPrimitive : struct
+    public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes) where TPrimitive : struct
     {
-        public PrimitiveStreamerBufferData(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
-            : base(vertexDeclaration, minRenderableVertexCount, indexes) { }
-
         public override void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
         {
             Debug.Assert(primitiveCount <= primitives.Length);

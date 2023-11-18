@@ -117,7 +117,7 @@ namespace StorybrewCommon.Scripting
         ///<summary> Opens a mapset file in read-only mode. You are responsible for disposing it. </summary>
         public Stream OpenMapsetFile(string path, bool watch = true) => openFile(Path.Combine(context.MapsetPath, path), watch);
 
-        Stream openFile(string path, bool watch)
+        FileStream openFile(string path, bool watch)
         {
             path = Path.GetFullPath(path);
             if (watch) context.AddDependency(path);

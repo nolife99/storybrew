@@ -110,13 +110,11 @@ namespace Tiny.Formats.Json
             public override void End() { }
         }
 
-        class ValueParser : Parser<JsonTokenType>
+        class ValueParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
         {
             static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
                 integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
                 boolRegex = new($"^{bool.TrueString}|{bool.FalseString}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            public ValueParser(Action<TinyToken> callback) : base(callback, 0) { }
 
             public override void Parse(ParseContext<JsonTokenType> context)
             {
@@ -151,10 +149,8 @@ namespace Tiny.Formats.Json
             public override void End() { }
         }
 
-        class AnyParser : Parser<JsonTokenType>
+        class AnyParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
         {
-            public AnyParser(Action<TinyToken> callback) : base(callback, 0) { }
-
             public override void Parse(ParseContext<JsonTokenType> context)
             {
                 switch (context.CurrentToken.Type)

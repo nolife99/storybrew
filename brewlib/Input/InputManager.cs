@@ -129,11 +129,9 @@ namespace BrewLib.Input
         void gamepadManager_OnButtonDown(object sender, GamepadButtonEventArgs e) => handler.OnGamepadButtonDown(e);
         void gamepadManager_OnButtonUp(object sender, GamepadButtonEventArgs e) => handler.OnGamepadButtonUp(e);
     }
-    public class FocusChangedEventArgs : EventArgs
+    public class FocusChangedEventArgs(bool hasFocus) : EventArgs
     {
-        readonly bool hasFocus;
+        readonly bool hasFocus = hasFocus;
         public bool HasFocus => hasFocus;
-
-        public FocusChangedEventArgs(bool hasFocus) => this.hasFocus = hasFocus;
     }
 }

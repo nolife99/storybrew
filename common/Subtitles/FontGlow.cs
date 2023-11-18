@@ -6,33 +6,26 @@ using System.Drawing.Drawing2D;
 namespace StorybrewCommon.Subtitles
 {
     ///<summary> A font glow effect. </summary>
-    public class FontGlow : FontEffect
+    ///<remarks> Creates a new <see cref="FontGlow"/> descriptor with information about a Gaussian blur effect. </remarks>
+    ///<param name="radius"> The radius of the glow. </param>
+    ///<param name="power"> The intensity of the glow. </param>
+    ///<param name="color"> The coloring tint of the glow. </param>
+    public class FontGlow(int radius = 6, double power = 0, FontColor color = default) : FontEffect
     {
         ///<summary> The radius of the glow. </summary>
-        public readonly int Radius;
+        public readonly int Radius = radius;
 
         ///<summary> The intensity of the glow. </summary>
-        public readonly double Power;
+        public readonly double Power = power;
 
         ///<summary> The coloring tint of the glow. </summary>
-        public readonly FontColor Color;
+        public readonly FontColor Color = color;
 
         ///<inheritdoc/>
         public bool Overlay => false;
 
         ///<inheritdoc/>
         public SizeF Measure => new Size(Radius * 2, Radius * 2);
-
-        ///<summary> Creates a new <see cref="FontGlow"/> descriptor with information about a Gaussian blur effect. </summary>
-        ///<param name="radius"> The radius of the glow. </param>
-        ///<param name="power"> The intensity of the glow. </param>
-        ///<param name="color"> The coloring tint of the glow. </param>
-        public FontGlow(int radius = 6, double power = 0, FontColor color = default)
-        {
-            Radius = radius;
-            Power = power;
-            Color = color;
-        }
 
         ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)

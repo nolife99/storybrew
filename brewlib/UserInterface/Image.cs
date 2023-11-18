@@ -6,7 +6,7 @@ using osuTK;
 
 namespace BrewLib.UserInterface
 {
-    public class Image : Widget
+    public class Image(WidgetManager manager) : Widget(manager)
     {
         Sprite sprite = new();
 
@@ -16,7 +16,6 @@ namespace BrewLib.UserInterface
             get => sprite.Texture;
             set => sprite.Texture = value;
         }
-        public Image(WidgetManager manager) : base(manager) { }
 
         protected override void Dispose(bool disposing)
         {

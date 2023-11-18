@@ -6,20 +6,9 @@
   	<AssemblyName>StorybrewEditor</AssemblyName>
   	<UseWindowsForms>true</UseWindowsForms>
   	<TargetFramework>net8.0-windows</TargetFramework>
-  	<Platforms>AnyCPU;x86;x64</Platforms>
+  	<Platforms>x86;x64</Platforms>
   	<Version>1.89</Version>
   </PropertyGroup>
-
-  <Target Name="NuGetXmls" AfterTargets="ResolveReferences">
-  	<ItemGroup>
-      <ReferenceCopyLocalPaths Include="@(ReferenceCopyLocalPaths->'%(RootDir)%(Directory)osuTK.xml')" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)'!='' and Exists('%(RootDir)%(Directory)osuTK.xml')" />
-  	</ItemGroup>
-  </Target>
-  <Target Name="DeleteUnusedDLLs" AfterTargets="Build">
-  	<Delete Files="$(OutDir)\System.Buffers.dll" />
-  	<Delete Files="$(OutDir)\System.Text.Encoding.CodePages.dll" />
-  	<Delete Files="$(OutDir)\System.Threading.Tasks.Extensions.dll" />
-  </Target>
 
   <PropertyGroup>
 	<StartupObject>StorybrewEditor.Program</StartupObject>
@@ -28,9 +17,7 @@
   	<Product>storybrew editor</Product>
   	<Title>storybrew editor</Title>
   	<Copyright>Copyright © Damnae 2016</Copyright>
-  	<PackageLicenseFile>LICENSE</PackageLicenseFile>
   	<AnalysisLevel>latest-recommended</AnalysisLevel>
-  	<PackageReadmeFile>README.md</PackageReadmeFile>
   	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	<SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
   </PropertyGroup>
@@ -61,11 +48,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-  	<None Include="..\README.md">
-  	  <Pack>True</Pack>
-  	  <PackagePath>\</PackagePath>
-  	</None>
-  	<None Include="App.config" />
   	<EmbeddedResource Include="Resources\FontAwesome.ttf" />
   	<EmbeddedResource Include="Resources\Roboto-Light.ttf" />
   	<EmbeddedResource Include="Resources\Roboto-Regular.ttf" />
@@ -95,9 +77,6 @@
   <ItemGroup>
 	<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0-3.final" />
 	<PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />
-	<PackageReference Include="System.Drawing.Common" Version="8.0.0">
-	  <IncludeAssets></IncludeAssets>
-	</PackageReference>
   </ItemGroup>
 	
   <ItemGroup>

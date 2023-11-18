@@ -5,10 +5,11 @@ using System.Collections.Generic;
 namespace StorybrewCommon.Curves
 {
     ///<summary> Represents a Catmull-Rom spline curve. </summary>
-    [Serializable] public class CatmullCurve : BaseCurve
+    ///<remarks> Constructs a Catmull-Rom curve from given control points <paramref name="points"/>. </remarks>
+    [Serializable] public class CatmullCurve(CommandPosition[] points, int precision) : BaseCurve
     {
-        readonly CommandPosition[] points;
-        readonly int precision;
+        readonly CommandPosition[] points = points;
+        readonly int precision = precision;
 
         ///<inheritdoc/>
         public override CommandPosition StartPosition => points[0];
@@ -18,13 +19,6 @@ namespace StorybrewCommon.Curves
 
         ///<summary> Whether the curve is straight (linear). </summary>
         public bool IsLinear => points.Length < 3;
-
-        ///<summary> Constructs a Catmull-Rom curve from given control points <paramref name="points"/>. </summary>
-        public CatmullCurve(CommandPosition[] points, int precision)
-        {
-            this.points = points;
-            this.precision = precision;
-        }
 
         ///<summary/>
         protected override void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length)

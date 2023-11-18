@@ -14,15 +14,13 @@ using Tiny.Formats.Json;
 
 namespace BrewLib.UserInterface.Skinning
 {
-    public class Skin : IDisposable
+    public class Skin(TextureContainer textureContainer) : IDisposable
     {
-        public readonly TextureContainer TextureContainer;
+        public readonly TextureContainer TextureContainer = textureContainer;
         public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
 
         Dictionary<string, Drawable> drawables = [];
         readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = [];
-
-        public Skin(TextureContainer textureContainer) => TextureContainer = textureContainer;
 
         public Drawable GetDrawable(string name)
         {
@@ -34,7 +32,7 @@ namespace BrewLib.UserInterface.Skinning
         public WidgetStyle GetStyle(Type type, string name)
         {
             name ??= "default";
-            if (!stylesPerType.TryGetValue(type, out Dictionary<string, WidgetStyle> styles)) return null;
+            if (!stylesPerType.TryGetValue(type, out var styles)) return null;
 
             var n = name;
             while (n != null)
@@ -160,9 +158,7 @@ namespace BrewLib.UserInterface.Skinning
             }
             else
             {
-                var drawableTypeName = data.Value<string>("_type");
-                if (drawableTypeName == null) throw new InvalidDataException($"Drawable '{data}' must declare a type");
-
+                var drawableTypeName = data.Value<string>("_type") ?? throw new InvalidDataException($"Drawable '{data}' must declare a type");
                 var drawableType = ResolveDrawableType(drawableTypeName);
                 var drawable = (Drawable)Activator.CreateInstance(drawableType);
 
@@ -185,7 +181,7 @@ namespace BrewLib.UserInterface.Skinning
                     var widgetType = ResolveWidgetType(styleTypeName);
                     var styleType = ResolveStyleType($"{styleTypeName}Style");
 
-                    if (!stylesPerType.TryGetValue(styleType, out Dictionary<string, WidgetStyle> styles))
+                    if (!stylesPerType.TryGetValue(styleType, out var styles))
                         stylesPerType.Add(styleType, styles = []);
 
                     WidgetStyle defaultStyle = null;
@@ -272,7 +268,7 @@ namespace BrewLib.UserInterface.Skinning
             while (fieldData != null && fieldData.Type == TinyTokenType.String)
             {
                 var fieldString = fieldData.Value<string>();
-                if (fieldString.StartsWith("@"))
+                if (fieldString.StartsWith('@'))
                 {
                     fieldData = constants?[fieldString[1..]];
                     if (fieldData == null) throw new InvalidDataException($"Missing skin constant: {fieldString}");
@@ -335,7 +331,7 @@ namespace BrewLib.UserInterface.Skinning
                 if (data.Type == TinyTokenType.String)
                 {
                     var value = data.Value<string>();
-                    if (value.StartsWith("#"))
+                    if (value.StartsWith('#'))
                     {
                         var color = (Color)colorConverter.ConvertFromString(value);
                         return new Color4(color.R, color.G, color.B, color.A);

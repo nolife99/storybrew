@@ -5,9 +5,9 @@ namespace StorybrewCommon.Storyboarding.Util
 {
 #pragma warning disable CS1591
     [Obsolete("Use StorybrewCommon.Storyboarding.SpritePools instead for better support.")]
-    public class OsbSpritePools : IDisposable
+    public class OsbSpritePools(StoryboardSegment segment) : IDisposable
     {
-        readonly StoryboardSegment segment;
+        readonly StoryboardSegment segment = segment;
         readonly Dictionary<string, OsbSpritePool> pools = [];
         readonly Dictionary<string, OsbAnimationPool> animationPools = [];
 
@@ -22,8 +22,6 @@ namespace StorybrewCommon.Storyboarding.Util
                 foreach (var pool in pools.Values) pool.MaxPoolDuration = maxPoolDuration;
             }
         }
-
-        public OsbSpritePools(StoryboardSegment segment) => this.segment = segment;
 
         public void Clear()
         {

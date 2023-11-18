@@ -4,7 +4,7 @@ using System;
 
 namespace BrewLib.UserInterface
 {
-    public class StackLayout : Widget
+    public class StackLayout(WidgetManager manager) : Widget(manager)
     {
         Vector2 minSize, preferredSize;
         bool invalidSizes = true;
@@ -23,7 +23,6 @@ namespace BrewLib.UserInterface
                 InvalidateLayout();
             }
         }
-        public StackLayout(WidgetManager manager) : base(manager) { }
 
         protected override WidgetStyle Style => Manager.Skin.GetStyle<StackLayoutStyle>(StyleName);
         public override void InvalidateLayout()

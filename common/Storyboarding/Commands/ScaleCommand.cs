@@ -4,10 +4,8 @@ using System;
 namespace StorybrewCommon.Storyboarding.Commands
 {
 #pragma warning disable CS1591
-    public class ScaleCommand : Command<CommandDecimal>
+    public class ScaleCommand(OsbEasing easing, double startTime, double endTime, CommandDecimal startValue, CommandDecimal endValue) : Command<CommandDecimal>("S", easing, startTime, endTime, startValue, endValue)
     {
-        public ScaleCommand(OsbEasing easing, double startTime, double endTime, CommandDecimal startValue, CommandDecimal endValue)
-            : base("S", easing, startTime, endTime, startValue, endValue) { }
 
         // Scale commands can't return a negative size
         public override CommandDecimal ValueAtProgress(double progress) => Math.Max(0, StartValue + (EndValue - StartValue) * progress);

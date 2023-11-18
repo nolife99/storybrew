@@ -43,7 +43,7 @@ namespace BrewLib.Util
                     endIndex--;
                 }
             }
-            if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add(string.Empty);
+            if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add("");
 
             return lines;
         }

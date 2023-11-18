@@ -3,15 +3,13 @@ using System.Text;
 
 namespace BrewLib.Graphics.Shaders
 {
-    public class ShaderPartScope
+    public class ShaderPartScope(string variablePrefix)
     {
         int lastId;
         string nextGenericName => $"_{variablePrefix}_{lastId++:000}";
 
-        readonly string variablePrefix;
+        readonly string variablePrefix = variablePrefix;
         readonly List<ShaderVariable> variables = [];
-
-        public ShaderPartScope(string variablePrefix) => this.variablePrefix = variablePrefix;
 
         public ShaderVariable AddVariable(ShaderContext context, string shaderTypeName)
         {

@@ -5,25 +5,19 @@ using System.Drawing;
 namespace StorybrewCommon.Storyboarding.CommandValues
 {
     ///<summary> Base struct for vector scale commands. Alternative for <see cref="Vector2"/>. </summary>
-    [Serializable] public struct CommandScale : CommandValue, IEquatable<CommandScale>
+    ///<remarks> Constructs a <see cref="CommandScale"/> from X and Y values. </remarks>
+    [Serializable] public struct CommandScale(CommandDecimal x, CommandDecimal y) : CommandValue, IEquatable<CommandScale>
     {
         ///<summary> Represents a scale in which all values are 1 (one). </summary>
         public static CommandScale One = new(1, 1);
 
-        readonly CommandDecimal x, y;
+        readonly CommandDecimal x = x, y = y;
 
         ///<summary> Gets the X value of this instance. </summary>
         public readonly CommandDecimal X => x;
 
         ///<summary> Gets the Y value of this instance. </summary>
         public readonly CommandDecimal Y => y;
-
-        ///<summary> Constructs a <see cref="CommandScale"/> from X and Y values. </summary>
-        public CommandScale(CommandDecimal x, CommandDecimal y)
-        {
-            this.x = x;
-            this.y = y;
-        }
 
         ///<summary> Constructs a <see cref="CommandScale"/> from a value. </summary>
         public CommandScale(CommandDecimal value) : this(value, value) { }

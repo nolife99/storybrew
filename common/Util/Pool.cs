@@ -4,24 +4,16 @@ using System.Collections.Generic;
 namespace StorybrewCommon.Util
 {
 #pragma warning disable CS1591
-    public sealed class Pool<T>
+    public sealed class Pool<T>(Func<T> allocator, Action<T> disposer = null, int poolCapacity = 256)
     {
-        readonly Func<T> allocator;
-        readonly Action<T> disposer;
-        readonly Queue<T> queue;
+        readonly Func<T> allocator = allocator;
+        readonly Action<T> disposer = disposer;
+        readonly Queue<T> queue = new(poolCapacity);
 
-        public readonly int PoolCapacity;
+        public readonly int PoolCapacity = poolCapacity;
         int virtualCapacity;
         public int OptimalCapacity { get; private set; }
 
-        public Pool(Func<T> allocator, Action<T> disposer = null, int poolCapacity = 256)
-        {
-            this.allocator = allocator;
-            this.disposer = disposer;
-
-            PoolCapacity = poolCapacity;
-            queue = new(poolCapacity);
-        }
         public void PreAllocate()
         {
             while (queue.Count < PoolCapacity) queue.Enqueue(allocator());

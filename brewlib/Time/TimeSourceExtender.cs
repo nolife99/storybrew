@@ -2,10 +2,10 @@
 
 namespace BrewLib.Time
 {
-    public class TimeSourceExtender : TimeSource
+    public class TimeSourceExtender(TimeSource timeSource) : TimeSource
     {
         readonly Clock clock = new();
-        readonly TimeSource timeSource;
+        readonly TimeSource timeSource = timeSource;
 
         public double Current => timeSource.Playing ? timeSource.Current : clock.Current;
 
@@ -29,7 +29,6 @@ namespace BrewLib.Time
                 clock.TimeFactor = value;
             }
         }
-        public TimeSourceExtender(TimeSource timeSource) => this.timeSource = timeSource;
 
         public bool Seek(double time)
         {

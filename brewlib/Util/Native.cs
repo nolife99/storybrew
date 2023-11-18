@@ -10,31 +10,8 @@ namespace BrewLib.Util
     {
         #region Memory
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")] 
-        private static partial void RtlCopyMemory(nint dest, nint src, uint count);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")]
-        private static partial void RtlMoveMemory(nint dest, nint src, uint count);
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CopyMemory(nint source, nint destination, uint count)
-        {
-            if (source != default && destination != default)
-            {
-                if (source < destination + count && source + count > destination)
-                {
-                    RtlMoveMemory(destination, source, count);
-                    return false;
-                }
-                if (Environment.Is64BitProcess)
-                {
-                    RtlCopyMemory(destination, source, count);
-                    return true;
-                }
-                RtlMoveMemory(destination, source, count);
-            }
-            return false;
-        }
+        public static unsafe void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlock(destination.ToPointer(), source.ToPointer(), (uint)count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static nint AddrOfPinnedArray(this Array arr) => (nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
@@ -48,17 +25,19 @@ namespace BrewLib.Util
 
         ///<summary> Sends the specified message to a window or windows. </summary>
         ///<remarks> Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage"/></remarks>
-        ///<typeparam name="T1"> The type of the first parameter, which is casted to <see cref="nint"/>. </typeparam>
-        ///<typeparam name="T2"> The type of the second parameter, which is casted to <see cref="nint"/>. </typeparam>
-        ///<typeparam name="TResult"> The return type, which is casted from <see cref="nint"/>. </typeparam>
+        ///<typeparam name="T1"> The type of the first parameter, which is platform-dependent. </typeparam>
+        ///<typeparam name="T2"> The type of the second parameter, which is platform-dependent. </typeparam>
+        ///<typeparam name="TResult"> The return type, which is platform-dependent. </typeparam>
         ///<param name="windowHandle"> The window to send the message to. </param>
-        ///<param name="winMsg"> The type of message to send. </param>
+        ///<param name="message"> The type of message to send. </param>
         ///<param name="param1"> The first value to wrap within the message. </param>
         ///<param name="param2"> The second value to wrap within the message. </param>
         ///<returns> The result from the call procedure. </returns>
-        ///<exception cref="NotSupportedException"> One of the types was unable to be casted to or from <see cref="nint"/>. </exception>
-        public static TResult SendMessage<T1, T2, TResult>(nint windowHandle, Message winMsg, T1 param1, T2 param2) where T1 : INumber<T1> where T2 : INumber<T2> where TResult : INumber<TResult>
-            => TResult.CreateChecked(SendMessageA(windowHandle, (uint)winMsg, nuint.CreateChecked(param1), nint.CreateChecked(param2)));
+        ///<exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint"/>. </exception>
+        ///<exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
+        public static TResult SendMessage<T1, T2, TResult>(nint windowHandle, Message message, T1 param1, T2 param2) 
+            where T1 : INumberBase<T1> where T2 : INumberBase<T2> where TResult : INumberBase<TResult>
+            => TResult.CreateChecked(SendMessageA(windowHandle, (uint)message, nuint.CreateChecked(param1), nint.CreateChecked(param2)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetWindowIcon(nint iconHandle)
@@ -91,13 +70,13 @@ namespace BrewLib.Util
         { 
             get
             {
-                if (hWnd == nint.Zero) throw new InvalidOperationException("hWnd was not initialized by UpdateHWND");
+                if (hWnd == nint.Zero) throw new InvalidOperationException("hWnd was not initialized");
                 return hWnd;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void InitializeHandle(string windowTitle, nint hWndFallback)
+        public static void InitializeHandle(string windowTitle, nint hWndFallback = default)
         {
             var handle = nint.Zero;
             var cont = true;

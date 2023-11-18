@@ -7,11 +7,14 @@ namespace StorybrewCommon.Animations
 {
     ///<summary> A mechanism for handling groups of keyframes. </summary>
     ///<typeparam name="TValue"> The type value of the keyframed value. </typeparam>
-    public class KeyframedValue<TValue> : MarshalByRefObject, IEnumerable<Keyframe<TValue>>
+    ///<remarks> Constructs a new keyframed value. </remarks>
+    ///<param name="interpolate"> The <see cref="InterpolatingFunctions"/> to use to interpolate between values. Required to use <see cref="ValueAt(double)"/> </param>
+    ///<param name="defaultValue"> The default value of the type of this keyframed value. </param>
+    public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpolate = null, TValue defaultValue = default) : MarshalByRefObject, IEnumerable<Keyframe<TValue>>
     {
         List<Keyframe<TValue>> keyframes = [];
-        readonly Func<TValue, TValue, double, TValue> interpolate;
-        readonly TValue defaultValue;
+        readonly Func<TValue, TValue, double, TValue> interpolate = interpolate;
+        readonly TValue defaultValue = defaultValue;
 
         ///<summary> Returns the start time of the first keyframe in the keyframed value. </summary>
         public double StartTime => keyframes.Count == 0 ? int.MinValue : keyframes[0].Time;
@@ -34,15 +37,6 @@ namespace StorybrewCommon.Animations
 
         ///<summary> Returns the amount of keyframes in the keyframed value. </summary>
         public int Count => keyframes.Count;
-
-        ///<summary> Constructs a new keyframed value. </summary>
-        ///<param name="interpolate"> The <see cref="InterpolatingFunctions"/> to use to interpolate between values. Required to use <see cref="ValueAt(double)"/> </param>
-        ///<param name="defaultValue"> The default value of the type of this keyframed value. </param>
-        public KeyframedValue(Func<TValue, TValue, double, TValue> interpolate = null, TValue defaultValue = default)
-        {
-            this.interpolate = interpolate;
-            this.defaultValue = defaultValue;
-        }
 
         ///<summary> Adds a <see cref="Keyframe{TValue}"/> to the <see cref="List{T}"/> of keyframed values. </summary>
         ///<param name="keyframe"> The <see cref="Keyframe{TValue}"/> to be added. </param>

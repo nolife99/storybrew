@@ -6,10 +6,11 @@ using System.Linq;
 namespace StorybrewCommon.Curves
 {
 #pragma warning disable CS1591
-    [Serializable] public class BezierCurve : BaseCurve
+    ///<summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
+    [Serializable] public class BezierCurve(IEnumerable<CommandPosition> points, int precision) : BaseCurve
     {
-        readonly CommandPosition[] points;
-        readonly int precision;
+        readonly CommandPosition[] points = points as CommandPosition[] ?? points.ToArray();
+        readonly int precision = precision;
 
         ///<summary> The start position (the head) of the bézier curve. </summary>
         public override CommandPosition StartPosition => points[0];
@@ -19,13 +20,6 @@ namespace StorybrewCommon.Curves
 
         ///<summary> Whether the bézier curve is straight (linear). </summary>
         public bool IsLinear => points.Length < 3;
-
-        ///<summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
-        public BezierCurve(IEnumerable<CommandPosition> points, int precision)
-        {
-            this.points = points as CommandPosition[] ?? points.ToArray();
-            this.precision = precision;
-        }
 
         protected override void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length)
         {

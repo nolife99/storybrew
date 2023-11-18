@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace BrewLib.UserInterface
 {
-    public class FlowLayout : Widget
+    public class FlowLayout(WidgetManager manager) : Widget(manager)
     {
         Vector2 preferredSize;
         float flowWidth;
@@ -98,7 +98,6 @@ namespace BrewLib.UserInterface
                 InvalidateLayout();
             }
         }
-        public FlowLayout(WidgetManager manager) : base(manager) { }
 
         protected override WidgetStyle Style => Manager.Skin.GetStyle<LinearLayoutStyle>(StyleName);
         protected override void ApplyStyle(WidgetStyle style)

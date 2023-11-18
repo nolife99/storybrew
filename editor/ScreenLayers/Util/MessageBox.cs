@@ -5,25 +5,18 @@ using System;
 
 namespace StorybrewEditor.ScreenLayers.Util
 {
-    public class MessageBox : UiScreenLayer
+    public class MessageBox(string message, Action yesAction, Action noAction, bool cancelable) : UiScreenLayer
     {
-        readonly string message;
+        readonly string message = message;
         LinearLayout mainLayout, buttonsLayout;
 
-        readonly Action yesAction, noAction;
-        readonly bool cancelable;
+        readonly Action yesAction = yesAction, noAction = noAction;
+        readonly bool cancelable = cancelable;
 
         public override bool IsPopup => true;
 
         public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
         public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
-        public MessageBox(string message, Action yesAction, Action noAction, bool cancelable)
-        {
-            this.message = message;
-            this.yesAction = yesAction;
-            this.noAction = noAction;
-            this.cancelable = cancelable;
-        }
 
         public override void Load()
         {

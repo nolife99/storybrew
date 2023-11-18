@@ -5,23 +5,16 @@ using System.Collections.Generic;
 namespace StorybrewCommon.Curves
 {
     ///<summary> Represents a perfect circular curve. </summary>
-    [Serializable] public class CircleCurve : BaseCurve
+    ///<remarks> Constructs a perfect circular curve from given control points. </remarks>
+    [Serializable] public class CircleCurve(CommandPosition startPoint, CommandPosition midPoint, CommandPosition endPoint) : BaseCurve
     {
-        readonly CommandPosition startPoint, midPoint, endPoint;
+        readonly CommandPosition startPoint = startPoint, midPoint = midPoint, endPoint = endPoint;
 
         ///<inheritdoc/>
         public override CommandPosition StartPosition => startPoint;
 
         ///<inheritdoc/>
         public override CommandPosition EndPosition => endPoint;
-
-        ///<summary> Constructs a perfect circular curve from given control points. </summary>
-        public CircleCurve(CommandPosition startPoint, CommandPosition midPoint, CommandPosition endPoint)
-        {
-            this.startPoint = startPoint;
-            this.midPoint = midPoint;
-            this.endPoint = endPoint;
-        }
 
         ///<summary/>
         protected override void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length)

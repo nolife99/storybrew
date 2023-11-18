@@ -7,7 +7,7 @@ using System.Drawing;
 
 namespace BrewLib.Graphics.RenderTargets
 {
-    public class RenderTarget : IDisposable
+    public class RenderTarget(int width, int height, PixelInternalFormat internalFormat, PixelFormat pixelFormat, PixelType pixelType, RenderbufferStorage? renderBufferType = null) : IDisposable
     {
         int textureId = -1, frameBufferId = -1, renderBufferId = -1;
         bool started, valid;
@@ -25,7 +25,7 @@ namespace BrewLib.Graphics.RenderTargets
             }
         }
 
-        int width;
+        int width = width;
         public int Width
         {
             get => width;
@@ -36,7 +36,7 @@ namespace BrewLib.Graphics.RenderTargets
                 width = value;
             }
         }
-        int height;
+        int height = height;
         public int Height
         {
             get => height;
@@ -48,7 +48,7 @@ namespace BrewLib.Graphics.RenderTargets
             }
         }
 
-        PixelInternalFormat internalFormat;
+        PixelInternalFormat internalFormat = internalFormat;
         public PixelInternalFormat InternalFormat
         {
             get => internalFormat;
@@ -59,7 +59,7 @@ namespace BrewLib.Graphics.RenderTargets
                 internalFormat = value;
             }
         }
-        PixelFormat pixelFormat;
+        PixelFormat pixelFormat = pixelFormat;
         public PixelFormat PixelFormat
         {
             get => pixelFormat;
@@ -70,7 +70,7 @@ namespace BrewLib.Graphics.RenderTargets
                 pixelFormat = value;
             }
         }
-        PixelType pixelType;
+        PixelType pixelType = pixelType;
         public PixelType PixelType
         {
             get => pixelType;
@@ -82,7 +82,7 @@ namespace BrewLib.Graphics.RenderTargets
             }
         }
 
-        RenderbufferStorage? renderBufferType;
+        RenderbufferStorage? renderBufferType = renderBufferType;
         public RenderbufferStorage? RenderBufferType
         {
             get => renderBufferType;
@@ -128,16 +128,6 @@ namespace BrewLib.Graphics.RenderTargets
 
         public RenderTarget(PixelInternalFormat internalFormat, PixelFormat pixelFormat, PixelType pixelType, RenderbufferStorage? renderBufferType = null)
             : this(0, 0, internalFormat, pixelFormat, pixelType, renderBufferType) { }
-
-        public RenderTarget(int width, int height, PixelInternalFormat internalFormat, PixelFormat pixelFormat, PixelType pixelType, RenderbufferStorage? renderBufferType = null)
-        {
-            this.width = width;
-            this.height = height;
-            this.internalFormat = internalFormat;
-            this.pixelFormat = pixelFormat;
-            this.pixelType = pixelType;
-            this.renderBufferType = renderBufferType;
-        }
 
         public void Begin(bool clear = true)
         {

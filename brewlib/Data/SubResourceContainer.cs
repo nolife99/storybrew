@@ -4,18 +4,12 @@ using System.IO;
 
 namespace BrewLib.Data
 {
-    public class SubResourceContainer : ResourceContainer
+    public class SubResourceContainer(ResourceContainer resourceContainer, string path) : ResourceContainer
     {
-        readonly ResourceContainer resourceContainer;
-        readonly string path;
+        readonly ResourceContainer resourceContainer = resourceContainer;
+        readonly string path = path;
 
         public IEnumerable<string> ResourceNames => resourceContainer.ResourceNames;
-
-        public SubResourceContainer(ResourceContainer resourceContainer, string path)
-        {
-            this.resourceContainer = resourceContainer;
-            this.path = path;
-        }
 
         public Stream GetStream(string path, ResourceSource sources)
             => resourceContainer.GetStream(applyPath(path), sources) ?? resourceContainer.GetStream(path, sources);

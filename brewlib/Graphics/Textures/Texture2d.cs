@@ -13,9 +13,9 @@ using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures
 {
-    public class Texture2d : Texture2dRegion, BindableTexture
+    public class Texture2d(int textureId, int width, int height, string description) : Texture2dRegion(null, new Box2(0, 0, width, height), description), BindableTexture
     {
-        readonly int textureId;
+        readonly int textureId = textureId;
         public int TextureId
         {
             get
@@ -25,9 +25,6 @@ namespace BrewLib.Graphics.Textures
             }
         }
         public TexturingModes TexturingMode => TexturingModes.Texturing2d;
-
-        public Texture2d(int textureId, int width, int height, string description) : base(null, new Box2(0, 0, width, height), description)
-            => this.textureId = textureId;
 
         public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
         {

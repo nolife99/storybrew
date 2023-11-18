@@ -5,22 +5,15 @@ using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures
 {
-    public class TextureAtlas2d : IDisposable
+    public class TextureAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0) : IDisposable
     {
-        Texture2d texture;
-        readonly TextureOptions textureOptions;
-        readonly int padding;
+        Texture2d texture = Texture2d.Create(new Color4(0, 0, 0, 0), description, width, height, textureOptions);
+        readonly TextureOptions textureOptions = textureOptions;
+        readonly int padding = padding;
 
         int currentX, currentY, nextY;
 
         public float FillRatio => (texture.Width * currentY + currentX * (nextY - currentY)) / (texture.Width * texture.Height);
-
-        public TextureAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0)
-        {
-            texture = Texture2d.Create(new Color4(0, 0, 0, 0), description, width, height, textureOptions);
-            this.textureOptions = textureOptions;
-            this.padding = padding;
-        }
 
         public Texture2dRegion AddRegion(Bitmap bitmap, string description)
         {

@@ -6,9 +6,9 @@ using System.IO;
 namespace StorybrewCommon.Storyboarding.Display
 {
 #pragma warning disable CS1591
-    public class TriggerDecorator<TValue> : ITypedCommand<TValue> where TValue : CommandValue
+    public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCommand<TValue> where TValue : CommandValue
     {
-        readonly ITypedCommand<TValue> command;
+        readonly ITypedCommand<TValue> command = command;
         double triggerTime;
 
         public OsbEasing Easing => throw new NotImplementedException();
@@ -21,8 +21,6 @@ namespace StorybrewCommon.Storyboarding.Display
         public int Cost => throw new NotImplementedException();
 
         public event EventHandler OnStateChanged;
-
-        public TriggerDecorator(ITypedCommand<TValue> command) => this.command = command;
 
         public void Trigger(double time)
         {

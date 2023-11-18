@@ -144,16 +144,16 @@ namespace BrewLib.Graphics.Text
             return lastLine.GetGlyph(lastLine.GlyphCount - 1);
         }
     }
-    public class TextLayoutLine
+    public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph)
     {
         readonly List<TextLayoutGlyph> glyphs = [];
         public IEnumerable<TextLayoutGlyph> Glyphs => glyphs;
         public int GlyphCount => glyphs.Count;
 
-        readonly TextLayout layout;
-        readonly float y;
-        readonly BoxAlignment alignment;
-        bool advance;
+        readonly TextLayout layout = layout;
+        readonly float y = y;
+        readonly BoxAlignment alignment = alignment;
+        bool advance = advanceOnEmptyGlyph;
 
         int width;
         public int Width => width;
@@ -163,14 +163,6 @@ namespace BrewLib.Graphics.Text
 
         public Vector2 Position => new((alignment & BoxAlignment.Left) > 0 ? 0 : (alignment & BoxAlignment.Right) > 0 ?
             layout.Size.X - width : layout.Size.X * .5f - width * .5f, y);
-
-        public TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph)
-        {
-            this.layout = layout;
-            this.y = y;
-            this.alignment = alignment;
-            advance = advanceOnEmptyGlyph;
-        }
 
         public void Add(FontGlyph glyph, int glyphIndex)
         {
@@ -182,26 +174,19 @@ namespace BrewLib.Graphics.Text
         }
         public TextLayoutGlyph GetGlyph(int index) => glyphs[index];
     }
-    public class TextLayoutGlyph
+    public class TextLayoutGlyph(TextLayoutLine line, FontGlyph glyph, int index, float x)
     {
-        readonly TextLayoutLine line;
-        readonly float x;
-        readonly FontGlyph glyph;
+        readonly TextLayoutLine line = line;
+        readonly float x = x;
+        readonly FontGlyph glyph = glyph;
         public FontGlyph Glyph => glyph;
 
-        readonly int index;
+        readonly int index = index;
         public int Index => index;
 
         public Vector2 Position
         {
             get => new(line.Position.X + x, line.Position.Y);
-        }
-        public TextLayoutGlyph(TextLayoutLine line, FontGlyph glyph, int index, float x)
-        {
-            this.line = line;
-            this.glyph = glyph;
-            this.index = index;
-            this.x = x;
         }
     }
 }

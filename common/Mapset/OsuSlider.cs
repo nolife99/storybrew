@@ -7,13 +7,13 @@ using System.Globalization;
 namespace StorybrewCommon.Mapset
 {
 #pragma warning disable CS1591
-    [Serializable] public class OsuSlider : OsuHitObject
+    [Serializable] public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints) : OsuHitObject
     {
-        readonly OsuSliderNode[] nodes;
+        readonly OsuSliderNode[] nodes = nodes;
         public IEnumerable<OsuSliderNode> Nodes => nodes;
         public int NodeCount => nodes.Length;
 
-        readonly OsuSliderControlPoint[] controlPoints;
+        readonly OsuSliderControlPoint[] controlPoints = controlPoints;
         public IEnumerable<OsuSliderControlPoint> ControlPoints => controlPoints;
         public int ControlPointCount => controlPoints.Length;
 
@@ -57,12 +57,6 @@ namespace StorybrewCommon.Mapset
         public int RepeatCount => nodes.Length - 2;
 
         public SliderCurveType CurveType;
-
-        public OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints)
-        {
-            this.nodes = nodes;
-            this.controlPoints = controlPoints;
-        }
 
         public override CommandPosition PlayfieldPositionAtTime(double time)
         {
@@ -299,12 +293,10 @@ namespace StorybrewCommon.Mapset
         public int CustomSampleSet;
         public float Volume;
     }
-    [Serializable] public class OsuSliderControlPoint
+    [Serializable] public class OsuSliderControlPoint(CommandPosition position)
     {
-        public CommandPosition PlayfieldPosition;
+        public CommandPosition PlayfieldPosition = position;
         public CommandPosition Position => PlayfieldPosition + OsuHitObject.PlayfieldToStoryboardOffset;
-
-        public OsuSliderControlPoint(CommandPosition position) => PlayfieldPosition = position;
 
         public static implicit operator OsuSliderControlPoint(CommandPosition position) => new(position);
     }

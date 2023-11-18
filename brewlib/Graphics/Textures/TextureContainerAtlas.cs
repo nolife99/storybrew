@@ -5,28 +5,18 @@ using System.Linq;
 
 namespace BrewLib.Graphics.Textures
 {
-    public class TextureContainerAtlas : TextureContainer
+    public class TextureContainerAtlas(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null, int width = 512, int height = 512, int padding = 0, string description = nameof(TextureContainerAtlas)) : TextureContainer
     {
-        readonly ResourceContainer resourceContainer;
-        readonly TextureOptions textureOptions;
-        readonly int width, height, padding;
-        readonly string description;
+        readonly ResourceContainer resourceContainer = resourceContainer;
+        readonly TextureOptions textureOptions = textureOptions;
+        readonly int width = width, height = height, padding = padding;
+        readonly string description = description;
 
         Dictionary<string, Texture2dRegion> textures = [];
         readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
 
         public IEnumerable<string> ResourceNames => textures.Where(e => e.Value != null).Select(e => e.Key);
         public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
-
-        public TextureContainerAtlas(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null, int width = 512, int height = 512, int padding = 0, string description = nameof(TextureContainerAtlas))
-        {
-            this.resourceContainer = resourceContainer;
-            this.textureOptions = textureOptions;
-            this.width = width;
-            this.height = height;
-            this.padding = padding;
-            this.description = description;
-        }
 
         public Texture2dRegion Get(string filename)
         {

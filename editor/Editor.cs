@@ -20,10 +20,10 @@ using System.Drawing;
 
 namespace StorybrewEditor
 {
-    public class Editor : IDisposable
+    public class Editor(GameWindow window) : IDisposable
     {
-        public GameWindow Window { get; }
-        public readonly FormsWindow FormsWindow;
+        public GameWindow Window => window;
+        internal readonly FormsWindow FormsWindow = new();
 
         readonly FrameClock clock = new();
         public FrameTimeSource TimeSource => clock;
@@ -35,12 +35,6 @@ namespace StorybrewEditor
         public Skin Skin;
         public ScreenLayerManager ScreenLayerManager;
         public InputManager InputManager;
-
-        public Editor(GameWindow window)
-        {
-            Window = window;
-            FormsWindow = new FormsWindow(Native.MainWindowHandle);
-        }
 
         public void Initialize(ScreenLayer initialLayer = null)
         {
@@ -244,9 +238,8 @@ namespace StorybrewEditor
             overlay.Size = new Vector2(virtualWidth, virtualHeight);
         }
     }
-    public class FormsWindow : System.Windows.Forms.IWin32Window
+    internal class FormsWindow : System.Windows.Forms.IWin32Window
     {
-        public nint Handle { get; }
-        public FormsWindow(nint handle) => Handle = handle;
+        public nint Handle => Native.MainWindowHandle;
     }
 }

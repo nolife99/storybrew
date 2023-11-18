@@ -20,50 +20,39 @@ using System.Globalization;
 namespace StorybrewCommon.Subtitles
 {
     ///<summary> Stores information about a font image. </summary>
-    public class FontTexture
+    ///<remarks> Creates a new <see cref="FontTexture"/> storing information of the texture. </remarks>
+    ///<param name="path"> The path to the font texture. </param>
+    ///<param name="offsetX"> The texture offset in X-units. </param>
+    ///<param name="offsetY"> The texture offset in Y-units. </param>
+    ///<param name="baseWidth"> The base width of the texture in pixels. </param>
+    ///<param name="baseHeight"> The base height of the texture in pixels. </param>
+    ///<param name="width"> The actual width of the texture in pixels. </param>
+    ///<param name="height"> The actual width of the texture in pixels. </param>
+    public class FontTexture(string path, float offsetX, float offsetY, int baseWidth, int baseHeight, int width, int height)
     {
         ///<summary> The path to the font texture. </summary>
-        public readonly string Path;
+        public readonly string Path = path;
 
         ///<returns> If the texture does not exist. </returns>
         public bool IsEmpty => Path is null;
 
         ///<summary> The texture offset in X-units. </summary>
-        public readonly float OffsetX;
+        public readonly float OffsetX = offsetX;
 
         ///<summary> The texture offset in Y-units. </summary>
-        public readonly float OffsetY;
+        public readonly float OffsetY = offsetY;
 
         ///<summary> The original width of the texture in pixels. </summary>
-        public readonly int BaseWidth;
+        public readonly int BaseWidth = baseWidth;
 
         ///<summary> The original height of the texture in pixels. </summary>
-        public readonly int BaseHeight;
+        public readonly int BaseHeight = baseHeight;
 
         ///<summary> The actual width of the texture in pixels. </summary>
-        public readonly int Width;
+        public readonly int Width = width;
 
         ///<summary> The actual width of the texture in pixels. </summary>
-        public readonly int Height;
-
-        ///<summary> Creates a new <see cref="FontTexture"/> storing information of the texture. </summary>
-        ///<param name="path"> The path to the font texture. </param>
-        ///<param name="offsetX"> The texture offset in X-units. </param>
-        ///<param name="offsetY"> The texture offset in Y-units. </param>
-        ///<param name="baseWidth"> The base width of the texture in pixels. </param>
-        ///<param name="baseHeight"> The base height of the texture in pixels. </param>
-        ///<param name="width"> The actual width of the texture in pixels. </param>
-        ///<param name="height"> The actual width of the texture in pixels. </param>
-        public FontTexture(string path, float offsetX, float offsetY, int baseWidth, int baseHeight, int width, int height)
-        {
-            Path = path;
-            OffsetX = offsetX;
-            OffsetY = offsetY;
-            BaseWidth = baseWidth;
-            BaseHeight = baseHeight;
-            Width = width;
-            Height = height;
-        }
+        public readonly int Height = height;
 
         ///<summary> Gets the font offset for the given <see cref="OsbOrigin"/>. </summary>
         public Vector2 OffsetFor(OsbOrigin origin)
@@ -229,54 +218,42 @@ namespace StorybrewCommon.Subtitles
     }
 
     /// <summary> Stores information about a font's appearance. </summary>
-    public class FontDescription
+    ///<remarks> Creates a new <see cref="FontDescription"/> storing a descriptor for <see cref="FontGenerator"/>. </remarks>
+    ///<param name="fontPath"> The path to the font file. </param>
+    ///<param name="fontSize"> The relative size of the font. </param>
+    ///<param name="color"> The coloring tint of the font. </param>
+    ///<param name="padding"> Allocate extra space around the font when generating it. </param>
+    ///<param name="fontStyle"> Format/style of the font. </param>
+    ///<param name="trimTransparency"> Trim transparent space around the font. </param>
+    ///<param name="effectsOnly"> Leave out the original font and keep the effects. </param>
+    ///<param name="debug"> Draw a randomly colored background behind the font. </param>
+    public class FontDescription(
+        string fontPath, int fontSize = 76, FontColor color = default, Vector2 padding = default,
+        FontStyle fontStyle = default, bool trimTransparency = true, bool effectsOnly = false, bool debug = false)
     {
         ///<summary> The path to the font file. </summary>
-        public readonly string FontPath;
+        public readonly string FontPath = fontPath;
 
         ///<summary> The relative size of the font. </summary>
-        public readonly int FontSize;
+        public readonly int FontSize = fontSize;
 
         ///<summary> The coloring tint of the font. </summary>
-        public readonly FontColor Color;
+        public readonly FontColor Color = color;
 
         ///<summary> How much extra space is allocated around the font when generating it. </summary>
-        public readonly Vector2 Padding;
+        public readonly Vector2 Padding = padding;
 
         ///<summary> The format/style of the font (for example: bold, italics, etc). </summary>
-        public readonly FontStyle FontStyle;
+        public readonly FontStyle FontStyle = fontStyle;
 
         ///<summary> Trim transparent space around the font. Should always be <see langword="true"/>. </summary>
-        public readonly bool TrimTransparency;
+        public readonly bool TrimTransparency = trimTransparency;
 
         ///<summary> Leave out the original font and keep the effects. </summary>
-        public readonly bool EffectsOnly;
+        public readonly bool EffectsOnly = effectsOnly;
 
         ///<summary> Draw a randomly colored background behind the font. </summary>
-        public readonly bool Debug;
-
-        ///<summary> Creates a new <see cref="FontDescription"/> storing a descriptor for <see cref="FontGenerator"/>. </summary>
-        ///<param name="fontPath"> The path to the font file. </param>
-        ///<param name="fontSize"> The relative size of the font. </param>
-        ///<param name="color"> The coloring tint of the font. </param>
-        ///<param name="padding"> Allocate extra space around the font when generating it. </param>
-        ///<param name="fontStyle"> Format/style of the font. </param>
-        ///<param name="trimTransparency"> Trim transparent space around the font. </param>
-        ///<param name="effectsOnly"> Leave out the original font and keep the effects. </param>
-        ///<param name="debug"> Draw a randomly colored background behind the font. </param>
-        public FontDescription(
-            string fontPath, int fontSize = 76, FontColor color = default, Vector2 padding = default, 
-            FontStyle fontStyle = default, bool trimTransparency = true, bool effectsOnly = false, bool debug = false)
-        {
-            FontPath = fontPath;
-            FontSize = fontSize;
-            Color = color;
-            Padding = padding;
-            FontStyle = fontStyle;
-            TrimTransparency = trimTransparency;
-            EffectsOnly = effectsOnly;
-            Debug = debug;
-        }
+        public readonly bool Debug = debug;
     }
 
     ///<summary> A class that generates and manages font textures. </summary>

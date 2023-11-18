@@ -14,15 +14,14 @@ using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Text
 {
-    public class TextGenerator : IDisposable
+    public class TextGenerator(ResourceContainer resourceContainer) : IDisposable
     {
         SolidBrush textBrush = new(Color.White), shadowBrush = new(Color.FromArgb(220, 0, 0, 0));
         Dictionary<string, Font> fonts = [];
         Dictionary<string, FontFamily> fontFamilies = [];
         Dictionary<string, PrivateFontCollection> fontCollections = [];
         readonly LinkedList<string> recentlyUsedFonts = new();
-        readonly ResourceContainer resourceContainer;
-        public TextGenerator(ResourceContainer resourceContainer) => this.resourceContainer = resourceContainer;
+        readonly ResourceContainer resourceContainer = resourceContainer;
 
         public Bitmap CreateBitmap(string text, string fontName, float fontSize, Vector2 maxSize, Vector2 padding, BoxAlignment alignment, StringTrimming trimming, out Vector2 textureSize, bool measureOnly)
         {

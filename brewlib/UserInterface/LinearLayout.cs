@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace BrewLib.UserInterface
 {
-    public class LinearLayout : Widget
+    public class LinearLayout(WidgetManager manager) : Widget(manager)
     {
         Vector2 minSize, preferredSize;
         bool invalidSizes = true;
@@ -87,7 +87,6 @@ namespace BrewLib.UserInterface
                 InvalidateLayout();
             }
         }
-        public LinearLayout(WidgetManager manager) : base(manager) { }
 
         protected override WidgetStyle Style => Manager.Skin.GetStyle<LinearLayoutStyle>(StyleName);
         protected override void ApplyStyle(WidgetStyle style)

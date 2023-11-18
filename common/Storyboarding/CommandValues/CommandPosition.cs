@@ -5,9 +5,10 @@ using System.Drawing;
 namespace StorybrewCommon.Storyboarding.CommandValues
 {
     ///<summary> Base struct for movement commands.</summary>
-    [Serializable] public struct CommandPosition : CommandValue, IEquatable<CommandPosition>
+    ///<remarks> Constructs a <see cref="CommandPosition"/> from X and Y values. </remarks>
+    [Serializable] public struct CommandPosition(double x, double y) : CommandValue, IEquatable<CommandPosition>
     {
-        readonly CommandDecimal x, y;
+        readonly CommandDecimal x = x, y = y;
 
         ///<summary> Gets the X value of this instance. </summary>
         public readonly CommandDecimal X => x;
@@ -20,13 +21,6 @@ namespace StorybrewCommon.Storyboarding.CommandValues
 
         ///<summary> Gets the vector length (magnitude). </summary>
         public readonly float Length => (float)Math.Sqrt(x * x + y * y);
-
-        ///<summary> Constructs a <see cref="CommandPosition"/> from X and Y values. </summary>
-        public CommandPosition(double x, double y)
-        {
-            this.x = x;
-            this.y = y;
-        }
 
         ///<inheritdoc/>
         public readonly bool Equals(CommandPosition other) => x.Equals(other.x) && y.Equals(other.y);

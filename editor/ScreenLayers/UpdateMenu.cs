@@ -8,15 +8,13 @@ using System.IO.Compression;
 
 namespace StorybrewEditor.ScreenLayers
 {
-    public class UpdateMenu : UiScreenLayer
+    public class UpdateMenu(string downloadUrl) : UiScreenLayer
     {
-        readonly string downloadUrl;
+        readonly string downloadUrl = downloadUrl;
 
         LinearLayout mainLayout;
         Label actionLabel, statusLabel;
         ProgressBar progressBar;
-
-        public UpdateMenu(string downloadUrl) => this.downloadUrl = downloadUrl;
 
         public override void Load()
         {

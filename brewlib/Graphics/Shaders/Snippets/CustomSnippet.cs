@@ -2,11 +2,10 @@
 
 namespace BrewLib.Graphics.Shaders.Snippets
 {
-    public class CustomSnippet : ShaderSnippet
+    public class CustomSnippet(Action<ShaderContext> action) : ShaderSnippet
     {
-        readonly Action<ShaderContext> action;
+        readonly Action<ShaderContext> action = action;
 
-        public CustomSnippet(Action<ShaderContext> action) => this.action = action;
         public override void Generate(ShaderContext context)
         {
             base.Generate(context);

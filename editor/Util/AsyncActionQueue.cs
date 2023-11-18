@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util
 {
-    public class AsyncActionQueue<T> : IDisposable
+    public sealed class AsyncActionQueue<T> : IDisposable
     {
         readonly ActionQueueContext context = new();
         readonly List<ActionRunner> actionRunners = [];
@@ -47,7 +48,7 @@ namespace StorybrewEditor.Util
         public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
         public void Queue(T target, string uniqueKey, Action<T> action, bool mustRunAlone = false)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(AsyncActionQueue<T>));
+            ObjectDisposedException.ThrowIf(disposedValue, typeof(AsyncActionQueue<T>));
 
             Parallel.For(0, actionRunners.Count, i => actionRunners[i].EnsureThreadAlive());
             lock (context.Queue)
@@ -80,7 +81,7 @@ namespace StorybrewEditor.Util
         #region IDisposable Support
 
         bool disposedValue;
-        protected virtual void Dispose(bool disposing)
+        void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -99,20 +100,20 @@ namespace StorybrewEditor.Util
 
         class ActionContainer
         {
-            public T Target;
-            public string UniqueKey;
-            public Action<T> Action;
-            public bool MustRunAlone;
+            internal T Target;
+            internal string UniqueKey;
+            internal Action<T> Action;
+            internal bool MustRunAlone;
         }
 
         class ActionQueueContext
         {
-            public readonly List<ActionContainer> Queue = [];
-            public readonly HashSet<string> Running = [];
-            public bool RunningLoneTask;
+            internal readonly List<ActionContainer> Queue = [];
+            internal readonly HashSet<string> Running = [];
+            internal bool RunningLoneTask;
 
-            public event ActionFailed OnActionFailed;
-            public bool TriggerActionFailed(T target, Exception e)
+            internal event ActionFailed OnActionFailed;
+            internal bool TriggerActionFailed(T target, Exception e)
             {
                 if (OnActionFailed is null) return false;
 
@@ -121,7 +122,7 @@ namespace StorybrewEditor.Util
             }
 
             bool enabled;
-            public bool Enabled
+            internal bool Enabled
             {
                 get => enabled;
                 set
@@ -134,42 +135,32 @@ namespace StorybrewEditor.Util
             }
         }
 
-        class ActionRunner
+        class ActionRunner(ActionQueueContext context, string threadName)
         {
-            readonly ActionQueueContext context;
-            readonly string threadName;
+            readonly ActionQueueContext context = context;
+            readonly string threadName = threadName;
 
-            CancellationTokenSource cancellationTokenSource;
-            CancellationToken cancellationToken;
-
+            CancellationTokenSource tokenSrc;
             Task thread;
 
-            public ActionRunner(ActionQueueContext context, string threadName)
+            internal void EnsureThreadAlive()
             {
-                this.context = context;
-                this.threadName = threadName;
-            }
-
-            public void EnsureThreadAlive()
-            {
-                if (cancellationTokenSource is null || cancellationTokenSource.IsCancellationRequested)
+                if (tokenSrc is null || tokenSrc.IsCancellationRequested)
                 {
-                    cancellationTokenSource?.Dispose();
-                    cancellationTokenSource = new CancellationTokenSource();
-                    cancellationToken = cancellationTokenSource.Token;
-
-                    // Drawbacks with deprecating Thread.Abort:
-                    // Tasks take a WHILE to completely stop executing, so they tend to only stop after the app was terminated.
+                    tokenSrc?.Dispose();
+                    tokenSrc = new CancellationTokenSource();
 
                     Task localThread = null;
-                    thread = localThread = new Task(async () =>
+
+#pragma warning disable SYSLIB0046 // ControlledExecution is obsolete
+                    thread = localThread = new Task(() => ControlledExecution.Run(async () =>
                     {
                         var mustSleep = false;
-                        while (true)
+                        while (!tokenSrc.IsCancellationRequested)
                         {
                             if (mustSleep)
                             {
-                                await Task.Delay(200);
+                                using (var wait = Task.Delay(200)) await wait;
                                 mustSleep = false;
                             }
 
@@ -182,7 +173,7 @@ namespace StorybrewEditor.Util
                                     // Cancel the thread if the instance's thread is invalidated
                                     if (thread != localThread)
                                     {
-                                        Trace.WriteLine($"Exiting thread {threadName}.");
+                                        Trace.WriteLine($"Exiting thread {threadName}");
                                         return;
                                     }
                                     Monitor.Wait(context.Queue);
@@ -216,10 +207,7 @@ namespace StorybrewEditor.Util
                             catch (Exception e)
                             {
                                 var target = task.Target;
-                                Program.Schedule(() =>
-                                {
-                                    if (!context.TriggerActionFailed(target, e)) Trace.WriteLine($"Action failed for '{task.UniqueKey}': {e}");
-                                });
+                                if (!context.TriggerActionFailed(task.Target, e) && thread == localThread) Trace.WriteLine($"Action failed for '{task.UniqueKey}': {e.Message}");
                             }
 
                             lock (context.Running)
@@ -228,14 +216,14 @@ namespace StorybrewEditor.Util
                                 if (task.MustRunAlone) context.RunningLoneTask = false;
                             }
                         }
-                    }, cancellationToken, TaskCreationOptions.PreferFairness);
+                    }, tokenSrc.Token), tokenSrc.Token);
+#pragma warning restore SYSLIB0046
 
                     Trace.WriteLine($"Starting thread {threadName}");
                     thread.Start();
                 }
             }
-
-            public void JoinOrAbort(int millisecondsTimeout)
+            internal async void JoinOrAbort(int millisecondsTimeout)
             {
                 if (thread is null) return;
                 var localThread = thread;
@@ -246,14 +234,23 @@ namespace StorybrewEditor.Util
                 lock (context.Queue) Monitor.PulseAll(context.Queue);
 
                 // If an exit hasn't happened (e.g. the thread is unresponsive) try to force-stop it
-                if (!localThread.Wait(millisecondsTimeout))
+                if (!localThread.Wait(millisecondsTimeout, tokenSrc.Token))
                 {
-                    Trace.WriteLine($"Aborting thread {threadName}.");
-                    cancellationTokenSource.Cancel();
+                    Trace.WriteLine($"Aborting thread {threadName}");
+                    tokenSrc.Cancel();
+
+                    try
+                    {
+                        await localThread;
+                    }
+                    catch (AggregateException)
+                    {
+                        Trace.WriteLine($"Aborted thread {threadName}");
+                    }
                 }
 
                 localThread.Dispose();
-                cancellationTokenSource.Dispose();
+                tokenSrc.Dispose();
             }
         }
     }

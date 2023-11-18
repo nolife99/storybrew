@@ -8,18 +8,16 @@ using StorybrewEditor.Storyboarding;
 
 namespace StorybrewEditor.UserInterface.Drawables
 {
-    public class StoryboardDrawable : Drawable
+    public class StoryboardDrawable(Project project) : Drawable
     {
         public Vector2 MinSize => Vector2.Zero;
         public Vector2 PreferredSize => new(854, 480);
 
-        readonly Project project;
+        readonly Project project = project;
         readonly RenderStates linesRenderStates = new();
 
         public double Time;
         public bool Clip = true, UpdateFrameStats;
-
-        public StoryboardDrawable(Project project) => this.project = project;
 
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity = 1)
         {

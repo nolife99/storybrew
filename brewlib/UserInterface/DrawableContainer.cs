@@ -4,7 +4,7 @@ using osuTK;
 
 namespace BrewLib.UserInterface
 {
-    public class DrawableContainer : Widget
+    public class DrawableContainer(WidgetManager manager) : Widget(manager)
     {
         public override Vector2 MinSize => drawable?.MinSize ?? Vector2.Zero;
         public override Vector2 PreferredSize => drawable?.PreferredSize ?? Vector2.Zero;
@@ -20,7 +20,6 @@ namespace BrewLib.UserInterface
                 InvalidateAncestorLayout();
             }
         }
-        public DrawableContainer(WidgetManager manager) : base(manager) { }
 
         protected override void Dispose(bool disposing)
         {

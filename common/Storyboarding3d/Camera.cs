@@ -16,22 +16,11 @@ namespace StorybrewCommon.Storyboarding3d
         public float DistanceForVerticalFov(double fov) => (float)(Resolution.Height / 2 / Math.Tan(osuTK.MathHelper.DegreesToRadians(fov) / 2));
         public abstract CameraState StateAt(double time);
     }
-    public class CameraState
+    public class CameraState(Matrix4x4 viewProjection, double aspectRatio, double focusDistance, double resolutionScale, double nearClip, double nearFade, double farFade, double farClip)
     {
-        public readonly Matrix4x4 ViewProjection;
-        public readonly double AspectRatio, FocusDistance, ResolutionScale, NearClip, NearFade, FarFade, FarClip;
+        public readonly Matrix4x4 ViewProjection = viewProjection;
+        public readonly double AspectRatio = aspectRatio, FocusDistance = focusDistance, ResolutionScale = resolutionScale, NearClip = nearClip, NearFade = nearFade, FarFade = farFade, FarClip = farClip;
 
-        public CameraState(Matrix4x4 viewProjection, double aspectRatio, double focusDistance, double resolutionScale, double nearClip, double nearFade, double farFade, double farClip)
-        {
-            ViewProjection = viewProjection;
-            AspectRatio = aspectRatio;
-            FocusDistance = focusDistance;
-            ResolutionScale = resolutionScale;
-            NearClip = nearClip;
-            NearFade = nearFade;
-            FarFade = farFade;
-            FarClip = farClip;
-        }
         public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
         {
             var offset = (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2;

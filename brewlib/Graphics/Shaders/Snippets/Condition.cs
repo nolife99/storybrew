@@ -4,10 +4,10 @@ using System.Text;
 
 namespace BrewLib.Graphics.Shaders.Snippets
 {
-    public class Condition : ShaderSnippet
+    public class Condition(Func<string> expression, ShaderSnippet trueSnippet, ShaderSnippet falseSnippet = null) : ShaderSnippet
     {
-        readonly Func<string> expression;
-        readonly ShaderSnippet trueSnippet, falseSnippet;
+        readonly Func<string> expression = expression;
+        readonly ShaderSnippet trueSnippet = trueSnippet, falseSnippet = falseSnippet;
 
         public override IEnumerable<string> RequiredExtensions
         {
@@ -24,12 +24,6 @@ namespace BrewLib.Graphics.Shaders.Snippets
         public override int MinVersion => falseSnippet != null ?
             Math.Max(trueSnippet.MinVersion, falseSnippet.MinVersion) : trueSnippet.MinVersion;
 
-        public Condition(Func<string> expression, ShaderSnippet trueSnippet, ShaderSnippet falseSnippet = null)
-        {
-            this.expression = expression;
-            this.trueSnippet = trueSnippet;
-            this.falseSnippet = falseSnippet;
-        }
         public override void GenerateFunctions(StringBuilder code)
         {
             trueSnippet.GenerateFunctions(code);

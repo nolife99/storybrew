@@ -10,21 +10,16 @@ using System.Reflection;
 
 namespace StorybrewEditor.ScreenLayers
 {
-    public class ReferencedAssemblyConfig : UiScreenLayer
+    public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
     {
         LinearLayout layout, assembliesLayout, buttonsLayout;
         Button okButton, cancelButton;
 
         public override bool IsPopup => true;
 
-        readonly Project project;
-        readonly HashSet<string> selectedAssemblies;
+        readonly Project project = project;
+        readonly HashSet<string> selectedAssemblies = new(project.ImportedAssemblies);
 
-        public ReferencedAssemblyConfig(Project project)
-        {
-            this.project = project;
-            selectedAssemblies = new HashSet<string>(project.ImportedAssemblies);
-        }
         public override void Load()
         {
             base.Load();

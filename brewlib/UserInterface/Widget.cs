@@ -12,12 +12,12 @@ using System.Text;
 
 namespace BrewLib.UserInterface
 {
-    public class Widget : IDisposable
+    public class Widget(WidgetManager manager) : IDisposable
     {
         static int nextId;
         public readonly int Id = nextId++;
 
-        readonly WidgetManager manager;
+        readonly WidgetManager manager = manager;
         public WidgetManager Manager => manager;
 
         bool displayed = true;
@@ -114,7 +114,6 @@ namespace BrewLib.UserInterface
                 else Manager.RegisterTooltip(this, tooltip);
             }
         }
-        public Widget(WidgetManager manager) => this.manager = manager;
 
         public Widget GetWidgetAt(float x, float y)
         {

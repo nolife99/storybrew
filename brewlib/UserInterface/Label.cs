@@ -8,7 +8,7 @@ using System;
 
 namespace BrewLib.UserInterface
 {
-    public class Label : Widget
+    public class Label(WidgetManager manager) : Widget(manager)
     {
         TextDrawable textDrawable = new();
 
@@ -53,7 +53,6 @@ namespace BrewLib.UserInterface
                 return new Box2(position, position + textSize);
             }
         }
-        public Label(WidgetManager manager) : base(manager) { }
 
         protected override void Dispose(bool disposing)
         {

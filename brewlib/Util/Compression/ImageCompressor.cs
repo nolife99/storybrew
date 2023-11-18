@@ -4,33 +4,27 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using BrewLib.Data;
 
 namespace BrewLib.Util.Compression
 {
-    public abstract class ImageCompressor : IDisposable
+    public abstract class ImageCompressor(string utilityPath = null) : IDisposable
     {
         public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
-        protected List<Argument> toCompress, lossyCompress;
+        protected List<Argument> toCompress = [], lossyCompress = [];
         protected List<string> toCleanup = [];
 
         protected Process process;
         protected ResourceContainer container;
 
-        public string UtilityPath { get; protected set; }
+        public string UtilityPath { get; protected set; } = utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
 
         protected string utilName;
         public string UtilityName
         {
-            get => HashHelper.GetMd5(utilName + Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture));
+            get => HashHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
             protected set => utilName = value;
-        }
-
-        public ImageCompressor(string utilityPath = null)
-        {
-            UtilityPath = utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
-            toCompress = [];
-            lossyCompress = [];
         }
 
         public void LosslessCompress(string path) => toCompress.Add(new Argument(path));
@@ -40,7 +34,7 @@ namespace BrewLib.Util.Compression
         public void LosslessCompress(string path, LosslessInputSettings settings, InputFormat inputFormat) => toCompress.Add(new Argument(path, settings, null, inputFormat));
         public void Compress(string path, LossyInputSettings settings, InputFormat inputFormat) => lossyCompress.Add(new Argument(path, null, settings, inputFormat));
 
-        protected abstract void doCompress();
+        protected abstract Task doCompress();
         protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
         protected abstract void ensureTool();
 
@@ -54,13 +48,13 @@ namespace BrewLib.Util.Compression
         internal string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
 
         protected bool disposed;
-        protected virtual void Dispose(bool disposing)
+        protected virtual async void Dispose(bool disposing)
         {
             if (!disposed)
             {
                 if (toCompress.Count > 0 && lossyCompress.Count > 0) try
                 {
-                    doCompress();
+                    await doCompress();
                 }
                 finally
                 {

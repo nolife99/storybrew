@@ -6,14 +6,14 @@ using System.IO;
 namespace StorybrewCommon.Storyboarding.Display
 {
 #pragma warning disable CS1591
-    public class LoopDecorator<TValue> : ITypedCommand<TValue> where TValue : CommandValue
+    public class LoopDecorator<TValue>(ITypedCommand<TValue> command, double startTime, double repeatDuration, int repeats) : ITypedCommand<TValue> where TValue : CommandValue
     {
-        readonly ITypedCommand<TValue> command;
-        readonly double repeatDuration;
-        readonly int repeats;
+        readonly ITypedCommand<TValue> command = command;
+        readonly double repeatDuration = repeatDuration;
+        readonly int repeats = repeats;
 
         public OsbEasing Easing { get { throw new InvalidOperationException(); } }
-        public double StartTime { get; }
+        public double StartTime { get; } = startTime;
         public double EndTime => StartTime + RepeatDuration * repeats;
         public double Duration => EndTime - StartTime;
         public TValue StartValue => command.StartValue;
@@ -22,14 +22,6 @@ namespace StorybrewCommon.Storyboarding.Display
         public int Cost => throw new InvalidOperationException();
 
         public double RepeatDuration => repeatDuration < 0 ? command.EndTime : repeatDuration;
-
-        public LoopDecorator(ITypedCommand<TValue> command, double startTime, double repeatDuration, int repeats)
-        {
-            this.command = command;
-            StartTime = startTime;
-            this.repeatDuration = repeatDuration;
-            this.repeats = repeats;
-        }
 
         public TValue ValueAtTime(double time)
         {

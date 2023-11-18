@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace BrewLib.Util.Compression
 {
@@ -12,9 +13,9 @@ namespace BrewLib.Util.Compression
         public PngCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(typeof(PngCompressor).Assembly, "BrewLib");
 
-        protected override void doCompress()
+        protected override async Task doCompress()
         {
-            UtilityName = Environment.Is64BitOperatingSystem ? "oxipng.exe" : "truepng.exe";
+            UtilityName = Environment.Is64BitOperatingSystem ? "oxipng.exe" : "oxipng32.exe";
             ensureTool();
 
             var startInfo = new ProcessStartInfo(GetUtility())
@@ -26,33 +27,39 @@ namespace BrewLib.Util.Compression
                 RedirectStandardError = true,
             };
 
-            foreach (var arg in toCompress) if (File.Exists(arg.path)) try
-            {
-                startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
-                process ??= Process.Start(startInfo);
-                var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
-            }
-            finally
-            {
-                ensureStop();
-            }
+            await Task.Factory.StartNew(() =>
+            { 
+                foreach (var arg in toCompress) if (File.Exists(arg.path)) try
+                {
+                    startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
+                    process ??= Process.Start(startInfo);
+                    var error = process.StandardError.ReadToEnd();
+                    if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
+                }
+                finally
+                {
+                    ensureStop();
+                }
+            }, TaskCreationOptions.AttachedToParent);
 
-            UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "truepng.exe";
+            UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
             ensureTool();
             startInfo.FileName = GetUtility();
 
-            foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
+            await Task.Factory.StartNew(() =>
             {
-                startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
-                process ??= Process.Start(startInfo);
-                var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
-            }
-            finally
-            {
-                ensureStop();
-            }
+                foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
+                {
+                    startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
+                    process ??= Process.Start(startInfo);
+                    var error = process.StandardError.ReadToEnd();
+                    if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
+                }
+                finally
+                {
+                    ensureStop();
+                }
+            }, TaskCreationOptions.AttachedToParent);
         }
         protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
         {
@@ -88,22 +95,18 @@ namespace BrewLib.Util.Compression
             }
             else
             {
-                if (lossless != null)
-                {
-                    var lvl = (byte)lossless.OptimizationLevel;
-                    str.AppendFormat(CultureInfo.InvariantCulture, " /o{0} ", lvl > 4 ? 4 : lvl);
-                    str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless.CustomInputArgs);
-                }
-                str.AppendFormat(CultureInfo.InvariantCulture, "/md remove all /a1 -Z /y /out {0} {0}", input);
+                var lvl = lossless != null ? (byte)lossless.OptimizationLevel : 7;
+                str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
+                str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
             }
             return str.ToString();
         }
         protected override void ensureTool()
         {
-            if (disposed) throw new ObjectDisposedException(nameof(PngCompressor));
-            var exe = container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative);
-            File.WriteAllBytes(GetUtility(), exe);
-            toCleanup.Add(GetUtility());
+            ObjectDisposedException.ThrowIf(disposed, typeof(PngCompressor));
+            var path = GetUtility();
+            File.WriteAllBytes(path, container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
+            toCleanup.Add(path);
         }
     }
 }

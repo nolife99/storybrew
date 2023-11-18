@@ -100,7 +100,7 @@ namespace StorybrewEditor.UserInterface.Components
             foreach (var effect in project.Effects.OrderBy(e => e.Name)) effectsLayout.Add(createEffectWidget(effect));
         }
 
-        Widget createEffectWidget(Effect effect)
+        LinearLayout createEffectWidget(Effect effect)
         {
             Label nameLabel, detailsLabel;
             Button renameButton, statusButton, configButton, editButton, removeButton;
@@ -334,11 +334,7 @@ namespace StorybrewEditor.UserInterface.Components
 
             foreach (var path in paths) try
             {
-                if (!File.Exists(path))
-                {
-                    Trace.WriteLine($"vscode not found at \"{path}\"");
-                    continue;
-                }
+                if (!File.Exists(path)) continue;
 
                 Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
                 var process = Process.Start(new ProcessStartInfo(path, arguments)

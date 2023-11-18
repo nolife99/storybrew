@@ -2,30 +2,20 @@
 
 namespace BrewLib.UserInterface
 {
-    public class WidgetEvent
+    public class WidgetEvent(Widget target, Widget relatedTarget)
     {
-        public readonly Widget Target, RelatedTarget;
+        public readonly Widget Target = target, RelatedTarget = relatedTarget;
         public Widget Listener;
         public bool Handled;
-
-        public WidgetEvent(Widget target, Widget relatedTarget)
-        {
-            Target = target;
-            RelatedTarget = relatedTarget;
-        }
     }
-    public class WidgetHoveredEventArgs : EventArgs
+    public class WidgetHoveredEventArgs(bool hovered) : EventArgs
     {
-        readonly bool hovered;
+        readonly bool hovered = hovered;
         public bool Hovered => hovered;
-
-        public WidgetHoveredEventArgs(bool hovered) => this.hovered = hovered;
     }
-    public class WidgetFocusEventArgs : EventArgs
+    public class WidgetFocusEventArgs(bool hasFocus) : EventArgs
     {
-        readonly bool hasFocus;
+        readonly bool hasFocus = hasFocus;
         public bool HasFocus => hasFocus;
-
-        public WidgetFocusEventArgs(bool hasFocus) => this.hasFocus = hasFocus;
     }
 }

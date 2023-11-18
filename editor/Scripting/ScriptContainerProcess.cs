@@ -6,12 +6,9 @@ using System.IO;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptContainerProcess<TScript> : ScriptContainerBase<TScript> where TScript : Script
+    public class ScriptContainerProcess<TScript>(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies) : ScriptContainerBase<TScript>(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) where TScript : Script
     {
         RemoteProcessWorkerContainer workerProcess;
-
-        public ScriptContainerProcess(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
-            : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) { }
 
         protected override IProvider<TScript> LoadScript()
         {

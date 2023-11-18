@@ -171,7 +171,7 @@ namespace BrewLib.Util
 
         public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
         {
-            if (src is null) throw new ArgumentNullException(nameof(src));
+            ArgumentNullException.ThrowIfNull(src);
             if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
                 throw new ArgumentOutOfRangeException(nameof(sect), "Invalid dimensions");
 
@@ -182,7 +182,7 @@ namespace BrewLib.Util
             var destDat = dest.LockBits(new Rectangle(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
 
             var pixBit = Image.GetPixelFormatSize(src.PixelFormat) * .125f;
-            var len = (uint)(dest.Width * pixBit);
+            var len = (int)(dest.Width * pixBit);
 
             try
             {

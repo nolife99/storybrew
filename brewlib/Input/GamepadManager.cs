@@ -4,10 +4,10 @@ using System;
 
 namespace BrewLib.Input
 {
-    public class GamepadManager
+    public class GamepadManager(int gamepadIndex)
     {
-        readonly int gamepadIndex;
-        GamePadState state;
+        readonly int gamepadIndex = gamepadIndex;
+        GamePadState state = GamePad.GetState(gamepadIndex);
         KeyboardState? keyboardState;
         Vector2 thumb, thumbAlt;
         float triggerLeft, triggerRight;
@@ -29,12 +29,6 @@ namespace BrewLib.Input
 
         public float TriggerInnerDeadzone = .1f, TriggerOuterDeadzone = .1f,
             AxisInnerDeadzone = .3f, AxisOuterDeadzone = .1f;
-
-        public GamepadManager(int gamepadIndex)
-        {
-            this.gamepadIndex = gamepadIndex;
-            state = GamePad.GetState(gamepadIndex);
-        }
 
         public void Update()
         {
@@ -137,15 +131,13 @@ namespace BrewLib.Input
         }
         bool isKeyDown(Key key) => keyboardState?.IsKeyDown(key) ?? false;
     }
-    public class GamepadEventArgs : EventArgs
+    public class GamepadEventArgs(GamepadManager manager) : EventArgs
     {
-        public GamepadManager Manager { get; set; }
-        public GamepadEventArgs(GamepadManager manager) => Manager = manager;
+        public GamepadManager Manager { get; set; } = manager;
     }
-    public class GamepadButtonEventArgs : GamepadEventArgs
+    public class GamepadButtonEventArgs(GamepadManager manager, GamepadButton button) : GamepadEventArgs(manager)
     {
-        public GamepadButton Button { get; set; }
-        public GamepadButtonEventArgs(GamepadManager manager, GamepadButton button) : base(manager) => Button = button;
+        public GamepadButton Button { get; set; } = button;
 
         public override string ToString() => Button.ToString();
     }

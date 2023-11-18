@@ -34,12 +34,10 @@ namespace Tiny.Formats.Yaml
             return result;
         }
 
-        abstract class MultilineParser : Parser<YamlTokenType>
+        abstract class MultilineParser(Action<TinyToken> callback, int virtualIndent) : Parser<YamlTokenType>(callback, virtualIndent)
         {
             int? indent;
             protected abstract int ResultCount { get; }
-
-            public MultilineParser(Action<TinyToken> callback, int virtualIndent) : base(callback, virtualIndent) { }
 
             protected bool CheckIndent(ParseContext<YamlTokenType> context)
             {
@@ -131,13 +129,11 @@ namespace Tiny.Formats.Yaml
             public override void End() { }
         }
 
-        class ValueParser : Parser<YamlTokenType>
+        class ValueParser(Action<TinyToken> callback) : Parser<YamlTokenType>(callback, 0)
         {
             static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             static readonly Regex integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             static readonly Regex boolRegex = new($"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-            public ValueParser(Action<TinyToken> callback) : base(callback, 0) { }
 
             public override void Parse(ParseContext<YamlTokenType> context)
             {
@@ -178,10 +174,8 @@ namespace Tiny.Formats.Yaml
             public override void End() { }
         }
 
-        class AnyParser : Parser<YamlTokenType>
+        class AnyParser(Action<TinyToken> callback, int virtualIndent = 0) : Parser<YamlTokenType>(callback, virtualIndent)
         {
-            public AnyParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent) { }
-
             public override void Parse(ParseContext<YamlTokenType> context)
             {
                 switch (context.CurrentToken.Type)
@@ -206,12 +200,9 @@ namespace Tiny.Formats.Yaml
             public override void End() { }
         }
 
-        class EmptyProperyParser : Parser<YamlTokenType>
+        class EmptyProperyParser(Action<TinyToken> callback, int expectedIndent, int virtualIndent = 0) : Parser<YamlTokenType>(callback, virtualIndent)
         {
-            readonly int expectedIndent;
-
-            public EmptyProperyParser(Action<TinyToken> callback, int expectedIndent, int virtualIndent = 0) : base(callback, virtualIndent)
-                => this.expectedIndent = expectedIndent;
+            readonly int expectedIndent = expectedIndent;
 
             public override void Parse(ParseContext<YamlTokenType> context)
             {

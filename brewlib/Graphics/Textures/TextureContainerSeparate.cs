@@ -5,21 +5,15 @@ using System.Linq;
 
 namespace BrewLib.Graphics.Textures
 {
-    public class TextureContainerSeparate : TextureContainer
+    public class TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null) : TextureContainer
     {
-        readonly ResourceContainer resourceContainer;
-        readonly TextureOptions textureOptions;
+        readonly ResourceContainer resourceContainer = resourceContainer;
+        readonly TextureOptions textureOptions = textureOptions;
 
         Dictionary<string, Texture2d> textures = [];
 
         public IEnumerable<string> ResourceNames => textures.Where(e => e.Value != null).Select(e => e.Key);
         public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
-
-        public TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
-        {
-            this.resourceContainer = resourceContainer;
-            this.textureOptions = textureOptions;
-        }
 
         public Texture2dRegion Get(string filename)
         {

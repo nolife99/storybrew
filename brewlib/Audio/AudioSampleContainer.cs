@@ -6,19 +6,14 @@ using System.Linq;
 
 namespace BrewLib.Audio
 {
-    public class AudioSampleContainer : IDisposable
+    public class AudioSampleContainer(AudioManager audioManager, ResourceContainer resourceContainer = null) : IDisposable
     {
-        readonly AudioManager audioManager;
-        readonly ResourceContainer resourceContainer;
+        readonly AudioManager audioManager = audioManager;
+        readonly ResourceContainer resourceContainer = resourceContainer;
 
         Dictionary<string, AudioSample> samples = [];
         public IEnumerable<string> ResourceNames => samples.Where(e => e.Value != null).Select(e => e.Key);
 
-        public AudioSampleContainer(AudioManager audioManager, ResourceContainer resourceContainer = null)
-        {
-            this.audioManager = audioManager;
-            this.resourceContainer = resourceContainer;
-        }
         public AudioSample Get(string filename)
         {
             filename = PathHelper.WithStandardSeparators(filename);

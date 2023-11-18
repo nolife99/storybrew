@@ -2,11 +2,10 @@
 
 namespace BrewLib.Util
 {
-    public sealed class ActionDisposable : IDisposable
+    public sealed class ActionDisposable(Action action) : IDisposable
     {
-        readonly Action action;
+        readonly Action action = action;
 
-        public ActionDisposable(Action action) => this.action = action;
         public void Dispose() => action();
     }
 }

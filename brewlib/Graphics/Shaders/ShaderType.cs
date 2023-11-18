@@ -3,14 +3,12 @@ using System.Collections.Generic;
 
 namespace BrewLib.Graphics.Shaders
 {
-    public class ShaderType
+    public class ShaderType(string name)
     {
         readonly HashSet<Field> fields = [];
 
-        public readonly string Name;
+        public readonly string Name = name;
         public IEnumerable<Field> Fields => fields;
-
-        public ShaderType(string name) => Name = name;
 
         public Field AddField(string name, string shaderTypeName)
         {
@@ -27,16 +25,10 @@ namespace BrewLib.Graphics.Shaders
 
             return new ShaderFieldVariable(variable.Context, variable, field);
         }
-        public class Field
+        public class Field(string name, string shaderTypeName)
         {
-            public readonly string Name;
-            public readonly string ShaderTypeName;
-
-            public Field(string name, string shaderTypeName)
-            {
-                Name = name;
-                ShaderTypeName = shaderTypeName;
-            }
+            public readonly string Name = name;
+            public readonly string ShaderTypeName = shaderTypeName;
         }
     }
 }

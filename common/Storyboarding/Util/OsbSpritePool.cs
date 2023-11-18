@@ -5,23 +5,15 @@ namespace StorybrewCommon.Storyboarding.Util
 {
 #pragma warning disable CS1591
     [Obsolete("Use StorybrewCommon.Storyboarding.SpritePool instead for better support.")]
-    public class OsbSpritePool : IDisposable
+    public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, Action<OsbSprite, double, double> finalizeSprite = null) : IDisposable
     {
-        readonly StoryboardSegment segment;
-        readonly string path;
-        readonly OsbOrigin origin;
-        readonly Action<OsbSprite, double, double> finalizeSprite;
+        readonly StoryboardSegment segment = segment;
+        readonly string path = path;
+        readonly OsbOrigin origin = origin;
+        readonly Action<OsbSprite, double, double> finalizeSprite = finalizeSprite;
         readonly List<PooledSprite> pooledSprites = [];
 
         public int MaxPoolDuration = 60000;
-
-        public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, Action<OsbSprite, double, double> finalizeSprite = null)
-        {
-            this.segment = segment;
-            this.path = path;
-            this.origin = origin;
-            this.finalizeSprite = finalizeSprite;
-        }
 
         public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive) : this(segment, path, origin, additive ?
             (pS, sT, e) => pS.Additive(sT) : null)
@@ -64,18 +56,11 @@ namespace StorybrewCommon.Storyboarding.Util
         protected virtual OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin)
             => segment.CreateSprite(path, origin);
 
-        class PooledSprite
+        class PooledSprite(OsbSprite sprite, double startTime, double endTime)
         {
-            public OsbSprite Sprite;
-            public double StartTime;
-            public double EndTime;
-
-            public PooledSprite(OsbSprite sprite, double startTime, double endTime)
-            {
-                Sprite = sprite;
-                StartTime = startTime;
-                EndTime = endTime;
-            }
+            public OsbSprite Sprite = sprite;
+            public double StartTime = startTime;
+            public double EndTime = endTime;
         }
 
         #region IDisposable Support

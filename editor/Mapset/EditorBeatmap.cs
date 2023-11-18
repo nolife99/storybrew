@@ -11,9 +11,9 @@ using System.IO;
 
 namespace StorybrewEditor.Mapset
 {
-    public class EditorBeatmap : Beatmap
+    public class EditorBeatmap(string path) : Beatmap
     {
-        public readonly string Path;
+        public readonly string Path = path;
 
         public override string AudioFilename => audioFilename;
         string audioFilename = "audio.mp3";
@@ -74,8 +74,6 @@ namespace StorybrewEditor.Mapset
 
         readonly List<OsuBreak> breaks = [];
         public override IEnumerable<OsuBreak> Breaks => breaks;
-
-        public EditorBeatmap(string path) => Path = path;
 
         public override string ToString() => Name;
 

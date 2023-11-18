@@ -116,18 +116,11 @@ namespace StorybrewCommon.Storyboarding3d
     }
 
 #pragma warning disable CS1591
-    public class Object3dState
+    public class Object3dState(Matrix4x4 worldTransform, CommandColor color, float opacity)
     {
         public static readonly Object3dState InitialState = new(Matrix4x4.Identity, CommandColor.White, 1);
-        public readonly Matrix4x4 WorldTransform;
-        public readonly CommandColor Color;
-        public readonly float Opacity;
-
-        public Object3dState(Matrix4x4 worldTransform, CommandColor color, float opacity)
-        {
-            WorldTransform = worldTransform;
-            Color = color;
-            Opacity = opacity;
-        }
+        public readonly Matrix4x4 WorldTransform = worldTransform;
+        public readonly CommandColor Color = color;
+        public readonly float Opacity = opacity;
     }
 }

@@ -11,10 +11,10 @@ using System.Linq;
 
 namespace StorybrewEditor.Storyboarding
 {
-    public class EditorStoryboardSegment : StoryboardSegment, DisplayableObject, HasPostProcess
+    public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer) : StoryboardSegment, DisplayableObject, HasPostProcess
     {
-        public Effect Effect { get; }
-        public EditorStoryboardLayer Layer { get; }
+        public Effect Effect { get; } = effect;
+        public EditorStoryboardLayer Layer { get; } = layer;
 
         double startTime, endTime;
         public override double StartTime => startTime;
@@ -31,12 +31,6 @@ namespace StorybrewEditor.Storyboarding
         readonly List<DisplayableObject> displayableObjects = [];
         readonly List<EventObject> eventObjects = [];
         readonly List<EditorStoryboardSegment> segments = [];
-
-        public EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
-        {
-            Effect = effect;
-            Layer = layer;
-        }
 
         public int GetActiveSpriteCount(double time) => storyboardObjects.Count(o => ((OsbSprite)o)?.IsActive(time) ?? false);
         public int GetCommandCost(double time) => storyboardObjects.Select(o => (OsbSprite)o).Where(s => s?.IsActive(time) ?? false).Sum(s => s.CommandCost);

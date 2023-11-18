@@ -5,13 +5,11 @@ using System;
 namespace StorybrewCommon.Storyboarding.Display
 {
 #pragma warning disable CS1591
-    public class AnimatedValueBuilder<TValue> : IAnimatedValueBuilder where TValue : CommandValue
+    public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimatedValueBuilder where TValue : CommandValue
     {
-        readonly AnimatedValue<TValue> value;
+        readonly AnimatedValue<TValue> value = value;
         CompositeCommand<TValue> composite;
         Func<ITypedCommand<TValue>, ITypedCommand<TValue>> decorate;
-
-        public AnimatedValueBuilder(AnimatedValue<TValue> value) => this.value = value;
 
         public void Add(ICommand command) => Add(command as Command<TValue>);
         public void Add(Command<TValue> command)

@@ -6,33 +6,23 @@ using BrewLib.Util;
 namespace StorybrewCommon.Storyboarding
 {
     ///<summary> Provides a way to optimize filesize and creates a way for sprites to be reused. </summary>
-    public class SpritePool : IDisposable
+    ///<remarks> Constructs a <see cref="SpritePool"/>. </remarks>
+    ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
+    ///<param name="path"> Image path of the available sprite. </param>
+    ///<param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
+    ///<param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
+    ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
+    public class SpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes = null) : IDisposable
     {
-        readonly StoryboardSegment segment;
-        readonly string path;
-        readonly OsbOrigin origin;
-        readonly CommandPosition position;
-        readonly Action<OsbSprite, double, double> attributes;
-        readonly List<PooledSprite> pooled;
+        readonly StoryboardSegment segment = segment;
+        readonly string path = path;
+        readonly OsbOrigin origin = origin;
+        readonly CommandPosition position = position;
+        readonly Action<OsbSprite, double, double> attributes = attributes;
+        readonly List<PooledSprite> pooled = [];
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
         public int MaxPoolDuration;
-
-        ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
-        ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-        ///<param name="path"> Image path of the available sprite. </param>
-        ///<param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
-        ///<param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
-        ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
-        public SpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes = null)
-        {
-            this.segment = segment;
-            this.path = path;
-            this.origin = origin;
-            this.position = position;
-            this.attributes = attributes;
-            pooled = [];
-        }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -158,16 +148,13 @@ namespace StorybrewCommon.Storyboarding
 
     ///<summary> Provides a way to optimize filesize and creates a way for sprites to be reused at a minor cost of performance. </summary>
     ///<remarks> Includes support for animation pools. </remarks>
-    public sealed class SpritePools : IDisposable
+    ///<remarks> Constructs a <see cref="SpritePools"/>. </remarks>
+    ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
+    public sealed class SpritePools(StoryboardSegment segment) : IDisposable
     {
-        readonly StoryboardSegment segment;
+        readonly StoryboardSegment segment = segment;
         readonly Dictionary<string, SpritePool> pools = [];
         readonly Dictionary<string, AnimationPool> animationPools = [];
-
-        ///<summary> Constructs a <see cref="SpritePools"/>. </summary>
-        ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
-        public SpritePools(StoryboardSegment segment) => this.segment = segment;
-
         int maxPoolDuration;
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
@@ -411,28 +398,20 @@ namespace StorybrewCommon.Storyboarding
     }
 
     ///<summary> Provides a way to optimize filesize and creates a way for animations to be reused at a minor cost of performance. </summary>
-    public sealed class AnimationPool : SpritePool
+    ///<remarks> Constructs a new <see cref="AnimationPool"/>. </remarks>
+    ///<param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="AnimationPool"/>. </param>
+    ///<param name="path"> Image path of the available sprite. </param>
+    ///<param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    ///<param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    ///<param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+    ///<param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
+    ///<param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
+    ///<param name="attributes"> Commands to be run on each animation in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
+    public sealed class AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes = null) : SpritePool(segment, path, origin, position, attributes)
     {
-        readonly int frameCount;
-        readonly double frameDelay;
-        readonly OsbLoopType loopType;
-
-        ///<summary> Constructs a new <see cref="AnimationPool"/>. </summary>
-        ///<param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="AnimationPool"/>. </param>
-        ///<param name="path"> Image path of the available sprite. </param>
-        ///<param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
-        ///<param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
-        ///<param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
-        ///<param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
-        ///<param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
-        ///<param name="attributes"> Commands to be run on each animation in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
-        public AnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes = null)
-            : base(segment, path, origin, position, attributes)
-        {
-            this.frameCount = frameCount;
-            this.frameDelay = frameDelay;
-            this.loopType = loopType;
-        }
+        readonly int frameCount = frameCount;
+        readonly double frameDelay = frameDelay;
+        readonly OsbLoopType loopType = loopType;
 
         ///<summary> Constructs a new <see cref="AnimationPool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="AnimationPool"/>. </param>

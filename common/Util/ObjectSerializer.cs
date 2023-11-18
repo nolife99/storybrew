@@ -132,9 +132,7 @@ namespace StorybrewCommon.Util
             var typeName = reader.ReadString();
             if (string.IsNullOrEmpty(typeName)) return null;
             
-            var serializer = GetSerializer(typeName);
-            if (serializer == null) throw new NotSupportedException($"Cannot read objects of type {typeName}");
-
+            var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot read objects of type {typeName}");
             return serializer.ReadValue(reader);
         }
         public static void Write(BinaryWriter writer, object value)
@@ -147,9 +145,7 @@ namespace StorybrewCommon.Util
 
             var typeName = value.GetType().FullName;
 
-            var serializer = GetSerializer(typeName);
-            if (serializer == null) throw new NotSupportedException($"Cannot write objects of type {typeName}");
-
+            var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot write objects of type {typeName}");
             writer.Write(typeName);
             serializer.WriteValue(writer, value);
         }
@@ -157,9 +153,7 @@ namespace StorybrewCommon.Util
         {
             if (typeName == string.Empty) return null;
 
-            var serializer = GetSerializer(typeName);
-            if (serializer == null) throw new NotSupportedException($"Cannot read objects of type {typeName}");
-
+            var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot read objects of type {typeName}");
             return serializer.FromString(value);
         }
         public static string ToString(Type type, object value)
@@ -168,9 +162,7 @@ namespace StorybrewCommon.Util
 
             var typeName = type.FullName;
 
-            var serializer = GetSerializer(typeName);
-            if (serializer == null) throw new NotSupportedException($"Cannot write objects of type {typeName}");
-
+            var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot write objects of type {typeName}");
             return serializer.ToString(value);
         }
         public static ObjectSerializer GetSerializer(string typeName)
@@ -180,20 +172,12 @@ namespace StorybrewCommon.Util
         }
         public static bool Supports(string typeName) => GetSerializer(typeName) != null;
     }
-    public class SimpleObjectSerializer<T> : ObjectSerializer
+    public class SimpleObjectSerializer<T>(Func<BinaryReader, object> read, Action<BinaryWriter, object> write, Func<string, object> fromString = null, Func<object, string> toString = null) : ObjectSerializer
     {
-        readonly Func<BinaryReader, object> read;
-        readonly Action<BinaryWriter, object> write;
-        readonly Func<string, object> fromString;
-        readonly Func<object, string> toString;
-
-        public SimpleObjectSerializer(Func<BinaryReader, object> read, Action<BinaryWriter, object> write, Func<string, object> fromString = null, Func<object, string> toString = null)
-        {
-            this.read = read;
-            this.write = write;
-            this.fromString = fromString;
-            this.toString = toString;
-        }
+        readonly Func<BinaryReader, object> read = read;
+        readonly Action<BinaryWriter, object> write = write;
+        readonly Func<string, object> fromString = fromString;
+        readonly Func<object, string> toString = toString;
 
         public override bool CanSerialize(string typeName) => typeName == typeof(T).FullName;
 

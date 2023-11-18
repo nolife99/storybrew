@@ -34,13 +34,12 @@ namespace BrewLib.Graphics.Shaders
         protected void RecordDependency() => Context.RecordDependency(this);
         public override string ToString()
         {
-            var arrayTag = ArrayCount != -1 ? $"[{ArrayCount}]" : string.Empty;
+            var arrayTag = ArrayCount != -1 ? $"[{ArrayCount}]" : "";
             return $"{ShaderTypeName} {Name}{arrayTag}";
         }
-        public class Reference
+        public class Reference(ShaderVariable variable)
         {
-            readonly ShaderVariable variable;
-            public Reference(ShaderVariable variable) => this.variable = variable;
+            readonly ShaderVariable variable = variable;
 
             public string this[int index] => this[index.ToString()];
             public virtual string this[string index] => $"{variable.Name}[{index}]";

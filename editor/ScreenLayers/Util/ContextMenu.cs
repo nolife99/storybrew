@@ -119,16 +119,10 @@ namespace StorybrewEditor.ScreenLayers
             base.Resize(width, height);
             mainLayout.Pack(400, 0, 0, 600);
         }
-        public readonly struct Option
+        public readonly struct Option(string name, T value)
         {
-            public readonly string Name;
-            public readonly T Value;
-
-            public Option(string name, T value)
-            {
-                Name = name;
-                Value = value;
-            }
+            public readonly string Name = name;
+            public readonly T Value = value;
         }
     }
 }

@@ -4,24 +4,16 @@ using System;
 namespace StorybrewCommon.Curves
 {
     ///<summary> Represents any <see cref="Curves.Curve"/> that has been transformed. </summary>
-    [Serializable] public class TransformedCurve : Curve
+    ///<remarks> Constructs a transformed curve from <paramref name="curve"/> and given transformations. </remarks>
+    [Serializable] public class TransformedCurve(Curve curve, CommandPosition offset, float scale, bool reversed = false) : Curve
     {
-        readonly Curve curve;
-        readonly CommandPosition offset;
-        readonly float scale;
-        readonly bool reversed;
+        readonly Curve curve = curve;
+        readonly CommandPosition offset = offset;
+        readonly float scale = scale;
+        readonly bool reversed = reversed;
 
         ///<summary> The transformed curve. </summary>
         public Curve Curve => curve;
-
-        ///<summary> Constructs a transformed curve from <paramref name="curve"/> and given transformations. </summary>
-        public TransformedCurve(Curve curve, CommandPosition offset, float scale, bool reversed = false)
-        {
-            this.curve = curve;
-            this.offset = offset;
-            this.scale = scale;
-            this.reversed = reversed;
-        }
 
         ///<inheritdoc/>
         public CommandPosition StartPosition => (reversed ? curve.EndPosition : curve.StartPosition) * scale + offset;

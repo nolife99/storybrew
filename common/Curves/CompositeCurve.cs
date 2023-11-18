@@ -6,9 +6,10 @@ using System.Linq;
 namespace StorybrewCommon.Curves
 {
     ///<summary> Represents a composite curve that is constructed from multiple curves. </summary>
-    [Serializable] public class CompositeCurve : Curve
+    ///<remarks> Constructs a composite curve from a list of curves <paramref name="curves"/>. </remarks>
+    [Serializable] public class CompositeCurve(IEnumerable<Curve> curves) : Curve
     {
-        readonly Curve[] curves;
+        readonly Curve[] curves = (curves as Curve[]) ?? curves.ToArray();
 
         ///<summary> Returns a readonly list of curves that makes up the composite curve. </summary>
         public IReadOnlyList<Curve> Curves => curves;
@@ -29,9 +30,6 @@ namespace StorybrewCommon.Curves
                 return length;
             }
         }
-
-        ///<summary> Constructs a composite curve from a list of curves <paramref name="curves"/>. </summary>
-        public CompositeCurve(IEnumerable<Curve> curves) => this.curves = (curves as Curve[]) ?? curves.ToArray();
 
         ///<inheritdoc/>
         public CommandPosition PositionAtDistance(double distance)
