@@ -96,7 +96,7 @@ namespace BrewLib.Util.Compression
         }
         protected override string GetUtility() => Path.Combine(UtilityPath, utilName);
 
-        List<string> toCleanup = [];
+        readonly List<string> toCleanup = [];
         protected override void Dispose(bool disposing)
         {
             if (disposed) return;
