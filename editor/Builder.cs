@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace StorybrewEditor
@@ -15,7 +16,7 @@ namespace StorybrewEditor
 
         public static void Build()
         {
-            var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}.zip";
+            var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE")}.zip";
             var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
 
             try
@@ -41,14 +42,10 @@ namespace StorybrewEditor
             using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
             addFile(archive, mainExecutablePath, appDirectory);
             addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
-            foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
-                addFile(archive, path, appDirectory);
 
-            foreach (var path in Directory.GetFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly))
-                addFile(archive, path, appDirectory);
-
-            foreach (var path in Directory.GetFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
-                addFile(archive, path, scriptsDirectory, "scripts");
+            foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
+            foreach (var path in Directory.GetFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
+            foreach (var path in Directory.GetFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly)) addFile(archive, path, scriptsDirectory, "scripts");
         }
         /* static void testUpdate(string archiveName)
         {

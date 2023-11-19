@@ -30,10 +30,4 @@
             PNM = "pnm",
             TIFF = "tiff";
     }
-    public class UserCredential
-    {
-        public string UserName { get; private set; }
-        public System.Security.SecureString Password { get; private set; }
-        public string Domain { get; private set; }
-    }
 }
