@@ -151,10 +151,7 @@ namespace StorybrewEditor
                 }
             }
 
-            var window = new GameWindow((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible)
-            {
-                VSync = VSyncMode.Off
-            };
+            var window = new GameWindow((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible);
             Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
             window.X = (int)(primaryScreenArea.X + (primaryScreenArea.Width - window.Width) * .5f);
@@ -205,6 +202,8 @@ namespace StorybrewEditor
                 if (focused && fixedUpdates == 0 && fixedRateTime < currentTime && currentTime < fixedRateTime + fixedRateUpdateDuration) editor.Update(currentTime * 1E-3, false);
 
                 if (!window.Exists || window.IsExiting) return;
+
+                window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
                 if (window.WindowState != WindowState.Minimized)
                 {
                     var tween = Math.Min((currentTime - fixedRateTime) / fixedRateUpdateDuration, 1);

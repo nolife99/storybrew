@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace BrewLib.Util.Compression
 {
+    [Obsolete("Use IntegratedCompressor instead for better performance and threading")]
     public class SynchronousCompressor : ImageCompressor
     {
         public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
@@ -113,6 +114,7 @@ namespace BrewLib.Util.Compression
         protected override void ensureTool()
         {
             ObjectDisposedException.ThrowIf(disposed, typeof(SynchronousCompressor));
+
             var path = GetUtility();
             File.WriteAllBytes(path, container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
             toCleanup.Add(path);

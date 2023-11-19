@@ -34,7 +34,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="oxipng.exe" />
     <EmbeddedResource Include="oxipng32.exe" />
     <EmbeddedResource Include="pngquant.exe" />
   </ItemGroup>

@@ -149,10 +149,11 @@ namespace StorybrewEditor.Util
                 {
                     tokenSrc?.Dispose();
                     tokenSrc = new CancellationTokenSource();
+                    tokenSrc.Token.Register(() => Trace.WriteLine($"Aborting thread {threadName}"));
 
                     Task localThread = null;
 
-#pragma warning disable SYSLIB0046 // ControlledExecution is obsolete
+#pragma warning disable SYSLIB0046 // ControlledExecution is obsolete, but we need a way to terminate frozen threads
                     thread = localThread = new Task(() => ControlledExecution.Run(async () =>
                     {
                         var mustSleep = false;
@@ -207,7 +208,7 @@ namespace StorybrewEditor.Util
                             catch (Exception e)
                             {
                                 var target = task.Target;
-                                if (!context.TriggerActionFailed(task.Target, e) && thread == localThread) Trace.WriteLine($"Action failed for '{task.UniqueKey}': {e.Message}");
+                                if (!context.TriggerActionFailed(task.Target, e)) Trace.WriteLine($"Action failed for '{task.UniqueKey}': {e}");
                             }
 
                             lock (context.Running)
@@ -233,20 +234,11 @@ namespace StorybrewEditor.Util
 
                 lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-                // If an exit hasn't happened (e.g. the thread is unresponsive) try to force-stop it
+                // If an exit hasn't happened (e.g. the thread is frozen) try to force-stop it
                 if (!localThread.Wait(millisecondsTimeout, tokenSrc.Token))
                 {
-                    Trace.WriteLine($"Aborting thread {threadName}");
                     tokenSrc.Cancel();
-
-                    try
-                    {
-                        await localThread;
-                    }
-                    catch (AggregateException)
-                    {
-                        Trace.WriteLine($"Aborted thread {threadName}");
-                    }
+                    if (!localThread.IsCompleted) await localThread;
                 }
 
                 localThread.Dispose();

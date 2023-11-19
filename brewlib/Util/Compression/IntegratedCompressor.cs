@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace BrewLib.Util.Compression
 {
@@ -19,8 +20,9 @@ namespace BrewLib.Util.Compression
 
             UtilityName = Environment.Is64BitOperatingSystem && useLossy ? "pngquant.exe" : "oxipng32.exe";
             ensureTool();
+            var utility = GetUtility();
 
-            var startInfo = new ProcessStartInfo(GetUtility())
+            var startInfo = new ProcessStartInfo(utility)
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -33,6 +35,7 @@ namespace BrewLib.Util.Compression
             {
                 startInfo.Arguments = appendArgs(arg.path, useLossy, arg.lossy, arg.lossless);
                 process ??= Process.Start(startInfo);
+
                 var error = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
             }
@@ -46,31 +49,18 @@ namespace BrewLib.Util.Compression
             var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
             var str = new StringBuilder();
 
-            if (Environment.Is64BitOperatingSystem)
+            if (Environment.Is64BitOperatingSystem && useLossy)
             {
-                if (useLossy)
+                str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
+                if (lossy != null)
                 {
-                    str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
-                    if (lossy != null)
-                    {
-                        if (lossy.MinQuality >= 0 && lossy.MaxQuality > 0 && lossy.MaxQuality <= 100)
-                            str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossy.MinQuality, lossy.MaxQuality);
+                    if (lossy.MinQuality >= 0 && lossy.MaxQuality > 0 && lossy.MaxQuality <= 100)
+                        str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossy.MinQuality, lossy.MaxQuality);
 
-                        if (lossy.Speed > 0 && lossy.Speed <= 10)
-                            str.AppendFormat(CultureInfo.InvariantCulture, " -s{0} ", lossy.Speed);
+                    if (lossy.Speed > 0 && lossy.Speed <= 10)
+                        str.AppendFormat(CultureInfo.InvariantCulture, " -s{0} ", lossy.Speed);
 
-                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossy.CustomInputArgs);
-                    }
-                }
-                else
-                {
-                    if (lossless != null)
-                    {
-                        var lvl = (byte)lossless.OptimizationLevel;
-                        str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
-                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless.CustomInputArgs);
-                    }
-                    str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
+                    str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossy.CustomInputArgs);
                 }
             }
             else

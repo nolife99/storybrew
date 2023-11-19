@@ -23,17 +23,16 @@ namespace StorybrewEditor.Scripting
             Path.GetDirectoryName(typeof(Brush).Assembly.Location),
             Environment.CurrentDirectory
         ];
-
         static int nextId;
+
         public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             var domain = new AssemblyLoadContext($"ScriptCompiler {nextId++}", true);
-            Trace.WriteLine($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths)}");
+            Trace.WriteLine($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths.Select(Path.GetFileName))}");
 
             try
             {
-                var compiler = (ICompiler)Activator.CreateInstance(domain.LoadFromAssemblyName(typeof(ScriptCompiler).Assembly.GetName())
-                    .GetType(typeof(ScriptCompiler).FullName));
+                var compiler = (ICompiler)Activator.CreateInstance(domain.LoadFromAssemblyName(typeof(ScriptCompiler).Assembly.GetName()).GetType(typeof(ScriptCompiler).FullName));
                 compiler.Compile(sourcePaths, outputPath, referencedAssemblies);
             }
             finally
