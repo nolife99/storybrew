@@ -35,7 +35,7 @@ namespace StorybrewCommon.Scripting
         public bool Multithreaded { get; protected set; }
         
         ///<summary> Gets the texture and image compressor for this instance. </summary>
-        protected internal PngCompressor Compressor { get; private set; }
+        protected internal ImageCompressor Compressor { get; private set; }
 
         ///<summary> Creates or retrieves a layer. </summary>
         ///<remarks> The identifier will be shown in the editor as "Effect name (Identifier)". </remarks>
@@ -401,20 +401,21 @@ namespace StorybrewCommon.Scripting
             {
                 this.context = context;
                 rnd = new FastRandom(RandomSeed);
-                Compressor = new PngCompressor();
+                Compressor = new IntegratedCompressor();
 
                 instanceSync.WaitOne();
                 Current = this;
 
                 Generate();
                 context.Multithreaded = Multithreaded;
-                if (fonts.Count > 0) saveFontCache();
             }
             finally
             {
-                this.context = null;
                 Current = null;
                 instanceSync.ReleaseMutex();
+
+                if (fonts.Count > 0) saveFontCache();
+                this.context = null;
 
                 bitmaps.Dispose();
                 fonts.Clear();

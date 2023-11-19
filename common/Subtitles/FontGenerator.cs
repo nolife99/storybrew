@@ -372,10 +372,10 @@ namespace StorybrewCommon.Subtitles
                     for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
 
                     if (description.Debug) using (var pen = new Pen(Color.Red))
-                        {
-                            textGraphics.DrawLine(pen, x, y, x, y + baseHeight);
-                            textGraphics.DrawLine(pen, x - baseWidth * .5f, y, x + baseWidth * .5f, y);
-                        }
+                    {
+                        textGraphics.DrawLine(pen, x, y, x, y + baseHeight);
+                        textGraphics.DrawLine(pen, x - baseWidth * .5f, y, x + baseWidth * .5f, y);
+                    }
                 }
 
                 var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : default;
@@ -408,10 +408,7 @@ namespace StorybrewCommon.Subtitles
                             MaxQuality = 100
                         });
                     }
-                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
-                    {
-                        OptimizationLevel = OptimizationLevel.Level4
-                    });
+                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path);
                 }
             }
             return new FontTexture(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);

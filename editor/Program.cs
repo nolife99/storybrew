@@ -151,7 +151,7 @@ namespace StorybrewEditor
                 }
             }
 
-            var window = new GameWindow((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 4, 6, GraphicsContextFlags.Debug)
+            var window = new GameWindow((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible)
             {
                 VSync = VSyncMode.Off
             };
