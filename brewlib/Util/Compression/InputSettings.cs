@@ -1,33 +1,15 @@
-﻿namespace BrewLib.Util.Compression
+﻿using osuTK;
+
+namespace BrewLib.Util.Compression
 {
-    public class LosslessInputSettings
+    public sealed class LosslessInputSettings(int level, string args = "")
     {
-        public string CustomInputArgs;
-        public OptimizationLevel OptimizationLevel;
+        public readonly string CustomInputArgs = args;
+        public readonly int OptimizationLevel = MathHelper.Clamp(level, 0, 7);
     }
-    public class LossyInputSettings
+    public sealed class LossyInputSettings(int min, int max, int speed, string args = "")
     {
-        public string CustomInputArgs;
-        public int MinQuality, MaxQuality, Speed;
-    }
-    public enum OptimizationLevel : byte
-    {
-        Level0 = 0, 
-        Level1 = 1,
-        Level2 = 2,
-        Level3 = 3,
-        Level4 = 4,
-        Level5 = 5,
-        Level6 = 6,
-        Level7 = 7
-    }
-    public class InputFormat
-    {
-        public const string 
-            PNG = "png", 
-            BMP = "bmp",
-            GIF = "gif",
-            PNM = "pnm",
-            TIFF = "tiff";
+        public readonly string CustomInputArgs = args;
+        public readonly int MinQuality = MathHelper.Clamp(min, 0, 100), MaxQuality = MathHelper.Clamp(max, 0, 100), Speed = MathHelper.Clamp(speed, 1, 11);
     }
 }

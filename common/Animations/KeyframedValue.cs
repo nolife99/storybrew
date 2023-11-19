@@ -241,7 +241,7 @@ namespace StorybrewCommon.Animations
 
         ///<summary> Simplifies keyframes on 1-parameter commands. </summary>
         ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
-        ///<param name="getComponent"> Converts the keyframe values to a <see cref="float"/> that the method can use. </param>
+        ///<param name="getComponent"> Converts the keyframe values to a <b>valid</b> <see cref="float"/> that the method can use. </param>
         public void Simplify1dKeyframes(double tolerance, Func<TValue, float> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
@@ -256,7 +256,7 @@ namespace StorybrewCommon.Animations
 
         ///<summary> Simplifies keyframes on 2-parameter commands. </summary>
         ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
-        ///<param name="getComponent"> Converts the keyframe values to a <see cref="Vector2"/> that the method can use. </param>
+        ///<param name="getComponent"> Converts the keyframe values to a <b>valid</b> <see cref="Vector2"/> that the method can use. </param>
         public void Simplify2dKeyframes(double tolerance, Func<TValue, Vector2> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
@@ -275,7 +275,7 @@ namespace StorybrewCommon.Animations
 
         ///<summary> Simplifies keyframes on 3-parameter commands. </summary>
         ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
-        ///<param name="getComponent"> Converts the keyframe values to a <see cref="Vector3"/> that the method can use. </param>
+        ///<param name="getComponent"> Converts the keyframe values to a <b>valid</b> <see cref="Vector3"/> that the method can use. </param>
         public void Simplify3dKeyframes(double tolerance, Func<TValue, Vector3> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
@@ -294,7 +294,7 @@ namespace StorybrewCommon.Animations
 
         void SimplifyEqualKeyframes()
         {
-            var simplifiedKeyframes = new List<Keyframe<TValue>>();
+            List<Keyframe<TValue>> simplifiedKeyframes = [];
             for (int i = 0, count = keyframes.Count; i < count; i++)
             {
                 var startKeyframe = keyframes[i];
@@ -313,8 +313,9 @@ namespace StorybrewCommon.Animations
                     else if (j == count - 1) i = j;
                 }
             }
-
             simplifiedKeyframes.TrimExcess();
+
+            Clear(true);
             keyframes = simplifiedKeyframes;
         }
 

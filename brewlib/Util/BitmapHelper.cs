@@ -13,18 +13,13 @@ namespace BrewLib.Util
 
         public static void LosslessCompress(string path, ImageCompressor compressor = null)
         {
-            var defaultSettings = new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level7 };
+            var defaultSettings = new LosslessInputSettings(7);
             if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.LosslessCompress(path, defaultSettings);
             else compressor.LosslessCompress(path, defaultSettings);
         }
         public static void Compress(string path, ImageCompressor compressor = null)
         {
-            var defaultSettings = new LossyInputSettings
-            {
-                Speed = 1,
-                MinQuality = 75,
-                MaxQuality = 100
-            };
+            var defaultSettings = new LossyInputSettings(75, 100, 1);
             if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.Compress(path, defaultSettings);
             else compressor.Compress(path, defaultSettings);
         }
