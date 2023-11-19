@@ -208,7 +208,7 @@ namespace StorybrewEditor.Util
                             catch (Exception e)
                             {
                                 var target = task.Target;
-                                if (!context.TriggerActionFailed(task.Target, e)) Trace.WriteLine($"Action failed for '{task.UniqueKey}': {e}");
+                                if (!context.TriggerActionFailed(task.Target, e)) Trace.TraceError($"'{task.UniqueKey}' - Action failed: {e}");
                             }
 
                             lock (context.Running)
@@ -217,7 +217,7 @@ namespace StorybrewEditor.Util
                                 if (task.MustRunAlone) context.RunningLoneTask = false;
                             }
                         }
-                    }, tokenSrc.Token), tokenSrc.Token, TaskCreationOptions.LongRunning);
+                    }, tokenSrc.Token), tokenSrc.Token);
 #pragma warning restore SYSLIB0046
 
                     Trace.WriteLine($"Starting thread {threadName}");

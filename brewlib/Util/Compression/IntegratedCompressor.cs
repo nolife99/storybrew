@@ -1,5 +1,6 @@
 ﻿using BrewLib.Data;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -14,6 +15,7 @@ namespace BrewLib.Util.Compression
         public IntegratedCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(typeof(IntegratedCompressor).Assembly, "BrewLib");
 
+        readonly List<Task> queuedTasks = [];
         protected override void compress(Argument arg, bool useLossy)
         {
             if (!File.Exists(arg.path)) return;
@@ -22,7 +24,7 @@ namespace BrewLib.Util.Compression
             ensureTool();
             var utility = GetUtility();
 
-            var startInfo = new ProcessStartInfo(utility)
+            var startInfo = new ProcessStartInfo(utility, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -31,23 +33,22 @@ namespace BrewLib.Util.Compression
                 RedirectStandardError = true
             };
 
-            try
+            var task = new Task(() =>
             {
-                startInfo.Arguments = appendArgs(arg.path, useLossy, arg.lossy, arg.lossless);
-                process ??= Process.Start(startInfo);
+                using var local = Process.Start(startInfo);
+                using var errorStream = local.StandardError;
 
-                var error = process.StandardError.ReadToEnd();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
-            }
-            finally
-            {
-                ensureStop();
-            }
+                var error = errorStream.ReadToEnd();
+                if (!string.IsNullOrEmpty(error) && local.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {local.ExitCode}: {error}");
+            }, TaskCreationOptions.AttachedToParent);
+
+            queuedTasks.Add(task);
+            task.Start();
         }
         protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
         {
             var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
-            var str = new StringBuilder();
+            StringBuilder str = new();
 
             if (Environment.Is64BitOperatingSystem && useLossy)
             {
@@ -72,7 +73,6 @@ namespace BrewLib.Util.Compression
             }
             return str.ToString();
         }
-
         protected override void ensureTool()
         {
             ObjectDisposedException.ThrowIf(disposed, typeof(IntegratedCompressor));
@@ -86,13 +86,16 @@ namespace BrewLib.Util.Compression
         }
         protected override string GetUtility() => Path.Combine(UtilityPath, utilName);
 
-        readonly List<string> toCleanup = [];
-        protected override void Dispose(bool disposing)
+        readonly ConcurrentBag<string> toCleanup = [];
+        protected override async void Dispose(bool disposing)
         {
             if (disposed) return;
-            base.Dispose(disposing);
 
-            for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) File.Delete(toCleanup[i]);
+            using (var complete = Task.WhenAll(queuedTasks)) await complete;
+            foreach (var task in queuedTasks) task.Dispose();
+
+            base.Dispose(disposing);
+            foreach (var cache in toCleanup) if (File.Exists(cache)) File.Delete(cache);
             toCleanup.Clear();
         }
     }
