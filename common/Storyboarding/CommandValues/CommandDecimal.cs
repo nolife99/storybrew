@@ -19,12 +19,8 @@ namespace StorybrewCommon.Storyboarding.CommandValues
 #pragma warning disable CS1591
         public CommandDecimal(double value)
         {
-            if (double.IsNaN(value) || double.IsInfinity(value))
-            {
-                this.value = 0;
-                return;
-            }
-            this.value = value;
+            if (double.IsNaN(value) || double.IsInfinity(value)) this.value = 0;
+            else this.value = value;
         }
 
         public bool Equals(CommandDecimal other) => value.Equals(other.value);
@@ -35,196 +31,120 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public float DistanceFrom(object obj) => (float)Math.Abs(value - ((CommandDecimal)obj).value);
         public string ToOsbString(ExportSettings exportSettings) => ((float)value).ToString(exportSettings.NumberFormat);
 
-        static CommandDecimal INumberBase<CommandDecimal>.Abs(CommandDecimal value) => Math.Abs(value.value);
+        static CommandDecimal INumberBase<CommandDecimal>.Abs(CommandDecimal value) => double.Abs(value.value);
 
-        static bool INumberBase<CommandDecimal>.IsCanonical(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
+        static bool INumberBase<CommandDecimal>.IsCanonical(CommandDecimal value) => true;
+        static bool INumberBase<CommandDecimal>.IsComplexNumber(CommandDecimal value) => false;
+        static bool INumberBase<CommandDecimal>.IsEvenInteger(CommandDecimal value) => double.IsEvenInteger(value.value);
+        static bool INumberBase<CommandDecimal>.IsFinite(CommandDecimal value) => double.IsFinite(value.value);
+        static bool INumberBase<CommandDecimal>.IsImaginaryNumber(CommandDecimal value) => false;
+        static bool INumberBase<CommandDecimal>.IsInfinity(CommandDecimal value) => false;
+        static bool INumberBase<CommandDecimal>.IsInteger(CommandDecimal value) => double.IsInteger(value);
+        static bool INumberBase<CommandDecimal>.IsNaN(CommandDecimal value) => false;
+        static bool INumberBase<CommandDecimal>.IsNegative(CommandDecimal value) => double.IsNegative(value.value);
+        static bool INumberBase<CommandDecimal>.IsNegativeInfinity(CommandDecimal value) => false;
+        static bool INumberBase<CommandDecimal>.IsNormal(CommandDecimal value) => double.IsNormal(value.value);
+        static bool INumberBase<CommandDecimal>.IsOddInteger(CommandDecimal value) => double.IsOddInteger(value.value);
+        static bool INumberBase<CommandDecimal>.IsPositive(CommandDecimal value) => double.IsPositive(value.value);
+        static bool INumberBase<CommandDecimal>.IsPositiveInfinity(CommandDecimal value) => false;
+        static bool INumberBase<CommandDecimal>.IsRealNumber(CommandDecimal value) => true;
+        static bool INumberBase<CommandDecimal>.IsSubnormal(CommandDecimal value) => double.IsSubnormal(value.value);
+        static bool INumberBase<CommandDecimal>.IsZero(CommandDecimal value) => value == 0;
 
-        static bool INumberBase<CommandDecimal>.IsComplexNumber(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
+        static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitude(CommandDecimal x, CommandDecimal y) => double.MaxMagnitude(x, y);
+        static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitudeNumber(CommandDecimal x, CommandDecimal y) => double.MaxMagnitudeNumber(x, y);
+        static CommandDecimal INumberBase<CommandDecimal>.MinMagnitude(CommandDecimal x, CommandDecimal y) => double.MinMagnitude(x, y);
+        static CommandDecimal INumberBase<CommandDecimal>.MinMagnitudeNumber(CommandDecimal x, CommandDecimal y) => double.MinMagnitudeNumber(x, y);
+        static CommandDecimal INumberBase<CommandDecimal>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider) => double.Parse(s, style, provider);
+        static CommandDecimal INumberBase<CommandDecimal>.Parse(string s, NumberStyles style, IFormatProvider provider) => double.Parse(s.Trim(), style, provider);
 
-        static bool INumberBase<CommandDecimal>.IsEvenInteger(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsFinite(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsImaginaryNumber(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsInfinity(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsInteger(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsNaN(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsNegative(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsNegativeInfinity(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsNormal(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsOddInteger(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsPositive(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsPositiveInfinity(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsRealNumber(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsSubnormal(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.IsZero(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitude(CommandDecimal x, CommandDecimal y)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitudeNumber(CommandDecimal x, CommandDecimal y)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal INumberBase<CommandDecimal>.MinMagnitude(CommandDecimal x, CommandDecimal y)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal INumberBase<CommandDecimal>.MinMagnitudeNumber(CommandDecimal x, CommandDecimal y)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal INumberBase<CommandDecimal>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal INumberBase<CommandDecimal>.Parse(string s, NumberStyles style, IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.TryConvertFromChecked<TOther>(TOther value, out CommandDecimal result)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.TryConvertFromSaturating<TOther>(TOther value, out CommandDecimal result)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool INumberBase<CommandDecimal>.TryConvertFromTruncating<TOther>(TOther value, out CommandDecimal result)
-        {
-            throw new NotImplementedException();
-        }
-
+        static bool INumberBase<CommandDecimal>.TryConvertFromChecked<TOther>(TOther value, out CommandDecimal result) => TryConvertFrom(value, out result);
+        static bool INumberBase<CommandDecimal>.TryConvertFromSaturating<TOther>(TOther value, out CommandDecimal result) => TryConvertFrom(value, out result);
+        static bool INumberBase<CommandDecimal>.TryConvertFromTruncating<TOther>(TOther value, out CommandDecimal result) => TryConvertFrom(value, out result);
         static bool INumberBase<CommandDecimal>.TryConvertToChecked<TOther>(CommandDecimal value, out TOther result)
         {
-            throw new NotImplementedException();
+            try
+            {
+                result = TOther.CreateChecked(value);
+                return true;
+            }
+            catch (SystemException)
+            {
+                result = default;
+                return false;
+            }
         }
-
         static bool INumberBase<CommandDecimal>.TryConvertToSaturating<TOther>(CommandDecimal value, out TOther result)
         {
-            throw new NotImplementedException();
+            try
+            {
+                result = TOther.CreateSaturating(value);
+                return true;
+            }
+            catch (SystemException)
+            {
+                result = default;
+                return false;
+            }
         }
-
         static bool INumberBase<CommandDecimal>.TryConvertToTruncating<TOther>(CommandDecimal value, out TOther result)
         {
-            throw new NotImplementedException();
+            try
+            {
+                result = TOther.CreateTruncating(value);
+                return true;
+            }
+            catch (SystemException)
+            {
+                result = default;
+                return false;
+            }
+        }
+        static bool TryConvertFrom<TOther>(TOther value, out CommandDecimal result) where TOther : INumberBase<TOther>
+        {
+            try
+            {
+                result = double.CreateChecked(value);
+                return true;
+            }
+            catch (SystemException)
+            {
+                result = default;
+                return false;
+            }
         }
 
         static bool INumberBase<CommandDecimal>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out CommandDecimal result)
         {
-            throw new NotImplementedException();
+            var success = double.TryParse(s, style, provider, out double dResult);
+            result = dResult;
+            return success;
         }
-
         static bool INumberBase<CommandDecimal>.TryParse(string s, NumberStyles style, IFormatProvider provider, out CommandDecimal result)
         {
-            throw new NotImplementedException();
+            var success = double.TryParse(s, style, provider, out double dResult);
+            result = dResult;
+            return success;
         }
-
-        bool IEquatable<CommandDecimal>.Equals(CommandDecimal other)
-        {
-            throw new NotImplementedException();
-        }
-
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
+            => value.TryFormat(destination, out charsWritten, format, provider);
 
-        string IFormattable.ToString(string format, IFormatProvider formatProvider)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal ISpanParsable<CommandDecimal>.Parse(ReadOnlySpan<char> s, IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
+        string IFormattable.ToString(string format, IFormatProvider formatProvider) => value.ToString(format, formatProvider);
+        static CommandDecimal ISpanParsable<CommandDecimal>.Parse(ReadOnlySpan<char> s, IFormatProvider provider) => double.Parse(s, provider);
 
         static bool ISpanParsable<CommandDecimal>.TryParse(ReadOnlySpan<char> s, IFormatProvider provider, out CommandDecimal result)
         {
-            throw new NotImplementedException();
+            var success = double.TryParse(s, provider, out double dResult);
+            result = dResult;
+            return success;
         }
 
-        static CommandDecimal IParsable<CommandDecimal>.Parse(string s, IFormatProvider provider)
-        {
-            throw new NotImplementedException();
-        }
-
+        static CommandDecimal IParsable<CommandDecimal>.Parse(string s, IFormatProvider provider) => double.Parse(s, provider);
         static bool IParsable<CommandDecimal>.TryParse(string s, IFormatProvider provider, out CommandDecimal result)
         {
-            throw new NotImplementedException();
+            var success = double.TryParse(s, provider, out double dResult);
+            result = dResult;
+            return success;
         }
 
         public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => left.value - right.value;
@@ -235,10 +155,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public static implicit operator double(CommandDecimal obj) => obj.value;
         public static implicit operator float(CommandDecimal obj) => (float)obj.value;
 
-        static CommandDecimal IAdditionOperators<CommandDecimal, CommandDecimal, CommandDecimal>.operator +(CommandDecimal left, CommandDecimal right)
-        {
-            throw new NotImplementedException();
-        }
+        static CommandDecimal IAdditionOperators<CommandDecimal, CommandDecimal, CommandDecimal>.operator +(CommandDecimal left, CommandDecimal right) => left.value + right.value;
 
         static CommandDecimal IDecrementOperators<CommandDecimal>.operator --(CommandDecimal value)
         {
