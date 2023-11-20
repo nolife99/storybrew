@@ -296,7 +296,7 @@ namespace StorybrewCommon.Scripting
             configurableFields.ForEach(configurableField =>
             {
                 var field = configurableField.Field;
-                var allowedValues = (NamedValue[])null;
+                NamedValue[] allowedValues = null;
 
                 var fieldType = field.FieldType;
                 if (fieldType.IsEnum)
@@ -357,7 +357,7 @@ namespace StorybrewCommon.Scripting
         void initializeConfigurableFields()
         {
             var fields = GetType().GetFields();
-            configurableFields = new List<ConfigurableField>(fields.Length);
+            configurableFields = new(fields.Length);
 
             for (int i = 0, order = 0; i < fields.Length; ++i)
             {

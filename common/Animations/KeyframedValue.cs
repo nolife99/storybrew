@@ -270,7 +270,7 @@ namespace StorybrewCommon.Animations
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
-            return (startToMiddle - Vector3.Dot(startToMiddle, startToEnd) / Vector3.Dot(startToEnd, startToEnd) * startToEnd).Length();
+            return (startToMiddle - Vector3.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).Length();
         });
 
         ///<summary> Simplifies keyframes on 3-parameter commands. </summary>
@@ -289,7 +289,7 @@ namespace StorybrewCommon.Animations
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
-            return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / Vector4.Dot(startToEnd, startToEnd) * startToEnd).Length();
+            return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).Length();
         });
 
         void SimplifyEqualKeyframes()

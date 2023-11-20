@@ -23,8 +23,6 @@ namespace BrewLib.Util.Compression
         public void Compress(string path) => compress(new Argument(path), true);
         public void LosslessCompress(string path, LosslessInputSettings settings) => compress(new Argument(path, settings), false);
         public void Compress(string path, LossyInputSettings settings) => compress(new Argument(path, null, settings), true);
-        public void LosslessCompress(string path, LosslessInputSettings settings, InputFormat inputFormat) => compress(new Argument(path, settings, null, inputFormat), false);
-        public void Compress(string path, LossyInputSettings settings, InputFormat inputFormat) => compress(new Argument(path, null, settings, inputFormat), true);
 
         protected abstract void compress(Argument arg, bool useLossy);
         protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
@@ -57,14 +55,12 @@ namespace BrewLib.Util.Compression
             internal readonly string path;
             internal readonly LosslessInputSettings lossless;
             internal readonly LossyInputSettings lossy;
-            internal readonly InputFormat format;
 
-            internal Argument(string path, LosslessInputSettings lossless = null, LossyInputSettings lossy = null, InputFormat format = null)
+            internal Argument(string path, LosslessInputSettings lossless = null, LossyInputSettings lossy = null)
             {
                 this.path = path;
                 this.lossless = lossless;
                 this.lossy = lossy;
-                this.format = format;
             }
         }
     }
