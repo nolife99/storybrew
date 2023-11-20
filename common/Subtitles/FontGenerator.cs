@@ -190,7 +190,7 @@ namespace StorybrewCommon.Subtitles
         }
 
         ///<summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
-        public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith("#", StringComparison.Ordinal) ? htmlColor : "#" + htmlColor);
+        public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
 
         static byte toByte(double x)
         {
@@ -397,18 +397,11 @@ namespace StorybrewCommon.Subtitles
                     }
                     if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath))
                     {
-                        if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings
-                        {
-                            OptimizationLevel = OptimizationLevel.Level7
-                        });
-                        else StoryboardObjectGenerator.Current.Compressor.Compress(path, new LossyInputSettings
-                        {
-                            Speed = 1,
-                            MinQuality = 75,
-                            MaxQuality = 100
-                        });
+                        if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) 
+                            StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings(7));
+                        else StoryboardObjectGenerator.Current.Compressor.Compress(path, new LossyInputSettings(75, 100, 1));
                     }
-                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path);
+                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings(4));
                 }
             }
             return new FontTexture(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);

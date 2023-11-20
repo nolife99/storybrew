@@ -50,7 +50,7 @@ namespace BrewLib.Util.Compression
 
         public void Dispose() => Dispose(true);
 
-        protected class Argument
+        protected readonly struct Argument
         {
             internal readonly string path;
             internal readonly LosslessInputSettings lossless;

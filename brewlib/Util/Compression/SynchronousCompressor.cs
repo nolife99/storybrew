@@ -104,7 +104,7 @@ namespace BrewLib.Util.Compression
             }
             else
             {
-                var lvl = lossless != null ? (byte)lossless.OptimizationLevel : 7;
+                var lvl = lossless != null ? lossless.OptimizationLevel : 4;
                 str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
                 str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless?.CustomInputArgs);
                 str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
