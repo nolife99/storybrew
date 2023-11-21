@@ -1,13 +1,13 @@
 ﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding.CommandValues;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace StorybrewCommon.Storyboarding.Commands
 {
-    public abstract class Command<TValue> : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable
-        where TValue : CommandValue
+#pragma warning disable CS1591
+    public abstract class Command<TValue> : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
     {
         public string Identifier { get; set; }
         public OsbEasing Easing { get; set; }
@@ -36,7 +36,6 @@ namespace StorybrewCommon.Storyboarding.Commands
             StartTime += offset;
             EndTime += offset;
         }
-
         public TValue ValueAtTime(double time)
         {
             if (time < StartTime) return MaintainValue ? ValueAtProgress(0) : default;
@@ -50,21 +49,19 @@ namespace StorybrewCommon.Storyboarding.Commands
         public abstract TValue ValueAtProgress(double progress);
         public abstract TValue Midpoint(Command<TValue> endCommand, double progress);
 
-        public bool IsFragmentable => StartTime == EndTime || Easing == OsbEasing.None;
-
+        public bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
         public abstract IFragmentableCommand GetFragment(double startTime, double endTime);
-
         public IEnumerable<int> GetNonFragmentableTimes()
         {
-            var nonFragmentableTimes = new HashSet<int>();
-            if (!IsFragmentable)
-                nonFragmentableTimes.UnionWith(Enumerable.Range((int)StartTime + 1, (int)(EndTime - StartTime - 1)));
-
-            return nonFragmentableTimes;
+            if (!IsFragmentable) for (var i = 0; i < EndTime - StartTime - 1; ++i) yield return (int)(StartTime + 1 + i);
         }
 
-        public int CompareTo(ICommand other)
-            => CommandComparer.CompareCommands(this, other);
+        public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
+        public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
+
+        public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
+        public bool Equals(Command<TValue> obj) => Identifier == obj.Identifier && Easing == obj.Easing && 
+            StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) && EndValue.Equals(obj.EndValue);
 
         public virtual string ToOsbString(ExportSettings exportSettings)
         {
@@ -73,26 +70,20 @@ namespace StorybrewCommon.Storyboarding.Commands
             var startValueString = StartValue.ToOsbString(exportSettings);
             var endValueString = (ExportEndValue ? EndValue : StartValue).ToOsbString(exportSettings);
 
-            if (startTimeString == endTimeString)
-                endTimeString = string.Empty;
+            if (startTimeString == endTimeString) endTimeString = "";
 
             string[] parameters =
-            {
+            [
                 Identifier, ((int)Easing).ToString(exportSettings.NumberFormat),
                 startTimeString, endTimeString, startValueString
-            };
+            ];
 
             var result = string.Join(",", parameters);
-            if (startValueString != endValueString)
-                result += "," + endValueString;
-
+            if (startValueString != endValueString) result += "," + endValueString;
             return result;
         }
 
-        public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation)
-            => writer.WriteLine(new string(' ', indentation) + ToOsbString(exportSettings));
-
-        public override string ToString()
-            => ToOsbString(ExportSettings.Default);
+        public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation) => writer.WriteLine(new string(' ', indentation) + ToOsbString(exportSettings));
+        public override string ToString() => ToOsbString(ExportSettings.Default);
     }
 }

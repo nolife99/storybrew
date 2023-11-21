@@ -1,19 +1,22 @@
-﻿using System;
+﻿using BrewLib.Util;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
 namespace StorybrewCommon.Subtitles.Parsers
 {
-    // YouTube's subtitle format
-    public class SbvParser
+    ///<summary> Parsing methods for .sbv subtitle files. </summary>
+    public class SbvParser : SubtitleParser
     {
+        ///<inheritdoc/>
         public SubtitleSet Parse(string path)
         {
-            using (var stream = BrewLib.Util.Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
-                return Parse(stream);
+            using var stream = Misc.WithRetries(() => File.OpenRead(path));
+            return Parse(stream);
         }
 
+        ///<inheritdoc/>
         public SubtitleSet Parse(Stream stream)
         {
             var lines = new List<SubtitleLine>();
@@ -29,30 +32,27 @@ namespace StorybrewCommon.Subtitles.Parsers
             return new SubtitleSet(lines);
         }
 
-        private IEnumerable<string> parseBlocks(Stream stream)
+        static IEnumerable<string> parseBlocks(Stream stream)
         {
-            using (var reader = new StreamReader(stream))
+            using var reader = new StreamReader(stream);
+            var sb = new StringBuilder();
+
+            string line;
+            while ((line = reader.ReadLine()) != null)
             {
-                var sb = new StringBuilder();
-
-                string line;
-                while ((line = reader.ReadLine()) != null)
+                if (string.IsNullOrEmpty(line.Trim()))
                 {
-                    if (string.IsNullOrEmpty(line.Trim()))
-                    {
-                        var block = sb.ToString().Trim();
-                        if (block.Length > 0) yield return block;
-                        sb.Clear();
-                    }
-                    else sb.AppendLine(line);
+                    var block = sb.ToString().Trim();
+                    if (block.Length > 0) yield return block;
+                    sb.Clear();
                 }
-
-                var endBlock = sb.ToString().Trim();
-                if (endBlock.Length > 0) yield return endBlock;
+                else sb.AppendLine(line);
             }
+
+            var endBlock = sb.ToString().Trim();
+            if (endBlock.Length > 0) yield return endBlock;
         }
 
-        private double parseTimestamp(string timestamp)
-            => TimeSpan.Parse(timestamp).TotalMilliseconds;
+        static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp).TotalMilliseconds;
     }
 }

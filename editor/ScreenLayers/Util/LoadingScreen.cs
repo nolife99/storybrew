@@ -1,26 +1,20 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using System;
 using System.Diagnostics;
 using System.Threading;
 
 namespace StorybrewEditor.ScreenLayers.Util
 {
-    public class LoadingScreen : UiScreenLayer
+    public class LoadingScreen(string title, Action action) : UiScreenLayer
     {
-        private readonly string title;
-        private readonly Action action;
+        readonly string title = title;
+        readonly Action action = action;
 
-        private LinearLayout mainLayout;
+        LinearLayout mainLayout;
 
         public override bool IsPopup => true;
-
-        public LoadingScreen(string title, Action action)
-        {
-            this.title = title;
-            this.action = action;
-        }
 
         public override void Load()
         {
@@ -29,7 +23,7 @@ namespace StorybrewEditor.ScreenLayers.Util
                 Exception exception = null;
                 try
                 {
-                    action.Invoke();
+                    action();
                 }
                 catch (Exception e)
                 {
@@ -53,7 +47,10 @@ namespace StorybrewEditor.ScreenLayers.Util
                     Exit();
                 });
             })
-            { Name = $"Loading ({title}, {action.Method.Name})", IsBackground = true, };
+            {
+                Name = $"Loading ({title}, {action.Method.Name})",
+                IsBackground = true
+            };
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
 
@@ -71,20 +68,16 @@ namespace StorybrewEditor.ScreenLayers.Util
                 {
                     new Label(WidgetManager)
                     {
-                        Text = $"{title}..." ?? "Loading...",
+                        Text = $"{title}..." ?? "Loading..."
                     }
-                },
+                }
             });
         }
-
         public override void Resize(int width, int height)
         {
             base.Resize(width, height);
             mainLayout.Pack(1024);
         }
-
-        public override void Close()
-        {
-        }
+        public override void Close() { }
     }
 }

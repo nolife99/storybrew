@@ -5,27 +5,22 @@ using System.IO;
 
 namespace StorybrewCommon.Storyboarding.Display
 {
-    public class TriggerDecorator<TValue> : ITypedCommand<TValue>
-        where TValue : CommandValue
+#pragma warning disable CS1591
+    public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCommand<TValue> where TValue : CommandValue
     {
-        private readonly ITypedCommand<TValue> command;
-        private double triggerTime;
+        readonly ITypedCommand<TValue> command = command;
+        double triggerTime;
 
-        public OsbEasing Easing { get { throw new InvalidOperationException(); } }
+        public OsbEasing Easing => throw new NotImplementedException();
         public double StartTime => triggerTime + command.StartTime;
         public double EndTime => triggerTime + command.EndTime;
         public TValue StartValue => command.StartValue;
         public TValue EndValue => command.EndValue;
         public double Duration => EndTime - StartTime;
-        public bool Active { get; private set; }
-        public int Cost => throw new InvalidOperationException();
+        public bool Active { get; set; }
+        public int Cost => throw new NotImplementedException();
 
         public event EventHandler OnStateChanged;
-
-        public TriggerDecorator(ITypedCommand<TValue> command)
-        {
-            this.command = command;
-        }
 
         public void Trigger(double time)
         {
@@ -35,7 +30,6 @@ namespace StorybrewCommon.Storyboarding.Display
             triggerTime = time;
             OnStateChanged?.Invoke(this, EventArgs.Empty);
         }
-
         public void UnTrigger()
         {
             if (!Active) return;
@@ -43,29 +37,18 @@ namespace StorybrewCommon.Storyboarding.Display
             Active = false;
             OnStateChanged?.Invoke(this, EventArgs.Empty);
         }
-
         public TValue ValueAtTime(double time)
         {
             if (!Active) throw new InvalidOperationException("Not triggered");
 
             var commandTime = time - triggerTime;
-            if (commandTime < command.StartTime) 
-                return command.ValueAtTime(command.StartTime);
-            if (command.EndTime < commandTime) 
-                return command.ValueAtTime(command.EndTime);
-
+            if (commandTime < command.StartTime) return command.ValueAtTime(command.StartTime);
+            if (command.EndTime < commandTime) return command.ValueAtTime(command.EndTime);
             return command.ValueAtTime(commandTime);
         }
+        public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-        public int CompareTo(ICommand other)
-            => CommandComparer.CompareCommands(this, other);
-
-        public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation)
-        {
-            throw new InvalidOperationException();
-        }
-
+        public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation) => throw new NotImplementedException();
         public override string ToString() => $"triggerable ({StartTime}s - {EndTime}s active:{Active})";
-
     }
 }

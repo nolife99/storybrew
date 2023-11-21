@@ -6,30 +6,23 @@ using System.IO;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptContainerProcess<TScript> : ScriptContainerBase<TScript>
-        where TScript : Script
+    public class ScriptContainerProcess<TScript>(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies) : ScriptContainerBase<TScript>(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) where TScript : Script
     {
-        private RemoteProcessWorkerContainer workerProcess;
+        RemoteProcessWorkerContainer workerProcess;
 
-        public ScriptContainerProcess(ScriptManager<TScript> manager, string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
-            : base(manager, scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies)
-        {
-        }
-
-        protected override ScriptProvider<TScript> LoadScript()
+        protected override IProvider<TScript> LoadScript()
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(ScriptContainerAppDomain<TScript>));
-
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Guid.NewGuid().ToString()}.dll");
+                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name}-{DateTime.UtcNow.Millisecond}.dll");
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 workerProcess?.Dispose();
                 workerProcess = new RemoteProcessWorkerContainer();
 
-                var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
-                scriptProvider.Initialize(assemblyPath, ScriptTypeName);
+                var scriptProvider = RemoteProcessWorker.CreateScriptProvider<TScript>();
+                scriptProvider.Initialize(null, assemblyPath, ScriptTypeName);
 
                 return scriptProvider;
             }
@@ -45,15 +38,12 @@ namespace StorybrewEditor.Scripting
 
         #region IDisposable Support
 
-        private bool disposedValue = false;
+        bool disposedValue;
         protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                    workerProcess?.Dispose();
-                }
+                if (disposing) workerProcess?.Dispose();
                 workerProcess = null;
                 disposedValue = true;
             }

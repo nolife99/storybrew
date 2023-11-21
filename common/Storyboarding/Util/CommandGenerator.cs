@@ -1,255 +1,312 @@
-﻿
-#if DEBUG
-using OpenTK;
 using StorybrewCommon.Animations;
-using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
+using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
+using System.Drawing;
+using StorybrewCommon.Subtitles;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
+    ///<summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
     public class CommandGenerator
     {
-        private readonly List<State> states = new List<State>();
+        readonly KeyframedValue<CommandPosition>
+            positions = new(InterpolatingFunctions.Position),
+            finalPositions = new(InterpolatingFunctions.Position);
 
-        private readonly KeyframedValue<Vector2> positions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
-        private readonly KeyframedValue<Vector2> scales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
-        private readonly KeyframedValue<float> rotations = new KeyframedValue<float>(InterpolatingFunctions.FloatAngle);
-        private readonly KeyframedValue<CommandColor> colors = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor);
-        private readonly KeyframedValue<float> opacities = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        readonly KeyframedValue<CommandScale>
+            scales = new(InterpolatingFunctions.Scale),
+            finalScales = new(InterpolatingFunctions.Scale);
 
-        private readonly KeyframedValue<Vector2> finalPositions = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
-        private readonly KeyframedValue<Vector2> finalScales = new KeyframedValue<Vector2>(InterpolatingFunctions.Vector2);
-        private readonly KeyframedValue<float> finalRotations = new KeyframedValue<float>(InterpolatingFunctions.FloatAngle);
-        private readonly KeyframedValue<CommandColor> finalColors = new KeyframedValue<CommandColor>(InterpolatingFunctions.CommandColor);
-        private readonly KeyframedValue<float> finalOpacities = new KeyframedValue<float>(InterpolatingFunctions.Float);
+        readonly KeyframedValue<double>
+            rotations = new(InterpolatingFunctions.DoubleAngle),
+            fades = new(InterpolatingFunctions.Double),
+            finalRotations = new(InterpolatingFunctions.DoubleAngle),
+            finalfades = new(InterpolatingFunctions.Double);
 
-        private readonly KeyframedValue<bool> flipH = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom);
-        private readonly KeyframedValue<bool> flipV = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom);
-        private readonly KeyframedValue<bool> additive = new KeyframedValue<bool>(InterpolatingFunctions.BoolFrom);
+        readonly KeyframedValue<CommandColor>
+            colors = new(InterpolatingFunctions.CommandColor),
+            finalColors = new(InterpolatingFunctions.CommandColor);
 
+        readonly KeyframedValue<bool>
+            flipH = new(InterpolatingFunctions.BoolFrom),
+            flipV = new(InterpolatingFunctions.BoolFrom),
+            additive = new(InterpolatingFunctions.BoolFrom);
+
+        readonly List<State> states = [];
+
+        ///<summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
         public State StartState => states.Count == 0 ? null : states[0];
-        public State EndState => states.Count == 0 ? null : states[states.Count - 1];
 
+        ///<summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
+        public State EndState => states.Count == 0 ? null : states[^1];
+
+        ///<summary> The tolerance threshold for position keyframe simplification. </summary>
         public double PositionTolerance = 1;
-        public double ScaleTolerance = 0.1;
-        public double RotationTolerance = 0.001;
-        public double ColorTolerance = 2;
-        public double OpacityTolerance = 0.01;
 
+        ///<summary> The tolerance threshold for scaling keyframe simplification. </summary>
+        public double ScaleTolerance = 1;
+
+        ///<summary> The tolerance threshold for rotation keyframe simplification. </summary>
+        public double RotationTolerance = .005;
+
+        ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
+        public double ColorTolerance = 1.5;
+
+        ///<summary> The tolerance threshold for opacity keyframe simplification. </summary>
+        public double OpacityTolerance = .1;
+
+        ///<summary> The amount of decimal digits for position keyframes. </summary>
         public int PositionDecimals = 1;
-        public int ScaleDecimals = 2;
-        public int RotationDecimals = 3;
-        public int OpacityDecimals = 2;
 
-        public Action<State> PostProcess;
+        ///<summary> The amount of decimal digits for scaling keyframes. </summary>
+        public int ScaleDecimals = 3;
 
-        public void Add(State state, bool before = false)
+        ///<summary> The amount of decimal digits for rotation keyframes. </summary>
+        public int RotationDecimals = 5;
+
+        ///<summary> The amount of decimal digits for opacity keyframes. </summary>
+        public int OpacityDecimals = 1;
+
+        ///<summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
+        public void Add(State state)
         {
-            if (states.Count == 0 || states[states.Count - 1].Time < state.Time)
-                states.Add(state);
-            else
+            var count = states.Count;
+            if (count == 0 || states[count - 1].Time < state.Time)
             {
-                var index = states.BinarySearch(state);
-                if (index >= 0)
-                {
-                    if (before)
-                        while (index > 0 && states[index].Time >= state.Time) index--;
-                    else while (index < states.Count && states[index].Time <= state.Time) index++;
-                }
-                else index = ~index;
-                states.Insert(index, state);
+                states.Add(state);
+                return;
             }
+
+            var i = states.BinarySearch(state, state);
+            if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) ++i;
+            else i = ~i;
+
+            states.Insert(i, state);
         }
 
-        public void ClearStates()
-            => states.Clear();
-
+        ///<summary> Generates commands on a sprite based on this generator's states. </summary>
+        ///<param name="sprite"> The <see cref="OsbSprite"/> to have commands generated on. </param>
+        ///<param name="action"> Encapsulates a group of commands to be generated on <paramref name="sprite"/>. </param>
+        ///<param name="startTime"> The explicit start time of the command generation. Can be left <see langword="null"/> if <see cref="State.Time"/> is used. </param>
+        ///<param name="endTime"> The explicit end time of the command generation. Can be left <see langword="null"/> if <see cref="State.Time"/> is used. </param>
+        ///<param name="timeOffset"> The time offset of the command times. </param>
+        ///<param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
+        ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
         public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
-            => GenerateCommands(sprite, OsuHitObject.WidescreenStoryboardBounds, action, startTime, endTime, timeOffset, loopable);
-
-        public bool GenerateCommands(OsbSprite sprite, Box2 bounds, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
         {
-            var previousState = (State)null;
-            var wasVisible = false;
-            var everVisible = false;
-            var stateAdded = false;
-            var imageSize = Vector2.One;
+            State previousState = null;
+            bool wasVisible = false, everVisible = false, stateAdded = false;
 
-            foreach (var state in states)
+            var imageSize = BitmapDimensions(sprite);
+            states.ForEach(state =>
             {
                 var time = state.Time + timeOffset;
-                var bitmap = StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.GetTexturePathAt(time));
-                imageSize = new Vector2(bitmap.Width, bitmap.Height);
+                var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
 
-                PostProcess?.Invoke(state);
-                var isVisible = state.IsVisible(bitmap.Width, bitmap.Height, sprite.Origin, bounds);
-
-                if (isVisible) everVisible = true;
+                if (isVisible && !everVisible) everVisible = true;
                 if (!wasVisible && isVisible)
                 {
-                    if (!stateAdded && previousState != null)
-                        addKeyframes(previousState, time);
+                    if (!stateAdded && previousState != null) addKeyframes(previousState, loopable ? time : (previousState.Time + timeOffset));
                     addKeyframes(state, time);
-                    stateAdded = true;
+                    if (!stateAdded) stateAdded = true;
                 }
                 else if (wasVisible && !isVisible)
                 {
                     addKeyframes(state, time);
                     commitKeyframes(imageSize);
-                    stateAdded = true;
+                    if (!stateAdded) stateAdded = true;
                 }
                 else if (isVisible)
                 {
                     addKeyframes(state, time);
-                    stateAdded = true;
+                    if (!stateAdded) stateAdded = true;
                 }
                 else stateAdded = false;
 
                 previousState = state;
                 wasVisible = isVisible;
-            }
+            });
 
-            if (wasVisible)
-                commitKeyframes(imageSize);
-
+            if (wasVisible) commitKeyframes(imageSize);
             if (everVisible)
             {
-                if (action != null)
-                    action(() => convertToCommands(sprite, startTime, endTime, timeOffset, loopable), sprite);
-                else convertToCommands(sprite, startTime, endTime, timeOffset, loopable);
+                if (action is null) convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable);
+                else action(() => convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable), sprite);
             }
 
-            clearFinalKeyframes();
+            clearKeyframes();
             return everVisible;
         }
-
-        private void commitKeyframes(Vector2 imageSize)
+        void commitKeyframes(SizeF imageSize)
         {
-            positions.Simplify2dKeyframes(PositionTolerance, p => p);
+            fades.Simplify1dKeyframes(OpacityTolerance, f => (float)f);
+            if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
+            if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
+            fades.TransferKeyframes(finalfades);
+
+            positions.Simplify2dKeyframes(PositionTolerance, s => s);
+            finalPositions.Until(positions.StartTime);
             positions.TransferKeyframes(finalPositions);
 
-            scales.Simplify2dKeyframes(ScaleTolerance, s => new Vector2(s.X * imageSize.X, s.Y * imageSize.Y));
+            scales.Simplify2dKeyframes(ScaleTolerance, v => v * imageSize);
+            finalScales.Until(scales.StartTime);
             scales.TransferKeyframes(finalScales);
 
-            rotations.Simplify1dKeyframes(RotationTolerance, a => a);
+            rotations.Simplify1dKeyframes(RotationTolerance, r => (float)r);
+            finalRotations.Until(rotations.StartTime);
             rotations.TransferKeyframes(finalRotations);
 
             colors.Simplify3dKeyframes(ColorTolerance, c => new Vector3(c.R, c.G, c.B));
+            finalColors.Until(colors.StartTime);
             colors.TransferKeyframes(finalColors);
-
-            opacities.Simplify1dKeyframes(OpacityTolerance, o => o);
-            if (opacities.StartValue > 0) opacities.Add(opacities.StartTime, 0, before: true);
-            if (opacities.EndValue > 0) opacities.Add(opacities.EndTime, 0);
-            opacities.TransferKeyframes(finalOpacities);
         }
-
-        private void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, bool loopable)
+        void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)
         {
-            var startStateTime = loopable ? (startTime ?? StartState.Time) + timeOffset : (double?)null;
-            var endStateTime = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
+            var startState = loopable ? (startTime ?? StartState.Time) + timeOffset : (double?)null;
+            var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
 
-            finalPositions.ForEachPair((start, end) => sprite.Move(start.Time, end.Time, start.Value, end.Value), new Vector2(320, 240),
-                p => new Vector2((float)Math.Round(p.X, PositionDecimals), (float)Math.Round(p.Y, PositionDecimals)), startStateTime, loopable: loopable);
-            var useVectorScaling = finalScales.Any(k => k.Value.X != k.Value.Y);
-            finalScales.ForEachPair((start, end) =>
+            double checkPos(double value) => Math.Round(value, PositionDecimals);
+            bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
+                 moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
+
+            finalPositions.ForEachPair((s, e) =>
             {
-                if (useVectorScaling)
-                    sprite.ScaleVec(start.Time, end.Time, start.Value, end.Value);
-                else sprite.Scale(start.Time, end.Time, start.Value.X, end.Value.X);
-            }, Vector2.One, s => new Vector2((float)Math.Round(s.X, ScaleDecimals), (float)Math.Round(s.Y, ScaleDecimals)), startStateTime, loopable: loopable);
-            finalRotations.ForEachPair((start, end) => sprite.Rotate(start.Time, end.Time, start.Value, end.Value), 0,
-                r => (float)Math.Round(r, RotationDecimals), startStateTime, loopable: loopable);
-            finalColors.ForEachPair((start, end) => sprite.Color(start.Time, end.Time, start.Value, end.Value), CommandColor.White,
-                c => CommandColor.FromRgb(c.R, c.G, c.B), startStateTime, loopable: loopable);
-            finalOpacities.ForEachPair((start, end) => sprite.Fade(start.Time, end.Time, start.Value, end.Value), -1,
-                o => (float)Math.Round(o, OpacityDecimals), startStateTime, endStateTime, loopable: loopable);
+                if (moveX && !moveY)
+                {
+                    sprite.MoveX(s.Time, e.Time, s.Value.X, e.Value.X);
+                    sprite.InitialPosition = new CommandPosition(0, s.Value.Y);
+                }
+                else if (moveY && !moveX)
+                {
+                    sprite.MoveY(s.Time, e.Time, s.Value.Y, e.Value.Y);
+                    sprite.InitialPosition = new CommandPosition(s.Value.X, 0);
+                }
+                else sprite.Move(s.Time, e.Time, s.Value, e.Value);
+            }, new Vector2(320, 240), p => new CommandPosition(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, endState, loopable);
 
-            flipH.ForEachFlag((fromTime, toTime) => sprite.FlipH(fromTime, toTime));
-            flipV.ForEachFlag((fromTime, toTime) => sprite.FlipV(fromTime, toTime));
-            additive.ForEachFlag((fromTime, toTime) => sprite.Additive(fromTime, toTime));
+            int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
+            var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) > 1);
+            finalScales.ForEachPair((s, e) =>
+            {
+                if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
+                else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
+            }, Vector2.One, s => new CommandScale(Math.Round(s.X, ScaleDecimals), Math.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
+
+            finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
+            finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), Color.White, null, startState, endState, loopable);
+            finalfades.ForEachPair((s, e) =>
+            {
+                // what the hell???
+                if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 ||
+                    s.Time == sprite.EndTime || s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0))
+                    sprite.Fade(s.Time, e.Time, s.Value, e.Value);
+            }, -1, o => Math.Round(o, OpacityDecimals), startState, endState, loopable);
+
+            flipH.ForEachFlag(sprite.FlipH);
+            flipV.ForEachFlag(sprite.FlipV);
+            additive.ForEachFlag(sprite.Additive);
         }
-
-        private void addKeyframes(State state, double time)
+        void addKeyframes(State state, double time)
         {
             positions.Add(time, state.Position);
             scales.Add(time, state.Scale);
-            rotations.Add(time, (float)state.Rotation);
+            rotations.Add(time, state.Rotation);
             colors.Add(time, state.Color);
-            opacities.Add(time, (float)state.Opacity);
+            fades.Add(time, state.Opacity);
             flipH.Add(time, state.FlipH);
             flipV.Add(time, state.FlipV);
             additive.Add(time, state.Additive);
         }
-
-        private void clearFinalKeyframes()
+        void clearKeyframes()
         {
-            finalPositions.Clear();
-            finalScales.Clear();
-            finalRotations.Clear();
-            finalColors.Clear();
-            finalOpacities.Clear();
-            flipH.Clear();
-            flipV.Clear();
-            additive.Clear();
+            states.Clear();
+            states.Capacity = 0;
+
+            positions.Clear(true);
+            scales.Clear(true);
+            rotations.Clear(true);
+            colors.Clear(true);
+            fades.Clear(true);
+            finalPositions.Clear(true);
+            finalScales.Clear(true);
+            finalRotations.Clear(true);
+            finalColors.Clear(true);
+            finalfades.Clear(true);
+            flipH.Clear(true);
+            flipV.Clear(true);
+            additive.Clear(true);
         }
-
-        public class State : IComparable<State>
+        internal static SizeF BitmapDimensions(OsbSprite sprite)
         {
-            public double Time;
-            public Vector2 Position = new Vector2(320, 240);
-            public Vector2 Scale = new Vector2(1, 1);
-            public double Rotation = 0;
-            public CommandColor Color = CommandColor.White;
-            public double Opacity = 1;
-            public bool FlipH;
-            public bool FlipV;
-            public bool Additive;
-
-            public bool IsVisible(int width, int height, OsbOrigin origin, Box2 bounds)
+            // try to reduce the amount of Bitmap in memory
+            if (StoryboardObjectGenerator.Current.fonts.Count > 0)
             {
-                if (Opacity <= 0)
-                    return false;
+                var font = StoryboardObjectGenerator.Current.fonts.Values.SelectMany(gen => gen.cache.Values).FirstOrDefault(texture => texture.Path == sprite.TexturePath);
 
-                if (Scale.X == 0 || Scale.Y == 0)
-                    return false;
-
-                if (Additive && Color.R == 0 && Color.G == 0 && Color.B == 0)
-                    return false;
-
-                if (!bounds.Contains(Position))
-                {
-                    var w = width * Scale.X;
-                    var h = height * Scale.Y;
-                    Vector2 originVector;
-                    switch (origin)
-                    {
-                        default:
-                        case OsbOrigin.TopLeft: originVector = Vector2.Zero; break;
-                        case OsbOrigin.TopCentre: originVector = new Vector2(w * 0.5f, 0); break;
-                        case OsbOrigin.TopRight: originVector = new Vector2(w, 0); break;
-                        case OsbOrigin.CentreLeft: originVector = new Vector2(0, h * 0.5f); break;
-                        case OsbOrigin.Centre: originVector = new Vector2(w * 0.5f, h * 0.5f); break;
-                        case OsbOrigin.CentreRight: originVector = new Vector2(w, h * 0.5f); break;
-                        case OsbOrigin.BottomLeft: originVector = new Vector2(0, h); break;
-                        case OsbOrigin.BottomCentre: originVector = new Vector2(w * 0.5f, h); break;
-                        case OsbOrigin.BottomRight: originVector = new Vector2(w, h); break;
-                    }
-                    var obb = new OrientedBoundingBox(Position, originVector, w, h, Rotation);
-                    if (!obb.Intersects(bounds))
-                        return false;
-                }
-
-                return true;
+                if (font == default(FontTexture) || font is null) return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
+                return new Size(font.Width, font.Height);
             }
-
-            public int CompareTo(State other)
-                => Math.Sign(Time - other.Time);
+            else return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
         }
     }
+
+    ///<summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
+    public class State : IComparer<State>
+    {
+        ///<summary> Represents the base time, in milliseconds, of this state. </summary>
+        public double Time;
+
+        ///<summary> Represents the rotation, in radians, of this state. </summary>
+        public double Rotation;
+
+        ///<summary> Represents the opacity, from 0 to 1, of this state. </summary>
+        public double Opacity;
+
+        ///<summary> Represents the position, in osu!pixels, of this state. </summary>
+        public CommandPosition Position = new Vector2(320, 240);
+
+        ///<summary> Represents the scale, in osu!pixels, of this state. </summary>
+        public CommandScale Scale = Vector2.One;
+
+        ///<summary> Represents the color, in RGB values, of this state. </summary>
+        public CommandColor Color = CommandColor.White;
+
+        ///<summary> Represents the horizontal flip condition of this state. </summary>
+        public bool FlipH;
+
+        ///<summary> Represents the vertical flip condition of this state. </summary>
+        public bool FlipV;
+
+        ///<summary> Represents the additive toggle condition of this state. </summary>
+        public bool Additive;
+
+        /// <summary> 
+        /// Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and <see cref="OsbOrigin"/>. 
+        /// </summary>
+        /// <returns> <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>. </returns>
+        public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
+        {
+            var noGen = generator is null;
+            var scale = new CommandScale(
+                noGen ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals), 
+                noGen ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals));
+
+            if (Additive && Color == CommandColor.Black ||
+                (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
+                scale.X <= 0 || scale.Y <= 0)
+                return false;
+
+            return OsbSprite.InScreenBounds(new CommandPosition(
+                noGen ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
+                noGen ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals)),
+                imageSize * scale, noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
+        }
+
+        int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
+    }
 }
-#endif

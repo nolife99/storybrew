@@ -2,18 +2,20 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util
 {
-    public class AsyncActionQueue<T> : IDisposable
+    public sealed class AsyncActionQueue<T> : IDisposable
     {
-        private readonly ActionQueueContext context = new ActionQueueContext();
-        private readonly List<ActionRunner> actionRunners = new List<ActionRunner>();
-        private readonly bool allowDuplicates;
+        readonly ActionQueueContext context = new();
+        readonly List<ActionRunner> actionRunners = [];
+        readonly bool allowDuplicates;
 
-        public delegate void ActionFailedEventHandler(T target, Exception e);
-        public event ActionFailedEventHandler OnActionFailed
+        public delegate void ActionFailed(T target, Exception e);
+        public event ActionFailed OnActionFailed
         {
             add => context.OnActionFailed += value;
             remove => context.OnActionFailed -= value;
@@ -29,9 +31,7 @@ namespace StorybrewEditor.Util
         {
             get
             {
-                lock (context.Queue)
-                    lock (context.Running)
-                        return context.Queue.Count + context.Running.Count;
+                lock (context.Queue) lock (context.Running) return context.Queue.Count + context.Running.Count;
             }
         }
 
@@ -39,35 +39,28 @@ namespace StorybrewEditor.Util
         {
             this.allowDuplicates = allowDuplicates;
 
-            if (runnerCount == 0)
-                runnerCount = Environment.ProcessorCount - 1;
+            if (runnerCount == 0) runnerCount = Environment.ProcessorCount - 1;
             runnerCount = Math.Max(1, runnerCount);
 
-            for (var i = 0; i < runnerCount; i++)
-                actionRunners.Add(new ActionRunner(context, $"{threadName} #{i + 1}"));
+            for (var i = 0; i < runnerCount; i++) actionRunners.Add(new ActionRunner(context, $"{threadName} #{i + 1}"));
         }
 
-        public void Queue(T target, Action<T> action, bool mustRunAlone = false)
-            => Queue(target, null, action, mustRunAlone);
-
+        public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
         public void Queue(T target, string uniqueKey, Action<T> action, bool mustRunAlone = false)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(AsyncActionQueue<T>));
+            ObjectDisposedException.ThrowIf(disposedValue, typeof(AsyncActionQueue<T>));
 
-            foreach (var r in actionRunners)
-                r.EnsureThreadAlive();
-
+            Parallel.For(0, actionRunners.Count, i => actionRunners[i].EnsureThreadAlive());
             lock (context.Queue)
             {
-                if (!allowDuplicates && context.Queue.Any(q => q.Target.Equals(target)))
-                    return;
+                if (!allowDuplicates && context.Queue.Any(q => q.Target.Equals(target))) return;
 
-                context.Queue.Add(new ActionContainer()
+                context.Queue.Add(new ActionContainer
                 {
                     Target = target,
                     UniqueKey = uniqueKey,
                     Action = action,
-                    MustRunAlone = mustRunAlone,
+                    MustRunAlone = mustRunAlone
                 });
                 Monitor.PulseAll(context.Queue);
             }
@@ -75,22 +68,20 @@ namespace StorybrewEditor.Util
 
         public void CancelQueuedActions(bool stopThreads)
         {
-            lock (context.Queue)
-                context.Queue.Clear();
+            lock (context.Queue) context.Queue.Clear();
 
             if (stopThreads)
             {
-                var sw = new Stopwatch();
-                sw.Start();
-                foreach (var r in actionRunners)
-                    r.JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds));
+                var sw = Stopwatch.StartNew();
+                Parallel.For(0, actionRunners.Count, i => actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds)));
+                sw.Stop();
             }
         }
 
         #region IDisposable Support
 
-        private bool disposedValue = false;
-        protected virtual void Dispose(bool disposing)
+        bool disposedValue;
+        void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
@@ -103,94 +94,87 @@ namespace StorybrewEditor.Util
             }
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         #endregion
 
-        private class ActionContainer
+        class ActionContainer
         {
-            public T Target;
-            public string UniqueKey;
-            public Action<T> Action;
-            public bool MustRunAlone;
+            internal T Target;
+            internal string UniqueKey;
+            internal Action<T> Action;
+            internal bool MustRunAlone;
         }
 
-        private class ActionQueueContext
+        class ActionQueueContext
         {
-            public readonly List<ActionContainer> Queue = new List<ActionContainer>();
-            public readonly HashSet<string> Running = new HashSet<string>();
-            public bool RunningLoneTask;
+            internal readonly List<ActionContainer> Queue = [];
+            internal readonly HashSet<string> Running = [];
+            internal bool RunningLoneTask;
 
-            public event ActionFailedEventHandler OnActionFailed;
-            public bool TriggerActionFailed(T target, Exception e)
+            internal event ActionFailed OnActionFailed;
+            internal bool TriggerActionFailed(T target, Exception e)
             {
-                if (OnActionFailed == null)
-                    return false;
+                if (OnActionFailed is null) return false;
 
                 OnActionFailed.Invoke(target, e);
                 return true;
             }
 
-            private bool enabled;
-            public bool Enabled
+            bool enabled;
+            internal bool Enabled
             {
                 get => enabled;
                 set
                 {
-                    if (enabled == value)
-                        return;
-
+                    if (enabled == value) return;
                     enabled = value;
 
-                    if (enabled)
-                        lock (Queue)
-                            if (Queue.Count > 0)
-                                Monitor.PulseAll(Queue);
+                    if (enabled) lock (Queue) if (Queue.Count > 0) Monitor.PulseAll(Queue);
                 }
             }
         }
 
-        private class ActionRunner
+        class ActionRunner(ActionQueueContext context, string threadName)
         {
-            private readonly ActionQueueContext context;
-            private readonly string threadName;
+            readonly ActionQueueContext context = context;
+            readonly string threadName = threadName;
 
-            private Thread thread;
+            CancellationTokenSource tokenSrc;
+            Task thread;
 
-            public ActionRunner(ActionQueueContext context, string threadName)
+            internal void EnsureThreadAlive()
             {
-                this.context = context;
-                this.threadName = threadName;
-            }
-
-            public void EnsureThreadAlive()
-            {
-                if (thread == null || !thread.IsAlive)
+                if (tokenSrc is null || tokenSrc.IsCancellationRequested)
                 {
-                    Thread localThread = null;
-                    thread = localThread = new Thread(() =>
+                    tokenSrc?.Dispose();
+                    tokenSrc = new CancellationTokenSource();
+                    tokenSrc.Token.Register(() => Trace.WriteLine($"Aborting thread {threadName}"));
+
+                    Task localThread = null;
+
+#pragma warning disable SYSLIB0046 // ControlledExecution is obsolete, but we need a way to terminate frozen threads
+                    thread = localThread = new Task(() => ControlledExecution.Run(async () =>
                     {
                         var mustSleep = false;
-                        while (true)
+                        while (!tokenSrc.IsCancellationRequested)
                         {
                             if (mustSleep)
                             {
-                                // Thread must sleep with no lock taken in case the queue was not empty but no task was able to start.
-                                Thread.Sleep(200);
+                                using (var wait = Task.Delay(200)) await wait;
                                 mustSleep = false;
                             }
 
                             ActionContainer task;
                             lock (context.Queue)
                             {
+                                // Check if we want to start cancelling
                                 while (!context.Enabled || context.Queue.Count == 0)
                                 {
+                                    // Cancel the thread if the instance's thread is invalidated
                                     if (thread != localThread)
                                     {
-                                        Trace.WriteLine($"Exiting thread {localThread.Name}.");
+                                        Trace.WriteLine($"Exiting thread {threadName}");
                                         return;
                                     }
                                     Monitor.Wait(context.Queue);
@@ -204,10 +188,8 @@ namespace StorybrewEditor.Util
                                         continue;
                                     }
 
-                                    task = context.Queue.FirstOrDefault(t => !context.Running.Contains(t.UniqueKey)
-                                        && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
-
-                                    if (task == null)
+                                    task = context.Queue.FirstOrDefault(t => !context.Running.Contains(t.UniqueKey) && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
+                                    if (task is null)
                                     {
                                         mustSleep = true;
                                         continue;
@@ -215,56 +197,52 @@ namespace StorybrewEditor.Util
 
                                     context.Queue.Remove(task);
                                     context.Running.Add(task.UniqueKey);
-                                    if (task.MustRunAlone)
-                                        context.RunningLoneTask = true;
+                                    if (task.MustRunAlone) context.RunningLoneTask = true;
                                 }
                             }
 
                             try
                             {
-                                task.Action.Invoke(task.Target);
+                                task.Action(task.Target);
                             }
                             catch (Exception e)
                             {
                                 var target = task.Target;
-                                Program.Schedule(() =>
-                                {
-                                    if (!context.TriggerActionFailed(target, e))
-                                        Trace.WriteLine($"Action failed for '{task.UniqueKey}': {e}");
-                                });
+                                if (!context.TriggerActionFailed(task.Target, e)) Trace.TraceError($"'{task.UniqueKey}' - Action failed: {e}");
                             }
 
                             lock (context.Running)
                             {
                                 context.Running.Remove(task.UniqueKey);
-                                if (task.MustRunAlone)
-                                    context.RunningLoneTask = false;
+                                if (task.MustRunAlone) context.RunningLoneTask = false;
                             }
                         }
-                    })
-                    { Name = threadName, IsBackground = true, };
+                    }, tokenSrc.Token), tokenSrc.Token, TaskCreationOptions.LongRunning);
+#pragma warning restore SYSLIB0046
 
-                    Trace.WriteLine($"Starting thread {thread.Name}.");
+                    Trace.WriteLine($"Starting thread {threadName}");
                     thread.Start();
                 }
             }
-
-            public void JoinOrAbort(int millisecondsTimeout)
+            internal async void JoinOrAbort(int millisecondsTimeout)
             {
-                if (thread == null)
-                    return;
-
+                if (thread is null) return;
                 var localThread = thread;
+
+                // Invalidate the instance's task to trigger an exit
                 thread = null;
 
-                lock (context.Queue)
-                    Monitor.PulseAll(context.Queue);
+                lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-                if (!localThread.Join(millisecondsTimeout))
+                // If an exit hasn't happened (e.g. the thread is frozen) try to force-stop it
+                if (!localThread.Wait(millisecondsTimeout, tokenSrc.Token))
                 {
-                    Trace.WriteLine($"Aborting thread {localThread.Name}.");
-                    localThread.Abort();
+                    tokenSrc.Cancel();
+                    if (!localThread.IsCompleted) await localThread;
                 }
+
+                localThread.Dispose();
+                tokenSrc.Dispose();
             }
         }
     }

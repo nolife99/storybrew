@@ -2,24 +2,18 @@
 
 namespace StorybrewCommon.Storyboarding.Util
 {
-    public class OsbAnimationPool : OsbSpritePool
+#pragma warning disable CS1591
+    [Obsolete("Use StorybrewCommon.Storyboarding.AnimationPool instead for better support.")]
+    public class OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> finalizeSprite = null) : OsbSpritePool(segment, path, origin, finalizeSprite)
     {
-        private readonly int frameCount;
-        private readonly double frameDelay;
-        private readonly OsbLoopType loopType;
-
-        public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> finalizeSprite = null)
-            : base(segment, path, origin, finalizeSprite)
-        {
-            this.frameCount = frameCount;
-            this.frameDelay = frameDelay;
-            this.loopType = loopType;
-        }
+        readonly int frameCount = frameCount;
+        readonly double frameDelay = frameDelay;
+        readonly OsbLoopType loopType = loopType;
 
         public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, bool additive)
-            : this(segment, path, frameCount, frameDelay, loopType, origin, additive ? (sprite, startTime, endTime) => sprite.Additive(startTime, endTime) : (Action<OsbSprite, double, double>)null)
-        {
-        }
+            : this(segment, path, frameCount, frameDelay, loopType, origin, additive ?
+            (pA, sT, eT) => pA.Additive(sT) : null)
+        { }
 
         protected override OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin)
             => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin);

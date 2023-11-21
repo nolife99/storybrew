@@ -4,7 +4,7 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
@@ -14,91 +14,73 @@ using StorybrewEditor.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
+using System.IO.Compression;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Tiny;
 
 namespace StorybrewEditor.Storyboarding
 {
-    public class Project : IDisposable
+    public sealed class Project : IDisposable
     {
-        public static readonly Encoding Encoding = new UTF8Encoding();
+        public static readonly Encoding Encoding = Encoding.ASCII;
 
-        public const string BinaryExtension = ".sbp";
-        public const string TextExtension = ".yaml";
-        public const string DefaultBinaryFilename = "project" + BinaryExtension;
-        public const string DefaultTextFilename = "project.sbrew" + TextExtension;
-        public const string DataFolder = ".sbrew";
-        public const string ProjectsFolder = "projects";
+        public const string BinaryExtension = ".sbp", TextExtension = ".yaml",
+            DefaultBinaryFilename = "project" + BinaryExtension, DefaultTextFilename = "project.sbrew" + TextExtension,
+            DataFolder = ".sbrew", ProjectsFolder = "projects",
+            FileFilter = "project files|" + DefaultBinaryFilename + ";" + DefaultTextFilename;
 
-        public const string FileFilter = "project files|" + DefaultBinaryFilename + ";" + DefaultTextFilename;
+        ScriptManager<StoryboardObjectGenerator> scriptManager;
 
-        private ScriptManager<StoryboardObjectGenerator> scriptManager;
-
-        private readonly string projectPath;
+        readonly string projectPath;
         public string ProjectFolderPath => Path.GetDirectoryName(projectPath);
         public string ProjectAssetFolderPath => Path.Combine(ProjectFolderPath, "assetlibrary");
 
-        public string ScriptsPath { get; }
-        public string CommonScriptsPath { get; }
-        public string ScriptsLibraryPath { get; }
+        internal bool DisplayDebugWarning, ShowHitObjects;
+        public readonly string ScriptsPath, CommonScriptsPath, ScriptsLibraryPath;
 
         public string AudioPath
         {
             get
             {
-                if (!Directory.Exists(MapsetPath))
-                    return null;
+                if (!Directory.Exists(MapsetPath)) return null;
 
                 foreach (var beatmap in MapsetManager.Beatmaps)
                 {
-                    if (beatmap.AudioFilename == null)
-                        continue;
+                    if (beatmap.AudioFilename == null) continue;
 
                     var path = Path.Combine(MapsetPath, beatmap.AudioFilename);
-                    if (!File.Exists(path))
-                        continue;
+                    if (!File.Exists(path)) continue;
 
                     return path;
                 }
-
-                return Directory.GetFiles(MapsetPath, "*.mp3", SearchOption.TopDirectoryOnly).FirstOrDefault();
+                return Directory.EnumerateFiles(MapsetPath, "*.mp3", SearchOption.TopDirectoryOnly).FirstOrDefault();
             }
         }
-
         public string OsbPath
         {
             get
             {
-                if (!MapsetPathIsValid)
-                    return Path.Combine(ProjectFolderPath, "storyboard.osb");
+                if (!MapsetPathIsValid) return Path.Combine(ProjectFolderPath, "storyboard.osb");
 
-                // Find the correct osb filename from .osu files
-                var regex = new Regex(@"^(.+ - .+ \(.+\)) \[.+\].osu$");
-                foreach (var osuFilePath in Directory.GetFiles(MapsetPath, "*.osu", SearchOption.TopDirectoryOnly))
-                {
-                    var osuFilename = Path.GetFileName(osuFilePath);
+                Regex regex = new(@"^(.+ - .+ \(.+\)) \[.+\].osu$");
+                var osuFilename = Path.GetFileName(MainBeatmap.Path);
 
-                    Match match;
-                    if ((match = regex.Match(osuFilename)).Success)
-                        return Path.Combine(MapsetPath, $"{match.Groups[1].Value}.osb");
-                }
+                Match match;
+                if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, $"{match.Groups[1].Value}.osb");
 
-                // Use an existing osb
-                foreach (var osbFilePath in Directory.GetFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly))
-                    return osbFilePath;
+                foreach (var osbFilePath in Directory.EnumerateFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly)) return osbFilePath;
 
-                // Whatever
                 return Path.Combine(MapsetPath, "storyboard.osb");
             }
         }
 
-        public readonly ExportSettings ExportSettings = new ExportSettings();
-
-        public LayerManager LayerManager { get; } = new LayerManager();
+        public readonly ExportSettings ExportSettings = new();
+        public readonly LayerManager LayerManager = new();
 
         public Project(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
         {
@@ -110,43 +92,34 @@ namespace StorybrewEditor.Storyboarding
             ScriptsPath = Path.GetDirectoryName(projectPath);
             if (withCommonScripts)
             {
-                CommonScriptsPath = Path.GetFullPath(Path.Combine("..", "..", "..", "scripts"));
+                CommonScriptsPath = Path.GetFullPath($"../../../scripts");
                 if (!Directory.Exists(CommonScriptsPath))
                 {
                     CommonScriptsPath = Path.GetFullPath("scripts");
-                    if (!Directory.Exists(CommonScriptsPath))
-                        Directory.CreateDirectory(CommonScriptsPath);
+                    if (!Directory.Exists(CommonScriptsPath)) Directory.CreateDirectory(CommonScriptsPath);
                 }
             }
             ScriptsLibraryPath = Path.Combine(ScriptsPath, "scriptslibrary");
-            if (!Directory.Exists(ScriptsLibraryPath))
-                Directory.CreateDirectory(ScriptsLibraryPath);
+            if (!Directory.Exists(ScriptsLibraryPath)) Directory.CreateDirectory(ScriptsLibraryPath);
 
             Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{ScriptsLibraryPath}");
 
             var compiledScriptsPath = Path.GetFullPath("cache/scripts");
-            if (!Directory.Exists(compiledScriptsPath))
-                Directory.CreateDirectory(compiledScriptsPath);
-            else
+            try
             {
-                cleanupFolder(compiledScriptsPath, "*.dll");
-                cleanupFolder(compiledScriptsPath, "*.pdb");
+                if (Directory.Exists(compiledScriptsPath)) Directory.Delete(compiledScriptsPath, true);
+                Directory.CreateDirectory(compiledScriptsPath);
             }
+            catch (SystemException) {}
 
             initializeAssetWatcher();
 
             scriptManager = new ScriptManager<StoryboardObjectGenerator>(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, ScriptsLibraryPath, compiledScriptsPath, ReferencedAssemblies);
             effectUpdateQueue.OnActionFailed += (effect, e) => Trace.WriteLine($"Action failed for '{effect}': {e.Message}");
 
-            LayerManager.OnLayersChanged +=
-                (sender, e) => Changed = true;
+            LayerManager.OnLayersChanged += (sender, e) => Changed = true;
 
-            OnMainBeatmapChanged += (sender, e) =>
-            {
-                foreach (var effect in effects)
-                    if (effect.BeatmapDependant)
-                        QueueEffectUpdate(effect);
-            };
+            OnMainBeatmapChanged += (sender, e) => effects.ForEach(effect => QueueEffectUpdate(effect), effect => effect.BeatmapDependant);
         }
 
         #region Audio and Display
@@ -156,16 +129,12 @@ namespace StorybrewEditor.Storyboarding
         public double DisplayTime;
         public float DimFactor;
 
-        public TextureContainer TextureContainer { get; private set; }
-        public AudioSampleContainer AudioContainer { get; private set; }
+        public TextureContainer TextureContainer { get; set; }
+        public AudioSampleContainer AudioContainer { get; set; }
 
-        public FrameStats FrameStats { get; private set; } = new FrameStats();
+        public FrameStats FrameStats { get; set; } = new FrameStats();
 
-        public void TriggerEvents(double startTime, double endTime)
-        {
-            LayerManager.TriggerEvents(startTime, endTime);
-        }
-
+        public void TriggerEvents(double startTime, double endTime) => LayerManager.TriggerEvents(startTime, endTime);
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, bool updateFrameStats)
         {
             effectUpdateQueue.Enabled = allowEffectUpdates && MapsetPathIsValid;
@@ -174,14 +143,12 @@ namespace StorybrewEditor.Storyboarding
             LayerManager.Draw(drawContext, camera, bounds, opacity, newFrameStats);
             FrameStats = newFrameStats ?? FrameStats;
         }
-
-        private void reloadTextures()
+        void reloadTextures()
         {
             TextureContainer?.Dispose();
             TextureContainer = new TextureContainerSeparate(null, TextureOptions.Default);
         }
-
-        private void reloadAudio()
+        void reloadAudio()
         {
             AudioContainer?.Dispose();
             AudioContainer = new AudioSampleContainer(Program.AudioManager, null);
@@ -191,23 +158,21 @@ namespace StorybrewEditor.Storyboarding
 
         #region Effects
 
-        private readonly List<Effect> effects = new List<Effect>();
+        readonly List<Effect> effects = [];
         public IEnumerable<Effect> Effects => effects;
-        public event EventHandler OnEffectsChanged;
+        public event EventHandler OnEffectsChanged, OnEffectsStatusChanged, OnEffectsContentChanged;
 
-        public EffectStatus EffectsStatus { get; private set; } = EffectStatus.Initializing;
-        public event EventHandler OnEffectsStatusChanged;
+        public EffectStatus EffectsStatus { get; set; } = EffectStatus.Initializing;
 
         public double StartTime => effects.Count > 0 ? effects.Min(e => e.StartTime) : 0;
         public double EndTime => effects.Count > 0 ? effects.Max(e => e.EndTime) : 0;
-        public event EventHandler OnEffectsContentChanged;
 
-        private bool allowEffectUpdates = true;
+        bool allowEffectUpdates = true;
 
-        private AsyncActionQueue<Effect> effectUpdateQueue = new AsyncActionQueue<Effect>("Effect Updates", false, Program.Settings.EffectThreads);
+        AsyncActionQueue<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
         public void QueueEffectUpdate(Effect effect)
         {
-            effectUpdateQueue.Queue(effect, effect.Path, (e) => e.Update(), effect.Multithreaded);
+            effectUpdateQueue.Queue(effect, effect.Path, e => e.Update(), effect.Multithreaded);
             refreshEffectsStatus();
         }
         public void CancelEffectUpdates(bool stopThreads) => effectUpdateQueue.CancelQueuedActions(stopThreads);
@@ -217,19 +182,16 @@ namespace StorybrewEditor.Storyboarding
             effectUpdateQueue.Enabled = false;
         }
 
-        public IEnumerable<string> GetEffectNames()
-            => scriptManager.GetScriptNames();
-
-        public Effect GetEffectByName(string name)
-            => effects.Find(e => e.Name == name);
+        public IEnumerable<string> GetEffectNames() => scriptManager.GetScriptNames();
+        public Effect GetEffectByName(string name) => effects.Find(e => e.Name == name);
 
         public Effect AddScriptedEffect(string scriptName, bool multithreaded = false)
         {
-            if (IsDisposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
             var effect = new ScriptedEffect(this, scriptManager.Get(scriptName), multithreaded)
             {
-                Name = GetUniqueEffectName(scriptName),
+                Name = GetUniqueEffectName(scriptName)
             };
 
             effects.Add(effect);
@@ -242,83 +204,68 @@ namespace StorybrewEditor.Storyboarding
             QueueEffectUpdate(effect);
             return effect;
         }
-
         public void Remove(Effect effect)
         {
-            if (IsDisposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
             effects.Remove(effect);
-            effect.Dispose();
+            effect?.Dispose();
             Changed = true;
 
             refreshEffectsStatus();
 
             OnEffectsChanged?.Invoke(this, EventArgs.Empty);
         }
-
         public string GetUniqueEffectName(string baseName)
         {
             var count = 1;
             string name;
-            do
-                name = $"{baseName} {count++}";
+            do name = $"{baseName} {count++}";
             while (GetEffectByName(name) != null);
             return name;
         }
-
-        private void effect_OnChanged(object sender, EventArgs e)
+        void effect_OnChanged(object sender, EventArgs e)
         {
             Changed = true;
 
             refreshEffectsStatus();
             OnEffectsContentChanged?.Invoke(this, EventArgs.Empty);
         }
-
-        private void refreshEffectsStatus()
+        void refreshEffectsStatus()
         {
             var previousStatus = EffectsStatus;
-            var pendingTasks = effectUpdateQueue.TaskCount;
-            var isUpdating = pendingTasks > 0;
+            var isUpdating = effectUpdateQueue.TaskCount > 0;
             var hasError = false;
 
-            foreach (var effect in effects)
+            effects.ForEach(effect =>
             {
                 switch (effect.Status)
                 {
                     case EffectStatus.Loading:
                     case EffectStatus.Configuring:
                     case EffectStatus.Updating:
-                    case EffectStatus.ReloadPending:
-                        isUpdating = true;
-                        break;
-
+                    case EffectStatus.ReloadPending: isUpdating = true; break;
                     case EffectStatus.CompilationFailed:
                     case EffectStatus.LoadingFailed:
-                    case EffectStatus.ExecutionFailed:
-                        hasError = true;
-                        break;
-
+                    case EffectStatus.ExecutionFailed: hasError = true; break;
                     case EffectStatus.Initializing:
-                    case EffectStatus.Ready:
-                        break;
+                    case EffectStatus.Ready: break;
                 }
-            }
-            EffectsStatus = hasError ? EffectStatus.ExecutionFailed :
-                isUpdating ? EffectStatus.Updating : EffectStatus.Ready;
-            if (EffectsStatus != previousStatus)
-                OnEffectsStatusChanged?.Invoke(this, EventArgs.Empty);
+            });
+            EffectsStatus = hasError ? EffectStatus.ExecutionFailed : isUpdating ? EffectStatus.Updating : EffectStatus.Ready;
+            if (EffectsStatus != previousStatus) OnEffectsStatusChanged?.Invoke(this, EventArgs.Empty);
         }
 
         #endregion
 
         #region Mapset
 
-        public bool MapsetPathIsValid { get; private set; }
+        public bool MapsetPathIsValid { get; set; }
 
-        private string mapsetPath;
+        string mapsetPath;
         public string MapsetPath
         {
-            get { return mapsetPath; }
+            get => mapsetPath;
             set
             {
                 if (mapsetPath == value) return;
@@ -332,17 +279,14 @@ namespace StorybrewEditor.Storyboarding
         }
 
         public event EventHandler OnMapsetPathChanged;
+        public MapsetManager MapsetManager { get; set; }
 
-        public MapsetManager MapsetManager { get; private set; }
-
-        private EditorBeatmap mainBeatmap;
+        EditorBeatmap mainBeatmap;
         public EditorBeatmap MainBeatmap
         {
             get
             {
-                if (mainBeatmap == null)
-                    SwitchMainBeatmap();
-
+                if (mainBeatmap == null) SwitchMainBeatmap();
                 return mainBeatmap;
             }
             set
@@ -367,8 +311,7 @@ namespace StorybrewEditor.Storyboarding
                     MainBeatmap = beatmap;
                     return;
                 }
-                else if (beatmap == mainBeatmap)
-                    takeNextBeatmap = true;
+                else if (beatmap == mainBeatmap) takeNextBeatmap = true;
             }
             foreach (var beatmap in MapsetManager.Beatmaps)
             {
@@ -377,18 +320,15 @@ namespace StorybrewEditor.Storyboarding
             }
             MainBeatmap = new EditorBeatmap(null);
         }
-
         public void SelectBeatmap(long id, string name)
         {
-            foreach (var beatmap in MapsetManager.Beatmaps)
-                if ((id > 0 && beatmap.Id == id) || (name.Length > 0 && beatmap.Name == name))
-                {
-                    MainBeatmap = beatmap;
-                    break;
-                }
+            foreach (var beatmap in MapsetManager.Beatmaps) if ((id > 0 && beatmap.Id == id) || (name.Length > 0 && beatmap.Name == name))
+            {
+                MainBeatmap = beatmap;
+                break;
+            }
         }
-
-        private void refreshMapset()
+        void refreshMapset()
         {
             var previousBeatmapId = mainBeatmap?.Id ?? -1;
             var previousBeatmapName = mainBeatmap?.Name;
@@ -399,37 +339,31 @@ namespace StorybrewEditor.Storyboarding
             MapsetManager = new MapsetManager(mapsetPath, MapsetManager != null);
             MapsetManager.OnFileChanged += mapsetManager_OnFileChanged;
 
-            if (previousBeatmapName != null)
-                SelectBeatmap(previousBeatmapId, previousBeatmapName);
+            if (previousBeatmapName != null) SelectBeatmap(previousBeatmapId, previousBeatmapName);
         }
-
-        private void mapsetManager_OnFileChanged(object sender, FileSystemEventArgs e)
+        void mapsetManager_OnFileChanged(object sender, FileSystemEventArgs e)
         {
             var extension = Path.GetExtension(e.Name);
-            if (extension == ".png" || extension == ".jpg" || extension == ".jpeg")
-                reloadTextures();
-            else if (extension == ".wav" || extension == ".mp3" || extension == ".ogg")
-                reloadAudio();
-            else if (extension == ".osu")
-                refreshMapset();
+            if (extension == ".png" || extension == ".jpg" || extension == ".jpeg") reloadTextures();
+            else if (extension == ".wav" || extension == ".mp3" || extension == ".ogg") reloadAudio();
+            else if (extension == ".osu") refreshMapset();
         }
 
         #endregion
 
         #region Asset library folder
 
-        private FileSystemWatcher assetWatcher;
-
-        private void initializeAssetWatcher()
+        FileSystemWatcher assetWatcher;
+        void initializeAssetWatcher()
         {
             var assetsFolderPath = Path.GetFullPath(ProjectAssetFolderPath);
-            if (!Directory.Exists(assetsFolderPath))
-                Directory.CreateDirectory(assetsFolderPath);
+            if (!Directory.Exists(assetsFolderPath)) Directory.CreateDirectory(assetsFolderPath);
 
-            assetWatcher = new FileSystemWatcher()
+            assetWatcher = new FileSystemWatcher
             {
                 Path = assetsFolderPath,
                 IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.Size
             };
             assetWatcher.Created += assetWatcher_OnFileChanged;
             assetWatcher.Changed += assetWatcher_OnFileChanged;
@@ -438,61 +372,60 @@ namespace StorybrewEditor.Storyboarding
             assetWatcher.EnableRaisingEvents = true;
             Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
         }
+        void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e) => Program.Schedule(() =>
+        {
+            if (Disposed) return;
 
-        private void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e)
-            => Program.Schedule(() =>
-            {
-                if (IsDisposed) return;
-
-                var extension = Path.GetExtension(e.Name);
-                if (extension == ".png" || extension == ".jpg" || extension == ".jpeg")
-                    reloadTextures();
-                else if (extension == ".wav" || extension == ".mp3" || extension == ".ogg")
-                    reloadAudio();
-            });
+            var extension = Path.GetExtension(e.Name);
+            if (extension == ".png" || extension == ".jpg" || extension == ".jpeg") reloadTextures();
+            else if (extension == ".wav" || extension == ".mp3" || extension == ".ogg") reloadAudio();
+        });
 
         #endregion
 
         #region Assemblies
 
-        private static readonly List<string> defaultAssemblies = new List<string>()
-        {
-            "System.dll",
-            "System.Core.dll",
-            "System.Drawing.dll",
-            "OpenTK.dll",
-            Assembly.GetAssembly(typeof(Script)).Location,
-        };
+        static readonly string[] defaultAssemblies =
+        [
+            "System.Runtime.dll",
+            "System.Numerics.Vectors.dll",
+            "netstandard.dll",
+            typeof(Line).Assembly.Location,
+            typeof(Enumerable).Assembly.Location,
+            typeof(object).Assembly.Location,
+            typeof(Box2).Assembly.Location,
+            typeof(Script).Assembly.Location,
+            typeof(Brush).Assembly.Location,
+            typeof(Size).Assembly.Location
+        ];
         public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
 
-        private List<string> importedAssemblies = new List<string>();
+        List<string> importedAssemblies = [];
         public IEnumerable<string> ImportedAssemblies
         {
-            get { return importedAssemblies; }
+            get => importedAssemblies;
             set
             {
-                if (IsDisposed) throw new ObjectDisposedException(nameof(Project));
+                ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
-                importedAssemblies = new List<string>(value);
+                importedAssemblies = value as List<string> ?? value.ToList();
                 scriptManager.ReferencedAssemblies = ReferencedAssemblies;
             }
         }
 
-        public IEnumerable<string> ReferencedAssemblies
-            => DefaultAssemblies.Concat(importedAssemblies);
+        public IEnumerable<string> ReferencedAssemblies => defaultAssemblies.Union(importedAssemblies);
 
         #endregion
 
         #region Save / Load / Export
 
         public const int Version = 7;
+        public bool Changed { get; set; }
 
-        public bool Changed { get; private set; }
-
-        private bool ownsOsb;
+        bool ownsOsb;
         public bool OwnsOsb
         {
-            get { return ownsOsb; }
+            get => ownsOsb;
             set
             {
                 if (ownsOsb == value) return;
@@ -501,512 +434,456 @@ namespace StorybrewEditor.Storyboarding
             }
         }
 
-        private static readonly Regex effectGuidRegex = new Regex("effect\\.([a-z0-9]{32})\\.yaml", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        static readonly Regex effectGuidRegex = new("effect\\.([a-z0-9]{32})\\.yaml", RegexOptions.IgnoreCase);
 
         public void Save()
         {
-            saveText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
+            var text = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
+            if (File.Exists(text)) saveText(text);
+            else saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
         }
-
         public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
         {
-            // Binary format isn't saved anymore and may be obsolete:
-            // Load from the text format if possible even if the binary format has been selected.
-            var textFormatPath = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
-            if (projectPath.EndsWith(BinaryExtension) && File.Exists(textFormatPath))
-                projectPath = textFormatPath;
-
             var project = new Project(projectPath, withCommonScripts, resourceContainer);
-            if (projectPath.EndsWith(BinaryExtension))
-                project.loadBinary(projectPath);
-            else project.loadText(textFormatPath);
+            if (projectPath.EndsWith(BinaryExtension, StringComparison.Ordinal)) project.loadBinary(projectPath);
+            else project.loadText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
             return project;
         }
-
-        private void loadBinary(string path)
+        void saveBinary(string path)
         {
-            using (var stream = new FileStream(path, FileMode.Open))
-            using (var r = new BinaryReader(stream, Encoding.UTF8))
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
+            using var file = File.Create(path); using var dfl = new DeflateStream(file, CompressionLevel.Optimal); using var w = new BinaryWriter(dfl, Encoding);
+            w.Write(Version);
+
+            w.Write(MapsetPath);
+            w.Write(MainBeatmap.Id);
+            w.Write(MainBeatmap.Name);
+
+            w.Write(OwnsOsb);
+
+            w.Write(effects.Count);
+            effects.ForEach(effect =>
             {
-                var version = r.ReadInt32();
-                if (version > Version)
-                    throw new InvalidOperationException("This project was saved with a more recent version, you need to update to open it");
+                w.Write(effect.Guid.ToByteArray());
+                w.Write(effect.BaseName);
+                w.Write(effect.Multithreaded);
+                w.Write(effect.Name);
 
-                var savedBy = r.ReadString();
-                Debug.Print($"Loading project saved by {savedBy}");
-
-                MapsetPath = r.ReadString();
-                if (version >= 1)
+                w.Write(effect.Config.FieldCount);
+                foreach (var field in effect.Config.SortedFields)
                 {
-                    var mainBeatmapId = r.ReadInt64();
-                    var mainBeatmapName = r.ReadString();
-                    SelectBeatmap(mainBeatmapId, mainBeatmapName);
-                }
+                    w.Write(field.Name);
+                    w.Write(field.DisplayName);
+                    ObjectSerializer.Write(w, field.Value);
 
-                OwnsOsb = version >= 4 ? r.ReadBoolean() : true;
-
-                var effectCount = r.ReadInt32();
-                for (int effectIndex = 0; effectIndex < effectCount; effectIndex++)
-                {
-                    var guid = version >= 6 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
-                    var baseName = r.ReadString();
-                    var name = r.ReadString();
-
-                    var effect = AddScriptedEffect(baseName);
-                    effect.Guid = guid;
-                    effect.Name = name;
-
-                    if (version >= 1)
-                    {
-                        var fieldCount = r.ReadInt32();
-                        for (int fieldIndex = 0; fieldIndex < fieldCount; fieldIndex++)
+                    w.Write(field.AllowedValues?.Length ?? 0);
+                    if (field.AllowedValues != null) for (var i = 0; i < field.AllowedValues.Length; ++i)
                         {
-                            var fieldName = r.ReadString();
-                            var fieldDisplayName = r.ReadString();
-                            var fieldValue = ObjectSerializer.Read(r);
-
-                            var allowedValueCount = r.ReadInt32();
-                            var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : null;
-                            for (int allowedValueIndex = 0; allowedValueIndex < allowedValueCount; allowedValueIndex++)
-                            {
-                                var allowedValueName = r.ReadString();
-                                var allowedValue = ObjectSerializer.Read(r);
-                                allowedValues[allowedValueIndex] = new NamedValue()
-                                {
-                                    Name = allowedValueName,
-                                    Value = allowedValue,
-                                };
-                            }
-                            effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue, allowedValues, null);
+                            w.Write(field.AllowedValues[i].Name);
+                            ObjectSerializer.Write(w, field.AllowedValues[i].Value);
                         }
-                    }
                 }
+            });
 
-                var layerCount = r.ReadInt32();
-                for (var layerIndex = 0; layerIndex < layerCount; layerIndex++)
+            w.Write(LayerManager.LayersCount);
+            foreach (var layer in LayerManager.Layers)
+            {
+                w.Write(layer.Guid.ToByteArray());
+                w.Write(layer.Name);
+                w.Write(effects.IndexOf(layer.Effect));
+                w.Write(layer.DiffSpecific);
+                w.Write((int)layer.OsbLayer);
+                w.Write(layer.Visible);
+            }
+
+            w.Write(importedAssemblies.Count);
+            foreach (var assembly in importedAssemblies) w.Write(assembly);
+
+            Changed = false;
+        }
+        void loadBinary(string path)
+        {
+            using var ram = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
+            using var file = ram.CreateViewStream(); using var dfl = new DeflateStream(file, CompressionMode.Decompress); using var r = new BinaryReader(dfl, Encoding);
+            var version = r.ReadInt32();
+            if (version > Version) throw new InvalidOperationException("This project was saved with a newer version; you need to update.");
+
+            MapsetPath = r.ReadString();
+            if (version >= 1) SelectBeatmap(r.ReadInt64(), r.ReadString());
+
+            OwnsOsb = version < 4 || r.ReadBoolean();
+
+            var effectCount = r.ReadInt32();
+            for (var effectIndex = 0; effectIndex < effectCount; ++effectIndex)
+            {
+                var guid = version > 5 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
+                var effect = AddScriptedEffect(r.ReadString(), r.ReadBoolean());
+                effect.Guid = guid;
+                effect.Name = r.ReadString();
+
+                if (version > 0)
                 {
-                    var guid = version >= 6 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
-                    var identifier = r.ReadString();
-                    var effectIndex = r.ReadInt32();
-                    var diffSpecific = version >= 3 ? r.ReadBoolean() : false;
-                    var osbLayer = version >= 2 ? (OsbLayer)r.ReadInt32() : OsbLayer.Background;
-                    var visible = r.ReadBoolean();
-
-                    var effect = effects[effectIndex];
-                    effect.AddPlaceholder(new EditorStoryboardLayer(identifier, effect)
+                    var fieldCount = r.ReadInt32();
+                    for (var fieldIndex = 0; fieldIndex < fieldCount; ++fieldIndex)
                     {
-                        Guid = guid,
-                        DiffSpecific = diffSpecific,
-                        OsbLayer = osbLayer,
-                        Visible = visible,
-                    });
-                }
+                        var fieldName = r.ReadString();
+                        var fieldDisplayName = r.ReadString();
+                        var fieldValue = ObjectSerializer.Read(r);
 
-                if (version >= 5)
-                {
-                    var assemblyCount = r.ReadInt32();
-                    var importedAssemblies = new List<string>();
-                    for (var assemblyIndex = 0; assemblyIndex < assemblyCount; assemblyIndex++)
-                    {
-                        var assembly = r.ReadString();
-                        importedAssemblies.Add(assembly);
+                        var allowedValueCount = r.ReadInt32();
+                        var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : null;
+                        for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
+                            allowedValues[allowedValueIndex] = new NamedValue
+                            {
+                                Name = r.ReadString(),
+                                Value = ObjectSerializer.Read(r)
+                            };
+
+                        effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue, allowedValues, null);
                     }
-                    ImportedAssemblies = importedAssemblies;
                 }
             }
+
+            var layerCount = r.ReadInt32();
+            for (var layerIndex = 0; layerIndex < layerCount; ++layerIndex)
+            {
+                var guid = version > 5 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
+                var name = r.ReadString();
+
+                var effect = effects[r.ReadInt32()];
+                effect.AddPlaceholder(new EditorStoryboardLayer(name, effect)
+                {
+                    Guid = guid,
+                    DiffSpecific = version >= 3 && r.ReadBoolean(),
+                    OsbLayer = version >= 2 ? (OsbLayer)r.ReadInt32() : OsbLayer.Background,
+                    Visible = r.ReadBoolean()
+                });
+            }
+
+            if (version > 4)
+            {
+                var assemblyCount = r.ReadInt32();
+                var importedAssemblies = new string[assemblyCount];
+                for (var i = 0; i < assemblyCount; ++i) importedAssemblies[i] = r.ReadString();
+
+                ImportedAssemblies = importedAssemblies;
+            }
         }
-
-        private void saveText(string path)
+        void saveText(string path)
         {
-            if (IsDisposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
-            // Create the opener file
-            if (!File.Exists(path))
-                File.WriteAllText(path, "# This file is only used to open the project\n# Project data is contained in the .sbrew folder");
+            if (!File.Exists(path)) File.WriteAllText(path, "# This file is used to open the project\n# Project data is contained in /.sbrew");
 
             var projectDirectory = Path.GetDirectoryName(path);
 
             var gitIgnorePath = Path.Combine(projectDirectory, ".gitignore");
-            if (!File.Exists(gitIgnorePath))
-                File.WriteAllText(gitIgnorePath, ".sbrew/user.yaml\n.sbrew.tmp\n.sbrew.bak\n.cache\n.vs");
+            if (!File.Exists(gitIgnorePath)) File.WriteAllText(gitIgnorePath, ".sbrew/user.yaml\n.sbrew.tmp\n.sbrew.bak\n.cache\n.vs");
 
             var targetDirectory = Path.Combine(projectDirectory, DataFolder);
-            using (var directoryWriter = new SafeDirectoryWriter(targetDirectory))
+            using var directoryWriter = new SafeDirectoryWriter(targetDirectory);
+            var indexRoot = new TinyObject
+                {
+                    { "FormatVersion", Version },
+                    { "BeatmapId", MainBeatmap.Id },
+                    { "BeatmapName", MainBeatmap.Name },
+                    { "Assemblies", importedAssemblies },
+                    { "Layers", LayerManager.Layers.Select(l => l.Guid.ToString("N")) }
+                };
+
+            var indexPath = directoryWriter.GetPath("index.yaml");
+            indexRoot.Write(indexPath);
+
+            var userRoot = new TinyObject
+                {
+                    { "FormatVersion", Version },
+                    { "Editor", Program.FullName },
+                    { "MapsetPath", PathHelper.WithStandardSeparators(MapsetPath) },
+                    { "ExportTimeAsFloatingPoint", ExportSettings.UseFloatForTime },
+                    { "OwnsOsb", OwnsOsb }
+                };
+
+            var userPath = directoryWriter.GetPath("user.yaml");
+            userRoot.Write(userPath);
+
+            effects.ForEach(effect =>
             {
-                // Write the index
+                var effectRoot = new TinyObject
                 {
-                    var indexRoot = new TinyObject
-                    {
-                        { "FormatVersion", Version },
-                        { "BeatmapId", MainBeatmap.Id },
-                        { "BeatmapName", MainBeatmap.Name },
-                        { "Assemblies", importedAssemblies },
-                        { "Layers", LayerManager.Layers.Select(l => l.Guid.ToString("N")) },
-                    };
-
-                    var indexPath = directoryWriter.GetPath("index.yaml");
-                    indexRoot.Write(indexPath);
-                }
-
-                // Write user specific data
-                {
-                    var userRoot = new TinyObject
-                    {
-                        { "FormatVersion", Version },
-                        { "Editor", Program.FullName },
-                        { "MapsetPath", PathHelper.WithStandardSeparators(MapsetPath) },
-                        { "ExportTimeAsFloatingPoint", ExportSettings.UseFloatForTime },
-                        { "OwnsOsb", OwnsOsb },
-                    };
-
-                    var userPath = directoryWriter.GetPath("user.yaml");
-                    userRoot.Write(userPath);
-                }
-
-                // Write each effect
-                foreach (var effect in effects)
-                {
-                    var effectRoot = new TinyObject
-                    {
                         { "FormatVersion", Version },
                         { "Name", effect.Name },
                         { "Script", effect.BaseName },
-                        { "Multithreaded", effect.Multithreaded },
-                    };
+                        { "Multithreaded", effect.Multithreaded }
+                };
 
-                    var configRoot = new TinyObject();
-                    effectRoot.Add("Config", configRoot);
+                var configRoot = new TinyObject();
+                effectRoot.Add("Config", configRoot);
 
-                    foreach (var field in effect.Config.SortedFields)
+                foreach (var field in effect.Config.SortedFields)
+                {
+                    var fieldRoot = new TinyObject
                     {
-                        var fieldRoot = new TinyObject
-                        {
                             { "Type", field.Type.FullName },
-                            { "Value", ObjectSerializer.ToString(field.Type, field.Value)},
-                        };
-                        if (field.DisplayName != field.Name)
-                            fieldRoot.Add("DisplayName", field.DisplayName);
-                        if (!string.IsNullOrWhiteSpace(field.BeginsGroup))
-                            fieldRoot.Add("BeginsGroup", field.BeginsGroup);
-                        configRoot.Add(field.Name, fieldRoot);
+                            { "Value", ObjectSerializer.ToString(field.Type, field.Value)}
+                    };
+                    if (field.DisplayName != field.Name) fieldRoot.Add("DisplayName", field.DisplayName);
+                    if (!string.IsNullOrWhiteSpace(field.BeginsGroup)) fieldRoot.Add("BeginsGroup", field.BeginsGroup);
+                    configRoot.Add(field.Name, fieldRoot);
 
-                        if ((field.AllowedValues?.Length ?? 0) > 0)
-                        {
-                            var allowedValuesRoot = new TinyObject();
-                            fieldRoot.Add("AllowedValues", allowedValuesRoot);
+                    if ((field.AllowedValues?.Length ?? 0) > 0)
+                    {
+                        var allowedValuesRoot = new TinyObject();
+                        fieldRoot.Add("AllowedValues", allowedValuesRoot);
 
-                            foreach (var allowedValue in field.AllowedValues)
-                                allowedValuesRoot.Add(allowedValue.Name, ObjectSerializer.ToString(field.Type, allowedValue.Value));
-                        }
+                        foreach (var allowedValue in field.AllowedValues) allowedValuesRoot.Add(
+                            allowedValue.Name, ObjectSerializer.ToString(field.Type, allowedValue.Value));
                     }
+                }
 
-                    var layersRoot = new TinyObject();
-                    effectRoot.Add("Layers", layersRoot);
+                var layersRoot = new TinyObject();
+                effectRoot.Add("Layers", layersRoot);
 
-                    foreach (var layer in LayerManager.Layers.Where(l => l.Effect == effect))
+                foreach (var layer in LayerManager.Layers) if (layer.Effect == effect)
                     {
                         var layerRoot = new TinyObject
-                        {
-                            { "Name", layer.Identifier },
+                    {
+                            { "Name", layer.Name },
                             { "OsbLayer", layer.OsbLayer },
                             { "DiffSpecific", layer.DiffSpecific },
-                            { "Visible", layer.Visible },
-                        };
+                            { "Visible", layer.Visible }
+                    };
                         layersRoot.Add(layer.Guid.ToString("N"), layerRoot);
                     }
 
-                    var effectPath = directoryWriter.GetPath("effect." + effect.Guid.ToString("N") + ".yaml");
-                    effectRoot.Write(effectPath);
-                }
+                var effectPath = directoryWriter.GetPath("effect." + effect.Guid.ToString("N") + ".yaml");
+                effectRoot.Write(effectPath);
+            });
 
-                directoryWriter.Commit(checkPaths: true);
-                Changed = false;
-            }
+            directoryWriter.Commit(checkPaths: true);
+            Changed = false;
         }
 
-        private void loadText(string path)
+        void loadText(string path)
         {
             var targetDirectory = Path.Combine(Path.GetDirectoryName(path), DataFolder);
-            using (var directoryReader = new SafeDirectoryReader(targetDirectory))
+            using var directoryReader = new SafeDirectoryReader(targetDirectory);
+            var indexPath = directoryReader.GetPath("index.yaml");
+            var indexRoot = TinyToken.Read(indexPath);
+
+            var indexVersion = indexRoot.Value<int>("FormatVersion");
+            if (indexVersion > Version) throw new InvalidOperationException("This project was saved with a newer version; you need to update.");
+
+            var userPath = directoryReader.GetPath("user.yaml");
+            var userRoot = (TinyToken)null;
+            if (File.Exists(userPath))
             {
-                var indexPath = directoryReader.GetPath("index.yaml");
-                var indexRoot = TinyToken.Read(indexPath);
+                userRoot = TinyToken.Read(userPath);
 
-                var indexVersion = indexRoot.Value<int>("FormatVersion");
-                if (indexVersion > Version)
-                    throw new InvalidOperationException("This project was saved with a more recent version, you need to update to open it");
+                var userVersion = userRoot.Value<int>("FormatVersion");
+                if (userVersion > Version) throw new InvalidOperationException("This project's user settings were saved with a newer version; you need to update.");
 
-                var userPath = directoryReader.GetPath("user.yaml");
-                var userRoot = (TinyToken)null;
-                if (File.Exists(userPath))
+                var savedBy = userRoot.Value<string>("Editor");
+                Debug.Print($"Project saved by {savedBy}");
+
+                ExportSettings.UseFloatForTime = userRoot.Value<bool>("ExportTimeAsFloatingPoint");
+                OwnsOsb = userRoot.Value<bool>("OwnsOsb");
+            }
+
+            MapsetPath = userRoot?.Value<string>("MapsetPath") ?? indexRoot.Value<string>("MapsetPath") ?? "nul";
+            SelectBeatmap(indexRoot.Value<long>("BeatmapId"), indexRoot.Value<string>("BeatmapName"));
+            ImportedAssemblies = indexRoot.Values<string>("Assemblies");
+
+            // Load effects
+            var layerInserters = new Dictionary<string, Action>();
+            foreach (var effectPath in Directory.GetFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
+            {
+                var guidMatch = effectGuidRegex.Match(effectPath);
+                if (!guidMatch.Success || guidMatch.Groups.Count < 2) throw new InvalidDataException($"Could not parse effect Guid from '{effectPath}'");
+
+                var effectRoot = TinyToken.Read(effectPath);
+
+                var effectVersion = effectRoot.Value<int>("FormatVersion");
+                if (effectVersion > Version) throw new InvalidOperationException("This project has an effect that was saved with a newer version; you need to update.");
+
+                var effect = AddScriptedEffect(effectRoot.Value<string>("Script"), effectRoot.Value<bool>("Multithreaded"));
+                effect.Guid = Guid.Parse(guidMatch.Groups[1].Value);
+                effect.Name = effectRoot.Value<string>("Name");
+
+                var configRoot = effectRoot.Value<TinyObject>("Config");
+                var fieldIndex = 0;
+                foreach (var fieldProperty in configRoot)
                 {
-                    userRoot = TinyToken.Read(userPath);
+                    var fieldRoot = fieldProperty.Value;
 
-                    var userVersion = userRoot.Value<int>("FormatVersion");
-                    if (userVersion > Version)
-                        throw new InvalidOperationException("This project's user settings were saved with a more recent version, you need to update to open it");
+                    var fieldTypeName = fieldRoot.Value<string>("Type");
+                    var fieldContent = fieldRoot.Value<string>("Value");
+                    var beginsGroup = fieldRoot.Value<string>("BeginsGroup");
 
-                    var savedBy = userRoot.Value<string>("Editor");
-                    Debug.Print($"Project saved by {savedBy}");
+                    var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldContent);
 
-                    ExportSettings.UseFloatForTime = userRoot.Value<bool>("ExportTimeAsFloatingPoint");
-                    OwnsOsb = userRoot.Value<bool>("OwnsOsb");
+                    var allowedValues = fieldRoot.Value<TinyObject>("AllowedValues")?
+                        .Select(p => new NamedValue { Name = p.Key, Value = ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()) }).ToArray();
+
+                    effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++, fieldValue?.GetType(), fieldValue, allowedValues, beginsGroup);
                 }
 
-                MapsetPath = userRoot?.Value<string>("MapsetPath") ?? indexRoot.Value<string>("MapsetPath") ?? "nul";
-                SelectBeatmap(indexRoot.Value<long>("BeatmapId"), indexRoot.Value<string>("BeatmapName"));
-                ImportedAssemblies = indexRoot.Values<string>("Assemblies");
-
-                // Load effects
-                var layerInserters = new Dictionary<string, Action>();
-                foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
+                var layersRoot = effectRoot.Value<TinyObject>("Layers");
+                foreach (var layerProperty in layersRoot)
                 {
-                    var guidMatch = effectGuidRegex.Match(effectPath);
-                    if (!guidMatch.Success || guidMatch.Groups.Count < 2)
-                        throw new InvalidDataException($"Could not parse effect Guid from '{effectPath}'");
-
-                    var effectRoot = TinyToken.Read(effectPath);
-
-                    var effectVersion = effectRoot.Value<int>("FormatVersion");
-                    if (effectVersion > Version)
-                        throw new InvalidOperationException("This project contains an effect that was saved with a more recent version, you need to update to open it");
-
-                    var effect = AddScriptedEffect(effectRoot.Value<string>("Script"), effectRoot.Value<bool>("Multithreaded"));
-                    effect.Guid = Guid.Parse(guidMatch.Groups[1].Value);
-                    effect.Name = effectRoot.Value<string>("Name");
-
-                    var configRoot = effectRoot.Value<TinyObject>("Config");
-                    var fieldIndex = 0;
-                    foreach (var fieldProperty in configRoot)
+                    var layerEffect = effect;
+                    var layerGuid = layerProperty.Key;
+                    var layerRoot = layerProperty.Value;
+                    layerInserters[layerGuid] = () => layerEffect.AddPlaceholder(new EditorStoryboardLayer(layerRoot.Value<string>("Name"), layerEffect)
                     {
-                        var fieldRoot = fieldProperty.Value;
-
-                        var fieldTypeName = fieldRoot.Value<string>("Type");
-                        var fieldContent = fieldRoot.Value<string>("Value");
-                        var beginsGroup = fieldRoot.Value<string>("BeginsGroup");
-
-                        var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldContent);
-
-                        var allowedValues = fieldRoot
-                                .Value<TinyObject>("AllowedValues")?
-                                .Select(p => new NamedValue { Name = p.Key, Value = ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()), })
-                                .ToArray();
-
-                        effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++, fieldValue?.GetType(), fieldValue, allowedValues, beginsGroup);
-                    }
-
-                    var layersRoot = effectRoot.Value<TinyObject>("Layers");
-                    foreach (var layerProperty in layersRoot)
-                    {
-                        var layerEffect = effect;
-                        var layerGuid = layerProperty.Key;
-                        var layerRoot = layerProperty.Value;
-                        layerInserters.Add(layerGuid, () => layerEffect.AddPlaceholder(new EditorStoryboardLayer(layerRoot.Value<string>("Name"), layerEffect)
-                        {
-                            Guid = Guid.Parse(layerGuid),
-                            OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
-                            DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
-                            Visible = layerRoot.Value<bool>("Visible"),
-                        }));
-                    }
-                }
-
-                if (effects.Count == 0)
-                    EffectsStatus = EffectStatus.Ready;
-
-                // Insert layers defined in the index
-                var layersOrder = indexRoot.Values<string>("Layers");
-                if (layersOrder != null)
-                    foreach (var layerGuid in layersOrder.Distinct())
-                    {
-                        if (layerInserters.TryGetValue(layerGuid, out var insertLayer))
-                            insertLayer();
-                    }
-
-                // Insert all remaining layers
-                foreach (var key in layersOrder == null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
-                {
-                    var insertLayer = layerInserters[key];
-                    insertLayer();
+                        Guid = Guid.Parse(layerGuid),
+                        OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
+                        DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
+                        Visible = layerRoot.Value<bool>("Visible")
+                    });
                 }
             }
-        }
 
+            if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
+
+            var layersOrder = indexRoot.Values<string>("Layers").Distinct();
+            if (layersOrder != null) foreach (var layerGuid in layersOrder) if (layerInserters.TryGetValue(layerGuid, out var insertLayer)) insertLayer();
+
+            // Insert all remaining layers
+            foreach (var key in layersOrder is null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
+            {
+                var insertLayer = layerInserters[key];
+                insertLayer();
+            }
+        }
         public static Project Create(string projectFolderName, string mapsetPath, bool withCommonScripts, ResourceContainer resourceContainer)
         {
-            if (!Directory.Exists(ProjectsFolder))
-                Directory.CreateDirectory(ProjectsFolder);
+            if (!Directory.Exists(ProjectsFolder)) Directory.CreateDirectory(ProjectsFolder);
 
             var hasInvalidCharacters = false;
-            foreach (var character in Path.GetInvalidFileNameChars())
-                if (projectFolderName.Contains(character.ToString()))
-                {
-                    hasInvalidCharacters = true;
-                    break;
-                }
+            foreach (var character in Path.GetInvalidFileNameChars()) if (projectFolderName.Contains(character))
+            {
+                hasInvalidCharacters = true;
+                break;
+            }
 
-            if (hasInvalidCharacters || string.IsNullOrWhiteSpace(projectFolderName))
-                throw new InvalidOperationException($"'{projectFolderName}' isn't a valid project folder name");
+            if (hasInvalidCharacters || string.IsNullOrWhiteSpace(projectFolderName)) throw new InvalidOperationException($"'{projectFolderName}' isn't a valid project folder name");
 
             var projectFolderPath = Path.Combine(ProjectsFolder, projectFolderName);
-            if (Directory.Exists(projectFolderPath))
-                throw new InvalidOperationException($"A project already exists at '{projectFolderPath}'");
+            if (Directory.Exists(projectFolderPath)) throw new InvalidOperationException($"A project already exists at '{projectFolderPath}'");
 
             Directory.CreateDirectory(projectFolderPath);
-            var project = new Project(Path.Combine(projectFolderPath, DefaultTextFilename), withCommonScripts, resourceContainer)
+            var project = new Project(Path.Combine(projectFolderPath, DefaultBinaryFilename), withCommonScripts, resourceContainer)
             {
-                MapsetPath = mapsetPath,
+                MapsetPath = mapsetPath
             };
             project.Save();
 
             return project;
         }
 
-        /// <summary>
-        /// Doesn't run in the main thread
-        /// </summary>
         public void ExportToOsb(bool exportOsb = true)
         {
-            if (IsDisposed) throw new ObjectDisposedException(nameof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
             string osuPath = null, osbPath = null;
-            List<EditorStoryboardLayer> localLayers = null;
+            IEnumerable<EditorStoryboardLayer> localLayers = null, diffSpecific = null, sbLayer;
             Program.RunMainThread(() =>
             {
-                osuPath = MainBeatmap.Path;
-                osbPath = OsbPath;
+                if (osuPath != MainBeatmap.Path) osuPath = MainBeatmap.Path;
+                if (osbPath != OsbPath) osbPath = OsbPath;
 
-                if (!OwnsOsb && File.Exists(osbPath))
-                    File.Copy(osbPath, $"{osbPath}.bak");
-                OwnsOsb = true;
+                if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
+                if (!OwnsOsb) OwnsOsb = true;
 
-                localLayers = new List<EditorStoryboardLayer>(LayerManager.FindLayers(l => l.Visible));
+                localLayers = LayerManager.FindLayers(l => l.Visible);
+                diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
             });
 
             var usesOverlayLayer = localLayers.Any(l => l.OsbLayer == OsbLayer.Overlay);
+            sbLayer = localLayers.Where(l => !l.DiffSpecific);
 
-            if (!string.IsNullOrEmpty(osuPath))
+            if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Any())
             {
-                Debug.Print($"Exporting diff specific events to {osuPath}");
-                using (var stream = new SafeWriteStream(osuPath))
-                using (var writer = new StreamWriter(stream, Encoding))
-                using (var fileStream = new FileStream(osuPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var reader = new StreamReader(fileStream, Encoding))
-                {
-                    string line;
-                    var inEvents = false;
-                    var inStoryboard = false;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        var trimmedLine = line.Trim();
-                        if (!inEvents && trimmedLine == "[Events]")
-                            inEvents = true;
-                        else if (trimmedLine.Length == 0)
-                            inEvents = false;
+                Trace.WriteLine($"Exporting diff specific events to {osuPath}");
+                using var stream = new SafeWriteStream(osuPath); using var writer = new StreamWriter(stream, Encoding); using var reader = new StreamReader(osuPath, Encoding);
+                string line;
+                var inEvents = false;
+                var inStoryboard = false;
 
-                        if (inEvents)
+                while ((line = reader.ReadLine()) != null)
+                {
+                    var trimmedLine = line.Trim();
+                    if (!inEvents && trimmedLine == "[Events]") inEvents = true;
+                    else if (trimmedLine.Length == 0) inEvents = false;
+
+                    if (inEvents)
+                    {
+                        if (trimmedLine.StartsWith("//Storyboard Layer", StringComparison.Ordinal))
                         {
-                            if (trimmedLine.StartsWith("//Storyboard Layer"))
+                            if (!inStoryboard)
                             {
-                                if (!inStoryboard)
+                                foreach (var osbLayer in OsbLayers)
                                 {
-                                    foreach (var osbLayer in OsbLayers)
-                                    {
-                                        if (osbLayer == OsbLayer.Overlay && !usesOverlayLayer)
-                                            continue;
+                                    if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
-                                        writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
-                                        foreach (var layer in localLayers)
-                                            if (layer.OsbLayer == osbLayer && layer.DiffSpecific)
-                                                layer.WriteOsb(writer, ExportSettings);
-                                    }
-                                    inStoryboard = true;
+                                    writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
+                                    foreach (var layer in diffSpecific) if (layer.OsbLayer == osbLayer && layer.Visible) layer.WriteOsb(writer, ExportSettings);
                                 }
+                                inStoryboard = true;
                             }
-                            else if (inStoryboard && trimmedLine.StartsWith("//"))
-                                inStoryboard = false;
-
-                            if (inStoryboard)
-                                continue;
                         }
-                        writer.WriteLine(line);
+                        else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.Ordinal)) inStoryboard = false;
+
+                        if (inStoryboard) continue;
                     }
-                    stream.Commit();
+                    writer.WriteLine(line);
                 }
+                stream.Commit();
             }
 
-            if (exportOsb)
+            if (exportOsb && sbLayer.Any())
             {
-                Debug.Print($"Exporting osb to {osbPath}");
-                using (var stream = new SafeWriteStream(osbPath))
-                using (var writer = new StreamWriter(stream, Encoding))
-                {
-                    writer.WriteLine("[Events]");
-                    writer.WriteLine("//Background and Video events");
-                    foreach (var osbLayer in OsbLayers)
-                    {
-                        if (osbLayer == OsbLayer.Overlay && !usesOverlayLayer)
-                            continue;
+                Trace.WriteLine($"Exporting osb to {osbPath}");
+                using var writer = new StreamWriter(osbPath, false);
+                writer.WriteLine("[Events]");
+                writer.WriteLine("//Background and Video events");
 
-                        writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
-                        foreach (var layer in localLayers)
-                            if (layer.OsbLayer == osbLayer && !layer.DiffSpecific)
-                                layer.WriteOsb(writer, ExportSettings);
-                    }
-                    writer.WriteLine("//Storyboard Sound Samples");
-                    stream.Commit();
+                foreach (var osbLayer in OsbLayers)
+                {
+                    if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
+
+                    writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
+                    foreach (var layer in sbLayer) if (layer.OsbLayer == osbLayer) layer.WriteOsb(writer, ExportSettings);
                 }
+                writer.WriteLine("//Storyboard Sound Samples");
             }
-        }
-
-        private static void cleanupFolder(string path, string searchPattern)
-        {
-            foreach (var filename in Directory.GetFiles(path, searchPattern, SearchOption.TopDirectoryOnly))
-                try
-                {
-                    File.Delete(filename);
-                    Debug.Print($"{filename} deleted");
-                }
-                catch (Exception e)
-                {
-                    Trace.WriteLine($"{filename} couldn't be deleted: {e.Message}");
-                }
         }
 
         #endregion
 
         #region IDisposable Support
 
-        public bool IsDisposed { get; private set; } = false;
-
-        protected virtual void Dispose(bool disposing)
+        public bool Disposed { get; private set; }
+        public void Dispose()
         {
-            if (!IsDisposed)
+            if (!Disposed)
             {
-                if (disposing)
-                {
-                    // Always dispose this first to ensure updates aren't happening while the project is being disposed
-                    effectUpdateQueue.Dispose();
+                effectUpdateQueue.Dispose();
+                assetWatcher.Dispose();
+                MapsetManager?.Dispose();
+                scriptManager.Dispose();
+                TextureContainer.Dispose();
+                AudioContainer.Dispose();
 
-                    assetWatcher.Dispose();
-                    MapsetManager?.Dispose();
-                    scriptManager.Dispose();
-                    TextureContainer.Dispose();
-                    AudioContainer.Dispose();
-                }
+                effectUpdateQueue = null;
                 assetWatcher = null;
                 MapsetManager = null;
-                effectUpdateQueue = null;
                 scriptManager = null;
                 TextureContainer = null;
                 AudioContainer = null;
-                IsDisposed = true;
-            }
-        }
 
-        public void Dispose()
-        {
-            Dispose(true);
+                Disposed = true;
+            }
         }
 
         #endregion

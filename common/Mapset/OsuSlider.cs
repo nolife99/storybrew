@@ -1,86 +1,67 @@
-﻿using OpenTK;
-using StorybrewCommon.Curves;
+﻿using StorybrewCommon.Curves;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
 namespace StorybrewCommon.Mapset
 {
-    [Serializable]
-    public class OsuSlider : OsuHitObject
+#pragma warning disable CS1591
+    [Serializable] public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints) : OsuHitObject
     {
-        private readonly List<OsuSliderNode> nodes;
+        readonly OsuSliderNode[] nodes = nodes;
         public IEnumerable<OsuSliderNode> Nodes => nodes;
-        public int NodeCount => nodes.Count;
+        public int NodeCount => nodes.Length;
 
-        private readonly List<OsuSliderControlPoint> controlPoints;
+        readonly OsuSliderControlPoint[] controlPoints = controlPoints;
         public IEnumerable<OsuSliderControlPoint> ControlPoints => controlPoints;
-        public int ControlPointCount => controlPoints.Count;
+        public int ControlPointCount => controlPoints.Length;
 
         public override double EndTime => StartTime + TravelCount * TravelDuration;
 
-        private Curve curve;
+        Curve curve;
         public Curve Curve
         {
             get
             {
-                if (curve == null) generateCurve();
+                if (curve is null) generateCurve();
                 return curve;
             }
         }
 
-        private Vector2 playfieldTipPosition;
-        public Vector2 PlayfieldTipPosition
+        CommandPosition playfieldTipPosition;
+        public CommandPosition PlayfieldTipPosition
         {
             get
             {
-                if (curve == null) generateCurve();
+                if (curve is null) generateCurve();
                 return playfieldTipPosition;
             }
         }
 
-        public Vector2 TipPosition => PlayfieldTipPosition + PlayfieldToStoryboardOffset;
+        public CommandPosition TipPosition => PlayfieldTipPosition + PlayfieldToStoryboardOffset;
 
-        /// <summary>
-        /// The total distance the slider ball travels, in osu!pixels.
-        /// </summary>
+        ///<summary> The total distance the slider ball travels, in osu!pixels. </summary>
         public double Length;
 
-        /// <summary>
-        /// The time it takes for the slider ball to travels across the slider's body in beats.
-        /// </summary>
+        ///<summary> The time it takes for the slider ball to travels across the slider's body in beats. </summary>
         public double TravelDurationBeats;
 
-        /// <summary>
-        /// The time it takes for the slider ball to travels across the slider's body in milliseconds.
-        /// </summary>
+        ///<summary> The time it takes for the slider ball to travels across the slider's body in milliseconds. </summary>
         public double TravelDuration;
 
-        /// <summary>
-        /// How many times the slider ball travels across the slider's body.
-        /// </summary>
-        public int TravelCount => nodes.Count - 1;
+        /// <summary> How many times the slider ball travels across the slider's body. </summary>
+        public int TravelCount => nodes.Length - 1;
 
-        /// <summary>
-        /// How many times the slider ball hits a repeat.
-        /// </summary>
-        public int RepeatCount => nodes.Count - 2;
+        ///<summary> How many times the slider ball hits a repeat. </summary>
+        public int RepeatCount => nodes.Length - 2;
 
         public SliderCurveType CurveType;
 
-        public OsuSlider(List<OsuSliderNode> nodes, List<OsuSliderControlPoint> controlPoints)
+        public override CommandPosition PlayfieldPositionAtTime(double time)
         {
-            this.nodes = nodes;
-            this.controlPoints = controlPoints;
-        }
-
-        public override Vector2 PlayfieldPositionAtTime(double time)
-        {
-            if (time <= StartTime)
-                return PlayfieldPosition;
-
-            if (EndTime <= time)
-                return TravelCount % 2 == 0 ? PlayfieldPosition : PlayfieldTipPosition;
+            if (time <= StartTime) return PlayfieldPosition;
+            if (EndTime <= time) return TravelCount % 2 == 0 ? PlayfieldPosition : PlayfieldTipPosition;
 
             var elapsedSinceStartTime = time - StartTime;
 
@@ -93,54 +74,48 @@ namespace StorybrewCommon.Mapset
             }
 
             var progress = progressDuration / TravelDuration;
-            var reversed = repeatAtTime % 2 == 0;
-            if (reversed) progress = 1.0 - progress;
+            var reversed = (repeatAtTime & 1) == 0;
+            if (reversed) progress = 1 - progress;
 
             if (curve == null) generateCurve();
             return curve.PositionAtDistance(Length * progress);
         }
 
-        public override string ToString()
-            => $"{base.ToString()}, {CurveType}, {TravelCount}x";
+        public override string ToString() => $"{base.ToString()}, {CurveType}, {TravelCount}x";
 
-        private void generateCurve()
+        void generateCurve()
         {
             switch (CurveType)
             {
                 case SliderCurveType.Catmull:
-                    if (controlPoints.Count == 1)
-                        goto case SliderCurveType.Linear;
+                    if (controlPoints.Length == 1) goto case SliderCurveType.Linear;
                     curve = generateCatmullCurve();
                     break;
+
                 case SliderCurveType.Bezier:
-                    if (controlPoints.Count == 1)
-                        goto case SliderCurveType.Linear;
+                    if (controlPoints.Length == 1) goto case SliderCurveType.Linear;
                     curve = generateBezierCurve();
                     break;
+
                 case SliderCurveType.Perfect:
-                    if (controlPoints.Count > 2)
-                        goto case SliderCurveType.Bezier;
-                    if (controlPoints.Count < 2 ||
-                        !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0].PlayfieldPosition, controlPoints[1].PlayfieldPosition))
-                        goto case SliderCurveType.Linear;
+                    if (controlPoints.Length > 2) goto case SliderCurveType.Bezier;
+                    if (controlPoints.Length < 2 || !CircleCurve.IsValid(
+                        PlayfieldPosition, controlPoints[0].PlayfieldPosition, controlPoints[1].PlayfieldPosition)) goto case SliderCurveType.Linear;
                     curve = generateCircleCurve();
                     break;
+
                 case SliderCurveType.Linear:
-                default:
-                    curve = generateLinearCurve();
-                    break;
+                default: curve = generateLinearCurve(); break;
             }
             playfieldTipPosition = curve.PositionAtDistance(Length);
         }
 
-        private Curve generateCircleCurve()
-            => new CircleCurve(PlayfieldPosition, controlPoints[0].PlayfieldPosition, controlPoints[1].PlayfieldPosition);
-
-        private Curve generateBezierCurve()
+        Curve generateCircleCurve() => new CircleCurve(PlayfieldPosition, controlPoints[0].PlayfieldPosition, controlPoints[1].PlayfieldPosition);
+        Curve generateBezierCurve()
         {
             var curves = new List<Curve>();
 
-            var curvePoints = new List<Vector2>();
+            var curvePoints = new List<CommandPosition>();
             var precision = (int)Math.Ceiling(Length);
 
             var previousPosition = PlayfieldPosition;
@@ -150,46 +125,39 @@ namespace StorybrewCommon.Mapset
             {
                 if (controlPoint.PlayfieldPosition == previousPosition)
                 {
-                    if (curvePoints.Count > 1)
-                        curves.Add(new Curves.BezierCurve(curvePoints, precision));
-
-                    curvePoints = new List<Vector2>();
+                    if (curvePoints.Count > 1) curves.Add(new BezierCurve(curvePoints, precision));
+                    curvePoints = [];
                 }
 
                 curvePoints.Add(controlPoint.PlayfieldPosition);
                 previousPosition = controlPoint.PlayfieldPosition;
             }
 
-            if (curvePoints.Count > 1)
-                curves.Add(new Curves.BezierCurve(curvePoints, precision));
-
+            if (curvePoints.Count > 1) curves.Add(new BezierCurve(curvePoints, precision));
             return new CompositeCurve(curves);
         }
-
-        private Curve generateCatmullCurve()
+        Curve generateCatmullCurve()
         {
-            List<Vector2> curvePoints = new List<Vector2>(controlPoints.Count + 1);
-            curvePoints.Add(PlayfieldPosition);
-            foreach (var controlPoint in controlPoints)
-                curvePoints.Add(controlPoint.PlayfieldPosition);
+            var curvePoints = new CommandPosition[controlPoints.Length + 1];
+            curvePoints[0] = PlayfieldPosition;
+            for (var i = 0; i < ControlPointCount; ++i) curvePoints[i + 1] = controlPoints[i].PlayfieldPosition;
 
             var precision = (int)Math.Ceiling(Length);
             return new CatmullCurve(curvePoints, precision);
         }
-
-        private Curve generateLinearCurve()
+        Curve generateLinearCurve()
         {
-            var curves = new List<Curve>();
+            var curves = new Curve[controlPoints.Length];
 
             var previousPoint = PlayfieldPosition;
-            foreach (var controlPoint in controlPoints)
+            for (var i = 0; i < controlPoints.Length; ++i)
             {
-                curves.Add(new Curves.BezierCurve(new List<Vector2>()
+                curves[i] = new BezierCurve(new CommandPosition[]
                 {
                     previousPoint,
-                    controlPoint.PlayfieldPosition,
-                }, 0));
-                previousPoint = controlPoint.PlayfieldPosition;
+                    controlPoints[i].PlayfieldPosition
+                }, 0);
+                previousPoint = controlPoints[i].PlayfieldPosition;
             }
             return new CompositeCurve(curves);
         }
@@ -201,36 +169,36 @@ namespace StorybrewCommon.Mapset
 
             var curveType = LetterToCurveType(sliderValues[0]);
             var sliderControlPointCount = sliderValues.Length - 1;
-            var sliderControlPoints = new List<OsuSliderControlPoint>(sliderControlPointCount);
+            var sliderControlPoints = new OsuSliderControlPoint[sliderControlPointCount];
             for (var i = 0; i < sliderControlPointCount; i++)
             {
                 var controlPointValues = sliderValues[i + 1].Split(':');
                 var controlPointX = float.Parse(controlPointValues[0], CultureInfo.InvariantCulture);
                 var controlPointY = float.Parse(controlPointValues[1], CultureInfo.InvariantCulture);
-                sliderControlPoints.Add(new Vector2(controlPointX, controlPointY));
+                sliderControlPoints[i] = new CommandPosition(controlPointX, controlPointY);
             }
 
-            var nodeCount = int.Parse(values[6]) + 1;
+            var nodeCount = int.Parse(values[6], CultureInfo.InvariantCulture) + 1;
             var length = double.Parse(values[7], CultureInfo.InvariantCulture);
 
             var sliderMultiplierLessLength = length / beatmap.SliderMultiplier;
             var travelDurationBeats = sliderMultiplierLessLength / 100 * controlPoint.SliderMultiplier;
             var travelDuration = timingPoint.BeatDuration * travelDurationBeats;
 
-            var sliderNodes = new List<OsuSliderNode>(nodeCount);
+            var sliderNodes = new OsuSliderNode[nodeCount];
             for (var i = 0; i < nodeCount; i++)
             {
                 var nodeStartTime = startTime + i * travelDuration;
                 var nodeControlPoint = beatmap.GetTimingPointAt((int)nodeStartTime);
-                sliderNodes.Add(new OsuSliderNode()
+                sliderNodes[i] = new OsuSliderNode
                 {
                     Time = nodeStartTime,
                     SampleSet = nodeControlPoint.SampleSet,
                     AdditionsSampleSet = nodeControlPoint.SampleSet,
                     CustomSampleSet = nodeControlPoint.CustomSampleSet,
                     Volume = nodeControlPoint.Volume,
-                    Additions = additions,
-                });
+                    Additions = additions
+                };
             }
             if (values.Length > 8)
             {
@@ -239,7 +207,7 @@ namespace StorybrewCommon.Mapset
                 for (var i = 0; i < sliderAdditionValues.Length; i++)
                 {
                     var node = sliderNodes[i];
-                    var nodeAdditions = (HitSoundAddition)int.Parse(sliderAdditionValues[i]);
+                    var nodeAdditions = (HitSoundAddition)int.Parse(sliderAdditionValues[i], CultureInfo.InvariantCulture);
                     node.Additions = nodeAdditions;
                 }
             }
@@ -251,51 +219,45 @@ namespace StorybrewCommon.Mapset
                 {
                     var node = sliderNodes[i];
                     var sampleAndAdditionSampleSetValues2 = sampleAndAdditionSampleSetValues[i].Split(':');
-                    var nodeSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0]);
-                    var nodeAdditionsSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[1]);
+                    var nodeSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0], CultureInfo.InvariantCulture);
+                    var nodeAdditionsSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[1], CultureInfo.InvariantCulture);
 
                     if (nodeSampleSet != 0)
                     {
                         node.SampleSet = nodeSampleSet;
                         node.AdditionsSampleSet = nodeSampleSet;
                     }
-                    if (nodeAdditionsSampleSet != 0)
-                        node.AdditionsSampleSet = nodeAdditionsSampleSet;
+                    if (nodeAdditionsSampleSet != 0) node.AdditionsSampleSet = nodeAdditionsSampleSet;
                 }
             }
 
-            string samplePath = string.Empty;
+            string samplePath = "";
             if (values.Length > 10)
             {
                 var special = values[10];
                 var specialValues = special.Split(':');
-                var objectSampleSet = (SampleSet)int.Parse(specialValues[0]);
-                var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1]);
+
+                var objectSampleSet = (SampleSet)int.Parse(specialValues[0], CultureInfo.InvariantCulture);
+                var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1], CultureInfo.InvariantCulture);
                 var objectCustomSampleSet = 0;
-                if (specialValues.Length > 2)
-                    objectCustomSampleSet = int.Parse(specialValues[2]);
-                var objectVolume = 0.0f;
-                if (specialValues.Length > 3)
-                    objectVolume = int.Parse(specialValues[3]);
-                if (specialValues.Length > 4)
-                    samplePath = specialValues[4];
+                if (specialValues.Length > 2) objectCustomSampleSet = int.Parse(specialValues[2], CultureInfo.InvariantCulture);
+                var objectVolume = 0f;
+                if (specialValues.Length > 3) objectVolume = int.Parse(specialValues[3], CultureInfo.InvariantCulture);
+                if (specialValues.Length > 4) samplePath = specialValues[4];
 
                 if (objectSampleSet != 0)
                 {
                     sampleSet = objectSampleSet;
                     additionsSampleSet = objectSampleSet;
                 }
-                if (objectAdditionsSampleSet != 0)
-                    additionsSampleSet = objectAdditionsSampleSet;
-                if (objectCustomSampleSet != 0)
-                    customSampleSet = objectCustomSampleSet;
-                if (objectVolume > 0.001f)
-                    volume = objectVolume;
+                if (objectAdditionsSampleSet != 0) additionsSampleSet = objectAdditionsSampleSet;
+                if (objectCustomSampleSet != 0) customSampleSet = objectCustomSampleSet;
+                if (objectVolume > .001) volume = objectVolume;
             }
 
             return new OsuSlider(sliderNodes, sliderControlPoints)
             {
-                PlayfieldPosition = new Vector2(x, y),
+                PlayfieldPosition = new CommandPosition(x, y),
                 StartTime = startTime,
                 Flags = flags,
                 Additions = additions,
@@ -308,50 +270,38 @@ namespace StorybrewCommon.Mapset
                 CurveType = curveType,
                 Length = length,
                 TravelDurationBeats = travelDurationBeats,
-                TravelDuration = travelDuration,
+                TravelDuration = travelDuration
             };
         }
-
         public static SliderCurveType LetterToCurveType(string letter)
         {
-            switch (letter)
+            return letter switch
             {
-                case "L": return SliderCurveType.Linear;
-                case "C": return SliderCurveType.Catmull;
-                case "B": return SliderCurveType.Bezier;
-                case "P": return SliderCurveType.Perfect;
-                default: return SliderCurveType.Unknown;
-            }
+                "L" => SliderCurveType.Linear,
+                "C" => SliderCurveType.Catmull,
+                "B" => SliderCurveType.Bezier,
+                "P" => SliderCurveType.Perfect,
+                _ => SliderCurveType.Unknown,
+            };
         }
     }
-
-    [Serializable]
-    public class OsuSliderNode
+    [Serializable] public class OsuSliderNode
     {
         public double Time;
         public HitSoundAddition Additions;
-        public SampleSet SampleSet;
-        public SampleSet AdditionsSampleSet;
+        public SampleSet SampleSet, AdditionsSampleSet;
         public int CustomSampleSet;
         public float Volume;
     }
-
-    [Serializable]
-    public struct OsuSliderControlPoint
+    [Serializable] public class OsuSliderControlPoint(CommandPosition position)
     {
-        public Vector2 PlayfieldPosition;
-        public Vector2 Position => PlayfieldPosition + OsuHitObject.PlayfieldToStoryboardOffset;
+        public CommandPosition PlayfieldPosition = position;
+        public CommandPosition Position => PlayfieldPosition + OsuHitObject.PlayfieldToStoryboardOffset;
 
-        public static implicit operator OsuSliderControlPoint(Vector2 vector2)
-            => new OsuSliderControlPoint() { PlayfieldPosition = vector2, };
+        public static implicit operator OsuSliderControlPoint(CommandPosition position) => new(position);
     }
-
     public enum SliderCurveType
     {
-        Unknown,
-        Linear,
-        Catmull,
-        Bezier,
-        Perfect,
+        Unknown, Linear, Catmull, Bezier, Perfect
     }
 }

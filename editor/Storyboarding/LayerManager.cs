@@ -1,7 +1,7 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
-using OpenTK;
+using osuTK;
 using StorybrewCommon.Storyboarding;
 using System;
 using System.Collections.Generic;
@@ -11,11 +11,11 @@ namespace StorybrewEditor.Storyboarding
 {
     public class LayerManager
     {
-        private readonly List<EditorStoryboardLayer> layers = new List<EditorStoryboardLayer>();
+        readonly List<EditorStoryboardLayer> layers = [];
 
         public int LayersCount => layers.Count;
         public IEnumerable<EditorStoryboardLayer> Layers => layers;
-        public List<EditorStoryboardLayer> FindLayers(Predicate<EditorStoryboardLayer> predicate) => layers.FindAll(predicate);
+        public IEnumerable<EditorStoryboardLayer> FindLayers(Func<EditorStoryboardLayer, bool> predicate) => layers.Where(predicate);
 
         public event EventHandler OnLayersChanged;
 
@@ -25,7 +25,6 @@ namespace StorybrewEditor.Storyboarding
             layer.OnChanged += layer_OnChanged;
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
         }
-
         public void Replace(EditorStoryboardLayer oldLayer, EditorStoryboardLayer newLayer)
         {
             var index = layers.IndexOf(oldLayer);
@@ -39,13 +38,12 @@ namespace StorybrewEditor.Storyboarding
             else throw new InvalidOperationException($"Cannot replace layer '{oldLayer.Name}' with '{newLayer.Name}', old layer not found");
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
         }
-
         public void Replace(List<EditorStoryboardLayer> oldLayers, List<EditorStoryboardLayer> newLayers)
         {
-            oldLayers = new List<EditorStoryboardLayer>(oldLayers);
-            foreach (var newLayer in newLayers)
+            oldLayers = new(oldLayers);
+            newLayers.ForEach(newLayer =>
             {
-                var oldLayer = oldLayers.Find(l => l.Identifier == newLayer.Identifier);
+                var oldLayer = oldLayers.Find(l => l.Name == newLayer.Name);
                 if (oldLayer != null)
                 {
                     var index = layers.IndexOf(oldLayer);
@@ -58,25 +56,24 @@ namespace StorybrewEditor.Storyboarding
                 }
                 else layers.Insert(findLayerIndex(newLayer), newLayer);
                 newLayer.OnChanged += layer_OnChanged;
-            }
-            foreach (var oldLayer in oldLayers)
+            });
+            oldLayers.ForEach(oldLayer =>
             {
                 oldLayer.OnChanged -= layer_OnChanged;
                 layers.Remove(oldLayer);
-            }
+            });
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
         }
-
         public void Replace(EditorStoryboardLayer oldLayer, List<EditorStoryboardLayer> newLayers)
         {
             var index = layers.IndexOf(oldLayer);
             if (index != -1)
             {
-                foreach (var newLayer in newLayers)
+                newLayers.ForEach(newLayer =>
                 {
                     newLayer.CopySettings(oldLayer, copyGuid: false);
                     newLayer.OnChanged += layer_OnChanged;
-                }
+                });
                 layers.InsertRange(index, newLayers);
 
                 oldLayer.OnChanged -= layer_OnChanged;
@@ -85,7 +82,6 @@ namespace StorybrewEditor.Storyboarding
             else throw new InvalidOperationException($"Cannot replace layer '{oldLayer.Name}' with multiple layers, old layer not found");
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
         }
-
         public void Remove(EditorStoryboardLayer layer)
         {
             if (layers.Remove(layer))
@@ -94,7 +90,6 @@ namespace StorybrewEditor.Storyboarding
                 OnLayersChanged?.Invoke(this, EventArgs.Empty);
             }
         }
-
         public bool MoveUp(EditorStoryboardLayer layer)
         {
             var index = layers.IndexOf(layer);
@@ -112,7 +107,6 @@ namespace StorybrewEditor.Storyboarding
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
-
         public bool MoveDown(EditorStoryboardLayer layer)
         {
             var index = layers.IndexOf(layer);
@@ -130,7 +124,6 @@ namespace StorybrewEditor.Storyboarding
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
-
         public bool MoveToTop(EditorStoryboardLayer layer)
         {
             var index = layers.IndexOf(layer);
@@ -149,7 +142,6 @@ namespace StorybrewEditor.Storyboarding
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
-
         public bool MoveToBottom(EditorStoryboardLayer layer)
         {
             var index = layers.IndexOf(layer);
@@ -168,15 +160,12 @@ namespace StorybrewEditor.Storyboarding
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
             return true;
         }
-
         public void MoveToOsbLayer(EditorStoryboardLayer layer, OsbLayer osbLayer)
         {
             var firstLayer = layers.FirstOrDefault(l => l.OsbLayer == osbLayer);
-            if (firstLayer != null)
-                MoveToLayer(layer, firstLayer);
+            if (firstLayer != null) MoveToLayer(layer, firstLayer);
             else layer.OsbLayer = osbLayer;
         }
-
         public void MoveToLayer(EditorStoryboardLayer layerToMove, EditorStoryboardLayer toLayer)
         {
             layerToMove.OsbLayer = toLayer.OsbLayer;
@@ -190,35 +179,27 @@ namespace StorybrewEditor.Storyboarding
             }
             else throw new InvalidOperationException($"Cannot move layer '{layerToMove.Name}' to the position of '{layerToMove.Name}'");
         }
-
         public void TriggerEvents(double startTime, double endTime)
         {
-            foreach (var layer in Layers)
-                layer.TriggerEvents(startTime, endTime);
+            foreach (var layer in Layers) layer.TriggerEvents(startTime, endTime);
         }
 
-        public int GetActiveSpriteCount(double time)
-            => layers.Sum(l => l.GetActiveSpriteCount(time));
-
-        public int GetCommandCost(double time)
-            => layers.Sum(l => l.GetCommandCost(time));
+        public int GetActiveSpriteCount(double time) => layers.Sum(l => l.GetActiveSpriteCount(time));
+        public int GetCommandCost(double time) => layers.Sum(l => l.GetCommandCost(time));
 
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, FrameStats frameStats)
         {
-            foreach (var layer in Layers)
-                layer.Draw(drawContext, camera, bounds, opacity, frameStats);
+            foreach (var layer in Layers) layer.Draw(drawContext, camera, bounds, opacity, frameStats);
         }
-
-        private void layer_OnChanged(object sender, ChangedEventArgs e)
+        void layer_OnChanged(object sender, ChangedEventArgs e)
         {
             if (e.PropertyName == null || e.PropertyName == nameof(EditorStoryboardLayer.OsbLayer) || e.PropertyName == nameof(EditorStoryboardLayer.DiffSpecific))
                 sortLayer((EditorStoryboardLayer)sender);
         }
-
-        private void sortLayer(EditorStoryboardLayer layer)
+        void sortLayer(EditorStoryboardLayer layer)
         {
             var initialIndex = layers.IndexOf(layer);
-            if (initialIndex < 0) new InvalidOperationException($"Layer '{layer.Name}' cannot be found");
+            if (initialIndex < 0) throw new InvalidOperationException($"Layer '{layer.Name}' cannot be found");
 
             var newIndex = initialIndex;
             while (newIndex > 0 && layer.CompareTo(layers[newIndex - 1]) < 0) newIndex--;
@@ -227,14 +208,12 @@ namespace StorybrewEditor.Storyboarding
             layers.Move(initialIndex, newIndex);
             OnLayersChanged?.Invoke(this, EventArgs.Empty);
         }
-
-        private int findLayerIndex(EditorStoryboardLayer layer)
+        int findLayerIndex(EditorStoryboardLayer layer)
         {
             var index = layers.BinarySearch(layer);
             if (index >= 0)
             {
-                while (index < layers.Count && layer.CompareTo(layers[index]) == 0)
-                    index++;
+                while (index < layers.Count && layer.CompareTo(layers[index]) == 0) index++;
                 return index;
             }
             else return ~index;

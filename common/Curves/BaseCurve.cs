@@ -1,18 +1,23 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
 
 namespace StorybrewCommon.Curves
 {
-    [Serializable]
-    public abstract class BaseCurve : Curve
+    ///<summary> Represents a base curve. </summary>
+    [Serializable] public abstract class BaseCurve : Curve
     {
-        public abstract Vector2 EndPosition { get; }
-        public abstract Vector2 StartPosition { get; }
+        ///<inheritdoc/>
+        public abstract CommandPosition EndPosition { get; }
 
-        private List<ValueTuple<float, Vector2>> distancePosition;
+        ///<inheritdoc/>
+        public abstract CommandPosition StartPosition { get; }
 
-        private double length;
+        List<ValueTuple<float, CommandPosition>> distancePosition;
+
+        double length;
+
+        ///<inheritdoc/>
         public double Length
         {
             get
@@ -22,19 +27,21 @@ namespace StorybrewCommon.Curves
             }
         }
 
-        private void initialize()
+        void initialize()
         {
-            distancePosition = new List<ValueTuple<float, Vector2>>();
+            distancePosition = [];
             Initialize(distancePosition, out length);
         }
 
-        protected abstract void Initialize(List<ValueTuple<float, Vector2>> distancePosition, out double length);
+        ///<summary/>
+        protected abstract void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length);
 
-        public Vector2 PositionAtDistance(double distance)
+        ///<inheritdoc/>
+        public CommandPosition PositionAtDistance(double distance)
         {
             if (distancePosition == null) initialize();
 
-            var previousDistance = 0.0f;
+            var previousDistance = 0f;
             var previousPosition = StartPosition;
 
             var nextDistance = length;
@@ -64,7 +71,7 @@ namespace StorybrewCommon.Curves
             return previousPosition + previousToNext * (float)delta;
         }
 
-        public Vector2 PositionAtDelta(double delta)
-            => PositionAtDistance(delta * Length);
+        ///<inheritdoc/>
+        public CommandPosition PositionAtDelta(double delta) => PositionAtDistance(delta * Length);
     }
 }

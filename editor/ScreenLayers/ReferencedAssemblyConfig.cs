@@ -3,36 +3,26 @@ using BrewLib.Util;
 using StorybrewEditor.Storyboarding;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 
 namespace StorybrewEditor.ScreenLayers
 {
-    public class ReferencedAssemblyConfig : UiScreenLayer
+    public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
     {
-        private LinearLayout layout;
-        private LinearLayout assembliesLayout;
-        private LinearLayout buttonsLayout;
-
-        private Button okButton;
-        private Button cancelButton;
+        LinearLayout layout, assembliesLayout, buttonsLayout;
+        Button okButton, cancelButton;
 
         public override bool IsPopup => true;
 
-        private readonly Project project;
-        private readonly List<string> selectedAssemblies;
-
-        public ReferencedAssemblyConfig(Project project)
-        {
-            this.project = project;
-            selectedAssemblies = new List<string>(project.ImportedAssemblies);
-        }
+        readonly Project project = project;
+        readonly HashSet<string> selectedAssemblies = new(project.ImportedAssemblies);
 
         public override void Load()
         {
             base.Load();
-
             Button addAssemblyButton, addSystemAssemblyButton;
 
             WidgetManager.Root.Add(layout = new LinearLayout(WidgetManager)
@@ -49,25 +39,25 @@ namespace StorybrewEditor.ScreenLayers
                     new Label(WidgetManager)
                     {
                         Text = "Imported Referenced Assemblies",
-                        CanGrow = false,
+                        CanGrow = false
                     },
                     new ScrollArea(WidgetManager, assembliesLayout = new LinearLayout(WidgetManager)
                     {
-                        FitChildren = true,
+                        FitChildren = true
                     }),
                     addAssemblyButton = new Button(WidgetManager)
                     {
                         Text = "Add assembly file",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,
-                        CanGrow = false,
+                        CanGrow = false
                     },
                     addSystemAssemblyButton = new Button(WidgetManager)
                     {
                         Text = "Add system assembly",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,
-                        CanGrow = false,
+                        CanGrow = false
                     },
                     buttonsLayout = new LinearLayout(WidgetManager)
                     {
@@ -80,52 +70,43 @@ namespace StorybrewEditor.ScreenLayers
                             okButton = new Button(WidgetManager)
                             {
                                 Text = "Ok",
-                                AnchorFrom = BoxAlignment.Centre,
+                                AnchorFrom = BoxAlignment.Centre
                             },
                             cancelButton = new Button(WidgetManager)
                             {
                                 Text = "Cancel",
-                                AnchorFrom = BoxAlignment.Centre,
-                            },
-                        },
-                    },
-                },
+                                AnchorFrom = BoxAlignment.Centre
+                            }
+                        }
+                    }
+                }
             });
 
-            addAssemblyButton.OnClick += (sender, e) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "", project.ProjectFolderPath, ".NET Assemblies (*.dll)|*.dll",
-                path =>
-                {
-                    if (!isValidAssembly(path))
-                    {
-                        WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is intended for .NET?");
-                        return;
-                    }
-
-                    if (validateAssembly(path))
-                    {
-                        var assembly = isSystemAssembly(path) ?
-                            Path.GetFileName(path) :
-                            PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
-
-                        addReferencedAssembly(assembly);
-                    }
-                });
-
-            addSystemAssemblyButton.OnClick += (sender, e) =>
+            addAssemblyButton.OnClick += (sender, e) => WidgetManager.ScreenLayerManager.OpenFilePicker(
+                "", "", project.ProjectFolderPath, ".NET Assemblies (*.dll)|*.dll", path =>
             {
-                tryCatchSystemAssemblies(() =>
+                if (!isValidAssembly(path))
                 {
-                    var systemAssemblies = getAvailableSystemAssemblies();
-                    WidgetManager.ScreenLayerManager.ShowContextMenu<string>("Select Assembly",
-                        result =>
-                        {
-                            var path = $"{result}.dll";
-                            if (validateAssembly(path))
-                                addReferencedAssembly(path);
-                        }, systemAssemblies);
-                });
-            };
+                    WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is made for .NET?");
+                    return;
+                }
+                if (validateAssembly(path))
+                {
+                    var assembly = isSystemAssembly(path) ? Path.GetFileName(path) :
+                        PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
 
+                    addReferencedAssembly(assembly);
+                }
+            });
+            addSystemAssemblyButton.OnClick += (sender, e) => tryCatchSystemAssemblies(() =>
+            {
+                var systemAssemblies = getAvailableSystemAssemblies();
+                WidgetManager.ScreenLayerManager.ShowContextMenu<string>("Select Assembly", result =>
+                {
+                    var path = $"{result}.dll";
+                    if (validateAssembly(path)) addReferencedAssembly(path);
+                }, systemAssemblies);
+            });
             okButton.OnClick += (sender, e) =>
             {
                 project.ImportedAssemblies = selectedAssemblies;
@@ -135,14 +116,12 @@ namespace StorybrewEditor.ScreenLayers
 
             refreshAssemblies();
         }
-
         public override void Resize(int width, int height)
         {
             base.Resize(width, height);
             layout.Pack(Math.Min(400, width), Math.Min(600, height));
         }
-
-        private void refreshAssemblies()
+        void refreshAssemblies()
         {
             assembliesLayout.ClearWidgets();
             foreach (var assembly in selectedAssemblies.OrderBy(id => isSystemAssembly(id) ? $"_{id}" : getAssemblyName(id)))
@@ -170,9 +149,9 @@ namespace StorybrewEditor.ScreenLayers
                                     StyleName = "listItem",
                                     Text = getAssemblyName(assembly),
                                     AnchorFrom = BoxAlignment.Left,
-                                    AnchorTo = BoxAlignment.Left,
-                                },
-                            },
+                                    AnchorTo = BoxAlignment.Left
+                                }
+                            }
                         },
                         statusButton = new Button(WidgetManager)
                         {
@@ -180,7 +159,7 @@ namespace StorybrewEditor.ScreenLayers
                             AnchorFrom = BoxAlignment.Centre,
                             AnchorTo = BoxAlignment.Centre,
                             CanGrow = false,
-                            Displayed = false,
+                            Displayed = false
                         },
                         editButton = new Button(WidgetManager)
                         {
@@ -189,7 +168,7 @@ namespace StorybrewEditor.ScreenLayers
                             Tooltip = "Change file",
                             AnchorFrom = BoxAlignment.Centre,
                             AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false,
+                            CanGrow = false
                         },
                         removeButton = new Button(WidgetManager)
                         {
@@ -198,19 +177,20 @@ namespace StorybrewEditor.ScreenLayers
                             Tooltip = "Remove",
                             AnchorFrom = BoxAlignment.Centre,
                             AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false,
-                        },
+                            CanGrow = false
+                        }
                     }
                 });
 
                 var ass = assembly;
 
                 editButton.OnClick += (sender, e) => changeReferencedAssembly(ass);
-                removeButton.OnClick += (sender, e) => WidgetManager.ScreenLayerManager.ShowMessage($"Remove {getAssemblyName(ass)}?", () => removeReferencedAssembly(ass), true);
+                removeButton.OnClick += (sender, e) => WidgetManager.ScreenLayerManager.ShowMessage(
+                    $"Remove {getAssemblyName(ass)}?", () => removeReferencedAssembly(ass), true);
             }
         }
 
-        private string getAssemblyName(string assemblyPath)
+        static string getAssemblyName(string assemblyPath)
         {
             try
             {
@@ -221,11 +201,9 @@ namespace StorybrewEditor.ScreenLayers
                 return Path.GetFileNameWithoutExtension(assemblyPath);
             }
         }
+        string getRelativePath(string assembly) => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ? assembly : Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
 
-        private string getRelativePath(string assembly)
-            => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ? assembly : Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
-
-        private bool isValidAssembly(string assembly)
+        static bool isValidAssembly(string assembly)
         {
             try
             {
@@ -238,121 +216,92 @@ namespace StorybrewEditor.ScreenLayers
             return true;
         }
 
-        private bool assemblyImported(string assembly, IEnumerable<string> assemblies)
-            => assemblies
-                .Select(ass => getAssemblyName(ass))
-                .Contains(getAssemblyName(assembly));
+        static bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies.Select(getAssemblyName).Contains(getAssemblyName(assembly));
+        static bool isDefaultAssembly(string assembly) => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
+        static bool isSystemAssembly(string assemblyId) => getAssemblyName(assemblyId).StartsWith("System.", StringComparison.Ordinal);
+        static bool validateAssembly(string assembly, IEnumerable<string> assemblies) => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));
+        bool validateAssembly(string assembly) => validateAssembly(assembly, selectedAssemblies);
 
-        private bool assemblyImported(string assembly)
-            => assemblyImported(assembly, selectedAssemblies);
-
-        private bool isDefaultAssembly(string assembly)
-            => Project.DefaultAssemblies
-                .Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
-
-        private bool isSystemAssembly(string assemblyId)
-            => getAssemblyName(assemblyId).StartsWith("System.");
-
-        private bool validateAssembly(string assembly, IEnumerable<string> assemblies)
-            => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));
-
-        private bool validateAssembly(string assembly)
-            => validateAssembly(assembly, selectedAssemblies);
-
-        private IEnumerable<string> getAvailableSystemAssemblies()
+        IEnumerable<string> getAvailableSystemAssemblies()
         {
-            var assemblyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Microsoft.NET\\assembly");
-            var badSystemAssemblySuffixes = new[] { "resources", "Resources", "Printing", "Speech", "VisualStudio.11.0" };
+            var coreDir = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            var formsDir = Path.GetDirectoryName(typeof(Brush).Assembly.Location);
+            var badSystemAssemblySuffixes = new[] { "xml" };
 
-            var systemAssemblies = new List<string>();
-            foreach (var gacFolder in Directory.GetDirectories(assemblyDirectory))
+            var allFiles = Directory.EnumerateFiles(formsDir).Union(Directory.EnumerateFiles(coreDir));
+
+            List<string> systemAssemblies = [];
+            foreach (var file in allFiles)
             {
-                foreach (var assemblyFolder in Directory.GetDirectories(gacFolder))
-                {
-                    var assembly = PathHelper.GetRelativePath(gacFolder, assemblyFolder);
+                var assembly = Path.GetFileNameWithoutExtension(file);
 
-                    if (!assembly.StartsWith("System.")) continue;
-                    if (badSystemAssemblySuffixes.Any(suffix => assembly.EndsWith(suffix))) continue;
+                if (!assembly.StartsWith("System.", StringComparison.Ordinal)) continue;
+                if (badSystemAssemblySuffixes.Any(suffix => assembly.EndsWith(suffix, StringComparison.Ordinal))) continue;
 
-                    var filename = $"{assembly}.dll";
-                    if (Project.DefaultAssemblies.Contains(filename)) continue;
-                    if (selectedAssemblies.Contains(filename)) continue;
+                var filename = $"{assembly}.dll";
+                if (Project.DefaultAssemblies.Contains(filename)) continue;
+                if (selectedAssemblies.Contains(filename)) continue;
 
-                    systemAssemblies.Add(assembly);
-                }
+                systemAssemblies.Add(assembly);
             }
-            return systemAssemblies.Distinct().OrderBy(e => e);
+            return systemAssemblies.OrderBy(e => e);
         }
-
-        private string copyReferencedAssembly(string assembly)
+        string copyReferencedAssembly(string assembly)
         {
             var newPath = getRelativePath(assembly);
             File.Copy(assembly, newPath, true);
             return newPath;
         }
-
-        private void addReferencedAssembly(string assembly)
+        void addReferencedAssembly(string assembly)
         {
             selectedAssemblies.Add(assembly);
             refreshAssemblies();
         }
-
-        private void removeReferencedAssembly(string assembly)
+        void removeReferencedAssembly(string assembly)
         {
             selectedAssemblies.Remove(assembly);
             refreshAssemblies();
         }
-
-        private void changeReferencedAssembly(string assembly)
+        void changeReferencedAssembly(string assembly)
         {
-            if (isSystemAssembly(assembly))
+            if (isSystemAssembly(assembly)) tryCatchSystemAssemblies(() =>
             {
-                tryCatchSystemAssemblies(() =>
+                var systemAssemblies = getAvailableSystemAssemblies();
+                WidgetManager.ScreenLayerManager.ShowContextMenu<string>("Select Assembly", result =>
                 {
-                    var systemAssemblies = getAvailableSystemAssemblies();
-                    WidgetManager.ScreenLayerManager.ShowContextMenu<string>("Select Assembly",
-                        result =>
-                        {
-                            var newPath = $"{result}.dll";
-                            var assemblies = selectedAssemblies.Where(ass => ass != assembly).ToList();
-                            if (validateAssembly(newPath, assemblies))
-                            {
-                                selectedAssemblies.Remove(assembly);
-                                selectedAssemblies.Add(newPath);
-                                refreshAssemblies();
-                            }
-                        }, systemAssemblies);
-                });
-            }
-            else
-            {
-                WidgetManager.ScreenLayerManager.OpenFilePicker("", "", Path.GetDirectoryName(assembly), ".NET Assemblies (*.dll)|*.dll",
-                    path =>
+                    var newPath = $"{result}.dll";
+                    var assemblies = selectedAssemblies.Where(ass => ass != assembly);
+                    if (validateAssembly(newPath, assemblies))
                     {
-                        if (!isValidAssembly(path))
-                        {
-                            WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is intended for .NET?");
-                            return;
-                        }
+                        selectedAssemblies.Remove(assembly);
+                        selectedAssemblies.Add(newPath);
+                        refreshAssemblies();
+                    }
+                }, systemAssemblies);
+            });
+            else WidgetManager.ScreenLayerManager.OpenFilePicker("", "", Path.GetDirectoryName(assembly), ".NET Assemblies (*.dll)|*.dll", path =>
+            {
+                if (!isValidAssembly(path))
+                {
+                    WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is intended for .NET?");
+                    return;
+                }
 
-                        var assemblies = selectedAssemblies.Where(ass => ass != assembly).ToList();
+                var assemblies = selectedAssemblies.Where(ass => ass != assembly).ToList();
 
-                        if (validateAssembly(path, assemblies))
-                        {
-                            var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
+                if (validateAssembly(path, assemblies))
+                {
+                    var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
 
-                            if (path == assembly)
-                                return;
+                    if (path == assembly) return;
 
-                            selectedAssemblies.Remove(assembly);
-                            selectedAssemblies.Add(newPath);
-                            refreshAssemblies();
-                        }
-                    });
-            }
+                    selectedAssemblies.Remove(assembly);
+                    selectedAssemblies.Add(newPath);
+                    refreshAssemblies();
+                }
+            });
         }
-
-        private void tryCatchSystemAssemblies(Action action)
+        void tryCatchSystemAssemblies(Action action)
         {
             try
             {
@@ -362,9 +311,9 @@ namespace StorybrewEditor.ScreenLayers
             {
                 WidgetManager.ScreenLayerManager.ShowMessage("Cannot find Global Assembly Cache folders. Consider your installation of the .NET framework.");
             }
-            catch (Exception exception)
+            catch (Exception e)
             {
-                WidgetManager.ScreenLayerManager.ShowMessage($"An error occurred. Check your .NET Framework installation.\nException:\n{exception}");
+                WidgetManager.ScreenLayerManager.ShowMessage($"An error occurred. Check your .NET Framework installation.\nException:\n{e}");
             }
         }
     }

@@ -5,15 +5,15 @@ using System.IO;
 
 namespace StorybrewCommon.Storyboarding.Display
 {
-    public class LoopDecorator<TValue> : ITypedCommand<TValue>
-        where TValue : CommandValue
+#pragma warning disable CS1591
+    public class LoopDecorator<TValue>(ITypedCommand<TValue> command, double startTime, double repeatDuration, int repeats) : ITypedCommand<TValue> where TValue : CommandValue
     {
-        private readonly ITypedCommand<TValue> command;
-        private readonly double repeatDuration;
-        private readonly int repeats;
+        readonly ITypedCommand<TValue> command = command;
+        readonly double repeatDuration = repeatDuration;
+        readonly int repeats = repeats;
 
         public OsbEasing Easing { get { throw new InvalidOperationException(); } }
-        public double StartTime { get; }
+        public double StartTime { get; } = startTime;
         public double EndTime => StartTime + RepeatDuration * repeats;
         public double Duration => EndTime - StartTime;
         public TValue StartValue => command.StartValue;
@@ -22,14 +22,6 @@ namespace StorybrewCommon.Storyboarding.Display
         public int Cost => throw new InvalidOperationException();
 
         public double RepeatDuration => repeatDuration < 0 ? command.EndTime : repeatDuration;
-
-        public LoopDecorator(ITypedCommand<TValue> command, double startTime, double repeatDuration, int repeats)
-        {
-            this.command = command;
-            StartTime = startTime;
-            this.repeatDuration = repeatDuration;
-            this.repeats = repeats;
-        }
 
         public TValue ValueAtTime(double time)
         {
@@ -45,24 +37,18 @@ namespace StorybrewCommon.Storyboarding.Display
                 repeated = true;
             }
 
-            if (repeatTime < command.StartTime)
-                if (repeated && repeatTime < command.StartTime)
-                    return command.ValueAtTime(command.EndTime);
+            if (repeatTime < command.StartTime) if (repeated && repeatTime < command.StartTime) return command.ValueAtTime(command.EndTime);
                 else return command.ValueAtTime(command.StartTime);
 
-            if (command.EndTime < repeatTime)
-                return command.ValueAtTime(command.EndTime);
+            if (command.EndTime < repeatTime) return command.ValueAtTime(command.EndTime);
             return command.ValueAtTime(repeatTime);
         }
-
-        public int CompareTo(ICommand other)
-            => CommandComparer.CompareCommands(this, other);
+        public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
         public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation)
         {
             throw new InvalidOperationException();
         }
-
         public override string ToString() => $"loop x{repeats} ({StartTime}s - {EndTime}s)";
     }
 }

@@ -1,31 +1,33 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 
 namespace StorybrewCommon.Curves
 {
-    [Serializable]
-    public class TransformedCurve : Curve
+    ///<summary> Represents any <see cref="Curves.Curve"/> that has been transformed. </summary>
+    ///<remarks> Constructs a transformed curve from <paramref name="curve"/> and given transformations. </remarks>
+    [Serializable] public class TransformedCurve(Curve curve, CommandPosition offset, float scale, bool reversed = false) : Curve
     {
-        private readonly Curve curve;
-        private Vector2 offset;
-        private readonly float scale;
-        private readonly bool reversed;
+        readonly Curve curve = curve;
+        readonly CommandPosition offset = offset;
+        readonly float scale = scale;
+        readonly bool reversed = reversed;
 
+        ///<summary> The transformed curve. </summary>
         public Curve Curve => curve;
 
-        public TransformedCurve(Curve curve, Vector2 offset, float scale, bool reversed = false)
-        {
-            this.curve = curve;
-            this.offset = offset;
-            this.scale = scale;
-            this.reversed = reversed;
-        }
+        ///<inheritdoc/>
+        public CommandPosition StartPosition => (reversed ? curve.EndPosition : curve.StartPosition) * scale + offset;
 
-        public Vector2 StartPosition => (reversed ? curve.EndPosition : curve.StartPosition) * scale + offset;
-        public Vector2 EndPosition => (reversed ? curve.StartPosition : curve.EndPosition) * scale + offset;
+        ///<inheritdoc/>
+        public CommandPosition EndPosition => (reversed ? curve.StartPosition : curve.EndPosition) * scale + offset;
+
+        ///<inheritdoc/>
         public double Length => curve.Length * scale;
 
-        public Vector2 PositionAtDistance(double distance) => curve.PositionAtDistance(reversed ? curve.Length - distance : distance) * scale + offset;
-        public Vector2 PositionAtDelta(double delta) => curve.PositionAtDelta(reversed ? 1.0 - delta : delta) * scale + offset;
+        ///<inheritdoc/>
+        public CommandPosition PositionAtDistance(double distance) => curve.PositionAtDistance(reversed ? curve.Length - distance : distance) * scale + offset;
+        
+        ///<inheritdoc/>
+        public CommandPosition PositionAtDelta(double delta) => curve.PositionAtDelta(reversed ? 1.0 - delta : delta) * scale + offset;
     }
 }

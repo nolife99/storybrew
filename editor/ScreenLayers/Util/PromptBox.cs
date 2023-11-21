@@ -4,27 +4,16 @@ using System;
 
 namespace StorybrewEditor.ScreenLayers.Util
 {
-    public class PromptBox : UiScreenLayer
+    public class PromptBox(string title, string description, string initialText, Action<string> action) : UiScreenLayer
     {
-        private readonly string title;
-        private readonly string description;
-        private readonly string initialText;
-        private readonly Action<string> action;
+        readonly string title = title, description = description, initialText = initialText;
+        readonly Action<string> action = action;
 
-        private LinearLayout mainLayout;
-        private Textbox textbox;
-        private Button okButton;
-        private Button cancelButton;
+        LinearLayout mainLayout;
+        Textbox textbox;
+        Button okButton, cancelButton;
 
         public override bool IsPopup => true;
-
-        public PromptBox(string title, string description, string initialText, Action<string> action)
-        {
-            this.title = title;
-            this.description = description;
-            this.initialText = initialText;
-            this.action = action;
-        }
 
         public override void Load()
         {
@@ -44,13 +33,13 @@ namespace StorybrewEditor.ScreenLayers.Util
                     {
                         StyleName = "small",
                         Text = description,
-                        AnchorFrom = BoxAlignment.Centre,
+                        AnchorFrom = BoxAlignment.Centre
                     },
                     textbox = new Textbox(WidgetManager)
                     {
                         LabelText = title,
                         AnchorFrom = BoxAlignment.Centre,
-                        Value = initialText,
+                        Value = initialText
                     },
                     new LinearLayout(WidgetManager)
                     {
@@ -61,20 +50,19 @@ namespace StorybrewEditor.ScreenLayers.Util
                             okButton = new Button(WidgetManager)
                             {
                                 Text = "Ok",
-                                AnchorFrom = BoxAlignment.Centre,
+                                AnchorFrom = BoxAlignment.Centre
                             },
                             cancelButton = new Button(WidgetManager)
                             {
                                 Text = "Cancel",
-                                AnchorFrom = BoxAlignment.Centre,
-                            },
-                        },
-                    },
-                },
+                                AnchorFrom = BoxAlignment.Centre
+                            }
+                        }
+                    }
+                }
             });
 
-            if (string.IsNullOrWhiteSpace(description))
-                descriptionLabel.Dispose();
+            if (string.IsNullOrWhiteSpace(description)) descriptionLabel.Dispose();
 
             okButton.OnClick += (sender, e) =>
             {
@@ -83,7 +71,6 @@ namespace StorybrewEditor.ScreenLayers.Util
             };
             cancelButton.OnClick += (sender, e) => Exit();
         }
-
         public override void OnTransitionIn()
         {
             base.OnTransitionIn();
@@ -91,7 +78,6 @@ namespace StorybrewEditor.ScreenLayers.Util
             WidgetManager.KeyboardFocus = textbox;
             textbox.SelectAll();
         }
-
         public override void Resize(int width, int height)
         {
             base.Resize(width, height);

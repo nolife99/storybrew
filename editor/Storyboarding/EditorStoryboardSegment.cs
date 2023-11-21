@@ -1,24 +1,23 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
-using OpenTK;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 
 namespace StorybrewEditor.Storyboarding
 {
-    public class EditorStoryboardSegment : StoryboardSegment, DisplayableObject, HasPostProcess
+    public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer) : StoryboardSegment, DisplayableObject, HasPostProcess
     {
-        public Effect Effect { get; }
-        public EditorStoryboardLayer Layer { get; }
+        public Effect Effect { get; } = effect;
+        public EditorStoryboardLayer Layer { get; } = layer;
 
-        private double startTime;
+        double startTime, endTime;
         public override double StartTime => startTime;
-
-        private double endTime;
         public override double EndTime => endTime;
 
         public bool Highlight;
@@ -26,55 +25,40 @@ namespace StorybrewEditor.Storyboarding
         public override bool ReverseDepth { get; set; }
 
         public event ChangedHandler OnChanged;
-        protected void RaiseChanged(string propertyName)
-            => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new ChangedEventArgs(propertyName)));
+        protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new ChangedEventArgs(propertyName)));
 
-        private readonly List<StoryboardObject> storyboardObjects = new List<StoryboardObject>();
-        private readonly List<DisplayableObject> displayableObjects = new List<DisplayableObject>();
-        private readonly List<EventObject> eventObjects = new List<EventObject>();
-        private readonly List<EditorStoryboardSegment> segments = new List<EditorStoryboardSegment>();
+        readonly List<StoryboardObject> storyboardObjects = [];
+        readonly List<DisplayableObject> displayableObjects = [];
+        readonly List<EventObject> eventObjects = [];
+        readonly List<EditorStoryboardSegment> segments = [];
 
-        public EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
+        public int GetActiveSpriteCount(double time) => storyboardObjects.Count(o => ((OsbSprite)o)?.IsActive(time) ?? false);
+        public int GetCommandCost(double time) => storyboardObjects.Select(o => (OsbSprite)o).Where(s => s?.IsActive(time) ?? false).Sum(s => s.CommandCost);
+
+        public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
         {
-            Effect = effect;
-            Layer = layer;
-        }
-
-        public int GetActiveSpriteCount(double time)
-            => storyboardObjects.Count(o => (o as OsbSprite)?.IsActive(time) ?? false);
-
-        public int GetCommandCost(double time)
-            => storyboardObjects
-                .Select(o => o as OsbSprite)
-                .Where(s => s?.IsActive(time) ?? false)
-                .Sum(s => s.CommandCost);
-
-        public override OsbSprite CreateSprite(string path, OsbOrigin origin, Vector2 initialPosition)
-        {
-            var storyboardObject = new EditorOsbSprite()
+            var storyboardObject = new EditorOsbSprite
             {
                 TexturePath = path,
                 Origin = origin,
-                InitialPosition = initialPosition,
+                InitialPosition = initialPosition
             };
             storyboardObjects.Add(storyboardObject);
             displayableObjects.Add(storyboardObject);
             return storyboardObject;
         }
+        public override OsbSprite CreateSprite(string path, OsbOrigin origin = OsbOrigin.Centre) => CreateSprite(path, origin, OsbSprite.DefaultPosition);
 
-        public override OsbSprite CreateSprite(string path, OsbOrigin origin)
-            => CreateSprite(path, origin, OsbSprite.DefaultPosition);
-
-        public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Vector2 initialPosition)
+        public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition)
         {
-            var storyboardObject = new EditorOsbAnimation()
+            var storyboardObject = new EditorOsbAnimation
             {
                 TexturePath = path,
                 Origin = origin,
                 FrameCount = frameCount,
                 FrameDelay = frameDelay,
                 LoopType = loopType,
-                InitialPosition = initialPosition,
+                InitialPosition = initialPosition
             };
             storyboardObjects.Add(storyboardObject);
             displayableObjects.Add(storyboardObject);
@@ -86,17 +70,16 @@ namespace StorybrewEditor.Storyboarding
 
         public override OsbSample CreateSample(string path, double time, double volume)
         {
-            var storyboardObject = new EditorOsbSample()
+            var storyboardObject = new EditorOsbSample
             {
                 AudioPath = path,
                 Time = time,
-                Volume = volume,
+                Volume = volume
             };
             storyboardObjects.Add(storyboardObject);
             eventObjects.Add(storyboardObject);
             return storyboardObject;
         }
-
         public override StoryboardSegment CreateSegment()
         {
             var segment = new EditorStoryboardSegment(Effect, Layer);
@@ -105,39 +88,30 @@ namespace StorybrewEditor.Storyboarding
             segments.Add(segment);
             return segment;
         }
-
         public override void Discard(StoryboardObject storyboardObject)
         {
             storyboardObjects.Remove(storyboardObject);
-            if (storyboardObject is DisplayableObject displayableObject)
-                displayableObjects.Remove(displayableObject);
-            if (storyboardObject is EventObject eventObject)
-                eventObjects.Remove(eventObject);
-            if (storyboardObject is EditorStoryboardSegment segment)
-                segments.Remove(segment);
+            if (storyboardObject is DisplayableObject displayableObject) displayableObjects.Remove(displayableObject);
+            if (storyboardObject is EventObject eventObject) eventObjects.Remove(eventObject);
+            if (storyboardObject is EditorStoryboardSegment segment) segments.Remove(segment);
         }
-
         public void TriggerEvents(double fromTime, double toTime)
         {
-            foreach (var eventObject in eventObjects)
-                if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime)
-                    eventObject.TriggerEvent(Effect.Project, toTime);
+            eventObjects.ForEach(eventObject =>
+            {
+                if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime) eventObject.TriggerEvent(Effect.Project, toTime);
+            });
             segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
         }
-
-        public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, Project project, FrameStats frameStats)
+        public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats)
         {
             var displayTime = project.DisplayTime * 1000;
-            if (displayTime < StartTime || EndTime < displayTime)
-                return;
+            if (displayTime < StartTime || EndTime < displayTime) return;
 
-            if (Layer.Highlight || Effect.Highlight)
-                opacity *= (float)((Math.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * 0.5);
+            if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Cos(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) / 2);
 
-            foreach (var displayableObject in displayableObjects)
-                displayableObject.Draw(drawContext, camera, bounds, opacity, project, frameStats);
+            for (var i = 0; i < displayableObjects.Count; ++i) displayableObjects[i].Draw(drawContext, camera, bounds, opacity, project, frameStats);
         }
-
         public void PostProcess()
         {
             if (ReverseDepth)
@@ -146,40 +120,25 @@ namespace StorybrewEditor.Storyboarding
                 displayableObjects.Reverse();
             }
 
-            foreach (var storyboardObject in storyboardObjects)
-                (storyboardObject as HasPostProcess)?.PostProcess();
+            storyboardObjects.ForEach(sbo => (sbo as HasPostProcess)?.PostProcess());
 
             startTime = double.MaxValue;
             endTime = double.MinValue;
-            foreach (var sbo in storyboardObjects)
+
+            storyboardObjects.ForEach(sbo =>
             {
                 startTime = Math.Min(startTime, sbo.StartTime);
                 endTime = Math.Max(endTime, sbo.EndTime);
-            }
+            });
         }
-
         public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer)
+            => storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
+
+        public long CalculateSize(OsbLayer osbLayer)
         {
-            foreach (var sbo in storyboardObjects)
-                sbo.WriteOsb(writer, exportSettings, osbLayer);
-        }
-
-        public int CalculateSize(OsbLayer osbLayer)
-        {
-            var exportSettings = new ExportSettings
-            {
-                OptimiseSprites = false, // reduce update time for a minor inaccuracy in estimatedSize
-            };
-
-            using (var stream = new ByteCounterStream())
-            using (var writer = new StreamWriter(stream, Project.Encoding))
-            {
-                foreach (var sbo in storyboardObjects)
-                    sbo.WriteOsb(writer, exportSettings, osbLayer);
-
-                return (int)stream.Length;
-            }
+            using var stream = new ByteCounterStream(); using var writer = new StreamWriter(stream, Project.Encoding);
+            for (var i = 0; i < storyboardObjects.Count; ++i) storyboardObjects[i].WriteOsb(writer, Effect.Project.ExportSettings, osbLayer);
+            return stream.Length;
         }
     }
 }
-

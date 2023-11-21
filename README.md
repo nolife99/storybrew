@@ -1,4 +1,15 @@
-﻿storybrew is an osu! storyboard editor for people that don't want to form an intimate relationship with the Ctrl-L shortcut: It lets you see changes to code or sprite textures as soon as you save them.
+# Changes
+* update to new Roslyn version and script compiler
+* upgrade to .NET 8
+    - Faster single-threaded script loading
+    - Less support for multithreaded script generation
+* code formatting and optimization
+* change project to SDK-style
+* merge BrewLib to this project
+* update NuGet packages and remove unused assemblies
+* add XML documentation for storyboarding (still WIP)
+
+storybrew is an osu! storyboard editor for people that don't want to form an intimate relationship with the Ctrl-L shortcut: It lets you see changes to code or sprite textures as soon as you save them.
 
 [Download the latest version](https://github.com/Damnae/storybrew/releases/latest), or learn more on the [Wiki](https://github.com/Damnae/storybrew/wiki/Getting-Started-%28Without-Programming%29).
 

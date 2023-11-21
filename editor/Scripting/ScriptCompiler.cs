@@ -1,94 +1,120 @@
-﻿using Microsoft.CodeDom.Providers.DotNetCompilerPlatform;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.Text;
 using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Runtime.Loader;
+using StorybrewCommon.Scripting;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptCompiler : MarshalByRefObject
+    public class ScriptCompiler : ICompiler
     {
-        private static int nextId;
+        static readonly string[] environmentDirectories =
+        [
+            Path.GetDirectoryName(typeof(object).Assembly.Location),
+            Path.GetDirectoryName(typeof(Brush).Assembly.Location),
+            Environment.CurrentDirectory
+        ];
+        static int nextId;
 
-        public static void Compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            var setup = new AppDomainSetup()
-            {
-                ApplicationName = $"ScriptCompiler {nextId++}",
-                ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
-            };
+            var domain = new AssemblyLoadContext($"ScriptCompiler {nextId++}", true);
+            Trace.WriteLine($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths.Select(Path.GetFileName))}");
 
-            Debug.Print($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths)}");
-            var compilerDomain = AppDomain.CreateDomain(setup.ApplicationName, null, setup);
             try
             {
-                var compiler = (ScriptCompiler)compilerDomain.CreateInstanceFromAndUnwrap(
-                    typeof(ScriptCompiler).Assembly.ManifestModule.FullyQualifiedName,
-                    typeof(ScriptCompiler).FullName);
-
-                compiler.compile(sourcePaths, outputPath, Program.Settings.UseRoslyn, referencedAssemblies);
+                var compiler = (ICompiler)Activator.CreateInstance(domain.LoadFromAssemblyName(typeof(ScriptCompiler).Assembly.GetName()).GetType(typeof(ScriptCompiler).FullName));
+                compiler.Compile(sourcePaths, outputPath, referencedAssemblies);
             }
             finally
             {
-                AppDomain.Unload(compilerDomain);
+                domain.Unload();
             }
         }
 
-        private void compile(string[] sourcePaths, string outputPath, bool useRoslyn, IEnumerable<string> referencedAssemblies)
+        void ICompiler.Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            var parameters = new CompilerParameters()
+            Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
+            foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
             {
-                GenerateExecutable = false,
-                GenerateInMemory = false,
-                OutputAssembly = outputPath,
-                IncludeDebugInformation = true,
-            };
+                var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
+                trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(src, sourceText);
+            }
+            HashSet<MetadataReference> references = [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)];
 
             foreach (var referencedAssembly in referencedAssemblies)
-                parameters.ReferencedAssemblies.Add(referencedAssembly);
-
-            using (var codeProvider = useRoslyn ? new CSharpCodeProvider() : CodeDomProvider.CreateProvider("csharp"))
             {
-                var results = codeProvider.CompileAssemblyFromFile(parameters, sourcePaths);
-
-                var errors = results.Errors;
-                if (errors.Count > 0)
+                var asmPath = referencedAssembly;
+                try
                 {
-                    var sourceLines = new Dictionary<string, string[]>();
-                    try
+                    if (Path.IsPathRooted(asmPath)) references.Add(MetadataReference.CreateFromFile(asmPath));
+                    else
                     {
-                        foreach (var sourcePath in sourcePaths)
-                            sourceLines[Path.GetFullPath(sourcePath)] = File.ReadAllText(sourcePath).Split('\n');
-                    }
-                    catch
-                    {
-                    }
-
-                    var message = new StringBuilder("Compilation error\n\n");
-                    for (var i = 0; i < errors.Count; i++)
-                    {
-                        var error = errors[i];
-                        if (!string.IsNullOrWhiteSpace(error.FileName))
+                        var isExist = false;
+                        for (var i = 0; i < environmentDirectories.Length; ++i)
                         {
-                            message.AppendLine($"{error.FileName}, line {error.Line}: {error.ErrorText}");
-                            if (i == errors.Count - 1 || error.Line != errors[i + 1].Line)
-                            {
-                                try
-                                {
-                                    var filename = Path.GetFullPath(error.FileName);
-                                    message.AppendLine(sourceLines[filename][error.Line - 1]);
-                                }
-                                catch
-                                {
-                                }
-                            }
+                            var actualAsmPath = Path.Combine(environmentDirectories[i], referencedAssembly);
+                            if (!File.Exists(actualAsmPath)) continue;
+                            isExist = true;
+                            asmPath = actualAsmPath;
+                            break;
                         }
-                        else message.AppendLine(error.ErrorText);
+
+                        if (isExist) references.Add(MetadataReference.CreateFromFile(asmPath));
+                        else throw new IOException($"Could not resolve dependency: \"{referencedAssembly}\". " +
+                            $"Searched directories: {string.Join(";", environmentDirectories.Select(k => $"\"{k}\""))}");
                     }
+                }
+                catch (Exception e)
+                {
+                    var message = new StringBuilder("Compilation error\n\n");
+                    message.AppendLine(e.ToString());
                     throw new ScriptCompilationException(message.ToString());
                 }
+            }
+
+            var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references, 
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
+
+            using (var assemblyStream = File.Create(outputPath))
+            {
+                var result = compilation.Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
+                    options: new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded));
+
+                if (result.Success)
+                {
+                    trees.Clear();
+                    return;
+                }
+
+                var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
+                {
+                    if (k.Location.SourceTree is null) return "";
+                    if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
+                    return "";
+                }).ToDictionary(k => k.Key, k => k);
+
+                trees.Clear();
+
+                var message = new StringBuilder("Compilation error\n\n");
+                foreach (var kvp in failureGroup)
+                {
+                    var file = kvp.Key;
+                    var diagnostics = kvp.Value;
+                    message.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)}:");
+                    foreach (var diagnostic in diagnostics) message.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
+                }
+
+                throw new ScriptCompilationException(message.ToString());
             }
         }
     }

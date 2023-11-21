@@ -1,72 +1,95 @@
-﻿#if DEBUG
-using OpenTK;
 using StorybrewCommon.Animations;
-using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 using System;
+using System.Numerics;
 using System.Collections.Generic;
+using System.Drawing;
 
 namespace StorybrewCommon.Storyboarding3d
 {
+    ///<summary> Represents a triangle with 3D functionality. </summary>
     public class Triangle3d : Node3d, HasOsbSprites
     {
-        public OsbSprite sprite0;
-        public OsbSprite sprite1;
+        Action<OsbSprite> finalize;
+        OsbSprite sprite0, sprite1;
+        
+        ///<inheritdoc/>
         public IEnumerable<OsbSprite> Sprites { get { yield return sprite0; yield return sprite1; } }
 
+        ///<summary> The path to the image of this <see cref="Triangle3d"/>. </summary>
         public string SpritePath;
+
+        ///<summary> Toggles additive blending on this <see cref="Triangle3d"/>. </summary>
         public bool Additive;
+
+        ///<summary> Whether to fade sprites based on distance from the <see cref="Camera"/>. </summary>
         public bool UseDistanceFade = true;
 
-        public readonly KeyframedValue<Vector3> Position0 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
-        public readonly KeyframedValue<Vector3> Position1 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
-        public readonly KeyframedValue<Vector3> Position2 = new KeyframedValue<Vector3>(InterpolatingFunctions.Vector3);
+        /// <summary> The position of the first vertex of the triangle. </summary>
+        public readonly KeyframedValue<Vector3> Position0 = new(InterpolatingFunctions.Vector3);
 
-        public readonly CommandGenerator Generator0 = new CommandGenerator();
-        public readonly CommandGenerator Generator1 = new CommandGenerator();
-        public override IEnumerable<CommandGenerator> CommandGenerators { get { yield return Generator0; yield return Generator1; } }
+        /// <summary> The position of the second vertex of the triangle. </summary>
+        public readonly KeyframedValue<Vector3> Position1 = new(InterpolatingFunctions.Vector3);
 
-        private int edgeIndex = 0;
+        /// <summary> The position of the third vertex of the triangle. </summary>
+        public readonly KeyframedValue<Vector3> Position2 = new(InterpolatingFunctions.Vector3);
+
+        readonly CommandGenerator Generator0 = new(), Generator1 = new();
+
+        ///<inheritdoc/>
+        public IEnumerable<CommandGenerator> CommandGenerators { get { yield return Generator0; yield return Generator1; } }
+
+        int edgeIndex;
+
+        ///<summary> The index of a vertex/edge to be fixed. </summary>
         public int FixedEdge = -1;
-        
+
+        SizeF spriteBitmap;
+
+        ///<inheritdoc/>
         public override void GenerateSprite(StoryboardSegment segment)
         {
-            sprite0 = sprite0 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomLeft);
-            sprite1 = sprite1 ?? segment.CreateSprite(SpritePath, OsbOrigin.BottomRight);
+            sprite0 ??= segment.CreateSprite(SpritePath, OsbOrigin.BottomLeft);
+            sprite1 ??= segment.CreateSprite(SpritePath, OsbOrigin.BottomRight);
+            spriteBitmap = CommandGenerator.BitmapDimensions(sprite0);
         }
 
+        ///<inheritdoc/>
         public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
         {
             var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
 
-            if (FixedEdge >= 0)
-                edgeIndex = FixedEdge;
+            if (FixedEdge >= 0) edgeIndex = FixedEdge;
 
             Vector4 vector0, vector1, vector2;
             switch (edgeIndex)
             {
                 case 0:
-                    vector0 = cameraState.ToScreen(wvp, Position0.ValueAt(time));
-                    vector1 = cameraState.ToScreen(wvp, Position1.ValueAt(time));
-                    vector2 = cameraState.ToScreen(wvp, Position2.ValueAt(time));
+                {
+                    vector0 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector1 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector2 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
                     break;
+                }
                 case 1:
-                    vector2 = cameraState.ToScreen(wvp, Position0.ValueAt(time));
-                    vector0 = cameraState.ToScreen(wvp, Position1.ValueAt(time));
-                    vector1 = cameraState.ToScreen(wvp, Position2.ValueAt(time));
+                {
+                    vector2 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector0 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector1 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
                     break;
+                }
                 case 2:
-                    vector1 = cameraState.ToScreen(wvp, Position0.ValueAt(time));
-                    vector2 = cameraState.ToScreen(wvp, Position1.ValueAt(time));
-                    vector0 = cameraState.ToScreen(wvp, Position2.ValueAt(time));
+                {
+                    vector1 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector2 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector0 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
                     break;
+                }
                 default: throw new InvalidOperationException();
             }
 
-            var cross = (vector2.X - vector0.X) * (vector1.Y - vector0.Y)
-                - (vector2.Y - vector0.Y) * (vector1.X - vector0.X);
-
+            var cross = (vector2.X - vector0.X) * (vector1.Y - vector0.Y) - (vector2.Y - vector0.Y) * (vector1.X - vector0.X);
             if (cross > 0)
             {
                 if (Generator0.EndState != null) Generator0.EndState.Opacity = 0;
@@ -74,25 +97,22 @@ namespace StorybrewCommon.Storyboarding3d
                 return;
             }
 
-            var bitmap = StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite0.GetTexturePathAt(time));
-
             var switchedEdge = false;
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 3; ++i)
             {
-
-                var delta = vector2.Xy - vector0.Xy;
-                var deltaLength = delta.Length;
+                var delta = new Vector2(vector2.X, vector2.Y) - new Vector2(vector0.X, vector0.Y);
+                var deltaLength = delta.Length();
                 var normalizedDelta = delta / deltaLength;
 
-                var delta2 = vector1.Xy - vector0.Xy;
+                var delta2 = new Vector2(vector1.X, vector1.Y) - new Vector2(vector0.X, vector0.Y);
                 var dot = Vector2.Dot(normalizedDelta, delta2);
+
                 if (dot <= 0 || dot > deltaLength)
                 {
                     if (FixedEdge >= 0)
                     {
                         if (Generator0.EndState != null) Generator0.EndState.Opacity = 0;
-                        if (Generator1.EndState != null) Generator1.EndState.Opacity = 0;
-                        break;
+                        if (Generator1.EndState != null) Generator1.EndState.Opacity = 0; break;
                     }
 
                     var temp = vector0;
@@ -104,9 +124,9 @@ namespace StorybrewCommon.Storyboarding3d
                     continue;
                 }
 
-                var position = project(vector0.Xy, vector2.Xy, vector1.Xy);
-                var scale0 = new Vector2((vector2.Xy - position).Length / bitmap.Width, (vector1.Xy - position).Length / bitmap.Height);
-                var scale1 = new Vector2((vector0.Xy - position).Length / bitmap.Width, scale0.Y);
+                var position = project(new Vector2(vector0.X, vector0.Y), new Vector2(vector2.X, vector2.Y), new Vector2(vector1.X, vector1.Y));
+                var scale0 = new Vector2((new Vector2(vector2.X, vector2.Y) - position).Length() / spriteBitmap.Width, (new Vector2(vector1.X, vector1.Y) - position).Length() / spriteBitmap.Height);
+                var scale1 = new Vector2((new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.Width, scale0.Y);
 
                 var angle = Math.Atan2(delta.Y, delta.X);
                 var rotation = InterpolatingFunctions.DoubleAngle(Generator0.EndState?.Rotation ?? 0, angle, 1);
@@ -120,7 +140,7 @@ namespace StorybrewCommon.Storyboarding3d
                     if (Generator1.EndState != null) Generator1.EndState.Opacity = 0;
                 }
 
-                Generator0.Add(new CommandGenerator.State()
+                Generator0.Add(new State
                 {
                     Time = time,
                     Position = position,
@@ -128,9 +148,9 @@ namespace StorybrewCommon.Storyboarding3d
                     Rotation = rotation,
                     Color = object3dState.Color,
                     Opacity = switchedEdge ? 0 : opacity,
-                    Additive = Additive,
+                    Additive = Additive
                 });
-                Generator1.Add(new CommandGenerator.State()
+                Generator1.Add(new State
                 {
                     Time = time,
                     Position = position,
@@ -139,28 +159,39 @@ namespace StorybrewCommon.Storyboarding3d
                     Color = object3dState.Color,
                     Opacity = switchedEdge ? 0 : opacity,
                     Additive = Additive,
-                    FlipH = true,
+                    FlipH = true
                 });
                 break;
             }
         }
 
+        ///<inheritdoc/>
+        public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
+
+        ///<inheritdoc/>
+        public void ConfigureGenerators(Action<CommandGenerator> action)
+        {
+            action(Generator0);
+            action(Generator1);
+        }
+
+        ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
+            if (finalize != null) action += (createCommands, sprite) =>
+            {
+                createCommands();
+                finalize(sprite);
+            };
             Generator0.GenerateCommands(sprite0, action, startTime, endTime, timeOffset, loopable);
             Generator1.GenerateCommands(sprite1, action, startTime, endTime, timeOffset, loopable);
         }
-
-        private static Vector2 project(Vector2 line1, Vector2 line2, Vector2 toProject)
+        static Vector2 project(Vector2 line1, Vector2 line2, Vector2 toProject)
         {
             var m = (line2.Y - line1.Y) / (line2.X - line1.X);
             var b = line1.Y - (m * line1.X);
 
-            var x = (m * toProject.Y + toProject.X - m * b) / (m * m + 1);
-            var y = (m * m * toProject.Y + m * toProject.X + b) / (m * m + 1);
-
-            return new Vector2(x, y);
+            return new Vector2((m * toProject.Y + toProject.X - m * b) / (m * m + 1), (m * m * toProject.Y + m * toProject.X + b) / (m * m + 1));
         }
     }
 }
-#endif

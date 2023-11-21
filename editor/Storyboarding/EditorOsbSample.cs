@@ -6,12 +6,11 @@ namespace StorybrewEditor.Storyboarding
 {
     public class EditorOsbSample : OsbSample, EventObject
     {
-        public double EventTime => Time * 0.001;
+        public double EventTime => Time * .001;
 
         public void TriggerEvent(Project project, double currentTime)
         {
-            if (EventTime + 1 < currentTime)
-                return;
+            if (EventTime + 1 < currentTime) return;
 
             AudioSample sample;
             var fullPath = Path.Combine(project.MapsetPath, AudioPath);
@@ -30,7 +29,7 @@ namespace StorybrewEditor.Storyboarding
                 return;
             }
 
-            sample.Play((float)Volume * 0.01f);
+            sample.Play((float)(Volume * .01));
         }
     }
 }
