@@ -1,4 +1,4 @@
-﻿using BrewLib.Data;
+using BrewLib.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,7 +31,7 @@ namespace BrewLib.Util.Compression
                 RedirectStandardInput = true,
                 RedirectStandardError = true
             };
-
+            
             tasks.Add(Task.Run(() =>
             {
                 using var localProcess = Process.Start(startInfo);
@@ -44,7 +44,7 @@ namespace BrewLib.Util.Compression
         protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
         {
             var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
-            var str = new StringBuilder();
+            StringBuilder str = new();
 
             if (Environment.Is64BitOperatingSystem && useLossy)
             {
@@ -69,7 +69,6 @@ namespace BrewLib.Util.Compression
             }
             return str.ToString();
         }
-
         protected override void ensureTool()
         {
             ObjectDisposedException.ThrowIf(disposed, typeof(IntegratedCompressor));

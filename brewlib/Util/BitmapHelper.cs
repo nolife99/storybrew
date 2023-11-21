@@ -19,7 +19,7 @@ namespace BrewLib.Util
         }
         public static void Compress(string path, ImageCompressor compressor = null)
         {
-            var defaultSettings = new LossyInputSettings(75, 100, 1);
+            var defaultSettings = new LossyInputSettings(75, 100, 1);\
             if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.Compress(path, defaultSettings);
             else compressor.Compress(path, defaultSettings);
         }

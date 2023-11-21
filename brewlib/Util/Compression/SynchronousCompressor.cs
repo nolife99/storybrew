@@ -1,4 +1,4 @@
-﻿using BrewLib.Data;
+using BrewLib.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

@@ -1,4 +1,4 @@
-﻿using osuTK;
+using osuTK;
 
 namespace BrewLib.Util.Compression
 {

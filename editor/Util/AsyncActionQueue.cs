@@ -208,7 +208,7 @@ namespace StorybrewEditor.Util
                             catch (Exception e)
                             {
                                 var target = task.Target;
-                                if (!context.TriggerActionFailed(task.Target, e)) Trace.WriteLine($"Action failed for '{task.UniqueKey}': {e}");
+                                if (!context.TriggerActionFailed(task.Target, e)) Trace.TraceError($"'{task.UniqueKey}' - Action failed: {e}");
                             }
 
                             lock (context.Running)
