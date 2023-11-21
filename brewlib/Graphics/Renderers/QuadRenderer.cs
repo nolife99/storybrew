@@ -18,8 +18,7 @@ namespace BrewLib.Graphics.Renderers
 
         void Draw(ref QuadPrimitive quad, Texture2dRegion texture);
     }
-    [StructLayout(LayoutKind.Sequential)]
-    public struct QuadPrimitive
+    [StructLayout(LayoutKind.Sequential)] public struct QuadPrimitive
     {
         public float x1, y1, u1, v1; public int color1;
         public float x2, y2, u2, v2; public int color2;

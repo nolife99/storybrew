@@ -39,7 +39,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         static bool INumberBase<CommandDecimal>.IsFinite(CommandDecimal value) => double.IsFinite(value.value);
         static bool INumberBase<CommandDecimal>.IsImaginaryNumber(CommandDecimal value) => false;
         static bool INumberBase<CommandDecimal>.IsInfinity(CommandDecimal value) => false;
-        static bool INumberBase<CommandDecimal>.IsInteger(CommandDecimal value) => double.IsInteger(value);
+        static bool INumberBase<CommandDecimal>.IsInteger(CommandDecimal value) => double.IsInteger(value.value);
         static bool INumberBase<CommandDecimal>.IsNaN(CommandDecimal value) => false;
         static bool INumberBase<CommandDecimal>.IsNegative(CommandDecimal value) => double.IsNegative(value.value);
         static bool INumberBase<CommandDecimal>.IsNegativeInfinity(CommandDecimal value) => false;
@@ -49,7 +49,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         static bool INumberBase<CommandDecimal>.IsPositiveInfinity(CommandDecimal value) => false;
         static bool INumberBase<CommandDecimal>.IsRealNumber(CommandDecimal value) => true;
         static bool INumberBase<CommandDecimal>.IsSubnormal(CommandDecimal value) => double.IsSubnormal(value.value);
-        static bool INumberBase<CommandDecimal>.IsZero(CommandDecimal value) => value == 0;
+        static bool INumberBase<CommandDecimal>.IsZero(CommandDecimal value) => value.value == 0;
 
         static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitude(CommandDecimal x, CommandDecimal y) => double.MaxMagnitude(x, y);
         static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitudeNumber(CommandDecimal x, CommandDecimal y) => double.MaxMagnitudeNumber(x, y);
@@ -148,58 +148,20 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         }
 
         public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => left.value - right.value;
+        public static CommandDecimal operator --(CommandDecimal value) => value.value - 1;
         public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => left.value + right.value;
-        public static bool operator ==(CommandDecimal left, CommandDecimal right) => left.Equals(right);
-        public static bool operator !=(CommandDecimal left, CommandDecimal right) => !left.Equals(right);
+        public static CommandDecimal operator ++(CommandDecimal value) => value.value + 1;
+        public static CommandDecimal operator *(CommandDecimal left, CommandDecimal right) => left.value * right.value;
+        public static CommandDecimal operator /(CommandDecimal left, CommandDecimal right) => left.value / right.value;
+
+        public static CommandDecimal operator -(CommandDecimal value) => -value.value;
+        public static CommandDecimal operator +(CommandDecimal value) => value.value;
+
+        public static bool operator ==(CommandDecimal left, CommandDecimal right) => left.value.Equals(right.value);
+        public static bool operator !=(CommandDecimal left, CommandDecimal right) => !left.value.Equals(right.value);
+
         public static implicit operator CommandDecimal(double value) => new(value);
         public static implicit operator double(CommandDecimal obj) => obj.value;
         public static implicit operator float(CommandDecimal obj) => (float)obj.value;
-
-        static CommandDecimal IAdditionOperators<CommandDecimal, CommandDecimal, CommandDecimal>.operator +(CommandDecimal left, CommandDecimal right) => left.value + right.value;
-
-        static CommandDecimal IDecrementOperators<CommandDecimal>.operator --(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal IDivisionOperators<CommandDecimal, CommandDecimal, CommandDecimal>.operator /(CommandDecimal left, CommandDecimal right)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool IEqualityOperators<CommandDecimal, CommandDecimal, bool>.operator ==(CommandDecimal left, CommandDecimal right)
-        {
-            throw new NotImplementedException();
-        }
-
-        static bool IEqualityOperators<CommandDecimal, CommandDecimal, bool>.operator !=(CommandDecimal left, CommandDecimal right)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal IIncrementOperators<CommandDecimal>.operator ++(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal IMultiplyOperators<CommandDecimal, CommandDecimal, CommandDecimal>.operator *(CommandDecimal left, CommandDecimal right)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal ISubtractionOperators<CommandDecimal, CommandDecimal, CommandDecimal>.operator -(CommandDecimal left, CommandDecimal right)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal IUnaryNegationOperators<CommandDecimal, CommandDecimal>.operator -(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
-
-        static CommandDecimal IUnaryPlusOperators<CommandDecimal, CommandDecimal>.operator +(CommandDecimal value)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

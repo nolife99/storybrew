@@ -52,8 +52,8 @@ namespace BrewLib.Graphics.Renderers
 
             if (rotation != 0)
             {
-                var cos = (float)Math.Cos(rotation);
-                var sin = (float)Math.Sin(rotation);
+                var cos = MathF.Cos(rotation);
+                var sin = MathF.Sin(rotation);
 
                 x1 = cos * p1x - sin * p1y;
                 y1 = sin * p1x + cos * p1y;
@@ -143,20 +143,20 @@ namespace BrewLib.Graphics.Renderers
 
             var absAngleLength = Math.Abs(angleLength);
             var circumference = absAngleLength * outerRadius;
-            var lineCount = Math.Max(2, Math.Max(absAngleLength / MathHelper.TwoPi * 8, (int)Math.Round(circumference * precision)));
+            var lineCount = Math.Max(2, Math.Max(absAngleLength / MathF.PI * 16, (int)Math.Round(circumference * precision)));
 
             var u = (uMax - uMin) / lineCount;
             var angleStep = angleLength / lineCount;
             var innerColorRgba = innerColor.ToRgba();
             var outerColorRgba = outerColor.ToRgba();
 
-            var initialUnit = new Vector2((float)Math.Cos(startAngle), (float)Math.Sin(startAngle));
+            var initialUnit = (MathF.Cos(startAngle), MathF.Sin(startAngle));
             var primitive = new QuadPrimitive
             {
-                x1 = center.X + initialUnit.X * outerRadius,
-                y1 = center.Y + initialUnit.Y * outerRadius,
-                x4 = center.X + initialUnit.X * innerRadius,
-                y4 = center.Y + initialUnit.Y * innerRadius,
+                x1 = center.X + initialUnit.Item1 * outerRadius,
+                y1 = center.Y + initialUnit.Item2 * outerRadius,
+                x4 = center.X + initialUnit.Item1 * innerRadius,
+                y4 = center.Y + initialUnit.Item2 * innerRadius,
 
                 u1 = uMin,
                 u4 = uMin,
@@ -179,11 +179,11 @@ namespace BrewLib.Graphics.Renderers
                 primitive.u2 = partU;
                 primitive.u3 = partU;
 
-                var unit = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
-                primitive.x2 = center.X + unit.X * outerRadius;
-                primitive.y2 = center.Y + unit.Y * outerRadius;
-                primitive.x3 = center.X + unit.X * innerRadius;
-                primitive.y3 = center.Y + unit.Y * innerRadius;
+                var unit = (MathF.Cos(angle), MathF.Sin(angle));
+                primitive.x2 = center.X + unit.Item1 * outerRadius;
+                primitive.y2 = center.Y + unit.Item2 * outerRadius;
+                primitive.x3 = center.X + unit.Item1 * innerRadius;
+                primitive.y3 = center.Y + unit.Item2 * innerRadius;
 
                 renderer.Draw(ref primitive, texture);
 

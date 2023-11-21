@@ -11,8 +11,36 @@ namespace BrewLib.Util
         #region Memory
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlock(destination.ToPointer(), source.ToPointer(), (uint)count);
+        [LibraryImport("kernel32")]
+        private static partial void RtlCopyMemory(IntPtr dest, IntPtr src, uint count);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [LibraryImport("kernel32")]
+        private static partial void RtlMoveMemory(IntPtr dest, IntPtr src, uint count);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool CopyMemory(IntPtr source, IntPtr destination, int count)
+        {
+            if (Environment.Is64BitProcess)
+            {
+                if (source != default && destination != default)
+                {
+                    if (source < destination + count && source + count > destination)
+                    {
+                        RtlMoveMemory(destination, source, (uint)count);
+                        return false;
+                    }
+                    RtlCopyMemory(destination, source, (uint)count);
+                    return true;
+                }
+                return false;
+            }
+            unsafe
+            {
+                Buffer.MemoryCopy(destination.ToPointer(), destination.ToPointer(), count, count);
+                return true;
+            }
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static nint AddrOfPinnedArray(this Array arr) => (nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
 
