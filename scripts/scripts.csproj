@@ -9,7 +9,6 @@
     <Company>storybrew</Company>
     <Product>storybrew scripts</Product>
     <Copyright>Copyright © Damnae 2016</Copyright>
-    <Platforms>AnyCPU;x86</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

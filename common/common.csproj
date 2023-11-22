@@ -11,7 +11,6 @@
     <Title>storybrew common</Title>
     <Copyright>Copyright © Damnae 2016</Copyright>
     <Version>1.1</Version>
-    <Platforms>AnyCPU;x86</Platforms>
 	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
