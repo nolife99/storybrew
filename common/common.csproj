@@ -45,7 +45,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\brewlib\brewlib.csproj" />
-	<ProjectReference Include="..\tiny\tiny.csproj" />
+    <ProjectReference Include="..\tiny\tiny.csproj" />
   </ItemGroup>
 
 </Project>

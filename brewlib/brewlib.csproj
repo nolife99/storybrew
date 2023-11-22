@@ -45,20 +45,14 @@
     <PackageReference Include="ManagedBass" Version="3.1.1" />
     <PackageReference Include="ManagedBass.Fx" Version="3.1.1" />
   </ItemGroup>
-	
+
   <ItemGroup>
-	<ProjectReference Include="..\tiny\tiny.csproj" />
+    <ProjectReference Include="..\tiny\tiny.csproj" />
   </ItemGroup>
-	
+
   <ItemGroup>
     <Reference Include="System.Management" />
-	<Reference Include="System.Web" />
-  </ItemGroup>
-	
-  <ItemGroup>
-    <None Update="C:\Users\die lin\.nuget\packages\magick.net-q8-anycpu\13.3.0\build\netstandard20\..\..\runtimes\win-arm64\native\Magick.Native-Q8-arm64.dll">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
+    <Reference Include="System.Web" />
   </ItemGroup>
 
 </Project>
