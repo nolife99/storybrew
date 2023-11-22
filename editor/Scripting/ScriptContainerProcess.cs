@@ -3,8 +3,6 @@ using StorybrewEditor.Processes;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace StorybrewEditor.Scripting
 {
@@ -13,20 +11,23 @@ namespace StorybrewEditor.Scripting
         RemoteProcessWorkerContainer workerProcess;
 
         public ScriptContainerProcess(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
-            : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) { }
+            : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies)
+        {
+        }
 
         protected override ScriptProvider<TScript> LoadScript()
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(ScriptContainerAppDomain<TScript>));
+
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name}-{DateTime.UtcNow.Millisecond}.dll");
+                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Guid.NewGuid().ToString()}.dll");
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 workerProcess?.Dispose();
                 workerProcess = new RemoteProcessWorkerContainer();
 
-                var scriptProvider = RemoteProcessWorker.CreateScriptProvider<TScript>();
+                var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
                 scriptProvider.Initialize(assemblyPath, ScriptTypeName);
 
                 return scriptProvider;
@@ -43,12 +44,15 @@ namespace StorybrewEditor.Scripting
 
         #region IDisposable Support
 
-        bool disposedValue;
+        private bool disposedValue = false;
         protected override void Dispose(bool disposing)
         {
             if (!disposedValue)
             {
-                if (disposing) workerProcess?.Dispose();
+                if (disposing)
+                {
+                    workerProcess?.Dispose();
+                }
                 workerProcess = null;
                 disposedValue = true;
             }

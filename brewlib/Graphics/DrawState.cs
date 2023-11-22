@@ -365,7 +365,7 @@ namespace BrewLib.Graphics
         public static TextFontManager TextFontManager => textFontManager;
 
         static Version openGlVersion, glslVersion;
-        static readonly string[] supportedExtensions;
+        static string[] supportedExtensions;
         static string rendererName, rendererVendor;
 
         static void retrieveRendererInfo()
@@ -389,10 +389,10 @@ namespace BrewLib.Graphics
             CheckError("retrieving glsl version");
             Trace.WriteLine($"glsl version: {glslVersionString}");
 
-            /* var extensionsString = GL.GetString(StringName.Extensions);
+            var extensionsString = GL.GetString(StringName.Extensions);
             supportedExtensions = extensionsString.Split(' ');
             CheckError("retrieving extensions");
-            Trace.WriteLine($"extensions: {extensionsString}"); */
+            // Trace.WriteLine($"extensions: {extensionsString}");
         }
         static void setupDebugOutput()
         {

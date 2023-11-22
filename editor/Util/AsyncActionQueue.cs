@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util
 {
@@ -48,7 +49,7 @@ namespace StorybrewEditor.Util
         {
             if (disposedValue) throw new ObjectDisposedException(nameof(AsyncActionQueue<T>));
 
-            for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].EnsureThreadAlive();
+            Parallel.For(0, actionRunners.Count, i => actionRunners[i].EnsureThreadAlive());
             lock (context.Queue)
             {
                 if (!allowDuplicates && context.Queue.Any(q => q.Target.Equals(target))) return;
@@ -71,7 +72,8 @@ namespace StorybrewEditor.Util
             if (stopThreads)
             {
                 var sw = Stopwatch.StartNew();
-                for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds));
+                Parallel.For(0, actionRunners.Count, i => actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds)));
+                sw.Stop();
             }
         }
 
@@ -150,14 +152,14 @@ namespace StorybrewEditor.Util
                 if (thread is null || !thread.IsAlive)
                 {
                     Thread localThread = null;
-                    thread = localThread = new Thread(() =>
+                    thread = localThread = new Thread(async () =>
                     {
                         var mustSleep = false;
                         while (true)
                         {
                             if (mustSleep)
                             {
-                                Thread.Sleep(200);
+                                using (var wait = Task.Delay(200)) await wait;
                                 mustSleep = false;
                             }
 
@@ -217,7 +219,7 @@ namespace StorybrewEditor.Util
                             }
                         }
                     })
-                    { Name = threadName, IsBackground = true, };
+                    { Name = threadName, IsBackground = true };
 
                     Trace.WriteLine($"Starting thread {thread.Name}.");
                     thread.Start();

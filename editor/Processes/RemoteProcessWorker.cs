@@ -7,8 +7,7 @@ namespace StorybrewEditor.Processes
 {
     public class RemoteProcessWorker : MarshalByRefObject, IDisposable
     {
-        public static void CheckIpc() => Trace.WriteLine("CheckIpc");
-        public static ScriptProvider<TScript> CreateScriptProvider<TScript>() where TScript : Script
+        public ScriptProvider<TScript> CreateScriptProvider<TScript>() where TScript : Script
         {
             Trace.WriteLine("GetScriptProvider");
             return new ScriptProvider<TScript>();

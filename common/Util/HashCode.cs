@@ -355,7 +355,7 @@ namespace StorybrewCommon.Util
         ///<exception cref="InvalidOperationException"> This method was called more than once. </exception>
         public int ToHashCode()
         {
-            if (ensureSingleton is null) ensureSingleton = new InvalidOperationException("Cannot call GetHashCode more than once per instance");
+            if (ensureSingleton is null) ensureSingleton = new InvalidOperationException("Cannot call ToHashCode more than once per instance");
             else throw ensureSingleton;
 
             var length = _length;

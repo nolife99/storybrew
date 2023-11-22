@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
-using StorybrewCommon.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -38,7 +37,7 @@ namespace StorybrewEditor.Scripting
                     typeof(ScriptCompiler).Assembly.ManifestModule.FullyQualifiedName,
                     typeof(ScriptCompiler).FullName);
 
-                compile(sourcePaths, outputPath, referencedAssemblies);
+                compiler.compile(sourcePaths, outputPath, referencedAssemblies);
             }
             finally
             {
@@ -46,7 +45,7 @@ namespace StorybrewEditor.Scripting
             }
         }
 
-        static void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        void compile(string[] sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             var trees = new Dictionary<SyntaxTree, KeyValuePair<string, SourceText>>();
             for (var i = 0; i < sourcePaths.Length; ++i) using (var sourceStream = File.OpenRead(sourcePaths[i]))
@@ -94,14 +93,11 @@ namespace StorybrewEditor.Scripting
             }
 
             var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references,
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                    allowUnsafe: true, platform: Environment.Is64BitOperatingSystem ? Platform.X64 : Platform.AnyCpu32BitPreferred, optimizationLevel: 
-                    OptimizationLevel.Debug, assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default));
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
 
             using (var assemblyStream = File.Create(outputPath))
             {
-                var result = compilation.Emit(assemblyStream, 
-                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
+                var result = compilation.Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
                     options: new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded));
 
                 if (result.Success)

@@ -1,5 +1,6 @@
 ﻿using StorybrewCommon.Scripting;
 using System;
+using System.IO;
 using System.Reflection;
 
 namespace StorybrewEditor.Scripting
@@ -11,7 +12,8 @@ namespace StorybrewEditor.Scripting
 
         public void Initialize(string assemblyPath, string typeName)
         {
-            var assembly = Assembly.LoadFrom(assemblyPath);
+            var assembly = Assembly.Load(File.ReadAllBytes(assemblyPath));
+            File.Delete(assemblyPath);
             type = assembly.GetType(typeName, true, true);
         }
         public TScript CreateScript()

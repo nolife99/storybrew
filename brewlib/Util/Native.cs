@@ -1,37 +1,45 @@
 ﻿using OpenTK;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.Text;
 
 namespace BrewLib.Util
 {
     [SuppressUnmanagedCodeSecurity] public static class Native
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [DllImport("kernel32.dll", EntryPoint = "RtlCopyMemory", CallingConvention = CallingConvention.Winapi)] 
-        static extern void memcpy(IntPtr dest, IntPtr src, uint count);
+        [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)] 
+        static extern void RtlCopyMemory(IntPtr dest, IntPtr src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory", CallingConvention = CallingConvention.Winapi)]
-        static extern void memmove(IntPtr dest, IntPtr src, uint count);
+        [DllImport("kernel32.dll", CallingConvention = CallingConvention.Winapi)]
+        static extern void RtlMoveMemory(IntPtr dest, IntPtr src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CopyMemory(IntPtr source, IntPtr destination, uint count)
+        public static bool CopyMemory(IntPtr source, IntPtr destination, int count)
         {
-            if (source != default && destination != default)
+            if (Environment.Is64BitProcess)
             {
-                if ((long)source < (long)destination + count && (long)source + count > (long)destination)
+                if (source != default && destination != default)
                 {
-                    memmove(destination, source, count);
-                    return false;
+                    if ((long)source < (long)destination + count && (long)source + count > (long)destination)
+                    {
+                        RtlMoveMemory(destination, source, (uint)count);
+                        return false;
+                    }
+                    RtlCopyMemory(destination, source, (uint)count);
+                    return true;
                 }
-                memcpy(destination, source, count);
+                return false;
+            }
+            unsafe
+            {
+                Buffer.MemoryCopy(source.ToPointer(), destination.ToPointer(), count, count);
                 return true;
             }
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -42,7 +50,7 @@ namespace BrewLib.Util
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi, CharSet = CharSet.Ansi)] 
-        static unsafe extern int GetWindowText(IntPtr hWnd, byte* lpString, int nMaxCount);
+        static unsafe extern int GetWindowText(IntPtr hWnd, IntPtr lpString, int nMaxCount);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [DllImport("user32.dll", CallingConvention = CallingConvention.Winapi)] 
@@ -50,12 +58,16 @@ namespace BrewLib.Util
 
         public unsafe static string GetWindowText(IntPtr hWnd)
         {
-            var length = GetWindowTextLength(hWnd) + 1;
-            if (length == 1) return "";
+            var length = GetWindowTextLength(hWnd);
+            if (length == 0) return "";
 
-            var buffer = stackalloc byte[length * 2];
+            var buffer = Marshal.AllocCoTaskMem(length * 2 + 1);
             _ = GetWindowText(hWnd, buffer, length);
-            return new string((sbyte*)buffer);
+
+            var result = Marshal.PtrToStringAnsi(buffer);
+            Marshal.FreeCoTaskMem(buffer);
+
+            return result;
         }
         public static IntPtr FindProcessWindow(string title)
         {

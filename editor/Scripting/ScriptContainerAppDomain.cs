@@ -40,11 +40,10 @@ namespace StorybrewEditor.Scripting
                 ScriptProvider<TScript> scriptProvider;
                 try
                 {
-                    var scriptProviderHandle = Activator.CreateInstanceFrom(scriptDomain,
+                    scriptProvider = (ScriptProvider<TScript>)scriptDomain.CreateInstanceFromAndUnwrap(
                         typeof(ScriptProvider<TScript>).Assembly.ManifestModule.FullyQualifiedName,
                         typeof(ScriptProvider<TScript>).FullName);
 
-                    scriptProvider = (ScriptProvider<TScript>)scriptProviderHandle.Unwrap();
                     scriptProvider.Initialize(assemblyPath, ScriptTypeName);
                 }
                 catch
@@ -81,13 +80,6 @@ namespace StorybrewEditor.Scripting
             {
                 if (appDomain != null) AppDomain.Unload(appDomain);
                 appDomain = null;
-
-                foreach (var item in Directory.GetFiles(CompiledScriptsPath))
-                try
-                {
-                    File.Delete(item);
-                }
-                catch (UnauthorizedAccessException) { }
 
                 disposed = true;
             }

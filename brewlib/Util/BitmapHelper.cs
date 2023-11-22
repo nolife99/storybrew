@@ -11,21 +11,16 @@ namespace BrewLib.Util
         public static PinnedBitmap Blur(Bitmap source, int radius, double power) => Convolute(source, CalculateGaussianKernel(radius, power));
         public static PinnedBitmap BlurAlpha(Bitmap source, int radius, double power, Color color) => ConvoluteAlpha(source, CalculateGaussianKernel(radius, power), color);
 
-        public static void LosslessCompress(string path, PngCompressor compressor = null)
+        public static void LosslessCompress(string path, IntegratedCompressor compressor = null)
         {
-            var defaultSettings = new LosslessInputSettings { OptimizationLevel = OptimizationLevel.Level7 };
-            if (compressor is null) using (compressor = new PngCompressor()) compressor.LosslessCompress(path, defaultSettings);
+            var defaultSettings = new LosslessInputSettings(7);
+            if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.LosslessCompress(path, defaultSettings);
             else compressor.LosslessCompress(path, defaultSettings);
         }
-        public static void Compress(string path, PngCompressor compressor = null)
+        public static void Compress(string path, IntegratedCompressor compressor = null)
         {
-            var defaultSettings = new LossyInputSettings
-            {
-                Speed = 1,
-                MinQuality = 75,
-                MaxQuality = 100
-            };
-            if (compressor is null) using (compressor = new PngCompressor()) compressor.Compress(path, defaultSettings);
+            var defaultSettings = new LossyInputSettings(75, 100, 1);
+            if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.Compress(path, defaultSettings);
             else compressor.Compress(path, defaultSettings);
         }
 
@@ -186,7 +181,7 @@ namespace BrewLib.Util
             var destDat = dest.LockBits(new Rectangle(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
 
             var pixBit = Image.GetPixelFormatSize(src.PixelFormat) * .125f;
-            var len = (uint)(dest.Width * pixBit);
+            var len = (int)(dest.Width * pixBit);
 
             try
             {

@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO.Pipes;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Ipc;
+using System.Runtime.Serialization.Formatters;
 using System.Threading;
 
 namespace StorybrewEditor.Processes
@@ -12,34 +15,29 @@ namespace StorybrewEditor.Processes
         public static void Run(string identifier)
         {
             Trace.WriteLine($"channel: {identifier}");
+
+            using (var wait = new ManualResetEventSlim())
             try
             {
                 var name = $"sbrew-worker-{identifier}";
-                var pipeServer = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+                var channel = new IpcServerChannel(name, name, new BinaryServerFormatterSinkProvider { TypeFilterLevel = TypeFilterLevel.Full });
 
+                ChannelServices.RegisterChannel(channel, false);
                 try
                 {
-                    var formatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                    RemotingConfiguration.RegisterWellKnownServiceType(typeof(RemoteProcessWorker), "worker", WellKnownObjectMode.Singleton);
+                    Trace.WriteLine($"ready\n");
 
                     while (!exit)
                     {
-                        pipeServer.WaitForConnection();
-                        var remoteProcessWorker = new RemoteProcessWorker();
-                        var stream = pipeServer;
-                        remoteProcessWorker = (RemoteProcessWorker)formatter.Deserialize(stream);
-
-                        stream.Position = 0;
-                        formatter.Serialize(stream, remoteProcessWorker);
-
-                        pipeServer.Disconnect();
                         Program.RunScheduledTasks();
-                        Thread.Sleep(100);
+                        wait.WaitHandle.WaitOne(100);
                     }
                 }
                 finally
                 {
-                    Trace.WriteLine($"closing pipe server");
-                    pipeServer.Close();
+                    Trace.WriteLine($"unregistering channel");
+                    ChannelServices.UnregisterChannel(channel);
                 }
             }
             catch (Exception e)
@@ -47,6 +45,7 @@ namespace StorybrewEditor.Processes
                 Trace.WriteLine($"ProcessWorker failed: {e}");
             }
         }
+
         public static void Exit()
         {
             Trace.WriteLine($"exiting");

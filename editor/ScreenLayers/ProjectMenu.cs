@@ -438,7 +438,7 @@ namespace StorybrewEditor.ScreenLayers
             var first = true;
             var mainBeatmap = proj.MainBeatmap;
 
-            foreach (var beatmap in proj.MapsetManager.Beatmaps)
+            using (var wait = new ManualResetEventSlim()) proj.MapsetManager.Beatmaps.ToList().ForEach(beatmap =>
             {
                 Program.RunMainThread(() => proj.MainBeatmap = beatmap);
                 while (proj.EffectsStatus != EffectStatus.Ready)
@@ -449,11 +449,13 @@ namespace StorybrewEditor.ScreenLayers
                         case EffectStatus.ExecutionFailed:
                         case EffectStatus.LoadingFailed: throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
                     }
+                    wait.WaitHandle.WaitOne(200);
                 }
 
                 proj.ExportToOsb(first);
                 first = false;
-            }
+            });
+
             if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.RunMainThread(() => proj.MainBeatmap = mainBeatmap);
         });
         public override void FixedUpdate()
