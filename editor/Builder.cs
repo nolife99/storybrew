@@ -16,7 +16,7 @@ namespace StorybrewEditor
 
         public static void Build()
         {
-            var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}.zip";
+            var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE")}.zip";
             var appDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
             try
