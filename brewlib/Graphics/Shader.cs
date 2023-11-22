@@ -104,7 +104,7 @@ namespace BrewLib.Graphics
             => uniforms.ContainsKey(GetUniformIdentifier(name, index, field));
 
         public static string GetUniformIdentifier(string name, int index, string field)
-            => name + (index >= 0 ? "[" + index + "]" : string.Empty) + (field != null ? "." + field : string.Empty);
+            => name + (index >= 0 ? "[" + index + "]" : string.Empty) + (field is not null ? "." + field : string.Empty);
 
         void initialize(string vertexShaderCode, string fragmentShaderCode)
         {

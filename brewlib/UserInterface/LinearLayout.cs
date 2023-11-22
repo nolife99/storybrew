@@ -114,7 +114,7 @@ namespace BrewLib.UserInterface
             var items = new List<LayoutItem>();
             foreach (var child in Children)
             {
-                if (child.AnchorTarget != null) continue;
+                if (child.AnchorTarget is not null) continue;
 
                 var preferredSize = child.PreferredSize;
                 var minSize = child.MinSize;
@@ -229,7 +229,7 @@ namespace BrewLib.UserInterface
             var firstChild = true;
             foreach (var child in Children)
             {
-                if (child.AnchorTarget != null) continue;
+                if (child.AnchorTarget is not null) continue;
 
                 var childMinSize = child.MinSize;
                 var childSize = child.PreferredSize;

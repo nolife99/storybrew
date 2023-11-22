@@ -438,7 +438,7 @@ namespace BrewLib.Graphics
         {
             var error = GL.GetError();
             if (alwaysThrow || error != ErrorCode.NoError) throw new GraphicsErrorException(
-                (context != null ? "openGL error while " + context : "openGL error") +
+                (context is not null ? "openGL error while " + context : "openGL error") +
                 (error != ErrorCode.NoError ? ": " + error.ToString() : string.Empty));
         }
 

@@ -23,7 +23,7 @@ namespace BrewLib.Audio
             if (decodeStream == 0 && !System.IO.Path.IsPathRooted(path))
             {
                 var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
-                if (resourceStream != null)
+                if (resourceStream is not null)
                 {
                     var procedures = new FileProcedures
                     {

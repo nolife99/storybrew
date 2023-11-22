@@ -61,9 +61,9 @@ namespace StorybrewEditor.Util
                 // find a parent to watch subfolders from
 
                 var parentDirectory = Directory.GetParent(directoryPath);
-                while (parentDirectory != null && !parentDirectory.Exists) parentDirectory = Directory.GetParent(parentDirectory.FullName);
+                while (parentDirectory is not null && !parentDirectory.Exists) parentDirectory = Directory.GetParent(parentDirectory.FullName);
 
-                if (parentDirectory != null && parentDirectory != parentDirectory.Root)
+                if (parentDirectory is not null && parentDirectory != parentDirectory.Root)
                 {
                     var parentDirectoryPath = parentDirectory.ToString();
 

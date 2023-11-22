@@ -58,10 +58,10 @@ namespace BrewLib.Graphics.Textures
             else
             {
                 var data = resourceContainer?.GetString(filename, ResourceSource.Embedded);
-                if (data != null) token = TinyToken.ReadString<JsonFormat>(data);
+                if (data is not null) token = TinyToken.ReadString<JsonFormat>(data);
             }
 
-            return token != null ? load(token) : null;
+            return token is not null ? load(token) : null;
         }
         static TextureOptions load(TinyToken data)
         {
@@ -79,10 +79,10 @@ namespace BrewLib.Graphics.Textures
                 {
                     var fieldType = field.FieldType;
                     var fieldData = data.Value<TinyToken>(field.Name);
-                    if (fieldData != null)
+                    if (fieldData is not null)
                     {
                         var parser = getFieldParser(fieldType);
-                        if (parser != null)
+                        if (parser is not null)
                         {
                             var value = parser.Invoke(fieldData);
                             field.SetValue(obj, value);

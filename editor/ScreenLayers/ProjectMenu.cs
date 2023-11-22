@@ -205,7 +205,7 @@ namespace StorybrewEditor.ScreenLayers
             });
             effects.OnEffectPreselect += effect =>
             {
-                if (effect != null) timeline.Highlight(effect.StartTime, effect.EndTime);
+                if (effect is not null) timeline.Highlight(effect.StartTime, effect.EndTime);
                 else timeline.ClearHighlight();
             };
             effects.OnEffectSelected += effect => timeline.Value = (float)effect.StartTime / 1000;
@@ -219,7 +219,7 @@ namespace StorybrewEditor.ScreenLayers
             });
             layers.OnLayerPreselect += layer =>
             {
-                if (layer != null) timeline.Highlight(layer.StartTime, layer.EndTime);
+                if (layer is not null) timeline.Highlight(layer.StartTime, layer.EndTime);
                 else timeline.ClearHighlight();
             };
             layers.OnLayerSelected += layer => timeline.Value = (float)layer.StartTime / 1000;
@@ -600,7 +600,7 @@ namespace StorybrewEditor.ScreenLayers
             refreshAudio();
             resizeTimeline();
 
-            if (previousAudio != null)
+            if (previousAudio is not null)
             {
                 pendingSeek = previousTimeSource.Current;
                 timeSource.TimeFactor = previousTimeSource.TimeFactor;

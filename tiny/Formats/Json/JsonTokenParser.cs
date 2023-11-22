@@ -12,7 +12,7 @@ namespace Tiny.Formats.Json
             TinyToken result = null;
 
             var context = new ParseContext<JsonTokenType>(tokens, new AnyParser(r => result = r));
-            while (context.CurrentToken != null)
+            while (context.CurrentToken is not null)
             {
                 // Debug.Print($"  - {context.Parser.GetType().Name} ({context.ParserCount}) {context.CurrentToken}");
                 context.Parser.Parse(context);

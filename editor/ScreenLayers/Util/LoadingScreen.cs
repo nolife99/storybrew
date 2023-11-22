@@ -31,13 +31,13 @@ namespace StorybrewEditor.ScreenLayers.Util
                 }
                 Program.Schedule(() =>
                 {
-                    if (exception != null)
+                    if (exception is not null)
                     {
                         Trace.WriteLine($"{title} failed ({action.Method.Name}): {exception}");
 
                         var exceptionMessage = $"{exception.Message} ({exception.GetType().Name})";
                         var innerException = exception.InnerException;
-                        while (innerException != null)
+                        while (innerException is not null)
                         {
                             exceptionMessage += $"\nCaused by: {innerException.Message} ({innerException.GetType().Name})";
                             innerException = innerException.InnerException;

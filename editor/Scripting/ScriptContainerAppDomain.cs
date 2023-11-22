@@ -37,7 +37,7 @@ namespace StorybrewEditor.Scripting
                     throw;
                 }
 
-                if (context != null)
+                if (context is not null)
                 {
                     Debug.Print($"{nameof(Scripting)}: Unloading domain {$"{Name} {Id}"}");
                     context.Unload();
@@ -63,7 +63,7 @@ namespace StorybrewEditor.Scripting
         {
             if (!disposed)
             {
-                if (context != null)
+                if (context is not null)
                 {
                     context.Unload();
                     context = null;

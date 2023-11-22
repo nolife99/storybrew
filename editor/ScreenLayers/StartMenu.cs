@@ -119,7 +119,7 @@ namespace StorybrewEditor.ScreenLayers
             => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", "cache/net/releases", 900, (r, e) =>
         {
             if (IsDisposed) return;
-            if (e != null)
+            if (e is not null)
             {
                 handleLastestVersionException(e);
                 return;
@@ -181,7 +181,7 @@ namespace StorybrewEditor.ScreenLayers
                     updateButton.Tooltip = $"What's new:\n\n{description.TrimEnd('\n')}";
                     updateButton.OnClick += (sender, ex) =>
                     {
-                        if (downloadUrl != null && latestVersion >= new Version(1, 4)) Manager.Add(new UpdateMenu(downloadUrl));
+                        if (downloadUrl is not null && latestVersion >= new Version(1, 4)) Manager.Add(new UpdateMenu(downloadUrl));
                         else Updater.OpenLastestReleasePage();
                     };
                     updateButton.StyleName = "";

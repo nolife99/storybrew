@@ -129,7 +129,7 @@ namespace BrewLib.UserInterface
             {
                 var child = children[i];
                 var result = child.GetWidgetAt(x, y);
-                if (result != null) return result;
+                if (result is not null) return result;
             }
             return overThis ? this : null;
         }
@@ -182,7 +182,7 @@ namespace BrewLib.UserInterface
             if (disposedValue) throw new ObjectDisposedException(nameof(Widget));
 
             var style = Style;
-            if (style != null) ApplyStyle(style);
+            if (style is not null) ApplyStyle(style);
         }
         protected virtual void ApplyStyle(WidgetStyle style)
         {
@@ -269,7 +269,7 @@ namespace BrewLib.UserInterface
         {
             var ancestors = new List<Widget>();
             var ancestor = parent;
-            while (ancestor != null)
+            while (ancestor is not null)
             {
                 ancestors.Add(ancestor);
                 ancestor = ancestor.Parent;
@@ -372,8 +372,8 @@ namespace BrewLib.UserInterface
             {
                 anchoringIteration = iteration;
 
-                var actualAnchorTarget = anchorTarget != null && (anchorTarget.parent != null || anchorTarget == manager.Root) ? anchorTarget : parent;
-                if (actualAnchorTarget != null)
+                var actualAnchorTarget = anchorTarget is not null && (anchorTarget.parent is not null || anchorTarget == manager.Root) ? anchorTarget : parent;
+                if (actualAnchorTarget is not null)
                 {
                     actualAnchorTarget.UpdateAnchoring(iteration, false);
                     absolutePosition = actualAnchorTarget.absolutePosition + offset;
@@ -501,7 +501,7 @@ namespace BrewLib.UserInterface
         public bool NotifyHoveredWidgetChange(WidgetEvent evt, WidgetHoveredEventArgs e)
         {
             var related = evt.RelatedTarget;
-            while (related != null && related != this) related = related.parent;
+            while (related is not null && related != this) related = related.parent;
 
             if (related != this) Raise(OnHovered, evt, e);
 
@@ -527,7 +527,7 @@ namespace BrewLib.UserInterface
         }
         protected static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
         {
-            if (handler != null) foreach (var handlerDelegate in handler.GetInvocationList())
+            if (handler is not null) foreach (var handlerDelegate in handler.GetInvocationList())
             {
                 try
                 {

@@ -92,7 +92,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
-            if (finalize != null) action += (createCommands, sprite) =>
+            if (finalize is not null) action += (createCommands, sprite) =>
             {
                 createCommands();
                 finalize(sprite);
@@ -113,12 +113,12 @@ namespace StorybrewCommon.Storyboarding3d
             get
             {
                 yield return spriteBody;
-                if (SpritePathEdge != null)
+                if (SpritePathEdge is not null)
                 {
                     yield return spriteTopEdge;
                     yield return spriteBottomEdge;
                 }
-                if (SpritePathCap != null)
+                if (SpritePathCap is not null)
                 {
                     yield return spriteStartCap;
                     yield return spriteEndCap;
@@ -167,13 +167,13 @@ namespace StorybrewCommon.Storyboarding3d
             spriteBody ??= segment.CreateSprite(SpritePathBody, OsbOrigin.Centre);
             spriteBitmaps[0] = CommandGenerator.BitmapDimensions(spriteBody);
 
-            if (SpritePathEdge != null)
+            if (SpritePathEdge is not null)
             {
                 spriteTopEdge ??= segment.CreateSprite(SpritePathEdge, OsbOrigin.BottomCentre);
                 spriteBottomEdge ??= segment.CreateSprite(SpritePathEdge, OsbOrigin.TopCentre);
                 spriteBitmaps[1] = CommandGenerator.BitmapDimensions(spriteTopEdge);
             }
-            if (SpritePathCap != null)
+            if (SpritePathCap is not null)
             {
                 spriteStartCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
                 spriteEndCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
@@ -225,7 +225,7 @@ namespace StorybrewCommon.Storyboarding3d
                 Additive = Additive
             });
 
-            if (SpritePathEdge != null)
+            if (SpritePathEdge is not null)
             {
                 var edgeScale = new Vector2(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height);
                 var edgeOffset = new Vector2((float)Math.Cos(angle - MathHelper.PiOver2), (float)Math.Sin(angle - MathHelper.PiOver2)) * (bodyHeight / 2 - EdgeOverlap);
@@ -258,7 +258,7 @@ namespace StorybrewCommon.Storyboarding3d
                     FlipV = true
                 });
             }
-            if (SpritePathCap != null)
+            if (SpritePathCap is not null)
             {
                 var startCapScale = new Vector2(startScale / spriteBitmaps[2].Width, startScale / spriteBitmaps[2].Height);
                 var endCapScale = new Vector2(endScale / spriteBitmaps[2].Width, endScale / spriteBitmaps[2].Height);
@@ -311,19 +311,19 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
-            if (finalize != null) action += (createCommands, sprite) =>
+            if (finalize is not null) action += (createCommands, sprite) =>
             {
                 createCommands();
                 finalize(sprite);
             };
 
             genBody.GenerateCommands(spriteBody, action, startTime, endTime, timeOffset, loopable);
-            if (SpritePathEdge != null)
+            if (SpritePathEdge is not null)
             {
                 genTopEdge.GenerateCommands(spriteTopEdge, action, startTime, endTime, timeOffset, loopable);
                 genBottomEdge.GenerateCommands(spriteBottomEdge, action, startTime, endTime, timeOffset, loopable);
             }
-            if (SpritePathCap != null)
+            if (SpritePathCap is not null)
             {
                 if (EnableStartCap) genStartCap.GenerateCommands(spriteStartCap, action, startTime, endTime, timeOffset, loopable);
                 if (EnableEndCap) genEndCap.GenerateCommands(spriteEndCap, action, startTime, endTime, timeOffset, loopable);

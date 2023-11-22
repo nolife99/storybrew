@@ -15,7 +15,7 @@ namespace StorybrewCommon.Scripting
             get => identifier;
             set
             {
-                if (identifier != null) throw new InvalidOperationException("This script already has an identifier");
+                if (identifier is not null) throw new InvalidOperationException("This script already has an identifier");
                 identifier = value;
             }
         }

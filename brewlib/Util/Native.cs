@@ -37,7 +37,7 @@ namespace BrewLib.Util
             }
             unsafe
             {
-                Buffer.MemoryCopy(destination.ToPointer(), destination.ToPointer(), count, count);
+                Unsafe.CopyBlock(destination.ToPointer(), source.ToPointer(), (uint)count);
                 return true;
             }
         }
@@ -64,9 +64,9 @@ namespace BrewLib.Util
         ///<returns> The result from the call procedure. </returns>
         ///<exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint"/>. </exception>
         ///<exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
-        public static TResult SendMessage<T1, T2, TResult>(nint windowHandle, Message message, T1 param1, T2 param2) 
+        public static TResult SendMessage<T1, T2, TResult>(nint windowHandle, Message message, T1 wParam, T2 lParam) 
             where T1 : INumberBase<T1> where T2 : INumberBase<T2> where TResult : INumberBase<TResult>
-            => TResult.CreateChecked(SendMessageA(windowHandle, (uint)message, nuint.CreateChecked(param1), nint.CreateChecked(param2)));
+            => TResult.CreateChecked(SendMessageA(windowHandle, (uint)message, nuint.CreateChecked(wParam), nint.CreateChecked(lParam)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetWindowIcon(nint iconHandle)

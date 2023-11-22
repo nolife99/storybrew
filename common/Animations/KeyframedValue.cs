@@ -210,7 +210,7 @@ namespace StorybrewCommon.Animations
             }
         }
 
-        static Keyframe<TValue> editKeyframe(Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit != null ?
+        static Keyframe<TValue> editKeyframe(Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit is not null ?
             new Keyframe<TValue>(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
 
         ///<summary> Removes all keyframes in the keyframed value. </summary>

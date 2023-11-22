@@ -19,7 +19,7 @@ namespace StorybrewCommon.Storyboarding.Display
         }
         public void StartDisplayLoop(LoopCommand loop)
         {
-            if (composite != null) throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
+            if (composite is not null) throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
 
             decorate = command =>
             {
@@ -30,7 +30,7 @@ namespace StorybrewCommon.Storyboarding.Display
         }
         public void StartDisplayTrigger(TriggerCommand triggerCommand)
         {
-            if (composite != null) throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
+            if (composite is not null) throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
 
             decorate = (command) => new TriggerDecorator<TValue>(command);
             composite = new CompositeCommand<TValue>();

@@ -80,7 +80,7 @@ namespace BrewLib.Util.Compression
                 if (useLossy)
                 {
                     str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
-                    if (lossy != null)
+                    if (lossy is not null)
                     {
                         if (lossy.MinQuality >= 0 && lossy.MaxQuality > 0 && lossy.MaxQuality <= 100)
                             str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossy.MinQuality, lossy.MaxQuality);
@@ -93,7 +93,7 @@ namespace BrewLib.Util.Compression
                 }
                 else
                 {
-                    if (lossless != null)
+                    if (lossless is not null)
                     {
                         var lvl = (byte)lossless.OptimizationLevel;
                         str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
@@ -104,7 +104,7 @@ namespace BrewLib.Util.Compression
             }
             else
             {
-                var lvl = lossless != null ? lossless.OptimizationLevel : 4;
+                var lvl = lossless is not null ? lossless.OptimizationLevel : 4;
                 str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
                 str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless?.CustomInputArgs);
                 str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);

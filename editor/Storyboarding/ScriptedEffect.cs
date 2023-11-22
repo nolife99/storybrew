@@ -89,7 +89,7 @@ namespace StorybrewEditor.Storyboarding
             catch (ScriptLoadingException e)
             {
                 Debug.Print($"Script load failed for {BaseName}\n{e}");
-                changeStatus(EffectStatus.LoadingFailed, e.InnerException != null ? $"{e.Message}: {e.InnerException.Message}" : e.Message, context.Log);
+                changeStatus(EffectStatus.LoadingFailed, e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message, context.Log);
                 return;
             }
             catch (Exception e)
@@ -101,7 +101,7 @@ namespace StorybrewEditor.Storyboarding
             {
                 if (!success)
                 {
-                    if (dependencyWatcher != null)
+                    if (dependencyWatcher is not null)
                     {
                         dependencyWatcher.Watch(newDependencyWatcher.WatchedFilenames);
                         newDependencyWatcher.Dispose();

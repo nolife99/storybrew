@@ -107,7 +107,7 @@ namespace StorybrewEditor
 
         public override string ToString()
         {
-            if (typeof(T).GetInterface(nameof(IConvertible)) != null) return Convert.ToString(value, CultureInfo.InvariantCulture);
+            if (typeof(T).GetInterface(nameof(IConvertible)) is not null) return Convert.ToString(value, CultureInfo.InvariantCulture);
             return value.ToString();
         }
     }

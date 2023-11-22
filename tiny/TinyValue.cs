@@ -70,7 +70,7 @@ namespace Tiny
 
         public override T Value<T>(object key)
         {
-            if (key != null) throw new ArgumentException($"Key must be null, was {key}", nameof(key));
+            if (key is not null) throw new ArgumentException($"Key must be null, was {key}", nameof(key));
 
             if (value is T typedValue) return typedValue;
 

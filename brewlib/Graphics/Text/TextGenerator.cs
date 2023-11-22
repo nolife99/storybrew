@@ -106,7 +106,7 @@ namespace BrewLib.Graphics.Text
             if (!fontFamilies.TryGetValue(name, out FontFamily fontFamily))
             {
                 var bytes = resourceContainer.GetBytes(name, ResourceSource.Embedded);
-                if (bytes != null)
+                if (bytes is not null)
                 {
                     var pinnedArray = GCHandle.Alloc(bytes, GCHandleType.Pinned);
                     try
@@ -135,7 +135,7 @@ namespace BrewLib.Graphics.Text
                 fontFamilies.Add(name, fontFamily);
             }
 
-            if (fontFamily != null) font = new Font(fontFamily, emSize, style);
+            if (fontFamily is not null) font = new Font(fontFamily, emSize, style);
             else
             {
                 font = new Font(name, emSize, style);

@@ -10,7 +10,7 @@ namespace StorybrewCommon.Util
         public static void ParseSections(this StreamReader reader, Action<string> action)
         {
             string line;
-            while ((line = reader.ReadLine()) != null)
+            while ((line = reader.ReadLine()) is not null)
             {
                 line = line.Trim();
                 if (line.StartsWith('[') && line.EndsWith(']'))
@@ -27,7 +27,7 @@ namespace StorybrewCommon.Util
             var line = string.Empty;
             try
             {
-                while ((line = reader.ReadLine()) != null)
+                while ((line = reader.ReadLine()) is not null)
                 {
                     if (trimLines) line = line.Trim();
                     if (line.Length == 0) return;

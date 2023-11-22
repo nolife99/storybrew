@@ -111,7 +111,7 @@ namespace StorybrewCommon.Storyboarding.Util
                 if (isVisible && !everVisible) everVisible = true;
                 if (!wasVisible && isVisible)
                 {
-                    if (!stateAdded && previousState != null) addKeyframes(previousState, loopable ? time : (previousState.Time + timeOffset));
+                    if (!stateAdded && previousState is not null) addKeyframes(previousState, loopable ? time : (previousState.Time + timeOffset));
                     addKeyframes(state, time);
                     if (!stateAdded) stateAdded = true;
                 }

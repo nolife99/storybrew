@@ -36,7 +36,7 @@ namespace BrewLib.UserInterface
 
             foreach (var child in Children)
             {
-                if (child.AnchorTarget != null) continue;
+                if (child.AnchorTarget is not null) continue;
                 if (child.AnchorFrom != child.AnchorTo) continue; // ?
 
                 var preferredSize = child.PreferredSize;
@@ -67,7 +67,7 @@ namespace BrewLib.UserInterface
 
             foreach (var child in Children)
             {
-                if (child.AnchorTarget != null) continue;
+                if (child.AnchorTarget is not null) continue;
 
                 var childMinSize = child.MinSize;
                 var childSize = child.PreferredSize;

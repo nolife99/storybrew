@@ -5,6 +5,7 @@ using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics;
+using StorybrewCommon.Subtitles;
 using StorybrewEditor.UserInterface.Skinning.Styles;
 using System;
 using System.Drawing;
@@ -143,7 +144,7 @@ namespace StorybrewEditor.UserInterface
         void htmlTextbox_OnValueCommited(object sender, EventArgs e)
         {
             var htmlColor = htmlTextbox.Value.Trim();
-            if (!htmlColor.StartsWith("#")) htmlColor = "#" + htmlColor;
+            if (!htmlColor.StartsWith('#')) htmlColor = '#' + htmlColor;
 
             Color color;
             try
@@ -162,7 +163,7 @@ namespace StorybrewEditor.UserInterface
         {
             previewSprite.Color = value;
 
-            var hsba = value.ToHsba();
+            var hsba = FontColor.ToHsb(value);
             if (hsba.Z > 0)
             {
                 if (!float.IsNaN(hsba.X))

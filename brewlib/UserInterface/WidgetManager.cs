@@ -47,7 +47,7 @@ namespace BrewLib.UserInterface
             {
                 if (keyboardFocus == value) return;
 
-                if (keyboardFocus != null)
+                if (keyboardFocus is not null)
                 {
                     var e = new WidgetFocusEventArgs(false);
                     fire((w, evt) => w.NotifyFocusChange(evt, e), keyboardFocus, value);
@@ -56,7 +56,7 @@ namespace BrewLib.UserInterface
                 var previousFocus = keyboardFocus;
                 keyboardFocus = value;
 
-                if (keyboardFocus != null)
+                if (keyboardFocus is not null)
                 {
                     var e = new WidgetFocusEventArgs(true);
                     fire((w, evt) => w.NotifyFocusChange(evt, e), keyboardFocus, previousFocus);
@@ -74,9 +74,9 @@ namespace BrewLib.UserInterface
             set
             {
                 if (camera == value) return;
-                if (camera != null) camera.Changed -= camera_Changed;
+                if (camera is not null) camera.Changed -= camera_Changed;
                 camera = value;
-                if (camera != null) camera.Changed += camera_Changed;
+                if (camera is not null) camera.Changed += camera_Changed;
                 RefreshHover();
             }
         }
@@ -95,7 +95,7 @@ namespace BrewLib.UserInterface
 
         public void RefreshHover()
         {
-            if (camera != null && InputManager.HasMouseFocus)
+            if (camera is not null && InputManager.HasMouseFocus)
             {
                 var fromScreen = camera.FromScreen(InputManager.MousePosition);
                 mousePosition = new Vector2(fromScreen.X, fromScreen.Y);
@@ -258,13 +258,13 @@ namespace BrewLib.UserInterface
         Vector2 dragOffset, dragSize;
         Widget hoveredDraggableWidget;
         readonly Dictionary<MouseButton, object> dragData = [];
-        public bool CanDrag => hoveredDraggableWidget != null;
-        public bool IsDragging => dragData.Values.Any(v => v != null);
+        public bool CanDrag => hoveredDraggableWidget is not null;
+        public bool IsDragging => dragData.Values.Any(v => v is not null);
 
         void startDragAndDrop(MouseButton button)
         {
             if (hoveredDraggableWidget == null ||
-                (dragData.TryGetValue(button, out var data) && data != null))
+                (dragData.TryGetValue(button, out var data) && data is not null))
                 return;
 
             dragOffset = hoveredDraggableWidget.AbsolutePosition - mousePosition;
@@ -278,9 +278,9 @@ namespace BrewLib.UserInterface
             dragData[button] = null;
 
             var dropTarget = HoveredWidget ?? rootContainer;
-            while (dropTarget != null)
+            while (dropTarget is not null)
             {
-                if (dropTarget.HandleDrop != null && dropTarget.HandleDrop(data)) break;
+                if (dropTarget.HandleDrop is not null && dropTarget.HandleDrop(data)) break;
 
                 dropTarget = dropTarget.Parent;
             }
@@ -289,7 +289,7 @@ namespace BrewLib.UserInterface
         void updateHoveredDraggable()
         {
             hoveredDraggableWidget = HoveredWidget;
-            while (hoveredDraggableWidget != null && hoveredDraggableWidget.GetDragData == null)
+            while (hoveredDraggableWidget is not null && hoveredDraggableWidget.GetDragData == null)
                 hoveredDraggableWidget = hoveredDraggableWidget.Parent;
         }
         void drawDragIndicator(DrawContext drawContext)
@@ -311,7 +311,7 @@ namespace BrewLib.UserInterface
         public bool OnClickDown(MouseButtonEventArgs e)
         {
             var target = HoveredWidget ?? rootContainer;
-            if (keyboardFocus != null && target != keyboardFocus && !target.HasAncestor(keyboardFocus))
+            if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus))
                 KeyboardFocus = null;
 
             var widgetEvent = fire((w, evt) => w.NotifyClickDown(evt, e), target);
@@ -351,7 +351,7 @@ namespace BrewLib.UserInterface
         {
             if (widget == HoveredWidget) return;
 
-            if (HoveredWidget != null)
+            if (HoveredWidget is not null)
             {
                 var e = new WidgetHoveredEventArgs(false);
                 fire((w, evt) => w.NotifyHoveredWidgetChange(evt, e), HoveredWidget, widget);
@@ -360,7 +360,7 @@ namespace BrewLib.UserInterface
             var previousWidget = HoveredWidget;
             HoveredWidget = widget;
 
-            if (HoveredWidget != null)
+            if (HoveredWidget is not null)
             {
                 var e = new WidgetHoveredEventArgs(true);
                 fire((w, evt) => w.NotifyHoveredWidgetChange(evt, e), HoveredWidget, previousWidget);
@@ -405,7 +405,7 @@ namespace BrewLib.UserInterface
             widgetEvent.Listener = target;
             if (notify(target, widgetEvent)) return widgetEvent;
 
-            if (ancestors != null) for (var i = 0; i < ancestors.Count; ++i)
+            if (ancestors is not null) for (var i = 0; i < ancestors.Count; ++i)
             {
                 widgetEvent.Listener = ancestors[i];
                 if (notify(ancestors[i], widgetEvent)) return widgetEvent;
@@ -422,7 +422,7 @@ namespace BrewLib.UserInterface
         {
             if (disposing)
             {
-                if (camera != null) camera.Changed -= camera_Changed;
+                if (camera is not null) camera.Changed -= camera_Changed;
                 rootContainer.Dispose();
             }
             camera = null;

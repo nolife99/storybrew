@@ -211,7 +211,7 @@ namespace BrewLib.Graphics.RenderTargets
             GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, textureId, 0);
             DrawState.CheckError("creating fbo");
 
-            if (renderBufferType != null)
+            if (renderBufferType is not null)
             {
                 renderBufferId = GL.GenRenderbuffer();
                 GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, renderBufferId);

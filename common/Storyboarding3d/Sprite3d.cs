@@ -102,7 +102,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
-            if (finalize != null) action += (createCommands, sprite) =>
+            if (finalize is not null) action += (createCommands, sprite) =>
             {
                 createCommands();
                 finalize(sprite);

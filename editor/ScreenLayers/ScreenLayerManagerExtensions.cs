@@ -37,7 +37,7 @@ namespace StorybrewEditor.ScreenLayers
                 RestoreDirectory = true,
                 FileName = initialValue,
                 Filter = filter,
-                InitialDirectory = initialDirectory != null ? Path.GetFullPath(initialDirectory) : ""
+                InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
             };
             if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK) Program.Schedule(() => callback(dialog.FileName));
         });

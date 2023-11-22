@@ -2,7 +2,6 @@
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.osuTKUtil;
 using System.Numerics;
 using System;
 
@@ -38,7 +37,7 @@ namespace StorybrewScripts
         {
             internal int X, Y;
             internal OsbSprite Sprite, Shadow;
-            internal bool HasSprite => Sprite != null; 
+            internal bool HasSprite => Sprite is not null; 
         }
         Cell[,] cells;
 
@@ -149,12 +148,12 @@ namespace StorybrewScripts
             var targetPosition = new Vector2(dropX * CellSize, dropY * CellSize);
             var startPosition = new Vector2(targetPosition.X, targetPosition.Y - CellSize * GridHeight);
 
-            sprite.Rotate(startTime, MathHelper.DegreesToRadians(Rotation));
+            sprite.Rotate(startTime, osuTK.MathHelper.DegreesToRadians(Rotation));
             sprite.Scale(startTime, SpriteScale);
             sprite.Color(startTime, color);
             sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
 
-            shadow.Rotate(startTime, MathHelper.DegreesToRadians(Rotation));
+            shadow.Rotate(startTime, osuTK.MathHelper.DegreesToRadians(Rotation));
             shadow.Scale(startTime, SpriteScale);
             shadow.Color(startTime, 0, 0, 0);
             shadow.Fade(startTime, .5);
@@ -192,7 +191,7 @@ namespace StorybrewScripts
         Vector2 transform(Vector2 position)
         {
             position = new Vector2(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize);
-            return Vector2.Transform(position, Quaternion.CreateFromYawPitchRoll(0, (float)MathHelper.DegreesToRadians(Rotation), 0)) + Offset;
+            return Vector2.Transform(position, Quaternion.CreateFromYawPitchRoll(0, (float)osuTK.MathHelper.DegreesToRadians(Rotation), 0)) + Offset;
         }
         void shuffle(int[] array)
         {

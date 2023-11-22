@@ -92,8 +92,8 @@ namespace StorybrewCommon.Storyboarding3d
             var cross = (vector2.X - vector0.X) * (vector1.Y - vector0.Y) - (vector2.Y - vector0.Y) * (vector1.X - vector0.X);
             if (cross > 0)
             {
-                if (Generator0.EndState != null) Generator0.EndState.Opacity = 0;
-                if (Generator1.EndState != null) Generator1.EndState.Opacity = 0;
+                if (Generator0.EndState is not null) Generator0.EndState.Opacity = 0;
+                if (Generator1.EndState is not null) Generator1.EndState.Opacity = 0;
                 return;
             }
 
@@ -111,8 +111,8 @@ namespace StorybrewCommon.Storyboarding3d
                 {
                     if (FixedEdge >= 0)
                     {
-                        if (Generator0.EndState != null) Generator0.EndState.Opacity = 0;
-                        if (Generator1.EndState != null) Generator1.EndState.Opacity = 0; break;
+                        if (Generator0.EndState is not null) Generator0.EndState.Opacity = 0;
+                        if (Generator1.EndState is not null) Generator1.EndState.Opacity = 0; break;
                     }
 
                     var temp = vector0;
@@ -136,8 +136,8 @@ namespace StorybrewCommon.Storyboarding3d
 
                 if (switchedEdge)
                 {
-                    if (Generator0.EndState != null) Generator0.EndState.Opacity = 0;
-                    if (Generator1.EndState != null) Generator1.EndState.Opacity = 0;
+                    if (Generator0.EndState is not null) Generator0.EndState.Opacity = 0;
+                    if (Generator1.EndState is not null) Generator1.EndState.Opacity = 0;
                 }
 
                 Generator0.Add(new State
@@ -178,7 +178,7 @@ namespace StorybrewCommon.Storyboarding3d
         ///<inheritdoc/>
         public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
         {
-            if (finalize != null) action += (createCommands, sprite) =>
+            if (finalize is not null) action += (createCommands, sprite) =>
             {
                 createCommands();
                 finalize(sprite);

@@ -98,7 +98,7 @@ namespace StorybrewEditor.Mapset
             var closestTimingPoint = (ControlPoint)null;
             foreach (var controlPoint in controlPoints)
             {
-                if (predicate != null && !predicate(controlPoint)) continue;
+                if (predicate is not null && !predicate(controlPoint)) continue;
                 if (closestTimingPoint == null || controlPoint.Offset - time <= ControlPointLeniency) closestTimingPoint = controlPoint;
                 else break;
             }
@@ -170,7 +170,7 @@ namespace StorybrewEditor.Mapset
                         case "Events": reader.ParseSectionLines(line =>
                         {
                             if (line.StartsWith("//", StringComparison.Ordinal)) return;
-                            if (line.StartsWith(" ", StringComparison.Ordinal)) return;
+                            if (line.StartsWith(' ')) return;
 
                             var values = line.Split(',');
                             switch (values[0])
@@ -302,8 +302,7 @@ namespace StorybrewEditor.Mapset
             hitObjects.ForEach(h => h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex);
         }
 
-        static string removePathQuotes(string path) => path.StartsWith("\"", StringComparison.Ordinal) && path.EndsWith("\"", StringComparison.Ordinal) ?
-            path[1..^1] : path;
+        static string removePathQuotes(string path) => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1] : path;
 
         #endregion
     }

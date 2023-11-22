@@ -182,7 +182,7 @@ namespace BrewLib.Graphics.Drawables
         void invalidate() => textLayout = null;
         void validate()
         {
-            if (textLayout != null) return;
+            if (textLayout is not null) return;
             if (font is null || font.Name != FontName || currentFontSize != FontSize || currentScaling != Scaling)
             {
                 font?.Dispose();

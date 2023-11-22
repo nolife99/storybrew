@@ -72,7 +72,7 @@ namespace StorybrewCommon.Scripting
         ///<param name="line"> The line at which the condition should be taken into account. </param>
         public static void Assert(bool condition, string message = null, [CallerLineNumber] int line = -1)
         {
-            if (!condition) throw new ArgumentException(message != null ? $"Assertion failed line {line}: {message}" : $"Assertion failed line {line}");
+            if (!condition) throw new ArgumentException(message is not null ? $"Assertion failed line {line}: {message}" : $"Assertion failed line {line}");
         }
 
         #region File loading
@@ -92,7 +92,7 @@ namespace StorybrewCommon.Scripting
             {
                 if (watch) context.AddDependency(path);
 
-                if (alternatePath != null && !File.Exists(path))
+                if (alternatePath is not null && !File.Exists(path))
                 {
                     alternatePath = Path.GetFullPath(alternatePath);
                     if (watch) context.AddDependency(alternatePath);
@@ -255,10 +255,10 @@ namespace StorybrewCommon.Scripting
             using (var cache = new ZipArchive(file, ZipArchiveMode.Read))
             {
                 var path = cache.GetEntry(HashHelper.GetMd5(directory));
-                if (path != null)
+                if (path is not null)
                 {
                     var cachedFontRoot = Misc.WithRetries(() => TinyToken.Read(path.Open(), TinyToken.Yaml), canThrow: false);
-                    if (cachedFontRoot != null) fontGenerator.HandleCache(cachedFontRoot);
+                    if (cachedFontRoot is not null) fontGenerator.HandleCache(cachedFontRoot);
                 }
             }
             return fontGenerator;
@@ -290,7 +290,7 @@ namespace StorybrewCommon.Scripting
         ///<summary/>
         public void UpdateConfiguration(EffectConfig config)
         {
-            if (context != null) throw new InvalidOperationException();
+            if (context is not null) throw new InvalidOperationException();
 
             var remainingFieldNames = new List<string>(config.FieldNames);
             configurableFields.ForEach(configurableField =>
@@ -338,7 +338,7 @@ namespace StorybrewCommon.Scripting
         ///<summary/>
         public void ApplyConfiguration(EffectConfig config)
         {
-            if (context != null) throw new InvalidOperationException();
+            if (context is not null) throw new InvalidOperationException();
 
             configurableFields.ForEach(configurableField =>
             {

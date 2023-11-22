@@ -2,7 +2,6 @@ using osuTK.Graphics;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.osuTKUtil;
 using System;
 using System.Numerics;
 using System.Drawing;
@@ -48,7 +47,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() != null)
+            if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() is not null)
             {
                 StartTime = (int)Beatmap.HitObjects.First().StartTime;
                 EndTime = (int)Beatmap.HitObjects.Last().EndTime;
@@ -66,10 +65,10 @@ namespace StorybrewScripts
                 var spawnAngle = Random(Math.PI * 2);
                 var spawnDistance = (float)(SpawnSpread * Math.Sqrt(Random(1f)));
 
-                var moveAngle = MathHelper.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) * .5f);
+                var moveAngle = osuTK.MathHelper.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) * .5f);
                 var moveDistance = Speed * Lifetime * .001f;
 
-                var spriteRotation = moveAngle + MathHelper.DegreesToRadians(Rotation);
+                var spriteRotation = moveAngle + osuTK.MathHelper.DegreesToRadians(Rotation);
 
                 var startPosition = SpawnOrigin + new Vector2((float)Math.Cos(spawnAngle), (float)Math.Sin(spawnAngle)) * spawnDistance;
                 var endPosition = startPosition + new Vector2((float)Math.Cos(moveAngle), (float)Math.Sin(moveAngle)) * moveDistance;
@@ -84,7 +83,7 @@ namespace StorybrewScripts
                 var color = Color;
                 if (ColorVariance > 0)
                 {
-                    ColorVariance = MathHelper.Clamp(ColorVariance, 0, 1);
+                    ColorVariance = osuTK.MathHelper.Clamp(ColorVariance, 0, 1);
 
                     var hsba = Color4.ToHsl(color);
                     var sMin = Math.Max(0, hsba.Y - ColorVariance * .5f);

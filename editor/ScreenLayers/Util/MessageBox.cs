@@ -48,7 +48,7 @@ namespace StorybrewEditor.ScreenLayers.Util
             });
             var yesButton = new Button(WidgetManager)
             {
-                Text = noAction != null ? "Yes" : "Ok",
+                Text = noAction is not null ? "Yes" : "Ok",
                 AnchorFrom = BoxAlignment.Centre
             };
             yesButton.OnClick += (sender, e) =>
@@ -58,7 +58,7 @@ namespace StorybrewEditor.ScreenLayers.Util
             };
             buttonsLayout.Add(yesButton);
 
-            if (noAction != null)
+            if (noAction is not null)
             {
                 var noButton = new Button(WidgetManager)
                 {

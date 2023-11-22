@@ -15,7 +15,7 @@ namespace Tiny.Formats
             string line;
             int lineNumber = 1;
 
-            while ((line = reader.ReadLine()) != null)
+            while ((line = reader.ReadLine()) is not null)
             {
                 foreach (var token in Tokenize(line))
                 {
@@ -37,7 +37,7 @@ namespace Tiny.Formats
             {
                 var bestMatch = byStartGroup.OrderBy(m => m.Priority).First();
 
-                if (previousMatch != null && bestMatch.StartIndex < previousMatch.EndIndex)
+                if (previousMatch is not null && bestMatch.StartIndex < previousMatch.EndIndex)
                     continue;
 
                 yield return new Token<TokenType>(bestMatch.Type, bestMatch.Value)

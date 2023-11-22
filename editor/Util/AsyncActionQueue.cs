@@ -42,13 +42,13 @@ namespace StorybrewEditor.Util
             if (runnerCount == 0) runnerCount = Environment.ProcessorCount - 1;
             runnerCount = Math.Max(1, runnerCount);
 
-            for (var i = 0; i < runnerCount; i++) actionRunners.Add(new ActionRunner(context, $"{threadName} #{i + 1}"));
+            for (var i = 0; i < runnerCount; i++) actionRunners.Add(new(context, $"{threadName} #{i + 1}"));
         }
 
         public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
         public void Queue(T target, string uniqueKey, Action<T> action, bool mustRunAlone = false)
         {
-            ObjectDisposedException.ThrowIf(disposedValue, typeof(AsyncActionQueue<T>));
+            ObjectDisposedException.ThrowIf(disposedValue, GetType());
 
             Parallel.For(0, actionRunners.Count, i => actionRunners[i].EnsureThreadAlive());
             lock (context.Queue)
@@ -148,13 +148,13 @@ namespace StorybrewEditor.Util
                 if (tokenSrc is null || tokenSrc.IsCancellationRequested)
                 {
                     tokenSrc?.Dispose();
-                    tokenSrc = new CancellationTokenSource();
+                    tokenSrc = new();
                     tokenSrc.Token.Register(() => Trace.WriteLine($"Aborting thread {threadName}"));
 
                     Task localThread = null;
 
 #pragma warning disable SYSLIB0046 // ControlledExecution is obsolete, but we need a way to terminate frozen threads
-                    thread = localThread = new Task(() => ControlledExecution.Run(async () =>
+                    thread = localThread = new(() => ControlledExecution.Run(async () =>
                     {
                         var mustSleep = false;
                         while (!tokenSrc.IsCancellationRequested)
@@ -208,7 +208,7 @@ namespace StorybrewEditor.Util
                             catch (Exception e)
                             {
                                 var target = task.Target;
-                                if (!context.TriggerActionFailed(task.Target, e)) Trace.TraceError($"'{task.UniqueKey}' - Action failed: {e}");
+                                if (!context.TriggerActionFailed(task.Target, e)) Trace.TraceError($"'{task.UniqueKey}' - Action failed: {e.GetType()} ({e})");
                             }
 
                             lock (context.Running)
@@ -217,7 +217,7 @@ namespace StorybrewEditor.Util
                                 if (task.MustRunAlone) context.RunningLoneTask = false;
                             }
                         }
-                    }, tokenSrc.Token), tokenSrc.Token, TaskCreationOptions.LongRunning);
+                    }, tokenSrc.Token), tokenSrc.Token);
 #pragma warning restore SYSLIB0046
 
                     Trace.WriteLine($"Starting thread {threadName}");

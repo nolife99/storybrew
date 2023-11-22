@@ -65,7 +65,7 @@ namespace StorybrewEditor.Storyboarding
         ///<summary> Used at load time to let the effect know about placeholder layers it should use. </summary>
         public void AddPlaceholder(EditorStoryboardLayer layer)
         {
-            if (placeHolderLayer != null)
+            if (placeHolderLayer is not null)
             {
                 layers.Remove(placeHolderLayer);
                 Project.LayerManager.Remove(placeHolderLayer);
@@ -78,7 +78,7 @@ namespace StorybrewEditor.Storyboarding
         }
         protected void UpdateLayers(List<EditorStoryboardLayer> newLayers)
         {
-            if (placeHolderLayer != null)
+            if (placeHolderLayer is not null)
             {
                 Project.LayerManager.Replace(placeHolderLayer, newLayers);
                 placeHolderLayer = null;

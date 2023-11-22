@@ -77,7 +77,7 @@ namespace StorybrewEditor.UserInterface.Components
                     if (data is EditorStoryboardLayer droppedLayer)
                     {
                         var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Guid == droppedLayer.Guid);
-                        if (dndLayer != null) layerManager.MoveToOsbLayer(dndLayer, ol);
+                        if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, ol);
                         return true;
                     }
                     return false;
@@ -171,7 +171,7 @@ namespace StorybrewEditor.UserInterface.Components
                         if (droppedLayer.Guid != la.Guid)
                         {
                             var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Guid == droppedLayer.Guid);
-                            if (dndLayer != null) layerManager.MoveToLayer(dndLayer, la);
+                            if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, la);
                         }
                         return true;
                     }

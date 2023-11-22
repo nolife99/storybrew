@@ -29,7 +29,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             primitiveSize = Unsafe.SizeOf<TPrimitive>();
 
             initializeVertexBuffer();
-            if (indexes != null) initializeIndexBuffer(indexes);
+            if (indexes is not null) initializeIndexBuffer(indexes);
         }
 
         protected virtual void initializeVertexBuffer() => vertexBufferId = GL.GenBuffer();

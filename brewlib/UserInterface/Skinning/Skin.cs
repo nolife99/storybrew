@@ -35,7 +35,7 @@ namespace BrewLib.UserInterface.Skinning
             if (!stylesPerType.TryGetValue(type, out var styles)) return null;
 
             var n = name;
-            while (n != null)
+            while (n is not null)
             {
                 if (styles.TryGetValue(n, out WidgetStyle style)) return style;
                 n = getImplicitParentStyleName(n);
@@ -44,7 +44,7 @@ namespace BrewLib.UserInterface.Skinning
             if (getBaseStyleName(name) != "default")
             {
                 var flags = getStyleFlags(name);
-                if (flags != null) return GetStyle(type, $"default {flags}");
+                if (flags is not null) return GetStyle(type, $"default {flags}");
                 else return GetStyle(type, "default");
             }
             return null;
@@ -61,7 +61,10 @@ namespace BrewLib.UserInterface.Skinning
                 {
                     foreach (var entry in drawables) entry.Value.Dispose();
                     drawables.Clear();
+
+                    stylesPerType.Clear();
                 }
+
                 drawables = null;
                 disposedValue = true;
             }
@@ -87,7 +90,7 @@ namespace BrewLib.UserInterface.Skinning
             else
             {
                 var data = resourceContainer?.GetString(filename, ResourceSource.Embedded);
-                if (data != null) token = TinyToken.ReadString<JsonFormat>(data);
+                if (data is not null) token = TinyToken.ReadString<JsonFormat>(data);
             }
 
             if (token == null) throw new FileNotFoundException(filename);
@@ -97,9 +100,9 @@ namespace BrewLib.UserInterface.Skinning
         TinyObject resolveIncludes(TinyObject data, ResourceContainer resourceContainer)
         {
             var includes = data.Value<TinyArray>("include");
-            if (includes != null)
+            if (includes is not null)
             {
-                var snapshot = new List<TinyToken>(includes);
+                List<TinyToken> snapshot = new(includes);
                 snapshot.ForEach(include =>
                 {
                     var path = include.Value<string>();
@@ -112,7 +115,7 @@ namespace BrewLib.UserInterface.Skinning
         }
         void loadDrawables(TinyObject data, TinyObject constants)
         {
-            if (data == null) return;
+            if (data is null) return;
             foreach (var entry in data)
             {
                 var name = entry.Key;
@@ -148,7 +151,7 @@ namespace BrewLib.UserInterface.Skinning
             }
             else if (data.Type == TinyTokenType.Array)
             {
-                var composite = new CompositeDrawable();
+                CompositeDrawable composite = new();
                 foreach (var arrayDrawableData in data.Values<TinyToken>())
                 {
                     var drawable = loadDrawable(arrayDrawableData, constants);
@@ -181,8 +184,7 @@ namespace BrewLib.UserInterface.Skinning
                     var widgetType = ResolveWidgetType(styleTypeName);
                     var styleType = ResolveStyleType($"{styleTypeName}Style");
 
-                    if (!stylesPerType.TryGetValue(styleType, out var styles))
-                        stylesPerType.Add(styleType, styles = []);
+                    if (!stylesPerType.TryGetValue(styleType, out var styles)) stylesPerType.Add(styleType, styles = []);
 
                     WidgetStyle defaultStyle = null;
                     foreach (var styleEntry in styleTypeObject)
@@ -195,17 +197,17 @@ namespace BrewLib.UserInterface.Skinning
 
                             var parentStyle = defaultStyle;
                             var implicitParentStyleName = getImplicitParentStyleName(styleName);
-                            if (implicitParentStyleName != null)
+                            if (implicitParentStyleName is not null)
                             {
                                 if (!styles.TryGetValue(implicitParentStyleName, out parentStyle)
-                                    && styleTypeObject.Value<TinyToken>(implicitParentStyleName) != null)
+                                    && styleTypeObject.Value<TinyToken>(implicitParentStyleName) is not null)
                                     throw new InvalidDataException($"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
 
                                 parentStyle = GetStyle(styleType, implicitParentStyleName);
                             }
 
                             var parentName = styleObject.Value<string>("_parent");
-                            if (parentName != null && !styles.TryGetValue(parentName, out parentStyle))
+                            if (parentName is not null && !styles.TryGetValue(parentName, out parentStyle))
                                 throw new InvalidDataException($"Parent style '{parentName}' style must be defined before '{styleName}'");
 
                             parseFields(style, styleObject, parentStyle, constants);
@@ -247,31 +249,31 @@ namespace BrewLib.UserInterface.Skinning
                 foreach (var field in fields)
                 {
                     var fieldData = resolveConstants(data.Value<TinyToken>(field.Name), constants);
-                    if (fieldData != null)
+                    if (fieldData is not null)
                     {
                         var fieldType = field.FieldType;
                         var parser = getFieldParser(fieldType);
-                        if (parser != null)
+                        if (parser is not null)
                         {
                             var value = parser.Invoke(fieldData, constants, this);
                             field.SetValue(skinnable, value);
                         }
                         else Trace.WriteLine($"Skin - No parser for {fieldType}");
                     }
-                    else if (parent != null) field.SetValue(skinnable, field.GetValue(parent));
+                    else if (parent is not null) field.SetValue(skinnable, field.GetValue(parent));
                 }
                 type = type.BaseType;
             }
         }
         static TinyToken resolveConstants(TinyToken fieldData, TinyObject constants)
         {
-            while (fieldData != null && fieldData.Type == TinyTokenType.String)
+            while (fieldData is not null && fieldData.Type == TinyTokenType.String)
             {
                 var fieldString = fieldData.Value<string>();
                 if (fieldString.StartsWith('@'))
                 {
                     fieldData = constants?[fieldString[1..]];
-                    if (fieldData == null) throw new InvalidDataException($"Missing skin constant: {fieldString}");
+                    if (fieldData is null) throw new InvalidDataException($"Missing skin constant: {fieldString}");
                 }
                 else break;
             }

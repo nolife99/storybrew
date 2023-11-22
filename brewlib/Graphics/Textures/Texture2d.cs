@@ -39,8 +39,8 @@ namespace BrewLib.Graphics.Textures
             textureOptions ??= TextureOptions.Default;
             textureOptions.WithBitmap(bitmap, b =>
             {
-                var data = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, b.PixelFormat);
-                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                var data = b.LockBits(new Rectangle(default, b.Size), ImageLockMode.ReadOnly, b.PixelFormat);
+                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
                 GL.Finish();
                 b.UnlockBits(data);
             });
@@ -87,7 +87,7 @@ namespace BrewLib.Graphics.Textures
 
         public static Texture2d Load(string filename, ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
         {
-            using var bitmap = LoadBitmap(filename, resourceContainer); return bitmap != null ?
+            using var bitmap = LoadBitmap(filename, resourceContainer); return bitmap is not null ?
                 Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
         }
         public static Texture2d Create(Color4 color, string description, int width = 1, int height = 1, TextureOptions textureOptions = null)

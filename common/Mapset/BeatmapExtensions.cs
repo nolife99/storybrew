@@ -15,7 +15,7 @@ namespace StorybrewCommon.Mapset
             if (timingPoints.MoveNext())
             {
                 var timingPoint = timingPoints.Current;
-                while (timingPoint != null)
+                while (timingPoint is not null)
                 {
                     var nextTimingPoint = timingPoints.MoveNext() ? timingPoints.Current : null;
                     if (timingPoint.Offset < leftTimingPoint.Offset)

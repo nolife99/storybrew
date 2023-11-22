@@ -55,7 +55,7 @@ namespace StorybrewEditor.Scripting
         }
 
         ///<summary> Returns false when Script would return null. </summary>
-        public bool HasScript => scriptProvider != null || currentVersion != targetVersion;
+        public bool HasScript => scriptProvider is not null || currentVersion != targetVersion;
         public event EventHandler OnScriptChanged;
 
         public ScriptContainerBase(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)

@@ -56,7 +56,7 @@ namespace StorybrewEditor.ScreenLayers
             }, exception =>
             {
                 if (IsDisposed) return;
-                if (exception != null)
+                if (exception is not null)
                 {
                     Trace.WriteLine($"Failed to download the new version.\n\n{exception}");
                     Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}",

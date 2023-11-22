@@ -44,7 +44,7 @@ namespace StorybrewEditor.Storyboarding
             newLayers.ForEach(newLayer =>
             {
                 var oldLayer = oldLayers.Find(l => l.Name == newLayer.Name);
-                if (oldLayer != null)
+                if (oldLayer is not null)
                 {
                     var index = layers.IndexOf(oldLayer);
                     if (index != -1)
@@ -163,7 +163,7 @@ namespace StorybrewEditor.Storyboarding
         public void MoveToOsbLayer(EditorStoryboardLayer layer, OsbLayer osbLayer)
         {
             var firstLayer = layers.FirstOrDefault(l => l.OsbLayer == osbLayer);
-            if (firstLayer != null) MoveToLayer(layer, firstLayer);
+            if (firstLayer is not null) MoveToLayer(layer, firstLayer);
             else layer.OsbLayer = osbLayer;
         }
         public void MoveToLayer(EditorStoryboardLayer layerToMove, EditorStoryboardLayer toLayer)

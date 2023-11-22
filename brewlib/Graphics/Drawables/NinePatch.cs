@@ -15,7 +15,7 @@ namespace BrewLib.Graphics.Drawables
         public FourSide Borders, Outset;
         public bool BordersOnly;
 
-        public Vector2 MinSize => Texture != null ? new Vector2(
+        public Vector2 MinSize => Texture is not null ? new Vector2(
             Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
             Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
             Vector2.Zero;

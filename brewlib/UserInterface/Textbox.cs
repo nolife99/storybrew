@@ -175,7 +175,7 @@ namespace BrewLib.UserInterface
                         if (inputManager.ControlOnly)
                         {
                             var clipboardText = ClipboardHelper.GetText(TextDataFormat.UnicodeText);
-                            if (clipboardText != null)
+                            if (clipboardText is not null)
                             {
                                 if (!AcceptMultiline) clipboardText = clipboardText.Replace("\n", "");
                                 ReplaceSelection(clipboardText);

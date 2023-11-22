@@ -83,7 +83,7 @@ namespace StorybrewEditor
             path = Path.GetFullPath(path);
 
             var entryName = PathHelper.GetRelativePath(sourceDirectory, path);
-            if (targetPath != null)
+            if (targetPath is not null)
             {
                 if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
                 entryName = Path.Combine(targetPath, entryName);

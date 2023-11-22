@@ -23,7 +23,7 @@ namespace BrewLib.Audio
             if (sample != 0) return;
 
             var bytes = resourceContainer?.GetBytes(path, ResourceSource.Embedded);
-            if (bytes != null)
+            if (bytes is not null)
             {
                 sample = Bass.SampleLoad(bytes, 0, bytes.Length, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
                 if (sample != 0) return;

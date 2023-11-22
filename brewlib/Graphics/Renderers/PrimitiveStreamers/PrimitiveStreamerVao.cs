@@ -18,14 +18,14 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         public PrimitiveStreamerVao(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
         {
             if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
-            if (indexes != null && minRenderableVertexCount > ushort.MaxValue) throw new ArgumentException("Can't have more than " + ushort.MaxValue + " indexed vertices");
+            if (indexes is not null && minRenderableVertexCount > ushort.MaxValue) throw new ArgumentException("Can't have more than " + ushort.MaxValue + " indexed vertices");
 
             MinRenderableVertexCount = minRenderableVertexCount;
             VertexDeclaration = vertexDeclaration;
             PrimitiveSize = Unsafe.SizeOf<TPrimitive>();
 
             initializeVertexBuffer();
-            if (indexes != null) initializeIndexBuffer(indexes);
+            if (indexes is not null) initializeIndexBuffer(indexes);
         }
 
         protected virtual void initializeVertexBuffer() => VertexBufferId = GL.GenBuffer();

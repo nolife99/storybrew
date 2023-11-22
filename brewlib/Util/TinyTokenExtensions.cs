@@ -10,7 +10,7 @@ namespace BrewLib.Util
             if (token is TinyObject tinyObject && into is TinyObject intoObject) foreach (var entry in tinyObject)
             {
                 var existing = intoObject.Value<TinyToken>(entry.Key);
-                if (existing != null) existing.Merge(entry.Value);
+                if (existing is not null) existing.Merge(entry.Value);
                 else intoObject.Add(entry);
             }
             else if (token is TinyArray tinyArray && into is TinyArray intoArray) foreach (var entry in tinyArray) intoArray.Add(entry);

@@ -22,7 +22,7 @@ namespace BrewLib.Graphics.Shaders
             if (dependantVariables == null && !flowDependant) throw new InvalidOperationException("Cannot reference variables while dependencies aren't defined");
             if (flowDependant) flowVariables.Add(referencedVariable);
 
-            if (dependantVariables != null) foreach (var dependentVariable in dependantVariables)
+            if (dependantVariables is not null) foreach (var dependentVariable in dependantVariables)
                 {
                     if (referencedVariable == dependentVariable) continue;
 
@@ -45,7 +45,7 @@ namespace BrewLib.Graphics.Shaders
         }
         public void GenerateCode(StringBuilder code, Action action)
         {
-            if (canReceiveCommands) throw new InvalidOperationException(this.code != null ? "Already generating code" : "Can't generate code while mark used variables");
+            if (canReceiveCommands) throw new InvalidOperationException(this.code is not null ? "Already generating code" : "Can't generate code while mark used variables");
 
             this.code = code;
             canReceiveCommands = true;
@@ -80,11 +80,11 @@ namespace BrewLib.Graphics.Shaders
         {
             checkCanReceiveCommands();
 
-            if (code != null)
+            if (code is not null)
             {
                 FlowDependant(() => $"if ({expression()})\n{{");
                 trueSnippet.Generate(this);
-                if (falseSnippet != null)
+                if (falseSnippet is not null)
                 {
                     code.AppendLine("}\nelse\n{");
                     falseSnippet.Generate(this);
@@ -105,7 +105,7 @@ namespace BrewLib.Graphics.Shaders
             var previousDependentVariables = this.dependantVariables;
             this.dependantVariables = dependantVariables;
 
-            if (code != null) code.AppendLine($"{expression()};");
+            if (code is not null) code.AppendLine($"{expression()};");
             else expression();
 
             this.dependantVariables = previousDependentVariables;
@@ -117,7 +117,7 @@ namespace BrewLib.Graphics.Shaders
             var previousFlowDependant = flowDependant;
             flowDependant = true;
 
-            if (code != null) code.AppendLine($"{expression()}");
+            if (code is not null) code.AppendLine($"{expression()}");
             else expression();
 
             flowDependant = previousFlowDependant;
@@ -138,9 +138,9 @@ namespace BrewLib.Graphics.Shaders
             checkCanReceiveCommands();
 
             if (result == null) throw new ArgumentNullException(nameof(result));
-            if (declare && components != null) throw new InvalidOperationException("Cannot set components when declaring a variable");
-            if (expression != null) Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
-                components != null ?
+            if (declare && components is not null) throw new InvalidOperationException("Cannot set components when declaring a variable");
+            if (expression is not null) Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
+                components is not null ?
                 $"{result.Ref}.{components} = {expression()}" : $"{result.Ref} = {expression()}", result);
 
             else if (declare) code?.AppendLine($"{result.ShaderTypeName} {result.Name};");

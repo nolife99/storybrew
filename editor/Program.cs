@@ -48,7 +48,7 @@ namespace StorybrewEditor
             startEditor();
 
             NetHelper.Client?.Dispose();
-            foreach (IDisposable listener in Trace.Listeners) listener.Dispose();
+            foreach (var listener in Trace.Listeners) (listener as IDisposable)?.Dispose();
         }
         static bool handleArguments(string[] args)
         {
@@ -298,7 +298,7 @@ namespace StorybrewEditor
             });
             completed.WaitOne();
 
-            if (exception != null) throw exception;
+            if (exception is not null) throw exception;
         }
         public static void RunScheduledTasks()
         {
@@ -363,7 +363,7 @@ namespace StorybrewEditor
                         w.WriteLine();
                     }
 
-                    if (reportType != null) Report(reportType, e);
+                    if (reportType is not null) Report(reportType, e);
                     if (show)
                     {
                         var result = MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButtons.OKCancel);

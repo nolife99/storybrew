@@ -200,7 +200,7 @@ namespace BrewLib.UserInterface
                 LayoutLine line = null;
                 foreach (var child in Children)
                 {
-                    if (child.AnchorTarget != null) continue;
+                    if (child.AnchorTarget is not null) continue;
 
                     var preferredSize = child.PreferredSize;
                     var minSize = child.MinSize;

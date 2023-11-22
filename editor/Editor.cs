@@ -89,7 +89,7 @@ namespace StorybrewEditor
         {
             initializeOverlay();
             ScreenLayerManager.Set(initialLayer ?? new StartMenu());
-            if (message != null) ScreenLayerManager.ShowMessage(message);
+            if (message is not null) ScreenLayerManager.ShowMessage(message);
         }
 
         #region Overlay

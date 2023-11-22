@@ -33,13 +33,13 @@ namespace StorybrewEditor.UserInterface.Components
             set
             {
                 if (effect == value) return;
-                if (effect != null)
+                if (effect is not null)
                 {
                     effect.OnChanged -= Effect_OnChanged;
                     effect.OnConfigFieldsChanged -= Effect_OnConfigFieldsChanged;
                 }
                 effect = value;
-                if (effect != null)
+                if (effect is not null)
                 {
                     effect.OnChanged += Effect_OnChanged;
                     effect.OnConfigFieldsChanged += Effect_OnConfigFieldsChanged;
@@ -156,7 +156,7 @@ namespace StorybrewEditor.UserInterface.Components
                 }
 
                 var displayName = field.DisplayName;
-                if (currentGroup != null)
+                if (currentGroup is not null)
                     displayName = Regex.Replace(displayName, $@"^{Regex.Escape(currentGroup)}\s+", "");
 
                 var description = $"Variable: {field.Name} ({field.Type.Name})";
@@ -186,7 +186,7 @@ namespace StorybrewEditor.UserInterface.Components
         }
         Widget buildFieldEditor(EffectConfig.ConfigField field)
         {
-            if (field.AllowedValues != null)
+            if (field.AllowedValues is not null)
             {
                 var widget = new Selectbox(Manager)
                 {
@@ -377,7 +377,7 @@ namespace StorybrewEditor.UserInterface.Components
                 };
                 return widget;
             }
-            else if (field.Type.GetInterface(nameof(IConvertible)) != null)
+            else if (field.Type.GetInterface(nameof(IConvertible)) is not null)
             {
                 var widget = new Textbox(Manager)
                 {

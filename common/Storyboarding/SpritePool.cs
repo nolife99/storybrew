@@ -131,7 +131,7 @@ namespace StorybrewCommon.Storyboarding
             {
                 if (dispose)
                 {
-                    if (attributes != null) pooled.ForEach(pooledSprite =>
+                    if (attributes is not null) pooled.ForEach(pooledSprite =>
                     {
                         var sprite = pooledSprite.Sprite;
                         attributes(sprite, sprite.CommandsStartTime, pooledSprite.EndTime);

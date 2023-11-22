@@ -142,63 +142,29 @@ namespace StorybrewCommon.Subtitles
         ///<summary> Creates a <see cref="FontColor"/> from RGB byte values. </summary>
         public static FontColor FromRgba(byte r, byte g, byte b, byte a) => new(r / 255f, g / 255f, b / 255f, a / 255f);
 
-        ///<summary> Creates a <see cref="FontColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
-        public static FontColor FromHsb(float hue, float saturation, float brightness)
-        {
-            var hi = (int)(hue / 60) % 6;
-            var f = hue / 60 - (int)(hue / 60);
-
-            var v = brightness;
-            var p = brightness * (1 - saturation);
-            var q = brightness * (1 - (f * saturation));
-            var t = brightness * (1 - ((1 - f) * saturation));
-
-            if (hi == 0) return new FontColor(v, t, p);
-            if (hi == 1) return new FontColor(q, v, p);
-            if (hi == 2) return new FontColor(p, v, t);
-            if (hi == 3) return new FontColor(p, q, v);
-            if (hi == 4) return new FontColor(t, p, v);
-            return new FontColor(v, p, q);
-        }
-
         ///<summary> Creates a <see cref="Vector4"/> containing the hue, saturation, brightness, and alpha values from a <see cref="FontColor"/>. </summary>
         public static Vector4 ToHsb(FontColor rgb)
         {
-            var max = Math.Max(rgb.R, Math.Max(rgb.G, rgb.B));
-            var min = Math.Min(rgb.R, Math.Min(rgb.G, rgb.B));
-            var diff = max - min;
+            var max = Math.Max(rgb.r, Math.Max(rgb.g, rgb.b));
+            var min = Math.Min(rgb.r, Math.Min(rgb.g, rgb.b));
+            var delta = max - min;
 
-            var h = 0f;
-            if (diff == 0) h = 0; 
-            else if (max == rgb.R)
-            {
-                h = (rgb.G - rgb.B) / diff % 6;
-                if (h < 0) h += 6;
-            }
-            else if (max == rgb.G) h = ((rgb.B - rgb.R) / diff) + 2; 
-            else if (max == rgb.B) h = ((rgb.R - rgb.G) / diff) + 4;
+            var hue = 0f;
+            if (rgb.r == max) hue = (rgb.g - rgb.b) / delta;
+            else if (rgb.g == max) hue = 2 + (rgb.b - rgb.r) / delta;
+            else if (rgb.b == max) hue = 4 + (rgb.r - rgb.g) / delta;
+            hue /= 6;
+            if (hue < 0f) ++hue;
 
-            var hue = h / 6;
-            if (hue < 0) ++hue;
+            var saturation = float.IsNegative(max) ? 0 : 1 - (min / max);
 
-            var lightness = (max + min) / 2;
-
-            var saturation = 0f;
-            if (1 - Math.Abs(2 * lightness - 1) != 0) saturation = diff / (1 - Math.Abs(2 * lightness - 1));
-
-            return new Vector4(hue, saturation, lightness, rgb.A);
+            return new Vector4(hue, saturation, max, rgb.a);
         }
 
         ///<summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
         public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
 
-        static byte toByte(double x)
-        {
-            x *= 255;
-            if (x > 255) return 255;
-            if (x < 0) return 0;
-            return (byte)x;
-        }
+        static byte toByte(float x) => (byte)osuTK.MathHelper.Clamp(x * 255, 0, 255);
 
 #pragma warning disable CS1591
         public static implicit operator Color4(FontColor obj) => new(obj.R, obj.G, obj.B, obj.A);
@@ -326,7 +292,7 @@ namespace StorybrewCommon.Subtitles
                 }
 
                 var dpiScale = 96 / graphics.DpiY;
-                using var font = fontFamily != null ?
+                using var font = fontFamily is not null ?
                     new Font(fontFamily, description.FontSize * dpiScale, description.FontStyle) :
                     new Font(fontPath, description.FontSize * dpiScale, description.FontStyle);
                 var measuredSize = graphics.MeasureString(text, font, 0, format);

@@ -4,7 +4,6 @@ using StorybrewCommon.Storyboarding;
 using System.Numerics;
 using System;
 using System.Linq;
-using StorybrewCommon.osuTKUtil;
 
 namespace StorybrewScripts
 {
@@ -36,7 +35,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() != null)
+            if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() is not null)
             {
                 StartTime = (int)Beatmap.HitObjects.First().StartTime;
                 EndTime = (int)Beatmap.HitObjects.Last().EndTime;
@@ -57,7 +56,7 @@ namespace StorybrewScripts
                 for (var i = 0; i < BarCount; ++i)
                 {
                     var height = Radius + (float)Math.Log10(1 + fft[i] * LogScale) * Scale;
-                    var angle = i * MathHelper.TwoPi / BarCount;
+                    var angle = i * osuTK.MathHelper.TwoPi / BarCount;
 
                     positionKeyframes[i].Add(time, Position + new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * height);
                 }

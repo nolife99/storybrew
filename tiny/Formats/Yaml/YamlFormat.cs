@@ -48,7 +48,7 @@ namespace Tiny.Formats.Yaml
 
         void writeObject(TextWriter writer, TinyObject obj, TinyToken parent, int indentLevel)
         {
-            var parentIsArray = parent != null && parent.Type == TinyTokenType.Array;
+            var parentIsArray = parent is not null && parent.Type == TinyTokenType.Array;
 
             var first = true;
             foreach (var property in obj)
@@ -76,7 +76,7 @@ namespace Tiny.Formats.Yaml
 
         void writeArray(TextWriter writer, TinyArray array, TinyToken parent, int indentLevel)
         {
-            var parentIsArray = parent != null && parent.Type == TinyTokenType.Array;
+            var parentIsArray = parent is not null && parent.Type == TinyTokenType.Array;
 
             var first = true;
             foreach (var token in array)

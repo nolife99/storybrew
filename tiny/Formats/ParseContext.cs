@@ -42,7 +42,7 @@ namespace Tiny.Formats
 
         public void End()
         {
-            while (Parser != null)
+            while (Parser is not null)
             {
                 Parser.End();
                 PopParser();

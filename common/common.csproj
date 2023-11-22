@@ -25,13 +25,6 @@
     <DebugType>embedded</DebugType>
     <Optimize>true</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <Optimize>True</Optimize>
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />

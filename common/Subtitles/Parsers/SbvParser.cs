@@ -38,7 +38,7 @@ namespace StorybrewCommon.Subtitles.Parsers
             var sb = new StringBuilder();
 
             string line;
-            while ((line = reader.ReadLine()) != null)
+            while ((line = reader.ReadLine()) is not null)
             {
                 if (string.IsNullOrEmpty(line.Trim()))
                 {

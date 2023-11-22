@@ -33,7 +33,7 @@ namespace StorybrewEditor.Storyboarding
             var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
             if (texturePath == null || !sprite.IsActive(time)) return;
 
-            if (frameStats != null)
+            if (frameStats is not null)
             {
                 ++frameStats.SpriteCount;
                 frameStats.CommandCount += sprite.CommandCost;
@@ -73,7 +73,7 @@ namespace StorybrewEditor.Storyboarding
 
             var origin = GetOriginVector(sprite.Origin, texture.Width, texture.Height);
 
-            if (frameStats != null)
+            if (frameStats is not null)
             {
                 var size = (CommandScale)texture.Size * (CommandScale)scale;
 

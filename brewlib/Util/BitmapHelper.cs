@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util
 {
@@ -19,7 +20,7 @@ namespace BrewLib.Util
         }
         public static void Compress(string path, ImageCompressor compressor = null)
         {
-            var defaultSettings = new LossyInputSettings(75, 100, 1);\
+            var defaultSettings = new LossyInputSettings(75, 100, 1);
             if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.Compress(path, defaultSettings);
             else compressor.Compress(path, defaultSettings);
         }
@@ -269,10 +270,7 @@ namespace BrewLib.Util
                 var data = bitmap.LockBits(new Rectangle(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
                 try
                 {
-                    unsafe
-                    {
-                        new Span<int>(data.Scan0.ToPointer(), Data.Length).CopyTo(Data);
-                    }
+                    Native.CopyMemory(data.Scan0, Data.AddrOfPinnedArray(), Data.Length * sizeof(int));
                 }
                 finally
                 {

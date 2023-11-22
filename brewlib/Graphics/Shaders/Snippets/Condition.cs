@@ -16,12 +16,12 @@ namespace BrewLib.Graphics.Shaders.Snippets
                 foreach (var requiredExtension in trueSnippet.RequiredExtensions)
                     yield return requiredExtension;
 
-                if (falseSnippet != null) foreach (var requiredExtension in falseSnippet.RequiredExtensions)
+                if (falseSnippet is not null) foreach (var requiredExtension in falseSnippet.RequiredExtensions)
                         yield return requiredExtension;
             }
         }
 
-        public override int MinVersion => falseSnippet != null ?
+        public override int MinVersion => falseSnippet is not null ?
             Math.Max(trueSnippet.MinVersion, falseSnippet.MinVersion) : trueSnippet.MinVersion;
 
         public override void GenerateFunctions(StringBuilder code)

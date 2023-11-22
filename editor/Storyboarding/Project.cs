@@ -221,7 +221,7 @@ namespace StorybrewEditor.Storyboarding
             var count = 1;
             string name;
             do name = $"{baseName} {count++}";
-            while (GetEffectByName(name) != null);
+            while (GetEffectByName(name) is not null);
             return name;
         }
         void effect_OnChanged(object sender, EventArgs e)
@@ -336,10 +336,10 @@ namespace StorybrewEditor.Storyboarding
             mainBeatmap = null;
             MapsetManager?.Dispose();
 
-            MapsetManager = new MapsetManager(mapsetPath, MapsetManager != null);
+            MapsetManager = new MapsetManager(mapsetPath, MapsetManager is not null);
             MapsetManager.OnFileChanged += mapsetManager_OnFileChanged;
 
-            if (previousBeatmapName != null) SelectBeatmap(previousBeatmapId, previousBeatmapName);
+            if (previousBeatmapName is not null) SelectBeatmap(previousBeatmapId, previousBeatmapName);
         }
         void mapsetManager_OnFileChanged(object sender, FileSystemEventArgs e)
         {
@@ -477,7 +477,7 @@ namespace StorybrewEditor.Storyboarding
                     ObjectSerializer.Write(w, field.Value);
 
                     w.Write(field.AllowedValues?.Length ?? 0);
-                    if (field.AllowedValues != null) for (var i = 0; i < field.AllowedValues.Length; ++i)
+                    if (field.AllowedValues is not null) for (var i = 0; i < field.AllowedValues.Length; ++i)
                         {
                             w.Write(field.AllowedValues[i].Name);
                             ObjectSerializer.Write(w, field.AllowedValues[i].Value);
@@ -746,7 +746,7 @@ namespace StorybrewEditor.Storyboarding
             if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
 
             var layersOrder = indexRoot.Values<string>("Layers").Distinct();
-            if (layersOrder != null) foreach (var layerGuid in layersOrder) if (layerInserters.TryGetValue(layerGuid, out var insertLayer)) insertLayer();
+            if (layersOrder is not null) foreach (var layerGuid in layersOrder) if (layerInserters.TryGetValue(layerGuid, out var insertLayer)) insertLayer();
 
             // Insert all remaining layers
             foreach (var key in layersOrder is null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
@@ -810,7 +810,7 @@ namespace StorybrewEditor.Storyboarding
                 var inEvents = false;
                 var inStoryboard = false;
 
-                while ((line = reader.ReadLine()) != null)
+                while ((line = reader.ReadLine()) is not null)
                 {
                     var trimmedLine = line.Trim();
                     if (!inEvents && trimmedLine == "[Events]") inEvents = true;

@@ -12,7 +12,7 @@ namespace BrewLib.Graphics.Textures
 
         Dictionary<string, Texture2d> textures = [];
 
-        public IEnumerable<string> ResourceNames => textures.Where(e => e.Value != null).Select(e => e.Key);
+        public IEnumerable<string> ResourceNames => textures.Where(e => e.Value is not null).Select(e => e.Key);
         public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
 
         public Texture2dRegion Get(string filename)

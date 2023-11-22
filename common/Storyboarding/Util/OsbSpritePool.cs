@@ -27,7 +27,7 @@ namespace StorybrewCommon.Storyboarding.Util
                 if (getMaxPoolDuration(startTime, endTime, MaxPoolDuration, pooledSprite) &&
                 (result == null || pooledSprite.StartTime < result.StartTime)) result = pooledSprite;
 
-            if (result != null)
+            if (result is not null)
             {
                 result.EndTime = endTime;
                 return result.Sprite;
@@ -44,7 +44,7 @@ namespace StorybrewCommon.Storyboarding.Util
 
         public void Clear()
         {
-            if (finalizeSprite != null)
+            if (finalizeSprite is not null)
                 foreach (var pooledSprite in pooledSprites)
                 {
                     var sprite = pooledSprite.Sprite;

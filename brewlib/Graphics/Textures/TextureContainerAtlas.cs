@@ -15,7 +15,7 @@ namespace BrewLib.Graphics.Textures
         Dictionary<string, Texture2dRegion> textures = [];
         readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
 
-        public IEnumerable<string> ResourceNames => textures.Where(e => e.Value != null).Select(e => e.Key);
+        public IEnumerable<string> ResourceNames => textures.Where(e => e.Value is not null).Select(e => e.Key);
         public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
 
         public Texture2dRegion Get(string filename)
@@ -29,7 +29,7 @@ namespace BrewLib.Graphics.Textures
                 if (!atlases.TryGetValue(textureOptions, out TextureMultiAtlas2d atlas))
                     atlases.Add(textureOptions, atlas = new TextureMultiAtlas2d(width, height, $"{description} (Option set {atlases.Count})", textureOptions, padding));
 
-                using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer)) if (bitmap != null) texture = atlas.AddRegion(bitmap, filename);
+                using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer)) if (bitmap is not null) texture = atlas.AddRegion(bitmap, filename);
 
                 textures.Add(filename, texture);
                 ResourceLoaded?.Invoke(filename, texture);

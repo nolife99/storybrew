@@ -18,7 +18,10 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            using var stream = OpenProjectFile(Path); using var reader = new StreamReader(stream, Encoding.ASCII); reader.ParseSections(section =>
+            using var stream = OpenProjectFile(Path); 
+            using var reader = new StreamReader(stream, Encoding.ASCII); 
+            
+            reader.ParseSections(section =>
             {
                 switch (section)
                 {
@@ -26,6 +29,7 @@ namespace StorybrewScripts
                     case "Events": parseEvents(reader); break;
                 }
             });
+            vars.Clear();
         }
         void parseVariables(StreamReader reader) => reader.ParseSectionLines(line =>
         {
@@ -42,7 +46,7 @@ namespace StorybrewScripts
                 if (line.StartsWith("//")) return;
 
                 var depth = 0;
-                while (line[depth..].StartsWith(" ")) ++depth;
+                while (line[depth..].StartsWith(' ')) ++depth;
 
                 var trim = applyVariables(line.Trim());
                 var v = trim.Split(',');
@@ -188,9 +192,7 @@ namespace StorybrewScripts
             }
         }
 
-        string removeQuotes(string path) => path.StartsWith("\"", StringComparison.Ordinal) && path.EndsWith("\"", StringComparison.Ordinal) ? 
-            path[1..^1] : path;
-
+        static string removeQuotes(string path) => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1] : path;
         string applyVariables(string line)
         {
             if (!line.Contains('$')) return line;

@@ -23,7 +23,7 @@ namespace StorybrewCommon.Storyboarding
         CommandGroup currentCommandGroup;
 
         ///<returns> True if the sprite is in a command group, else returns false. </returns>
-        public bool InGroup => currentCommandGroup != null;
+        public bool InGroup => currentCommandGroup is not null;
 
         ///<summary> If the sprite has more commands than <see cref="CommandSplitThreshold"/>, they will be split between multiple sprites. </summary>
         ///<remarks> Does not apply when the sprite has triggers. </remarks>
@@ -666,7 +666,7 @@ namespace StorybrewCommon.Storyboarding
                 currentCommandGroup = commandGroup;
                 commands.Add(commandGroup);
             }
-            else if (currentCommandGroup != null ? currentCommandGroup.Add(command) : commands.Add(command)) addDisplayCommand(command);
+            else if (currentCommandGroup is not null ? currentCommandGroup.Add(command) : commands.Add(command)) addDisplayCommand(command);
             clearStartEndTimes();
         }
 

@@ -12,7 +12,7 @@ namespace Tiny.Formats.Yaml
             TinyToken result = null;
 
             var context = new ParseContext<YamlTokenType>(tokens, new AnyParser(r => result = r));
-            while (context.CurrentToken != null)
+            while (context.CurrentToken is not null)
             {
                 switch (context.CurrentToken.Type)
                 {

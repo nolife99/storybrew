@@ -170,7 +170,7 @@ namespace StorybrewCommon.Util
             foreach (var serializer in serializers) if (serializer.CanSerialize(typeName)) return serializer;
             return null;
         }
-        public static bool Supports(string typeName) => GetSerializer(typeName) != null;
+        public static bool Supports(string typeName) => GetSerializer(typeName) is not null;
     }
     public class SimpleObjectSerializer<T>(Func<BinaryReader, object> read, Action<BinaryWriter, object> write, Func<string, object> fromString = null, Func<object, string> toString = null) : ObjectSerializer
     {

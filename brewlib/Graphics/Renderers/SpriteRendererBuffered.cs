@@ -175,7 +175,7 @@ namespace BrewLib.Graphics.Renderers
             {
                 var combinedMatrix = transformMatrix * Camera.ProjectionView.ToGLMatrix();
 
-                var samplerUnit = CustomTextureBind != null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
+                var samplerUnit = CustomTextureBind is not null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
                 if (currentSamplerUnit != samplerUnit)
                 {
                     currentSamplerUnit = samplerUnit;

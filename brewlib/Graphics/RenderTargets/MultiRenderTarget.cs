@@ -25,7 +25,7 @@ namespace BrewLib.Graphics.RenderTargets
             this.depthStencilTexture = depthStencilTexture;
 
             for (var i = 0; i < renderTextures.Length; ++i) renderTextures[i].OnChanged += renderTexture_OnChanged;
-            if (depthStencilTexture != null) depthStencilTexture.OnChanged += renderTexture_OnChanged;
+            if (depthStencilTexture is not null) depthStencilTexture.OnChanged += renderTexture_OnChanged;
         }
 
         public void Begin(bool clear = true)
@@ -92,7 +92,7 @@ namespace BrewLib.Graphics.RenderTargets
             for (var i = 0; i < renderTextures.Length; ++i) renderTextures[i].OnChanged -= renderTexture_OnChanged;
             renderTextures = null;
 
-            if (depthStencilTexture != null)
+            if (depthStencilTexture is not null)
             {
                 depthStencilTexture.OnChanged -= renderTexture_OnChanged;
                 depthStencilTexture = null;
@@ -123,7 +123,7 @@ namespace BrewLib.Graphics.RenderTargets
                 GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0 + i, TextureTarget.Texture2D, textureId, 0);
             }
 
-            if (depthStencilTexture != null)
+            if (depthStencilTexture is not null)
             {
                 if (width != depthStencilTexture.Width || height != depthStencilTexture.Height)
                     throw new InvalidOperationException("The depth / stencil texture must have the same size as the render textures");

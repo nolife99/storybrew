@@ -139,13 +139,13 @@ namespace BrewLib.ScreenLayers
         }, layer => layer.CurrentState != ScreenLayer.State.Hidden);
         void changeFocus(ScreenLayer layer)
         {
-            if (focusedLayer != null)
+            if (focusedLayer is not null)
             {
                 inputDispatcher.Remove(focusedLayer.InputHandler);
                 focusedLayer.LoseFocus();
                 focusedLayer = null;
             }
-            if (layer != null)
+            if (layer is not null)
             {
                 inputDispatcher.Add(layer.InputHandler);
                 layer.GainFocus();

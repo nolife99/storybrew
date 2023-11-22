@@ -89,7 +89,7 @@ namespace StorybrewEditor.Scripting
             var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
             var sourcePath = Path.Combine(ScriptsPath, $"{scriptName}.cs");
 
-            if (commonScriptsPath != null && !File.Exists(sourcePath))
+            if (commonScriptsPath is not null && !File.Exists(sourcePath))
             {
                 var commonSourcePath = Path.Combine(commonScriptsPath, $"{scriptName}.cs");
                 if (File.Exists(commonSourcePath))

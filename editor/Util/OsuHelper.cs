@@ -12,8 +12,8 @@ namespace StorybrewEditor.Util
             if (registryKey == null) return string.Empty;
 
             var value = registryKey.GetValue(null).ToString();
-            var startIndex = value.IndexOf("\"", StringComparison.Ordinal);
-            var endIndex = value.LastIndexOf("\"", StringComparison.Ordinal);
+            var startIndex = value.IndexOf('"');
+            var endIndex = value.LastIndexOf('"');
             return value.Substring(startIndex + 1, endIndex - 1);
         }
         public static string GetOsuFolder()
