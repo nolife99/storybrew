@@ -10,24 +10,25 @@ namespace StorybrewEditor.Storyboarding
 {
     public class ScriptedEffect : Effect
     {
-        private readonly ScriptContainer<StoryboardObjectGenerator> scriptContainer;
+        readonly ScriptContainer<StoryboardObjectGenerator> scriptContainer;
 
-        private readonly Stopwatch statusStopwatch = new Stopwatch();
-        private string configScriptIdentifier;
-        private MultiFileWatcher dependencyWatcher;
+        readonly Stopwatch statusStopwatch = new Stopwatch();
+        string configScriptIdentifier;
+        MultiFileWatcher dependencyWatcher;
 
         public override string BaseName => scriptContainer?.Name;
         public override string Path => scriptContainer?.MainSourcePath;
 
-        private EffectStatus status = EffectStatus.Initializing;
+        EffectStatus status = EffectStatus.Initializing;
         public override EffectStatus Status => status;
-        private string statusMessage = string.Empty;
+
+        string statusMessage = string.Empty;
         public override string StatusMessage => statusMessage;
 
-        private bool multithreaded;
+        bool multithreaded;
         public override bool Multithreaded => multithreaded;
 
-        private bool beatmapDependant = true;
+        bool beatmapDependant = true;
         public override bool BeatmapDependant => beatmapDependant;
 
         public ScriptedEffect(Project project, ScriptContainer<StoryboardObjectGenerator> scriptContainer, bool multithreaded = false) : base(project)
@@ -40,10 +41,7 @@ namespace StorybrewEditor.Storyboarding
             this.multithreaded = multithreaded;
         }
 
-        /// <summary>
-        /// Should only be called by Project.QueueEffectUpdate(Effect).
-        /// Doesn't run on the main thread.
-        /// </summary>
+        ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate"/>. Doesn't run on the main thread. </summary>
         public override void Update()
         {
             if (!scriptContainer.HasScript) return;
@@ -51,7 +49,7 @@ namespace StorybrewEditor.Storyboarding
             var newDependencyWatcher = new MultiFileWatcher();
             newDependencyWatcher.OnFileChanged += (sender, e) =>
             {
-                if (IsDisposed) return;
+                if (Disposed) return;
                 Refresh();
             };
 
@@ -78,10 +76,20 @@ namespace StorybrewEditor.Storyboarding
 
                 changeStatus(EffectStatus.Updating);
                 script.Generate(context);
-                foreach (var layer in context.EditorLayers)
-                    layer.PostProcess();
+                context.EditorLayers.ForEach(layer => layer.PostProcess());
 
                 success = true;
+            }
+            catch (PipeException e)
+            {
+                Debug.Print($"Script execution failed with pipe-related IOException, reloading {BaseName} ({e.Message})");
+                changeStatus(EffectStatus.ReloadPending);
+                Program.Schedule(() =>
+                {
+                    if (Project.Disposed) return;
+                    scriptContainer.ReloadScript();
+                });
+                return;
             }
             catch (RemotingException e)
             {
@@ -89,7 +97,7 @@ namespace StorybrewEditor.Storyboarding
                 changeStatus(EffectStatus.ReloadPending);
                 Program.Schedule(() =>
                 {
-                    if (Project.IsDisposed) return;
+                    if (Project.Disposed) return;
                     scriptContainer.ReloadScript();
                 });
                 return;
@@ -123,13 +131,14 @@ namespace StorybrewEditor.Storyboarding
                     }
                     else dependencyWatcher = newDependencyWatcher;
                 }
-                context.DisposeResources();
+                context.Dispose();
             }
+
             changeStatus(EffectStatus.Ready, null, context.Log);
 
             Program.Schedule(() =>
             {
-                if (IsDisposed)
+                if (Disposed)
                 {
                     newDependencyWatcher.Dispose();
                     return;
@@ -140,62 +149,51 @@ namespace StorybrewEditor.Storyboarding
                 dependencyWatcher?.Dispose();
                 dependencyWatcher = newDependencyWatcher;
 
-                if (Project.IsDisposed)
-                    return;
+                if (Project.Disposed) return;
 
                 UpdateLayers(context.EditorLayers);
             });
         }
 
-        private void scriptContainer_OnScriptChanged(object sender, EventArgs e)
-            => Refresh();
-
-        private void changeStatus(EffectStatus status, string message = null, string log = null)
+        void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
+        void changeStatus(EffectStatus status, string message = null, string log = null) => Program.Schedule(() =>
         {
-            Program.Schedule(() =>
+            var duration = statusStopwatch.ElapsedMilliseconds;
+            if (duration > 0) switch (this.status)
             {
-                var duration = statusStopwatch.ElapsedMilliseconds;
-                if (duration > 0)
-                    switch (this.status)
-                    {
-                        case EffectStatus.Ready:
-                        case EffectStatus.CompilationFailed:
-                        case EffectStatus.LoadingFailed:
-                        case EffectStatus.ExecutionFailed:
-                            break;
-                        default:
-                            Debug.Print($"{BaseName}'s {this.status} status took {duration}ms");
-                            break;
-                    }
+                case EffectStatus.Ready:
+                case EffectStatus.CompilationFailed:
+                case EffectStatus.LoadingFailed:
+                case EffectStatus.ExecutionFailed: break;
+                default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
+            }
 
-                this.status = status;
-                statusMessage = message ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(log))
-                {
-                    if (!string.IsNullOrWhiteSpace(statusMessage))
-                        statusMessage += "\n\n";
-                    statusMessage += $"Log:\n\n{log}";
-                }
-                RaiseChanged();
+            this.status = status;
+            statusMessage = message ?? "";
 
-                statusStopwatch.Restart();
-            });
-        }
+            if (!string.IsNullOrWhiteSpace(log))
+            {
+                if (!string.IsNullOrWhiteSpace(statusMessage)) statusMessage += "\n\n";
+                statusMessage += $"Log:\n\n{log}";
+            }
+            RaiseChanged();
 
-        private string getExecutionFailedMessage(Exception e)
+            statusStopwatch.Restart();
+        });
+        string getExecutionFailedMessage(Exception e)
         {
-            if (e is FileNotFoundException)
-                return $"File not found while {status}. Make sure this path is correct:\n{(e as FileNotFoundException).FileName}\n\nDetails:\n{e}";
+            if (e is FileNotFoundException exception)
+                return $"File not found while {status.ToString().ToLowerInvariant()}. Make sure this path is correct:\n{exception.FileName}\n\nDetails:\n{e}";
 
-            return $"Unexpected error during {status}:\n{e}";
+            return $"Unexpected error during {status.ToString().ToLowerInvariant()}:\n{e}";
         }
 
         #region IDisposable Support
 
-        private bool disposedValue = false;
+        bool disposed;
         protected override void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!disposed)
             {
                 if (disposing)
                 {
@@ -203,7 +201,7 @@ namespace StorybrewEditor.Storyboarding
                     scriptContainer.OnScriptChanged -= scriptContainer_OnScriptChanged;
                 }
                 dependencyWatcher = null;
-                disposedValue = true;
+                disposed = true;
             }
 
             base.Dispose(disposing);

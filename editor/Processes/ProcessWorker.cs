@@ -10,17 +10,17 @@ namespace StorybrewEditor.Processes
 {
     public static class ProcessWorker
     {
-        private static bool exit;
+        static bool exit;
 
         public static void Run(string identifier)
         {
-            //if (!Debugger.IsAttached) Debugger.Launch();
-
             Trace.WriteLine($"channel: {identifier}");
+
+            using (var wait = new ManualResetEventSlim())
             try
             {
                 var name = $"sbrew-worker-{identifier}";
-                var channel = new IpcServerChannel(name, name, new BinaryServerFormatterSinkProvider() { TypeFilterLevel = TypeFilterLevel.Full });
+                var channel = new IpcServerChannel(name, name, new BinaryServerFormatterSinkProvider { TypeFilterLevel = TypeFilterLevel.Full });
 
                 ChannelServices.RegisterChannel(channel, false);
                 try
@@ -31,7 +31,7 @@ namespace StorybrewEditor.Processes
                     while (!exit)
                     {
                         Program.RunScheduledTasks();
-                        Thread.Sleep(100);
+                        wait.WaitHandle.WaitOne(100);
                     }
                 }
                 finally

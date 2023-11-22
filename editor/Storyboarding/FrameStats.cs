@@ -1,12 +1,11 @@
-﻿namespace StorybrewEditor.Storyboarding
+﻿using StorybrewCommon.Storyboarding.CommandValues;
+
+namespace StorybrewEditor.Storyboarding
 {
     public class FrameStats
     {
-        public int SpriteCount;
-        public int CommandCount;
-        public int EffectiveCommandCount;
-        public bool IncompatibleCommands;
-        public bool OverlappedCommands;
-        public float ScreenFill;
+        public int SpriteCount, CommandCount, EffectiveCommandCount;
+        public bool IncompatibleCommands, OverlappedCommands;
+        public CommandDecimal ScreenFill = 0;
     }
 }

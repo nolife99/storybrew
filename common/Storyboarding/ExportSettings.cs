@@ -2,25 +2,17 @@
 
 namespace StorybrewCommon.Storyboarding
 {
+#pragma warning disable CS1591
     public class ExportSettings
     {
         public static readonly ExportSettings Default = new ExportSettings();
 
-        /// <summary>
-        /// Not compatible with Fallback!
-        /// </summary>
         public bool UseFloatForMove = true;
-        
-        /// <summary>
-        /// Not compatible with Stable!
-        /// </summary>
-        public bool UseFloatForTime = false;
+        public bool UseFloatForTime;
 
-        /// <summary>
-        /// Enables optimisation for OsbSprites that have a MaxCommandCount > 0
-        /// </summary>
+        ///<summary> Enables optimisation for sprites that have <see cref="OsbSprite.CommandSplitThreshold"/> > 0 </summary>
         public bool OptimiseSprites = true;
 
-        public readonly NumberFormatInfo NumberFormat = new CultureInfo(@"en-US", false).NumberFormat;
+        public readonly NumberFormatInfo NumberFormat = CultureInfo.InvariantCulture.NumberFormat;
     }
 }

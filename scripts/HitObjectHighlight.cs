@@ -1,55 +1,61 @@
 ﻿using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewScripts
 {
-    public class HitObjectHighlight : StoryboardObjectGenerator
+    class HitObjectHighlight : StoryboardObjectGenerator
     {
         [Group("Timing")]
         [Configurable] public int StartTime = 0;
         [Configurable] public int EndTime = 0;
-        [Configurable] public int BeatDivisor = 8;
+        [Configurable] public int BeatDivisor = 480;
 
         [Group("Sprite")]
         [Configurable] public string SpritePath = "sb/glow.png";
-        [Configurable] public double SpriteScale = 1;
-        [Configurable] public int FadeDuration = 200;
+        [Configurable] public float SpriteScale = 1;
+        [Configurable] public float FadeDuration = 1000;
+        [Configurable] public bool Additive = true;
 
-        public override void Generate()
+        protected override void Generate()
         {
-            var hitobjectLayer = GetLayer("");
-            foreach (var hitobject in Beatmap.HitObjects)
+            using (var pool = new SpritePool(GetLayer(""), SpritePath, Additive)) foreach (var hitobject in Beatmap.HitObjects)
             {
-                if ((StartTime != 0 || EndTime != 0) &&
-                    (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime))
+                if ((StartTime != 0 || EndTime != 0) && (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime))
                     continue;
 
-                var stackOffset = hitobject.StackOffset;
+                var hSprite = pool.Get(hitobject.StartTime, hitobject.EndTime + FadeDuration);
 
-                var hSprite = hitobjectLayer.CreateSprite(SpritePath, OsbOrigin.Centre, hitobject.Position + stackOffset);
-                hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale * 0.2);
+                var pos = hitobject.Position + hitobject.StackOffset;
+                if (hSprite.PositionAt(hitobject.StartTime) != pos && !(hitobject is OsuSlider)) hSprite.Move(hitobject.StartTime, pos);
+                hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale / 5);
                 hSprite.Fade(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, 1, 0);
-                hSprite.Additive(hitobject.StartTime, hitobject.EndTime + FadeDuration);
-                hSprite.Color(hitobject.StartTime, hitobject.Color);
+                if (hSprite.ColorAt(hitobject.StartTime) != hitobject.Color) hSprite.Color(hitobject.StartTime, hitobject.Color);
 
                 if (hitobject is OsuSlider)
                 {
+                    var keyframe = new KeyframedValue<CommandPosition>();
                     var timestep = Beatmap.GetTimingPointAt((int)hitobject.StartTime).BeatDuration / BeatDivisor;
                     var startTime = hitobject.StartTime;
+
                     while (true)
                     {
                         var endTime = startTime + timestep;
 
-                        var complete = hitobject.EndTime - endTime < 5;
+                        var complete = hitobject.EndTime - startTime < 5;
                         if (complete) endTime = hitobject.EndTime;
 
-                        var startPosition = hSprite.PositionAt(startTime);
-                        hSprite.Move(startTime, endTime, startPosition, hitobject.PositionAtTime(endTime) + stackOffset);
+                        var startPosition = hitobject.PositionAtTime(startTime);
+                        keyframe.Add(startTime, startPosition);
 
                         if (complete) break;
                         startTime += timestep;
                     }
+                    
+                    keyframe.Simplify2dKeyframes(1, v => v);
+                    keyframe.ForEachPair((sTime, eTime) => hSprite.Move(sTime.Time, eTime.Time, sTime.Value, eTime.Value));
                 }
             }
         }

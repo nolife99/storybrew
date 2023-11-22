@@ -6,13 +6,12 @@ using System.IO;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptContainerProcess<TScript> : ScriptContainerBase<TScript>
-        where TScript : Script
+    public class ScriptContainerProcess<TScript> : ScriptContainerBase<TScript> where TScript : Script
     {
-        private RemoteProcessWorkerContainer workerProcess;
+        RemoteProcessWorkerContainer workerProcess;
 
-        public ScriptContainerProcess(ScriptManager<TScript> manager, string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
-            : base(manager, scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies)
+        public ScriptContainerProcess(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
+            : base(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies)
         {
         }
 
@@ -22,7 +21,7 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Guid.NewGuid().ToString()}.dll");
+                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Guid.NewGuid()}.dll");
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 workerProcess?.Dispose();

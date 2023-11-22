@@ -1,16 +1,16 @@
-using OpenTK;
 using OpenTK.Graphics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Subtitles;
 using System;
+using System.Numerics;
 using System.Drawing;
 using System.IO;
 using System.Text.RegularExpressions;
 
 namespace StorybrewScripts
 {
-    public class Karaoke : StoryboardObjectGenerator
+    class Karaoke : StoryboardObjectGenerator
     {
         [Description("Path to a .sbv, .srt, .ass or .ssa file in your project's folder.\nThese can be made with a tool like aegisub.")]
         [Configurable] public string SubtitlesPath = "lyrics.srt";
@@ -24,10 +24,10 @@ namespace StorybrewScripts
         [Description("The Size of the font.\nIncreasing the font size creates larger images.")]
         [Configurable] public int FontSize = 26;
         [Description("The Scale of the font.\nIncreasing the font scale does not creates larger images, but the result may be blurrier.")]
-        [Configurable] public float FontScale = 0.5f;
+        [Configurable] public float FontScale = .5f;
         [Configurable] public Color4 FontColor = Color4.White;
         [Configurable] public FontStyle FontStyle = FontStyle.Regular;
-        
+
         [Group("Outline")]
         [Configurable] public int OutlineThickness = 3;
         [Configurable] public Color4 OutlineColor = new Color4(50, 50, 50, 200);
@@ -48,9 +48,9 @@ namespace StorybrewScripts
         [Configurable] public Vector2 Padding = Vector2.Zero;
         [Configurable] public OsbOrigin Origin = OsbOrigin.Centre;
 
-        public override void Generate()
+        protected override void Generate()
         {
-            var font = LoadFont(SpritesPath, new FontDescription()
+            var font = LoadFont(SpritesPath, new FontDescription
             {
                 FontPath = FontName,
                 FontSize = FontSize,
@@ -58,29 +58,29 @@ namespace StorybrewScripts
                 Padding = Padding,
                 FontStyle = FontStyle,
                 TrimTransparency = TrimTransparency,
-                EffectsOnly = EffectsOnly,
+                EffectsOnly = EffectsOnly
             },
-            new FontGlow()
+            new FontGlow
             {
                 Radius = GlowAdditive ? 0 : GlowRadius,
-                Color = GlowColor,
+                Color = GlowColor
             },
-            new FontOutline()
+            new FontOutline
             {
                 Thickness = OutlineThickness,
-                Color = OutlineColor,
+                Color = OutlineColor
             },
-            new FontShadow()
+            new FontShadow
             {
                 Thickness = ShadowThickness,
-                Color = ShadowColor,
+                Color = ShadowColor
             });
 
             var subtitles = LoadSubtitles(SubtitlesPath);
 
             if (GlowRadius > 0 && GlowAdditive)
             {
-                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new FontDescription()
+                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new FontDescription
                 {
                     FontPath = FontName,
                     FontSize = FontSize,
@@ -88,19 +88,18 @@ namespace StorybrewScripts
                     Padding = Padding,
                     FontStyle = FontStyle,
                     TrimTransparency = TrimTransparency,
-                    EffectsOnly = true,
+                    EffectsOnly = true
                 },
                 new FontGlow()
                 {
                     Radius = GlowRadius,
-                    Color = GlowColor,
+                    Color = GlowColor
                 });
                 generateLyrics(glowFont, subtitles, "glow", true);
             }
             generateLyrics(font, subtitles, "", false);
         }
-
-        public void generateLyrics(FontGenerator font, SubtitleSet subtitles, string layerName, bool additive)
+        void generateLyrics(FontGenerator font, SubtitleSet subtitles, string layerName, bool additive)
         {
             var regex = new Regex(@"({\\k(\d+)})?([^{]+)");
 
@@ -126,7 +125,7 @@ namespace StorybrewScripts
                     }
 
                     var karaokeStartTime = subtitleLine.StartTime;
-                    var letterX = 320 - lineWidth * 0.5f;
+                    var letterX = 320 - lineWidth * .5f;
                     foreach (Match match in matches)
                     {
                         var durationString = match.Groups[2].Value;
@@ -140,17 +139,15 @@ namespace StorybrewScripts
                             var texture = font.GetTexture(letter.ToString());
                             if (!texture.IsEmpty)
                             {
-                                var position = new Vector2(letterX, letterY)
-                                    + texture.OffsetFor(Origin) * FontScale;
+                                var position = new Vector2(letterX, letterY) + texture.OffsetFor(Origin) * FontScale;
 
                                 var sprite = layer.CreateSprite(texture.Path, Origin, position);
                                 sprite.Scale(subtitleLine.StartTime, FontScale);
                                 sprite.Fade(subtitleLine.StartTime - 200, subtitleLine.StartTime, 0, 1);
                                 sprite.Fade(subtitleLine.EndTime - 200, subtitleLine.EndTime, 1, 0);
-                                if (additive)
-                                    sprite.Additive(subtitleLine.StartTime - 200, subtitleLine.EndTime);
+                                if (additive) sprite.Additive(subtitleLine.StartTime - 200, subtitleLine.EndTime);
 
-                                applyKaraoke(sprite, subtitleLine, karaokeStartTime, karaokeEndTime);
+                                applyKaraoke(sprite, karaokeStartTime, karaokeEndTime);
                             }
                             letterX += texture.BaseWidth * FontScale;
                         }
@@ -160,8 +157,7 @@ namespace StorybrewScripts
                 }
             }
         }
-
-        private void applyKaraoke(OsbSprite sprite, SubtitleLine subtitleLine, double startTime, double endTime)
+        void applyKaraoke(OsbSprite sprite, double startTime, double endTime)
         {
             var before = new Color4(.2f, .2f, .2f, 1f);
             var after = new Color4(.6f, .6f, .6f, 1f);

@@ -1,59 +1,62 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StorybrewCommon.Curves
 {
-    [Serializable]
-    public class CompositeCurve : Curve
+    ///<summary> Represents a composite curve that is constructed from multiple curves. </summary>
+    [Serializable] public class CompositeCurve : Curve
     {
-        private readonly List<Curve> curves;
+        readonly Curve[] curves;
+
+        ///<summary> Returns a readonly list of curves that makes up the composite curve. </summary>
         public IReadOnlyList<Curve> Curves => curves;
 
-        public Vector2 StartPosition => curves[0].StartPosition;
-        public Vector2 EndPosition => curves[curves.Count - 1].EndPosition;
+        ///<inheritdoc/>
+        public CommandPosition StartPosition => curves[0].StartPosition;
 
+        ///<inheritdoc/>
+        public CommandPosition EndPosition => curves[curves.Length - 1].EndPosition;
+
+        ///<inheritdoc/>
         public double Length
         {
             get
             {
-                var length = 0.0;
-                foreach (var curve in curves)
-                    length += curve.Length;
+                var length = curves[0].Length;
+                for (var i = 1; i < curves.Length; ++i) length += curves[i].Length;
                 return length;
             }
         }
 
-        public CompositeCurve(List<Curve> curves)
-        {
-            this.curves = new List<Curve>(curves);
-        }
+        ///<summary> Constructs a composite curve from a list of curves <paramref name="curves"/>. </summary>
+        public CompositeCurve(IEnumerable<Curve> curves) => this.curves = (curves as Curve[]) ?? curves.ToArray();
 
-        public Vector2 PositionAtDistance(double distance)
+        ///<inheritdoc/>
+        public CommandPosition PositionAtDistance(double distance)
         {
-            foreach (var curve in curves)
+            for (var i = 0; i < curves.Length; ++i)
             {
-                if (distance < curve.Length)
-                    return curve.PositionAtDistance(distance);
-
+                var curve = curves[i];
+                if (distance < curve.Length) return curve.PositionAtDistance(distance);
                 distance -= curve.Length;
             }
-            return curves[curves.Count - 1].EndPosition;
+            return curves[curves.Length - 1].EndPosition;
         }
 
-        public Vector2 PositionAtDelta(double delta)
+        ///<inheritdoc/>
+        public CommandPosition PositionAtDelta(double delta)
         {
             var length = Length;
 
             var d = delta;
-            for (var curveIndex = 0; curveIndex < curves.Count; ++curveIndex)
+            for (var i = 0; i < curves.Length; ++i)
             {
-                var curve = curves[curveIndex];
+                var curve = curves[i];
                 var curveDelta = curve.Length / length;
 
-                if (d < curveDelta)
-                    return curve.PositionAtDelta(d / curveDelta);
-
+                if (d < curveDelta) return curve.PositionAtDelta(d / curveDelta);
                 d -= curveDelta;
             }
             return EndPosition;
