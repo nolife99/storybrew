@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Version>1.2.0</Version>
-	<AssemblyName>Tiny</AssemblyName>
+    <AssemblyName>Tiny</AssemblyName>
     <Authors>Damnae</Authors>
     <Description>Lightweight yaml subset parser/writer.</Description>
     <Copyright>Damnae 2021</Copyright>
@@ -13,26 +13,26 @@
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
-	
+
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-  	<DebugType>embedded</DebugType>
-  	<Optimize>true</Optimize>
+    <DebugType>embedded</DebugType>
+    <Optimize>true</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-  	<DebugType>embedded</DebugType>
-  	<Optimize>true</Optimize>
+    <DebugType>embedded</DebugType>
+    <Optimize>true</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-  	<Optimize>True</Optimize>
-  	<DebugType>embedded</DebugType>
+    <Optimize>True</Optimize>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Optimize>True</Optimize>
     <DebugType>embedded</DebugType>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-  	<DebugType>embedded</DebugType>
-  	<Optimize>True</Optimize>
+    <DebugType>embedded</DebugType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebugType>embedded</DebugType>

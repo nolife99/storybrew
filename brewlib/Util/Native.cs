@@ -12,14 +12,14 @@ namespace BrewLib.Util
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [LibraryImport("kernel32")]
-        private static partial void RtlCopyMemory(IntPtr dest, IntPtr src, uint count);
+        private static partial void RtlCopyMemory(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [LibraryImport("kernel32")]
-        private static partial void RtlMoveMemory(IntPtr dest, IntPtr src, uint count);
+        private static partial void RtlMoveMemory(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CopyMemory(IntPtr source, IntPtr destination, int count)
+        public static bool CopyMemory(nint source, nint destination, int count)
         {
             if (Environment.Is64BitProcess)
             {
@@ -41,6 +41,7 @@ namespace BrewLib.Util
                 return true;
             }
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static nint AddrOfPinnedArray(this Array arr) => (nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
 

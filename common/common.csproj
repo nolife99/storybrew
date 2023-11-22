@@ -11,7 +11,7 @@
     <Title>storybrew common</Title>
     <Copyright>Copyright © Damnae 2016</Copyright>
     <Version>1.1</Version>
-	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
@@ -43,7 +43,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\brewlib\brewlib.csproj" />
-	<ProjectReference Include="..\tiny\tiny.csproj" />
+    <ProjectReference Include="..\tiny\tiny.csproj" />
   </ItemGroup>
 
 </Project>

@@ -43,9 +43,9 @@
     <PackageReference Include="ppy.ManagedBass.Fx" Version="2022.1216.0" />
     <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />
   </ItemGroup>
-	
+
   <ItemGroup>
-	<ProjectReference Include="..\tiny\tiny.csproj" />
+    <ProjectReference Include="..\tiny\tiny.csproj" />
   </ItemGroup>
 
 </Project>
