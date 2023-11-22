@@ -8,17 +8,16 @@ namespace StorybrewEditor.Mapset
 {
     public class MapsetManager : IDisposable
     {
-        private readonly string path;
-        private readonly bool logLoadingExceptions;
+        readonly string path;
+        readonly bool logLoadingExceptions;
 
-        private readonly List<EditorBeatmap> beatmaps = new List<EditorBeatmap>();
+        readonly HashSet<EditorBeatmap> beatmaps = new HashSet<EditorBeatmap>();
         public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
         public int BeatmapCount => beatmaps.Count;
 
         public MapsetManager(string path, bool logLoadingExceptions)
         {
-            if (string.IsNullOrWhiteSpace(path))
-                throw new ArgumentException("Mapset path cannot be empty", nameof(path));
+            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("Mapset path cannot be empty", nameof(path));
 
             this.path = path;
             this.logLoadingExceptions = logLoadingExceptions;
@@ -29,43 +28,43 @@ namespace StorybrewEditor.Mapset
 
         #region Beatmaps
 
-        private void loadBeatmaps()
+        void loadBeatmaps()
         {
-            if (!Directory.Exists(path))
-                return;
+            if (!Directory.Exists(path)) return;
 
-            foreach (var beatmapPath in Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly))
-                try
-                {
-                    beatmaps.Add(EditorBeatmap.Load(beatmapPath));
-                }
-                catch (Exception e)
-                {
-                    if (logLoadingExceptions)
-                        Trace.WriteLine($"Failed to load beatmap: {e}");
-                    else throw e;
-                }
+            var maps = Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly);
+            Array.Sort(maps);
+            foreach (var beatmapPath in maps) try
+            {
+                beatmaps.Add(EditorBeatmap.Load(beatmapPath));
+            }
+            catch (Exception e)
+            {
+                if (logLoadingExceptions) Trace.WriteLine($"Failed to load beatmap: {e}");
+                else throw;
+            }
         }
 
         #endregion
 
         #region Events
 
-        private FileSystemWatcher fileWatcher;
-        private readonly ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
+        FileSystemWatcher fileWatcher;
+        readonly ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
 
         public event FileSystemEventHandler OnFileChanged;
 
-        private void initializeMapsetWatcher()
+        void initializeMapsetWatcher()
         {
-            if (!Directory.Exists(path))
-                return;
+            if (!Directory.Exists(path)) return;
 
-            fileWatcher = new FileSystemWatcher()
+            fileWatcher = new FileSystemWatcher
             {
                 Path = path,
                 IncludeSubdirectories = true,
+                NotifyFilter = NotifyFilters.Size
             };
+
             fileWatcher.Created += mapsetFileWatcher_Changed;
             fileWatcher.Changed += mapsetFileWatcher_Changed;
             fileWatcher.Renamed += mapsetFileWatcher_Changed;
@@ -73,41 +72,28 @@ namespace StorybrewEditor.Mapset
             fileWatcher.EnableRaisingEvents = true;
             Trace.WriteLine($"Watching (mapset): {path}");
         }
-
-        private void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e)
-            => scheduler.Schedule(e.FullPath, (key) =>
-            {
-                if (disposedValue) return;
-
-                if (Path.GetExtension(e.Name) == ".osu")
-                    Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
-
-                OnFileChanged?.Invoke(sender, e);
-            });
+        void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath, key =>
+        {
+            if (Path.GetExtension(e.Name) == ".osu") Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
+            OnFileChanged?.Invoke(sender, e);
+        });
 
         #endregion
 
         #region IDisposable Support
 
-        private bool disposedValue = false;
-
+        bool disposed;
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!disposed)
             {
-                if (disposing)
-                {
-                    fileWatcher?.Dispose();
-                }
+                if (disposing) fileWatcher?.Dispose();
+                beatmaps.Clear();
                 fileWatcher = null;
-                disposedValue = true;
+                disposed = true;
             }
         }
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         #endregion
     }

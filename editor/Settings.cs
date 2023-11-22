@@ -1,6 +1,7 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
 using StorybrewCommon.Util;
+using StorybrewEditor.Storyboarding;
 using System;
 using System.Diagnostics;
 using System.Globalization;
@@ -12,18 +13,13 @@ namespace StorybrewEditor
     {
         public const string DefaultPath = "settings.cfg";
 
-        public readonly Setting<string> Id = new Setting<string>(Guid.NewGuid().ToString("N"));
-        public readonly Setting<int> FrameRate = new Setting<int>(0);
-        public readonly Setting<int> UpdateRate = new Setting<int>(60);
-        public readonly Setting<float> Volume = new Setting<float>(0.5f);
-        public readonly Setting<bool> FitStoryboard = new Setting<bool>(false);
-        public readonly Setting<bool> ShowStats = new Setting<bool>(false);
-        public readonly Setting<bool> VerboseVsCode = new Setting<bool>(false);
-        public readonly Setting<bool> UseRoslyn = new Setting<bool>(true);
-        public readonly Setting<int> EffectThreads = new Setting<int>(0);
-        public readonly Setting<string> TimeCopyFormat = new Setting<string>(@"h\:mm\:ss\.ff");
+        public readonly Setting<string> Id = new Setting<string>(Guid.NewGuid().ToString("N")), TimeCopyFormat = new Setting<string>(@"h\:mm\:ss\.ff");
+        public readonly Setting<int> FrameRate = new Setting<int>(0), UpdateRate = new Setting<int>(60), EffectThreads = new Setting<int>(0);
+        public readonly Setting<float> Volume = new Setting<float>(.5f);
+        public readonly Setting<bool> FitStoryboard = new Setting<bool>(false), ShowStats = new Setting<bool>(true),
+            VerboseVsCode = new Setting<bool>(false), UseRoslyn = new Setting<bool>(false);
 
-        private readonly string path;
+        readonly string path;
 
         public Settings(string path = DefaultPath)
         {
@@ -40,24 +36,21 @@ namespace StorybrewEditor
             var type = GetType();
             try
             {
-                using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var reader = new StreamReader(stream, System.Text.Encoding.UTF8))
-                    reader.ParseKeyValueSection((key, value) =>
-                    {
-                        var field = type.GetField(key);
-                        if (field == null || !field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
-                            return;
+                using (var reader = File.OpenText(path)) reader.ParseKeyValueSection((key, value) =>
+                {
+                    var field = type.GetField(key);
+                    if (field is null || !field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
 
-                        try
-                        {
-                            var setting = (Setting)field.GetValue(this);
-                            setting.Set(value);
-                        }
-                        catch (Exception e)
-                        {
-                            Trace.WriteLine($"Failed to load setting {key} with value {value}: {e}");
-                        }
-                    });
+                    try
+                    {
+                        var setting = (Setting)field.GetValue(this);
+                        setting.Set(value);
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.WriteLine($"Failed to load setting {key} with value {value}: {e}");
+                    }
+                });
             }
             catch (Exception e)
             {
@@ -65,18 +58,15 @@ namespace StorybrewEditor
                 Save();
             }
         }
-
         public void Save()
         {
             Trace.WriteLine($"Saving settings at '{path}'");
 
-            using (var stream = new SafeWriteStream(path))
-            using (var writer = new StreamWriter(stream, System.Text.Encoding.UTF8))
+            using (var stream = new SafeWriteStream(path)) using (var writer = new StreamWriter(stream, Project.Encoding))
             {
                 foreach (var field in GetType().GetFields())
                 {
-                    if (!field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
-                        continue;
+                    if (!field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) continue;
 
                     var setting = (Setting)field.GetValue(this);
                     writer.WriteLine($"{field.Name}: {setting}");
@@ -85,22 +75,16 @@ namespace StorybrewEditor
             }
         }
     }
-
     public interface Setting
     {
         void Set(object value);
     }
-
     public class Setting<T> : Setting
     {
-        private T value;
-
+        T value;
         public event EventHandler OnValueChanged;
 
-        public Setting(T defaultValue)
-        {
-            value = defaultValue;
-        }
+        public Setting(T defaultValue) => value = defaultValue;
 
         public void Set(T value)
         {
@@ -117,7 +101,7 @@ namespace StorybrewEditor
             OnValueChanged += handler = (sender, e) =>
             {
                 field.FieldValue = value;
-                changedAction();
+                changedAction?.Invoke();
             };
             field.OnDisposed += (sender, e) => OnValueChanged -= handler;
             handler(this, EventArgs.Empty);
@@ -127,13 +111,10 @@ namespace StorybrewEditor
 
         public override string ToString()
         {
-            if (typeof(T).GetInterface(nameof(IConvertible)) != null)
-                return Convert.ToString(value, CultureInfo.InvariantCulture);
-
+            if (typeof(T).GetInterface(nameof(IConvertible)) != null) return Convert.ToString(value, CultureInfo.InvariantCulture);
             return value.ToString();
         }
     }
-
     public static class SettingsExtensions
     {
         public static void BindToSetting<T>(this Button button, Setting<T> setting, Action changedAction)
@@ -142,8 +123,8 @@ namespace StorybrewEditor
             EventHandler handler;
             setting.OnValueChanged += handler = (sender, e) =>
             {
-                button.Checked = (bool)Convert.ChangeType((T)setting, typeof(bool));
-                changedAction();
+                button.Checked = (bool)Convert.ChangeType((T)setting, typeof(bool), CultureInfo.InvariantCulture);
+                changedAction?.Invoke();
             };
             button.OnDisposed += (sender, e) => setting.OnValueChanged -= handler;
             handler(button, EventArgs.Empty);

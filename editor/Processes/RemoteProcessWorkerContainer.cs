@@ -11,36 +11,35 @@ namespace StorybrewEditor.Processes
 {
     public class RemoteProcessWorkerContainer : IDisposable
     {
-        private IChannel channel;
-        private Process process;
+        IChannel channel;
+        Process process;
 
         public RemoteProcessWorker Worker { get; private set; }
 
         public RemoteProcessWorkerContainer()
         {
-            var identifier = $"{Guid.NewGuid().ToString()}";
+            var identifier = Guid.NewGuid().ToString();
             var workerUrl = $"ipc://sbrew-worker-{identifier}/worker";
 
-            channel = new IpcChannel(
-                new Hashtable()
-                {
-                    ["name"] = $"sbrew-{identifier}",
-                    ["portName"] = $"sbrew-{identifier}",
-                },
-                new BinaryClientFormatterSinkProvider(),
-                null
-            );
+            channel = new IpcChannel(new Hashtable
+            {
+                ["name"] = $"sbrew-{identifier}",
+                ["portName"] = $"sbrew-{identifier}",
+            },
+            new BinaryClientFormatterSinkProvider(), null);
+
             ChannelServices.RegisterChannel(channel, false);
 
             startProcess(identifier);
             Worker = retrieveWorker(workerUrl);
         }
 
-        private void startProcess(string identifier)
+        void startProcess(string identifier)
         {
             var executablePath = Assembly.GetExecutingAssembly().Location;
             var workingDirectory = Path.GetDirectoryName(executablePath);
-            process = new Process()
+
+            process = new Process
             {
                 StartInfo = new ProcessStartInfo(executablePath, $"worker \"{identifier}\"")
                 {
@@ -50,17 +49,16 @@ namespace StorybrewEditor.Processes
             process.Start();
         }
 
-        private RemoteProcessWorker retrieveWorker(string workerUrl)
+        static RemoteProcessWorker retrieveWorker(string workerUrl)
         {
+            using (var wait = new ManualResetEventSlim())
             while (true)
             {
-                Thread.Sleep(250);
+                wait.WaitHandle.WaitOne(250);
                 try
                 {
                     Trace.WriteLine($"Retrieving {workerUrl}");
-                    var worker = (RemoteProcessWorker)Activator.GetObject(typeof(RemoteProcessWorker), workerUrl);
-                    worker.CheckIpc();
-                    return worker;
+                    return (RemoteProcessWorker)Activator.GetObject(typeof(RemoteProcessWorker), workerUrl);
                 }
                 catch (Exception e)
                 {
@@ -71,8 +69,7 @@ namespace StorybrewEditor.Processes
 
         #region IDisposable Support
 
-        private bool disposedValue = false;
-
+        bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
@@ -87,11 +84,13 @@ namespace StorybrewEditor.Processes
                     {
                         Trace.WriteLine($"Failed to dispose the worker: {e}");
                     }
-                    if (!process.WaitForExit(3000))
-                        process.Kill();
+
+                    if (!process.WaitForExit(3000)) process.Kill();
                     ChannelServices.UnregisterChannel(channel);
                 }
+
                 Worker = null;
+                process.Close();
                 process = null;
                 channel = null;
                 disposedValue = true;

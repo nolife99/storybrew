@@ -2,14 +2,12 @@
 
 namespace StorybrewCommon.Subtitles
 {
-    public class SubtitleSet
+#pragma warning disable CS1591
+    public readonly struct SubtitleSet
     {
-        private readonly List<SubtitleLine> lines = new List<SubtitleLine>();
+        readonly HashSet<SubtitleLine> lines;
         public IEnumerable<SubtitleLine> Lines => lines;
 
-        public SubtitleSet(IEnumerable<SubtitleLine> lines)
-        {
-            this.lines = new List<SubtitleLine>(lines);
-        }
+        public SubtitleSet(IEnumerable<SubtitleLine> lines) => this.lines = new HashSet<SubtitleLine>(lines);
     }
 }

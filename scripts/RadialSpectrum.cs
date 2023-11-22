@@ -1,16 +1,15 @@
-﻿using OpenTK;
-using StorybrewCommon.Animations;
+﻿using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using System.Numerics;
 using System;
 using System.Linq;
+using StorybrewCommon.OpenTKUtil;
 
 namespace StorybrewScripts
 {
-    /// <summary>
-    /// An example of a radial spectrum effect, using movement instead of scaling.
-    /// </summary>
-    public class RadialSpectrum : StoryboardObjectGenerator
+    ///<summary> An example of a radial spectrum effect, using movement instead of scaling. </summary>
+    class RadialSpectrum : StoryboardObjectGenerator
     {
         [Group("Timing")]
         [Configurable] public int StartTime = 0;
@@ -35,7 +34,7 @@ namespace StorybrewScripts
         [Configurable] public int CommandDecimals = 0;
         [Configurable] public int FrequencyCutOff = 16000;
 
-        public override void Generate()
+        protected override void Generate()
         {
             if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() != null)
             {
@@ -48,28 +47,25 @@ namespace StorybrewScripts
             var bitmap = GetMapsetBitmap(SpritePath);
 
             var positionKeyframes = new KeyframedValue<Vector2>[BarCount];
-            for (var i = 0; i < BarCount; i++)
-                positionKeyframes[i] = new KeyframedValue<Vector2>(null);
+            for (var i = 0; i < BarCount; ++i) positionKeyframes[i] = new KeyframedValue<Vector2>();
 
-            var fftTimeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
-            var fftOffset = fftTimeStep * 0.2;
-            for (var time = (double)StartTime; time < EndTime; time += fftTimeStep)
+            var timeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
+            var offset = timeStep * .2;
+            for (double time = StartTime; time < EndTime; time += timeStep)
             {
-                var fft = GetFft(time + fftOffset, BarCount, null, FftEasing, FrequencyCutOff);
-                for (var i = 0; i < BarCount; i++)
+                var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
+                for (var i = 0; i < BarCount; ++i)
                 {
                     var height = Radius + (float)Math.Log10(1 + fft[i] * LogScale) * Scale;
+                    var angle = i * MathHelper.TwoPi / BarCount;
 
-                    var angle = i * (Math.PI * 2) / BarCount;
-                    var offset = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * height;
-
-                    positionKeyframes[i].Add(time, Position + offset);
+                    positionKeyframes[i].Add(time, Position + new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * height);
                 }
             }
 
             var layer = GetLayer("Spectrum");
-            var barScale = ((Math.PI * 2 * Radius) / BarCount) / bitmap.Width;
-            for (var i = 0; i < BarCount; i++)
+            var barScale = Math.PI * 2 * Radius / BarCount / bitmap.Width;
+            for (var i = 0; i < BarCount; ++i)
             {
                 var keyframes = positionKeyframes[i];
                 keyframes.Simplify2dKeyframes(Tolerance, h => h);
@@ -78,25 +74,20 @@ namespace StorybrewScripts
                 var defaultPosition = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * Radius;
 
                 var bar = layer.CreateSprite(SpritePath, SpriteOrigin);
-                bar.CommandSplitThreshold = 300;
-                bar.ColorHsb(StartTime, (i * 360.0 / BarCount) + Random(-10.0, 10.0), 0.6 + Random(0.4), 1);
-                if (SpriteScale.X == SpriteScale.Y)
-                    bar.Scale(StartTime, barScale * SpriteScale.X);
+                bar.ColorHsb(StartTime, i * 360f / BarCount + Random(-10f, 10), .6f + Random(.4f), 1);
+                if (SpriteScale.X == SpriteScale.Y) bar.Scale(StartTime, barScale * SpriteScale.X);
                 else bar.ScaleVec(StartTime, barScale * SpriteScale.X, barScale * SpriteScale.Y);
                 bar.Rotate(StartTime, angle);
-                bar.Additive(StartTime, EndTime);
+                bar.Additive(StartTime);
 
                 var hasMove = false;
-                keyframes.ForEachPair(
-                    (start, end) =>
-                    {
-                        hasMove = true;
-                        bar.Move(start.Time, end.Time, start.Value, end.Value);
-                    },
-                    defaultPosition,
-                    s => new Vector2((float)Math.Round(s.X, CommandDecimals), (float)Math.Round(s.Y, CommandDecimals))
-                );
-                if (!hasMove) bar.Move(StartTime, defaultPosition);
+                keyframes.ForEachPair((start, end) =>
+                {
+                    hasMove = true;
+                    bar.Move(start.Time, end.Time, start.Value, end.Value);
+                }, defaultPosition, s => new Vector2((float)Math.Round(s.X, CommandDecimals), (float)Math.Round(s.Y, CommandDecimals)));
+
+                if (!hasMove) bar.Move(EndTime, defaultPosition);
             }
         }
     }

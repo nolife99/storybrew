@@ -9,18 +9,12 @@ namespace StorybrewEditor
 {
     public static class Updater
     {
-        private static readonly string[] ignoredPaths = { ".vscode/", "cache/", "logs/", "settings.cfg" };
-        private static readonly string[] readOnlyPaths = { "scripts/" };
+        static readonly string[] ignoredPaths = { ".vscode/", "cache/", "logs/", "settings.cfg" }, readOnlyPaths = { "scripts/" };
+        public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update", FirstRunPath = "firstrun";
 
-        public const string UpdateArchivePath = "cache/net/update";
-        public const string UpdateFolderPath = "cache/update";
-        public const string FirstRunPath = "firstrun";
+        static readonly Version readOnlyVersion = new Version(1, 8);
 
-        private static readonly Version readOnlyVersion = new Version(1, 8);
-
-        public static void OpenLastestReleasePage()
-            => Process.Start($"https://github.com/{Program.Repository}/releases/latest");
-
+        public static void OpenLastestReleasePage() => Process.Start($"https://github.com/{Program.Repository}/releases/latest");
         public static void Update(string destinationFolder, Version fromVersion)
         {
             Trace.WriteLine($"Updating from version {fromVersion} to {Program.Version}");
@@ -38,7 +32,6 @@ namespace StorybrewEditor
                 Program.Report("updatefail", e);
                 return;
             }
-
             try
             {
                 updateData(destinationFolder, fromVersion);
@@ -50,18 +43,16 @@ namespace StorybrewEditor
                 Program.Report("updatefail", e);
             }
 
-            // Start the updated process
             var relativeProcessPath = PathHelper.GetRelativePath(sourceFolder, updaterPath);
             var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
             Trace.WriteLine($"\nUpdate complete, starting {processPath}");
-            Process.Start(new ProcessStartInfo()
+            Process.Start(new ProcessStartInfo
             {
                 FileName = processPath,
-                WorkingDirectory = destinationFolder,
+                WorkingDirectory = destinationFolder
             });
         }
-
         public static void NotifyEditorRun()
         {
             if (File.Exists(FirstRunPath))
@@ -70,17 +61,14 @@ namespace StorybrewEditor
                 firstRun();
             }
 
-            if (File.Exists(UpdateArchivePath))
-                Misc.WithRetries(() => File.Delete(UpdateArchivePath), canThrow: false);
-            if (Directory.Exists(UpdateFolderPath))
-                Misc.WithRetries(() => Directory.Delete(UpdateFolderPath, true), canThrow: false);
+            if (File.Exists(UpdateArchivePath)) Misc.WithRetries(() => File.Delete(UpdateArchivePath), canThrow: false);
+            if (Directory.Exists(UpdateFolderPath)) Misc.WithRetries(() => Directory.Delete(UpdateFolderPath, true), canThrow: false);
         }
-
-        private static void updateData(string destinationFolder, Version fromVersion)
+        static void updateData(string destinationFolder, Version fromVersion)
         {
             var settings = new Settings(Path.Combine(destinationFolder, Settings.DefaultPath));
             if (fromVersion < new Version(1, 53)) settings.UseRoslyn.Set(true);
-            if (fromVersion < new Version(1, 70)) settings.Volume.Set(Math.Pow(settings.Volume, 1 / 4f));
+            if (fromVersion < new Version(1, 70)) settings.Volume.Set(Math.Pow(settings.Volume, .25));
             settings.Save();
 
             if (fromVersion < new Version(1, 57))
@@ -102,8 +90,7 @@ namespace StorybrewEditor
                 }
             }
         }
-
-        private static void firstRun()
+        static void firstRun()
         {
             Trace.WriteLine("First run\n");
 
@@ -114,12 +101,10 @@ namespace StorybrewEditor
                 Trace.WriteLine($"Renaming {exeFilename} to {newFilename}");
                 Misc.WithRetries(() => File.Move(exeFilename, newFilename), canThrow: false);
             }
-
             foreach (var scriptFilename in Directory.GetFiles("scripts", "*.cs", SearchOption.TopDirectoryOnly))
                 File.SetAttributes(scriptFilename, FileAttributes.ReadOnly);
         }
-
-        private static void replaceFiles(string sourceFolder, string destinationFolder, Version fromVersion)
+        static void replaceFiles(string sourceFolder, string destinationFolder, Version fromVersion)
         {
             Trace.WriteLine($"\nCopying files from {sourceFolder} to {destinationFolder}");
             foreach (var sourceFilename in Directory.GetFiles(sourceFolder, "*", SearchOption.AllDirectories))
@@ -134,19 +119,16 @@ namespace StorybrewEditor
                 var readOnly = matchFilter(relativeFilename, readOnlyPaths);
 
                 var destinationFilename = Path.Combine(destinationFolder, relativeFilename);
-                if (Path.GetExtension(destinationFilename) == ".exe_")
-                    destinationFilename = Path.ChangeExtension(destinationFilename, ".exe");
+                if (Path.GetExtension(destinationFilename) == ".exe_") destinationFilename = Path.ChangeExtension(destinationFilename, ".exe");
 
                 Trace.WriteLine($"  Copying {relativeFilename} to {destinationFilename}");
                 replaceFile(sourceFilename, destinationFilename, readOnly, fromVersion);
             }
         }
-
-        private static void replaceFile(string sourceFilename, string destinationFilename, bool readOnly, Version fromVersion)
+        static void replaceFile(string sourceFilename, string destinationFilename, bool readOnly, Version fromVersion)
         {
             var destinationFolder = Path.GetDirectoryName(destinationFilename);
-            if (!Directory.Exists(destinationFolder))
-                Directory.CreateDirectory(destinationFolder);
+            if (!Directory.Exists(destinationFolder)) Directory.CreateDirectory(destinationFolder);
 
             if (readOnly && File.Exists(destinationFilename))
             {
@@ -166,12 +148,9 @@ namespace StorybrewEditor
             Misc.WithRetries(() => File.Copy(sourceFilename, destinationFilename, true), 5000);
             if (readOnly) File.SetAttributes(destinationFilename, FileAttributes.ReadOnly);
         }
-
-        private static bool matchFilter(string filename, string[] filters)
+        static bool matchFilter(string filename, string[] filters)
         {
-            foreach (var filter in filters)
-                if (filename.StartsWith(filter))
-                    return true;
+            foreach (var filter in filters) if (filename.StartsWith(filter)) return true;
             return false;
         }
     }

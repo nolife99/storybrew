@@ -1,30 +1,51 @@
-﻿using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Subtitles
 {
+    ///<summary> A font gradient effect. </summary>
     public class FontGradient : FontEffect
     {
-        public Vector2 Offset = new Vector2(0, 0);
-        public Vector2 Size = new Vector2(0, 24);
-        public Color4 Color = new Color4(255, 0, 0, 0);
-        public WrapMode WrapMode = WrapMode.TileFlipXY;
+        ///<summary> The gradient offset of the effect. </summary>
+        public readonly PointF Offset;
 
+        ///<summary> The relative size of the gradient. </summary>
+        public readonly SizeF Size;
+
+        ///<summary> The color tinting of the gradient. </summary>
+        public readonly FontColor Color;
+
+        ///<summary> How the gradient is tiled when it is smaller than the area being filled. </summary>
+        public readonly WrapMode WrapMode;
+
+        ///<inheritdoc/>
         public bool Overlay => true;
-        public Vector2 Measure() => Vector2.Zero;
 
+        ///<inheritdoc/>
+        public SizeF Measure => default;
+
+        ///<summary> Creates a new <see cref="FontGradient"/> with a descriptor about a smooth gradient effect. </summary>
+        ///<param name="offset"> The gradient offset of the effect. </param>
+        ///<param name="size"> The relative size of the gradient. </param>
+        ///<param name="color"> The color tinting of the gradient. </param>
+        ///<param name="wrapMode"> How the gradient is tiled when it is smaller than the area being filled. </param>
+        public FontGradient(PointF offset = default, SizeF size = default, FontColor color = default, WrapMode wrapMode = WrapMode.TileFlipXY)
+        {
+            Offset = offset;
+            Size = size;
+            Color = color;
+            WrapMode = wrapMode;
+        }
+
+        ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
         {
-            var transparentColor = Color.WithOpacity(0);
+            var transparentColor = FontColor.FromRgba(Color.R, Color.G, Color.B, 0);
             using (var brush = new LinearGradientBrush(
-                new PointF(x + Offset.X, y + Offset.Y),
-                new PointF(x + Offset.X + Size.X, y + Offset.Y + Size.Y),
-                System.Drawing.Color.FromArgb(Color.ToArgb()),
-                System.Drawing.Color.FromArgb(transparentColor.ToArgb()))
-                { WrapMode = WrapMode, })
+                new PointF(x + Offset.X, y + Offset.Y), 
+                new PointF(x + Offset.X + Size.Width, y + Offset.Y + Size.Height),
+                Color, transparentColor)
+            { WrapMode = WrapMode })
                 textGraphics.DrawString(text, font, brush, x, y, stringFormat);
         }
     }
