@@ -44,17 +44,9 @@
     <DebugType>embedded</DebugType>
     <Optimize>true</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <Optimize>True</Optimize>
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Optimize>True</Optimize>
     <DebugType>embedded</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugType>embedded</DebugType>
-    <Optimize>True</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <DebugType>embedded</DebugType>
@@ -62,7 +54,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="App.config" />
     <EmbeddedResource Include="Resources\FontAwesome.ttf" />
     <EmbeddedResource Include="Resources\Roboto-Light.ttf" />
     <EmbeddedResource Include="Resources\Roboto-Regular.ttf" />

@@ -21,10 +21,10 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
             GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-            GL.BufferStorage(BufferTarget.ArrayBuffer, new IntPtr(vertexBufferSize), default,
+            GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, default,
                 BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
 
-            bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, default, new IntPtr(vertexBufferSize),
+            bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, default, vertexBufferSize,
                 BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
 
             DrawState.CheckError("mapping vertex buffer", bufferPointer == null);
@@ -62,7 +62,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
             }
 
             var pinnedVertexData = GCHandle.Alloc(primitives, GCHandleType.Pinned);
-            Native.CopyMemory(pinnedVertexData.AddrOfPinnedObject(), bufferPointer + bufferOffset, vertexDataSize);
+            Native.CopyMemory(Marshal.UnsafeAddrOfPinnedArrayElement(primitives, 0), bufferPointer + bufferOffset, vertexDataSize);
             pinnedVertexData.Free();
 
             if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));

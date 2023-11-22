@@ -1,12 +1,7 @@
-﻿using System.Collections.Generic;
-using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
-using System.Runtime.InteropServices;
-using System.Security;
 
 namespace BrewLib.Util
 {

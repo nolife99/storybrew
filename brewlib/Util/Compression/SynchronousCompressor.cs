@@ -32,8 +32,9 @@ namespace BrewLib.Util.Compression
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
                 WorkingDirectory = Path.GetDirectoryName(UtilityPath),
+                UseShellExecute = false,
                 RedirectStandardInput = true,
-                RedirectStandardError = true,
+                RedirectStandardError = true
             };
 
             await Task.Factory.StartNew(() =>

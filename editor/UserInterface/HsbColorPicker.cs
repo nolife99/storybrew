@@ -5,6 +5,7 @@ using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
 using OpenTK;
 using OpenTK.Graphics;
+using StorybrewCommon.Subtitles;
 using StorybrewEditor.UserInterface.Skinning.Styles;
 using System;
 using System.Drawing;
@@ -143,7 +144,7 @@ namespace StorybrewEditor.UserInterface
         void htmlTextbox_OnValueCommited(object sender, EventArgs e)
         {
             var htmlColor = htmlTextbox.Value.Trim();
-            if (!htmlColor.StartsWith("#")) htmlColor = "#" + htmlColor;
+            if (!htmlColor.StartsWith("#", StringComparison.Ordinal)) htmlColor = "#" + htmlColor;
 
             Color color;
             try
@@ -162,7 +163,7 @@ namespace StorybrewEditor.UserInterface
         {
             previewSprite.Color = value;
 
-            var hsba = value.ToHsba();
+            var hsba = FontColor.ToHsb(value);
             if (hsba.Z > 0)
             {
                 if (!float.IsNaN(hsba.X))
@@ -196,16 +197,11 @@ namespace StorybrewEditor.UserInterface
             alphaSlider.SetValueSilent(hsba.W);
             alphaSlider.Tooltip = $"{alphaSlider.Value:.%}";
 
-            htmlTextbox.SetValueSilent(ColorTranslator.ToHtml(Color.FromArgb(value.ToArgb())));
+            htmlTextbox.SetValueSilent(ColorTranslator.ToHtml((Color)value));
         }
 
         protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());
 
-        protected override void ApplyStyle(WidgetStyle style)
-        {
-            base.ApplyStyle(style);
-            var textboxStyle = (ColorPickerStyle)style;
-        }
         protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
         {
             base.DrawBackground(drawContext, actualOpacity);

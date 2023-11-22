@@ -1,5 +1,4 @@
-﻿using BrewLib.Util;
-using OpenTK;
+﻿using OpenTK;
 using OpenTK.Graphics;
 using System;
 using System.Collections.Generic;

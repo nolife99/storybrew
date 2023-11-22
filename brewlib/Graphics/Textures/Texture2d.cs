@@ -41,8 +41,8 @@ namespace BrewLib.Graphics.Textures
             textureOptions = textureOptions ?? TextureOptions.Default;
             textureOptions.WithBitmap(bitmap, b =>
             {
-                var data = b.LockBits(new Rectangle(0, 0, b.Width, b.Height), ImageLockMode.ReadOnly, b.PixelFormat);
-                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                var data = b.LockBits(new Rectangle(default, b.Size), ImageLockMode.ReadOnly, b.PixelFormat);
+                GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
                 GL.Finish();
                 b.UnlockBits(data);
             });

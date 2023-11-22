@@ -31,7 +31,7 @@ namespace StorybrewEditor.Storyboarding
         {
             var time = project.DisplayTime * 1000;
             var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
-            if (texturePath == null || !sprite.IsActive(time)) return;
+            if (texturePath is null || !sprite.IsActive(time)) return;
 
             if (frameStats != null)
             {
@@ -82,9 +82,11 @@ namespace StorybrewEditor.Storyboarding
                 {
                     frameStats.EffectiveCommandCount += sprite.CommandCost;
 
-                    var _sprite = spriteBox.GetAABB();
-                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, size.X * size.Y * _sprite.IntersectWith(
-                        OsuHitObject.WidescreenStoryboardBounds).Area() / _sprite.Area()) / OsuHitObject.WidescreenStoryboardArea;
+                    var aabb = spriteBox.GetAABB();
+                    var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);
+
+                    var intersectionArea = size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
+                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) / OsuHitObject.WidescreenStoryboardArea;
                 }
             }
 

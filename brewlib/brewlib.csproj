@@ -24,14 +24,6 @@
     <DebugType>embedded</DebugType>
     <Optimize>true</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <DebugType>embedded</DebugType>
-    <Optimize>true</Optimize>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <DebugType>embedded</DebugType>
-    <Optimize>true</Optimize>
-  </PropertyGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="oxipng32.exe" />

@@ -1,7 +1,6 @@
 ﻿using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
-using OpenTK;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;
@@ -50,6 +49,7 @@ namespace StorybrewEditor.Storyboarding
                 Origin = origin,
                 InitialPosition = initialPosition
             };
+
             storyboardObjects.Add(storyboardObject);
             displayableObjects.Add(storyboardObject);
             return storyboardObject;
@@ -67,6 +67,7 @@ namespace StorybrewEditor.Storyboarding
                 LoopType = loopType,
                 InitialPosition = initialPosition
             };
+
             storyboardObjects.Add(storyboardObject);
             displayableObjects.Add(storyboardObject);
             return storyboardObject;
@@ -83,6 +84,7 @@ namespace StorybrewEditor.Storyboarding
                 Time = time,
                 Volume = volume
             };
+
             storyboardObjects.Add(storyboardObject);
             eventObjects.Add(storyboardObject);
             return storyboardObject;
@@ -138,8 +140,8 @@ namespace StorybrewEditor.Storyboarding
                 endTime = Math.Max(endTime, sbo.EndTime);
             });
         }
-        public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer)
-            => storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
+        public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
+            => storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, layer));
 
         public long CalculateSize(OsbLayer osbLayer)
         {

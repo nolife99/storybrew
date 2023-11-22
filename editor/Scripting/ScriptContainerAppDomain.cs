@@ -3,7 +3,6 @@ using StorybrewCommon.Scripting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Security;
 using System.Security.Permissions;
 

@@ -33,7 +33,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         {
             IndexBufferId = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, new IntPtr(indexes.Length * sizeof(ushort)), indexes, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), indexes, BufferUsageHint.StaticDraw);
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
         }
 

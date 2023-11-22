@@ -176,41 +176,26 @@ namespace StorybrewCommon.Subtitles
         ///<summary> Creates a <see cref="Vector4"/> containing the hue, saturation, brightness, and alpha values from a <see cref="FontColor"/>. </summary>
         public static Vector4 ToHsb(FontColor rgb)
         {
-            var max = Math.Max(rgb.R, Math.Max(rgb.G, rgb.B));
-            var min = Math.Min(rgb.R, Math.Min(rgb.G, rgb.B));
-            var diff = max - min;
+            var max = Math.Max(rgb.r, Math.Max(rgb.g, rgb.b));
+            var min = Math.Min(rgb.r, Math.Min(rgb.g, rgb.b));
+            var delta = max - min;
 
-            var h = 0f;
-            if (diff == 0) h = 0; 
-            else if (max == rgb.R)
-            {
-                h = (rgb.G - rgb.B) / diff % 6;
-                if (h < 0) h += 6;
-            }
-            else if (max == rgb.G) h = ((rgb.B - rgb.R) / diff) + 2; 
-            else if (max == rgb.B) h = ((rgb.R - rgb.G) / diff) + 4;
-
-            var hue = h / 6;
+            var hue = 0f;
+            if (rgb.r == max) hue = (rgb.g - rgb.b) / delta;
+            else if (rgb.g == max) hue = 2 + (rgb.b - rgb.r) / delta;
+            else if (rgb.b == max) hue = 4 + (rgb.r - rgb.g) / delta;
+            hue /= 6;
             if (hue < 0) ++hue;
 
-            var lightness = (max + min) / 2;
+            var saturation = (max <= 0) ? 0 : 1 - (min / max);
 
-            var saturation = 0f;
-            if (1 - Math.Abs(2 * lightness - 1) != 0) saturation = diff / (1 - Math.Abs(2 * lightness - 1));
-
-            return new Vector4(hue, saturation, lightness, rgb.A);
+            return new Vector4(hue, saturation, max, rgb.a);
         }
 
         ///<summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
         public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith("#", StringComparison.Ordinal) ? htmlColor : "#" + htmlColor);
 
-        static byte toByte(double x)
-        {
-            x *= 255;
-            if (x > 255) return 255;
-            if (x < 0) return 0;
-            return (byte)x;
-        }
+        static byte toByte(double x) =>(byte)OpenTK.MathHelper.Clamp(x * 255, 0, 255);
 
 #pragma warning disable CS1591
         public static implicit operator Color4(FontColor obj) => new Color4(obj.R, obj.G, obj.B, obj.A);

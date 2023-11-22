@@ -86,20 +86,7 @@ namespace BrewLib.Graphics.Renderers
         public int LargestBatch { get; set; }
 
         public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
-            : this((vertexDeclaration, minRenderableVertexCount) =>
-        {
-            if (PrimitiveStreamerPersistentMap<LinePrimitive>.HasCapabilities())
-                return new PrimitiveStreamerPersistentMap<LinePrimitive>(vertexDeclaration, minRenderableVertexCount);
-
-            else if (PrimitiveStreamerBufferData<LinePrimitive>.HasCapabilities())
-                return new PrimitiveStreamerBufferData<LinePrimitive>(vertexDeclaration, minRenderableVertexCount);
-
-            else if (PrimitiveStreamerVbo<LinePrimitive>.HasCapabilities())
-                return new PrimitiveStreamerVbo<LinePrimitive>(vertexDeclaration);
-
-            throw new NotSupportedException();
-
-        }, shader, maxLinesPerBatch, primitiveBufferSize) { }
+            : this(PrimitiveStreamerUtil<LinePrimitive>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
         public LineRendererBuffered(CreatePrimitiveStreamerDelegate<LinePrimitive> createPrimitiveStreamer, Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
         {

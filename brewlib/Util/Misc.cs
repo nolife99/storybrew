@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace BrewLib.Util
 {
@@ -34,7 +35,7 @@ namespace BrewLib.Util
 
                     var retryDelay = timeout / 10;
                     sleepTime += retryDelay;
-                    Thread.Sleep(retryDelay);
+                    using (var wait = Task.Delay(retryDelay)) wait.Wait();
                 }
             }
         }
