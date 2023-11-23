@@ -105,7 +105,13 @@ namespace StorybrewEditor.Storyboarding
             Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{ScriptsLibraryPath}");
 
             var compiledScriptsPath = Path.GetFullPath("cache/scripts");
-            if (!Directory.Exists(compiledScriptsPath)) Directory.CreateDirectory(compiledScriptsPath);
+            if (Directory.Exists(compiledScriptsPath)) foreach (var script in Directory.EnumerateFiles(compiledScriptsPath))
+            try
+            {
+                File.Delete(script);
+            }
+            catch {}
+            else Directory.CreateDirectory(compiledScriptsPath);
 
             initializeAssetWatcher();
 
