@@ -205,6 +205,10 @@ namespace StorybrewEditor.Util
                             {
                                 task.Action(task.Target);
                             }
+                            catch (ThreadAbortException)
+                            {
+                                Trace.WriteLine($"Aborted thread {threadName}");
+                            }
                             catch (Exception e)
                             {
                                 var target = task.Target;

@@ -105,17 +105,18 @@ namespace StorybrewEditor.Storyboarding
             Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{ScriptsLibraryPath}");
 
             var compiledScriptsPath = Path.GetFullPath("cache/scripts");
+            if (Directory.Exists(compiledScriptsPath)) foreach (var script in Directory.EnumerateFiles(compiledScriptsPath))
             try
             {
-                if (Directory.Exists(compiledScriptsPath)) Directory.Delete(compiledScriptsPath, true);
-                Directory.CreateDirectory(compiledScriptsPath);
+                File.Delete(script);
             }
-            catch (SystemException) {}
+            catch {}
+            else Directory.CreateDirectory(compiledScriptsPath);
 
             initializeAssetWatcher();
 
             scriptManager = new ScriptManager<StoryboardObjectGenerator>(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, ScriptsLibraryPath, compiledScriptsPath, ReferencedAssemblies);
-            effectUpdateQueue.OnActionFailed += (effect, e) => Trace.WriteLine($"Action failed for '{effect}': {e.Message}");
+            effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
 
             LayerManager.OnLayersChanged += (sender, e) => Changed = true;
 

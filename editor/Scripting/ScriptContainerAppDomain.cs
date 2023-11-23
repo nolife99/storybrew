@@ -10,7 +10,6 @@ namespace StorybrewEditor.Scripting
     public class ScriptContainerAppDomain<TScript>(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies) : ScriptContainerBase<TScript>(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) where TScript : Script
     {
         AssemblyLoadContext context;
-        string assemblyPath;
 
         protected override IProvider<TScript> LoadScript()
         {
@@ -18,7 +17,7 @@ namespace StorybrewEditor.Scripting
 
             try
             {
-                assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount64)}.dll";
+                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount64)}.dll";
                 ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 Trace.WriteLine($"{nameof(Scripting)}: Loading domain {$"{Name} {Id}"}");

@@ -88,7 +88,7 @@ namespace StorybrewCommon.Scripting
         Bitmap getBitmap(string path, string alternatePath, bool watch)
         {
             path = Path.GetFullPath(path);
-            if (!bitmaps.TryGetValue(path, out Bitmap bitmap)) using (var stream = File.OpenRead(path))
+            if (!bitmaps.TryGetValue(path, out var bitmap)) using (var stream = File.OpenRead(path))
             {
                 if (watch) context.AddDependency(path);
 
@@ -392,7 +392,7 @@ namespace StorybrewCommon.Scripting
 
         #endregion
 
-        static readonly Mutex instanceSync = new();
+        static readonly object instanceSync = new();
 
         ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
@@ -400,10 +400,10 @@ namespace StorybrewCommon.Scripting
             try
             {
                 this.context = context;
-                rnd = new FastRandom(RandomSeed);
+                rnd = new(RandomSeed);
                 Compressor = new IntegratedCompressor();
 
-                instanceSync.WaitOne();
+                Monitor.Enter(instanceSync);
                 Current = this;
 
                 Generate();
@@ -412,7 +412,7 @@ namespace StorybrewCommon.Scripting
             finally
             {
                 Current = null;
-                instanceSync.ReleaseMutex();
+                Monitor.Exit(instanceSync);
 
                 if (fonts.Count > 0) saveFontCache();
                 this.context = null;

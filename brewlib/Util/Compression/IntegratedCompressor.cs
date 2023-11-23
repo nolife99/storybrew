@@ -21,9 +21,8 @@ namespace BrewLib.Util.Compression
 
             UtilityName = Environment.Is64BitOperatingSystem && useLossy ? "pngquant.exe" : "oxipng32.exe";
             ensureTool();
-            var utility = GetUtility();
 
-            var startInfo = new ProcessStartInfo(utility, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+            var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -31,15 +30,21 @@ namespace BrewLib.Util.Compression
                 RedirectStandardInput = true,
                 RedirectStandardError = true
             };
-            
+
+            Exception e = null;
             tasks.Add(Task.Run(() =>
             {
-                using var localProcess = Process.Start(startInfo);
-                using var errorStream = localProcess.StandardError;
+                var localProcess = Process.Start(startInfo);
 
+                var errorStream = localProcess.StandardError;
                 var error = errorStream.ReadToEnd();
-                if (!string.IsNullOrEmpty(error) && localProcess.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {localProcess.ExitCode}: {error}");
+                errorStream.Dispose();
+
+                if (!string.IsNullOrEmpty(error) && localProcess.ExitCode != 0) e = new OperationCanceledException($"Image compression closed with code {localProcess.ExitCode}: {error}");
+                localProcess.Close();
             }));
+
+            if (e is not null) throw e;
         }
         protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
         {
