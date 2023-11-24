@@ -36,7 +36,7 @@ namespace BrewLib.Util.Compression
                 RedirectStandardError = true,
             };
 
-            await Task.Factory.StartNew(() =>
+            using (Task losslessTask = new(() =>
             { 
                 foreach (var arg in toCompress) if (File.Exists(arg.path)) try
                 {
@@ -49,13 +49,17 @@ namespace BrewLib.Util.Compression
                 {
                     ensureStop();
                 }
-            }, TaskCreationOptions.AttachedToParent);
+            }, TaskCreationOptions.AttachedToParent))
+            {
+                losslessTask.Start();
+                await losslessTask;
+            }
 
             UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
             ensureTool();
             startInfo.FileName = GetUtility();
 
-            await Task.Factory.StartNew(() =>
+            using (Task lossyTask = new(() =>
             {
                 foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
                 {
@@ -68,7 +72,11 @@ namespace BrewLib.Util.Compression
                 {
                     ensureStop();
                 }
-            }, TaskCreationOptions.AttachedToParent);
+            }, TaskCreationOptions.AttachedToParent))
+            {
+                lossyTask.Start();
+                await lossyTask;
+            }
         }
         protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
         {

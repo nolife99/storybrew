@@ -25,7 +25,7 @@ namespace StorybrewCommon.Subtitles
         public bool Overlay => false;
 
         ///<inheritdoc/>
-        public SizeF Measure => new Size(Radius * 2, Radius * 2);
+        public SizeF Measure => new(Radius * 2, Radius * 2);
 
         ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
@@ -41,7 +41,7 @@ namespace StorybrewCommon.Subtitles
                 graphics.DrawString(text, font, brush, x, y, stringFormat);
             }
 
-            using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5, Color); textGraphics.DrawImage(blur.Bitmap, 0, 0);
+            using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? (float)Power : Radius * .5f, Color); textGraphics.DrawImage(blur.Bitmap, 0, 0);
         }
     }
 }

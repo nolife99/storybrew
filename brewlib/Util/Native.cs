@@ -37,7 +37,7 @@ namespace BrewLib.Util
             }
             unsafe
             {
-                Unsafe.CopyBlock(destination.ToPointer(), source.ToPointer(), (uint)count);
+                Unsafe.CopyBlock(ref *(byte*)destination, ref *(byte*)source, (uint)count);
                 return true;
             }
         }
@@ -99,13 +99,13 @@ namespace BrewLib.Util
         { 
             get
             {
-                if (hWnd == nint.Zero) throw new InvalidOperationException("hWnd was not initialized");
+                if (hWnd == 0) throw new InvalidOperationException("hWnd was not initialized");
                 return hWnd;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void InitializeHandle(string windowTitle, nint hWndFallback = default)
+        public static void InitializeHandle(string windowTitle, nint hWndFallback = 0)
         {
             var handle = nint.Zero;
             var cont = true;
@@ -121,7 +121,7 @@ namespace BrewLib.Util
                 return cont;
             }, default);
 
-            hWnd = handle != nint.Zero ? handle : hWndFallback;
+            hWnd = handle != 0 ? handle : hWndFallback;
         }
 
         #endregion

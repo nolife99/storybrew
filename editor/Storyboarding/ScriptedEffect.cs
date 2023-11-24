@@ -45,14 +45,14 @@ namespace StorybrewEditor.Storyboarding
         {
             if (!scriptContainer.HasScript) return;
 
-            var newDependencyWatcher = new MultiFileWatcher();
+            MultiFileWatcher newDependencyWatcher = new();
             newDependencyWatcher.OnFileChanged += (sender, e) =>
             {
                 if (Disposed) return;
                 Refresh();
             };
 
-            var context = new EditorGeneratorContext(this, Project.ProjectFolderPath, Project.ProjectAssetFolderPath, Project.MapsetPath, Project.MainBeatmap, Project.MapsetManager.Beatmaps, newDependencyWatcher);
+            EditorGeneratorContext context = new(this, Project.ProjectFolderPath, Project.ProjectAssetFolderPath, Project.MapsetPath, Project.MainBeatmap, Project.MapsetManager.Beatmaps, newDependencyWatcher);
             var success = false;
             try
             {

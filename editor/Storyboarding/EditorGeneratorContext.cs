@@ -58,7 +58,7 @@ namespace StorybrewEditor.Storyboarding
         public override StoryboardLayer GetLayer(string name)
         {
             var layer = EditorLayers.Find(l => l.Name == name);
-            if (layer == null) EditorLayers.Add(layer = new EditorStoryboardLayer(name, effect));
+            if (layer == null) EditorLayers.Add(layer = new(name, effect));
             return layer;
         }
 
@@ -72,7 +72,7 @@ namespace StorybrewEditor.Storyboarding
         {
             path = Path.GetFullPath(path);
 
-            if (!fftAudioStreams.TryGetValue(path, out FftStream audioStream)) fftAudioStreams[path] = audioStream = new FftStream(path);
+            if (!fftAudioStreams.TryGetValue(path, out var audioStream)) fftAudioStreams[path] = audioStream = new(path);
             return audioStream;
         }
 

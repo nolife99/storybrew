@@ -12,11 +12,17 @@ namespace BrewLib.Util
             UseShellExecute = true
         });
 
-        public static string WithPlatformSeparators(string path)
+        public static bool SafeDelete(string path)
         {
-            if (Path.DirectorySeparatorChar != '/') path = path.Replace('/', Path.DirectorySeparatorChar);
-            if (Path.DirectorySeparatorChar != '\\') path = path.Replace('\\', Path.DirectorySeparatorChar);
-            return path;
+            try
+            {
+                File.Delete(path);
+                return true;
+            }
+            catch (SystemException)
+            {
+                return false;
+            }
         }
 
         public const char StandardDirectorySeparator = '/';

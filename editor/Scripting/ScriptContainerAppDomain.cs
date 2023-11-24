@@ -1,5 +1,4 @@
-﻿using BrewLib.Util;
-using StorybrewCommon.Scripting;
+﻿using StorybrewCommon.Scripting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -13,20 +12,21 @@ namespace StorybrewEditor.Scripting
 
         protected override IProvider<TScript> LoadScript()
         {
-            if (disposed) return null;
-
+            ObjectDisposedException.ThrowIf(disposed, GetType());
             try
             {
-                var assemblyPath = $"{CompiledScriptsPath}/{HashHelper.GetMd5(Name + Environment.TickCount64)}.dll";
-                ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
+                var assemblyPath = $"{CompiledScriptsPath}/{Name + Environment.TickCount64}.dll";
 
-                Trace.WriteLine($"{nameof(Scripting)}: Loading domain {$"{Name} {Id}"}");
-                var context = new AssemblyLoadContext($"{Name} {Id}", true);
+                var id = $"{Name} {Id}";
+                Trace.WriteLine($"{nameof(Scripting)}: Loading domain {id}");
+                AssemblyLoadContext context = new(id, true);
+
+                ScriptCompiler.Compile(context, SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 IProvider<TScript> scriptProvider;
                 try
                 {
-                    scriptProvider = (IProvider<TScript>)Activator.CreateInstance(context.LoadFromAssemblyName(typeof(ScriptProvider<TScript>).Assembly.GetName())
+                    scriptProvider = (IProvider<TScript>)Activator.CreateInstance(context.LoadFromAssemblyPath(typeof(ScriptProvider<TScript>).Assembly.Location)
                         .GetType(typeof(ScriptProvider<TScript>).FullName));
                     scriptProvider.Initialize(context, assemblyPath, ScriptTypeName);
                 }
@@ -38,7 +38,7 @@ namespace StorybrewEditor.Scripting
 
                 if (context is not null)
                 {
-                    Debug.Print($"{nameof(Scripting)}: Unloading domain {$"{Name} {Id}"}");
+                    Trace.WriteLine($"{nameof(Scripting)}: Unloading domain {id}");
                     context.Unload();
                 }
                 this.context = context;

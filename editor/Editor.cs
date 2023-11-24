@@ -202,7 +202,7 @@ namespace StorybrewEditor
             Skin.Dispose();
             DrawState.Cleanup();
         }
-        public void Update(double time, bool isFixedRateUpdate)
+        public void Update(double time, bool isFixedRateUpdate = true)
         {
             IsFixedRateUpdate = isFixedRateUpdate;
             clock.AdvanceFrameTo(time);

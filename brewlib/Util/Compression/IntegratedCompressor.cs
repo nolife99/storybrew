@@ -81,8 +81,9 @@ namespace BrewLib.Util.Compression
             var utility = GetUtility();
             if (!File.Exists(utility))
             {
-                File.WriteAllBytes(utility, container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
-                toCleanup.Add(utility);
+                using var dest = File.OpenWrite(utility);
+                using var src = container.GetStream(utilName, ResourceSource.Embedded | ResourceSource.Relative);
+                src.CopyTo(dest);
             }
         }
         protected override string GetUtility() => Path.Combine(UtilityPath, utilName);
@@ -97,7 +98,8 @@ namespace BrewLib.Util.Compression
             tasks.Clear();
 
             base.Dispose(disposing);
-            for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) File.Delete(toCleanup[i]);
+            toCleanup.ForEach(clean => PathHelper.SafeDelete(clean));
+
             toCleanup.Clear();
         }
     }

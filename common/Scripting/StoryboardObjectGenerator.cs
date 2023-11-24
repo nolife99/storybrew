@@ -392,7 +392,7 @@ namespace StorybrewCommon.Scripting
 
         #endregion
 
-        static readonly object instanceSync = new();
+        static readonly Mutex instanceSync = new(false, nameof(StorybrewCommon));
 
         ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
@@ -403,7 +403,7 @@ namespace StorybrewCommon.Scripting
                 rnd = new(RandomSeed);
                 Compressor = new IntegratedCompressor();
 
-                Monitor.Enter(instanceSync);
+                instanceSync.WaitOne();
                 Current = this;
 
                 Generate();
@@ -412,7 +412,7 @@ namespace StorybrewCommon.Scripting
             finally
             {
                 Current = null;
-                Monitor.Exit(instanceSync);
+                instanceSync.ReleaseMutex();
 
                 if (fonts.Count > 0) saveFontCache();
                 this.context = null;

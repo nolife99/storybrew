@@ -43,7 +43,7 @@ namespace BrewLib.Audio
         }
         public AudioStream LoadStream(string path, ResourceContainer resourceContainer = null)
         {
-            var audio = new AudioStream(this, path, resourceContainer);
+            AudioStream audio = new(this, path, resourceContainer);
             RegisterChannel(audio);
             return audio;
         }

@@ -48,7 +48,7 @@ namespace StorybrewEditor
             startEditor();
 
             NetHelper.Client?.Dispose();
-            foreach (var listener in Trace.Listeners) (listener as IDisposable)?.Dispose();
+            foreach (IDisposable listener in Trace.Listeners) listener?.Dispose();
         }
         static bool handleArguments(string[] args)
         {
@@ -103,9 +103,10 @@ namespace StorybrewEditor
                 editor.Initialize();
 
                 runMainLoop(window, editor,
-                    1000d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
-                    1000d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
+                    1000f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
+                    1000f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
 
+                if (Mutex.TryOpenExisting(nameof(StorybrewCommon), out var mutex)) mutex.Dispose();
                 Settings.Save();
             }
         }
@@ -177,36 +178,36 @@ namespace StorybrewEditor
 
             return audioManager;
         }
-        static void runMainLoop(GameWindow window, Editor editor, double fixedRateUpdateDuration, double targetFrameDuration)
+        static void runMainLoop(GameWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
         {
-            double previousTime = 0, fixedRateTime = 0, averageFrame = 0, averageActive = 0, longestFrame = 0, lastStatTime = 0;
+            float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
             var windowDisplayed = false;
             var watch = Stopwatch.StartNew();
 
             while (window.Exists && !window.IsExiting)
             {
                 var focused = window.Focused;
-                var currentTime = watch.Elapsed.TotalMilliseconds;
+                var cur = (float)watch.Elapsed.TotalMilliseconds;
                 var fixedUpdates = 0;
 
                 AudioManager.Update();
                 window.ProcessEvents();
 
-                while (currentTime - fixedRateTime >= fixedRateUpdateDuration && fixedUpdates < 2)
+                while (cur - fixedRate >= fixedRateUpdate && fixedUpdates < 2)
                 {
-                    fixedRateTime += fixedRateUpdateDuration;
+                    fixedRate += fixedRateUpdate;
                     ++fixedUpdates;
 
-                    editor.Update(fixedRateTime * 1E-3, true);
+                    editor.Update(fixedRate / 1000);
                 }
-                if (focused && fixedUpdates == 0 && fixedRateTime < currentTime && currentTime < fixedRateTime + fixedRateUpdateDuration) editor.Update(currentTime * 1E-3, false);
+                if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur / 1000, false);
 
                 if (!window.Exists || window.IsExiting) return;
 
                 window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
                 if (window.WindowState != WindowState.Minimized)
                 {
-                    var tween = Math.Min((currentTime - fixedRateTime) / fixedRateUpdateDuration, 1);
+                    var tween = Math.Min((cur - fixedRate) / fixedRateUpdate, 1);
                     editor.Draw(tween);
                     window.SwapBuffers();
                 }
@@ -219,26 +220,26 @@ namespace StorybrewEditor
 
                 RunScheduledTasks();
 
-                var activeDuration = watch.Elapsed.TotalMilliseconds - currentTime;
+                var active = (float)watch.Elapsed.TotalMilliseconds - cur;
                 if (window.WindowState != WindowState.Minimized)
                 {
-                    var sleepTime = (focused ? targetFrameDuration : fixedRateUpdateDuration) - activeDuration;
+                    var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
                     if (sleepTime > 0) using (var wait = Task.Delay((int)sleepTime)) wait.Wait();
                 }
 
-                var frameTime = currentTime - previousTime;
-                previousTime = currentTime;
+                var frameTime = cur - prev;
+                prev = cur;
 
-                averageFrame = (frameTime + averageFrame) * .5;
-                averageActive = (activeDuration + averageActive) * .5;
-                longestFrame = Math.Max(frameTime, longestFrame);
+                av = (frameTime + av) / 2;
+                avActive = (active + avActive) / 2;
+                longest = Math.Max(frameTime, longest);
 
-                if (lastStatTime + 150 < currentTime)
+                if (lastStat + 150 < cur)
                 {
-                    Stats = $"fps:{1000 / averageFrame:0}/{1000 / averageActive:0} (act:{averageActive:0} avg:{averageFrame:0} hi:{longestFrame:0})";
+                    Stats = $"fps:{1000 / av:0}/{1000 / avActive:0} (act:{avActive:0} avg:{av:0} hi:{longest:0})";
 
-                    longestFrame = 0;
-                    lastStatTime = currentTime;
+                    longest = 0;
+                    lastStat = cur;
                 }
             }
         }
@@ -264,11 +265,16 @@ namespace StorybrewEditor
         /// Schedule the action to run in the main thread after a delay (in milliseconds).
         /// Exceptions will be logged.
         /// </summary>
-        public static void Schedule(Action action, int delay) => Task.Factory.StartNew(async () =>
+        public static void Schedule(Action action, int delay)
         {
-            using (var wait = Task.Delay(delay)) await wait;
-            Schedule(action);
-        }, TaskCreationOptions.AttachedToParent);
+            using Task task = new(async () =>
+            {
+                using (var wait = Task.Delay(delay)) await wait;
+                Schedule(action);
+            }, TaskCreationOptions.AttachedToParent);
+
+            task.Start();
+        }
 
         /// <summary>
         /// Run the action synchronously in the main thread.
@@ -283,7 +289,7 @@ namespace StorybrewEditor
             }
 
             using ManualResetEvent completed = new(false);
-            Exception exception = null;
+            Exception ex = null;
             Schedule(() =>
             {
                 try
@@ -292,13 +298,13 @@ namespace StorybrewEditor
                 }
                 catch (Exception e)
                 {
-                    exception = e;
+                    ex = e;
                 }
                 completed.Set();
             });
             completed.WaitOne();
 
-            if (exception is not null) throw exception;
+            if (ex is not null) throw ex;
         }
         public static void RunScheduledTasks()
         {

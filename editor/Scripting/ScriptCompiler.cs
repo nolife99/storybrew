@@ -25,20 +25,11 @@ namespace StorybrewEditor.Scripting
         ];
         static int nextId;
 
-        public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        public static void Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
-            var domain = new AssemblyLoadContext($"ScriptCompiler {nextId++}", true);
             Trace.WriteLine($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths.Select(Path.GetFileName))}");
-
-            try
-            {
-                var compiler = (ICompiler)Activator.CreateInstance(domain.LoadFromAssemblyName(typeof(ScriptCompiler).Assembly.GetName()).GetType(typeof(ScriptCompiler).FullName));
-                compiler.Compile(sourcePaths, outputPath, referencedAssemblies);
-            }
-            finally
-            {
-                domain.Unload();
-            }
+            var compiler = (ICompiler)(context ?? AssemblyLoadContext.Default).LoadFromAssemblyPath(typeof(ScriptCompiler).Assembly.Location).CreateInstance(typeof(ScriptCompiler).FullName);
+            compiler.Compile(sourcePaths, outputPath, referencedAssemblies);
         }
 
         void ICompiler.Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)

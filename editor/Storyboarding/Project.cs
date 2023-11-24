@@ -17,7 +17,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.IO.Compression;
-using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -105,17 +104,12 @@ namespace StorybrewEditor.Storyboarding
             Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{ScriptsLibraryPath}");
 
             var compiledScriptsPath = Path.GetFullPath("cache/scripts");
-            if (Directory.Exists(compiledScriptsPath)) foreach (var script in Directory.EnumerateFiles(compiledScriptsPath))
-            try
-            {
-                File.Delete(script);
-            }
-            catch {}
+            if (Directory.Exists(compiledScriptsPath)) foreach (var script in Directory.EnumerateFiles(compiledScriptsPath)) PathHelper.SafeDelete(script);
             else Directory.CreateDirectory(compiledScriptsPath);
 
             initializeAssetWatcher();
 
-            scriptManager = new ScriptManager<StoryboardObjectGenerator>(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, ScriptsLibraryPath, compiledScriptsPath, ReferencedAssemblies);
+            scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, ScriptsLibraryPath, compiledScriptsPath, ReferencedAssemblies);
             effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
 
             LayerManager.OnLayersChanged += (sender, e) => Changed = true;
@@ -125,7 +119,7 @@ namespace StorybrewEditor.Storyboarding
 
         #region Audio and Display
 
-        public static readonly OsbLayer[] OsbLayers = (OsbLayer[])Enum.GetValues(typeof(OsbLayer));
+        public static readonly OsbLayer[] OsbLayers = [OsbLayer.Background, OsbLayer.Fail, OsbLayer.Pass, OsbLayer.Foreground, OsbLayer.Overlay];
 
         public double DisplayTime;
         public float DimFactor;
@@ -133,7 +127,7 @@ namespace StorybrewEditor.Storyboarding
         public TextureContainer TextureContainer { get; set; }
         public AudioSampleContainer AudioContainer { get; set; }
 
-        public FrameStats FrameStats { get; set; } = new FrameStats();
+        public FrameStats FrameStats { get; set; } = new();
 
         public void TriggerEvents(double startTime, double endTime) => LayerManager.TriggerEvents(startTime, endTime);
         public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, bool updateFrameStats)
@@ -190,7 +184,7 @@ namespace StorybrewEditor.Storyboarding
         {
             ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
 
-            var effect = new ScriptedEffect(this, scriptManager.Get(scriptName), multithreaded)
+            ScriptedEffect effect = new(this, scriptManager.Get(scriptName), multithreaded)
             {
                 Name = GetUniqueEffectName(scriptName)
             };
@@ -287,7 +281,7 @@ namespace StorybrewEditor.Storyboarding
         {
             get
             {
-                if (mainBeatmap == null) SwitchMainBeatmap();
+                if (mainBeatmap is null) SwitchMainBeatmap();
                 return mainBeatmap;
             }
             set
@@ -396,7 +390,7 @@ namespace StorybrewEditor.Storyboarding
             typeof(object).Assembly.Location,
             typeof(Box2).Assembly.Location,
             typeof(Script).Assembly.Location,
-            typeof(Brush).Assembly.Location,
+            typeof(Font).Assembly.Location,
             typeof(Size).Assembly.Location
         ];
         public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
@@ -453,7 +447,11 @@ namespace StorybrewEditor.Storyboarding
         void saveBinary(string path)
         {
             ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
-            using var file = File.Create(path); using var dfl = new DeflateStream(file, CompressionLevel.Optimal); using var w = new BinaryWriter(dfl, Encoding);
+
+            using var file = File.Create(path); 
+            using DeflateStream dfl = new(file, CompressionLevel.Optimal); 
+            using BinaryWriter w = new(dfl, Encoding);
+
             w.Write(Version);
 
             w.Write(MapsetPath);
@@ -479,10 +477,10 @@ namespace StorybrewEditor.Storyboarding
 
                     w.Write(field.AllowedValues?.Length ?? 0);
                     if (field.AllowedValues is not null) for (var i = 0; i < field.AllowedValues.Length; ++i)
-                        {
-                            w.Write(field.AllowedValues[i].Name);
-                            ObjectSerializer.Write(w, field.AllowedValues[i].Value);
-                        }
+                    {
+                        w.Write(field.AllowedValues[i].Name);
+                        ObjectSerializer.Write(w, field.AllowedValues[i].Value);
+                    }
                 }
             });
 
@@ -504,8 +502,10 @@ namespace StorybrewEditor.Storyboarding
         }
         void loadBinary(string path)
         {
-            using var ram = MemoryMappedFile.CreateFromFile(path, FileMode.Open);
-            using var file = ram.CreateViewStream(); using var dfl = new DeflateStream(file, CompressionMode.Decompress); using var r = new BinaryReader(dfl, Encoding);
+            using var file = File.OpenRead(path); 
+            using DeflateStream dfl = new(file, CompressionMode.Decompress); 
+            using BinaryReader r = new(dfl, Encoding);
+
             var version = r.ReadInt32();
             if (version > Version) throw new InvalidOperationException("This project was saved with a newer version; you need to update.");
 
@@ -517,7 +517,7 @@ namespace StorybrewEditor.Storyboarding
             var effectCount = r.ReadInt32();
             for (var effectIndex = 0; effectIndex < effectCount; ++effectIndex)
             {
-                var guid = version > 5 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
+                var guid = version > 5 ? new(r.ReadBytes(16)) : Guid.NewGuid();
                 var effect = AddScriptedEffect(r.ReadString(), r.ReadBoolean());
                 effect.Guid = guid;
                 effect.Name = r.ReadString();
@@ -533,12 +533,11 @@ namespace StorybrewEditor.Storyboarding
 
                         var allowedValueCount = r.ReadInt32();
                         var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : null;
-                        for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
-                            allowedValues[allowedValueIndex] = new NamedValue
-                            {
-                                Name = r.ReadString(),
-                                Value = ObjectSerializer.Read(r)
-                            };
+                        for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex) allowedValues[allowedValueIndex] = new()
+                        {
+                            Name = r.ReadString(),
+                            Value = ObjectSerializer.Read(r)
+                        };
 
                         effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue, allowedValues, null);
                     }
@@ -548,7 +547,7 @@ namespace StorybrewEditor.Storyboarding
             var layerCount = r.ReadInt32();
             for (var layerIndex = 0; layerIndex < layerCount; ++layerIndex)
             {
-                var guid = version > 5 ? new Guid(r.ReadBytes(16)) : Guid.NewGuid();
+                var guid = version > 5 ? new(r.ReadBytes(16)) : Guid.NewGuid();
                 var name = r.ReadString();
 
                 var effect = effects[r.ReadInt32()];
@@ -582,39 +581,39 @@ namespace StorybrewEditor.Storyboarding
             if (!File.Exists(gitIgnorePath)) File.WriteAllText(gitIgnorePath, ".sbrew/user.yaml\n.sbrew.tmp\n.sbrew.bak\n.cache\n.vs");
 
             var targetDirectory = Path.Combine(projectDirectory, DataFolder);
-            using var directoryWriter = new SafeDirectoryWriter(targetDirectory);
-            var indexRoot = new TinyObject
-                {
-                    { "FormatVersion", Version },
-                    { "BeatmapId", MainBeatmap.Id },
-                    { "BeatmapName", MainBeatmap.Name },
-                    { "Assemblies", importedAssemblies },
-                    { "Layers", LayerManager.Layers.Select(l => l.Guid.ToString("N")) }
-                };
+            using SafeDirectoryWriter directoryWriter = new(targetDirectory);
+            TinyObject indexRoot = new()
+            {
+                { "FormatVersion", Version },
+                { "BeatmapId", MainBeatmap.Id },
+                { "BeatmapName", MainBeatmap.Name },
+                { "Assemblies", importedAssemblies },
+                { "Layers", LayerManager.Layers.Select(l => l.Guid.ToString("N")) }
+            };
 
             var indexPath = directoryWriter.GetPath("index.yaml");
             indexRoot.Write(indexPath);
 
-            var userRoot = new TinyObject
-                {
-                    { "FormatVersion", Version },
-                    { "Editor", Program.FullName },
-                    { "MapsetPath", PathHelper.WithStandardSeparators(MapsetPath) },
-                    { "ExportTimeAsFloatingPoint", ExportSettings.UseFloatForTime },
-                    { "OwnsOsb", OwnsOsb }
-                };
+            TinyObject userRoot = new()
+            {
+                { "FormatVersion", Version },
+                { "Editor", Program.FullName },
+                { "MapsetPath", PathHelper.WithStandardSeparators(MapsetPath) },
+                { "ExportTimeAsFloatingPoint", ExportSettings.UseFloatForTime },
+                { "OwnsOsb", OwnsOsb }
+            };
 
             var userPath = directoryWriter.GetPath("user.yaml");
             userRoot.Write(userPath);
 
             effects.ForEach(effect =>
             {
-                var effectRoot = new TinyObject
+                TinyObject effectRoot = new()
                 {
-                        { "FormatVersion", Version },
-                        { "Name", effect.Name },
-                        { "Script", effect.BaseName },
-                        { "Multithreaded", effect.Multithreaded }
+                    { "FormatVersion", Version },
+                    { "Name", effect.Name },
+                    { "Script", effect.BaseName },
+                    { "Multithreaded", effect.Multithreaded }
                 };
 
                 var configRoot = new TinyObject();
@@ -622,10 +621,10 @@ namespace StorybrewEditor.Storyboarding
 
                 foreach (var field in effect.Config.SortedFields)
                 {
-                    var fieldRoot = new TinyObject
+                    TinyObject fieldRoot = new()
                     {
-                            { "Type", field.Type.FullName },
-                            { "Value", ObjectSerializer.ToString(field.Type, field.Value)}
+                        { "Type", field.Type.FullName },
+                        { "Value", ObjectSerializer.ToString(field.Type, field.Value)}
                     };
                     if (field.DisplayName != field.Name) fieldRoot.Add("DisplayName", field.DisplayName);
                     if (!string.IsNullOrWhiteSpace(field.BeginsGroup)) fieldRoot.Add("BeginsGroup", field.BeginsGroup);
@@ -633,11 +632,10 @@ namespace StorybrewEditor.Storyboarding
 
                     if ((field.AllowedValues?.Length ?? 0) > 0)
                     {
-                        var allowedValuesRoot = new TinyObject();
+                        TinyObject allowedValuesRoot = [];
                         fieldRoot.Add("AllowedValues", allowedValuesRoot);
 
-                        foreach (var allowedValue in field.AllowedValues) allowedValuesRoot.Add(
-                            allowedValue.Name, ObjectSerializer.ToString(field.Type, allowedValue.Value));
+                        foreach (var allowedValue in field.AllowedValues) allowedValuesRoot.Add(allowedValue.Name, ObjectSerializer.ToString(field.Type, allowedValue.Value));
                     }
                 }
 
@@ -645,16 +643,16 @@ namespace StorybrewEditor.Storyboarding
                 effectRoot.Add("Layers", layersRoot);
 
                 foreach (var layer in LayerManager.Layers) if (layer.Effect == effect)
+                {
+                    TinyObject layerRoot = new()
                     {
-                        var layerRoot = new TinyObject
-                    {
-                            { "Name", layer.Name },
-                            { "OsbLayer", layer.OsbLayer },
-                            { "DiffSpecific", layer.DiffSpecific },
-                            { "Visible", layer.Visible }
+                        { "Name", layer.Name },
+                        { "OsbLayer", layer.OsbLayer },
+                        { "DiffSpecific", layer.DiffSpecific },
+                        { "Visible", layer.Visible }
                     };
-                        layersRoot.Add(layer.Guid.ToString("N"), layerRoot);
-                    }
+                    layersRoot.Add(layer.Guid.ToString("N"), layerRoot);
+                }
 
                 var effectPath = directoryWriter.GetPath("effect." + effect.Guid.ToString("N") + ".yaml");
                 effectRoot.Write(effectPath);
@@ -667,7 +665,7 @@ namespace StorybrewEditor.Storyboarding
         void loadText(string path)
         {
             var targetDirectory = Path.Combine(Path.GetDirectoryName(path), DataFolder);
-            using var directoryReader = new SafeDirectoryReader(targetDirectory);
+            using SafeDirectoryReader directoryReader = new(targetDirectory);
             var indexPath = directoryReader.GetPath("index.yaml");
             var indexRoot = TinyToken.Read(indexPath);
 
@@ -675,7 +673,7 @@ namespace StorybrewEditor.Storyboarding
             if (indexVersion > Version) throw new InvalidOperationException("This project was saved with a newer version; you need to update.");
 
             var userPath = directoryReader.GetPath("user.yaml");
-            var userRoot = (TinyToken)null;
+            TinyToken userRoot = null;
             if (File.Exists(userPath))
             {
                 userRoot = TinyToken.Read(userPath);
@@ -695,7 +693,7 @@ namespace StorybrewEditor.Storyboarding
             ImportedAssemblies = indexRoot.Values<string>("Assemblies");
 
             // Load effects
-            var layerInserters = new Dictionary<string, Action>();
+            Dictionary<string, Action> layerInserters = [];
             foreach (var effectPath in Directory.GetFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
             {
                 var guidMatch = effectGuidRegex.Match(effectPath);
@@ -773,7 +771,7 @@ namespace StorybrewEditor.Storyboarding
             if (Directory.Exists(projectFolderPath)) throw new InvalidOperationException($"A project already exists at '{projectFolderPath}'");
 
             Directory.CreateDirectory(projectFolderPath);
-            var project = new Project(Path.Combine(projectFolderPath, DefaultBinaryFilename), withCommonScripts, resourceContainer)
+            Project project = new(Path.Combine(projectFolderPath, DefaultBinaryFilename), withCommonScripts, resourceContainer)
             {
                 MapsetPath = mapsetPath
             };
@@ -784,7 +782,7 @@ namespace StorybrewEditor.Storyboarding
 
         public void ExportToOsb(bool exportOsb = true)
         {
-            ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
+            ObjectDisposedException.ThrowIf(Disposed, GetType());
 
             string osuPath = null, osbPath = null;
             IEnumerable<EditorStoryboardLayer> localLayers = null, diffSpecific = null, sbLayer;

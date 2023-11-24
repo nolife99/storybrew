@@ -12,11 +12,11 @@ namespace StorybrewEditor.Scripting
 
         protected override IProvider<TScript> LoadScript()
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(ScriptContainerAppDomain<TScript>));
+            ObjectDisposedException.ThrowIf(disposedValue, this);
             try
             {
                 var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name}-{DateTime.UtcNow.Millisecond}.dll");
-                ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
+                ScriptCompiler.Compile(null, SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 workerProcess?.Dispose();
                 workerProcess = new RemoteProcessWorkerContainer();
