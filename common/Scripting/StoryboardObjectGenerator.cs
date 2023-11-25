@@ -24,8 +24,10 @@ namespace StorybrewCommon.Scripting
     ///<summary> Base abstract class for all storyboarding scripts. </summary>
     public abstract class StoryboardObjectGenerator : Script
     {
+        [ThreadStatic] static StoryboardObjectGenerator instance;
+
         ///<summary> Gets the currently active <see cref="StoryboardObjectGenerator"/>. </summary>
-        public static StoryboardObjectGenerator Current { get; private set; }
+        public static StoryboardObjectGenerator Current => instance;
 
         List<ConfigurableField> configurableFields;
         GeneratorContext context;
@@ -392,29 +394,24 @@ namespace StorybrewCommon.Scripting
 
         #endregion
 
-        ///<summary> Synchronizes access to the static instance, <see cref="Current"/>. </summary>
-        public static IDisposable InstanceSync => _lock;
-        static readonly ReaderWriterLockSlim _lock = new();
-
         ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
         {
+            if (instance is not null) throw new InvalidOperationException("A script is already running in this domain");
             try
             {
                 this.context = context;
                 rnd = new(RandomSeed);
                 Compressor = new IntegratedCompressor();
 
-                if (!_lock.IsWriteLockHeld) _lock.EnterWriteLock();
-                Current = this;
+                instance = this;
 
                 Generate();
                 context.Multithreaded = Multithreaded;
             }
             finally
             {
-                Current = null;
-                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
+                instance = null;
 
                 if (fonts.Count > 0) saveFontCache();
                 this.context = null;

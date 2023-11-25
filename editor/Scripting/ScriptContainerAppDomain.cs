@@ -32,6 +32,10 @@ namespace StorybrewEditor.Scripting
                 catch
                 {
                     context.Unload();
+
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+
                     throw;
                 }
 
@@ -39,6 +43,9 @@ namespace StorybrewEditor.Scripting
                 {
                     Trace.WriteLine($"{nameof(Scripting)}: Unloading domain {id}");
                     context.Unload();
+
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
                 }
                 this.context = context;
 
@@ -64,6 +71,10 @@ namespace StorybrewEditor.Scripting
                 if (context is not null)
                 {
                     context.Unload();
+
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+
                     context = null;
                 }
                 disposed = true;

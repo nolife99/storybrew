@@ -67,7 +67,7 @@ namespace StorybrewEditor.Util
             if (stopThreads)
             {
                 var sw = Stopwatch.StartNew();
-                for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - (int)sw.ElapsedMilliseconds));
+                for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - sw.ElapsedMilliseconds));
                 sw.Stop();
             }
         }
@@ -222,7 +222,7 @@ namespace StorybrewEditor.Util
                     thread.Start();
                 }
             }
-            internal void JoinOrAbort(int millisecondsTimeout)
+            internal void JoinOrAbort(double millisecondsTimeout)
             {
                 if (thread is null) return;
 
@@ -231,7 +231,7 @@ namespace StorybrewEditor.Util
 
                 lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-                if (!localThread.Join(millisecondsTimeout))
+                if (!localThread.Join(TimeSpan.FromMilliseconds(millisecondsTimeout)))
                 {
                     tokenSrc.Cancel();
                     localThread.Interrupt();
