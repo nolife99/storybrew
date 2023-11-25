@@ -106,7 +106,7 @@ namespace StorybrewEditor
                     1000f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
                     1000f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
 
-                if (Mutex.TryOpenExisting(nameof(StorybrewCommon), out var mutex)) mutex.Dispose();
+                StorybrewCommon.Scripting.StoryboardObjectGenerator.InstanceSync.Dispose();
                 Settings.Save();
             }
         }

@@ -73,8 +73,10 @@ namespace BrewLib.Util
             var halfWidth = kernelWidth >> 1;
             var halfHeight = kernelHeight >> 1;
 
+            var pinnedSrc = source.LockBits(new(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             PinnedBitmap result = new(width, height);
-            using (PinnedBitmap pinnedSource = new(source)) for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+
+            for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
             {
                 var a = 0f;
                 var r = 0f;
@@ -93,8 +95,9 @@ namespace BrewLib.Util
                         if (pixelY < 0) pixelY = 0;
                         else if (pixelY >= height) pixelY = height - 1;
 
-                        var col = pinnedSource.Data[pixelY * width + pixelX];
+                        var col = Marshal.ReadInt32(pinnedSrc.Scan0, sizeof(int) * (pixelY * width + pixelX));
                         var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
+
                         a += ((col >> 24) & 0xFF) * k;
                         r += ((col >> 16) & 0xFF) * k;
                         g += ((col >> 8) & 0xFF) * k;
@@ -102,15 +105,13 @@ namespace BrewLib.Util
                     }
                 }
 
-                var alpha = (byte)(a > 255 ? 255 : (a < 0 ? 0 : a));
+                var alpha = byte.CreateTruncating(a);
                 if (alpha == 1) alpha = 0;
 
-                var red = (byte)(r > 255 ? 255 : (r < 0 ? 0 : r));
-                var green = (byte)(g > 255 ? 255 : (g < 0 ? 0 : g));
-                var blue = (byte)(b > 255 ? 255 : (b < 0 ? 0 : b));
-
-                result.Data[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
+                result.Data[index++] = (alpha << 24) | (byte.CreateTruncating(r) << 16) | (byte.CreateTruncating(g) << 8) | byte.CreateTruncating(b);
             }
+
+            source.UnlockBits(pinnedSrc);
             return result;
         }
         public static PinnedBitmap ConvoluteAlpha(Bitmap source, float[,] kernel, Color color)
@@ -129,8 +130,10 @@ namespace BrewLib.Util
 
             var rgb = (color.R << 16) | (color.G << 8) | color.B;
 
-            PinnedBitmap result = new(width, height);
-            using (PinnedBitmap pinnedSource = new(source)) for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+            var pinnedSrc = source.LockBits(new(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            PinnedBitmap result = new(width, height); 
+            
+            for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
             {
                 var a = 0f;
                 for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
@@ -145,13 +148,12 @@ namespace BrewLib.Util
                         if (pixelY < 0) pixelY = 0;
                         else if (pixelY >= height) pixelY = height - 1;
 
-                        var col = pinnedSource.Data[pixelY * width + pixelX];
+                        var col = Marshal.ReadInt32(pinnedSrc.Scan0, sizeof(int) * (pixelY * width + pixelX));
                         var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
                         a += ((col >> 24) & 0xFF) * k;
                     }
                 }
-
-                result.Data[index++] = ((byte)osuTK.MathHelper.Clamp(a, 0, 255) << 24) | rgb;
+                result.Data[index++] = (byte.CreateTruncating(a) << 24) | rgb;
             }
             return result;
         }
@@ -164,7 +166,7 @@ namespace BrewLib.Util
 
             if (sect.Size == src.PhysicalDimension && sect.Location == default) return src;
 
-            var pixBit = Image.GetPixelFormatSize(src.PixelFormat) * .125f;
+            var pixBit = Image.GetPixelFormatSize(src.PixelFormat) / 8;
             var len = (int)(sect.Width * pixBit);
 
             var srcDat = src.LockBits(new(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
@@ -188,10 +190,13 @@ namespace BrewLib.Util
         public static bool IsFullyTransparent(Bitmap source)
         {
             if (source is null) return true;
+            if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
 
-            var data = source.LockBits(new(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var data = source.LockBits(new(default, source.Size), ImageLockMode.ReadOnly, source.PixelFormat);
             try
             {
+                var pixBit = Image.GetPixelFormatSize(source.PixelFormat) / 8;
+
                 var buf = data.Scan0;
                 for (var y = 0; y < data.Height; ++y)
                 {
@@ -202,9 +207,9 @@ namespace BrewLib.Util
                             source.UnlockBits(data);
                             return false;
                         }
-                        buf += 4;
+                        buf += pixBit;
                     }
-                    buf += data.Stride - source.Width * 4;
+                    buf += data.Stride - source.Width * pixBit;
                 }
             }
             catch
@@ -218,25 +223,25 @@ namespace BrewLib.Util
         public static Rectangle FindTransparencyBounds(Bitmap source)
         {
             if (source is null) return default;
+            if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return new(default, source.Size);
 
-            var data = source.LockBits(new(default, source.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            var data = source.LockBits(new(default, source.Size), ImageLockMode.ReadOnly, source.PixelFormat);
             int xMin = data.Width, yMin = data.Height, xMax = -1, yMax = -1;
 
             try
             {
-                unsafe
+                var pixBit = Image.GetPixelFormatSize(source.PixelFormat) / 8;
+
+                var buf = data.Scan0;
+                for (var y = 0; y < data.Height; ++y)
                 {
-                    var buf = (byte*)data.Scan0;
-                    for (var y = 0; y < data.Height; ++y)
+                    var row = buf + (y * data.Stride);
+                    for (var x = 0; x < data.Width; ++x) if (Marshal.ReadByte(row, x * pixBit + 3) > 0)
                     {
-                        var row = buf + (y * data.Stride);
-                        for (var x = 0; x < data.Width; ++x) if (row[x * 4 + 3] > 0)
-                        {
-                            if (x < xMin) xMin = x;
-                            if (x > xMax) xMax = x;
-                            if (y < yMin) yMin = y;
-                            if (y > yMax) yMax = y;
-                        }
+                        if (x < xMin) xMin = x;
+                        if (x > xMax) xMax = x;
+                        if (y < yMin) yMin = y;
+                        if (y > yMax) yMax = y;
                     }
                 }
             }
@@ -260,7 +265,7 @@ namespace BrewLib.Util
             {
                 Data = new int[width * height];
                 handle = GCHandle.Alloc(Data, GCHandleType.Pinned);
-                Bitmap = new(width, height, width * 4, PixelFormat.Format32bppArgb, addr = Data.AddrOfPinnedArray());
+                Bitmap = new(width, height, width * sizeof(int), PixelFormat.Format32bppArgb, addr = Data.AddrOfPinnedArray());
             }
             public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
             {

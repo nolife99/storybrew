@@ -392,7 +392,8 @@ namespace StorybrewCommon.Scripting
 
         #endregion
 
-        static readonly Mutex instanceSync = new(false, nameof(StorybrewCommon));
+        ///<summary> Represents a primitive to synchronize access to the static instance, <see cref="Current"/>. </summary>
+        public static readonly ReaderWriterLockSlim InstanceSync = new();
 
         ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
@@ -403,7 +404,7 @@ namespace StorybrewCommon.Scripting
                 rnd = new(RandomSeed);
                 Compressor = new IntegratedCompressor();
 
-                instanceSync.WaitOne();
+                if (!InstanceSync.IsWriteLockHeld) InstanceSync.EnterWriteLock();
                 Current = this;
 
                 Generate();
@@ -412,7 +413,7 @@ namespace StorybrewCommon.Scripting
             finally
             {
                 Current = null;
-                instanceSync.ReleaseMutex();
+                if (InstanceSync.IsWriteLockHeld) InstanceSync.ExitWriteLock();
 
                 if (fonts.Count > 0) saveFontCache();
                 this.context = null;

@@ -254,7 +254,7 @@ namespace StorybrewCommon.Subtitles
         {
             // wtf is this
             var filename = text.Length == 1 ?
-                $"{(!PathHelper.IsValidFilename(text[0].ToString(CultureInfo.InvariantCulture)) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + "_" : text[0].ToString(CultureInfo.InvariantCulture)))}.png" :
+                $"{(!PathHelper.IsValidFilename(text[0].ToString(CultureInfo.InvariantCulture)) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' : text[0].ToString(CultureInfo.InvariantCulture)))}.png" :
                 $"_{cache.Count(l => l.Key.Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
             var trimExist = false;
@@ -275,7 +275,7 @@ namespace StorybrewCommon.Subtitles
             float offsetX = 0, offsetY = 0;
             int baseWidth, baseHeight, width, height;
 
-            using (StringFormat format = new(StringFormat.GenericTypographic)) using (PrivateFontCollection fontCollection = new()) using (var graphics = Graphics.FromHwnd(default))
+            using (var format = StringFormat.GenericTypographic) using (PrivateFontCollection fontCollection = new()) using (var graphics = Graphics.FromHwnd(0))
             {
                 graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -284,17 +284,16 @@ namespace StorybrewCommon.Subtitles
                 format.Alignment = StringAlignment.Center;
                 format.FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip;
 
-                FontFamily fontFamily = null;
+                FontFamily family = null;
                 if (File.Exists(fontPath))
                 {
                     fontCollection.AddFontFile(fontPath);
-                    fontFamily = fontCollection.Families[0];
+                    family = fontCollection.Families[0];
                 }
 
                 var dpiScale = 96 / graphics.DpiY;
-                using var font = fontFamily is not null ?
-                    new Font(fontFamily, description.FontSize * dpiScale, description.FontStyle) :
-                    new Font(fontPath, description.FontSize * dpiScale, description.FontStyle);
+                using Font font = family is not null ? new(family, description.FontSize * dpiScale, description.FontStyle) : new(fontPath, description.FontSize * dpiScale, description.FontStyle);
+
                 var measuredSize = graphics.MeasureString(text, font, 0, format);
                 baseWidth = (int)Math.Ceiling(measuredSize.Width);
                 baseHeight = (int)Math.Ceiling(measuredSize.Height);
@@ -320,7 +319,7 @@ namespace StorybrewCommon.Subtitles
                 if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0)
                     return new FontTexture(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
 
-                using var bitmap = new Bitmap(width, height);
+                using Bitmap bitmap = new(width, height);
                 using (var textGraphics = Graphics.FromImage(bitmap))
                 {
                     textGraphics.TextRenderingHint = graphics.TextRenderingHint;
@@ -329,7 +328,7 @@ namespace StorybrewCommon.Subtitles
 
                     if (description.Debug)
                     {
-                        var r = new FastRandom(cache.Count);
+                        FastRandom r = new(cache.Count);
                         textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
                     }
 
@@ -337,7 +336,7 @@ namespace StorybrewCommon.Subtitles
                     if (!description.EffectsOnly) using (var draw = new SolidBrush(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
                     for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
 
-                    if (description.Debug) using (var pen = new Pen(Color.Red))
+                    if (description.Debug) using (Pen pen = new(Color.Red))
                     {
                         textGraphics.DrawLine(pen, x, y, x, y + baseHeight);
                         textGraphics.DrawLine(pen, x - baseWidth * .5f, y, x + baseWidth * .5f, y);
@@ -363,11 +362,10 @@ namespace StorybrewCommon.Subtitles
                     }
                     if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath))
                     {
-                        if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) 
-                            StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings(7));
-                        else StoryboardObjectGenerator.Current.Compressor.Compress(path, new LossyInputSettings(75, 100, 1));
+                        if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(7));
+                        else StoryboardObjectGenerator.Current.Compressor.Compress(path, new(75, 100, 1));
                     }
-                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new LosslessInputSettings(4));
+                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(4));
                 }
             }
             return new FontTexture(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);
