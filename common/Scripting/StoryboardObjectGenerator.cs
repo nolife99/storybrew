@@ -308,7 +308,7 @@ namespace StorybrewCommon.Scripting
                     for (var i = 0; i < enumValues.Length; ++i)
                     {
                         var value = enumValues.GetValue(i);
-                        allowedValues[i] = new NamedValue
+                        allowedValues[i] = new()
                         {
                             Name = value.ToString(),
                             Value = Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture)
@@ -392,8 +392,9 @@ namespace StorybrewCommon.Scripting
 
         #endregion
 
-        ///<summary> Represents a primitive to synchronize access to the static instance, <see cref="Current"/>. </summary>
-        public static readonly ReaderWriterLockSlim InstanceSync = new();
+        ///<summary> Synchronizes access to the static instance, <see cref="Current"/>. </summary>
+        public static IDisposable InstanceSync => _lock;
+        static readonly ReaderWriterLockSlim _lock = new();
 
         ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
@@ -404,7 +405,7 @@ namespace StorybrewCommon.Scripting
                 rnd = new(RandomSeed);
                 Compressor = new IntegratedCompressor();
 
-                if (!InstanceSync.IsWriteLockHeld) InstanceSync.EnterWriteLock();
+                if (!_lock.IsWriteLockHeld) _lock.EnterWriteLock();
                 Current = this;
 
                 Generate();
@@ -413,7 +414,7 @@ namespace StorybrewCommon.Scripting
             finally
             {
                 Current = null;
-                if (InstanceSync.IsWriteLockHeld) InstanceSync.ExitWriteLock();
+                if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
 
                 if (fonts.Count > 0) saveFontCache();
                 this.context = null;

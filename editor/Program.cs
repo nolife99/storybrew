@@ -90,7 +90,7 @@ namespace StorybrewEditor
             using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager())
             using (Editor editor = new(window)) using (System.Drawing.Icon icon = new(typeof(Editor), "icon.ico"))
             {
-                Trace.WriteLine($"{Environment.OSVersion} / {window.WindowInfo}");
+                Trace.WriteLine($"{Environment.OSVersion} / Handle: 0x{Native.MainWindowHandle:X}");
                 Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
                 Native.SetWindowIcon(icon.Handle);
@@ -265,16 +265,11 @@ namespace StorybrewEditor
         /// Schedule the action to run in the main thread after a delay (in milliseconds).
         /// Exceptions will be logged.
         /// </summary>
-        public static void Schedule(Action action, int delay)
+        public static void Schedule(Action action, int delay) => Task.Run(async () =>
         {
-            using Task task = new(async () =>
-            {
-                using (var wait = Task.Delay(delay)) await wait;
-                Schedule(action);
-            }, TaskCreationOptions.AttachedToParent);
-
-            task.Start();
-        }
+            using (var wait = Task.Delay(delay)) await wait;
+            Schedule(action);
+        });
 
         /// <summary>
         /// Run the action synchronously in the main thread.
@@ -396,33 +391,42 @@ namespace StorybrewEditor
 
         static void setupFreezeCheck(Action<Exception> action)
         {
-            var mainThread = Thread.CurrentThread;
+            using ManualResetEvent wait = new(false);
 
-            var cancel = new CancellationTokenSource();
-            var thread = new Task(async () =>
+            var thread = new Thread(async () =>
             {
                 var answered = false;
                 var frozen = 0;
-                var cancellationToken = cancel.Token;
 
-                while (!SchedulingEnabled) using (var wait = Task.Delay(1000)) await wait;
-                while (!cancellationToken.IsCancellationRequested)
+                while (!SchedulingEnabled) using (var delay = Task.Delay(1000)) await delay;
+                while (true)
                 {
                     answered = false;
                     Schedule(() => answered = true);
 
-                    using (var wait = Task.Delay(1000)) await wait;
+                    Thread.Sleep(1000);
 
                     if (!answered) ++frozen;
                     if (frozen >= 3)
                     {
                         frozen = 0;
-                        cancel.Cancel();
+
+                        wait.WaitOne();
+                        StackTrace trace = null;
 
                         try
                         {
-                            var trace = new StackTrace(true);
-                            action(new ThreadStateException(trace.ToString()));
+                            trace = new(true);
+                            action(new(trace.ToString()));
+                        }
+                        catch (ThreadStateException e)
+                        {
+                            action(e);
+                        }
+
+                        try
+                        {
+                            wait.Set();
                         }
                         catch (ThreadStateException e)
                         {
@@ -430,9 +434,13 @@ namespace StorybrewEditor
                         }
                     }
                 }
+            })
+            { 
+                Name = "Freeze Checker", 
+                IsBackground = true
+            };
 
-                cancel.Dispose();
-            }, cancel.Token);
+            thread.TrySetApartmentState(ApartmentState.STA);
             thread.Start();
         }
 

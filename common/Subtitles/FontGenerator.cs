@@ -1,5 +1,4 @@
 ﻿using BrewLib.Util;
-using BrewLib.Util.Compression;
 using osuTK.Graphics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;

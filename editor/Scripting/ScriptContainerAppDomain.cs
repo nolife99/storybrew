@@ -26,8 +26,7 @@ namespace StorybrewEditor.Scripting
                 IProvider<TScript> scriptProvider;
                 try
                 {
-                    scriptProvider = (IProvider<TScript>)Activator.CreateInstance(context.LoadFromAssemblyPath(typeof(ScriptProvider<TScript>).Assembly.Location)
-                        .GetType(typeof(ScriptProvider<TScript>).FullName));
+                    scriptProvider = (IProvider<TScript>)context.LoadFromAssemblyPath(typeof(ScriptProvider<TScript>).Assembly.Location).CreateInstance(typeof(ScriptProvider<TScript>).FullName);
                     scriptProvider.Initialize(context, assemblyPath, ScriptTypeName);
                 }
                 catch

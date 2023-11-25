@@ -15,13 +15,13 @@ namespace StorybrewEditor.Scripting
             ObjectDisposedException.ThrowIf(disposedValue, this);
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name}-{DateTime.UtcNow.Millisecond}.dll");
+                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name + Environment.TickCount64}.dll");
                 ScriptCompiler.Compile(null, SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 workerProcess?.Dispose();
-                workerProcess = new RemoteProcessWorkerContainer();
+                workerProcess = new();
 
-                var scriptProvider = RemoteProcessWorker.CreateScriptProvider<TScript>();
+                var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
                 scriptProvider.Initialize(null, assemblyPath, ScriptTypeName);
 
                 return scriptProvider;

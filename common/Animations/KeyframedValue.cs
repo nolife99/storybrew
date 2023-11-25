@@ -211,7 +211,7 @@ namespace StorybrewCommon.Animations
         }
 
         static Keyframe<TValue> editKeyframe(Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit is not null ?
-            new Keyframe<TValue>(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
+            new(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
 
         ///<summary> Removes all keyframes in the keyframed value. </summary>
         public void Clear(bool trim = false)
@@ -235,7 +235,7 @@ namespace StorybrewCommon.Animations
             else i = ~i;
             return i;
         }
-        internal int indexAt(double time, bool before) => indexFor(new Keyframe<TValue>(time), before);
+        internal int indexAt(double time, bool before) => indexFor(new(time), before);
 
         #region Manipulation
 
@@ -245,9 +245,9 @@ namespace StorybrewCommon.Animations
         public void Simplify1dKeyframes(double tolerance, Func<TValue, float> getComponent)
             => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
         {
-            var start = new Vector2((float)startKeyframe.Time, getComponent(startKeyframe.Value));
-            var middle = new Vector2((float)middleKeyframe.Time, getComponent(middleKeyframe.Value));
-            var end = new Vector2((float)endKeyframe.Time, getComponent(endKeyframe.Value));
+            Vector2 start = new((float)startKeyframe.Time, getComponent(startKeyframe.Value));
+            Vector2 middle = new((float)middleKeyframe.Time, getComponent(middleKeyframe.Value));
+            Vector2 end = new((float)endKeyframe.Time, getComponent(endKeyframe.Value));
 
             var area = Math.Abs((start.X * end.Y + end.X * middle.Y + middle.X * start.Y - end.X * start.Y - middle.X * end.Y - start.X * middle.Y) * .5);
             var bottom = Math.Sqrt((start.X - end.X) * (start.X - end.X) + (start.Y - end.Y) * (start.Y - end.Y));
@@ -264,9 +264,9 @@ namespace StorybrewCommon.Animations
             var middleComponent = getComponent(middleKeyframe.Value);
             var endComponent = getComponent(endKeyframe.Value);
 
-            var start = new Vector3((float)startKeyframe.Time, startComponent.X, startComponent.Y);
-            var middle = new Vector3((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y);
-            var end = new Vector3((float)endKeyframe.Time, endComponent.X, endComponent.Y);
+            Vector3 start = new((float)startKeyframe.Time, startComponent.X, startComponent.Y);
+            Vector3 middle = new((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y);
+            Vector3 end = new((float)endKeyframe.Time, endComponent.X, endComponent.Y);
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
@@ -283,9 +283,9 @@ namespace StorybrewCommon.Animations
             var middleComponent = getComponent(middleKeyframe.Value);
             var endComponent = getComponent(endKeyframe.Value);
 
-            var start = new Vector4((float)startKeyframe.Time, startComponent.X, startComponent.Y, startComponent.Z);
-            var middle = new Vector4((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y, middleComponent.Z);
-            var end = new Vector4((float)endKeyframe.Time, endComponent.X, endComponent.Y, endComponent.Z);
+            Vector4 start = new((float)startKeyframe.Time, startComponent.X, startComponent.Y, startComponent.Z);
+            Vector4 middle = new((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y, middleComponent.Z);
+            Vector4 end = new((float)endKeyframe.Time, endComponent.X, endComponent.Y, endComponent.Z);
 
             var startToMiddle = middle - start;
             var startToEnd = end - start;
@@ -333,16 +333,17 @@ namespace StorybrewCommon.Animations
 
             var firstPoint = 0;
             var lastPoint = keyframes.Count - 1;
-            var keyframesToKeep = new SortedSet<int> { firstPoint, lastPoint };
+
+            SortedSet<int> keyframesToKeep = [firstPoint, lastPoint];
             getSimplifiedKeyframeIndexes(ref keyframesToKeep, firstPoint, lastPoint, tolerance, getDistance);
 
             if (keyframesToKeep.Count == keyframes.Count) return;
 
-            var simplifiedKeyframes = new List<Keyframe<TValue>>(keyframesToKeep.Count);
+            List<Keyframe<TValue>> simplifiedKeyframes = new(keyframesToKeep.Count);
             foreach (var keep in keyframesToKeep)
             {
                 var keyframe = keyframes[keep];
-                simplifiedKeyframes.Add(new Keyframe<TValue>(keyframe.Time, keyframe.Value));
+                simplifiedKeyframes.Add(new(keyframe.Time, keyframe.Value));
             }
             keyframes = simplifiedKeyframes;
         }

@@ -94,7 +94,6 @@ namespace BrewLib.Util.Compression
             if (disposed) return;
 
             using (var completion = Task.WhenAll(tasks)) await completion;
-            tasks.ForEach(task => task.Dispose());
             tasks.Clear();
 
             base.Dispose(disposing);

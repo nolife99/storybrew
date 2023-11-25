@@ -34,7 +34,7 @@ namespace BrewLib.Util
 
                     var retryDelay = timeout / 10;
                     sleepTime += retryDelay;
-                    using (var wait = Task.Delay(retryDelay)) wait.Wait();
+                    using var wait = Task.Delay(retryDelay); wait.Wait();
                 }
             }
         }

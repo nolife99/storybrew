@@ -7,8 +7,7 @@ namespace StorybrewEditor.Processes
 {
     public class RemoteProcessWorker : MarshalByRefObject, IDisposable
     {
-        public static void CheckIpc() => Trace.WriteLine("CheckIpc");
-        public static IProvider<TScript> CreateScriptProvider<TScript>() where TScript : Script
+        public ScriptProvider<TScript> CreateScriptProvider<TScript>() where TScript : Script
         {
             Trace.WriteLine("GetScriptProvider");
             return new ScriptProvider<TScript>();
@@ -16,15 +15,16 @@ namespace StorybrewEditor.Processes
 
         #region IDisposable Support
 
-        bool disposed;
+        bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposed)
+            if (!disposedValue)
             {
                 if (disposing) ProcessWorker.Exit();
-                disposed = true;
+                disposedValue = true;
             }
         }
+
         public void Dispose() => Dispose(true);
 
         #endregion

@@ -23,13 +23,14 @@ namespace StorybrewEditor.Scripting
             Path.GetDirectoryName(typeof(Brush).Assembly.Location),
             Environment.CurrentDirectory
         ];
-        static int nextId;
 
         public static void Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             Trace.WriteLine($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths.Select(Path.GetFileName))}");
-            var compiler = (ICompiler)(context ?? AssemblyLoadContext.Default).LoadFromAssemblyPath(typeof(ScriptCompiler).Assembly.Location).CreateInstance(typeof(ScriptCompiler).FullName);
-            compiler.Compile(sourcePaths, outputPath, referencedAssemblies);
+            ((ICompiler)(context ?? AssemblyLoadContext.Default)
+                .LoadFromAssemblyPath(typeof(ScriptCompiler).Assembly.Location)
+                .CreateInstance(typeof(ScriptCompiler).FullName))
+                .Compile(sourcePaths, outputPath, referencedAssemblies);
         }
 
         void ICompiler.Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
@@ -67,19 +68,19 @@ namespace StorybrewEditor.Scripting
                 }
                 catch (Exception e)
                 {
-                    var message = new StringBuilder("Compilation error\n\n");
+                    StringBuilder message = new("Compilation error\n\n");
                     message.AppendLine(e.ToString());
                     throw new ScriptCompilationException(message.ToString());
                 }
             }
 
             var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references, 
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
+                new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
 
             using (var assemblyStream = File.Create(outputPath))
             {
                 var result = compilation.Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
-                    options: new EmitOptions(debugInformationFormat: DebugInformationFormat.Embedded));
+                    options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
                 if (result.Success)
                 {
@@ -96,7 +97,7 @@ namespace StorybrewEditor.Scripting
 
                 trees.Clear();
 
-                var message = new StringBuilder("Compilation error\n\n");
+                StringBuilder message = new("Compilation error\n\n");
                 foreach (var kvp in failureGroup)
                 {
                     var file = kvp.Key;

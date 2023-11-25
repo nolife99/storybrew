@@ -1,54 +1,67 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Pipes;
-using System.Text.Json;
-using System.Threading;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Processes
 {
     public class RemoteProcessWorkerContainer : IDisposable
     {
-        readonly NamedPipeServerStream pipeServer;
+        NamedPipeServerStream server;
+        Process process;
 
         public RemoteProcessWorker Worker { get; private set; }
+
         public RemoteProcessWorkerContainer()
         {
-            pipeServer = new NamedPipeServerStream($"sbrew-{Guid.NewGuid()}");
-            pipeServer.WaitForConnection();
+            var identifier = Guid.NewGuid().ToString();
+            var workerUrl = $"sbrew-worker-{identifier}";
 
-            Worker = retrieveWorker(pipeServer);
+            server = new(workerUrl);
+            startProcess(identifier);
+            Worker = retrieveWorker(workerUrl);
         }
 
-        static RemoteProcessWorker retrieveWorker(NamedPipeServerStream pipeServer)
+        private void startProcess(string identifier)
+        {
+            var executablePath = Assembly.GetExecutingAssembly().Location;
+            var workingDirectory = Path.GetDirectoryName(executablePath);
+            process = new()
+            {
+                StartInfo = new(executablePath, $"worker \"{identifier}\"")
+                {
+                    WorkingDirectory = workingDirectory,
+                }
+            };
+            process.Start();
+        }
+
+        RemoteProcessWorker retrieveWorker(string workerUrl)
         {
             while (true)
             {
+                using (var delay = Task.Delay(250)) delay.Wait();
                 try
                 {
-                    Trace.WriteLine("Waiting for connection...");
-                    pipeServer.WaitForConnection(); 
-                    Trace.WriteLine("Connection established.");
-
-                    var worker = (RemoteProcessWorker)JsonSerializer.Deserialize(pipeServer, typeof(RemoteProcessWorker));
-                    Trace.WriteLine("Worker received.");
-
+                    Trace.WriteLine($"Retrieving {workerUrl}");
+                    var worker = (RemoteProcessWorker)Activator.CreateInstance(typeof(RemoteProcessWorker));
                     return worker;
                 }
                 catch (Exception e)
                 {
-                    Trace.WriteLine($"Couldn't start pipe: {e}");
+                    Trace.WriteLine($"Couldn't start ipc: {e}");
                 }
-
-                Thread.Sleep(250);
             }
         }
 
         #region IDisposable Support
 
-        bool disposed;
+        bool disposedValue;
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposed)
+            if (!disposedValue)
             {
                 if (disposing)
                 {
@@ -61,14 +74,20 @@ namespace StorybrewEditor.Processes
                         Trace.WriteLine($"Failed to dispose the worker: {e}");
                     }
 
-                    pipeServer.Disconnect();
-                    pipeServer.Dispose();
+                    if (!process.WaitForExit(3000)) process.Kill();
+                    server.Close();
                 }
 
                 Worker = null;
-                disposed = true;
+
+                process.Close();
+                process = null;
+
+                server = null;
+                disposedValue = true;
             }
         }
+
         public void Dispose() => Dispose(true);
 
         #endregion

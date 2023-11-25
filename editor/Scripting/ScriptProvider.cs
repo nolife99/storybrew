@@ -17,7 +17,7 @@ namespace StorybrewEditor.Scripting
             stream.Dispose();
 
             if (File.Exists(assemblyPath)) File.Delete(assemblyPath);
-            type = assembly.GetType(typeName, true, true);
+            type = assembly.GetType(typeName, true);
         }
         public TScript CreateScript()
         {

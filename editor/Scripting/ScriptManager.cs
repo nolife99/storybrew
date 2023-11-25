@@ -83,8 +83,8 @@ namespace StorybrewEditor.Scripting
 
         public ScriptContainer<TScript> Get(string scriptName)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(ScriptManager<TScript>));
-            if (scriptContainers.TryGetValue(scriptName, out ScriptContainer<TScript> scriptContainer)) return scriptContainer;
+            ObjectDisposedException.ThrowIf(disposedValue, GetType());
+            if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
 
             var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
             var sourcePath = Path.Combine(ScriptsPath, $"{scriptName}.cs");
@@ -99,8 +99,7 @@ namespace StorybrewEditor.Scripting
                 }
             }
 
-            scriptContainer = new ScriptContainerAppDomain<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
-            scriptContainers[scriptName] = scriptContainer;
+            scriptContainers[scriptName] = scriptContainer = new ScriptContainerAppDomain<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
             return scriptContainer;
         }
         public IEnumerable<string> GetScriptNames()

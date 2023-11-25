@@ -10,12 +10,10 @@ namespace BrewLib.Util
     {
         #region Memory
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [LibraryImport("kernel32")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")]
         private static partial void RtlCopyMemory(nint dest, nint src, uint count);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [LibraryImport("kernel32")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")]
         private static partial void RtlMoveMemory(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO.Pipes;
-using System.Text.Json;
 using System.Threading;
 
 namespace StorybrewEditor.Processes
 {
     public static class ProcessWorker
     {
-        static bool exit;
+        private static bool exit;
 
         public static void Run(string identifier)
         {
@@ -16,29 +15,17 @@ namespace StorybrewEditor.Processes
             try
             {
                 var name = $"sbrew-worker-{identifier}";
-                var pipeServer = new NamedPipeServerStream(name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-
-                try
+                using (NamedPipeServerStream server = new(name))
                 {
+                    Trace.WriteLine($"{name}: ready");
+
                     while (!exit)
                     {
-                        pipeServer.WaitForConnection();
-                        var remoteProcessWorker = new RemoteProcessWorker();
-                        var stream = pipeServer;
-                        remoteProcessWorker = (RemoteProcessWorker)JsonSerializer.Deserialize(stream, typeof(RemoteProcessWorker));
-
-                        stream.Position = 0;
-                        JsonSerializer.Serialize(stream, remoteProcessWorker);
-
-                        pipeServer.Disconnect();
+                        server.WaitForConnection();
                         Program.RunScheduledTasks();
+                        server.Disconnect();
                         Thread.Sleep(100);
                     }
-                }
-                finally
-                {
-                    Trace.WriteLine($"closing pipe server");
-                    pipeServer.Close();
                 }
             }
             catch (Exception e)
@@ -52,4 +39,5 @@ namespace StorybrewEditor.Processes
             exit = true;
         }
     }
+
 }

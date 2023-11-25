@@ -58,7 +58,7 @@ namespace StorybrewEditor.Storyboarding
         public override StoryboardLayer GetLayer(string name)
         {
             var layer = EditorLayers.Find(l => l.Name == name);
-            if (layer == null) EditorLayers.Add(layer = new(name, effect));
+            if (layer is null) EditorLayers.Add(layer = new(name, effect));
             return layer;
         }
 
