@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
+using System.Security.Policy;
 
 namespace BrewLib.Util
 {
@@ -31,7 +32,7 @@ namespace BrewLib.Util
             var pixels = source.Width * source.Height;
             for (var index = 0; index < pixels; ++index)
             {
-                var color = result.Data[index];
+                var color = result[index];
 
                 var alpha = (color >> 24) & 0xFF;
                 var red = (color >> 16) & 0xFF;
@@ -43,7 +44,7 @@ namespace BrewLib.Util
                 green = (int)(green * a);
                 blue = (int)(blue * a);
 
-                result.Data[index] = (alpha << 24) | (red << 16) | (green << 8) | blue;
+                result[index] = (alpha << 24) | (red << 16) | (green << 8) | blue;
             }
 
             return result;
@@ -78,37 +79,27 @@ namespace BrewLib.Util
 
             for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
             {
-                var a = 0f;
-                var r = 0f;
-                var g = 0f;
-                var b = 0f;
-
+                float a = 0f, r = 0f, g = 0f, b = 0f;
                 for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
-                    var pixelX = kernelX + x;
-                    if (pixelX < 0) pixelX = 0;
-                    else if (pixelX >= width) pixelX = width - 1;
-
+                    var pixelX = osuTK.MathHelper.Clamp(kernelX + x, 0, width - 1);
                     for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                     {
-                        var pixelY = kernelY + y;
-                        if (pixelY < 0) pixelY = 0;
-                        else if (pixelY >= height) pixelY = height - 1;
-
+                        var pixelY = osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1);
                         var col = Marshal.ReadInt32(pinnedSrc.Scan0, sizeof(int) * (pixelY * width + pixelX));
                         var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
 
                         a += ((col >> 24) & 0xFF) * k;
                         r += ((col >> 16) & 0xFF) * k;
                         g += ((col >> 8) & 0xFF) * k;
-                        b += ((col) & 0xFF) * k;
+                        b += (col & 0xFF) * k;
                     }
                 }
 
                 var alpha = byte.CreateTruncating(a);
                 if (alpha == 1) alpha = 0;
 
-                result.Data[index++] = (alpha << 24) | (byte.CreateTruncating(r) << 16) | (byte.CreateTruncating(g) << 8) | byte.CreateTruncating(b);
+                result[index++] = (alpha << 24) | (byte.CreateTruncating(r) << 16) | (byte.CreateTruncating(g) << 8) | byte.CreateTruncating(b);
             }
 
             source.UnlockBits(pinnedSrc);
@@ -138,22 +129,12 @@ namespace BrewLib.Util
                 var a = 0f;
                 for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
-                    var pixelX = kernelX + x;
-                    if (pixelX < 0) pixelX = 0;
-                    else if (pixelX >= width) pixelX = width - 1;
-
-                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
-                    {
-                        var pixelY = kernelY + y;
-                        if (pixelY < 0) pixelY = 0;
-                        else if (pixelY >= height) pixelY = height - 1;
-
-                        var col = Marshal.ReadInt32(pinnedSrc.Scan0, sizeof(int) * (pixelY * width + pixelX));
-                        var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
-                        a += ((col >> 24) & 0xFF) * k;
-                    }
+                    var pixelX = osuTK.MathHelper.Clamp(kernelX + x, 0, width - 1);
+                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY) a += ((Marshal.ReadInt32(pinnedSrc.Scan0, sizeof(int) * 
+                        (osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1) * width + pixelX)) >> 24) & 0xFF) * 
+                        kernel[kernelY + halfWidth, kernelX + halfHeight];
                 }
-                result.Data[index++] = (byte.CreateTruncating(a) << 24) | rgb;
+                result[index++] = (byte.CreateTruncating(a) << 24) | rgb;
             }
             return result;
         }
@@ -253,26 +234,38 @@ namespace BrewLib.Util
             return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
         }
 
-        public sealed class PinnedBitmap : IDisposable
+        public unsafe sealed class PinnedBitmap : IDisposable
         {
             public readonly Bitmap Bitmap;
-            public readonly int[] Data;
+            readonly int* addr;
+            readonly int size;
 
-            readonly GCHandle handle;
-            readonly nint addr;
+            public unsafe int this[int pixelIndex]
+            {
+                get
+                {
+                    if (pixelIndex > size || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                    return addr[pixelIndex];
+                }
+                set
+                {
+                    if (pixelIndex > size || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                    addr[pixelIndex] = value;
+                }
+            }
 
             public PinnedBitmap(int width, int height)
             {
-                Data = new int[width * height];
-                handle = GCHandle.Alloc(Data, GCHandleType.Pinned);
-                Bitmap = new(width, height, width * sizeof(int), PixelFormat.Format32bppArgb, addr = Data.AddrOfPinnedArray());
+                size = width * height;
+                addr = (int*)NativeMemory.AlignedAlloc(nuint.CreateChecked(size * sizeof(int)), sizeof(int));
+                Bitmap = new(width, height, width * sizeof(int), PixelFormat.Format32bppArgb, (nint)addr);
             }
             public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
             {
                 var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
                 try
                 {
-                    Native.CopyMemory(data.Scan0, addr, Data.Length * sizeof(int));
+                    Native.CopyMemory(data.Scan0, (nint)addr, size * sizeof(int));
                 }
                 finally
                 {
@@ -284,8 +277,8 @@ namespace BrewLib.Util
             public void Dispose()
             {
                 if (disposed) return;
-                Bitmap?.Dispose();
-                if (handle.IsAllocated) handle.Free();
+                Bitmap.Dispose();
+                NativeMemory.AlignedFree(addr);
                 disposed = true;
             }
         }
