@@ -35,7 +35,7 @@ namespace BrewLib.Util
             }
             unsafe
             {
-                Unsafe.CopyBlock(ref *(byte*)destination, ref *(byte*)source, (uint)count);
+                NativeMemory.Copy(destination.ToPointer(), source.ToPointer(), (uint)count);
                 return true;
             }
         }

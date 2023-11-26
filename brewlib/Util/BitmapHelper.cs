@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
-using System.Security.Policy;
 
 namespace BrewLib.Util
 {
@@ -40,9 +39,9 @@ namespace BrewLib.Util
                 var blue = color & 0xFF;
 
                 var a = alpha / 255f;
-                red = (int)(red * a);
-                green = (int)(green * a);
-                blue = (int)(blue * a);
+                red = byte.CreateTruncating(red * a);
+                green = byte.CreateTruncating(green * a);
+                blue = byte.CreateTruncating(blue * a);
 
                 result[index] = (alpha << 24) | (red << 16) | (green << 8) | blue;
             }
@@ -57,7 +56,7 @@ namespace BrewLib.Util
 
             var scale = 1 / (weight * weight * 2 * MathF.PI);
             for (var y = -radius; y <= radius; ++y) for (var x = -radius; x <= radius; ++x) total += kernel[y + radius, x + radius] = scale * MathF.Exp(-(x * x + y * y) / (2 * weight * weight));
-            for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] = kernel[y, x] / total;
+            for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] /= total;
             return kernel;
         }
         public static PinnedBitmap Convolute(Bitmap source, float[,] kernel)
@@ -85,14 +84,13 @@ namespace BrewLib.Util
                     var pixelX = osuTK.MathHelper.Clamp(kernelX + x, 0, width - 1);
                     for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                     {
-                        var pixelY = osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1);
-                        var col = Marshal.ReadInt32(pinnedSrc.Scan0, sizeof(int) * (pixelY * width + pixelX));
+                        var color = Marshal.ReadInt32(pinnedSrc.Scan0, (osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1) * width + pixelX) << 2);
                         var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
 
-                        a += ((col >> 24) & 0xFF) * k;
-                        r += ((col >> 16) & 0xFF) * k;
-                        g += ((col >> 8) & 0xFF) * k;
-                        b += (col & 0xFF) * k;
+                        a += ((color >> 24) & 0xFF) * k;
+                        r += ((color >> 16) & 0xFF) * k;
+                        g += ((color >> 8) & 0xFF) * k;
+                        b += (color & 0xFF) * k;
                     }
                 }
 
@@ -130,8 +128,8 @@ namespace BrewLib.Util
                 for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
                     var pixelX = osuTK.MathHelper.Clamp(kernelX + x, 0, width - 1);
-                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY) a += ((Marshal.ReadInt32(pinnedSrc.Scan0, sizeof(int) * 
-                        (osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1) * width + pixelX)) >> 24) & 0xFF) * 
+                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY) a += ((Marshal.ReadInt32(pinnedSrc.Scan0,
+                        (osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1) * width + pixelX) << 2) >> 24) & 0xFF) * 
                         kernel[kernelY + halfWidth, kernelX + halfHeight];
                 }
                 result[index++] = (byte.CreateTruncating(a) << 24) | rgb;
@@ -147,7 +145,7 @@ namespace BrewLib.Util
 
             if (sect.Size == src.PhysicalDimension && sect.Location == default) return src;
 
-            var pixBit = Image.GetPixelFormatSize(src.PixelFormat) / 8;
+            var pixBit = Image.GetPixelFormatSize(src.PixelFormat) >> 3;
             var len = (int)(sect.Width * pixBit);
 
             var srcDat = src.LockBits(new(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
@@ -176,7 +174,7 @@ namespace BrewLib.Util
             var data = source.LockBits(new(default, source.Size), ImageLockMode.ReadOnly, source.PixelFormat);
             try
             {
-                var pixBit = Image.GetPixelFormatSize(source.PixelFormat) / 8;
+                var pixBit = Image.GetPixelFormatSize(source.PixelFormat) >> 3;
 
                 var buf = data.Scan0;
                 for (var y = 0; y < data.Height; ++y)
@@ -211,7 +209,7 @@ namespace BrewLib.Util
 
             try
             {
-                var pixBit = Image.GetPixelFormatSize(source.PixelFormat) / 8;
+                var pixBit = Image.GetPixelFormatSize(source.PixelFormat) >> 3;
 
                 var buf = data.Scan0;
                 for (var y = 0; y < data.Height; ++y)
@@ -234,38 +232,39 @@ namespace BrewLib.Util
             return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
         }
 
-        public unsafe sealed class PinnedBitmap : IDisposable
+        public sealed class PinnedBitmap : IDisposable
         {
-            public readonly Bitmap Bitmap;
-            readonly int* addr;
-            readonly int size;
+            public Bitmap Bitmap { get; }
 
-            public unsafe int this[int pixelIndex]
+            readonly nint addr;
+            readonly int pixels, size;
+
+            public int this[int pixelIndex]
             {
                 get
                 {
-                    if (pixelIndex > size || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
-                    return addr[pixelIndex];
+                    if (pixelIndex > pixels || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                    return Marshal.ReadInt32(addr, pixelIndex << 2);
                 }
                 set
                 {
-                    if (pixelIndex > size || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
-                    addr[pixelIndex] = value;
+                    if (pixelIndex > pixels || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                    Marshal.WriteInt32(addr, pixelIndex << 2, value);
                 }
             }
 
             public PinnedBitmap(int width, int height)
             {
-                size = width * height;
-                addr = (int*)NativeMemory.AlignedAlloc(nuint.CreateChecked(size * sizeof(int)), sizeof(int));
-                Bitmap = new(width, height, width * sizeof(int), PixelFormat.Format32bppArgb, (nint)addr);
+                pixels = width * height;
+                size = pixels << 2;
+                Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, addr = Marshal.AllocCoTaskMem(size));
             }
             public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
             {
                 var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
                 try
                 {
-                    Native.CopyMemory(data.Scan0, (nint)addr, size * sizeof(int));
+                    Native.CopyMemory(data.Scan0, addr, size);
                 }
                 finally
                 {
@@ -278,7 +277,7 @@ namespace BrewLib.Util
             {
                 if (disposed) return;
                 Bitmap.Dispose();
-                NativeMemory.AlignedFree(addr);
+                if (addr != 0) Marshal.FreeCoTaskMem(addr);
                 disposed = true;
             }
         }
