@@ -76,16 +76,17 @@ namespace BrewLib.Graphics.Renderers
                 y4 = p4y;
             }
 
-            QuadPrimitive primitive = default;
-
-            primitive.x1 = x1 + x;
-            primitive.y1 = y1 + y;
-            primitive.x2 = x2 + x;
-            primitive.y2 = y2 + y;
-            primitive.x3 = x3 + x;
-            primitive.y3 = y3 + y;
-            primitive.x4 = x4 + x;
-            primitive.y4 = y4 + y;
+            QuadPrimitive primitive = new()
+            {
+                x1 = x1 + x,
+                y1 = y1 + y,
+                x2 = x2 + x,
+                y2 = y2 + y,
+                x3 = x3 + x,
+                y3 = y3 + y,
+                x4 = x4 + x,
+                y4 = y4 + y
+            };
 
             var textureUvBounds = texture.UvBounds;
             var textureUvRatio = texture.UvRatio;
@@ -151,7 +152,7 @@ namespace BrewLib.Graphics.Renderers
             var outerColorRgba = outerColor.ToRgba();
 
             var initialUnit = (MathF.Cos(startAngle), MathF.Sin(startAngle));
-            var primitive = new QuadPrimitive
+            QuadPrimitive primitive = new()
             {
                 x1 = center.X + initialUnit.Item1 * outerRadius,
                 y1 = center.Y + initialUnit.Item2 * outerRadius,

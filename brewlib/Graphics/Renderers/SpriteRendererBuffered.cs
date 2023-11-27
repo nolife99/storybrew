@@ -67,8 +67,7 @@ namespace BrewLib.Graphics.Renderers
             get => camera;
             set
             {
-                if (camera == value)
-                    return;
+                if (camera == value) return;
 
                 if (rendering) DrawState.FlushRenderer();
                 camera = value;
@@ -81,8 +80,7 @@ namespace BrewLib.Graphics.Renderers
             get => transformMatrix;
             set
             {
-                if (transformMatrix.Equals(value))
-                    return;
+                if (transformMatrix.Equals(value)) return;
 
                 DrawState.FlushRenderer();
                 transformMatrix = value;
@@ -109,7 +107,7 @@ namespace BrewLib.Graphics.Renderers
 
         public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<SpritePrimitive>> createPrimitiveStreamer, Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0)
         {
-            if (shader == null)
+            if (shader is null)
             {
                 shader = CreateDefaultShader();
                 ownsShader = true;
@@ -213,7 +211,7 @@ namespace BrewLib.Graphics.Renderers
         public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color4 color, float textureX0, float textureY0, float textureX1, float textureY1)
         {
             if (!rendering) throw new InvalidOperationException("Not rendering");
-            if (texture is null) throw new ArgumentNullException(nameof(texture));
+            ArgumentNullException.ThrowIfNull(texture);
 
             if (currentTexture != texture.BindableTexture)
             {
@@ -283,15 +281,17 @@ namespace BrewLib.Graphics.Renderers
                 y4 = p4y;
             }
 
-            SpritePrimitive spritePrimitive = default;
-            spritePrimitive.x1 = x1 + x;
-            spritePrimitive.y1 = y1 + y;
-            spritePrimitive.x2 = x2 + x;
-            spritePrimitive.y2 = y2 + y;
-            spritePrimitive.x3 = x3 + x;
-            spritePrimitive.y3 = y3 + y;
-            spritePrimitive.x4 = x4 + x;
-            spritePrimitive.y4 = y4 + y;
+            SpritePrimitive spritePrimitive = new()
+            {
+                x1 = x1 + x,
+                y1 = y1 + y,
+                x2 = x2 + x,
+                y2 = y2 + y,
+                x3 = x3 + x,
+                y3 = y3 + y,
+                x4 = x4 + x,
+                y4 = y4 + y
+            };
 
             var textureUvBounds = texture.UvBounds;
             var textureUvRatio = texture.UvRatio;

@@ -3,8 +3,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
-using System.Buffers;
-using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util
 {
@@ -193,28 +191,35 @@ namespace BrewLib.Util
             return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
         }
     }
-    public sealed class PinnedBitmap : IDisposable
+    public unsafe sealed class PinnedBitmap : IDisposable
     {
-        static ArrayPool<int> pool = ArrayPool<int>.Create();
-        readonly int[] data;
-        GCHandle handle;
-
         public Bitmap Bitmap { get; private set; }
+
+        readonly int* data;
+        readonly int pixels;
+
         public int this[int pixelIndex]
         {
-            get => data[pixelIndex];
-            set => data[pixelIndex] = value;
+            get
+            {
+                if (pixelIndex > pixels || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                return data[pixelIndex];
+            }
+            set
+            {
+                if (pixelIndex > pixels || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                data[pixelIndex] = value;
+            }
         }
 
         public PinnedBitmap(int width, int height)
         {
-            data = pool.Rent(width * height);
-            handle = GCHandle.Alloc(data, GCHandleType.Pinned);
-            Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, data.AddrOfPinnedArray());
+            data = (int*)NativeMemory.AllocZeroed((uint)(pixels = width * height), sizeof(int));
+            Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, (nint)data);
         }
         public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
         {
-            using (var graphics = System.Drawing.Graphics.FromImage(Bitmap)) graphics.DrawImage(bitmap, 0, 0);
+            using (var graphics = System.Drawing.Graphics.FromImage(Bitmap)) graphics.DrawImage(bitmap, 0, 0, bitmap.Width, bitmap.Height);
         }
 
         bool disposed;
@@ -222,10 +227,7 @@ namespace BrewLib.Util
         {
             if (disposed) return;
             Bitmap.Dispose();
-
-            if (handle.IsAllocated) handle.Free();
-            pool.Return(data, true);
-
+            NativeMemory.Free(data);
             disposed = true;
         }
     }

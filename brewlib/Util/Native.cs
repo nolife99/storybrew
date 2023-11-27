@@ -79,12 +79,13 @@ namespace BrewLib.Util
             var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
             if (length == 0) return "";
 
-            var buffer = Marshal.AllocCoTaskMem(length * 2 + 1);
-            SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, buffer);
+            unsafe
+            {
+                var buffer = stackalloc byte[length * 2 + 1];
+                SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buffer);
 
-            var result = Marshal.PtrToStringAnsi(buffer);
-            Marshal.FreeCoTaskMem(buffer);
-            return result;
+                return new string((sbyte*)buffer);
+            }
         }
 
         delegate bool EnumThreadWndProc(nint hWnd, nint lParam);

@@ -18,8 +18,7 @@ namespace BrewLib.Graphics.Renderers
         public const int VertexPerLine = 2;
         public const string CombinedMatrixUniformName = "u_combinedMatrix";
 
-        public static readonly VertexDeclaration VertexDeclaration =
-            new(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
+        public static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
 
         public Action FlushAction;
 
@@ -186,17 +185,18 @@ namespace BrewLib.Graphics.Renderers
             if (!rendering) throw new InvalidOperationException("Not rendering");
             if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-            LinePrimitive linePrimitive = default;
+            LinePrimitive linePrimitive = new()
+            {
+                x1 = start.X,
+                y1 = start.Y,
+                z1 = start.Z,
+                color1 = startColor.ToRgba(),
 
-            linePrimitive.x1 = start.X;
-            linePrimitive.y1 = start.Y;
-            linePrimitive.z1 = start.Z;
-            linePrimitive.color1 = startColor.ToRgba();
-
-            linePrimitive.x2 = end.X;
-            linePrimitive.y2 = end.Y;
-            linePrimitive.z2 = end.Z;
-            linePrimitive.color2 = endColor.ToRgba();
+                x2 = end.X,
+                y2 = end.Y,
+                z2 = end.Z,
+                color2 = endColor.ToRgba()
+            };
 
             primitives[linesInBatch] = linePrimitive;
 

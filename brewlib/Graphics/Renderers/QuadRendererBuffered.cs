@@ -101,7 +101,7 @@ namespace BrewLib.Graphics.Renderers
 
         public QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<QuadPrimitive>> createPrimitiveStreamer, Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
         {
-            if (shader == null)
+            if (shader is null)
             {
                 shader = CreateDefaultShader();
                 ownsShader = true;
@@ -162,7 +162,7 @@ namespace BrewLib.Graphics.Renderers
         public void Flush(bool canBuffer = false)
         {
             if (quadsInBatch == 0) return;
-            if (currentTexture == null) throw new InvalidOperationException("currentTexture is null");
+            if (currentTexture is null) throw new InvalidOperationException("currentTexture is null");
 
             // When the previous flush was bufferable, draw state should stay the same.
             if (!lastFlushWasBuffered)
