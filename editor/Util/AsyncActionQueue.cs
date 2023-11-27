@@ -51,7 +51,7 @@ namespace StorybrewEditor.Util
         {
             ObjectDisposedException.ThrowIf(disposed, GetType());
 
-            for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].EnsureThreadAlive();
+            Parallel.ForEach(actionRunners, runner => runner.EnsureThreadAlive());
             lock (context.Queue)
             {
                 if (!allowDuplicates && context.Queue.Any(q => q.Target.Equals(target))) return;
@@ -67,7 +67,7 @@ namespace StorybrewEditor.Util
             if (stopThreads)
             {
                 var sw = Stopwatch.StartNew();
-                for (var i = 0; i < actionRunners.Count; ++i) actionRunners[i].JoinOrAbort(Math.Max(1000, 5000 - sw.ElapsedMilliseconds));
+                Parallel.ForEach(actionRunners, runner => runner.JoinOrAbort(Math.Max(1000, 5000 - sw.ElapsedMilliseconds)));
                 sw.Stop();
             }
         }
@@ -152,7 +152,7 @@ namespace StorybrewEditor.Util
                         {
                             if (mustSleep)
                             {
-                                using (var wait = Task.Delay(200)) await wait;
+                                await Task.Delay(200);
                                 mustSleep = false;
                             }
 
@@ -213,8 +213,7 @@ namespace StorybrewEditor.Util
                     }, tokenSrc.Token))
                     {
                         Name = threadName,
-                        IsBackground = true,
-                        Priority = ThreadPriority.BelowNormal
+                        IsBackground = true
                     };
 #pragma warning restore SYSLIB0046
 
@@ -231,7 +230,7 @@ namespace StorybrewEditor.Util
 
                 lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-                if (!localThread.Join(TimeSpan.FromMilliseconds(millisecondsTimeout)))
+                if (!localThread.Join((int)millisecondsTimeout))
                 {
                     tokenSrc.Cancel();
                     localThread.Interrupt();

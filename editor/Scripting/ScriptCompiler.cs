@@ -4,18 +4,15 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Runtime.Loader;
-using StorybrewCommon.Scripting;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptCompiler : ICompiler
+    public class ScriptCompiler
     {
         static readonly string[] environmentDirectories =
         [
@@ -24,16 +21,7 @@ namespace StorybrewEditor.Scripting
             Environment.CurrentDirectory
         ];
 
-        public static void Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
-        {
-            Trace.WriteLine($"{nameof(Scripting)}: Compiling {string.Join(", ", sourcePaths.Select(Path.GetFileName))}");
-            ((ICompiler)(context ?? AssemblyLoadContext.Default)
-                .LoadFromAssemblyPath(typeof(ScriptCompiler).Assembly.Location)
-                .CreateInstance(typeof(ScriptCompiler).FullName))
-                .Compile(sourcePaths, outputPath, referencedAssemblies);
-        }
-
-        void ICompiler.Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
         {
             Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
             foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))

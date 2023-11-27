@@ -6,7 +6,7 @@ namespace BrewLib.Audio
 {
     public class AudioChannel : IDisposable
     {
-        public readonly AudioManager Manager;
+        public AudioManager Manager { get; }
 
         float frequency;
         public float Frequency => frequency;

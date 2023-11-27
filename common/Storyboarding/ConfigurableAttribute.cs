@@ -14,7 +14,7 @@ namespace StorybrewCommon.Storyboarding
     [AttributeUsage(AttributeTargets.Field)] public sealed class DescriptionAttribute(string content) : Attribute
     {
         ///<summary> Represents the content of the description attribute. </summary>
-        public readonly string Content = content;
+        public string Content => content;
     }
 
     ///<summary> Represents a grouping mechanism for configurable variables. </summary>
@@ -22,6 +22,6 @@ namespace StorybrewCommon.Storyboarding
     [AttributeUsage(AttributeTargets.Field)] public sealed class GroupAttribute(string name) : Attribute
     {
         ///<summary> The name of the group. </summary>
-        public readonly string Name = name;
+        public string Name => name;
     }
 }

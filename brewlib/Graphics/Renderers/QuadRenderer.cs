@@ -1,6 +1,6 @@
 ﻿using BrewLib.Graphics.Textures;
-using osuTK;
 using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers
@@ -8,7 +8,7 @@ namespace BrewLib.Graphics.Renderers
     public interface QuadRenderer : Renderer, IDisposable
     {
         Shader Shader { get; }
-        Matrix4 TransformMatrix { get; set; }
+        Matrix4x4 TransformMatrix { get; set; }
 
         int RenderedQuadCount { get; }
         int FlushedBufferCount { get; }

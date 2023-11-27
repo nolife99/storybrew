@@ -17,7 +17,6 @@ using System.Runtime.CompilerServices;
 using Tiny;
 using System.IO.Compression;
 using System.Globalization;
-using System.Threading;
 
 namespace StorybrewCommon.Scripting
 {
@@ -26,10 +25,10 @@ namespace StorybrewCommon.Scripting
     {
         [ThreadStatic] static StoryboardObjectGenerator instance;
 
-        ///<summary> Gets the currently active <see cref="StoryboardObjectGenerator"/>. </summary>
+        ///<summary> Gets the currently executing script. </summary>
         public static StoryboardObjectGenerator Current => instance;
 
-        List<ConfigurableField> configurableFields;
+        readonly List<ConfigurableField> configurableFields;
         GeneratorContext context;
 
         ///<summary> Set to true if this script uses multiple threads. </summary>
@@ -59,7 +58,21 @@ namespace StorybrewCommon.Scripting
         public string MapsetPath => context.MapsetPath;
 
         ///<summary> Constructs a new storyboard object generator. </summary>
-        public StoryboardObjectGenerator() => initializeConfigurableFields();
+        public StoryboardObjectGenerator()
+        {
+            var fields = GetType().GetFields();
+            configurableFields = new(fields.Length);
+
+            for (int i = 0, order = 0; i < fields.Length; ++i)
+            {
+                var field = fields[i];
+                var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
+                if (!field.FieldType.IsEnum && !ObjectSerializer.Supports(field.FieldType.FullName) || configurable is null) continue;
+
+                configurableFields.Add(new(field, configurable, field.GetValue(this),
+                    field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(), field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order++));
+            }
+        }
 
         ///<summary> Adds a dependency at the given <paramref name="path"/>. </summary>
         public void AddDependency(string path) => context.AddDependency(path);
@@ -294,7 +307,7 @@ namespace StorybrewCommon.Scripting
         {
             if (context is not null) throw new InvalidOperationException();
 
-            var remainingFieldNames = new List<string>(config.FieldNames);
+            var remainingFieldNames = config.FieldNames.ToList();
             configurableFields.ForEach(configurableField =>
             {
                 var field = configurableField.Field;
@@ -356,21 +369,7 @@ namespace StorybrewCommon.Scripting
                 }
             });
         }
-        void initializeConfigurableFields()
-        {
-            var fields = GetType().GetFields();
-            configurableFields = new(fields.Length);
 
-            for (int i = 0, order = 0; i < fields.Length; ++i)
-            {
-                var field = fields[i];
-                var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-                if (!field.FieldType.IsEnum && !ObjectSerializer.Supports(field.FieldType.FullName) || configurable is null) continue;
-
-                configurableFields.Add(new ConfigurableField(field, configurable, field.GetValue(this),
-                    field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(), field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order++));
-            }
-        }
         struct ConfigurableField
         {
             internal FieldInfo Field;
@@ -397,7 +396,7 @@ namespace StorybrewCommon.Scripting
         ///<summary> Generates the storyboard created by this script. </summary>
         public void Generate(GeneratorContext context)
         {
-            if (instance is not null) throw new InvalidOperationException("A script is already running in this domain");
+            if (instance is not null) throw new InvalidOperationException("A script is already running in this thread");
             try
             {
                 this.context = context;

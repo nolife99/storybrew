@@ -2,20 +2,17 @@
 using StorybrewCommon.Scripting;
 using System;
 using System.IO;
-using System.Runtime.Loader;
+using System.Reflection;
 
 namespace StorybrewEditor.Scripting
 {
-    public class ScriptProvider<TScript> : IProvider<TScript> where TScript : Script
+    public class ScriptProvider<TScript> where TScript : Script
     {
         Type type;
 
-        public void Initialize(AssemblyLoadContext context, string assemblyPath, string typeName)
+        public void Initialize(string assemblyPath, string typeName)
         {
-            var stream = File.OpenRead(assemblyPath);
-            var assembly = (context ?? AssemblyLoadContext.Default).LoadFromStream(stream);
-            stream.Dispose();
-
+            var assembly = Assembly.Load(File.ReadAllBytes(assemblyPath));
             if (File.Exists(assemblyPath)) File.Delete(assemblyPath);
             type = assembly.GetType(typeName, true);
         }

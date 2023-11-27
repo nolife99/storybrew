@@ -90,7 +90,7 @@ namespace BrewLib.Graphics
         {
             var identifier = GetUniformIdentifier(name, index, field);
 
-            if (uniforms.TryGetValue(identifier, out Property<ActiveUniformType> property)) return property.Location;
+            if (uniforms.TryGetValue(identifier, out var property)) return property.Location;
             return -1;
         }
         public int GetUniformLocation(string name, int index = -1, string field = null)

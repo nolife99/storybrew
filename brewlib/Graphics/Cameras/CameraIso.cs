@@ -27,7 +27,7 @@ namespace BrewLib.Graphics.Cameras
             var screenViewport = Viewport;
 
             var distanceSqrt = .57735026919f;
-            Forward = new Vector3(distanceSqrt, -distanceSqrt, -distanceSqrt);
+            Forward = new(distanceSqrt, -distanceSqrt, -distanceSqrt);
             Position = target - Forward;
             Up = DefaultUp;
 

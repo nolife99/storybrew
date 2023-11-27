@@ -1,6 +1,7 @@
 ﻿using BrewLib.Util;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -19,17 +20,17 @@ namespace StorybrewCommon.Subtitles.Parsers
         ///<inheritdoc/>
         public SubtitleSet Parse(Stream stream)
         {
-            var lines = new List<SubtitleLine>();
+            HashSet<SubtitleLine> lines = [];
             foreach (var block in parseBlocks(stream))
             {
                 var blockLines = block.Split('\n');
-                var timestamps = blockLines[1].Split(new string[] { "-->" }, StringSplitOptions.None);
+                var timestamps = blockLines[1].Split("-->", StringSplitOptions.None);
                 var startTime = parseTimestamp(timestamps[0]);
                 var endTime = parseTimestamp(timestamps[1]);
                 var text = string.Join("\n", blockLines, 2, blockLines.Length - 2);
-                lines.Add(new SubtitleLine(startTime, endTime, text));
+                lines.Add(new(startTime, endTime, text));
             }
-            return new SubtitleSet(lines);
+            return new(lines);
         }
 
         static IEnumerable<string> parseBlocks(Stream stream)
@@ -53,6 +54,6 @@ namespace StorybrewCommon.Subtitles.Parsers
             if (endBlock.Length > 0) yield return endBlock;
         }
 
-        static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp.Replace(',', '.')).TotalMilliseconds;
+        static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp.Replace(',', '.'), CultureInfo.InvariantCulture).TotalMilliseconds;
     }
 }

@@ -99,7 +99,7 @@ namespace StorybrewEditor.Scripting
                 }
             }
 
-            scriptContainers[scriptName] = scriptContainer = new ScriptContainerAppDomain<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
+            scriptContainers[scriptName] = scriptContainer = new ScriptContainerContext<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
             return scriptContainer;
         }
         public IEnumerable<string> GetScriptNames()

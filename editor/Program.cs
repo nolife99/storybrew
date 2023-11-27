@@ -356,7 +356,7 @@ namespace StorybrewEditor
                 try
                 {
                     var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
-                    using (var w = new StreamWriter(logPath, true))
+                    using (StreamWriter w = new(logPath, true))
                     {
                         w.Write(DateTime.Now + " - ");
                         w.WriteLine(e);
@@ -392,7 +392,7 @@ namespace StorybrewEditor
         {
             using ManualResetEvent wait = new(false);
 
-            var thread = new Thread(async () =>
+            Thread thread = new(async () =>
             {
                 var answered = false;
                 var frozen = 0;

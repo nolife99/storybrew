@@ -4,10 +4,11 @@ using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using osuTK;
 using osuTK.Graphics;
 using osuTK.Graphics.OpenGL;
 using System;
+using System.Buffers;
+using System.Numerics;
 
 namespace BrewLib.Graphics.Renderers
 {
@@ -74,8 +75,8 @@ namespace BrewLib.Graphics.Renderers
             }
         }
 
-        Matrix4 transformMatrix = Matrix4.Identity;
-        public Matrix4 TransformMatrix
+        Matrix4x4 transformMatrix = Matrix4x4.Identity;
+        public Matrix4x4 TransformMatrix
         {
             get => transformMatrix;
             set
@@ -121,7 +122,7 @@ namespace BrewLib.Graphics.Renderers
             var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
             primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
-            spriteArray = new SpritePrimitive[maxSpritesPerBatch];
+            spriteArray = ArrayPool<SpritePrimitive>.Shared.Rent(maxSpritesPerBatch);
         }
 
         public void Dispose()
@@ -135,6 +136,7 @@ namespace BrewLib.Graphics.Renderers
 
             if (rendering) EndRendering();
 
+            ArrayPool<SpritePrimitive>.Shared.Return(spriteArray);
             spriteArray = null;
 
             primitiveStreamer.Dispose();
@@ -173,7 +175,7 @@ namespace BrewLib.Graphics.Renderers
             // When the previous flush was bufferable, draw state should stay the same.
             if (!lastFlushWasBuffered)
             {
-                var combinedMatrix = transformMatrix * Camera.ProjectionView.ToGLMatrix();
+                var combinedMatrix = transformMatrix * Camera.ProjectionView;
 
                 var samplerUnit = CustomTextureBind is not null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
                 if (currentSamplerUnit != samplerUnit)
@@ -181,7 +183,11 @@ namespace BrewLib.Graphics.Renderers
                     currentSamplerUnit = samplerUnit;
                     GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
                 }
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), false, ref combinedMatrix);
+                
+                unsafe
+                {
+                    GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+                }
 
                 flushAction?.Invoke();
             }

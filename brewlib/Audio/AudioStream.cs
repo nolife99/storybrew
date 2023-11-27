@@ -1,10 +1,8 @@
 ﻿using BrewLib.Data;
 using ManagedBass;
 using ManagedBass.Fx;
-using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace BrewLib.Audio
@@ -26,14 +24,8 @@ namespace BrewLib.Audio
                     {
                         Read = (buffer, length, user) =>
                         {
-                            Span<byte> readBuffer = stackalloc byte[length];
-                            var readBytes = resourceStream.Read(readBuffer);
-                            unsafe
-                            {
-                                Unsafe.CopyBlock(ref *(byte*)buffer, ref MemoryMarshal.GetReference(readBuffer), (uint)readBytes);
-                            }
-
-                            readBuffer.Clear();
+                            int read, readBytes = 0;
+                            while ((read = resourceStream.ReadByte()) != -1) Marshal.WriteByte(buffer + readBytes++, (byte)read);
                             return readBytes;
                         },
                         Length = user => resourceStream.Length,

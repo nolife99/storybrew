@@ -7,7 +7,7 @@ namespace StorybrewEditor.Processes
 {
     public static class ProcessWorker
     {
-        private static bool exit;
+        static bool exit;
 
         public static void Run(string identifier)
         {
@@ -15,17 +15,15 @@ namespace StorybrewEditor.Processes
             try
             {
                 var name = $"sbrew-worker-{identifier}";
-                using (NamedPipeServerStream server = new(name))
-                {
-                    Trace.WriteLine($"{name}: ready");
+                using NamedPipeServerStream server = new(name);
+                Trace.WriteLine($"{name}: ready");
 
-                    while (!exit)
-                    {
-                        server.WaitForConnection();
-                        Program.RunScheduledTasks();
-                        server.Disconnect();
-                        Thread.Sleep(100);
-                    }
+                while (!exit)
+                {
+                    server.WaitForConnection();
+                    Program.RunScheduledTasks();
+                    server.Disconnect();
+                    Thread.Sleep(100);
                 }
             }
             catch (Exception e)
@@ -39,5 +37,4 @@ namespace StorybrewEditor.Processes
             exit = true;
         }
     }
-
 }

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Loader;
 
 namespace StorybrewCommon.Scripting
 {
@@ -19,17 +17,5 @@ namespace StorybrewCommon.Scripting
                 identifier = value;
             }
         }
-    }
-
-#pragma warning disable CS1591
-    public interface IProvider<TScript> where TScript : Script
-    {
-        void Initialize(AssemblyLoadContext context, string assemblyPath, string typeName);
-        TScript CreateScript();
-    }
-
-    public interface ICompiler
-    {
-        void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies);
     }
 }

@@ -8,7 +8,7 @@ namespace BrewLib.Graphics.Renderers
     public interface LineRenderer : Renderer, IDisposable
     {
         Shader Shader { get; }
-        Matrix4 TransformMatrix { get; set; }
+        System.Numerics.Matrix4x4 TransformMatrix { get; set; }
 
         int RenderedLineCount { get; }
         int FlushedBufferCount { get; }

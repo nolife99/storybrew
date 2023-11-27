@@ -10,19 +10,19 @@ namespace StorybrewEditor.Scripting
     {
         RemoteProcessWorkerContainer workerProcess;
 
-        protected override IProvider<TScript> LoadScript()
+        protected override ScriptProvider<TScript> LoadScript()
         {
             ObjectDisposedException.ThrowIf(disposedValue, this);
             try
             {
                 var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name + Environment.TickCount64}.dll");
-                ScriptCompiler.Compile(null, SourcePaths, assemblyPath, ReferencedAssemblies);
+                ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
 
                 workerProcess?.Dispose();
                 workerProcess = new();
 
                 var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
-                scriptProvider.Initialize(null, assemblyPath, ScriptTypeName);
+                scriptProvider.Initialize(assemblyPath, ScriptTypeName);
 
                 return scriptProvider;
             }

@@ -70,7 +70,7 @@ namespace BrewLib.Data
         public SafeWriteStream GetWriteStream(string path)
         {
             if (Path.IsPathRooted(path)) throw new ArgumentException($"Resource paths must be relative", path);
-            return new SafeWriteStream(basePath is not null ? Path.Combine(basePath, path) : path);
+            return new(basePath is not null ? Path.Combine(basePath, path) : path);
         }
     }
 }

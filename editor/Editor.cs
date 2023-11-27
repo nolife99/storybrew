@@ -16,11 +16,10 @@ using StorybrewEditor.ScreenLayers;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Drawing;
 
 namespace StorybrewEditor
 {
-    public class Editor(GameWindow window) : IDisposable
+    public sealed class Editor(GameWindow window) : IDisposable
     {
         public GameWindow Window => window;
         internal readonly FormsWindow FormsWindow = new();
@@ -41,7 +40,7 @@ namespace StorybrewEditor
             ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
             DrawState.Initialize(ResourceContainer, Window.Width, Window.Height);
 
-            drawContext = new DrawContext();
+            drawContext = new();
             drawContext.Register(this);
             drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
             drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
@@ -50,7 +49,7 @@ namespace StorybrewEditor
             try
             {
                 var brewLibAssembly = typeof(Drawable).Assembly;
-                Skin = new Skin(drawContext.Get<TextureContainer>())
+                Skin = new(drawContext.Get<TextureContainer>())
                 {
                     ResolveDrawableType = drawableTypeName => brewLibAssembly.GetType(
                         $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}", true, true),
@@ -68,7 +67,7 @@ namespace StorybrewEditor
             catch (Exception e)
             {
                 Trace.WriteLine($"Failed to load skin: {e}");
-                Skin = new Skin(drawContext.Get<TextureContainer>());
+                Skin = new(drawContext.Get<TextureContainer>());
             }
 
             InputDispatcher inputDispatcher = new();
@@ -102,13 +101,13 @@ namespace StorybrewEditor
 
         WidgetManager createOverlay(ScreenLayerManager screenLayerManager) => overlay = new WidgetManager(screenLayerManager, InputManager, Skin)
         {
-            Camera = overlayCamera = new CameraOrtho()
+            Camera = overlayCamera = new()
         };
 
         void initializeOverlay()
         {
             overlay.Root.ClearWidgets();
-            overlay.Root.Add(overlayTop = new LinearLayout(overlay)
+            overlay.Root.Add(overlayTop = new(overlay)
             {
                 AnchorTarget = overlay.Root,
                 AnchorFrom = BoxAlignment.Top,
@@ -129,7 +128,7 @@ namespace StorybrewEditor
             });
             overlayTop.Pack(1024, 16);
 
-            overlay.Root.Add(altOverlayTop = new LinearLayout(overlay)
+            overlay.Root.Add(altOverlayTop = new(overlay)
             {
                 AnchorTarget = overlay.Root,
                 AnchorFrom = BoxAlignment.Top,
@@ -228,7 +227,7 @@ namespace StorybrewEditor
             var height = Window.Height;
             if (width == 0 || height == 0) return;
 
-            DrawState.Viewport = new Rectangle(0, 0, width, height);
+            DrawState.Viewport = new(0, 0, width, height);
 
             var virtualHeight = height * Math.Max(1024f / width, 768f / height);
             overlayCamera.VirtualHeight = (int)virtualHeight;

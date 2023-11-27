@@ -32,7 +32,7 @@ namespace StorybrewEditor.Processes
             {
                 StartInfo = new(executablePath, $"worker \"{identifier}\"")
                 {
-                    WorkingDirectory = workingDirectory,
+                    WorkingDirectory = workingDirectory
                 }
             };
             process.Start();

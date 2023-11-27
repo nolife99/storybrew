@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace BrewLib.Util.Compression
 {
@@ -14,7 +13,6 @@ namespace BrewLib.Util.Compression
         public IntegratedCompressor(string utilityPath = null) : base(utilityPath) 
             => container = new AssemblyResourceContainer(typeof(IntegratedCompressor).Assembly, "BrewLib");
 
-        readonly List<Task> tasks = [];
         protected override void compress(Argument arg, bool useLossy)
         {
             if (!File.Exists(arg.path)) return;
@@ -22,29 +20,27 @@ namespace BrewLib.Util.Compression
             UtilityName = Environment.Is64BitOperatingSystem && useLossy ? "pngquant.exe" : "oxipng32.exe";
             ensureTool();
 
-            var startInfo = new ProcessStartInfo(GetUtility(), appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+            try
             {
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                WorkingDirectory = Path.GetDirectoryName(UtilityPath),
-                RedirectStandardInput = true,
-                RedirectStandardError = true
-            };
+                process ??= Process.Start(new ProcessStartInfo(GetUtility(), appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+                {
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(UtilityPath),
+                    RedirectStandardInput = true,
+                    RedirectStandardError = true
+                });
 
-            Exception e = null;
-            tasks.Add(Task.Run(() =>
-            {
-                var localProcess = Process.Start(startInfo);
-
-                var errorStream = localProcess.StandardError;
+                var errorStream = process.StandardError;
                 var error = errorStream.ReadToEnd();
                 errorStream.Dispose();
 
-                if (!string.IsNullOrEmpty(error) && localProcess.ExitCode != 0) e = new OperationCanceledException($"Image compression closed with code {localProcess.ExitCode}: {error}");
-                localProcess.Close();
-            }));
-
-            if (e is not null) throw e;
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
+            }
+            finally
+            {
+                ensureStop();
+            }
         }
         protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
         {
@@ -81,23 +77,20 @@ namespace BrewLib.Util.Compression
             var utility = GetUtility();
             if (!File.Exists(utility))
             {
-                using var dest = File.OpenWrite(utility);
-                using var src = container.GetStream(utilName, ResourceSource.Embedded | ResourceSource.Relative);
-                src.CopyTo(dest);
+                var src = container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative);
+                File.WriteAllBytes(utility, src);
             }
+            toCleanup.Add(utility);
         }
         protected override string GetUtility() => Path.Combine(UtilityPath, utilName);
 
-        readonly List<string> toCleanup = [];
-        protected override async void Dispose(bool disposing)
+        readonly HashSet<string> toCleanup = [];
+        protected override void Dispose(bool disposing)
         {
             if (disposed) return;
 
-            using (var completion = Task.WhenAll(tasks)) await completion;
-            tasks.Clear();
-
             base.Dispose(disposing);
-            toCleanup.ForEach(clean => PathHelper.SafeDelete(clean));
+            foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);
 
             toCleanup.Clear();
         }

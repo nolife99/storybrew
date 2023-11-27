@@ -22,7 +22,7 @@ namespace StorybrewCommon.Storyboarding
         readonly List<PooledSprite> pooled = [];
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
-        public int MaxPoolDuration;
+        public int MaxPoolDuration { get; set; }
 
         ///<summary> Constructs a <see cref="SpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -100,7 +100,7 @@ namespace StorybrewCommon.Storyboarding
             }
 
             var sprite = CreateSprite(segment, path, origin, position);
-            pooled.Add(new PooledSprite(sprite, startTime, endTime));
+            pooled.Add(new(sprite, startTime, endTime));
 
             return sprite;
         }
@@ -111,17 +111,10 @@ namespace StorybrewCommon.Storyboarding
 #pragma warning restore CS1591
             => segment.CreateSprite(path, origin, position);
 
-        class PooledSprite
+        class PooledSprite(OsbSprite sprite, double startTime, double endTime)
         {
-            internal OsbSprite Sprite;
-            internal double StartTime, EndTime;
-
-            internal PooledSprite(OsbSprite sprite, double startTime, double endTime)
-            {
-                Sprite = sprite;
-                StartTime = startTime;
-                EndTime = endTime;
-            }
+            internal OsbSprite Sprite = sprite;
+            internal double StartTime = startTime, EndTime = endTime;
         }
 
         bool disposed;
@@ -358,16 +351,16 @@ namespace StorybrewCommon.Storyboarding
         SpritePool getPool(string path, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes, int group)
         {
             var key = getKey(path, origin, attributes, group);
-            if (!pools.TryGetValue(key, out SpritePool pool))
-                pools[key] = pool = new SpritePool(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
+            if (!pools.TryGetValue(key, out var pool))
+                pools[key] = pool = new(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
 
             return pool;
         }
         AnimationPool getPool(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes, int group)
         {
             var key = getKey(path, frameCount, frameDelay, loopType, origin, attributes, group);
-            if (!animationPools.TryGetValue(key, out AnimationPool pool)) animationPools[key] = 
-                pool = new AnimationPool(segment, path, frameCount, frameDelay, loopType, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
+            if (!animationPools.TryGetValue(key, out var pool)) animationPools[key] = 
+                pool = new(segment, path, frameCount, frameDelay, loopType, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
 
             return pool;
         }

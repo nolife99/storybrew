@@ -26,7 +26,7 @@ namespace StorybrewEditor.UserInterface.Drawables
             else
             {
                 project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
-                DrawState.Prepare(drawContext.Get<LineRenderer>(), camera, linesRenderStates).DrawSquare(new Vector3(
+                DrawState.Prepare(drawContext.Get<LineRenderer>(), camera, linesRenderStates).DrawSquare(new(
                     bounds.Left, bounds.Top, 0), new Vector3(bounds.Right, bounds.Bottom, 0), Color4.Black);
             }
         }

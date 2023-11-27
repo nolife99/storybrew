@@ -8,7 +8,7 @@ namespace StorybrewCommon.Subtitles
     public class FontBackground(FontColor color = default) : FontEffect
     {
         ///<summary> The coloring tint of the glow. </summary>
-        public readonly FontColor Color = color;
+        public FontColor Color { get; } = color;
 
         ///<inheritdoc/>
         public bool Overlay => false;

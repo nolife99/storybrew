@@ -74,7 +74,7 @@ namespace BrewLib.Graphics.Renderers.PrimitiveStreamers
         }
         public void Bind(Shader shader)
         {
-            if (shader is null) throw new ArgumentNullException(nameof(shader));
+            ArgumentNullException.ThrowIfNull(shader);
             if (Bound) throw new InvalidOperationException("Already bound");
 
             internalBind(shader);

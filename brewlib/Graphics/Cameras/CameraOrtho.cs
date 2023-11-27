@@ -53,8 +53,8 @@ namespace BrewLib.Graphics.Cameras
             this.virtualHeight = virtualHeight;
             this.yDown = yDown;
 
-            Up = new Vector3(0, yDown ? -1 : 1, 0);
-            Forward = new Vector3(0, 0, yDown ? 1 : -1);
+            Up = new(0, yDown ? -1 : 1, 0);
+            Forward = new(0, 0, yDown ? 1 : -1);
 
             NearPlane = -1;
             FarPlane = 1;
@@ -72,7 +72,7 @@ namespace BrewLib.Graphics.Cameras
                 orthoViewport.Height = virtualHeight;
                 if (virtualWidth > 0) orthoViewport.X += (orthoViewport.Width - virtualWidth) / 2;
 
-                internalViewport = new Rectangle(0, 0, virtualWidth > 0 ? virtualWidth : orthoViewport.Width, virtualHeight);
+                internalViewport = new(0, 0, virtualWidth > 0 ? virtualWidth : orthoViewport.Width, virtualHeight);
             }
             else internalViewport = screenViewport;
             extendedViewport = orthoViewport;

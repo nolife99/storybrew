@@ -53,7 +53,7 @@ namespace StorybrewEditor.UserInterface.Components
         {
             Button copyButton, pasteButton, closeButton;
 
-            Add(layout = new LinearLayout(manager)
+            Add(layout = new(manager)
             {
                 StyleName = "panel",
                 Padding = new FourSide(16),
@@ -101,7 +101,7 @@ namespace StorybrewEditor.UserInterface.Components
                             }
                         }
                     },
-                    new ScrollArea(manager, configFieldsLayout = new LinearLayout(manager)
+                    new ScrollArea(manager, configFieldsLayout = new(manager)
                     {
                         FitChildren = true
                     })
@@ -206,8 +206,8 @@ namespace StorybrewEditor.UserInterface.Components
                     Value = field.Value,
                     Options =
                     [
-                        new NamedValue{ Name = bool.TrueString, Value = true },
-                        new NamedValue{ Name = bool.FalseString, Value = false }
+                        new NamedValue { Name = bool.TrueString, Value = true },
+                        new NamedValue { Name = bool.FalseString, Value = false }
                     ],
                     AnchorFrom = BoxAlignment.Right,
                     AnchorTo = BoxAlignment.Right,

@@ -1,6 +1,6 @@
 ﻿using osuTK;
 using osuTK.Graphics;
-using System;
+using static System.MathF;
 
 namespace BrewLib.Graphics.Renderers
 {
@@ -14,15 +14,15 @@ namespace BrewLib.Graphics.Renderers
 
         public static void DrawCircle(this LineRenderer line, Vector3 center, float radius, Color4 color, float precision = 1)
         {
-            var circumference = Math.PI * 2 * radius;
-            var lineCount = Math.Max(16, (int)Math.Round(circumference * precision));
+            var circumference = MathHelper.TwoPi * radius;
+            var lineCount = Max(16, (int)Round(circumference * precision));
 
-            var angleStep = Math.PI * 2 / lineCount;
+            var angleStep = MathHelper.TwoPi / lineCount;
             var previousPosition = new Vector3(center.X + radius, center.Y, center.Z);
             for (var i = 1; i <= lineCount; ++i)
             {
                 var angle = angleStep * i;
-                var position = new Vector3(center.X + (float)Math.Cos(angle) * radius, center.Y + (float)Math.Sin(angle) * radius, center.Z);
+                var position = new Vector3(center.X + Cos(angle) * radius, center.Y + Sin(angle) * radius, center.Z);
                 line.Draw(previousPosition, position, color);
                 previousPosition = position;
             }
@@ -58,23 +58,23 @@ namespace BrewLib.Graphics.Renderers
             var fromAngle = orientation - arc * .5f;
             var toAngle = orientation + arc * .5f;
 
-            line.Draw(center + new Vector3((float)Math.Cos(fromAngle) * innerRadius, (float)Math.Sin(fromAngle) * innerRadius, 0),
-                center + new Vector3((float)Math.Cos(fromAngle) * radius, (float)Math.Sin(fromAngle) * radius, 0), color);
-            line.Draw(center + new Vector3((float)Math.Cos(toAngle) * innerRadius, (float)Math.Sin(toAngle) * innerRadius, 0),
-                center + new Vector3((float)Math.Cos(toAngle) * radius, (float)Math.Sin(toAngle) * radius, 0), color);
+            line.Draw(center + new Vector3(Cos(fromAngle) * innerRadius, Sin(fromAngle) * innerRadius, 0),
+                center + new Vector3(Cos(fromAngle) * radius, Sin(fromAngle) * radius, 0), color);
+            line.Draw(center + new Vector3(Cos(toAngle) * innerRadius, Sin(toAngle) * innerRadius, 0),
+                center + new Vector3(Cos(toAngle) * radius, Sin(toAngle) * radius, 0), color);
 
-            var minLineCount = Math.Max((int)Math.Round(16 * (arc / MathHelper.TwoPi)), 2);
+            var minLineCount = Max((int)Round(16 * (arc / MathHelper.TwoPi)), 2);
 
             var outerCircumference = arc * radius;
-            var outerLineCount = Math.Max(minLineCount, (int)Math.Round(outerCircumference * precision));
+            var outerLineCount = Max(minLineCount, (int)Round(outerCircumference * precision));
 
             var angleStep = arc / outerLineCount;
-            var previousPosition = center + new Vector3((float)Math.Cos(fromAngle) * radius, (float)Math.Sin(fromAngle) * radius, 0);
+            var previousPosition = center + new Vector3(Cos(fromAngle) * radius, Sin(fromAngle) * radius, 0);
 
             for (var i = 1; i <= outerLineCount; ++i)
             {
                 var angle = fromAngle + angleStep * i;
-                var position = new Vector3(center.X + (float)Math.Cos(angle) * radius, center.Y + (float)Math.Sin(angle) * radius, center.Z);
+                var position = new Vector3(center.X + Cos(angle) * radius, center.Y + Sin(angle) * radius, center.Z);
                 line.Draw(previousPosition, position, color);
                 previousPosition = position;
             }
@@ -82,14 +82,14 @@ namespace BrewLib.Graphics.Renderers
             if (innerRadius > 0)
             {
                 var innerCircumference = arc * innerRadius;
-                var innerLineCount = Math.Max(minLineCount, (int)Math.Round(innerCircumference * precision));
+                var innerLineCount = Max(minLineCount, (int)Round(innerCircumference * precision));
 
                 angleStep = arc / innerLineCount;
-                previousPosition = new Vector3(center.X + (float)Math.Cos(fromAngle) * innerRadius, center.Y + (float)Math.Sin(fromAngle) * innerRadius, center.Z);
+                previousPosition = new Vector3(center.X + Cos(fromAngle) * innerRadius, center.Y + Sin(fromAngle) * innerRadius, center.Z);
                 for (var i = 1; i <= innerLineCount; ++i)
                 {
                     var angle = fromAngle + angleStep * i;
-                    var position = new Vector3(center.X + (float)Math.Cos(angle) * innerRadius, center.Y + (float)Math.Sin(angle) * innerRadius, center.Z);
+                    var position = new Vector3(center.X + Cos(angle) * innerRadius, center.Y + Sin(angle) * innerRadius, center.Z);
                     line.Draw(previousPosition, position, color);
                     previousPosition = position;
                 }

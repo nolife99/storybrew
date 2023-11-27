@@ -3,11 +3,13 @@ using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Util;
-using osuTK;
 using osuTK.Graphics;
 using osuTK.Graphics.OpenGL;
 using System;
+using System.Buffers;
 using System.Diagnostics;
+using System.Numerics;
+using Vector3 = osuTK.Vector3;
 
 namespace BrewLib.Graphics.Renderers
 {
@@ -63,8 +65,8 @@ namespace BrewLib.Graphics.Renderers
             }
         }
 
-        Matrix4 transformMatrix = Matrix4.Identity;
-        public Matrix4 TransformMatrix
+        Matrix4x4 transformMatrix = Matrix4x4.Identity;
+        public Matrix4x4 TransformMatrix
         {
             get => transformMatrix;
             set
@@ -105,7 +107,7 @@ namespace BrewLib.Graphics.Renderers
             var primitiveBatchSize = Math.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize));
             primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerLine);
 
-            primitives = new LinePrimitive[maxLinesPerBatch];
+            primitives = ArrayPool<LinePrimitive>.Shared.Rent(maxLinesPerBatch);
             Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
         }
         public void Dispose()
@@ -118,6 +120,7 @@ namespace BrewLib.Graphics.Renderers
             if (!disposing) return;
             if (rendering) EndRendering();
 
+            ArrayPool<LinePrimitive>.Shared.Return(primitives);
             primitives = null;
 
             primitiveStreamer.Dispose();
@@ -153,8 +156,11 @@ namespace BrewLib.Graphics.Renderers
             // When the previous flush was bufferable, draw state should stay the same.
             if (!lastFlushWasBuffered)
             {
-                var combinedMatrix = transformMatrix * Camera.ProjectionView.ToGLMatrix();
-                GL.UniformMatrix4(combinedMatrixLocation, false, ref combinedMatrix);
+                var combinedMatrix = transformMatrix * Camera.ProjectionView;
+                unsafe
+                {
+                    GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+                }
 
                 FlushAction?.Invoke();
             }

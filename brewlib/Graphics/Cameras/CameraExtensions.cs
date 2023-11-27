@@ -11,19 +11,19 @@ namespace BrewLib.Graphics.Cameras
         {
             var cast = new Vector3(worldCoords.X, worldCoords.Y, 0);
             var result = camera.ToScreen(cast);
-            return new Vector3(result.X, result.Y, result.Z);
+            return new(result.X, result.Y, result.Z);
         }
         public static Vector2 ToCamera(this Camera from, Camera to, Vector2 coords)
         {
             var projCast = from.ToScreen(coords);
             var fromCast = to.FromScreen(new Vector2(projCast.X, projCast.Y));
-            return new Vector2(fromCast.X, fromCast.Y);
+            return new(fromCast.X, fromCast.Y);
         }
         public static Vector2 ToCamera(this Camera from, Camera to, Vector3 coords)
         {
             var projCast = from.ToScreen(coords);
             var fromCast = to.FromScreen(new Vector2(projCast.X, projCast.Y));
-            return new Vector2(fromCast.X, fromCast.Y);
+            return new(fromCast.X, fromCast.Y);
         }
 
         // Box2
@@ -46,11 +46,5 @@ namespace BrewLib.Graphics.Cameras
             var bottomRight = from.ToCamera(to, new Vector2(box2.Right, box2.Bottom));
             return RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
         }
-
-        public static osuTK.Matrix4 ToGLMatrix(this Matrix4x4 matrix) => new(
-            matrix.M11, matrix.M12, matrix.M13, matrix.M14,
-            matrix.M21, matrix.M22, matrix.M23, matrix.M24,
-            matrix.M31, matrix.M32, matrix.M33, matrix.M34,
-            matrix.M41, matrix.M42, matrix.M43, matrix.M44);
     }
 }
