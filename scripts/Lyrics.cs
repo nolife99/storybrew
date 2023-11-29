@@ -50,16 +50,14 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            var font = LoadFont(SpritesPath, new FontDescription(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
-                new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor),
-                new FontOutline(OutlineThickness, OutlineColor),
-            new FontShadow(ShadowThickness, ShadowColor));
+            var font = LoadFont(SpritesPath, new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
+                new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor), new FontOutline(OutlineThickness, OutlineColor), new FontShadow(ShadowThickness, ShadowColor));
 
             var subtitles = LoadSubtitles(SubtitlesPath);
 
             if (GlowRadius > 0 && GlowAdditive)
             {
-                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new FontDescription(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true),
+                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true),
                     new FontGlow(GlowRadius, 0, GlowColor));
                 generateLyrics(glowFont, subtitles, "glow", true);
             }
@@ -76,7 +74,7 @@ namespace StorybrewScripts
             foreach (var line in subtitles.Lines)
             {
                 var texture = font.GetTexture(line.Text);
-                var position = new Vector2(320 - texture.BaseWidth * FontScale * .5f, SubtitleY) + texture.OffsetFor(Origin) * FontScale;
+                var position = new Vector2(320 - texture.BaseWidth * FontScale / 2, SubtitleY) + texture.OffsetFor(Origin) * FontScale;
 
                 var sprite = layer.CreateSprite(texture.Path, Origin, position);
                 sprite.Scale(line.StartTime, FontScale);
@@ -101,7 +99,7 @@ namespace StorybrewScripts
                         lineHeight = Math.Max(lineHeight, texture.BaseHeight * FontScale);
                     }
 
-                    var letterX = 320 - lineWidth * .5f;
+                    var letterX = 320 - lineWidth / 2;
                     foreach (var letter in line)
                     {
                         var texture = font.GetTexture(letter);

@@ -144,20 +144,20 @@ namespace BrewLib.Graphics.Renderers
 
             var absAngleLength = Math.Abs(angleLength);
             var circumference = absAngleLength * outerRadius;
-            var lineCount = Math.Max(2, Math.Max(absAngleLength / MathF.PI * 16, (int)Math.Round(circumference * precision)));
+            var lineCount = Math.Max(2, Math.Max(absAngleLength / MathF.PI * 16, (int)MathF.Round(circumference * precision)));
 
             var u = (uMax - uMin) / lineCount;
             var angleStep = angleLength / lineCount;
             var innerColorRgba = innerColor.ToRgba();
             var outerColorRgba = outerColor.ToRgba();
 
-            var initialUnit = (MathF.Cos(startAngle), MathF.Sin(startAngle));
+            var (sin, cos) = MathF.SinCos(startAngle);
             QuadPrimitive primitive = new()
             {
-                x1 = center.X + initialUnit.Item1 * outerRadius,
-                y1 = center.Y + initialUnit.Item2 * outerRadius,
-                x4 = center.X + initialUnit.Item1 * innerRadius,
-                y4 = center.Y + initialUnit.Item2 * innerRadius,
+                x1 = center.X + sin * outerRadius,
+                y1 = center.Y + cos * outerRadius,
+                x4 = center.X + sin * innerRadius,
+                y4 = center.Y + cos * innerRadius,
 
                 u1 = uMin,
                 u4 = uMin,
@@ -180,11 +180,11 @@ namespace BrewLib.Graphics.Renderers
                 primitive.u2 = partU;
                 primitive.u3 = partU;
 
-                var unit = (MathF.Cos(angle), MathF.Sin(angle));
-                primitive.x2 = center.X + unit.Item1 * outerRadius;
-                primitive.y2 = center.Y + unit.Item2 * outerRadius;
-                primitive.x3 = center.X + unit.Item1 * innerRadius;
-                primitive.y3 = center.Y + unit.Item2 * innerRadius;
+                (sin, cos) = MathF.SinCos(angle);
+                primitive.x2 = center.X + sin * outerRadius;
+                primitive.y2 = center.Y + cos * outerRadius;
+                primitive.x3 = center.X + sin * innerRadius;
+                primitive.y3 = center.Y + cos * innerRadius;
 
                 renderer.Draw(ref primitive, texture);
 

@@ -20,7 +20,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public readonly float LengthSquared => x * x + y * y;
 
         ///<summary> Gets the vector length (magnitude). </summary>
-        public readonly float Length => (float)Math.Sqrt(x * x + y * y);
+        public readonly float Length => MathF.Sqrt(x * x + y * y);
 
         ///<inheritdoc/>
         public readonly bool Equals(CommandPosition other) => x.Equals(other.x) && y.Equals(other.y);
@@ -41,7 +41,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
         public readonly float DistanceFrom(object obj)
         {
             var vector = this - (CommandPosition)obj;
-            return (float)Math.Sqrt(vector.x * vector.x + vector.y * vector.y);
+            return MathF.Sqrt(vector.x * vector.x + vector.y * vector.y);
         }
 
 #pragma warning disable CS1591

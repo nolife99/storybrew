@@ -7,8 +7,6 @@
     <UseWindowsForms>true</UseWindowsForms>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Company>storybrew</Company>
-    <Product>storybrew common</Product>
-    <Title>storybrew common</Title>
     <Copyright>Copyright © Damnae 2016</Copyright>
     <Version>1.1</Version>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -28,7 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />
-    <PackageReference Include="SauceControl.InheritDoc" Version="1.3.0">
+    <PackageReference Include="SauceControl.InheritDoc" Version="1.4.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

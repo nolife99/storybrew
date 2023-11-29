@@ -1,15 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
     <Version>1.2.0</Version>
     <AssemblyName>Tiny</AssemblyName>
-    <Authors>Damnae</Authors>
-    <Description>Lightweight yaml subset parser/writer.</Description>
-    <Copyright>Damnae 2021</Copyright>
-    <PackageTags>yaml json</PackageTags>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <Copyright>Copyright © Damnae 2021</Copyright>
     <RootNamespace>Tiny</RootNamespace>
+    <Company>storybrew</Company>
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>

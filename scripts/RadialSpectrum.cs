@@ -55,22 +55,22 @@ namespace StorybrewScripts
                 var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
                 for (var i = 0; i < BarCount; ++i)
                 {
-                    var height = Radius + (float)Math.Log10(1 + fft[i] * LogScale) * Scale;
+                    var height = Radius + MathF.Log10(1 + fft[i] * LogScale) * Scale;
                     var angle = i * osuTK.MathHelper.TwoPi / BarCount;
 
-                    positionKeyframes[i].Add(time, Position + new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * height);
+                    positionKeyframes[i].Add(time, Position + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * height);
                 }
             }
 
             var layer = GetLayer("Spectrum");
-            var barScale = Math.PI * 2 * Radius / BarCount / bitmap.Width;
+            var barScale = MathF.Tau * Radius / BarCount / bitmap.Width;
             for (var i = 0; i < BarCount; ++i)
             {
                 var keyframes = positionKeyframes[i];
                 keyframes.Simplify2dKeyframes(Tolerance, h => h);
 
-                var angle = i * (Math.PI * 2) / BarCount;
-                var defaultPosition = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * Radius;
+                var angle = i * MathF.Tau / BarCount;
+                var defaultPosition = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * Radius;
 
                 var bar = layer.CreateSprite(SpritePath, SpriteOrigin);
                 bar.ColorHsb(StartTime, i * 360f / BarCount + Random(-10f, 10), .6f + Random(.4f), 1);
@@ -84,7 +84,7 @@ namespace StorybrewScripts
                 {
                     hasMove = true;
                     bar.Move(start.Time, end.Time, start.Value, end.Value);
-                }, defaultPosition, s => new Vector2((float)Math.Round(s.X, CommandDecimals), (float)Math.Round(s.Y, CommandDecimals)));
+                }, defaultPosition, s => new(MathF.Round(s.X, CommandDecimals), MathF.Round(s.Y, CommandDecimals)));
 
                 if (!hasMove) bar.Move(EndTime, defaultPosition);
             }

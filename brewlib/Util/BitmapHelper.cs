@@ -3,20 +3,30 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
+using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace BrewLib.Util
 {
     public static class BitmapHelper
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PinnedBitmap Blur(Bitmap source, int radius, float power) => Convolute(source, CalculateGaussianKernel(radius, power));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PinnedBitmap BlurAlpha(Bitmap source, int radius, float power, Color color) => ConvoluteAlpha(source, CalculateGaussianKernel(radius, power), color);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LosslessCompress(string path, ImageCompressor compressor = null)
         {
             LosslessInputSettings defaultSettings = new(7);
             if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.LosslessCompress(path, defaultSettings);
             else compressor.LosslessCompress(path, defaultSettings);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Compress(string path, ImageCompressor compressor = null)
         {
             LossyInputSettings defaultSettings = new(75, 100, 1);
@@ -24,6 +34,7 @@ namespace BrewLib.Util
             else compressor.Compress(path, defaultSettings);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PinnedBitmap Premultiply(Bitmap source)
         {
             PinnedBitmap result = new(source);
@@ -48,6 +59,8 @@ namespace BrewLib.Util
 
             return result;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float[,] CalculateGaussianKernel(int radius, float weight)
         {
             var length = radius * 2 + 1;
@@ -59,6 +72,8 @@ namespace BrewLib.Util
             for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] /= total;
             return kernel;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PinnedBitmap Convolute(Bitmap source, float[,] kernel)
         {
             var kernelHeight = kernel.GetUpperBound(0) + 1;
@@ -100,6 +115,8 @@ namespace BrewLib.Util
 
             return result;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PinnedBitmap ConvoluteAlpha(Bitmap source, float[,] kernel, Color color)
         {
             var kernelHeight = kernel.GetUpperBound(0) + 1;
@@ -133,7 +150,8 @@ namespace BrewLib.Util
             }
             return result;
         }
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
         {
             ArgumentNullException.ThrowIfNull(src);
@@ -163,6 +181,7 @@ namespace BrewLib.Util
             return dest;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFullyTransparent(Bitmap source)
         {
             if (source is null) return true;
@@ -173,6 +192,8 @@ namespace BrewLib.Util
 
             return true;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Rectangle FindTransparencyBounds(Bitmap source)
         {
             if (source is null) return default;
@@ -191,30 +212,31 @@ namespace BrewLib.Util
             return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
         }
     }
-    public unsafe sealed class PinnedBitmap : IDisposable
+    public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
     {
-        public Bitmap Bitmap { get; private set; }
+        public Bitmap Bitmap { get; }
+        public int Count { get; }
 
         readonly int* data;
-        readonly int pixels;
-
         public int this[int pixelIndex]
         {
             get
             {
-                if (pixelIndex > pixels || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
-                return data[pixelIndex];
+                ObjectDisposedException.ThrowIf(disposed, this);
+                if (pixelIndex < 0 || pixelIndex >= Count) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                return *(data + pixelIndex);
             }
             set
             {
-                if (pixelIndex > pixels || pixelIndex < 0) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
-                data[pixelIndex] = value;
+                ObjectDisposedException.ThrowIf(disposed, this);
+                if (pixelIndex < 0 || pixelIndex >= Count) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+                *(data + pixelIndex) = value;
             }
         }
 
         public PinnedBitmap(int width, int height)
         {
-            data = (int*)NativeMemory.AllocZeroed((uint)(pixels = width * height), sizeof(int));
+            data = (int*)NativeMemory.AllocZeroed((uint)(Count = width * height), sizeof(int));
             Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, (nint)data);
         }
         public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
@@ -230,5 +252,8 @@ namespace BrewLib.Util
             NativeMemory.Free(data);
             disposed = true;
         }
+
+        IEnumerator<int> IEnumerable<int>.GetEnumerator() => (IEnumerator<int>)new Span<int>(data, Count).ToArray().GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => new Span<int>(data, Count).ToArray().GetEnumerator();
     }
 }

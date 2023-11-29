@@ -36,7 +36,7 @@ namespace StorybrewScripts
 
                 if (hitobject is OsuSlider)
                 {
-                    var keyframe = new KeyframedValue<Vector2>();
+                    KeyframedValue<Vector2> keyframe = [];
                     var timestep = Beatmap.GetTimingPointAt((int)hitobject.StartTime).BeatDuration / BeatDivisor;
                     var startTime = hitobject.StartTime;
 

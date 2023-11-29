@@ -22,7 +22,7 @@ namespace BrewLib.Audio
 
         public static double SquareWave(double t, double period = .5) => t % 2 < period ? 1 : -1;
         public static double SawWave(double t) => (t % 2) - 1;
-        public static double SineWave(double t) => Math.Sin(t * Math.PI * 2);
+        public static double SineWave(double t) => Math.Sin(t * Math.Tau);
         public static double TriangleWave(double t) => Math.Abs(((t * 4 - 1) % 4) - 2) - 1;
     }
 }

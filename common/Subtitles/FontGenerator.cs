@@ -32,7 +32,7 @@ namespace StorybrewCommon.Subtitles
         ///<summary> The path to the font texture. </summary>
         public readonly string Path = path;
 
-        ///<returns> If the texture does not exist. </returns>
+        ///<returns> <see langword="true"/> if the texture does not exist. </returns>
         public bool IsEmpty => Path is null;
 
         ///<summary> The texture offset in X-units. </summary>
@@ -54,21 +54,18 @@ namespace StorybrewCommon.Subtitles
         public readonly int Height = height;
 
         ///<summary> Gets the font offset for the given <see cref="OsbOrigin"/>. </summary>
-        public Vector2 OffsetFor(OsbOrigin origin)
+        public Vector2 OffsetFor(OsbOrigin origin) => origin switch
         {
-            return origin switch
-            {
-                OsbOrigin.TopCentre => new Vector2(OffsetX + Width * .5f, OffsetY),
-                OsbOrigin.TopRight => new Vector2(OffsetX + Width, OffsetY),
-                OsbOrigin.CentreLeft => new Vector2(OffsetX, OffsetY + Height * .5f),
-                OsbOrigin.Centre => new Vector2(OffsetX + Width * .5f, OffsetY + Height * .5f),
-                OsbOrigin.CentreRight => new Vector2(OffsetX + Width, OffsetY + Height * .5f),
-                OsbOrigin.BottomLeft => new Vector2(OffsetX, OffsetY + Height),
-                OsbOrigin.BottomCentre => new Vector2(OffsetX + Width * .5f, OffsetY + Height),
-                OsbOrigin.BottomRight => new Vector2(OffsetX + Width, OffsetY + Height),
-                _ => new Vector2(OffsetX, OffsetY),
-            };
-        }
+            OsbOrigin.TopCentre => new(OffsetX + Width * .5f, OffsetY),
+            OsbOrigin.TopRight => new(OffsetX + Width, OffsetY),
+            OsbOrigin.CentreLeft => new(OffsetX, OffsetY + Height * .5f),
+            OsbOrigin.Centre => new(OffsetX + Width * .5f, OffsetY + Height * .5f),
+            OsbOrigin.CentreRight => new(OffsetX + Width, OffsetY + Height * .5f),
+            OsbOrigin.BottomLeft => new(OffsetX, OffsetY + Height),
+            OsbOrigin.BottomCentre => new(OffsetX + Width * .5f, OffsetY + Height),
+            OsbOrigin.BottomRight => new(OffsetX + Width, OffsetY + Height),
+            _ => new(OffsetX, OffsetY),
+        };
     }
 
     ///<summary> Base struct for coloring commands. </summary>
@@ -274,7 +271,7 @@ namespace StorybrewCommon.Subtitles
             float offsetX = 0, offsetY = 0;
             int baseWidth, baseHeight, width, height;
 
-            using (var format = StringFormat.GenericTypographic) using (PrivateFontCollection fontCollection = new()) using (var graphics = Graphics.FromHwnd(0))
+            using (StringFormat format = new(StringFormat.GenericTypographic)) using (PrivateFontCollection fontCollection = new()) using (var graphics = Graphics.FromHwnd(0))
             {
                 graphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                 graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -315,8 +312,7 @@ namespace StorybrewCommon.Subtitles
                 offsetX = -paddingX;
                 offsetY = -paddingY;
 
-                if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0)
-                    return new FontTexture(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
+                if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0) return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
 
                 using Bitmap bitmap = new(width, height);
                 using (var textGraphics = Graphics.FromImage(bitmap))
@@ -332,7 +328,7 @@ namespace StorybrewCommon.Subtitles
                     }
 
                     for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
-                    if (!description.EffectsOnly) using (var draw = new SolidBrush(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
+                    if (!description.EffectsOnly) using (SolidBrush draw = new(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
                     for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(bitmap, textGraphics, font, format, text, x, y);
 
                     if (description.Debug) using (Pen pen = new(Color.Red))
@@ -343,7 +339,7 @@ namespace StorybrewCommon.Subtitles
                 }
 
                 var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(bitmap) : default;
-                var validBounds = bounds != default && bounds != new Rectangle(default, bitmap.Size);
+                var validBounds = !bounds.IsEmpty && !bounds.Equals(new(default, bitmap.Size));
                 if (validBounds)
                 {
                     offsetX += bounds.Left;
@@ -359,15 +355,11 @@ namespace StorybrewCommon.Subtitles
                         if (validBounds) using (var trim = bitmap.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
                         else Misc.WithRetries(() => bitmap.Save(stream, ImageFormat.Png));
                     }
-                    if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath))
-                    {
-                        if (FontColor.ToHsb(description.Color).Y > 0 && description.FontSize > 60 || effects.Length > 0) StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(7));
-                        else StoryboardObjectGenerator.Current.Compressor.Compress(path, new(75, 100, 1));
-                    }
-                    else StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(4));
+                    StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(
+                        path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath) ? 7 : 2));
                 }
             }
-            return new FontTexture(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);
+            return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);
         }
         internal void HandleCache(TinyToken cachedFontRoot)
         {
@@ -389,7 +381,7 @@ namespace StorybrewCommon.Subtitles
                 }
                 if (cache.ContainsKey(text)) throw new InvalidDataException($"The font texture for \"{text}\" ({path}) has been cached multiple times");
 
-                cache[text] = new FontTexture(path,
+                cache[text] = new(path,
                     cacheEntry.Value<float>("OffsetX"), cacheEntry.Value<float>("OffsetY"),
                     cacheEntry.Value<int>("BaseWidth"), cacheEntry.Value<int>("BaseHeight"),
                     cacheEntry.Value<int>("Width"), cacheEntry.Value<int>("Height"));
@@ -413,9 +405,7 @@ namespace StorybrewCommon.Subtitles
                 var effectsRoot = cachedFontRoot.Value<TinyArray>("Effects");
                 if (effectsRoot.Count != effects.Length) return false;
 
-                for (var i = 0; i < effects.Length; ++i) if (!matches(effects[i], effectsRoot[i].Value<TinyToken>()))
-                    return false;
-
+                for (var i = 0; i < effects.Length; ++i) if (!matches(effects[i], effectsRoot[i].Value<TinyToken>())) return false;
                 return true;
             }
             return false;
@@ -506,7 +496,7 @@ namespace StorybrewCommon.Subtitles
         static TinyObject fontEffectToTinyObject(FontEffect fontEffect)
         {
             var effectType = fontEffect.GetType();
-            var cache = new TinyObject
+            TinyObject cache = new()
             {
                 ["Type"] = effectType.FullName
             };

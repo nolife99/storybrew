@@ -5,7 +5,6 @@
     <RootNamespace>scripts</RootNamespace>
     <AssemblyName>StorybrewScripts</AssemblyName>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <PackageId>storybrew scripts</PackageId>
     <Company>storybrew</Company>
     <Product>storybrew scripts</Product>
     <Copyright>Copyright © Damnae 2016</Copyright>

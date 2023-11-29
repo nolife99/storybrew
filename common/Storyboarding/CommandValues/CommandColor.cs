@@ -58,7 +58,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues
             float diffR = R - other.R;
             float diffG = G - other.G;
             float diffB = B - other.B;
-            return (float)Math.Sqrt((diffR * diffR) + (diffG * diffG) + (diffB * diffB));
+            return MathF.Sqrt((diffR * diffR) + (diffG * diffG) + (diffB * diffB));
         }
 
         ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>

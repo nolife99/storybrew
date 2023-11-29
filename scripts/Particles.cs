@@ -58,20 +58,20 @@ namespace StorybrewScripts
             var bitmap = GetMapsetBitmap(Path);
 
             var duration = (float)(EndTime - StartTime);
-            var loopCount = Math.Max(1, (int)Math.Floor(duration / Lifetime));
+            var loopCount = Math.Max(1, (int)MathF.Floor(duration / Lifetime));
 
             for (var i = 0; i < ParticleCount; ++i)
             {
-                var spawnAngle = Random(Math.PI * 2);
-                var spawnDistance = (float)(SpawnSpread * Math.Sqrt(Random(1f)));
+                var spawnAngle = Random(MathF.Tau);
+                var spawnDistance = SpawnSpread * MathF.Sqrt(Random(1f));
 
-                var moveAngle = osuTK.MathHelper.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) * .5f);
+                var moveAngle = osuTK.MathHelper.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) / 2);
                 var moveDistance = Speed * Lifetime * .001f;
 
                 var spriteRotation = moveAngle + osuTK.MathHelper.DegreesToRadians(Rotation);
 
-                var startPosition = SpawnOrigin + new Vector2((float)Math.Cos(spawnAngle), (float)Math.Sin(spawnAngle)) * spawnDistance;
-                var endPosition = startPosition + new Vector2((float)Math.Cos(moveAngle), (float)Math.Sin(moveAngle)) * moveDistance;
+                var startPosition = SpawnOrigin + new Vector2(MathF.Cos(spawnAngle), MathF.Sin(spawnAngle)) * spawnDistance;
+                var endPosition = startPosition + new Vector2(MathF.Cos(moveAngle), MathF.Sin(moveAngle)) * moveDistance;
 
                 var loopDuration = duration / loopCount;
                 var startTime = StartTime + i * loopDuration / ParticleCount;
@@ -113,7 +113,7 @@ namespace StorybrewScripts
         }
         bool isVisible(Bitmap bitmap, Vector2 startPosition, Vector2 endPosition, float rotation, float duration)
         {
-            var spriteSize = new SizeF(bitmap.Width * Scale.X, bitmap.Height * Scale.Y);
+            SizeF spriteSize = new(bitmap.Width * Scale.X, bitmap.Height * Scale.Y);
             for (var t = 0; t < duration; t += 200)
             {
                 var position = Vector2.Lerp(startPosition, endPosition, t / duration);

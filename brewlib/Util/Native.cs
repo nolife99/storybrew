@@ -10,16 +10,16 @@ namespace BrewLib.Util
     {
         #region Memory
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")]
+        /* [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")]
         private static partial void RtlCopyMemory(nint dest, nint src, uint count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("kernel32")]
-        private static partial void RtlMoveMemory(nint dest, nint src, uint count);
+        private static partial void RtlMoveMemory(nint dest, nint src, uint count); */
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CopyMemory(nint source, nint destination, int count)
         {
-            if (Environment.Is64BitProcess)
+            /* if (Environment.Is64BitProcess)
             {
                 if (source != default && destination != default)
                 {
@@ -32,10 +32,10 @@ namespace BrewLib.Util
                     return true;
                 }
                 return false;
-            }
+            } */
             unsafe
             {
-                NativeMemory.Copy(destination.ToPointer(), source.ToPointer(), (uint)count);
+                NativeMemory.Copy(source.ToPointer(), destination.ToPointer(), (uint)count);
                 return true;
             }
         }
@@ -90,7 +90,7 @@ namespace BrewLib.Util
 
         delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("user32")] [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
         static nint hWnd;

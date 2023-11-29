@@ -36,7 +36,7 @@ namespace StorybrewCommon.Scripting
         public bool Multithreaded { get; protected set; }
         
         ///<summary> Gets the texture and image compressor for this instance. </summary>
-        protected internal ImageCompressor Compressor { get; private set; }
+        public ImageCompressor Compressor { get; private set; }
 
         ///<summary> Creates or retrieves a layer. </summary>
         ///<remarks> The identifier will be shown in the editor as "Effect name (Identifier)". </remarks>
@@ -57,8 +57,8 @@ namespace StorybrewCommon.Scripting
         ///<summary> Path to the mapset target of this project. </summary>
         public string MapsetPath => context.MapsetPath;
 
-        ///<summary> Constructs a new storyboard object generator. </summary>
-        public StoryboardObjectGenerator()
+        ///<summary> Reserved </summary>
+        protected StoryboardObjectGenerator()
         {
             var fields = GetType().GetFields();
             configurableFields = new(fields.Length);
@@ -231,9 +231,7 @@ namespace StorybrewCommon.Scripting
         ///<summary> Loads subtitles from a given subtitle file. </summary>
         public SubtitleSet LoadSubtitles(string path)
         {
-            path = Path.Combine(context.ProjectPath, path);
-            context.AddDependency(path);
-
+            context.AddDependency(Path.Combine(context.ProjectPath, path));
             return Path.GetExtension(path) switch
             {
                 ".srt" => srt.Parse(path),

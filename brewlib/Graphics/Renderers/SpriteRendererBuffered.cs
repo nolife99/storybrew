@@ -257,8 +257,7 @@ namespace BrewLib.Graphics.Renderers
 
             if (rotation != 0)
             {
-                var cos = (float)Math.Cos(rotation);
-                var sin = (float)Math.Sin(rotation);
+                var (sin, cos) = MathF.SinCos(rotation);
 
                 x1 = cos * p1x - sin * p1y;
                 y1 = sin * p1x + cos * p1y;

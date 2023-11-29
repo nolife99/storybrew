@@ -7,8 +7,6 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Copyright>Copyright © Damnae 2016</Copyright>
     <UseWindowsForms>true</UseWindowsForms>
-    <Product>brewlib</Product>
-    <Title>brewlib</Title>
     <Version>1.1</Version>
     <Company>storybrew</Company>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>

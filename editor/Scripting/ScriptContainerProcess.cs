@@ -15,15 +15,11 @@ namespace StorybrewEditor.Scripting
             ObjectDisposedException.ThrowIf(disposedValue, this);
             try
             {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Name + Environment.TickCount64}.dll");
-                ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
-
                 workerProcess?.Dispose();
                 workerProcess = new();
 
                 var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
-                scriptProvider.Initialize(assemblyPath, ScriptTypeName);
-
+                scriptProvider.Initialize(ScriptCompiler.Compile(SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies), ScriptTypeName);
                 return scriptProvider;
             }
             catch (ScriptCompilationException)

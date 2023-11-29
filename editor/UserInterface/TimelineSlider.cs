@@ -208,8 +208,8 @@ namespace StorybrewEditor.UserInterface
                 }
 
                 // Current time (bottom)
-                var centerX = (float)Math.Round(bounds.Width * .5);
-                lineSize = new Vector2(pixelSize, bounds.Height * .4f);
+                var centerX = MathF.Round(bounds.Width * .5f);
+                lineSize = new(pixelSize, bounds.Height * .4f);
                 drawLine(drawContext, offset + new Vector2(centerX - pixelSize, lineBottomY), lineSize, Color4.White, actualOpacity);
                 drawLine(drawContext, offset + new Vector2(centerX + pixelSize, lineBottomY), lineSize, Color4.White, actualOpacity);
             }

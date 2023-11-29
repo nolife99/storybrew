@@ -21,7 +21,7 @@ namespace StorybrewEditor.Scripting
             Environment.CurrentDirectory
         ];
 
-        public static void Compile(IEnumerable<string> sourcePaths, string outputPath, IEnumerable<string> referencedAssemblies)
+        public static byte[] Compile(IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
         {
             Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
             foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
@@ -62,40 +62,43 @@ namespace StorybrewEditor.Scripting
                 }
             }
 
-            var compilation = CSharpCompilation.Create(Path.GetFileName(outputPath), trees.Keys, references, 
+            var compilation = CSharpCompilation.Create(Path.GetFileName(asmName), trees.Keys, references, 
                 new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
 
-            using (var assemblyStream = File.Create(outputPath))
+            MemoryStream assemblyStream = new();
+
+            var result = compilation.Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
+                options: new(debugInformationFormat: DebugInformationFormat.Embedded));
+
+            if (result.Success)
             {
-                var result = compilation.Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
-                    options: new(debugInformationFormat: DebugInformationFormat.Embedded));
-
-                if (result.Success)
-                {
-                    trees.Clear();
-                    return;
-                }
-
-                var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
-                {
-                    if (k.Location.SourceTree is null) return "";
-                    if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
-                    return "";
-                }).ToDictionary(k => k.Key, k => k);
-
                 trees.Clear();
+                var arr = assemblyStream.ToArray();
+                assemblyStream.Dispose();
 
-                StringBuilder message = new("Compilation error\n\n");
-                foreach (var kvp in failureGroup)
-                {
-                    var file = kvp.Key;
-                    var diagnostics = kvp.Value;
-                    message.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)}:");
-                    foreach (var diagnostic in diagnostics) message.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
-                }
-
-                throw new ScriptCompilationException(message.ToString());
+                return arr;
             }
+            assemblyStream.Dispose();
+
+            var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
+            {
+                if (k.Location.SourceTree is null) return "";
+                if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
+                return "";
+            }).ToDictionary(k => k.Key, k => k);
+
+            trees.Clear();
+
+            StringBuilder error = new("Compilation error\n\n");
+            foreach (var kvp in failureGroup)
+            {
+                var file = kvp.Key;
+                var diagnostics = kvp.Value;
+                error.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)}:");
+                foreach (var diagnostic in diagnostics) error.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
+            }
+
+            throw new ScriptCompilationException(error.ToString());
         }
     }
 }

@@ -5,18 +5,18 @@ namespace BrewLib.Util
 {
     public static class VectorExtensions
     {
-        public static Vector2 Round(this Vector2 v) => new((float)Math.Round(v.X), (float)Math.Round(v.Y));
-        public static Vector3 Round(this Vector3 v) => new((float)Math.Round(v.X), (float)Math.Round(v.Y), (float)Math.Round(v.Z));
+        public static Vector2 Round(this Vector2 v) => new(MathF.Round(v.X), MathF.Round(v.Y));
+        public static Vector3 Round(this Vector3 v) => new(MathF.Round(v.X), MathF.Round(v.Y), MathF.Round(v.Z));
 
         public static Vector2 ClampLength(this Vector2 v, float max)
         {
             var length = v.LengthSquared;
-            return length > max * max ? v / (float)Math.Sqrt(length) * max : v;
+            return length > max * max ? v / MathF.Sqrt(length) * max : v;
         }
         public static Vector3 ClampLength(this Vector3 v, float max)
         {
             var length = v.LengthSquared;
-            return length > max * max ? v / (float)Math.Sqrt(length) * max : v;
+            return length > max * max ? v / MathF.Sqrt(length) * max : v;
         }
         public static Vector2 Project(this Vector2 v, Vector2 line0, Vector2 line1)
         {

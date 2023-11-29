@@ -26,7 +26,7 @@ namespace StorybrewCommon.Curves
             var midPointLS = midPoint.LengthSquared;
             var endPointLS = endPoint.LengthSquared;
 
-            var centre = new CommandPosition(
+            CommandPosition centre = new(
                 (startPointLS * (midPoint.Y - endPoint.Y) + midPointLS * (endPoint.Y - startPoint.Y) + endPointLS * (startPoint.Y - midPoint.Y)) / d,
                 (startPointLS * (endPoint.X - midPoint.X) + midPointLS * (startPoint.X - endPoint.X) + endPointLS * (midPoint.X - startPoint.X)) / d);
             var radius = (startPoint - centre).Length;
@@ -35,9 +35,9 @@ namespace StorybrewCommon.Curves
             var midAngle = Math.Atan2(midPoint.Y - centre.Y, midPoint.X - centre.X);
             var endAngle = Math.Atan2(endPoint.Y - centre.Y, endPoint.X - centre.X);
 
-            while (midAngle < startAngle) midAngle += 2 * Math.PI;
-            while (endAngle < startAngle) endAngle += 2 * Math.PI;
-            if (midAngle > endAngle) endAngle -= 2 * Math.PI;
+            while (midAngle < startAngle) midAngle += Math.Tau;
+            while (endAngle < startAngle) endAngle += Math.Tau;
+            if (midAngle > endAngle) endAngle -= Math.Tau;
 
             length = Math.Abs((endAngle - startAngle) * radius);
             var precision = (int)(length / 8);
@@ -47,10 +47,9 @@ namespace StorybrewCommon.Curves
                 var progress = (double)i / precision;
                 var angle = endAngle * progress + startAngle * (1 - progress);
 
-                var position = new CommandPosition((float)(Math.Cos(angle) * radius), (float)(Math.Sin(angle) * radius)) + centre;
-                distancePosition.Add(new ValueTuple<float, CommandPosition>((float)(progress * length), position));
+                distancePosition.Add(((float)(progress * length), new CommandPosition(Math.Cos(angle) * radius, Math.Sin(angle) * radius) + centre));
             }
-            distancePosition.Add(new ValueTuple<float, CommandPosition>((float)length, endPoint));
+            distancePosition.Add(((float)length, endPoint));
         }
 
         ///<summary> Returns whether or not the curve is a valid circle curve based on given control points. </summary>

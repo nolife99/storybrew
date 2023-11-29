@@ -234,7 +234,7 @@ namespace StorybrewCommon.Storyboarding3d
 
                 var edgeOpacity = ignoreEdges ? 0 : opacity;
 
-                genTopEdge.Add(new State
+                genTopEdge.Add(new()
                 {
                     Time = time,
                     Position = positionTop,
@@ -245,7 +245,7 @@ namespace StorybrewCommon.Storyboarding3d
                     FlipH = flip,
                     Additive = Additive
                 });
-                genBottomEdge.Add(new State
+                genBottomEdge.Add(new()
                 {
                     Time = time,
                     Position = positionBottom,
@@ -271,7 +271,7 @@ namespace StorybrewCommon.Storyboarding3d
                     endCapScale.X *= .5f;
                 }
 
-                genStartCap.Add(new State
+                genStartCap.Add(new()
                 {
                     Time = time,
                     Position = new Vector2(startVector.X, startVector.Y) + capOffset,

@@ -1,7 +1,6 @@
 ﻿using StorybrewCommon.Scripting;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace StorybrewEditor.Scripting
 {
@@ -9,18 +8,14 @@ namespace StorybrewEditor.Scripting
     {
         protected override ScriptProvider<TScript> LoadScript()
         {
-            ObjectDisposedException.ThrowIf(disposed, GetType());
+            /* This implementation is empty due to a replacement for AppDomain (thread-local), but this is not a fix-all solution.
+               For example, scripts cannot invoke parallel actions or work with threads and asynchronous code.
+               Sadly, AssemblyLoadContext is extremely painful to get working with transitive assemblies,
+               as they don't provide the same amount of isolation that AppDomain originally gave. */ 
             try
             {
-                var assemblyPath = $"{CompiledScriptsPath}/{Name + Environment.TickCount64}.dll";
-
-                var id = $"{Name} {Id}";
-                Trace.WriteLine($"{nameof(Scripting)}: Loading domain {id}");
-                ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
-
                 ScriptProvider<TScript> scriptProvider = new();
-                scriptProvider.Initialize(assemblyPath, ScriptTypeName);
-
+                scriptProvider.Initialize(ScriptCompiler.Compile(SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies), ScriptTypeName);
                 return scriptProvider;
             }
             catch (ScriptCompilationException)
@@ -32,22 +27,5 @@ namespace StorybrewEditor.Scripting
                 throw CreateScriptLoadingException(e);
             }
         }
-
-        #region IDisposable Support
-
-        bool disposed;
-        protected override void Dispose(bool disposing)
-        {
-            if (!disposed)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-
-                disposed = true;
-            }
-            base.Dispose(disposing);
-        }
-
-        #endregion
     }
 }

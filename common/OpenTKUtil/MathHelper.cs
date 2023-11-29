@@ -518,8 +518,8 @@ namespace StorybrewCommon.osuTKUtil
         /// <returns>The clamped angle in the range [0, 2π).</returns>
         public static double ClampRadians(double angle)
         {
-            angle %= 2d * Math.PI;
-            if (angle < 0) angle += 2 * Math.PI;
+            angle %= Math.Tau;
+            if (angle < 0) angle += Math.Tau;
 
             return angle;
         }

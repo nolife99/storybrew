@@ -44,7 +44,7 @@ namespace StorybrewScripts
             bgLayer = GetLayer("Background");
             mainLayer = GetLayer("Main");
 
-            using (spritePools = new SpritePools(mainLayer))
+            using (spritePools = new(mainLayer))
             {
                 Intro(TimeIntro, TimePart1);
 
@@ -83,8 +83,7 @@ namespace StorybrewScripts
             bg.Fade(OsbEasing.In, TimeSbStart, tStart, 0, 1);
             bg.Fade(tStart, tEnd, 1, 1);
 
-            var times = new int[] { 1833, 2363, 4260, 4833, 6774 };
-            var xs = new int[] { 500, 300, 400, 200, 100 };
+            int[] times = [1833, 2363, 4260, 4833, 6774], xs = [500, 300, 400, 200, 100];
             for (var i = 0; i < times.Length; ++i)
             {
                 var t = times[i];

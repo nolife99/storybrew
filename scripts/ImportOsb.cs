@@ -18,10 +18,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            using var stream = OpenProjectFile(Path); 
-            using var reader = new StreamReader(stream, Encoding.ASCII); 
-            
-            reader.ParseSections(section =>
+            using (var stream = OpenProjectFile(Path)) using (StreamReader reader = new(stream, Encoding.ASCII)) reader.ParseSections(section =>
             {
                 switch (section)
                 {

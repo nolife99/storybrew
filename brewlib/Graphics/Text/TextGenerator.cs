@@ -38,8 +38,10 @@ namespace BrewLib.Graphics.Text
                 BoxAlignment.Bottom => StringAlignment.Far,
                 _ => StringAlignment.Center,
             };
-            using var graphics = System.Drawing.Graphics.FromHwnd(default);
-            using var stringFormat = new StringFormat(StringFormat.GenericTypographic);
+
+            using var graphics = System.Drawing.Graphics.FromHwnd(0);
+            using StringFormat stringFormat = new(StringFormat.GenericTypographic);
+
             graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
             stringFormat.Alignment = horizontalAlignment;
             stringFormat.LineAlignment = verticalAlignment;
@@ -56,10 +58,10 @@ namespace BrewLib.Graphics.Text
             var offsetX = padding.X;
             var offsetY = padding.Y;
 
-            textureSize = new Vector2(width, height);
+            textureSize = new(width, height);
             if (measureOnly) return null;
 
-            var bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+            Bitmap bitmap = new(width, height, PixelFormat.Format32bppArgb);
             try
             {
                 using var textGraphics = System.Drawing.Graphics.FromImage(bitmap);

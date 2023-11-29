@@ -14,28 +14,14 @@ namespace StorybrewCommon.Storyboarding.Util
     ///<summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
     public class CommandGenerator
     {
-        readonly KeyframedValue<CommandPosition>
-            positions = new(InterpolatingFunctions.Position),
-            finalPositions = new(InterpolatingFunctions.Position);
+        readonly KeyframedValue<CommandPosition> positions = new(InterpolatingFunctions.Position), finalPositions = new(InterpolatingFunctions.Position);
+        readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale), finalScales = new(InterpolatingFunctions.Scale);
 
-        readonly KeyframedValue<CommandScale>
-            scales = new(InterpolatingFunctions.Scale),
-            finalScales = new(InterpolatingFunctions.Scale);
+        readonly KeyframedValue<double> rotations = new(InterpolatingFunctions.DoubleAngle), fades = new(InterpolatingFunctions.Double),
+            finalRotations = new(InterpolatingFunctions.DoubleAngle), finalfades = new(InterpolatingFunctions.Double);
 
-        readonly KeyframedValue<double>
-            rotations = new(InterpolatingFunctions.DoubleAngle),
-            fades = new(InterpolatingFunctions.Double),
-            finalRotations = new(InterpolatingFunctions.DoubleAngle),
-            finalfades = new(InterpolatingFunctions.Double);
-
-        readonly KeyframedValue<CommandColor>
-            colors = new(InterpolatingFunctions.CommandColor),
-            finalColors = new(InterpolatingFunctions.CommandColor);
-
-        readonly KeyframedValue<bool>
-            flipH = new(InterpolatingFunctions.BoolFrom),
-            flipV = new(InterpolatingFunctions.BoolFrom),
-            additive = new(InterpolatingFunctions.BoolFrom);
+        readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor), finalColors = new(InterpolatingFunctions.CommandColor);
+        readonly KeyframedValue<bool> flipH = new(InterpolatingFunctions.BoolFrom), flipV = new(InterpolatingFunctions.BoolFrom), additive = new(InterpolatingFunctions.BoolFrom);
 
         readonly List<State> states = [];
 
@@ -161,7 +147,7 @@ namespace StorybrewCommon.Storyboarding.Util
             finalRotations.Until(rotations.StartTime);
             rotations.TransferKeyframes(finalRotations);
 
-            colors.Simplify3dKeyframes(ColorTolerance, c => new Vector3(c.R, c.G, c.B));
+            colors.Simplify3dKeyframes(ColorTolerance, c => new(c.R, c.G, c.B));
             finalColors.Until(colors.StartTime);
             colors.TransferKeyframes(finalColors);
         }
@@ -179,15 +165,15 @@ namespace StorybrewCommon.Storyboarding.Util
                 if (moveX && !moveY)
                 {
                     sprite.MoveX(s.Time, e.Time, s.Value.X, e.Value.X);
-                    sprite.InitialPosition = new CommandPosition(0, s.Value.Y);
+                    sprite.InitialPosition = new(0, s.Value.Y);
                 }
                 else if (moveY && !moveX)
                 {
                     sprite.MoveY(s.Time, e.Time, s.Value.Y, e.Value.Y);
-                    sprite.InitialPosition = new CommandPosition(s.Value.X, 0);
+                    sprite.InitialPosition = new(s.Value.X, 0);
                 }
                 else sprite.Move(s.Time, e.Time, s.Value, e.Value);
-            }, new Vector2(320, 240), p => new CommandPosition(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, endState, loopable);
+            }, new(320, 240), p => new(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, endState, loopable);
 
             int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
             var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) > 1);
@@ -195,7 +181,7 @@ namespace StorybrewCommon.Storyboarding.Util
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
                 else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
-            }, Vector2.One, s => new CommandScale(Math.Round(s.X, ScaleDecimals), Math.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
+            }, Vector2.One, s => new(Math.Round(s.X, ScaleDecimals), Math.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
 
             finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
             finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), Color.White, null, startState, endState, loopable);
@@ -249,7 +235,7 @@ namespace StorybrewCommon.Storyboarding.Util
                 var font = StoryboardObjectGenerator.Current.fonts.Values.SelectMany(gen => gen.cache.Values).FirstOrDefault(texture => texture.Path == sprite.TexturePath);
 
                 if (font == default(FontTexture) || font is null) return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
-                return new Size(font.Width, font.Height);
+                return new(font.Width, font.Height);
             }
             else return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
         }
@@ -268,7 +254,7 @@ namespace StorybrewCommon.Storyboarding.Util
         public double Opacity;
 
         ///<summary> Represents the position, in osu!pixels, of this state. </summary>
-        public CommandPosition Position = new Vector2(320, 240);
+        public CommandPosition Position = new(320, 240);
 
         ///<summary> Represents the scale, in osu!pixels, of this state. </summary>
         public CommandScale Scale = Vector2.One;
@@ -292,7 +278,7 @@ namespace StorybrewCommon.Storyboarding.Util
         public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
         {
             var noGen = generator is null;
-            var scale = new CommandScale(
+            CommandScale scale = new(
                 noGen ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals), 
                 noGen ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals));
 
@@ -301,7 +287,7 @@ namespace StorybrewCommon.Storyboarding.Util
                 scale.X <= 0 || scale.Y <= 0)
                 return false;
 
-            return OsbSprite.InScreenBounds(new CommandPosition(
+            return OsbSprite.InScreenBounds(new(
                 noGen ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
                 noGen ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals)),
                 imageSize * scale, noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);

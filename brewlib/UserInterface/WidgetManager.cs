@@ -247,7 +247,7 @@ namespace BrewLib.UserInterface
         public Vector2 SnapToPixel(Vector2 value)
         {
             var scaling = (camera as CameraOrtho)?.HeightScaling ?? 1;
-            return new Vector2((float)Math.Round(value.X * scaling) / scaling, (float)Math.Round(value.Y * scaling) / scaling);
+            return new Vector2(MathF.Round(value.X * scaling) / scaling, MathF.Round(value.Y * scaling) / scaling);
         }
 
         #endregion
@@ -397,7 +397,7 @@ namespace BrewLib.UserInterface
         }
         static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, Widget target, Widget relatedTarget = null, bool bubbles = true)
         {
-            if (target.IsDisposed) throw new ObjectDisposedException(nameof(target));
+            ObjectDisposedException.ThrowIf(target.IsDisposed, nameof(target));
 
             var widgetEvent = new WidgetEvent(target, relatedTarget);
             var ancestors = bubbles ? target.GetAncestors() : null;

@@ -50,7 +50,7 @@ namespace StorybrewScripts
 
         protected override void Generate()
         {
-            var font = LoadFont(SpritesPath, new FontDescription(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
+            var font = LoadFont(SpritesPath, new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
                 new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor),
                 new FontOutline(OutlineThickness, OutlineColor),
                 new FontShadow(ShadowThickness, ShadowColor));
@@ -59,8 +59,7 @@ namespace StorybrewScripts
 
             if (GlowRadius > 0 && GlowAdditive)
             {
-                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new FontDescription(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true),
-                    new FontGlow(GlowRadius, 0, GlowColor));
+                var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"), new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true), new FontGlow(GlowRadius, 0, GlowColor));
                 generateLyrics(glowFont, subtitles, "glow", true);
             }
             generateLyrics(font, subtitles, "", false);
@@ -84,14 +83,14 @@ namespace StorybrewScripts
                         var text = match.Groups[3].Value;
                         foreach (var letter in text)
                         {
-                            var texture = font.GetTexture(letter.ToString());
+                            var texture = font.GetTexture(letter);
                             lineWidth += texture.BaseWidth * FontScale;
                             lineHeight = Math.Max(lineHeight, texture.BaseHeight * FontScale);
                         }
                     }
 
                     var karaokeStartTime = subtitleLine.StartTime;
-                    var letterX = 320 - lineWidth * .5f;
+                    var letterX = 320 - lineWidth / 2;
                     foreach (Match match in matches)
                     {
                         var durationString = match.Groups[2].Value;
@@ -102,7 +101,7 @@ namespace StorybrewScripts
 
                         foreach (var letter in text)
                         {
-                            var texture = font.GetTexture(letter.ToString());
+                            var texture = font.GetTexture(letter);
                             if (!texture.IsEmpty)
                             {
                                 var position = new Vector2(letterX, letterY) + texture.OffsetFor(Origin) * FontScale;
@@ -125,11 +124,8 @@ namespace StorybrewScripts
         }
         void applyKaraoke(OsbSprite sprite, double startTime, double endTime)
         {
-            var before = new Color4(.2f, .2f, .2f, 1f);
-            var after = new Color4(.6f, .6f, .6f, 1f);
-
-            sprite.Color(startTime - 100, startTime, before, Color.White);
-            sprite.Color(endTime - 100, endTime, Color.White, after);
+            sprite.Color(startTime - 100, startTime, new Color4(.2f, .2f, .2f, 1), Color.White);
+            sprite.Color(endTime - 100, endTime, Color.White, new Color4(.6f, .6f, .6f, 1));
         }
     }
 }

@@ -249,9 +249,9 @@ namespace StorybrewCommon.Animations
             Vector2 middle = new((float)middleKeyframe.Time, getComponent(middleKeyframe.Value));
             Vector2 end = new((float)endKeyframe.Time, getComponent(endKeyframe.Value));
 
-            var area = Math.Abs((start.X * end.Y + end.X * middle.Y + middle.X * start.Y - end.X * start.Y - middle.X * end.Y - start.X * middle.Y) * .5);
-            var bottom = Math.Sqrt((start.X - end.X) * (start.X - end.X) + (start.Y - end.Y) * (start.Y - end.Y));
-            return (float)(area / bottom * 2);
+            var area = Math.Abs((start.X * end.Y + end.X * middle.Y + middle.X * start.Y - end.X * start.Y - middle.X * end.Y - start.X * middle.Y) * .5f);
+            var bottom = MathF.Sqrt((start.X - end.X) * (start.X - end.X) + (start.Y - end.Y) * (start.Y - end.Y));
+            return area / bottom * 2;
         });
 
         ///<summary> Simplifies keyframes on 2-parameter commands. </summary>

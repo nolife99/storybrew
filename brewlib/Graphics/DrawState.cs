@@ -311,10 +311,10 @@ namespace BrewLib.Graphics
         {
             var screenBounds = camera.ToScreen(RectangleF.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
             var clipRectangle = new Rectangle(
-                (int)Math.Round(screenBounds.Left),
-                viewport.Height - (int)Math.Round(screenBounds.Top + screenBounds.Height),
-                (int)Math.Round(screenBounds.Width),
-                (int)Math.Round(screenBounds.Height));
+                (int)MathF.Round(screenBounds.Left),
+                viewport.Height - (int)MathF.Round(screenBounds.Top + screenBounds.Height),
+                (int)MathF.Round(screenBounds.Width),
+                (int)MathF.Round(screenBounds.Height));
 
             return Clip(clipRectangle);
         }

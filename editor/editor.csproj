@@ -13,13 +13,13 @@
   <PropertyGroup>
     <StartupObject>StorybrewEditor.Program</StartupObject>
     <ApplicationIcon>icon.ico</ApplicationIcon>
-    <Authors>storybrew</Authors>
     <Product>storybrew editor</Product>
-    <Title>storybrew editor</Title>
+    <Company>storybrew</Company>
     <Copyright>Copyright © Damnae 2016</Copyright>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-  <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
@@ -67,7 +67,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0-3.final" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
     <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />
   </ItemGroup>
   

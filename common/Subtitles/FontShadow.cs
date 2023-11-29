@@ -18,13 +18,15 @@ namespace StorybrewCommon.Subtitles
         public bool Overlay => false;
 
         ///<inheritdoc/>
-        public SizeF Measure => new Size(Thickness * 2, Thickness * 2);
+        public SizeF Measure => new(Thickness * 2, Thickness * 2);
 
         ///<inheritdoc/>
         public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
         {
             if (Thickness < 1) return;
-            using var brush = new SolidBrush(Color); for (var i = 1; i <= Thickness; ++i) textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
+
+            using SolidBrush brush = new(Color); 
+            for (var i = 1; i <= Thickness; ++i) textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
         }
     }
 }

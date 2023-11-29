@@ -20,6 +20,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Tiny;
 
 namespace StorybrewEditor.Storyboarding
@@ -354,7 +355,7 @@ namespace StorybrewEditor.Storyboarding
             var assetsFolderPath = Path.GetFullPath(ProjectAssetFolderPath);
             if (!Directory.Exists(assetsFolderPath)) Directory.CreateDirectory(assetsFolderPath);
 
-            assetWatcher = new FileSystemWatcher
+            assetWatcher = new()
             {
                 Path = assetsFolderPath,
                 IncludeSubdirectories = true,
@@ -401,7 +402,7 @@ namespace StorybrewEditor.Storyboarding
             get => importedAssemblies;
             set
             {
-                ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
+                ObjectDisposedException.ThrowIf(Disposed, this);
 
                 importedAssemblies = value as List<string> ?? value.ToList();
                 scriptManager.ReferencedAssemblies = ReferencedAssemblies;
@@ -873,6 +874,8 @@ namespace StorybrewEditor.Storyboarding
                 scriptManager.Dispose();
                 TextureContainer.Dispose();
                 AudioContainer.Dispose();
+
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true);
 
                 effectUpdateQueue = null;
                 assetWatcher = null;
