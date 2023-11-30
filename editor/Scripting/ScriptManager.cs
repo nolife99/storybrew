@@ -11,198 +11,197 @@ using System.Linq;
 using System.Reflection;
 using System.Xml;
 
-namespace StorybrewEditor.Scripting
+namespace StorybrewEditor.Scripting;
+
+public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 {
-    public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
+    readonly ResourceContainer resourceContainer;
+    readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
+
+    List<string> referencedAssemblies = [];
+    public IEnumerable<string> ReferencedAssemblies
     {
-        readonly ResourceContainer resourceContainer;
-        readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
-
-        List<string> referencedAssemblies = [];
-        public IEnumerable<string> ReferencedAssemblies
+        get => referencedAssemblies;
+        set
         {
-            get => referencedAssemblies;
-            set
+            referencedAssemblies = (value as List<string>) ?? value.ToList();
+            foreach (var scriptContainer in scriptContainers.Values) scriptContainer.ReferencedAssemblies = referencedAssemblies;
+            updateSolutionFiles();
+        }
+    }
+
+    FileSystemWatcher scriptWatcher;
+    readonly FileSystemWatcher libraryWatcher;
+    ThrottledActionScheduler scheduler = new();
+    readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
+
+    public string ScriptsPath { get; }
+
+    public ScriptManager(ResourceContainer resourceContainer, string scriptsNamespace, string scriptsSourcePath, string commonScriptsPath, string scriptsLibraryPath, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
+    {
+        this.resourceContainer = resourceContainer;
+        this.scriptsNamespace = scriptsNamespace;
+        ScriptsPath = scriptsSourcePath;
+        this.commonScriptsPath = commonScriptsPath;
+        this.scriptsLibraryPath = scriptsLibraryPath;
+        this.compiledScriptsPath = compiledScriptsPath;
+
+        ReferencedAssemblies = referencedAssemblies;
+
+        scriptWatcher = new FileSystemWatcher
+        {
+            Filter = "*.cs",
+            Path = scriptsSourcePath,
+            IncludeSubdirectories = false,
+            NotifyFilter = NotifyFilters.LastWrite
+        };
+
+        scriptWatcher.Created += scriptWatcher_Changed;
+        scriptWatcher.Changed += scriptWatcher_Changed;
+        scriptWatcher.Renamed += scriptWatcher_Changed;
+        scriptWatcher.Deleted += scriptWatcher_Changed;
+        scriptWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (script): {e.GetException()}");
+        scriptWatcher.EnableRaisingEvents = true;
+        Trace.WriteLine($"Watching (script): {scriptsSourcePath}");
+
+        libraryWatcher = new FileSystemWatcher
+        {
+            Filter = "*.cs",
+            Path = scriptsLibraryPath,
+            IncludeSubdirectories = true,
+            NotifyFilter = NotifyFilters.LastWrite
+        };
+
+        libraryWatcher.Created += libraryWatcher_Changed;
+        libraryWatcher.Changed += libraryWatcher_Changed;
+        libraryWatcher.Renamed += libraryWatcher_Changed;
+        libraryWatcher.Deleted += libraryWatcher_Changed;
+        libraryWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (library): {e.GetException()}");
+        libraryWatcher.EnableRaisingEvents = true;
+        Trace.WriteLine($"Watching (library): {scriptsLibraryPath}");
+    }
+
+    public ScriptContainer<TScript> Get(string scriptName)
+    {
+        ObjectDisposedException.ThrowIf(disposedValue, GetType());
+        if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
+
+        var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
+        var sourcePath = Path.Combine(ScriptsPath, $"{scriptName}.cs");
+
+        if (commonScriptsPath is not null && !File.Exists(sourcePath))
+        {
+            var commonSourcePath = Path.Combine(commonScriptsPath, $"{scriptName}.cs");
+            if (File.Exists(commonSourcePath))
             {
-                referencedAssemblies = (value as List<string>) ?? value.ToList();
-                foreach (var scriptContainer in scriptContainers.Values) scriptContainer.ReferencedAssemblies = referencedAssemblies;
-                updateSolutionFiles();
+                File.Copy(commonSourcePath, sourcePath);
+                File.SetAttributes(sourcePath, File.GetAttributes(sourcePath) & ~FileAttributes.ReadOnly);
             }
         }
 
-        FileSystemWatcher scriptWatcher;
-        readonly FileSystemWatcher libraryWatcher;
-        ThrottledActionScheduler scheduler = new();
-        readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
-
-        public string ScriptsPath { get; }
-
-        public ScriptManager(ResourceContainer resourceContainer, string scriptsNamespace, string scriptsSourcePath, string commonScriptsPath, string scriptsLibraryPath, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
+        scriptContainers[scriptName] = scriptContainer = new ScriptContainerContext<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
+        return scriptContainer;
+    }
+    public IEnumerable<string> GetScriptNames()
+    {
+        var projectScriptNames = new List<string>();
+        foreach (var scriptPath in Directory.GetFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
         {
-            this.resourceContainer = resourceContainer;
-            this.scriptsNamespace = scriptsNamespace;
-            ScriptsPath = scriptsSourcePath;
-            this.commonScriptsPath = commonScriptsPath;
-            this.scriptsLibraryPath = scriptsLibraryPath;
-            this.compiledScriptsPath = compiledScriptsPath;
-
-            ReferencedAssemblies = referencedAssemblies;
-
-            scriptWatcher = new FileSystemWatcher
-            {
-                Filter = "*.cs",
-                Path = scriptsSourcePath,
-                IncludeSubdirectories = false,
-                NotifyFilter = NotifyFilters.LastWrite
-            };
-
-            scriptWatcher.Created += scriptWatcher_Changed;
-            scriptWatcher.Changed += scriptWatcher_Changed;
-            scriptWatcher.Renamed += scriptWatcher_Changed;
-            scriptWatcher.Deleted += scriptWatcher_Changed;
-            scriptWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (script): {e.GetException()}");
-            scriptWatcher.EnableRaisingEvents = true;
-            Trace.WriteLine($"Watching (script): {scriptsSourcePath}");
-
-            libraryWatcher = new FileSystemWatcher
-            {
-                Filter = "*.cs",
-                Path = scriptsLibraryPath,
-                IncludeSubdirectories = true,
-                NotifyFilter = NotifyFilters.LastWrite
-            };
-
-            libraryWatcher.Created += libraryWatcher_Changed;
-            libraryWatcher.Changed += libraryWatcher_Changed;
-            libraryWatcher.Renamed += libraryWatcher_Changed;
-            libraryWatcher.Deleted += libraryWatcher_Changed;
-            libraryWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (library): {e.GetException()}");
-            libraryWatcher.EnableRaisingEvents = true;
-            Trace.WriteLine($"Watching (library): {scriptsLibraryPath}");
+            var name = Path.GetFileNameWithoutExtension(scriptPath);
+            projectScriptNames.Add(name);
+            yield return name;
         }
-
-        public ScriptContainer<TScript> Get(string scriptName)
+        foreach (var scriptPath in Directory.GetFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
         {
-            ObjectDisposedException.ThrowIf(disposedValue, GetType());
-            if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
-
-            var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
-            var sourcePath = Path.Combine(ScriptsPath, $"{scriptName}.cs");
-
-            if (commonScriptsPath is not null && !File.Exists(sourcePath))
-            {
-                var commonSourcePath = Path.Combine(commonScriptsPath, $"{scriptName}.cs");
-                if (File.Exists(commonSourcePath))
-                {
-                    File.Copy(commonSourcePath, sourcePath);
-                    File.SetAttributes(sourcePath, File.GetAttributes(sourcePath) & ~FileAttributes.ReadOnly);
-                }
-            }
-
-            scriptContainers[scriptName] = scriptContainer = new ScriptContainerContext<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
-            return scriptContainer;
+            var name = Path.GetFileNameWithoutExtension(scriptPath);
+            if (!projectScriptNames.Contains(name)) yield return name;
         }
-        public IEnumerable<string> GetScriptNames()
-        {
-            var projectScriptNames = new List<string>();
-            foreach (var scriptPath in Directory.GetFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
-            {
-                var name = Path.GetFileNameWithoutExtension(scriptPath);
-                projectScriptNames.Add(name);
-                yield return name;
-            }
-            foreach (var scriptPath in Directory.GetFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
-            {
-                var name = Path.GetFileNameWithoutExtension(scriptPath);
-                if (!projectScriptNames.Contains(name)) yield return name;
-            }
-        }
-        void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
-        {
-            var change = e.ChangeType.ToString().ToLowerInvariant();
-            Trace.WriteLine($"Watched script file {change}: {e.FullPath}");
+    }
+    void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
+    {
+        var change = e.ChangeType.ToString().ToLowerInvariant();
+        Trace.WriteLine($"Watched script file {change}: {e.FullPath}");
 
-            if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
-            if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, _ =>
-            {
-                if (disposedValue) return;
-                var scriptName = Path.GetFileNameWithoutExtension(e.Name);
-
-                if (scriptContainers.TryGetValue(scriptName, out ScriptContainer<TScript> container)) container.ReloadScript();
-            });
-        }
-        void libraryWatcher_Changed(object sender, FileSystemEventArgs e)
-        {
-            var change = e.ChangeType.ToString().ToLowerInvariant();
-            Trace.WriteLine($"Watched library file {change}: {e.FullPath}");
-
-            if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
-            if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, key =>
-            {
-                if (disposedValue) return;
-                foreach (var container in scriptContainers.Values) container.ReloadScript();
-            });
-        }
-        void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}", key =>
+        if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
+        if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, _ =>
         {
             if (disposedValue) return;
-            updateSolutionFiles();
+            var scriptName = Path.GetFileNameWithoutExtension(e.Name);
+
+            if (scriptContainers.TryGetValue(scriptName, out ScriptContainer<TScript> container)) container.ReloadScript();
         });
-        void updateSolutionFiles()
+    }
+    void libraryWatcher_Changed(object sender, FileSystemEventArgs e)
+    {
+        var change = e.ChangeType.ToString().ToLowerInvariant();
+        Trace.WriteLine($"Watched library file {change}: {e.FullPath}");
+
+        if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
+        if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, key =>
         {
-            Trace.WriteLine($"Updating solution files");
+            if (disposedValue) return;
+            foreach (var container in scriptContainers.Values) container.ReloadScript();
+        });
+    }
+    void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}", key =>
+    {
+        if (disposedValue) return;
+        updateSolutionFiles();
+    });
+    void updateSolutionFiles()
+    {
+        Trace.WriteLine($"Updating solution files");
 
-            var slnPath = Path.Combine(ScriptsPath, "storyboard.sln");
-            File.WriteAllBytes(slnPath, resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative));
+        var slnPath = Path.Combine(ScriptsPath, "storyboard.sln");
+        File.WriteAllBytes(slnPath, resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative));
 
-            var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
-            var document = new XmlDocument() { PreserveWhitespace = false };
-            try
+        var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
+        var document = new XmlDocument() { PreserveWhitespace = false };
+        try
+        {
+            using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
+            using (var sr = new XmlTextReader(stream) { DtdProcessing = default, XmlResolver = null }) document.Load(sr);
+
+            var xmlns = document.DocumentElement.GetAttribute("xmlns");
+
+            var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
+            document.DocumentElement.AppendChild(referencedAssembliesGroup);
+            foreach (var path in referencedAssemblies) if (!Project.DefaultAssemblies.Contains(path))
             {
-                using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
-                using (var sr = new XmlTextReader(stream) { DtdProcessing = default, XmlResolver = null }) document.Load(sr);
+                var isSystem = path.StartsWith("System.", StringComparison.Ordinal);
+                var relativePath = isSystem ? path : PathHelper.GetRelativePath(ScriptsPath, path);
 
-                var xmlns = document.DocumentElement.GetAttribute("xmlns");
-
-                var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
-                document.DocumentElement.AppendChild(referencedAssembliesGroup);
-                foreach (var path in referencedAssemblies) if (!Project.DefaultAssemblies.Contains(path))
-                {
-                    var isSystem = path.StartsWith("System.", StringComparison.Ordinal);
-                    var relativePath = isSystem ? path : PathHelper.GetRelativePath(ScriptsPath, path);
-
-                    var compileNode = document.CreateElement("Reference", xmlns);
-                    compileNode.SetAttribute("Include", isSystem ? path : AssemblyName.GetAssemblyName(path).Name);
-                    if (!isSystem)
-                    { 
-                        var hintPath = document.CreateElement("HintPath", xmlns);
-                        hintPath.AppendChild(document.CreateTextNode(relativePath));
-                        compileNode.AppendChild(hintPath);
-                    }
-                    referencedAssembliesGroup.AppendChild(compileNode);
+                var compileNode = document.CreateElement("Reference", xmlns);
+                compileNode.SetAttribute("Include", isSystem ? path : AssemblyName.GetAssemblyName(path).Name);
+                if (!isSystem)
+                { 
+                    var hintPath = document.CreateElement("HintPath", xmlns);
+                    hintPath.AppendChild(document.CreateTextNode(relativePath));
+                    compileNode.AppendChild(hintPath);
                 }
-                document.Save(csProjPath);
+                referencedAssembliesGroup.AppendChild(compileNode);
             }
-            catch (Exception e)
-            {
-                Trace.TraceError($"Failed to update scripts.csproj: {e}");
-            }
+            document.Save(csProjPath);
         }
-
-        bool disposedValue;
-        public void Dispose()
+        catch (Exception e)
         {
-            if (!disposedValue)
-            {
-                scriptWatcher.Dispose();
-                libraryWatcher.Dispose();
-                scriptContainers.Dispose();
+            Trace.TraceError($"Failed to update scripts.csproj: {e}");
+        }
+    }
 
-                scheduler = null;
-                scriptWatcher = null;
+    bool disposedValue;
+    public void Dispose()
+    {
+        if (!disposedValue)
+        {
+            scriptWatcher.Dispose();
+            libraryWatcher.Dispose();
+            scriptContainers.Dispose();
 
-                disposedValue = true;
-            }
+            scheduler = null;
+            scriptWatcher = null;
+
+            disposedValue = true;
         }
     }
 }

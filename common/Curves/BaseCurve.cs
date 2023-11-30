@@ -2,76 +2,75 @@
 using System;
 using System.Collections.Generic;
 
-namespace StorybrewCommon.Curves
+namespace StorybrewCommon.Curves;
+
+///<summary> Represents a base curve. </summary>
+[Serializable] public abstract class BaseCurve : Curve
 {
-    ///<summary> Represents a base curve. </summary>
-    [Serializable] public abstract class BaseCurve : Curve
+    ///<inheritdoc/>
+    public abstract CommandPosition EndPosition { get; }
+
+    ///<inheritdoc/>
+    public abstract CommandPosition StartPosition { get; }
+
+    List<ValueTuple<float, CommandPosition>> distancePosition;
+
+    double length;
+
+    ///<inheritdoc/>
+    public double Length
     {
-        ///<inheritdoc/>
-        public abstract CommandPosition EndPosition { get; }
-
-        ///<inheritdoc/>
-        public abstract CommandPosition StartPosition { get; }
-
-        List<ValueTuple<float, CommandPosition>> distancePosition;
-
-        double length;
-
-        ///<inheritdoc/>
-        public double Length
-        {
-            get
-            {
-                if (distancePosition == null) initialize();
-                return length;
-            }
-        }
-
-        void initialize()
-        {
-            distancePosition = [];
-            Initialize(distancePosition, out length);
-        }
-
-        ///<summary/>
-        protected abstract void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length);
-
-        ///<inheritdoc/>
-        public CommandPosition PositionAtDistance(double distance)
+        get
         {
             if (distancePosition == null) initialize();
+            return length;
+        }
+    }
 
-            var previousDistance = 0f;
-            var previousPosition = StartPosition;
+    void initialize()
+    {
+        distancePosition = [];
+        Initialize(distancePosition, out length);
+    }
 
-            var nextDistance = length;
-            var nextPosition = EndPosition;
+    ///<summary/>
+    protected abstract void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length);
 
-            var i = 0;
-            while (i < distancePosition.Count)
-            {
-                var distancePositionTuple = distancePosition[i];
-                if (distancePositionTuple.Item1 > distance) break;
+    ///<inheritdoc/>
+    public CommandPosition PositionAtDistance(double distance)
+    {
+        if (distancePosition == null) initialize();
 
-                previousDistance = distancePositionTuple.Item1;
-                previousPosition = distancePositionTuple.Item2;
-                i++;
-            }
+        var previousDistance = 0f;
+        var previousPosition = StartPosition;
 
-            if (i < distancePosition.Count - 1)
-            {
-                var distancePositionTuple = distancePosition[i + 1];
-                nextDistance = distancePositionTuple.Item1;
-                nextPosition = distancePositionTuple.Item2;
-            }
+        var nextDistance = length;
+        var nextPosition = EndPosition;
 
-            var delta = (distance - previousDistance) / (nextDistance - previousDistance);
-            var previousToNext = nextPosition - previousPosition;
+        var i = 0;
+        while (i < distancePosition.Count)
+        {
+            var distancePositionTuple = distancePosition[i];
+            if (distancePositionTuple.Item1 > distance) break;
 
-            return previousPosition + previousToNext * (float)delta;
+            previousDistance = distancePositionTuple.Item1;
+            previousPosition = distancePositionTuple.Item2;
+            i++;
         }
 
-        ///<inheritdoc/>
-        public CommandPosition PositionAtDelta(double delta) => PositionAtDistance(delta * Length);
+        if (i < distancePosition.Count - 1)
+        {
+            var distancePositionTuple = distancePosition[i + 1];
+            nextDistance = distancePositionTuple.Item1;
+            nextPosition = distancePositionTuple.Item2;
+        }
+
+        var delta = (distance - previousDistance) / (nextDistance - previousDistance);
+        var previousToNext = nextPosition - previousPosition;
+
+        return previousPosition + previousToNext * (float)delta;
     }
+
+    ///<inheritdoc/>
+    public CommandPosition PositionAtDelta(double delta) => PositionAtDistance(delta * Length);
 }
