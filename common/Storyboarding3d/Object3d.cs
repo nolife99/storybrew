@@ -100,7 +100,7 @@ public class Object3d
     }, startTime, endTime, offsetCommands ? -startTime : 0, true);
 
     ///<summary> Generates a <see cref="HasOsbSprites"/> object's sprites. </summary>
-    ///<param name="parentSegment"> The <see cref="StoryboardSegment"/> for the sprites to be generated in. </param>
+    ///<param name="segment"> The <see cref="StoryboardSegment"/> for the sprites to be generated in. </param>
     public virtual void GenerateSprite(StoryboardSegment segment) { }
 
     ///<summary> Generates a <see cref="State"/> for this <see cref="HasOsbSprites"/> object at <paramref name="time"/> based on the given <see cref="CameraState"/> and <see cref="Object3dState"/>. </summary>

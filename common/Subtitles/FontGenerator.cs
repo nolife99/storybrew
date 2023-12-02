@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using Tiny;
 using System.Globalization;
+using osuTK.Graphics;
 
 namespace StorybrewCommon.Subtitles;
 
@@ -226,6 +227,8 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
     public static implicit operator CommandColor(FontColor obj) => new(obj.R, obj.G, obj.B);
     public static implicit operator FontColor(Color obj) => new(obj.R / 255f, obj.G / 255f, obj.B / 255f, obj.A / 255f);
     public static implicit operator Color(FontColor obj) => Color.FromArgb(obj.A, obj.R, obj.G, obj.B);
+    public static implicit operator FontColor(Color4 obj) => new(obj.R, obj.G, obj.B, obj.A);
+    public static implicit operator Color4(FontColor obj) => new(obj.R, obj.G, obj.B, obj.A);
     public static implicit operator FontColor(string hexCode) => FromHtml(hexCode);
     public static implicit operator FontColor(int channel) => FromHashCode(channel);
     public static bool operator ==(FontColor left, FontColor right) => left.Equals(right);

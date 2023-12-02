@@ -38,7 +38,7 @@ public class CommandGenerator
     public double ScaleTolerance = 1;
 
     ///<summary> The tolerance threshold for rotation keyframe simplification. </summary>
-    public double RotationTolerance = .005;
+    public double RotationTolerance = 1;
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public double ColorTolerance = 1.5;
@@ -143,7 +143,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)r);
+        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)(r * 180 / Math.PI));
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 
