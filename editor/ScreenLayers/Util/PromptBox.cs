@@ -2,86 +2,82 @@
 using BrewLib.Util;
 using System;
 
-namespace StorybrewEditor.ScreenLayers.Util
+namespace StorybrewEditor.ScreenLayers.Util;
+
+public class PromptBox(string title, string description, string initialText, Action<string> action) : UiScreenLayer
 {
-    public class PromptBox(string title, string description, string initialText, Action<string> action) : UiScreenLayer
+    LinearLayout mainLayout;
+    Textbox textbox;
+    Button okButton, cancelButton;
+
+    public override bool IsPopup => true;
+
+    public override void Load()
     {
-        readonly string title = title, description = description, initialText = initialText;
-        readonly Action<string> action = action;
+        base.Load();
 
-        LinearLayout mainLayout;
-        Textbox textbox;
-        Button okButton, cancelButton;
-
-        public override bool IsPopup => true;
-
-        public override void Load()
+        Label descriptionLabel;
+        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
         {
-            base.Load();
-
-            Label descriptionLabel;
-            WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
+            StyleName = "panel",
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            Children = new Widget[]
             {
-                StyleName = "panel",
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new FourSide(16),
-                Children = new Widget[]
+                descriptionLabel = new(WidgetManager)
                 {
-                    descriptionLabel = new Label(WidgetManager)
+                    StyleName = "small",
+                    Text = description,
+                    AnchorFrom = BoxAlignment.Centre
+                },
+                textbox = new(WidgetManager)
+                {
+                    LabelText = title,
+                    AnchorFrom = BoxAlignment.Centre,
+                    Value = initialText
+                },
+                new LinearLayout(WidgetManager)
+                {
+                    Horizontal = true,
+                    AnchorFrom = BoxAlignment.Centre,
+                    Children = new Widget[]
                     {
-                        StyleName = "small",
-                        Text = description,
-                        AnchorFrom = BoxAlignment.Centre
-                    },
-                    textbox = new Textbox(WidgetManager)
-                    {
-                        LabelText = title,
-                        AnchorFrom = BoxAlignment.Centre,
-                        Value = initialText
-                    },
-                    new LinearLayout(WidgetManager)
-                    {
-                        Horizontal = true,
-                        AnchorFrom = BoxAlignment.Centre,
-                        Children = new Widget[]
+                        okButton = new(WidgetManager)
                         {
-                            okButton = new Button(WidgetManager)
-                            {
-                                Text = "Ok",
-                                AnchorFrom = BoxAlignment.Centre
-                            },
-                            cancelButton = new Button(WidgetManager)
-                            {
-                                Text = "Cancel",
-                                AnchorFrom = BoxAlignment.Centre
-                            }
+                            Text = "Ok",
+                            AnchorFrom = BoxAlignment.Centre
+                        },
+                        cancelButton = new(WidgetManager)
+                        {
+                            Text = "Cancel",
+                            AnchorFrom = BoxAlignment.Centre
                         }
                     }
                 }
-            });
+            }
+        });
 
-            if (string.IsNullOrWhiteSpace(description)) descriptionLabel.Dispose();
+        if (string.IsNullOrWhiteSpace(description)) descriptionLabel.Dispose();
 
-            okButton.OnClick += (sender, e) =>
-            {
-                Exit();
-                action?.Invoke(textbox.Value);
-            };
-            cancelButton.OnClick += (sender, e) => Exit();
-        }
-        public override void OnTransitionIn()
+        okButton.OnClick += (sender, e) =>
         {
-            base.OnTransitionIn();
+            Exit();
+            action?.Invoke(textbox.Value);
+        };
+        cancelButton.OnClick += (sender, e) => Exit();
+    }
+    public override void OnTransitionIn()
+    {
+        base.OnTransitionIn();
 
-            WidgetManager.KeyboardFocus = textbox;
-            textbox.SelectAll();
-        }
-        public override void Resize(int width, int height)
-        {
-            base.Resize(width, height);
-            mainLayout.Pack(400);
-        }
+        WidgetManager.KeyboardFocus = textbox;
+        textbox.SelectAll();
+    }
+    public override void Resize(int width, int height)
+    {
+        base.Resize(width, height);
+        mainLayout.Pack(400);
     }
 }

@@ -1,10 +1,9 @@
-﻿namespace BrewLib.Util
-{
-    public class ChangedEventArgs(string propertyName)
-    {
-        public static readonly ChangedEventArgs All = new(null);
+﻿namespace BrewLib.Util;
 
-        public readonly string PropertyName = propertyName;
-    }
-    public delegate void ChangedHandler(object sender, ChangedEventArgs e);
+public class ChangedEventArgs(string propertyName)
+{
+    public static readonly ChangedEventArgs All = new(null);
+
+    public readonly string PropertyName = propertyName;
 }
+public delegate void ChangedHandler(object sender, ChangedEventArgs e);

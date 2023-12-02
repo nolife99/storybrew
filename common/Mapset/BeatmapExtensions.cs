@@ -52,7 +52,7 @@ public static class BeatmapExtensions
         {
             switch (hitobject)
             {
-                case OsuCircle circle: action(new OsuSliderNode
+                case OsuCircle circle: action(new()
                 {
                     Time = circle.StartTime,
                     Additions = circle.Additions,
@@ -64,7 +64,7 @@ public static class BeatmapExtensions
 
                 case OsuSlider slider: foreach (var node in slider.Nodes) action(node, hitobject); break;
 
-                case OsuSpinner spinner: action(new OsuSliderNode
+                case OsuSpinner spinner: action(new()
                 {
                     Time = spinner.EndTime,
                     Additions = spinner.Additions,

@@ -3,13 +3,13 @@ using BrewLib.Input;
 using BrewLib.Time;
 using BrewLib.Util;
 using osuTK;
-using osuTK.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 
 namespace BrewLib.ScreenLayers
 {
-    public class ScreenLayerManager : IDisposable
+    public sealed class ScreenLayerManager : IDisposable
     {
         readonly GameWindow window;
         readonly FrameTimeSource timeSource;
@@ -24,7 +24,7 @@ namespace BrewLib.ScreenLayers
         readonly InputDispatcher inputDispatcher = new();
         public InputHandler InputHandler => inputDispatcher;
 
-        public static Color4 BackgroundColor => Color4.Black;
+        public static Color BackgroundColor => Color.Black;
         public event Action<ScreenLayer> LayerAdded;
 
         public ScreenLayerManager(GameWindow window, FrameTimeSource timeSource, object context)
@@ -158,27 +158,23 @@ namespace BrewLib.ScreenLayers
             var height = window.Height;
 
             if (width == 0 || height == 0) return;
-
-            layers.ForEach(layer => layer.Resize(width, height));
+            for (var i = 0; i < layers.Count; ++i) layers[i].Resize(width, height);
         }
 
         #region IDisposable Support
 
-        bool disposedValue;
-        protected virtual void Dispose(bool disposing)
+        bool disposed;
+        public void Dispose()
         {
-            if (!disposedValue)
+            if (!disposed)
             {
-                if (disposing)
-                {
-                    changeFocus(null);
-                    for (var i = layers.Count - 1; i >= 0; --i) layers[i].Dispose();
-                    window.Resize -= window_Resize;
-                }
-                disposedValue = true;
+                changeFocus(null);
+                for (var i = layers.Count - 1; i >= 0; --i) layers[i].Dispose();
+                window.Resize -= window_Resize;
+
+                disposed = true;
             }
         }
-        public void Dispose() => Dispose(true);
 
         #endregion
     }

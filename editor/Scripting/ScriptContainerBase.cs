@@ -102,13 +102,13 @@ public abstract class ScriptContainerBase<TScript> : ScriptContainer<TScript> wh
 
     #region IDisposable Support
 
-    bool disposedValue;
+    bool disposed;
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!disposed)
         {
             scriptProvider = null;
-            disposedValue = true;
+            disposed = true;
         }
     }
     public void Dispose() => Dispose(true);

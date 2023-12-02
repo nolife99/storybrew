@@ -1,48 +1,47 @@
-﻿using System;
+﻿using BrewLib.Util;
+using System;
 using System.Collections.Generic;
 
-namespace BrewLib.Graphics.Text
+namespace BrewLib.Graphics.Text;
+
+public class TextFontManager : IDisposable
 {
-    public class TextFontManager : IDisposable
+    Dictionary<string, TextFont> fonts = [];
+    readonly Dictionary<string, int> references = [];
+
+    public TextFont GetTextFont(string fontName, float fontSize, float scaling)
     {
-        Dictionary<string, TextFont> fonts = [];
-        readonly Dictionary<string, int> references = [];
+        var identifier = $"{fontName}|{fontSize}|{scaling}";
 
-        public TextFont GetTextFont(string fontName, float fontSize, float scaling)
+        if (!fonts.TryGetValue(identifier, out TextFont font)) fonts.Add(identifier, font = new TextFontAtlased(fontName, fontSize * scaling));
+        if (references.TryGetValue(identifier, out int refCount)) references[identifier] = refCount + 1;
+        else references[identifier] = 1;
+
+        return new TextFontProxy(font, () =>
         {
-            var identifier = $"{fontName}|{fontSize}|{scaling}";
-
-            if (!fonts.TryGetValue(identifier, out TextFont font)) fonts.Add(identifier, font = new TextFontAtlased(fontName, fontSize * scaling));
-            if (references.TryGetValue(identifier, out int refCount)) references[identifier] = refCount + 1;
-            else references[identifier] = 1;
-
-            return new TextFontProxy(font, () =>
+            var remaining = --references[identifier];
+            if (remaining == 0)
             {
-                var remaining = --references[identifier];
-                if (remaining == 0)
-                {
-                    fonts.Remove(identifier);
-                    font.Dispose();
-                }
-            });
-        }
-
-        #region IDisposable Support
-
-        bool disposedValue;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing) foreach (var entry in fonts) entry.Value.Dispose();
-                fonts.Clear();
-                references.Clear();
-                fonts = null;
-                disposedValue = true;
+                fonts.Remove(identifier);
+                font.Dispose();
             }
-        }
-        public void Dispose() => Dispose(true);
-
-        #endregion
+        });
     }
+
+    #region IDisposable Support
+
+    bool disposed;
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            fonts.Dispose();
+            references.Clear();
+            fonts = null;
+            disposed = true;
+        }
+    }
+    public void Dispose() => Dispose(true);
+
+    #endregion
 }

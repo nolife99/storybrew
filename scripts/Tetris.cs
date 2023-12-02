@@ -1,207 +1,206 @@
-﻿using osuTK.Graphics;
-using StorybrewCommon.Mapset;
+﻿using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System.Numerics;
 using System;
+using System.Drawing;
 
-namespace StorybrewScripts
+namespace StorybrewScripts;
+
+class Tetris : StoryboardObjectGenerator
 {
-    class Tetris : StoryboardObjectGenerator
+    [Group("Timing")]
+    [Configurable] public int StartTime = 0;
+    [Configurable] public int EndTime = 0;
+    [Configurable] public double BeatDivisor = 1;
+
+    [Group("Sprite")]
+    [Configurable] public string SpritePath = "sb/sq.png";
+    [Configurable] public double SpriteScale = .625;
+    [Configurable] public Color Color = Color.White;
+
+    [Group("Grid")]
+    [Configurable] public Vector2 Offset = new(320, 240);
+    [Configurable] public Vector2 ShadowOffset = new(4);
+    [Configurable] public double Rotation = 0;
+    [Configurable] public int GridWidth = 10;
+    [Configurable] public int GridHeight = 20;
+    [Configurable] public float CellSize = 20;
+    [Configurable] public int BlockLength = 4;
+    [Configurable] public int Blocks = 1;
+
+    [Group("AI")]
+    [Configurable] public bool Wait = true;
+    [Configurable] public bool Dumb = false;
+
+    public class Cell
     {
-        [Group("Timing")]
-        [Configurable] public int StartTime = 0;
-        [Configurable] public int EndTime = 0;
-        [Configurable] public double BeatDivisor = 1;
+        internal int X, Y;
+        internal OsbSprite Sprite, Shadow;
+        internal bool HasSprite => Sprite is not null; 
+    }
+    Cell[,] cells;
 
-        [Group("Sprite")]
-        [Configurable] public string SpritePath = "sb/sq.png";
-        [Configurable] public double SpriteScale = .625;
-        [Configurable] public Color4 Color = Color4.White;
+    protected override void Generate()
+    {
+        var beatDuration = Beatmap.GetTimingPointAt(StartTime).BeatDuration;
+        var timestep = beatDuration / BeatDivisor;
 
-        [Group("Grid")]
-        [Configurable] public Vector2 Offset = new(320, 240);
-        [Configurable] public Vector2 ShadowOffset = new(4);
-        [Configurable] public double Rotation = 0;
-        [Configurable] public int GridWidth = 10;
-        [Configurable] public int GridHeight = 20;
-        [Configurable] public float CellSize = 20;
-        [Configurable] public int BlockLength = 4;
-        [Configurable] public int Blocks = 1;
+        cells = new Cell[GridWidth, GridHeight];
+        for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) cells[x, y] = new Cell { X = x, Y = y };
 
-        [Group("AI")]
-        [Configurable] public bool Wait = true;
-        [Configurable] public bool Dumb = false;
-
-        public class Cell
+        for (var time = (double)StartTime; time < EndTime; time += timestep)
         {
-            internal int X, Y;
-            internal OsbSprite Sprite, Shadow;
-            internal bool HasSprite => Sprite is not null; 
+            for (var i = 0; i < Blocks; ++i) addBlock(time - timestep, time);
+            if (clearLines(time, time + timestep)) time += Wait ? timestep : 0;
         }
-        Cell[,] cells;
 
-        protected override void Generate()
+        for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) if (cells[x, y].HasSprite)
+            killCell(EndTime, EndTime + timestep, x, y);
+    }
+    void addBlock(double startTime, double endTime)
+    {
+        var brightness = Random(.3f, 1);
+        CommandColor color = new(Color.R * brightness, Color.G * brightness, Color.B * brightness);
+
+        var heightMap = new int[GridWidth];
+        var bottom = 0;
+        for (var x = 0; x < GridWidth; ++x)
         {
-            var beatDuration = Beatmap.GetTimingPointAt(StartTime).BeatDuration;
-            var timestep = beatDuration / BeatDivisor;
-
-            cells = new Cell[GridWidth, GridHeight];
-            for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) cells[x, y] = new Cell { X = x, Y = y };
-
-            for (var time = (double)StartTime; time < EndTime; time += timestep)
+            for (var y = 0; y < GridHeight; ++y)
             {
-                for (var i = 0; i < Blocks; ++i) addBlock(time - timestep, time);
-                if (clearLines(time, time + timestep)) time += Wait ? timestep : 0;
+                if (cells[x, y].HasSprite) break;
+                heightMap[x] = y;
             }
-
-            for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) if (cells[x, y].HasSprite)
-                killCell(EndTime, EndTime + timestep, x, y);
+            bottom = Math.Max(bottom, heightMap[x]);
         }
-        void addBlock(double startTime, double endTime)
+
+        var dropX = Random(GridWidth);
+        while (!Dumb && heightMap[dropX] != bottom) dropX = Random(GridWidth);
+
+        var dropY = heightMap[dropX];
+
+        fillCell(startTime, endTime, dropX, dropY, color);
+        for (var i = 1; i < BlockLength; ++i)
         {
-            var brightness = Random(.3f, 1);
-            var color = new Color4(Color.R * brightness, Color.G * brightness, Color.B * brightness, 1);
+            int[] options = [0, 1, 2, 3];
+            shuffle(options);
 
-            var heightMap = new int[GridWidth];
-            var bottom = 0;
-            for (var x = 0; x < GridWidth; ++x)
+            foreach (var option in options)
             {
-                for (var y = 0; y < GridHeight; ++y)
+                var nextDropX = dropX;
+                var nextDropY = dropY;
+
+                switch (option)
                 {
-                    if (cells[x, y].HasSprite) break;
-                    heightMap[x] = y;
-                }
-                bottom = Math.Max(bottom, heightMap[x]);
-            }
-
-            var dropX = Random(GridWidth);
-            while (!Dumb && heightMap[dropX] != bottom) dropX = Random(GridWidth);
-
-            var dropY = heightMap[dropX];
-
-            fillCell(startTime, endTime, dropX, dropY, color);
-            for (var i = 1; i < BlockLength; ++i)
-            {
-                int[] options = [0, 1, 2, 3];
-                shuffle(options);
-
-                foreach (var option in options)
-                {
-                    var nextDropX = dropX;
-                    var nextDropY = dropY;
-
-                    switch (option)
-                    {
-                        case 0: ++nextDropX; break;
-                        case 1: ++nextDropY; break;
-                        case 2: --nextDropX; break;
-                        case 3: --nextDropY; break;
-                    }
-
-                    if (nextDropX < 0 || nextDropX >= GridWidth || nextDropY < 0 || nextDropY >= GridHeight) continue;
-                    if (cells[nextDropX, nextDropY].HasSprite) continue;
-                    if (heightMap[nextDropX] < nextDropY) continue;
-
-                    dropX = nextDropX;
-                    dropY = nextDropY;
-                    fillCell(startTime, endTime, dropX, dropY, color);
-                    break;
-                }
-            }
-        }
-        bool clearLines(double startTime, double endTime)
-        {
-            var anyCombo = false;
-            var dropHeight = 0;
-            for (var y = GridHeight - 1; y >= 0; y--)
-            {
-                var combo = true;
-                for (var x = 0; x < GridWidth; ++x) if (!cells[x, y].HasSprite)
-                {
-                    combo = false;
-                    break;
+                    case 0: ++nextDropX; break;
+                    case 1: ++nextDropY; break;
+                    case 2: --nextDropX; break;
+                    case 3: --nextDropY; break;
                 }
 
-                if (combo)
-                {
-                    anyCombo = true;
-                    for (var x = 0; x < GridWidth; ++x) killCell(startTime, endTime, x, y);
+                if (nextDropX < 0 || nextDropX >= GridWidth || nextDropY < 0 || nextDropY >= GridHeight) continue;
+                if (cells[nextDropX, nextDropY].HasSprite) continue;
+                if (heightMap[nextDropX] < nextDropY) continue;
 
-                    dropHeight++;
-                }
-                else if (dropHeight > 0)
-                {
-                    for (var x = 0; x < GridWidth; ++x) if (cells[x, y].HasSprite) dropCell(startTime, endTime, x, y, dropHeight);
-                }
+                dropX = nextDropX;
+                dropY = nextDropY;
+                fillCell(startTime, endTime, dropX, dropY, color);
+                break;
             }
-            return anyCombo;
         }
-        void fillCell(double startTime, double endTime, int dropX, int dropY, Color4 color)
+    }
+    bool clearLines(double startTime, double endTime)
+    {
+        var anyCombo = false;
+        var dropHeight = 0;
+        for (var y = GridHeight - 1; y >= 0; y--)
         {
-            var shadow = GetLayer("Shadows").CreateSprite(SpritePath, OsbOrigin.TopCentre);
-            var sprite = GetLayer("Blocks").CreateSprite(SpritePath, OsbOrigin.TopCentre);
-
-            cells[dropX, dropY].Sprite = sprite;
-            cells[dropX, dropY].Shadow = shadow;
-
-            var targetPosition = new Vector2(dropX * CellSize, dropY * CellSize);
-            var startPosition = new Vector2(targetPosition.X, targetPosition.Y - CellSize * GridHeight);
-
-            sprite.Rotate(startTime, osuTK.MathHelper.DegreesToRadians(Rotation));
-            sprite.Scale(startTime, SpriteScale);
-            sprite.Color(startTime, color);
-            sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
-
-            shadow.Rotate(startTime, osuTK.MathHelper.DegreesToRadians(Rotation));
-            shadow.Scale(startTime, SpriteScale);
-            shadow.Color(startTime, 0, 0, 0);
-            shadow.Fade(startTime, .5);
-            shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset, transform(targetPosition) + ShadowOffset);
-        }
-        void killCell(double startTime, double endTime, int dropX, int dropY)
-        {
-            var sprite = cells[dropX, dropY].Sprite;
-            var shadow = cells[dropX, dropY].Shadow;
-            cells[dropX, dropY].Sprite = null;
-            cells[dropX, dropY].Shadow = null;
-
-            sprite.Scale(startTime, endTime, SpriteScale, 0);
-            sprite.Color(startTime, Color);
-
-            shadow.Scale(startTime, endTime, SpriteScale, 0);
-        }
-        void dropCell(double startTime, double endTime, int dropX, int dropY, int dropHeight)
-        {
-            var sprite = cells[dropX, dropY].Sprite;
-            var shadow = cells[dropX, dropY].Shadow;
-
-            cells[dropX, dropY].Sprite = null;
-            cells[dropX, dropY + dropHeight].Sprite = sprite;
-
-            cells[dropX, dropY].Shadow = null;
-            cells[dropX, dropY + dropHeight].Shadow = shadow;
-
-            var targetPosition = new Vector2(dropX * CellSize, (dropY + dropHeight) * CellSize);
-            var startPosition = new Vector2(targetPosition.X, dropY * CellSize);
-
-            sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
-            shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset, transform(targetPosition) + ShadowOffset);
-        }
-        Vector2 transform(Vector2 position)
-        {
-            position = new Vector2(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize);
-            return Vector2.Transform(position, Quaternion.CreateFromYawPitchRoll(0, (float)osuTK.MathHelper.DegreesToRadians(Rotation), 0)) + Offset;
-        }
-        void shuffle(int[] array)
-        {
-            var n = array.Length;
-            while (n > 1)
+            var combo = true;
+            for (var x = 0; x < GridWidth; ++x) if (!cells[x, y].HasSprite)
             {
-                n--;
-                var k = Random(n + 1);
-                (array[n], array[k]) = (array[k], array[n]);
+                combo = false;
+                break;
             }
+
+            if (combo)
+            {
+                anyCombo = true;
+                for (var x = 0; x < GridWidth; ++x) killCell(startTime, endTime, x, y);
+
+                dropHeight++;
+            }
+            else if (dropHeight > 0)
+            {
+                for (var x = 0; x < GridWidth; ++x) if (cells[x, y].HasSprite) dropCell(startTime, endTime, x, y, dropHeight);
+            }
+        }
+        return anyCombo;
+    }
+    void fillCell(double startTime, double endTime, int dropX, int dropY, Color color)
+    {
+        var shadow = GetLayer("Shadows").CreateSprite(SpritePath, OsbOrigin.TopCentre);
+        var sprite = GetLayer("Blocks").CreateSprite(SpritePath, OsbOrigin.TopCentre);
+
+        cells[dropX, dropY].Sprite = sprite;
+        cells[dropX, dropY].Shadow = shadow;
+
+        Vector2 targetPosition = new(dropX * CellSize, dropY * CellSize);
+        Vector2 startPosition = new(targetPosition.X, targetPosition.Y - CellSize * GridHeight);
+
+        sprite.Rotate(startTime, osuTK.MathHelper.DegreesToRadians(Rotation));
+        sprite.Scale(startTime, SpriteScale);
+        sprite.Color(startTime, color);
+        sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
+
+        shadow.Rotate(startTime, osuTK.MathHelper.DegreesToRadians(Rotation));
+        shadow.Scale(startTime, SpriteScale);
+        shadow.Color(startTime, 0, 0, 0);
+        shadow.Fade(startTime, .5);
+        shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset, transform(targetPosition) + ShadowOffset);
+    }
+    void killCell(double startTime, double endTime, int dropX, int dropY)
+    {
+        var sprite = cells[dropX, dropY].Sprite;
+        var shadow = cells[dropX, dropY].Shadow;
+        cells[dropX, dropY].Sprite = null;
+        cells[dropX, dropY].Shadow = null;
+
+        sprite.Scale(startTime, endTime, SpriteScale, 0);
+        sprite.Color(startTime, Color);
+
+        shadow.Scale(startTime, endTime, SpriteScale, 0);
+    }
+    void dropCell(double startTime, double endTime, int dropX, int dropY, int dropHeight)
+    {
+        var sprite = cells[dropX, dropY].Sprite;
+        var shadow = cells[dropX, dropY].Shadow;
+
+        cells[dropX, dropY].Sprite = null;
+        cells[dropX, dropY + dropHeight].Sprite = sprite;
+
+        cells[dropX, dropY].Shadow = null;
+        cells[dropX, dropY + dropHeight].Shadow = shadow;
+
+        Vector2 targetPosition = new(dropX * CellSize, (dropY + dropHeight) * CellSize);
+        Vector2 startPosition = new(targetPosition.X, dropY * CellSize);
+
+        sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
+        shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset, transform(targetPosition) + ShadowOffset);
+    }
+    Vector2 transform(Vector2 position) => Vector2.Transform(
+        new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize), 
+        Quaternion.CreateFromYawPitchRoll(0, (float)osuTK.MathHelper.DegreesToRadians(Rotation), 0));
+
+    void shuffle(int[] array)
+    {
+        var n = array.Length;
+        while (n > 1)
+        {
+            n--;
+            var k = Random(n + 1);
+            (array[n], array[k]) = (array[k], array[n]);
         }
     }
 }

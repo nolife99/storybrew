@@ -48,7 +48,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         ReferencedAssemblies = referencedAssemblies;
 
-        scriptWatcher = new FileSystemWatcher
+        scriptWatcher = new()
         {
             Filter = "*.cs",
             Path = scriptsSourcePath,
@@ -64,7 +64,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         scriptWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (script): {scriptsSourcePath}");
 
-        libraryWatcher = new FileSystemWatcher
+        libraryWatcher = new()
         {
             Filter = "*.cs",
             Path = scriptsLibraryPath,
@@ -83,7 +83,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
     public ScriptContainer<TScript> Get(string scriptName)
     {
-        ObjectDisposedException.ThrowIf(disposedValue, GetType());
+        ObjectDisposedException.ThrowIf(disposed, GetType());
         if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
 
         var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
@@ -125,7 +125,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, _ =>
         {
-            if (disposedValue) return;
+            if (disposed) return;
             var scriptName = Path.GetFileNameWithoutExtension(e.Name);
 
             if (scriptContainers.TryGetValue(scriptName, out ScriptContainer<TScript> container)) container.ReloadScript();
@@ -139,13 +139,13 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, key =>
         {
-            if (disposedValue) return;
+            if (disposed) return;
             foreach (var container in scriptContainers.Values) container.ReloadScript();
         });
     }
     void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}", key =>
     {
-        if (disposedValue) return;
+        if (disposed) return;
         updateSolutionFiles();
     });
     void updateSolutionFiles()
@@ -189,10 +189,10 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
     }
 
-    bool disposedValue;
+    bool disposed;
     public void Dispose()
     {
-        if (!disposedValue)
+        if (!disposed)
         {
             scriptWatcher.Dispose();
             libraryWatcher.Dispose();
@@ -201,7 +201,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             scheduler = null;
             scriptWatcher = null;
 
-            disposedValue = true;
+            disposed = true;
         }
     }
 }

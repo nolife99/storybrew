@@ -1,15 +1,14 @@
-﻿namespace Tiny.Formats.Json
+﻿namespace Tiny.Formats.Json;
+
+public enum JsonTokenType
 {
-    public enum JsonTokenType
-    {
-        PropertyQuoted,
-        WordQuoted,
-        ObjectStart,
-        ObjectEnd,
-        ArrayStart,
-        ArrayEnd,
-        ValueSeparator,
-        Property,
-        Word,
-    }
+    PropertyQuoted,
+    WordQuoted,
+    ObjectStart,
+    ObjectEnd,
+    ArrayStart,
+    ArrayEnd,
+    ValueSeparator,
+    Property,
+    Word,
 }

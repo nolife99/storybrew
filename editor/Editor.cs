@@ -22,7 +22,6 @@ namespace StorybrewEditor;
 public sealed class Editor(GameWindow window) : IDisposable
 {
     public GameWindow Window => window;
-    internal readonly FormsWindow FormsWindow = new();
 
     readonly FrameClock clock = new();
     public FrameTimeSource TimeSource => clock;
@@ -99,7 +98,7 @@ public sealed class Editor(GameWindow window) : IDisposable
     Slider volumeSlider;
     Label statsLabel;
 
-    WidgetManager createOverlay(ScreenLayerManager screenLayerManager) => overlay = new WidgetManager(screenLayerManager, InputManager, Skin)
+    WidgetManager createOverlay(ScreenLayerManager screenLayerManager) => overlay = new(screenLayerManager, InputManager, Skin)
     {
         Camera = overlayCamera = new()
     };
@@ -117,7 +116,7 @@ public sealed class Editor(GameWindow window) : IDisposable
             Displayed = false,
             Children = new Widget[]
             {
-                statsLabel = new Label(overlay)
+                statsLabel = new(overlay)
                 {
                     StyleName = "small",
                     AnchorTarget = overlay.Root,
@@ -144,7 +143,7 @@ public sealed class Editor(GameWindow window) : IDisposable
                     Icon = IconFont.VolumeUp,
                     AnchorTo = BoxAlignment.Centre
                 },
-                volumeSlider = new Slider(overlay)
+                volumeSlider = new(overlay)
                 {
                     Step = .01f,
                     AnchorTo = BoxAlignment.Centre
@@ -234,10 +233,6 @@ public sealed class Editor(GameWindow window) : IDisposable
 
         var virtualWidth = width * virtualHeight / height;
         overlayCamera.VirtualWidth = (int)virtualWidth;
-        overlay.Size = new Vector2(virtualWidth, virtualHeight);
+        overlay.Size = new(virtualWidth, virtualHeight);
     }
-}
-internal class FormsWindow : System.Windows.Forms.IWin32Window
-{
-    public nint Handle => Native.MainWindowHandle;
 }

@@ -1,48 +1,47 @@
 ﻿using System.Diagnostics;
 
-namespace BrewLib.Time
+namespace BrewLib.Time;
+
+public class Clock : TimeSource
 {
-    public class Clock : TimeSource
+    readonly Stopwatch stopwatch = new();
+    double timeOrigin;
+
+    public double Current => timeOrigin + stopwatch.Elapsed.TotalSeconds * timeFactor;
+
+    double timeFactor = 1;
+    public double TimeFactor
     {
-        readonly Stopwatch stopwatch = new();
-        double timeOrigin;
-
-        public double Current => timeOrigin + stopwatch.Elapsed.TotalSeconds * timeFactor;
-
-        double timeFactor = 1;
-        public double TimeFactor
+        get => timeFactor;
+        set
         {
-            get => timeFactor;
-            set
-            {
-                if (timeFactor == value) return;
+            if (timeFactor == value) return;
 
-                var elapsed = stopwatch.Elapsed.TotalSeconds;
-                var previousTime = timeOrigin + elapsed * timeFactor;
-                timeFactor = value;
-                timeOrigin = previousTime - elapsed * timeFactor;
-            }
+            var elapsed = stopwatch.Elapsed.TotalSeconds;
+            var previousTime = timeOrigin + elapsed * timeFactor;
+            timeFactor = value;
+            timeOrigin = previousTime - elapsed * timeFactor;
         }
+    }
 
-        bool playing;
-        public bool Playing
+    bool playing;
+    public bool Playing
+    {
+        get => playing;
+        set
         {
-            get => playing;
-            set
-            {
-                if (playing == value) return;
+            if (playing == value) return;
 
-                playing = value;
+            playing = value;
 
-                if (playing) stopwatch.Start();
-                else stopwatch.Stop();
-            }
+            if (playing) stopwatch.Start();
+            else stopwatch.Stop();
         }
+    }
 
-        public bool Seek(double time)
-        {
-            timeOrigin = time - stopwatch.Elapsed.TotalSeconds * timeFactor;
-            return true;
-        }
+    public bool Seek(double time)
+    {
+        timeOrigin = time - stopwatch.Elapsed.TotalSeconds * timeFactor;
+        return true;
     }
 }

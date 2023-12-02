@@ -1,32 +1,27 @@
 ﻿using System;
 
-namespace BrewLib.Graphics.Text
+namespace BrewLib.Graphics.Text;
+
+public sealed class TextFontProxy(TextFont textFont, Action disposed) : TextFont
 {
-    public class TextFontProxy(TextFont textFont, Action disposed) : TextFont
+    public string Name => textFont.Name;
+    public float Size => textFont.Size;
+    public int LineHeight => textFont.LineHeight;
+
+    public FontGlyph GetGlyph(char c) => textFont.GetGlyph(c);
+
+    #region IDisposable Support
+
+    bool disposed;
+    public void Dispose()
     {
-        TextFont textFont = textFont;
-        readonly Action disposed = disposed;
-
-        public string Name => textFont.Name;
-        public float Size => textFont.Size;
-        public int LineHeight => textFont.LineHeight;
-
-        public FontGlyph GetGlyph(char c) => textFont.GetGlyph(c);
-
-        #region IDisposable Support
-
-        bool disposedValue;
-        protected virtual void Dispose(bool disposing)
+        if (!disposed)
         {
-            if (!disposedValue)
-            {
-                if (disposing) disposed();
-                textFont = null;
-                disposedValue = true;
-            }
+            disposed();
+            textFont = null;
+            disposed = true;
         }
-        public void Dispose() => Dispose(true);
-
-        #endregion
     }
+
+    #endregion
 }

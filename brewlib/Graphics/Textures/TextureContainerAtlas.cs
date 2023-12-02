@@ -3,59 +3,49 @@ using BrewLib.Util;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BrewLib.Graphics.Textures
+namespace BrewLib.Graphics.Textures;
+
+public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null, int width = 512, int height = 512, int padding = 0, string description = nameof(TextureContainerAtlas)) : TextureContainer
 {
-    public class TextureContainerAtlas(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null, int width = 512, int height = 512, int padding = 0, string description = nameof(TextureContainerAtlas)) : TextureContainer
+    Dictionary<string, Texture2dRegion> textures = [];
+    readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
+
+    public IEnumerable<string> ResourceNames => textures.Where(e => e.Value is not null).Select(e => e.Key);
+    public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
+
+    public Texture2dRegion Get(string filename)
     {
-        readonly ResourceContainer resourceContainer = resourceContainer;
-        readonly TextureOptions textureOptions = textureOptions;
-        readonly int width = width, height = height, padding = padding;
-        readonly string description = description;
+        if (filename is null) return null;
 
-        Dictionary<string, Texture2dRegion> textures = [];
-        readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
-
-        public IEnumerable<string> ResourceNames => textures.Where(e => e.Value is not null).Select(e => e.Key);
-        public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
-
-        public Texture2dRegion Get(string filename)
+        filename = PathHelper.WithStandardSeparators(filename);
+        if (!textures.TryGetValue(filename, out Texture2dRegion texture))
         {
-            if (filename == null) return null;
+            var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
+            if (!atlases.TryGetValue(options, out var atlas))
+                atlases.Add(options, atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding));
 
-            filename = PathHelper.WithStandardSeparators(filename);
-            if (!textures.TryGetValue(filename, out Texture2dRegion texture))
-            {
-                var textureOptions = this.textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
-                if (!atlases.TryGetValue(textureOptions, out TextureMultiAtlas2d atlas))
-                    atlases.Add(textureOptions, atlas = new TextureMultiAtlas2d(width, height, $"{description} (Option set {atlases.Count})", textureOptions, padding));
+            using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer)) if (bitmap is not null) texture = atlas.AddRegion(bitmap, filename);
 
-                using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer)) if (bitmap is not null) texture = atlas.AddRegion(bitmap, filename);
-
-                textures.Add(filename, texture);
-                ResourceLoaded?.Invoke(filename, texture);
-            }
-            return texture;
+            textures.Add(filename, texture);
+            ResourceLoaded?.Invoke(filename, texture);
         }
-
-        #region IDisposable Support
-
-        bool disposedValue;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    foreach (var entry in atlases) entry.Value?.Dispose();
-                    atlases.Clear();
-                    textures.Clear();
-                }
-                textures = null;
-                disposedValue = true;
-            }
-        }
-        public void Dispose() => Dispose(true);
-
-        #endregion
+        return texture;
     }
+
+    #region IDisposable Support
+
+    bool disposed;
+    public void Dispose()
+    {
+        if (!disposed)
+        {
+            atlases.Dispose();
+            textures.Clear();
+
+            textures = null;
+            disposed = true;
+        }
+    }
+
+    #endregion
 }

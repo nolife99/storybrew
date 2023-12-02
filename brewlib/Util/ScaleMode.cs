@@ -1,7 +1,6 @@
-﻿namespace BrewLib.Util
+﻿namespace BrewLib.Util;
+
+public enum ScaleMode
 {
-    public enum ScaleMode
-    {
-        None, Fill, Fit, Repeat, RepeatFit
-    }
+    None, Fill, Fit, Repeat, RepeatFit
 }

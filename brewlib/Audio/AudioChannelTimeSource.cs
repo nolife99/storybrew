@@ -1,31 +1,30 @@
 ﻿using BrewLib.Time;
 
-namespace BrewLib.Audio
+namespace BrewLib.Audio;
+
+public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
 {
-    public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
+    readonly AudioChannel channel = channel;
+
+    public double Current => channel.Time;
+    public bool Playing
     {
-        readonly AudioChannel channel = channel;
+        get => channel.Playing;
+        set => channel.Playing = value;
+    }
+    public double TimeFactor
+    {
+        get => channel.TimeFactor;
+        set => channel.TimeFactor = value;
+    }
 
-        public double Current => channel.Time;
-        public bool Playing
+    public bool Seek(double time)
+    {
+        if (time >= 0 && time < channel.Duration)
         {
-            get => channel.Playing;
-            set => channel.Playing = value;
+            channel.Time = time;
+            return true;
         }
-        public double TimeFactor
-        {
-            get => channel.TimeFactor;
-            set => channel.TimeFactor = value;
-        }
-
-        public bool Seek(double time)
-        {
-            if (time >= 0 && time < channel.Duration)
-            {
-                channel.Time = time;
-                return true;
-            }
-            return false;
-        }
+        return false;
     }
 }

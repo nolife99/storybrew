@@ -1,7 +1,6 @@
-﻿namespace BrewLib.UserInterface.Skinning.Styles
+﻿namespace BrewLib.UserInterface.Skinning.Styles;
+
+public class LinearLayoutStyle : WidgetStyle
 {
-    public class LinearLayoutStyle : WidgetStyle
-    {
-        public float Spacing;
-    }
+    public float Spacing;
 }

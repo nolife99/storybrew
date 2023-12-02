@@ -32,7 +32,7 @@ public class AssemblyResourceContainer : ResourceContainer
         {
             if (sources.HasFlag(ResourceSource.Absolute))
             {
-                if (File.Exists(path)) using (var mem = MemoryMappedFile.CreateFromFile(path)) return mem.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
+                if (File.Exists(path)) using (var mem = MemoryMappedFile.CreateFromFile(path)) return mem.CreateViewStream();
             }
             else throw new InvalidOperationException($"Resource paths must be relative ({path})");
         }
@@ -41,7 +41,7 @@ public class AssemblyResourceContainer : ResourceContainer
             if (sources.HasFlag(ResourceSource.Relative))
             {
                 var combinedPath = basePath is not null ? Path.Combine(basePath, path) : path;
-                if (File.Exists(combinedPath)) using (var mem = MemoryMappedFile.CreateFromFile(combinedPath)) return mem.CreateViewStream(0, 0, MemoryMappedFileAccess.Read);
+                if (File.Exists(combinedPath)) using (var mem = MemoryMappedFile.CreateFromFile(combinedPath)) return mem.CreateViewStream();
             }
             if (sources.HasFlag(ResourceSource.Embedded))
             {

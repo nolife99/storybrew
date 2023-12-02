@@ -1,10 +1,9 @@
 ﻿using BrewLib.Graphics.Drawables;
 
-namespace BrewLib.UserInterface.Skinning.Styles
+namespace BrewLib.UserInterface.Skinning.Styles;
+
+public class ProgressBarStyle : WidgetStyle
 {
-    public class ProgressBarStyle : WidgetStyle
-    {
-        public Drawable Bar;
-        public int Height;
-    }
+    public Drawable Bar;
+    public int Height;
 }

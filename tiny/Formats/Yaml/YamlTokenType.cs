@@ -1,13 +1,12 @@
-﻿namespace Tiny.Formats.Yaml
+﻿namespace Tiny.Formats.Yaml;
+
+public enum YamlTokenType
 {
-    public enum YamlTokenType
-    {
-        Indent,
-        PropertyQuoted,
-        Property,
-        WordQuoted,
-        Word,
-        ArrayIndicator,
-        EndLine,
-    }
+    Indent,
+    PropertyQuoted,
+    Property,
+    WordQuoted,
+    Word,
+    ArrayIndicator,
+    EndLine,
 }

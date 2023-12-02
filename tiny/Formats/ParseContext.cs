@@ -1,58 +1,57 @@
 ﻿using System.Collections.Generic;
 
-namespace Tiny.Formats
+namespace Tiny.Formats;
+
+public class ParseContext<TokenType>
 {
-    public class ParseContext<TokenType>
+    readonly IEnumerator<Token<TokenType>> tokenEnumerator;
+
+    public Token<TokenType> CurrentToken, LookaheadToken;
+
+    readonly Stack<Parser<TokenType>> parserStack = new();
+    public Parser<TokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
+    public int ParserCount => parserStack.Count;
+
+    public int IndentLevel { get; private set; }
+
+    public ParseContext(IEnumerable<Token<TokenType>> tokens, Parser<TokenType> initialParser)
     {
-        readonly IEnumerator<Token<TokenType>> tokenEnumerator;
+        tokenEnumerator = tokens.GetEnumerator();
+        initializeCurrentAndLookahead();
 
-        public Token<TokenType> CurrentToken, LookaheadToken;
+        parserStack.Push(initialParser);
+    }
 
-        readonly Stack<Parser<TokenType>> parserStack = new();
-        public Parser<TokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
-        public int ParserCount => parserStack.Count;
+    public void PopParser() => parserStack.Pop();
+    public void PushParser(Parser<TokenType> parser) => parserStack.Push(parser);
 
-        public int IndentLevel { get; private set; }
+    public void ReplaceParser(Parser<TokenType> parser)
+    {
+        parserStack.Pop();
+        parserStack.Push(parser);
+    }
 
-        public ParseContext(IEnumerable<Token<TokenType>> tokens, Parser<TokenType> initialParser)
+    public void Indent(int level) => IndentLevel = level;
+    public void NewLine() => IndentLevel = 0;
+
+    public void ConsumeToken()
+    {
+        CurrentToken = LookaheadToken;
+        LookaheadToken = tokenEnumerator.MoveNext() ? tokenEnumerator.Current : null;
+    }
+
+    public void End()
+    {
+        while (Parser is not null)
         {
-            tokenEnumerator = tokens.GetEnumerator();
-            initializeCurrentAndLookahead();
-
-            parserStack.Push(initialParser);
+            Parser.End();
+            PopParser();
         }
+    }
 
-        public void PopParser() => parserStack.Pop();
-        public void PushParser(Parser<TokenType> parser) => parserStack.Push(parser);
-
-        public void ReplaceParser(Parser<TokenType> parser)
-        {
-            parserStack.Pop();
-            parserStack.Push(parser);
-        }
-
-        public void Indent(int level) => IndentLevel = level;
-        public void NewLine() => IndentLevel = 0;
-
-        public void ConsumeToken()
-        {
-            CurrentToken = LookaheadToken;
-            LookaheadToken = tokenEnumerator.MoveNext() ? tokenEnumerator.Current : null;
-        }
-
-        public void End()
-        {
-            while (Parser is not null)
-            {
-                Parser.End();
-                PopParser();
-            }
-        }
-
-        void initializeCurrentAndLookahead()
-        {
-            ConsumeToken();
-            ConsumeToken();
-        }
+    void initializeCurrentAndLookahead()
+    {
+        ConsumeToken();
+        ConsumeToken();
     }
 }

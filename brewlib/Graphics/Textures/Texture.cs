@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace BrewLib.Graphics.Textures
+namespace BrewLib.Graphics.Textures;
+
+public interface Texture : IDisposable
 {
-    public interface Texture : IDisposable
-    {
-        string Description { get; }
-        BindableTexture BindableTexture { get; }
-    }
+    string Description { get; }
+    BindableTexture BindableTexture { get; }
 }

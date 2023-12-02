@@ -2,64 +2,63 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace BrewLib.Util
+namespace BrewLib.Util;
+
+public class SafeDirectoryWriter : IDisposable
 {
-    public class SafeDirectoryWriter : IDisposable
+    readonly HashSet<string> paths = [];
+    readonly string targetDirectory, tempDirectory, backupDirectory;
+    bool committed;
+
+    public SafeDirectoryWriter(string targetDirectory)
     {
-        readonly HashSet<string> paths = [];
-        readonly string targetDirectory, tempDirectory, backupDirectory;
-        bool committed;
+        this.targetDirectory = targetDirectory;
+        tempDirectory = targetDirectory + ".tmp";
+        backupDirectory = targetDirectory + ".bak";
 
-        public SafeDirectoryWriter(string targetDirectory)
-        {
-            this.targetDirectory = targetDirectory;
-            tempDirectory = targetDirectory + ".tmp";
-            backupDirectory = targetDirectory + ".bak";
+        // Clear temporary directory
+        if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
+        Directory.CreateDirectory(tempDirectory);
+    }
 
-            // Clear temporary directory
-            if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
-            Directory.CreateDirectory(tempDirectory);
-        }
-
-        public string GetPath(string path)
+    public string GetPath(string path)
+    {
+        var fullpath = Path.Combine(tempDirectory, path);
+        paths.Add(fullpath);
+        return fullpath;
+    }
+    public void Commit(bool checkPaths = true)
+    {
+        if (checkPaths)
         {
-            var fullpath = Path.Combine(tempDirectory, path);
-            paths.Add(fullpath);
-            return fullpath;
-        }
-        public void Commit(bool checkPaths = true)
-        {
-            if (checkPaths)
+            if (paths.Count == 0) throw new InvalidOperationException($"No file path requested");
+            foreach (var path in paths)
             {
-                if (paths.Count == 0) throw new InvalidOperationException($"No file path requested");
-                foreach (var path in paths)
-                {
-                    var file = new FileInfo(path);
+                FileInfo file = new(path);
 
-                    if (!file.Exists) throw new InvalidOperationException($"File path requested but not created: {path}");
-                    if (file.Length == 0) throw new InvalidOperationException($"File path requested but is empty: {path}");
-                }
+                if (!file.Exists) throw new InvalidOperationException($"File path requested but not created: {path}");
+                if (file.Length == 0) throw new InvalidOperationException($"File path requested but is empty: {path}");
             }
-
-            committed = true;
         }
-        public void Dispose()
+
+        committed = true;
+    }
+    public void Dispose()
+    {
+        if (committed)
         {
-            if (committed)
+            // Switch temp and target directories
+            if (Directory.Exists(targetDirectory))
             {
-                // Switch temp and target directories
-                if (Directory.Exists(targetDirectory))
-                {
-                    if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
-                    Directory.Move(targetDirectory, backupDirectory);
-                }
-                Directory.Move(tempDirectory, targetDirectory);
                 if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
+                Directory.Move(targetDirectory, backupDirectory);
             }
-            else
-            {
-                if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
-            }
+            Directory.Move(tempDirectory, targetDirectory);
+            if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
+        }
+        else
+        {
+            if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
         }
     }
 }

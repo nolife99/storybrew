@@ -1,14 +1,13 @@
 ﻿using BrewLib.Graphics.Cameras;
 
-namespace BrewLib.Graphics.Renderers
+namespace BrewLib.Graphics.Renderers;
+
+public interface Renderer
 {
-    public interface Renderer
-    {
-        Camera Camera { get; set; }
+    Camera Camera { get; set; }
 
-        void BeginRendering();
-        void EndRendering();
+    void BeginRendering();
+    void EndRendering();
 
-        void Flush(bool canBuffer = false);
-    }
+    void Flush(bool canBuffer = false);
 }

@@ -1,8 +1,7 @@
-﻿namespace StorybrewEditor.Storyboarding
+﻿namespace StorybrewEditor.Storyboarding;
+
+public interface EventObject
 {
-    public interface EventObject
-    {
-        double EventTime { get; }
-        void TriggerEvent(Project project, double currentTime);
-    }
+    double EventTime { get; }
+    void TriggerEvent(Project project, double currentTime);
 }

@@ -1,110 +1,107 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
-namespace BrewLib.Graphics.Shaders
+namespace BrewLib.Graphics.Shaders;
+
+public class ShaderBuilder
 {
-    public class ShaderBuilder
+    public VertexDeclaration VertexDeclaration;
+
+    readonly ShaderContext Context = new();
+    readonly ProgramScope ProgramScope = new();
+    readonly ShaderPartScope VertexShaderScope = new("vs"), FragmentShaderScope = new("fs");
+
+    public ShaderSnippet VertexShader, FragmentShader;
+    public readonly ShaderVariable GlPosition, GlPointSize, GlPointCoord, GlFragColor, GlFragDepth;
+    public int MinVersion = 110;
+
+    public ShaderType AddStruct() => ProgramScope.AddStruct();
+    public ShaderVariable AddUniform(string name, string shaderTypeName, int count = -1) => ProgramScope.AddUniform(Context, name, shaderTypeName, count);
+    public ShaderVariable AddVarying(string shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
+    public ShaderVariable AddVertexVariable(string shaderTypeName) => VertexShaderScope.AddVariable(Context, shaderTypeName);
+    public ShaderVariable AddFragmentVariable(string shaderTypeName) => FragmentShaderScope.AddVariable(Context, shaderTypeName);
+
+    public ShaderBuilder(VertexDeclaration vertexDeclaration)
     {
-        public VertexDeclaration VertexDeclaration;
+        VertexDeclaration = vertexDeclaration;
+        GlPosition = new(Context, "gl_Position", "vec4");
+        GlPointSize = new(Context, "gl_PointSize", "float");
+        GlPointCoord = new(Context, "gl_PointCoord", "vec2");
+        GlFragColor = new(Context, "gl_FragColor", "vec4");
+        GlFragDepth = new(Context, "gl_FragDepth", "float");
+    }
 
-        readonly ShaderContext Context = new();
-        readonly ProgramScope ProgramScope = new();
-        readonly ShaderPartScope VertexShaderScope = new("vs"), FragmentShaderScope = new("fs");
+    public Shader Build(bool log = false)
+    {
+        Context.VertexDeclaration = VertexDeclaration;
+        Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPointSize, GlFragColor, GlFragDepth);
 
-        public ShaderSnippet VertexShader, FragmentShader;
-        public readonly ShaderVariable GlPosition, GlPointSize, GlPointCoord, GlFragColor, GlFragDepth;
-        public int MinVersion = 110;
+        var commonCode = buildCommon();
+        var vertexShaderCode = buildVertexShader();
+        var fragmentShaderCode = buildFragmentShader();
 
-        public ShaderType AddStruct() => ProgramScope.AddStruct();
-        public ShaderVariable AddUniform(string name, string shaderTypeName, int count = -1) => ProgramScope.AddUniform(Context, name, shaderTypeName, count);
-        public ShaderVariable AddVarying(string shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
-        public ShaderVariable AddVertexVariable(string shaderTypeName) => VertexShaderScope.AddVariable(Context, shaderTypeName);
-        public ShaderVariable AddFragmentVariable(string shaderTypeName) => FragmentShaderScope.AddVariable(Context, shaderTypeName);
-
-        public ShaderBuilder(VertexDeclaration vertexDeclaration)
+        if (log)
         {
-            VertexDeclaration = vertexDeclaration;
-            GlPosition = new ShaderVariable(Context, "gl_Position", "vec4");
-            GlPointSize = new ShaderVariable(Context, "gl_PointSize", "float");
-            GlPointCoord = new ShaderVariable(Context, "gl_PointCoord", "vec2");
-            GlFragColor = new ShaderVariable(Context, "gl_FragColor", "vec4");
-            GlFragDepth = new ShaderVariable(Context, "gl_FragDepth", "float");
+            Trace.WriteLine("--- VERTEX ---");
+            Trace.WriteLine(commonCode + vertexShaderCode);
+
+            Trace.WriteLine("--- FRAGMENT ---");
+            Trace.WriteLine(commonCode + fragmentShaderCode);
         }
 
-        public Shader Build(bool log = false)
-        {
-            Context.VertexDeclaration = VertexDeclaration;
-            Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPointSize, GlFragColor, GlFragDepth);
+        return new(commonCode + vertexShaderCode, commonCode + fragmentShaderCode);
+    }
+    string buildCommon()
+    {
+        StringBuilder code = new();
+        code.AppendLine(CultureInfo.InvariantCulture, $"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
-            var commonCode = buildCommon();
-            var vertexShaderCode = buildVertexShader();
-            var fragmentShaderCode = buildFragmentShader();
+        List<string> requiredExtensions = [];
+        foreach (var extensionName in VertexShader.RequiredExtensions) requiredExtensions.Add(extensionName);
+        foreach (var extensionName in FragmentShader.RequiredExtensions) requiredExtensions.Add(extensionName);
+        requiredExtensions.ForEach(extensionName => code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable"));
 
-            if (log)
-            {
-                Trace.WriteLine("--- VERTEX ---");
-                Trace.WriteLine(commonCode + vertexShaderCode);
+        code.AppendLine("#ifdef GL_ES");
+        code.AppendLine("    precision mediump float;");
+        code.AppendLine("#endif");
 
-                Trace.WriteLine("--- FRAGMENT ---");
-                Trace.WriteLine(commonCode + fragmentShaderCode);
-            }
+        ProgramScope.DeclareTypes(code);
+        ProgramScope.DeclareUniforms(code);
+        ProgramScope.DeclareVaryings(code, Context);
 
-            return new Shader(commonCode + vertexShaderCode, commonCode + fragmentShaderCode);
-        }
-        string buildCommon()
-        {
-            var code = new StringBuilder();
+        return code.ToString();
+    }
+    string buildVertexShader()
+    {
+        StringBuilder code = new();
 
-            code.AppendLine($"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
+        // Attributes
+        foreach (var attribute in VertexDeclaration) code.AppendLine(CultureInfo.InvariantCulture, $"attribute {attribute.ShaderTypeName} {attribute.Name};");
+        VertexShader.GenerateFunctions(code);
 
-            var requiredExtensions = new List<string>();
-            foreach (var extensionName in VertexShader.RequiredExtensions) requiredExtensions.Add(extensionName);
-            foreach (var extensionName in FragmentShader.RequiredExtensions) requiredExtensions.Add(extensionName);
-            requiredExtensions.ForEach(extensionName => code.AppendLine($"#extension {extensionName} : enable"));
+        // Main function
 
-            code.AppendLine("#ifdef GL_ES");
-            code.AppendLine("    precision mediump float;");
-            code.AppendLine("#endif");
+        code.AppendLine("void main() {");
+        ProgramScope.DeclareUnusedVaryingsAsVariables(code, Context);
+        VertexShaderScope.DeclareVariables(code);
+        Context.GenerateCode(code, () => VertexShader.Generate(Context));
+        code.AppendLine("}");
+        return code.ToString();
+    }
+    string buildFragmentShader()
+    {
+        StringBuilder code = new();
+        FragmentShader.GenerateFunctions(code);
 
-            ProgramScope.DeclareTypes(code);
-            ProgramScope.DeclareUniforms(code);
-            ProgramScope.DeclareVaryings(code, Context);
+        // Main function
 
-            return code.ToString();
-        }
-        string buildVertexShader()
-        {
-            var code = new StringBuilder();
-
-            // Attributes
-            foreach (var attribute in VertexDeclaration) code.AppendLine($"attribute {attribute.ShaderTypeName} {attribute.Name};");
-
-            VertexShader.GenerateFunctions(code);
-
-            // Main function
-
-            code.AppendLine("void main() {");
-            ProgramScope.DeclareUnusedVaryingsAsVariables(code, Context);
-            VertexShaderScope.DeclareVariables(code);
-            Context.GenerateCode(code, () => VertexShader.Generate(Context));
-            code.AppendLine("}");
-            return code.ToString();
-        }
-        string buildFragmentShader()
-        {
-            var code = new StringBuilder();
-
-            FragmentShader.GenerateFunctions(code);
-
-            // Main function
-
-            code.AppendLine("void main() {");
-            FragmentShaderScope.DeclareVariables(code);
-            Context.GenerateCode(code, () => FragmentShader.Generate(Context));
-            code.AppendLine("}");
-            return code.ToString();
-        }
+        code.AppendLine("void main() {");
+        FragmentShaderScope.DeclareVariables(code);
+        Context.GenerateCode(code, () => FragmentShader.Generate(Context));
+        code.AppendLine("}");
+        return code.ToString();
     }
 }

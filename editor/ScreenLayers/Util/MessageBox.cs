@@ -3,107 +3,93 @@ using BrewLib.Util;
 using osuTK.Input;
 using System;
 
-namespace StorybrewEditor.ScreenLayers.Util
+namespace StorybrewEditor.ScreenLayers.Util;
+
+public class MessageBox(string message, Action yesAction, Action noAction, bool cancelable) : UiScreenLayer
 {
-    public class MessageBox(string message, Action yesAction, Action noAction, bool cancelable) : UiScreenLayer
+    LinearLayout mainLayout, buttonsLayout;
+    public override bool IsPopup => true;
+
+    public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
+    public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
+
+    public override void Load()
     {
-        readonly string message = message;
-        LinearLayout mainLayout, buttonsLayout;
+        base.Load();
 
-        readonly Action yesAction = yesAction, noAction = noAction;
-        readonly bool cancelable = cancelable;
-
-        public override bool IsPopup => true;
-
-        public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
-        public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
-
-        public override void Load()
+        WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
         {
-            base.Load();
-
-            WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
+            StyleName = "panel",
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            Children = new Widget[]
             {
-                StyleName = "panel",
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new FourSide(16),
-                Children = new Widget[]
+                new ScrollArea(WidgetManager, new Label(WidgetManager)
                 {
-                    new ScrollArea(WidgetManager, new Label(WidgetManager)
-                    {
-                        Text = message,
-                        AnchorFrom = BoxAlignment.Centre
-                    })
-                    {
-                        ScrollsHorizontally = true
-                    },
-                    buttonsLayout = new LinearLayout(WidgetManager)
-                    {
-                        Horizontal = true,
-                        AnchorFrom = BoxAlignment.Centre
-                    }
+                    Text = message,
+                    AnchorFrom = BoxAlignment.Centre
+                })
+                {
+                    ScrollsHorizontally = true
+                },
+                buttonsLayout = new(WidgetManager)
+                {
+                    Horizontal = true,
+                    AnchorFrom = BoxAlignment.Centre
                 }
-            });
-            var yesButton = new Button(WidgetManager)
+            }
+        });
+        Button yesButton = new(WidgetManager)
+        {
+            Text = noAction is not null ? "Yes" : "Ok",
+            AnchorFrom = BoxAlignment.Centre
+        };
+        yesButton.OnClick += (sender, e) =>
+        {
+            Exit();
+            yesAction?.Invoke();
+        };
+        buttonsLayout.Add(yesButton);
+
+        if (noAction is not null)
+        {
+            Button noButton = new(WidgetManager)
             {
-                Text = noAction is not null ? "Yes" : "Ok",
+                Text = "No",
                 AnchorFrom = BoxAlignment.Centre
             };
-            yesButton.OnClick += (sender, e) =>
+            noButton.OnClick += (sender, e) =>
             {
                 Exit();
-                yesAction?.Invoke();
+                noAction.Invoke();
             };
-            buttonsLayout.Add(yesButton);
-
-            if (noAction is not null)
-            {
-                var noButton = new Button(WidgetManager)
-                {
-                    Text = "No",
-                    AnchorFrom = BoxAlignment.Centre
-                };
-                noButton.OnClick += (sender, e) =>
-                {
-                    Exit();
-                    noAction.Invoke();
-                };
-                buttonsLayout.Add(noButton);
-            }
-            if (cancelable)
-            {
-                var cancelButton = new Button(WidgetManager)
-                {
-                    Text = "Cancel",
-                    AnchorFrom = BoxAlignment.Centre
-                };
-                cancelButton.OnClick += (sender, e) => Exit();
-                buttonsLayout.Add(cancelButton);
-            }
+            buttonsLayout.Add(noButton);
         }
-        public override bool OnKeyDown(KeyboardKeyEventArgs e)
+        if (cancelable)
         {
-            if (!e.IsRepeat)
+            Button cancelButton = new(WidgetManager)
             {
-                switch (e.Key)
-                {
-                    case Key.C:
-                        if (e.Control)
-                        {
-                            ClipboardHelper.SetText(message);
-                            return true;
-                        }
-                        break;
-                }
-            }
-            return base.OnKeyDown(e);
+                Text = "Cancel",
+                AnchorFrom = BoxAlignment.Centre
+            };
+            cancelButton.OnClick += (sender, e) => Exit();
+            buttonsLayout.Add(cancelButton);
         }
-        public override void Resize(int width, int height)
+    }
+    public override bool OnKeyDown(KeyboardKeyEventArgs e)
+    {
+        if (!e.IsRepeat && e.Key is Key.C && e.Control)
         {
-            base.Resize(width, height);
-            mainLayout.Pack(400, 0, 1024 - 32, 768 - 32);
+            ClipboardHelper.SetText(message);
+            return true;
         }
+        return base.OnKeyDown(e);
+    }
+    public override void Resize(int width, int height)
+    {
+        base.Resize(width, height);
+        mainLayout.Pack(400, 0, 1024 - 32, 768 - 32);
     }
 }

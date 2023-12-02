@@ -3,6 +3,7 @@ using BrewLib.Data;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
+using BrewLib.UserInterface;
 using BrewLib.Util;
 using osuTK;
 using StorybrewCommon.Scripting;
@@ -51,7 +52,7 @@ public sealed class Project : IDisposable
 
             foreach (var beatmap in MapsetManager.Beatmaps)
             {
-                if (beatmap.AudioFilename == null) continue;
+                if (beatmap.AudioFilename is null) continue;
 
                 var path = Path.Combine(MapsetPath, beatmap.AudioFilename);
                 if (!File.Exists(path)) continue;
@@ -125,13 +126,13 @@ public sealed class Project : IDisposable
     public double DisplayTime;
     public float DimFactor;
 
-    public TextureContainer TextureContainer { get; set; }
-    public AudioSampleContainer AudioContainer { get; set; }
+    public TextureContainer TextureContainer;
+    public AudioSampleContainer AudioContainer;
 
-    public FrameStats FrameStats { get; set; } = new();
+    public FrameStats FrameStats = new();
 
     public void TriggerEvents(double startTime, double endTime) => LayerManager.TriggerEvents(startTime, endTime);
-    public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity, bool updateFrameStats)
+    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, bool updateFrameStats)
     {
         effectUpdateQueue.Enabled = allowEffectUpdates && MapsetPathIsValid;
 
@@ -147,7 +148,7 @@ public sealed class Project : IDisposable
     void reloadAudio()
     {
         AudioContainer?.Dispose();
-        AudioContainer = new AudioSampleContainer(Program.AudioManager, null);
+        AudioContainer = new(Program.AudioManager, null);
     }
 
     #endregion
@@ -158,7 +159,7 @@ public sealed class Project : IDisposable
     public IEnumerable<Effect> Effects => effects;
     public event EventHandler OnEffectsChanged, OnEffectsStatusChanged, OnEffectsContentChanged;
 
-    public EffectStatus EffectsStatus { get; set; } = EffectStatus.Initializing;
+    public EffectStatus EffectsStatus = EffectStatus.Initializing;
 
     public double StartTime => effects.Count > 0 ? effects.Min(e => e.StartTime) : 0;
     public double EndTime => effects.Count > 0 ? effects.Max(e => e.EndTime) : 0;
@@ -256,7 +257,7 @@ public sealed class Project : IDisposable
 
     #region Mapset
 
-    public bool MapsetPathIsValid { get; set; }
+    public bool MapsetPathIsValid;
 
     string mapsetPath;
     public string MapsetPath
@@ -275,7 +276,7 @@ public sealed class Project : IDisposable
     }
 
     public event EventHandler OnMapsetPathChanged;
-    public MapsetManager MapsetManager { get; set; }
+    public MapsetManager MapsetManager;
 
     EditorBeatmap mainBeatmap;
     public EditorBeatmap MainBeatmap
@@ -314,7 +315,7 @@ public sealed class Project : IDisposable
             MainBeatmap = beatmap;
             return;
         }
-        MainBeatmap = new EditorBeatmap(null);
+        MainBeatmap = new(null);
     }
     public void SelectBeatmap(long id, string name)
     {
@@ -332,7 +333,7 @@ public sealed class Project : IDisposable
         mainBeatmap = null;
         MapsetManager?.Dispose();
 
-        MapsetManager = new MapsetManager(mapsetPath, MapsetManager is not null);
+        MapsetManager = new(mapsetPath, MapsetManager is not null);
         MapsetManager.OnFileChanged += mapsetManager_OnFileChanged;
 
         if (previousBeatmapName is not null) SelectBeatmap(previousBeatmapId, previousBeatmapName);
@@ -386,7 +387,7 @@ public sealed class Project : IDisposable
         "System.Runtime.dll",
         "System.Numerics.Vectors.dll",
         "netstandard.dll",
-        typeof(Line).Assembly.Location,
+        typeof(Label).Assembly.Location,
         typeof(Enumerable).Assembly.Location,
         typeof(object).Assembly.Location,
         typeof(Box2).Assembly.Location,
@@ -417,7 +418,7 @@ public sealed class Project : IDisposable
     #region Save / Load / Export
 
     public const int Version = 7;
-    public bool Changed { get; set; }
+    public bool Changed;
 
     bool ownsOsb;
     public bool OwnsOsb
@@ -441,7 +442,7 @@ public sealed class Project : IDisposable
     }
     public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
     {
-        var project = new Project(projectPath, withCommonScripts, resourceContainer);
+        Project project = new(projectPath, withCommonScripts, resourceContainer);
         if (projectPath.EndsWith(BinaryExtension, StringComparison.Ordinal)) project.loadBinary(projectPath);
         else project.loadText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
         return project;
@@ -553,7 +554,7 @@ public sealed class Project : IDisposable
             var name = r.ReadString();
 
             var effect = effects[r.ReadInt32()];
-            effect.AddPlaceholder(new EditorStoryboardLayer(name, effect)
+            effect.AddPlaceholder(new(name, effect)
             {
                 Guid = guid,
                 DiffSpecific = version >= 3 && r.ReadBoolean(),
@@ -618,7 +619,7 @@ public sealed class Project : IDisposable
                 { "Multithreaded", effect.Multithreaded }
             };
 
-            var configRoot = new TinyObject();
+            TinyObject configRoot = new();
             effectRoot.Add("Config", configRoot);
 
             foreach (var field in effect.Config.SortedFields)
@@ -641,7 +642,7 @@ public sealed class Project : IDisposable
                 }
             }
 
-            var layersRoot = new TinyObject();
+            TinyObject layersRoot = [];
             effectRoot.Add("Layers", layersRoot);
 
             foreach (var layer in LayerManager.Layers) if (layer.Effect == effect)
@@ -667,7 +668,7 @@ public sealed class Project : IDisposable
     void loadText(string path)
     {
         var targetDirectory = Path.Combine(Path.GetDirectoryName(path), DataFolder);
-        using SafeDirectoryReader directoryReader = new(targetDirectory);
+        SafeDirectoryReader directoryReader = new(targetDirectory);
         var indexPath = directoryReader.GetPath("index.yaml");
         var indexRoot = TinyToken.Read(indexPath);
 
@@ -734,7 +735,7 @@ public sealed class Project : IDisposable
                 var layerEffect = effect;
                 var layerGuid = layerProperty.Key;
                 var layerRoot = layerProperty.Value;
-                layerInserters[layerGuid] = () => layerEffect.AddPlaceholder(new EditorStoryboardLayer(layerRoot.Value<string>("Name"), layerEffect)
+                layerInserters[layerGuid] = () => layerEffect.AddPlaceholder(new(layerRoot.Value<string>("Name"), layerEffect)
                 {
                     Guid = Guid.Parse(layerGuid),
                     OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
@@ -806,7 +807,7 @@ public sealed class Project : IDisposable
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Any())
         {
             Trace.WriteLine($"Exporting diff specific events to {osuPath}");
-            using var stream = new SafeWriteStream(osuPath); using var writer = new StreamWriter(stream, Encoding); using var reader = new StreamReader(osuPath, Encoding);
+            using SafeWriteStream stream = new(osuPath); using StreamWriter writer = new(stream, Encoding); using StreamReader reader = new(osuPath, Encoding);
             string line;
             var inEvents = false;
             var inStoryboard = false;
@@ -845,7 +846,7 @@ public sealed class Project : IDisposable
         if (exportOsb && sbLayer.Any())
         {
             Trace.WriteLine($"Exporting osb to {osbPath}");
-            using var writer = new StreamWriter(osbPath, false);
+            using StreamWriter writer = new(osbPath, false);
             writer.WriteLine("[Events]");
             writer.WriteLine("//Background and Video events");
 

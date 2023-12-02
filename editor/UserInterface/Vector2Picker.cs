@@ -1,517 +1,135 @@
 ﻿using BrewLib.UserInterface;
-using osuTK;
-using StorybrewCommon.osuTKUtil;
+using System.Numerics;
+using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Globalization;
 
-namespace StorybrewEditor.UserInterface
+namespace StorybrewEditor.UserInterface;
+
+public class Vector2Picker : Widget, Field
 {
-    public class Vector2Picker : Widget, Field
+    readonly LinearLayout layout;
+    readonly Textbox xTextbox, yTextbox;
+
+    public override Vector2 MinSize => layout.MinSize;
+    public override Vector2 MaxSize => Vector2.Zero;
+    public override Vector2 PreferredSize => layout.PreferredSize;
+
+    CommandPosition value;
+    public CommandPosition Value
     {
-        readonly LinearLayout layout;
-        readonly Textbox xTextbox, yTextbox;
-
-        public override Vector2 MinSize => layout.MinSize;
-        public override Vector2 MaxSize => Vector2.Zero;
-        public override Vector2 PreferredSize => layout.PreferredSize;
-
-        Vector2 value;
-        public Vector2 Value
+        get => value;
+        set
         {
-            get => value;
-            set
-            {
-                if (this.value == value) return;
-                this.value = value;
+            if (this.value == value) return;
+            this.value = value;
 
-                updateWidgets();
-                OnValueChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-        public object FieldValue
-        {
-            get => Value;
-            set => Value = (Vector2)value;
-        }
-
-        public event EventHandler OnValueChanged, OnValueCommited;
-
-        public Vector2Picker(WidgetManager manager) : base(manager)
-        {
-            Add(layout = new LinearLayout(manager)
-            {
-                FitChildren = true,
-                Children = new Widget[]
-                {
-                    new LinearLayout(manager)
-                    {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
-                        {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "X",
-                                CanGrow = false
-                            },
-                            xTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
-                        }
-                    },
-                    new LinearLayout(manager)
-                    {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
-                        {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "Y",
-                                CanGrow = false
-                            },
-                            yTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
-                        }
-                    }
-                }
-            });
             updateWidgets();
-
-            xTextbox.OnValueCommited += xTextbox_OnValueCommited;
-            yTextbox.OnValueCommited += yTextbox_OnValueCommited;
-        }
-        void xTextbox_OnValueCommited(object sender, EventArgs e)
-        {
-            var xCommit = xTextbox.Value;
-
-            float x;
-            try
-            {
-                x = float.Parse(xCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new Vector2(x, value.Y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
-        }
-        void yTextbox_OnValueCommited(object sender, EventArgs e)
-        {
-            var yCommit = yTextbox.Value;
-
-            float y;
-            try
-            {
-                y = float.Parse(yCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new Vector2(value.X, y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
-        }
-        void updateWidgets()
-        {
-            xTextbox.SetValueSilent(value.X.ToString(CultureInfo.InvariantCulture));
-            yTextbox.SetValueSilent(value.Y.ToString(CultureInfo.InvariantCulture));
-        }
-        protected override void Layout()
-        {
-            base.Layout();
-            layout.Size = Size;
+            OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
     }
-    public class Numeric2Picker : Widget, Field
+    public object FieldValue
     {
-        readonly LinearLayout layout;
-        readonly Textbox xTextbox, yTextbox;
-
-        public override Vector2 MinSize => layout.MinSize;
-        public override Vector2 MaxSize => Vector2.Zero;
-        public override Vector2 PreferredSize => layout.PreferredSize;
-
-        System.Numerics.Vector2 value;
-        public System.Numerics.Vector2 Value
-        {
-            get => value;
-            set
-            {
-                if (this.value == value) return;
-                this.value = value;
-
-                updateWidgets();
-                OnValueChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-        public object FieldValue
-        {
-            get => Value;
-            set => Value = (System.Numerics.Vector2)value;
-        }
-
-        public event EventHandler OnValueChanged, OnValueCommited;
-
-        public Numeric2Picker(WidgetManager manager) : base(manager)
-        {
-            Add(layout = new LinearLayout(manager)
-            {
-                FitChildren = true,
-                Children = new Widget[]
-                {
-                    new LinearLayout(manager)
-                    {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
-                        {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "X",
-                                CanGrow = false
-                            },
-                            xTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
-                        }
-                    },
-                    new LinearLayout(manager)
-                    {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
-                        {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "Y",
-                                CanGrow = false
-                            },
-                            yTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
-                        }
-                    }
-                }
-            });
-            updateWidgets();
-
-            xTextbox.OnValueCommited += xTextbox_OnValueCommited;
-            yTextbox.OnValueCommited += yTextbox_OnValueCommited;
-        }
-        void xTextbox_OnValueCommited(object sender, EventArgs e)
-        {
-            var xCommit = xTextbox.Value;
-
-            float x;
-            try
-            {
-                x = float.Parse(xCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new System.Numerics.Vector2(x, value.Y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
-        }
-        void yTextbox_OnValueCommited(object sender, EventArgs e)
-        {
-            var yCommit = yTextbox.Value;
-
-            float y;
-            try
-            {
-                y = float.Parse(yCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new System.Numerics.Vector2(value.X, y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
-        }
-        void updateWidgets()
-        {
-            xTextbox.SetValueSilent(value.X.ToString(CultureInfo.InvariantCulture));
-            yTextbox.SetValueSilent(value.Y.ToString(CultureInfo.InvariantCulture));
-        }
-        protected override void Layout()
-        {
-            base.Layout();
-            layout.Size = Size;
-        }
+        get => Value;
+        set => Value = (CommandPosition)value;
     }
-    public class Vector2dPicker : Widget, Field
+
+    public event EventHandler OnValueChanged, OnValueCommited;
+
+    public Vector2Picker(WidgetManager manager) : base(manager)
     {
-        readonly LinearLayout layout;
-        readonly Textbox xTextbox, yTextbox;
-
-        public override Vector2 MinSize => layout.MinSize;
-        public override Vector2 MaxSize => Vector2.Zero;
-        public override Vector2 PreferredSize => layout.PreferredSize;
-
-        Vector2d value;
-        public Vector2d Value
+        Add(layout = new LinearLayout(manager)
         {
-            get => value;
-            set
+            FitChildren = true,
+            Children = new Widget[]
             {
-                if (this.value == value) return;
-                this.value = value;
-
-                updateWidgets();
-                OnValueChanged?.Invoke(this, EventArgs.Empty);
-            }
-        }
-        public object FieldValue
-        {
-            get => Value;
-            set => Value = (Vector2d)value;
-        }
-
-        public event EventHandler OnValueChanged, OnValueCommited;
-
-        public Vector2dPicker(WidgetManager manager) : base(manager)
-        {
-            Add(layout = new LinearLayout(manager)
-            {
-                FitChildren = true,
-                Children = new Widget[]
+                new LinearLayout(manager)
                 {
-                    new LinearLayout(manager)
+                    Horizontal = true,
+                    FitChildren = true,
+                    Fill = true,
+                    Children = new Widget[]
                     {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
+                        new Label(Manager)
                         {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "X",
-                                CanGrow = false
-                            },
-                            xTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
+                            StyleName = "small",
+                            Text = "X",
+                            CanGrow = false
+                        },
+                        xTextbox = new(manager)
+                        {
+                            EnterCommits = true
                         }
-                    },
-                    new LinearLayout(manager)
+                    }
+                },
+                new LinearLayout(manager)
+                {
+                    Horizontal = true,
+                    FitChildren = true,
+                    Fill = true,
+                    Children = new Widget[]
                     {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
+                        new Label(Manager)
                         {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "Y",
-                                CanGrow = false
-                            },
-                            yTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
+                            StyleName = "small",
+                            Text = "Y",
+                            CanGrow = false
+                        },
+                        yTextbox = new(manager)
+                        {
+                            EnterCommits = true
                         }
                     }
                 }
-            });
-            updateWidgets();
+            }
+        });
+        updateWidgets();
 
-            xTextbox.OnValueCommited += xTextbox_OnValueCommited;
-            yTextbox.OnValueCommited += yTextbox_OnValueCommited;
-        }
-        void xTextbox_OnValueCommited(object sender, EventArgs e)
-        {
-            var xCommit = xTextbox.Value;
-
-            double x;
-            try
-            {
-                x = double.Parse(xCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new Vector2d(x, value.Y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
-        }
-        void yTextbox_OnValueCommited(object sender, EventArgs e)
-        {
-            var yCommit = yTextbox.Value;
-
-            double y;
-            try
-            {
-                y = double.Parse(yCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new Vector2d(value.X, y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
-        }
-        void updateWidgets()
-        {
-            xTextbox.SetValueSilent(value.X.ToString(CultureInfo.InvariantCulture));
-            yTextbox.SetValueSilent(value.Y.ToString(CultureInfo.InvariantCulture));
-        }
-        protected override void Layout()
-        {
-            base.Layout();
-            layout.Size = Size;
-        }
+        xTextbox.OnValueCommited += xTextbox_OnValueCommited;
+        yTextbox.OnValueCommited += yTextbox_OnValueCommited;
     }
-    public class Vector2iPicker : Widget, Field
+    void xTextbox_OnValueCommited(object sender, EventArgs e)
     {
-        readonly LinearLayout layout;
-        readonly Textbox xTextbox, yTextbox;
+        var xCommit = xTextbox.Value;
 
-        public override Vector2 MinSize => layout.MinSize;
-        public override Vector2 MaxSize => Vector2.Zero;
-        public override Vector2 PreferredSize => layout.PreferredSize;
-
-        Vector2i value;
-        public Vector2i Value
+        float x;
+        try
         {
-            get => value;
-            set
-            {
-                if (this.value == value) return;
-                this.value = value;
-
-                updateWidgets();
-                OnValueChanged?.Invoke(this, EventArgs.Empty);
-            }
+            x = float.Parse(xCommit, CultureInfo.InvariantCulture);
         }
-        public object FieldValue
+        catch
         {
-            get => Value;
-            set => Value = (Vector2i)value;
-        }
-
-        public event EventHandler OnValueChanged, OnValueCommited;
-
-        public Vector2iPicker(WidgetManager manager) : base(manager)
-        {
-            Add(layout = new LinearLayout(manager)
-            {
-                FitChildren = true,
-                Children = new Widget[]
-                {
-                    new LinearLayout(manager)
-                    {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
-                        {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "X",
-                                CanGrow = false
-                            },
-                            xTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
-                        }
-                    },
-                    new LinearLayout(manager)
-                    {
-                        Horizontal = true,
-                        FitChildren = true,
-                        Fill = true,
-                        Children = new Widget[]
-                        {
-                            new Label(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "Y",
-                                CanGrow = false
-                            },
-                            yTextbox = new Textbox(manager)
-                            {
-                                EnterCommits = true
-                            }
-                        }
-                    }
-                }
-            });
             updateWidgets();
+            return;
+        }
+        Value = new(x, value.Y);
+        OnValueCommited?.Invoke(this, EventArgs.Empty);
+    }
+    void yTextbox_OnValueCommited(object sender, EventArgs e)
+    {
+        var yCommit = yTextbox.Value;
 
-            xTextbox.OnValueCommited += xTextbox_OnValueCommited;
-            yTextbox.OnValueCommited += yTextbox_OnValueCommited;
-        }
-        void xTextbox_OnValueCommited(object sender, EventArgs e)
+        float y;
+        try
         {
-            var xCommit = xTextbox.Value;
-
-            int x;
-            try
-            {
-                x = int.Parse(xCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new Vector2i(x, value.Y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
+            y = float.Parse(yCommit, CultureInfo.InvariantCulture);
         }
-        void yTextbox_OnValueCommited(object sender, EventArgs e)
+        catch
         {
-            var yCommit = yTextbox.Value;
-
-            int y;
-            try
-            {
-                y = int.Parse(yCommit, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                updateWidgets();
-                return;
-            }
-            Value = new Vector2i(value.X, y);
-            OnValueCommited?.Invoke(this, EventArgs.Empty);
+            updateWidgets();
+            return;
         }
-        void updateWidgets()
-        {
-            xTextbox.SetValueSilent(value.X.ToString(CultureInfo.InvariantCulture));
-            yTextbox.SetValueSilent(value.Y.ToString(CultureInfo.InvariantCulture));
-        }
-        protected override void Layout()
-        {
-            base.Layout();
-            layout.Size = Size;
-        }
+        Value = new(value.X, y);
+        OnValueCommited?.Invoke(this, EventArgs.Empty);
+    }
+    void updateWidgets()
+    {
+        xTextbox.SetValueSilent(value.X.ToString());
+        yTextbox.SetValueSilent(value.Y.ToString());
+    }
+    protected override void Layout()
+    {
+        base.Layout();
+        layout.Size = Size;
     }
 }

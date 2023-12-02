@@ -9,7 +9,7 @@ namespace StorybrewCommon.Storyboarding3d;
 #pragma warning disable CS1591
 public abstract class Camera
 {
-    public static SizeF Resolution = new Size(1366, 768);
+    public static SizeF Resolution = new(1366, 768);
     public static double ResolutionScale = OsuHitObject.WidescreenStoryboardSize.Height / Resolution.Height;
     public static double AspectRatio = Resolution.Width / Resolution.Height;
     public float DistanceForHorizontalFov(double fov) => (float)(Resolution.Width / 2 / Math.Tan(osuTK.MathHelper.DegreesToRadians(fov) / 2));
@@ -31,7 +31,7 @@ public class CameraState(Matrix4x4 viewProjection, double aspectRatio, double fo
         var screenPosition = (ndc + Vector2.One) / 2 * new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
         var depth = transformedPoint.Z / transformedPoint.W;
 
-        return new Vector4(screenPosition.X - offset, screenPosition.Y, depth, transformedPoint.W);
+        return new(screenPosition.X - offset, screenPosition.Y, depth, transformedPoint.W);
     }
     public double LinearizeZ(double z) => 2 * NearClip / (FarClip + NearClip - z * (FarClip - NearClip));
     public float OpacityAt(float distance)
@@ -109,6 +109,6 @@ public class PerspectiveCamera : Camera
         var view = Matrix4x4.CreateLookAt(cameraPosition, targetPosition, up);
         var projection = Matrix4x4.CreatePerspectiveFieldOfView((float)fovY, (float)aspectRatio, (float)nearClip, (float)farClip);
 
-        return new CameraState(view * projection, aspectRatio, focusDistance, ResolutionScale, nearClip, nearFade, farFade, farClip);
+        return new(view * projection, aspectRatio, focusDistance, ResolutionScale, nearClip, nearFade, farFade, farClip);
     }
 }

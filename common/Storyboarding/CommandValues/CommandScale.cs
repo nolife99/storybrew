@@ -1,65 +1,72 @@
-using osuTK;
 using System;
 using System.Drawing;
+using System.Numerics;
 
-namespace StorybrewCommon.Storyboarding.CommandValues
+namespace StorybrewCommon.Storyboarding.CommandValues;
+
+///<summary> Base structure for scale commands. </summary>
+[Serializable] public struct CommandScale(CommandDecimal x, CommandDecimal y) : 
+    CommandValue, IEquatable<CommandScale>,
+    IAdditionOperators<CommandScale, CommandScale, CommandScale>,
+    ISubtractionOperators<CommandScale, CommandScale, CommandScale>,
+    IMultiplyOperators<CommandScale, CommandScale, CommandScale>,
+    IDivisionOperators<CommandScale, CommandScale, CommandScale>
 {
-    ///<summary> Base struct for vector scale commands. Alternative for <see cref="Vector2"/>. </summary>
-    ///<remarks> Constructs a <see cref="CommandScale"/> from X and Y values. </remarks>
-    [Serializable] public struct CommandScale(CommandDecimal x, CommandDecimal y) : CommandValue, IEquatable<CommandScale>
-    {
-        ///<summary> Represents a scale in which all values are 1 (one). </summary>
-        public static CommandScale One = new(1, 1);
+    ///<summary> Represents a scale vector in which all values are 1 (one). </summary>
+    public static CommandScale One = new(1, 1);
 
-        readonly CommandDecimal x = x, y = y;
+    readonly CommandDecimal x = x, y = y;
 
-        ///<summary> Gets the X value of this instance. </summary>
-        public readonly CommandDecimal X => x;
+    ///<summary> Gets the X value of this instance. </summary>
+    public readonly CommandDecimal X => x;
 
-        ///<summary> Gets the Y value of this instance. </summary>
-        public readonly CommandDecimal Y => y;
+    ///<summary> Gets the Y value of this instance. </summary>
+    public readonly CommandDecimal Y => y;
 
-        ///<summary> Constructs a <see cref="CommandScale"/> from a value. </summary>
-        public CommandScale(CommandDecimal value) : this(value, value) { }
+    ///<summary> Constructs a <see cref="CommandScale"/> from a value. </summary>
+    public CommandScale(CommandDecimal value) : this(value, value) { }
 
-        ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
-        public CommandScale(Vector2 vector) : this(vector.X, vector.Y) { }
+    ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="osuTK.Vector2"/>. </summary>
+    public CommandScale(osuTK.Vector2 vector) : this(vector.X, vector.Y) { }
 
-        ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="System.Numerics.Vector2"/>. </summary>
-        public CommandScale(System.Numerics.Vector2 vector) : this(vector.X, vector.Y) { }
+    ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
+    public CommandScale(Vector2 vector) : this(vector.X, vector.Y) { }
 
-        ///<inheritdoc/>
-        public readonly bool Equals(CommandScale other) => x.Equals(other.x) && y.Equals(other.y);
+    ///<inheritdoc/>
+    public readonly bool Equals(CommandScale other) => x.Equals(other.x) && y.Equals(other.y);
 
-        ///<inheritdoc/>
-        public override bool Equals(object obj) => obj is CommandScale scale && Equals(scale);
+    ///<inheritdoc/>
+    public override readonly bool Equals(object obj) => obj is CommandScale scale && Equals(scale);
 
-        ///<inheritdoc/>
-        public override readonly int GetHashCode() => ((System.Numerics.Vector2)this).GetHashCode();
+    ///<inheritdoc/>
+    public override readonly int GetHashCode() => HashCode.Combine(x, y);
 
-        ///<summary> Converts this instance to a .osb string. </summary>
-        public string ToOsbString(ExportSettings exportSettings) => $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}";
+    ///<summary> Converts this instance to a .osb string. </summary>
+    public readonly string ToOsbString(ExportSettings exportSettings) => $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}";
 
-        ///<summary> Converts this instance to a string. </summary>
-        public override readonly string ToString() => ((Vector2)this).ToString();
+    ///<summary> Converts this instance to a string. </summary>
+    public override readonly string ToString() => ToOsbString(ExportSettings.Default);
 
-        ///<summary> Returns the distance between this instance and point <paramref name="obj"/> on the Cartesian plane. </summary>
-        public readonly float DistanceFrom(object obj) => Vector2.Distance(this, (Vector2)obj);
+    ///<summary> Returns the distance between this instance and point <paramref name="obj"/> on the Cartesian plane. </summary>
+    public readonly float DistanceFrom(object obj) => Vector2.Distance(this, (Vector2)obj);
 
 #pragma warning disable CS1591
-        public static CommandScale operator +(CommandScale left, CommandScale right) => new(left.x + right.x, left.y + right.y);
-        public static CommandScale operator -(CommandScale left, CommandScale right) => new(left.x - right.x, left.y - right.y);
-        public static CommandScale operator *(CommandScale left, CommandScale right) => new(left.x * right.x, left.y * right.y);
-        public static CommandScale operator *(CommandScale left, double right) => new(left.x * right, left.y * right);
-        public static CommandScale operator *(double left, CommandScale right) => right * left;
-        public static CommandScale operator /(CommandScale left, double right) => new(left.x / right, left.y / right);
-        public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
-        public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
-        public static implicit operator CommandScale(Vector2 vector) => new(vector);
-        public static implicit operator CommandScale(SizeF vector) => new(vector.Width, vector.Height);
-        public static implicit operator CommandScale(System.Numerics.Vector2 vector) => new(vector);
-        public static implicit operator Vector2(CommandScale obj) => new(obj.x, obj.y);
-        public static implicit operator SizeF(CommandScale vector) => new(vector.x, vector.y);
-        public static implicit operator System.Numerics.Vector2(CommandScale obj) => new(obj.x, obj.y);
-    }
+    public static CommandScale operator +(CommandScale left, CommandScale right) => new(left.x + right.x, left.y + right.y);
+    public static CommandScale operator -(CommandScale left, CommandScale right) => new(left.x - right.x, left.y - right.y);
+    public static CommandScale operator *(CommandScale left, CommandScale right) => new(left.x * right.x, left.y * right.y);
+    public static CommandScale operator *(CommandScale left, double right) => new(left.x * right, left.y * right);
+    public static CommandScale operator /(CommandScale left, CommandScale right) => new(left.x / right.x, left.y / right.y);
+    public static CommandScale operator /(CommandScale left, double right) => new(left.x / right, left.y / right);
+    public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
+    public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
+    public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector);
+    public static implicit operator CommandScale(osuTK.Vector2d vector) => new(vector.X, vector.Y);
+    public static implicit operator CommandScale(SizeF vector) => new(vector.Width, vector.Height);
+    public static implicit operator CommandScale(Vector2 vector) => new(vector);
+    public static implicit operator CommandScale(CommandPosition position) => new(position.X, position.Y);
+    public static implicit operator osuTK.Vector2(CommandScale obj) => new(obj.x, obj.y);
+    public static implicit operator osuTK.Vector2d(CommandScale obj) => new(obj.x, obj.y);
+    public static implicit operator SizeF(CommandScale vector) => new(vector.x, vector.y);
+    public static implicit operator Vector2(CommandScale obj) => new(obj.x, obj.y);
+    public static implicit operator CommandPosition(CommandScale position) => new(position.x, position.y);
 }

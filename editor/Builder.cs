@@ -5,93 +5,92 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
+using System.Windows;
 
-namespace StorybrewEditor
+namespace StorybrewEditor;
+
+public class Builder
 {
-    public class Builder
+    static readonly string mainExecutablePath = "StorybrewEditor.exe";
+    static readonly string[] ignoredPaths = [];
+
+    public static void Build()
     {
-        static readonly string mainExecutablePath = "StorybrewEditor.exe";
-        static readonly string[] ignoredPaths = [];
+        var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{RuntimeInformation.RuntimeIdentifier}.zip";
+        var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
 
-        public static void Build()
+        try
         {
-            var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{RuntimeInformation.RuntimeIdentifier}.zip";
-            var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
-
-            try
-            {
-                buildReleaseZip(archiveName, appDirectory);
-            }
-            catch (Exception e)
-            {
-                MessageBox.Show($"\nBuild failed:\n\n{e}", Program.FullName);
-                return;
-            }
-
-            Trace.WriteLine($"\nOpening {appDirectory}");
-            PathHelper.OpenExplorer(appDirectory);
+            buildReleaseZip(archiveName, appDirectory);
         }
-        static void buildReleaseZip(string archiveName, string appDirectory)
+        catch (Exception e)
         {
-            Trace.WriteLine($"\n\nBuilding {archiveName}\n");
-
-            var scriptsDirectory = Path.GetFullPath(Path.Combine(appDirectory, "../../../../../scripts"));
-
-            using var stream = new FileStream(archiveName, FileMode.Create, FileAccess.ReadWrite);
-            using var archive = new ZipArchive(stream, ZipArchiveMode.Create);
-            addFile(archive, mainExecutablePath, appDirectory);
-            addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
-
-            foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
-            foreach (var path in Directory.GetFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
-            foreach (var path in Directory.GetFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly)) addFile(archive, path, scriptsDirectory, "scripts");
+            MessageBox.Show($"\nBuild failed:\n\n{e}", Program.FullName);
+            return;
         }
-        /* static void testUpdate(string archiveName)
+
+        Trace.WriteLine($"\nOpening {appDirectory}");
+        PathHelper.OpenExplorer(appDirectory);
+    }
+    static void buildReleaseZip(string archiveName, string appDirectory)
+    {
+        Trace.WriteLine($"\n\nBuilding {archiveName}\n");
+
+        var scriptsDirectory = Path.GetFullPath(Path.Combine(appDirectory, "../../../../../scripts"));
+
+        using FileStream stream = new(archiveName, FileMode.Create, FileAccess.ReadWrite);
+        using ZipArchive archive = new(stream, ZipArchiveMode.Create);
+        addFile(archive, mainExecutablePath, appDirectory);
+        addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
+
+        foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
+        foreach (var path in Directory.GetFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
+        foreach (var path in Directory.GetFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly)) addFile(archive, path, scriptsDirectory, "scripts");
+    }
+    /* static void testUpdate(string archiveName)
+    {
+        var previousVersion = $"{Program.Version.Major}.{Program.Version.Minor - 1}";
+        var previousArchiveName = $"storybrew.{previousVersion}.zip";
+        if (!File.Exists(previousArchiveName)) using (var webClient = new WebClient())
         {
-            var previousVersion = $"{Program.Version.Major}.{Program.Version.Minor - 1}";
-            var previousArchiveName = $"storybrew.{previousVersion}.zip";
-            if (!File.Exists(previousArchiveName)) using (var webClient = new WebClient())
-            {
-                webClient.Headers.Add("user-agent", Program.Name);
-                webClient.DownloadFile($"https://github.com/{Program.Repository}/releases/download/{previousVersion}/{previousArchiveName}", previousArchiveName);
-            }
-
-            var updateTestPath = Path.GetFullPath("updatetest");
-            var updateFolderPath = Path.GetFullPath(Path.Combine(updateTestPath, Updater.UpdateFolderPath));
-            var executablePath = Path.GetFullPath(Path.Combine(updateFolderPath, mainExecutablePath));
-
-            if (Directory.Exists(updateTestPath))
-            {
-                foreach (var filename in Directory.GetFiles(updateTestPath, "*", SearchOption.AllDirectories))
-                    File.SetAttributes(filename, FileAttributes.Normal);
-
-                Directory.Delete(updateTestPath, true);
-            }
-            Directory.CreateDirectory(updateTestPath);
-
-            ZipFile.ExtractToDirectory(previousArchiveName, updateTestPath);
-            ZipFile.ExtractToDirectory(archiveName, updateFolderPath);
-
-            Process.Start(new ProcessStartInfo(executablePath, $"update \"{updateTestPath}\" {previousVersion}")
-            {
-                WorkingDirectory = updateFolderPath,
-            });
-        } */
-        static void addFile(ZipArchive archive, string path, string sourceDirectory, string targetPath = null)
-        {
-            path = Path.GetFullPath(path);
-
-            var entryName = PathHelper.GetRelativePath(sourceDirectory, path);
-            if (targetPath is not null)
-            {
-                if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
-                entryName = Path.Combine(targetPath, entryName);
-            }
-            if (ignoredPaths.Contains(entryName)) return;
-            if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
-
-            archive.CreateEntryFromFile(path, entryName, CompressionLevel.Optimal);
+            webClient.Headers.Add("user-agent", Program.Name);
+            webClient.DownloadFile($"https://github.com/{Program.Repository}/releases/download/{previousVersion}/{previousArchiveName}", previousArchiveName);
         }
+
+        var updateTestPath = Path.GetFullPath("updatetest");
+        var updateFolderPath = Path.GetFullPath(Path.Combine(updateTestPath, Updater.UpdateFolderPath));
+        var executablePath = Path.GetFullPath(Path.Combine(updateFolderPath, mainExecutablePath));
+
+        if (Directory.Exists(updateTestPath))
+        {
+            foreach (var filename in Directory.GetFiles(updateTestPath, "*", SearchOption.AllDirectories))
+                File.SetAttributes(filename, FileAttributes.Normal);
+
+            Directory.Delete(updateTestPath, true);
+        }
+        Directory.CreateDirectory(updateTestPath);
+
+        ZipFile.ExtractToDirectory(previousArchiveName, updateTestPath);
+        ZipFile.ExtractToDirectory(archiveName, updateFolderPath);
+
+        Process.Start(new ProcessStartInfo(executablePath, $"update \"{updateTestPath}\" {previousVersion}")
+        {
+            WorkingDirectory = updateFolderPath,
+        });
+    } */
+    static void addFile(ZipArchive archive, string path, string sourceDirectory, string targetPath = null)
+    {
+        path = Path.GetFullPath(path);
+
+        var entryName = PathHelper.GetRelativePath(sourceDirectory, path);
+        if (targetPath is not null)
+        {
+            if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
+            entryName = Path.Combine(targetPath, entryName);
+        }
+        if (ignoredPaths.Contains(entryName)) return;
+        if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
+
+        archive.CreateEntryFromFile(path, entryName, CompressionLevel.Optimal);
     }
 }

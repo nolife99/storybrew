@@ -1,9 +1,8 @@
 ﻿using BrewLib.UserInterface.Skinning.Styles;
 
-namespace StorybrewEditor.UserInterface.Skinning.Styles
+namespace StorybrewEditor.UserInterface.Skinning.Styles;
+
+public class PathSelectorStyle : WidgetStyle
 {
-    public class PathSelectorStyle : WidgetStyle
-    {
-        public string LinearLayoutStyle, TextboxStyle, ButtonStyle;
-    }
+    public string LinearLayoutStyle, TextboxStyle, ButtonStyle;
 }

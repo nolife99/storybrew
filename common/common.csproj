@@ -4,7 +4,6 @@
     <OutputType>Library</OutputType>
     <RootNamespace>StorybrewCommon</RootNamespace>
     <AssemblyName>StorybrewCommon</AssemblyName>
-    <UseWindowsForms>true</UseWindowsForms>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Company>storybrew</Company>
     <Copyright>Copyright © Damnae 2016</Copyright>
@@ -30,6 +29,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

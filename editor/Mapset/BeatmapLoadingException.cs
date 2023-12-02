@@ -1,11 +1,10 @@
 ﻿using System;
 
-namespace StorybrewEditor.Mapset
+namespace StorybrewEditor.Mapset;
+
+[Serializable] public class BeatmapLoadingException : Exception
 {
-    [Serializable] public class BeatmapLoadingException : Exception
-    {
-        public BeatmapLoadingException() { }
-        public BeatmapLoadingException(string message) : base(message) { }
-        public BeatmapLoadingException(string message, Exception innerException) : base(message, innerException) { }
-    }
+    public BeatmapLoadingException() { }
+    public BeatmapLoadingException(string message) : base(message) { }
+    public BeatmapLoadingException(string message, Exception innerException) : base(message, innerException) { }
 }

@@ -1,44 +1,42 @@
 ﻿using System.Text;
 
-namespace Tiny.Formats.Json
+namespace Tiny.Formats.Json;
+
+public class JsonUtil
 {
-    public class JsonUtil
+    public static string EscapeString(string value)
     {
-        public static string EscapeString(string value)
+        StringBuilder sb = new((int)(value.Length * 1.3f));
+        foreach (var c in value) switch (c)
         {
-            var sb = new StringBuilder((int)(value.Length * 1.3f));
-            foreach (var c in value) switch (c)
+            case '\r': sb.Append("\\r"); break;
+            case '\n': sb.Append("\\n"); break;
+            case '"': sb.Append("\\\""); break;
+            case '\\': sb.Append("\\\\"); break;
+            default: sb.Append(c); break;
+        }
+
+        return sb.ToString();
+    }
+
+    public static string UnescapeString(string value)
+    {
+        var special = false;
+
+        StringBuilder sb = new(value.Length);
+        foreach (var c in value) if (special)
+        {
+            switch (c)
             {
-                case '\r': sb.Append("\\r"); break;
-                case '\n': sb.Append("\\n"); break;
-                case '"': sb.Append("\\\""); break;
-                case '\\': sb.Append("\\\\"); break;
+                case 'r': sb.Append('\r'); break;
+                case 'n': sb.Append('\n'); break;
                 default: sb.Append(c); break;
             }
-
-            return sb.ToString();
+            special = false;
         }
+        else if (c == '\\') special = true;
+        else sb.Append(c);
 
-        public static string UnescapeString(string value)
-        {
-            var special = false;
-
-            var sb = new StringBuilder(value.Length);
-            foreach (var c in value)
-            if (special)
-            {
-                switch (c)
-                {
-                    case 'r': sb.Append('\r'); break;
-                    case 'n': sb.Append('\n'); break;
-                    default: sb.Append(c); break;
-                }
-                special = false;
-            }
-            else if (c == '\\') special = true;
-            else sb.Append(c);
-
-            return sb.ToString();
-        }
+        return sb.ToString();
     }
 }

@@ -1,282 +1,279 @@
 ﻿using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using osuTK;
+using System.Numerics;
 using System;
 using System.Collections.Generic;
 
-namespace BrewLib.UserInterface
+namespace BrewLib.UserInterface;
+
+public class LinearLayout(WidgetManager manager) : Widget(manager)
 {
-    public class LinearLayout(WidgetManager manager) : Widget(manager)
+    Vector2 minSize, preferredSize;
+    bool invalidSizes = true;
+
+    public override Vector2 MinSize
     {
-        Vector2 minSize, preferredSize;
-        bool invalidSizes = true;
-
-        public override Vector2 MinSize
+        get
         {
-            get
-            {
-                measureChildren();
-                return minSize;
-            }
+            measureChildren();
+            return minSize;
         }
-        public override Vector2 PreferredSize
+    }
+    public override Vector2 PreferredSize
+    {
+        get
         {
-            get
-            {
-                measureChildren();
-                return preferredSize;
-            }
+            measureChildren();
+            return preferredSize;
         }
+    }
 
-        bool horizontal;
-        public bool Horizontal
+    bool horizontal;
+    public bool Horizontal
+    {
+        get => horizontal;
+        set
         {
-            get => horizontal;
-            set
-            {
-                if (horizontal == value) return;
-                horizontal = value;
-                InvalidateAncestorLayout();
-            }
+            if (horizontal == value) return;
+            horizontal = value;
+            InvalidateAncestorLayout();
         }
+    }
 
-        float spacing;
-        public float Spacing
+    float spacing;
+    public float Spacing
+    {
+        get => spacing;
+        set
         {
-            get => spacing;
-            set
-            {
-                if (spacing == value) return;
-                spacing = value;
-                InvalidateAncestorLayout();
-            }
+            if (spacing == value) return;
+            spacing = value;
+            InvalidateAncestorLayout();
         }
+    }
 
-        FourSide padding;
-        public FourSide Padding
+    FourSide padding;
+    public FourSide Padding
+    {
+        get => padding;
+        set
         {
-            get => padding;
-            set
-            {
-                if (padding == value) return;
-                padding = value;
-                InvalidateAncestorLayout();
-            }
+            if (padding == value) return;
+            padding = value;
+            InvalidateAncestorLayout();
         }
+    }
 
-        bool fitChildren;
-        public bool FitChildren
+    bool fitChildren;
+    public bool FitChildren
+    {
+        get => fitChildren;
+        set
         {
-            get => fitChildren;
-            set
-            {
-                if (fitChildren == value) return;
-                fitChildren = value;
-                InvalidateLayout();
-            }
+            if (fitChildren == value) return;
+            fitChildren = value;
+            InvalidateLayout();
         }
+    }
 
-        bool fill;
-        public bool Fill
+    bool fill;
+    public bool Fill
+    {
+        get => fill;
+        set
         {
-            get => fill;
-            set
-            {
-                if (fill == value) return;
-                fill = value;
-                InvalidateLayout();
-            }
+            if (fill == value) return;
+            fill = value;
+            InvalidateLayout();
         }
+    }
 
-        protected override WidgetStyle Style => Manager.Skin.GetStyle<LinearLayoutStyle>(StyleName);
-        protected override void ApplyStyle(WidgetStyle style)
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<LinearLayoutStyle>(StyleName);
+    protected override void ApplyStyle(WidgetStyle style)
+    {
+        base.ApplyStyle(style);
+        var layoutStyle = (LinearLayoutStyle)style;
+
+        Spacing = layoutStyle.Spacing;
+    }
+    public override void InvalidateLayout()
+    {
+        base.InvalidateLayout();
+        invalidSizes = true;
+    }
+    protected override void Layout()
+    {
+        base.Layout();
+
+        var innerSize = new Vector2(Size.X - padding.Horizontal, Size.Y - padding.Vertical);
+        var totalSpace = horizontal ? innerSize.X : innerSize.Y;
+        var usedSpace = 0f;
+
+        List<LayoutItem> items = [];
+        foreach (var child in Children)
         {
-            base.ApplyStyle(style);
-            var layoutStyle = (LinearLayoutStyle)style;
+            if (child.AnchorTarget is not null) continue;
 
-            Spacing = layoutStyle.Spacing;
-        }
-        public override void InvalidateLayout()
-        {
-            base.InvalidateLayout();
-            invalidSizes = true;
-        }
-        protected override void Layout()
-        {
-            base.Layout();
+            var preferredSize = child.PreferredSize;
+            var minSize = child.MinSize;
+            var maxSize = child.MaxSize;
+            var length = horizontal ? preferredSize.X : preferredSize.Y;
 
-            // Prepare preferred lengths
-
-            var innerSize = new Vector2(Size.X - padding.Horizontal, Size.Y - padding.Vertical);
-            var totalSpace = horizontal ? innerSize.X : innerSize.Y;
-            var usedSpace = 0f;
-
-            var items = new List<LayoutItem>();
-            foreach (var child in Children)
+            items.Add(new()
             {
-                if (child.AnchorTarget is not null) continue;
+                Widget = child,
+                PreferredSize = preferredSize,
+                MinSize = minSize,
+                MaxSize = maxSize,
+                Length = length,
+                Scalable = true
+            });
+            usedSpace += length;
+        }
+        var totalSpacing = spacing * (items.Count - 1);
+        usedSpace += totalSpacing;
 
-                var preferredSize = child.PreferredSize;
-                var minSize = child.MinSize;
-                var maxSize = child.MaxSize;
-                var length = horizontal ? preferredSize.X : preferredSize.Y;
+        var scalableItems = items.Count;
+        while (scalableItems > 0 && Math.Abs(totalSpace - usedSpace) > 0.001f)
+        {
+            var remainingSpace = totalSpace - usedSpace;
+            if (!fill && remainingSpace > 0) break;
 
-                items.Add(new LayoutItem
-                {
-                    Widget = child,
-                    PreferredSize = preferredSize,
-                    MinSize = minSize,
-                    MaxSize = maxSize,
-                    Length = length,
-                    Scalable = true
-                });
-                usedSpace += length;
-            }
-            var totalSpacing = spacing * (items.Count - 1);
-            usedSpace += totalSpacing;
+            var adjustment = remainingSpace / scalableItems;
+            usedSpace = totalSpacing;
+            scalableItems = 0;
 
-            var scalableItems = items.Count;
-            while (scalableItems > 0 && Math.Abs(totalSpace - usedSpace) > 0.001f)
-            {
-                var remainingSpace = totalSpace - usedSpace;
-                if (!fill && remainingSpace > 0) break;
-
-                var adjustment = remainingSpace / scalableItems;
-                usedSpace = totalSpacing;
-                scalableItems = 0;
-
-                items.ForEach(item =>
-                {
-                    if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
-
-                    if (item.Scalable)
-                    {
-                        item.Length += adjustment;
-                        if (horizontal)
-                        {
-                            if (item.Length < item.MinSize.X)
-                            {
-                                item.Length = item.MinSize.X;
-                                item.Scalable = false;
-                            }
-                            else if (item.MaxSize.X > 0 && item.Length >= item.MaxSize.X)
-                            {
-                                item.Length = item.MaxSize.X;
-                                item.Scalable = false;
-                            }
-                            else ++scalableItems;
-                        }
-                        else
-                        {
-                            if (item.Length < item.MinSize.Y)
-                            {
-                                item.Length = item.MinSize.Y;
-                                item.Scalable = false;
-                            }
-                            else if (item.MaxSize.Y > 0 && item.Length >= item.MaxSize.Y)
-                            {
-                                item.Length = item.MaxSize.Y;
-                                item.Scalable = false;
-                            }
-                            else ++scalableItems;
-                        }
-                    }
-                    usedSpace += item.Length;
-                });
-            }
-
-            var distance = horizontal ? padding.Left : padding.Top;
             items.ForEach(item =>
             {
-                var child = item.Widget;
-                var minSize = item.MinSize;
-                var maxSize = item.MaxSize;
+                if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
 
-                if (horizontal)
+                if (item.Scalable)
                 {
-                    var childBreadth = fitChildren ? Math.Max(minSize.Y, innerSize.Y) : Math.Max(minSize.Y, Math.Min(item.PreferredSize.Y, innerSize.Y));
-                    if (maxSize.Y > 0 && childBreadth > maxSize.Y) childBreadth = maxSize.Y;
-
-                    var anchor = (child.AnchorFrom & BoxAlignment.Vertical) | BoxAlignment.Left;
-                    PlaceChildren(child, new Vector2(distance, padding.GetVerticalOffset(anchor)), new Vector2(item.Length, childBreadth), anchor);
+                    item.Length += adjustment;
+                    if (horizontal)
+                    {
+                        if (item.Length < item.MinSize.X)
+                        {
+                            item.Length = item.MinSize.X;
+                            item.Scalable = false;
+                        }
+                        else if (item.MaxSize.X > 0 && item.Length >= item.MaxSize.X)
+                        {
+                            item.Length = item.MaxSize.X;
+                            item.Scalable = false;
+                        }
+                        else ++scalableItems;
+                    }
+                    else
+                    {
+                        if (item.Length < item.MinSize.Y)
+                        {
+                            item.Length = item.MinSize.Y;
+                            item.Scalable = false;
+                        }
+                        else if (item.MaxSize.Y > 0 && item.Length >= item.MaxSize.Y)
+                        {
+                            item.Length = item.MaxSize.Y;
+                            item.Scalable = false;
+                        }
+                        else ++scalableItems;
+                    }
                 }
-                else
-                {
-                    var childBreadth = fitChildren ? Math.Max(minSize.X, innerSize.X) : Math.Max(minSize.X, Math.Min(item.PreferredSize.X, innerSize.X));
-                    if (maxSize.X > 0 && childBreadth > maxSize.X) childBreadth = maxSize.X;
-
-                    var anchor = (child.AnchorFrom & BoxAlignment.Horizontal) | BoxAlignment.Top;
-                    PlaceChildren(child, new Vector2(padding.GetHorizontalOffset(anchor), distance), new Vector2(childBreadth, item.Length), anchor);
-                }
-                distance += item.Length + spacing;
+                usedSpace += item.Length;
             });
         }
-        protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
-        {
-            widget.Offset = offset;
-            widget.Size = size;
-            widget.AnchorFrom = anchor;
-            widget.AnchorTo = anchor;
-        }
-        void measureChildren()
-        {
-            if (!invalidSizes) return;
-            invalidSizes = false;
 
-            float width = 0, height = 0;
-            float minWidth = 0, minHeight = 0;
+        var distance = horizontal ? padding.Left : padding.Top;
+        items.ForEach(item =>
+        {
+            var child = item.Widget;
+            var minSize = item.MinSize;
+            var maxSize = item.MaxSize;
 
-            var firstChild = true;
-            foreach (var child in Children)
+            if (horizontal)
             {
-                if (child.AnchorTarget is not null) continue;
+                var childBreadth = fitChildren ? Math.Max(minSize.Y, innerSize.Y) : Math.Max(minSize.Y, Math.Min(item.PreferredSize.Y, innerSize.Y));
+                if (maxSize.Y > 0 && childBreadth > maxSize.Y) childBreadth = maxSize.Y;
 
-                var childMinSize = child.MinSize;
-                var childSize = child.PreferredSize;
-                if (horizontal)
-                {
-                    height = Math.Max(height, childSize.Y);
-                    width += childSize.X;
-
-                    minHeight = Math.Max(minHeight, childMinSize.Y);
-                    minWidth += childMinSize.X;
-
-                    if (!firstChild)
-                    {
-                        width += spacing;
-                        minWidth += spacing;
-                    }
-                }
-                else
-                {
-                    width = Math.Max(width, childSize.X);
-                    height += childSize.Y;
-
-                    minWidth = Math.Max(minWidth, childMinSize.X);
-                    minHeight += childMinSize.Y;
-
-                    if (!firstChild)
-                    {
-                        height += spacing;
-                        minHeight += spacing;
-                    }
-                }
-                firstChild = false;
+                var anchor = (child.AnchorFrom & BoxAlignment.Vertical) | BoxAlignment.Left;
+                PlaceChildren(child, new(distance, padding.GetVerticalOffset(anchor)), new(item.Length, childBreadth), anchor);
             }
-            var paddingH = padding.Horizontal;
-            var paddingV = padding.Vertical;
+            else
+            {
+                var childBreadth = fitChildren ? Math.Max(minSize.X, innerSize.X) : Math.Max(minSize.X, Math.Min(item.PreferredSize.X, innerSize.X));
+                if (maxSize.X > 0 && childBreadth > maxSize.X) childBreadth = maxSize.X;
 
-            minSize = new Vector2(minWidth + paddingH, minHeight + paddingV);
-            preferredSize = new Vector2(width + paddingH, height + paddingV);
-        }
-        class LayoutItem
+                var anchor = (child.AnchorFrom & BoxAlignment.Horizontal) | BoxAlignment.Top;
+                PlaceChildren(child, new(padding.GetHorizontalOffset(anchor), distance), new(childBreadth, item.Length), anchor);
+            }
+            distance += item.Length + spacing;
+        });
+    }
+    protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
+    {
+        widget.Offset = offset;
+        widget.Size = size;
+        widget.AnchorFrom = anchor;
+        widget.AnchorTo = anchor;
+    }
+    void measureChildren()
+    {
+        if (!invalidSizes) return;
+        invalidSizes = false;
+
+        float width = 0, height = 0;
+        float minWidth = 0, minHeight = 0;
+
+        var firstChild = true;
+        foreach (var child in Children)
         {
-            public Widget Widget;
-            public Vector2 PreferredSize, MinSize, MaxSize;
-            public float Length;
-            public bool Scalable;
+            if (child.AnchorTarget is not null) continue;
 
-            public override string ToString() => $"{Widget} Scalable:{Scalable} Length:{Length} PreferredSize:{PreferredSize}";
+            var childMinSize = child.MinSize;
+            var childSize = child.PreferredSize;
+            if (horizontal)
+            {
+                height = Math.Max(height, childSize.Y);
+                width += childSize.X;
+
+                minHeight = Math.Max(minHeight, childMinSize.Y);
+                minWidth += childMinSize.X;
+
+                if (!firstChild)
+                {
+                    width += spacing;
+                    minWidth += spacing;
+                }
+            }
+            else
+            {
+                width = Math.Max(width, childSize.X);
+                height += childSize.Y;
+
+                minWidth = Math.Max(minWidth, childMinSize.X);
+                minHeight += childMinSize.Y;
+
+                if (!firstChild)
+                {
+                    height += spacing;
+                    minHeight += spacing;
+                }
+            }
+            firstChild = false;
         }
+        var paddingH = padding.Horizontal;
+        var paddingV = padding.Vertical;
+
+        minSize = new(minWidth + paddingH, minHeight + paddingV);
+        preferredSize = new(width + paddingH, height + paddingV);
+    }
+    class LayoutItem
+    {
+        public Widget Widget;
+        public Vector2 PreferredSize, MinSize, MaxSize;
+        public float Length;
+        public bool Scalable;
+
+        public override string ToString() => $"{Widget} Scalable:{Scalable} Length:{Length} PreferredSize:{PreferredSize}";
     }
 }

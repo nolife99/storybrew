@@ -1,31 +1,17 @@
-﻿using osuTK.Graphics;
+﻿using System.Drawing;
 
-namespace BrewLib.Util
+namespace BrewLib.Util;
+
+public static class ColorExtensions
 {
-    public static class ColorExtensions
+    public static int ToRgba(this Color color) => (color.A << 24) | (color.B << 16) | (color.G << 8) | color.R;
+    public static Color LerpColor(this Color color, Color otherColor, float blend)
     {
-        public static int ToRgba(this Color4 color)
-            => ((byte)(color.A * 255) << 24) | ((byte)(color.B * 255) << 16) | ((byte)(color.G * 255) << 8) | (byte)(color.R * 255);
-
-        public static Color4 ToColor4(this int color) => new(
-            (byte)(color & 0xFF),
-            (byte)((color >> 8) & 0xFF),
-            (byte)((color >> 16) & 0xFF),
-            (byte)(color >> 24));
-
-        public static Color4 LerpColor(this Color4 color, Color4 otherColor, float blend)
-        {
-            var invBlend = 1 - blend;
-            return new Color4(
-                color.R * invBlend + otherColor.R * blend,
-                color.G * invBlend + otherColor.G * blend,
-                color.B * invBlend + otherColor.B * blend,
-                color.A);
-        }
-
-        public static Color4 WithOpacity(this Color4 color, float opacity)
-            => new(color.R, color.G, color.B, color.A * opacity);
-
-        public static Color4 Premultiply(this Color4 color) => new(color.R * color.A, color.G * color.A, color.B * color.A, color.A);
+        var invBlend = 1 - blend;
+        return Color.FromArgb(color.A,
+            (int)(color.R * invBlend + otherColor.R * blend),
+            (int)(color.G * invBlend + otherColor.G * blend),
+            (int)(color.B * invBlend + otherColor.B * blend));
     }
+    public static Color WithOpacity(this Color color, float opacity) => Color.FromArgb((int)(color.A * opacity), color.R, color.G, color.B);
 }

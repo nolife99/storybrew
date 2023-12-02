@@ -1,10 +1,9 @@
 ﻿using System;
 
-namespace BrewLib.UserInterface
+namespace BrewLib.UserInterface;
+
+public interface Field
 {
-    public interface Field
-    {
-        object FieldValue { get; set; }
-        event EventHandler OnValueChanged, OnDisposed;
-    }
+    object FieldValue { get; set; }
+    event EventHandler OnValueChanged, OnDisposed;
 }

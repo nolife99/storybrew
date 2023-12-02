@@ -2,34 +2,33 @@
 using StorybrewCommon.Storyboarding;
 using System.IO;
 
-namespace StorybrewEditor.Storyboarding
+namespace StorybrewEditor.Storyboarding;
+
+public class EditorOsbSample : OsbSample, EventObject
 {
-    public class EditorOsbSample : OsbSample, EventObject
+    public double EventTime => Time * .001;
+
+    public void TriggerEvent(Project project, double currentTime)
     {
-        public double EventTime => Time * .001;
+        if (EventTime + 1 < currentTime) return;
 
-        public void TriggerEvent(Project project, double currentTime)
+        AudioSample sample;
+        var fullPath = Path.Combine(project.MapsetPath, AudioPath);
+        try
         {
-            if (EventTime + 1 < currentTime) return;
-
-            AudioSample sample;
-            var fullPath = Path.Combine(project.MapsetPath, AudioPath);
-            try
+            sample = project.AudioContainer.Get(fullPath);
+            if (sample is null)
             {
+                fullPath = Path.Combine(project.ProjectAssetFolderPath, AudioPath);
                 sample = project.AudioContainer.Get(fullPath);
-                if (sample == null)
-                {
-                    fullPath = Path.Combine(project.ProjectAssetFolderPath, AudioPath);
-                    sample = project.AudioContainer.Get(fullPath);
-                }
             }
-            catch (IOException)
-            {
-                // Happens when another process is writing to the file, will try again later.
-                return;
-            }
-
-            sample.Play((float)(Volume * .01));
         }
+        catch (IOException)
+        {
+            // Happens when another process is writing to the file, will try again later.
+            return;
+        }
+
+        sample.Play((float)(Volume * .01));
     }
 }

@@ -1,17 +1,16 @@
-﻿namespace BrewLib.Time
+﻿namespace BrewLib.Time;
+
+public interface ReadOnlyTimeSource
 {
-    public interface ReadOnlyTimeSource
-    {
-        double Current { get; }
+    double Current { get; }
 
-        double TimeFactor { get; }
-        bool Playing { get; }
-    }
-    public interface TimeSource : ReadOnlyTimeSource
-    {
-        new double TimeFactor { get; set; }
-        new bool Playing { get; set; }
+    double TimeFactor { get; }
+    bool Playing { get; }
+}
+public interface TimeSource : ReadOnlyTimeSource
+{
+    new double TimeFactor { get; set; }
+    new bool Playing { get; set; }
 
-        bool Seek(double time);
-    }
+    bool Seek(double time);
 }

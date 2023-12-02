@@ -1,11 +1,10 @@
 ﻿using BrewLib.Util;
-using osuTK.Graphics;
+using System.Drawing;
 
-namespace BrewLib.UserInterface.Skinning.Styles
+namespace BrewLib.UserInterface.Skinning.Styles;
+
+public class ImageStyle : WidgetStyle
 {
-    public class ImageStyle : WidgetStyle
-    {
-        public Color4 Color;
-        public ScaleMode ScaleMode;
-    }
+    public Color Color;
+    public ScaleMode ScaleMode;
 }

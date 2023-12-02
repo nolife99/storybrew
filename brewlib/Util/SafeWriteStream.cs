@@ -1,37 +1,36 @@
 ﻿using System.IO;
 
-namespace BrewLib.Util
+namespace BrewLib.Util;
+
+public class SafeWriteStream : FileStream
 {
-    public class SafeWriteStream : FileStream
+    readonly string temporaryPath, path;
+    bool commited, disposed;
+
+    public SafeWriteStream(string path) : base(prepare(path), FileMode.OpenOrCreate, FileAccess.Write)
     {
-        readonly string temporaryPath, path;
-        bool commited, disposed;
+        this.path = path;
+        temporaryPath = Name;
+    }
 
-        public SafeWriteStream(string path) : base(prepare(path), FileMode.OpenOrCreate, FileAccess.Write)
+    public void Commit() => commited = true;
+    protected override void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        disposed = true;
+
+        base.Dispose(disposing);
+
+        if (disposing && commited)
         {
-            this.path = path;
-            temporaryPath = Name;
+            if (File.Exists(path)) File.Replace(temporaryPath, path, null);
+            else File.Move(temporaryPath, path);
         }
-
-        public void Commit() => commited = true;
-        protected override void Dispose(bool disposing)
-        {
-            if (disposed) return;
-            disposed = true;
-
-            base.Dispose(disposing);
-
-            if (disposing && commited)
-            {
-                if (File.Exists(path)) File.Replace(temporaryPath, path, null);
-                else File.Move(temporaryPath, path);
-            }
-        }
-        static string prepare(string path)
-        {
-            var folder = Path.GetDirectoryName(path);
-            if (!string.IsNullOrWhiteSpace(folder) && !Directory.Exists(folder)) Directory.CreateDirectory(folder);
-            return path + ".tmp";
-        }
+    }
+    static string prepare(string path)
+    {
+        var folder = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(folder) && !Directory.Exists(folder)) Directory.CreateDirectory(folder);
+        return path + ".tmp";
     }
 }

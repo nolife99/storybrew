@@ -13,7 +13,7 @@ namespace StorybrewCommon.Curves;
     ///<inheritdoc/>
     public abstract CommandPosition StartPosition { get; }
 
-    List<ValueTuple<float, CommandPosition>> distancePosition;
+    List<(float Distance, CommandPosition Position)> distancePosition;
 
     double length;
 
@@ -22,7 +22,7 @@ namespace StorybrewCommon.Curves;
     {
         get
         {
-            if (distancePosition == null) initialize();
+            if (distancePosition is null) initialize();
             return length;
         }
     }
@@ -34,12 +34,12 @@ namespace StorybrewCommon.Curves;
     }
 
     ///<summary/>
-    protected abstract void Initialize(List<ValueTuple<float, CommandPosition>> distancePosition, out double length);
+    protected abstract void Initialize(List<(float, CommandPosition)> distancePosition, out double length);
 
     ///<inheritdoc/>
     public CommandPosition PositionAtDistance(double distance)
     {
-        if (distancePosition == null) initialize();
+        if (distancePosition is null) initialize();
 
         var previousDistance = 0f;
         var previousPosition = StartPosition;
@@ -50,19 +50,19 @@ namespace StorybrewCommon.Curves;
         var i = 0;
         while (i < distancePosition.Count)
         {
-            var distancePositionTuple = distancePosition[i];
-            if (distancePositionTuple.Item1 > distance) break;
+            var (Distance, Position) = distancePosition[i];
+            if (Distance > distance) break;
 
-            previousDistance = distancePositionTuple.Item1;
-            previousPosition = distancePositionTuple.Item2;
-            i++;
+            previousDistance = Distance;
+            previousPosition = Position;
+            ++i;
         }
 
         if (i < distancePosition.Count - 1)
         {
-            var distancePositionTuple = distancePosition[i + 1];
-            nextDistance = distancePositionTuple.Item1;
-            nextPosition = distancePositionTuple.Item2;
+            var (Distance, Position) = distancePosition[i + 1];
+            nextDistance = Distance;
+            nextPosition = Position;
         }
 
         var delta = (distance - previousDistance) / (nextDistance - previousDistance);

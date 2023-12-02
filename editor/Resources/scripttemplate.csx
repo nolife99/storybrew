@@ -1,16 +1,15 @@
-﻿using osuTK;
-using StorybrewCommon.Scripting;
+﻿using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using System.Numerics;
 using System;
 
-namespace StorybrewScripts
+namespace StorybrewScripts;
+
+class %CLASSNAME% : StoryboardObjectGenerator
 {
-    class %CLASSNAME% : StoryboardObjectGenerator
+    protected override void Generate()
     {
-        protected override void Generate()
-        {
-            
-            
-        }
+        
+        
     }
 }

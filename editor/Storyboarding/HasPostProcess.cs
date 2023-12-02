@@ -1,7 +1,6 @@
-﻿namespace StorybrewEditor.Storyboarding
+﻿namespace StorybrewEditor.Storyboarding;
+
+public interface HasPostProcess
 {
-    public interface HasPostProcess
-    {
-        void PostProcess();
-    }
+    void PostProcess();
 }

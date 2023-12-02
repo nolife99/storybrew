@@ -1,19 +1,16 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
-namespace BrewLib.Util
+namespace BrewLib.Util;
+
+public class SafeDirectoryReader
 {
-    public class SafeDirectoryReader : IDisposable
+    public readonly string Path;
+
+    public SafeDirectoryReader(string targetDirectory)
     {
-        public string Path { get; }
-
-        public SafeDirectoryReader(string targetDirectory)
-        {
-            var backupDirectory = targetDirectory + ".bak";
-            Path = Directory.Exists(targetDirectory) || !Directory.Exists(backupDirectory) ? targetDirectory : backupDirectory;
-        }
-
-        public string GetPath(string path) => System.IO.Path.Combine(Path, path);
-        public void Dispose() { }
+        var backupDirectory = targetDirectory + ".bak";
+        Path = Directory.Exists(targetDirectory) || !Directory.Exists(backupDirectory) ? targetDirectory : backupDirectory;
     }
+
+    public string GetPath(string path) => System.IO.Path.Combine(Path, path);
 }
