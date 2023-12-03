@@ -14,15 +14,10 @@ namespace StorybrewCommon.Storyboarding.Util
     ///<param name="attributes"> Commands to be run on each sprite in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
     public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes = null) : IDisposable
     {
-        readonly StoryboardSegment segment = segment;
-        readonly string path = path;
-        readonly OsbOrigin origin = origin;
-        readonly CommandPosition position = position;
-        readonly Action<OsbSprite, double, double> attributes = attributes;
         readonly List<PooledSprite> pooled = [];
 
         ///<summary> The maximum duration for a sprite to be pooled. </summary>
-        public int MaxPoolDuration { get; set; }
+        public int MaxPoolDuration;
 
         ///<summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
@@ -82,17 +77,19 @@ namespace StorybrewCommon.Storyboarding.Util
             : this(segment, path, OsbOrigin.Centre, default, additive) { }
 
         ///<summary> Gets an available sprite from the sprite pool. </summary>
-        ///<remarks> You must input the correct start time and end time of the sprite for correct execution. </remarks>
+        ///<remarks> You must input the correct start time and end time of the sprite for proper pooling. </remarks>
         ///<param name="startTime"> The start time for this sprite. </param>
         ///<param name="endTime"> The end time for this sprite. </param>
         public OsbSprite Get(double startTime, double endTime)
         {
             PooledSprite result = null;
-            for (var i = 0; i < pooled.Count; ++i) if (validateDur(startTime, pooled[i]) && (result is null || pooled[i].StartTime < result.StartTime))
-                {
-                    result = pooled[i];
-                    break;
-                }
+            pooled.ForEach(sprite =>
+            {
+                result = sprite;
+                return;
+            }, sprite => 
+                (MaxPoolDuration > 0 ? sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration : sprite.EndTime <= startTime) && 
+                (result is null || sprite.StartTime < result.StartTime));
 
             if (result is not null)
             {
@@ -105,7 +102,6 @@ namespace StorybrewCommon.Storyboarding.Util
 
             return sprite;
         }
-        bool validateDur(double startTime, PooledSprite sprite) => MaxPoolDuration > 0 ? sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration : sprite.EndTime <= startTime;
 
 #pragma warning disable CS1591
         protected virtual OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
@@ -119,25 +115,22 @@ namespace StorybrewCommon.Storyboarding.Util
         }
 
         bool disposed;
-        void Dispose(bool dispose)
+
+        ///<inheritdoc/>
+        public void Dispose()
         {
             if (!disposed)
             {
-                if (dispose)
+                if (attributes is not null) pooled.ForEach(pooledSprite =>
                 {
-                    if (attributes is not null) pooled.ForEach(pooledSprite =>
-                    {
-                        var sprite = pooledSprite.Sprite;
-                        attributes(sprite, sprite.CommandsStartTime, pooledSprite.EndTime);
-                    });
-                    pooled.Clear();
-                }
+                    var sprite = pooledSprite.Sprite;
+                    attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
+                });
+                pooled.Clear();
+
                 disposed = true;
             }
         }
-
-        ///<summary/>
-        public void Dispose() => Dispose(true);
     }
 
     ///<summary> Provides a way to optimize filesize and creates a way for sprites to be reused at a minor cost of performance. </summary>
@@ -146,7 +139,6 @@ namespace StorybrewCommon.Storyboarding.Util
     ///<param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
     public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     {
-        readonly StoryboardSegment segment = segment;
         readonly Dictionary<string, OsbSpritePool> pools = [];
         readonly Dictionary<string, OsbAnimationPool> animationPools = [];
         int maxPoolDuration;
@@ -379,16 +371,16 @@ namespace StorybrewCommon.Storyboarding.Util
         }
 
         bool disposed;
-        void Dispose(bool dispose)
+
+        ///<summary/>
+        public void Dispose()
         {
             if (!disposed)
             {
-                if (dispose) Clear();
+                Clear();
                 disposed = true;
             }
         }
-        ///<summary/>
-        public void Dispose() => Dispose(true);
     }
 
     ///<summary> Provides a way to optimize filesize and creates a way for animations to be reused at a minor cost of performance. </summary>
@@ -403,10 +395,6 @@ namespace StorybrewCommon.Storyboarding.Util
     ///<param name="attributes"> Commands to be run on each animation in the pool, using <see cref="Action"/>&#60;<see cref="OsbSprite"/> (pooled sprite), <see cref="double"/> (start time), <see cref="double"/> (end time)&#62;. </param>
     public sealed class OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes = null) : OsbSpritePool(segment, path, origin, position, attributes)
     {
-        readonly int frameCount = frameCount;
-        readonly double frameDelay = frameDelay;
-        readonly OsbLoopType loopType = loopType;
-
         ///<summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
         ///<param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
         ///<param name="path"> Image path of the available sprite. </param>

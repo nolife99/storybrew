@@ -32,7 +32,7 @@ public class OsbAnimation : OsbSprite
     ///<summary> Gets the frame number at <paramref name="time"/>. </summary>
     public int GetFrameAt(double time)
     {
-        var frame = (time - CommandsStartTime) / FrameDelay;
+        var frame = (time - StartTime) / FrameDelay;
         switch (LoopType)
         {
             case OsbLoopType.LoopForever: frame %= FrameCount; break;

@@ -21,11 +21,21 @@ public static class ScreenLayerManagerExtensions
             FolderName = initialValue,
             InitialDirectory = initialValue
         };
-        if (dialog.ShowDialog().Value)
+        System.Windows.Window parent = new()
         {
-            var path = dialog.FolderName;
-            Program.Schedule(() => callback(path));
-        }
+            Topmost = true,
+            ResizeMode = 0,
+            WindowStyle = 0,
+            Visibility = System.Windows.Visibility.Hidden,
+            Content = dialog
+        };
+
+        var result = false;
+        parent.Loaded += (s, e) => result = dialog.ShowDialog().Value;
+        parent.ShowDialog();
+        parent.Close();
+
+        if (result) Program.Schedule(() => callback(dialog.FolderName));
     });
     public static void OpenFilePicker(this ScreenLayerManager screenLayer, string description, string initialValue, string initialDirectory, string filter, Action<string> callback)
         => screenLayer.AsyncLoading("Select a file", () =>
@@ -37,7 +47,21 @@ public static class ScreenLayerManagerExtensions
             Filter = filter,
             InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
         };
-        if (dialog.ShowDialog().Value) Program.Schedule(() => callback(dialog.FileName));
+        System.Windows.Window parent = new()
+        {
+            Topmost = true,
+            ResizeMode = 0,
+            WindowStyle = 0,
+            Visibility = System.Windows.Visibility.Hidden,
+            Content = dialog
+        };
+
+        var result = false;
+        parent.Loaded += (s, e) => result = dialog.ShowDialog().Value;
+        parent.ShowDialog();
+        parent.Close();
+
+        if (result) Program.Schedule(() => callback(dialog.FileName));
     });
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer, string description, string initialValue, string extension, string filter, Action<string> callback)
         => screenLayer.AsyncLoading("Select a location", () =>
@@ -51,7 +75,21 @@ public static class ScreenLayerManagerExtensions
             DefaultExt = extension,
             Filter = filter
         };
-        if (dialog.ShowDialog().Value) Program.Schedule(() => callback(dialog.FileName));
+        System.Windows.Window parent = new()
+        {
+            Topmost = true,
+            ResizeMode = 0,
+            WindowStyle = 0,
+            Visibility = System.Windows.Visibility.Hidden,
+            Content = dialog
+        };
+
+        var result = false;
+        parent.Loaded += (s, e) => result = dialog.ShowDialog().Value;
+        parent.ShowDialog();
+        parent.Close();
+
+        if (result) Program.Schedule(() => callback(dialog.FileName));
     });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Action action)

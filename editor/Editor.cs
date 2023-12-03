@@ -16,6 +16,8 @@ using StorybrewEditor.ScreenLayers;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Windows;
+using System.Windows.Interop;
 
 namespace StorybrewEditor;
 

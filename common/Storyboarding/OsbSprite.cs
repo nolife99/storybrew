@@ -88,8 +88,8 @@ public class OsbSprite : StoryboardObject
 
     double commandsStartTime = double.MaxValue, commandsEndTime = double.MinValue;
 
-    ///<returns> The start time, in milliseconds, of this instance of the <see cref="OsbSprite"/>. </returns>
-    public double CommandsStartTime
+    ///<summary> Gets the start time of the first command on this sprite. </summary>
+    public override double StartTime
     {
         get
         {
@@ -98,8 +98,8 @@ public class OsbSprite : StoryboardObject
         }
     }
 
-    ///<returns> The end time, in milliseconds, of this instance of the <see cref="OsbSprite"/>. </returns>
-    public double CommandsEndTime
+    ///<summary> Gets the end time of the last command on this sprite. </summary>
+    public override double EndTime
     {
         get
         {
@@ -107,6 +107,7 @@ public class OsbSprite : StoryboardObject
             return commandsEndTime;
         }
     }
+
     void refreshStartEndTimes()
     {
         clearStartEndTimes();
@@ -771,13 +772,7 @@ public class OsbSprite : StoryboardObject
     #endregion
 
     ///<returns> True if the sprite is active at <paramref name="time"/>, else returns false. </returns>
-    public bool IsActive(double time) => CommandsStartTime <= time && time <= CommandsEndTime;
-
-    ///<summary> Gets the start time of the 1st command on this sprite. </summary>
-    public override double StartTime => CommandsStartTime;
-
-    ///<summary> Gets the end time of the last command on this sprite. </summary>
-    public override double EndTime => CommandsEndTime;
+    public bool IsActive(double time) => StartTime <= time && time <= EndTime;
 
     ///<summary> Writes this sprite's data to a stream. </summary>
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer)

@@ -153,12 +153,12 @@ public class CommandGenerator
     }
     void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)
     {
-        var startState = loopable ? (startTime ?? StartState.Time) + timeOffset : (double?)null;
-        var endState = loopable ? (endTime ?? EndState.Time) + timeOffset : (double?)null;
+        double? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
+            endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        double checkPos(double value) => Math.Round(value, PositionDecimals);
+        float checkPos(float value) => MathF.Round(value, PositionDecimals);
         bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
-             moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
+            moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
         finalPositions.ForEachPair((s, e) =>
         {
@@ -173,15 +173,15 @@ public class CommandGenerator
                 sprite.InitialPosition = new(s.Value.X, 0);
             }
             else sprite.Move(s.Time, e.Time, s.Value, e.Value);
-        }, new(320, 240), p => new(Math.Round(p.X, PositionDecimals), Math.Round(p.Y, PositionDecimals)), startState, endState, loopable);
+        }, new(320, 240), p => new(MathF.Round(p.X, PositionDecimals), MathF.Round(p.Y, PositionDecimals)), startState, endState, loopable);
 
-        int checkScale(double value) => (int)(value * Math.Max(imageSize.Width, imageSize.Height));
+        float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
         var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) > 1);
         finalScales.ForEachPair((s, e) =>
         {
             if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
             else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
-        }, Vector2.One, s => new(Math.Round(s.X, ScaleDecimals), Math.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
+        }, Vector2.One, s => new(MathF.Round(s.X, ScaleDecimals), MathF.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
 
         finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
         finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), Color.White, null, startState, endState, loopable);
