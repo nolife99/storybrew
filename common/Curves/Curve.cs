@@ -1,14 +1,22 @@
-﻿using OpenTK;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 
-namespace StorybrewCommon.Curves
+namespace StorybrewCommon.Curves;
+
+///<summary> Represents types of curves. </summary>
+public interface Curve
 {
-    public interface Curve
-    {
-        Vector2 StartPosition { get; }
-        Vector2 EndPosition { get; }
-        double Length { get; }
+    ///<summary> The start position (the head) of the curve. </summary>
+    CommandPosition StartPosition { get; }
 
-        Vector2 PositionAtDistance(double distance);
-        Vector2 PositionAtDelta(double delta);
-    }
+    ///<summary> The end position (the tail) of the curve. </summary>
+    CommandPosition EndPosition { get; }
+
+    ///<summary> The total length of the curve from the head to the tail. </summary>
+    double Length { get; }
+
+    ///<summary> Returns the position of the curve at <paramref name="distance"/>. </summary>
+    CommandPosition PositionAtDistance(double distance);
+
+    ///<summary> Returns the position of the curve at <paramref name="delta"/>. </summary>
+    CommandPosition PositionAtDelta(double delta);
 }

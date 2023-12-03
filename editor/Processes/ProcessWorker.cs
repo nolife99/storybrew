@@ -1,55 +1,39 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.Remoting;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Ipc;
-using System.Runtime.Serialization.Formatters;
+using System.IO.Pipes;
 using System.Threading;
 
-namespace StorybrewEditor.Processes
+namespace StorybrewEditor.Processes;
+
+public static class ProcessWorker
 {
-    public static class ProcessWorker
+    static bool exit;
+
+    public static void Run(string identifier)
     {
-        private static bool exit;
-
-        public static void Run(string identifier)
+        Trace.WriteLine($"channel: {identifier}");
+        try
         {
-            //if (!Debugger.IsAttached) Debugger.Launch();
+            var name = $"sbrew-worker-{identifier}";
+            using NamedPipeServerStream server = new(name);
+            Trace.WriteLine($"{name}: ready");
 
-            Trace.WriteLine($"channel: {identifier}");
-            try
+            while (!exit)
             {
-                var name = $"sbrew-worker-{identifier}";
-                var channel = new IpcServerChannel(name, name, new BinaryServerFormatterSinkProvider() { TypeFilterLevel = TypeFilterLevel.Full });
-
-                ChannelServices.RegisterChannel(channel, false);
-                try
-                {
-                    RemotingConfiguration.RegisterWellKnownServiceType(typeof(RemoteProcessWorker), "worker", WellKnownObjectMode.Singleton);
-                    Trace.WriteLine($"ready\n");
-
-                    while (!exit)
-                    {
-                        Program.RunScheduledTasks();
-                        Thread.Sleep(100);
-                    }
-                }
-                finally
-                {
-                    Trace.WriteLine($"unregistering channel");
-                    ChannelServices.UnregisterChannel(channel);
-                }
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine($"ProcessWorker failed: {e}");
+                server.WaitForConnection();
+                Program.RunScheduledTasks();
+                server.Disconnect();
+                Thread.Sleep(100);
             }
         }
-
-        public static void Exit()
+        catch (Exception e)
         {
-            Trace.WriteLine($"exiting");
-            exit = true;
+            Trace.WriteLine($"ProcessWorker failed: {e}");
         }
+    }
+    public static void Exit()
+    {
+        Trace.WriteLine($"exiting");
+        exit = true;
     }
 }

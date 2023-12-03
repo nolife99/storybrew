@@ -1,122 +1,95 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.Util;
-using OpenTK.Input;
+using osuTK.Input;
 using System;
 
-namespace StorybrewEditor.ScreenLayers.Util
+namespace StorybrewEditor.ScreenLayers.Util;
+
+public class MessageBox(string message, Action yesAction, Action noAction, bool cancelable) : UiScreenLayer
 {
-    public class MessageBox : UiScreenLayer
+    LinearLayout mainLayout, buttonsLayout;
+    public override bool IsPopup => true;
+
+    public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
+    public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
+
+    public override void Load()
     {
-        private readonly string message;
-        private LinearLayout mainLayout;
-        private LinearLayout buttonsLayout;
+        base.Load();
 
-        private readonly Action yesAction;
-        private readonly Action noAction;
-        private readonly bool cancelable;
-
-        public override bool IsPopup => true;
-
-        public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
-        public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
-        public MessageBox(string message, Action yesAction, Action noAction, bool cancelable)
+        WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
         {
-            this.message = message;
-            this.yesAction = yesAction;
-            this.noAction = noAction;
-            this.cancelable = cancelable;
-        }
-
-        public override void Load()
-        {
-            base.Load();
-
-            WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
+            StyleName = "panel",
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            Children = new Widget[]
             {
-                StyleName = "panel",
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new FourSide(16),
-                Children = new Widget[]
+                new ScrollArea(WidgetManager, new Label(WidgetManager)
                 {
-                    new ScrollArea(WidgetManager, new Label(WidgetManager)
-                    {
-                        Text = message,
-                        AnchorFrom = BoxAlignment.Centre,
-                    })
-                    {
-                        ScrollsHorizontally = true,
-                    },
-                    buttonsLayout = new LinearLayout(WidgetManager)
-                    {
-                        Horizontal = true,
-                        AnchorFrom = BoxAlignment.Centre,
-                    },
+                    Text = message,
+                    AnchorFrom = BoxAlignment.Centre
+                })
+                {
+                    ScrollsHorizontally = true
                 },
-            });
-
-            var yesButton = new Button(WidgetManager)
-            {
-                Text = noAction != null ? "Yes" : "Ok",
-                AnchorFrom = BoxAlignment.Centre,
-            };
-            yesButton.OnClick += (sender, e) =>
-            {
-                Exit();
-                yesAction?.Invoke();
-            };
-            buttonsLayout.Add(yesButton);
-
-            if (noAction != null)
-            {
-                var noButton = new Button(WidgetManager)
+                buttonsLayout = new(WidgetManager)
                 {
-                    Text = "No",
-                    AnchorFrom = BoxAlignment.Centre,
-                };
-                noButton.OnClick += (sender, e) =>
-                {
-                    Exit();
-                    noAction.Invoke();
-                };
-                buttonsLayout.Add(noButton);
-            }
-
-            if (cancelable)
-            {
-                var cancelButton = new Button(WidgetManager)
-                {
-                    Text = "Cancel",
-                    AnchorFrom = BoxAlignment.Centre,
-                };
-                cancelButton.OnClick += (sender, e) => Exit();
-                buttonsLayout.Add(cancelButton);
-            }
-        }
-
-        public override bool OnKeyDown(KeyboardKeyEventArgs e)
-        {
-            if (!e.IsRepeat)
-            {
-                switch (e.Key)
-                {
-                    case Key.C:
-                        if (e.Control)
-                        {
-                            ClipboardHelper.SetText(message);
-                            return true;
-                        }
-                        break;
+                    Horizontal = true,
+                    AnchorFrom = BoxAlignment.Centre
                 }
             }
-            return base.OnKeyDown(e);
-        }
-
-        public override void Resize(int width, int height)
+        });
+        Button yesButton = new(WidgetManager)
         {
-            base.Resize(width, height);
-            mainLayout.Pack(400, 0, 1024 - 32, 768 - 32);
+            Text = noAction is not null ? "Yes" : "Ok",
+            AnchorFrom = BoxAlignment.Centre
+        };
+        yesButton.OnClick += (sender, e) =>
+        {
+            Exit();
+            yesAction?.Invoke();
+        };
+        buttonsLayout.Add(yesButton);
+
+        if (noAction is not null)
+        {
+            Button noButton = new(WidgetManager)
+            {
+                Text = "No",
+                AnchorFrom = BoxAlignment.Centre
+            };
+            noButton.OnClick += (sender, e) =>
+            {
+                Exit();
+                noAction.Invoke();
+            };
+            buttonsLayout.Add(noButton);
         }
+        if (cancelable)
+        {
+            Button cancelButton = new(WidgetManager)
+            {
+                Text = "Cancel",
+                AnchorFrom = BoxAlignment.Centre
+            };
+            cancelButton.OnClick += (sender, e) => Exit();
+            buttonsLayout.Add(cancelButton);
+        }
+    }
+    public override bool OnKeyDown(KeyboardKeyEventArgs e)
+    {
+        if (!e.IsRepeat && e.Key is Key.C && e.Control)
+        {
+            ClipboardHelper.SetText(message);
+            return true;
+        }
+        return base.OnKeyDown(e);
+    }
+    public override void Resize(int width, int height)
+    {
+        base.Resize(width, height);
+        mainLayout.Pack(400, 0, 1024 - 32, 768 - 32);
     }
 }

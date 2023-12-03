@@ -5,144 +5,131 @@ using StorybrewEditor.UserInterface;
 using StorybrewEditor.Util;
 using System.IO;
 
-namespace StorybrewEditor.ScreenLayers
+namespace StorybrewEditor.ScreenLayers;
+
+public class NewProjectMenu : UiScreenLayer
 {
-    public class NewProjectMenu : UiScreenLayer
+    LinearLayout mainLayout;
+    Textbox projectNameTextbox;
+    PathSelector mapsetPathSelector;
+    Button startButton, cancelButton;
+
+    public override void Load()
     {
-        private LinearLayout mainLayout;
-        private Textbox projectNameTextbox;
-        private PathSelector mapsetPathSelector;
-        private Button startButton;
-        private Button cancelButton;
+        base.Load();
 
-        public override void Load()
+        WidgetManager.Root.StyleName = "panel";
+        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
         {
-            base.Load();
-
-            WidgetManager.Root.StyleName = "panel";
-            WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            FitChildren = true,
+            Children = new Widget[]
             {
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new FourSide(16),
-                FitChildren = true,
-                Children = new Widget[]
+                new Label(WidgetManager)
                 {
-                    new Label(WidgetManager)
-                    {
-                        Text = "New Project",
-                        AnchorFrom = BoxAlignment.Centre,
-                    },
-                    projectNameTextbox = new Textbox(WidgetManager)
-                    {
-                        LabelText = "Project Name",
-                        AnchorFrom = BoxAlignment.Centre,
-                    },
-                    mapsetPathSelector = new PathSelector(WidgetManager, PathSelectorMode.OpenDirectory)
-                    {
-                        Value = OsuHelper.GetOsuSongFolder(),
-                        LabelText = "Mapset Path",
-                        AnchorFrom = BoxAlignment.Centre,
-                        Filter = ".osu files (*.osu)|*.osu",
-                    },
-                    new LinearLayout(WidgetManager)
-                    {
-                        Horizontal = true,
-                        AnchorFrom = BoxAlignment.Centre,
-                        Fill = true,
-                        Children = new Widget[]
-                        {
-                            startButton = new Button(WidgetManager)
-                            {
-                                Text = "Start",
-                                AnchorFrom = BoxAlignment.Centre,
-                            },
-                            cancelButton = new Button(WidgetManager)
-                            {
-                                Text = "Cancel",
-                                AnchorFrom = BoxAlignment.Centre,
-                            },
-                        },
-                    },
+                    Text = "New Project",
+                    AnchorFrom = BoxAlignment.Centre
                 },
-            });
-
-            projectNameTextbox.OnValueChanged += (sender, e) => updateButtonsState();
-            projectNameTextbox.OnValueCommited += (sender, e) =>
-            {
-                var name = projectNameTextbox.Value;
-                foreach (var character in Path.GetInvalidFileNameChars())
-                    name = name.Replace(character, '_');
-                projectNameTextbox.Value = name;
-            };
-            mapsetPathSelector.OnValueChanged += (sender, e) => updateButtonsState();
-            mapsetPathSelector.OnValueCommited += (sender, e) =>
-            {
-                if (!Directory.Exists(mapsetPathSelector.Value) && File.Exists(mapsetPathSelector.Value))
+                projectNameTextbox = new(WidgetManager)
                 {
-                    mapsetPathSelector.Value = Path.GetDirectoryName(mapsetPathSelector.Value);
-                    return;
+                    LabelText = "Project Name",
+                    AnchorFrom = BoxAlignment.Centre
+                },
+                mapsetPathSelector = new(WidgetManager, PathSelectorMode.OpenDirectory)
+                {
+                    Value = OsuHelper.GetOsuSongFolder(),
+                    LabelText = "Mapset Path",
+                    AnchorFrom = BoxAlignment.Centre,
+                    Filter = ".osu files (*.osu)|*.osu"
+                },
+                new LinearLayout(WidgetManager)
+                {
+                    Horizontal = true,
+                    AnchorFrom = BoxAlignment.Centre,
+                    Fill = true,
+                    Children = new Widget[]
+                    {
+                        startButton = new(WidgetManager)
+                        {
+                            Text = "Start",
+                            AnchorFrom = BoxAlignment.Centre
+                        },
+                        cancelButton = new(WidgetManager)
+                        {
+                            Text = "Cancel",
+                            AnchorFrom = BoxAlignment.Centre
+                        }
+                    }
                 }
-                updateButtonsState();
-            };
+            }
+        });
+
+        projectNameTextbox.OnValueChanged += (sender, e) => updateButtonsState();
+        projectNameTextbox.OnValueCommited += (sender, e) =>
+        {
+            var name = projectNameTextbox.Value;
+            foreach (var character in Path.GetInvalidFileNameChars()) name = name.Replace(character, '_');
+            projectNameTextbox.Value = name;
+        };
+
+        mapsetPathSelector.OnValueChanged += (sender, e) => updateButtonsState();
+        mapsetPathSelector.OnValueCommited += (sender, e) =>
+        {
+            if (!Directory.Exists(mapsetPathSelector.Value) && File.Exists(mapsetPathSelector.Value))
+            {
+                mapsetPathSelector.Value = Path.GetDirectoryName(mapsetPathSelector.Value);
+                return;
+            }
             updateButtonsState();
+        };
+        updateButtonsState();
 
-            startButton.OnClick += (sender, e) => createProject();
-            cancelButton.OnClick += (sender, e) => Exit();
-        }
+        startButton.OnClick += (sender, e) => createProject();
+        cancelButton.OnClick += (sender, e) => Exit();
+    }
+    public override void Resize(int width, int height)
+    {
+        base.Resize(width, height);
+        mainLayout.Pack(300, 0);
+    }
+    void createProject() => Manager.AsyncLoading("Creating project", () =>
+    {
+        var resourceContainer = Manager.GetContext<Editor>().ResourceContainer;
+        var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true, resourceContainer);
+        Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
+    });
 
-        public override void Resize(int width, int height)
+    void updateButtonsState() => startButton.Disabled = !updateFieldsValid();
+    bool updateFieldsValid()
+    {
+        var projectFolderName = projectNameTextbox.Value;
+        if (string.IsNullOrWhiteSpace(projectFolderName))
         {
-            base.Resize(width, height);
-            mainLayout.Pack(300, 0);
+            startButton.Tooltip = $"The project name isn't valid";
+            return false;
         }
 
-        private void createProject()
+        var projectFolderPath = Path.Combine(Project.ProjectsFolder, projectFolderName);
+        if (Directory.Exists(projectFolderPath))
         {
-            Manager.AsyncLoading("Creating project", () =>
-            {
-                var resourceContainer = Manager.GetContext<Editor>().ResourceContainer;
-                var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true, resourceContainer);
-                Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
-            });
+            startButton.Tooltip = $"A project named '{projectFolderName}' already exists";
+            return false;
         }
-
-        private void updateButtonsState()
+        if (!Directory.Exists(mapsetPathSelector.Value))
         {
-            startButton.Disabled = !updateFieldsValid();
+            startButton.Tooltip = "The selected mapset folder does not exist";
+            return false;
         }
-
-        private bool updateFieldsValid()
+        if (Directory.GetFiles(mapsetPathSelector.Value, "*.osu", SearchOption.TopDirectoryOnly).Length == 0)
         {
-            var projectFolderName = projectNameTextbox.Value;
-            if (string.IsNullOrWhiteSpace(projectFolderName))
-            {
-                startButton.Tooltip = $"The project name isn't valid";
-                return false;
-            }
-
-            var projectFolderPath = Path.Combine(Project.ProjectsFolder, projectFolderName);
-            if (Directory.Exists(projectFolderPath))
-            {
-                startButton.Tooltip = $"A project named '{projectFolderName}' already exists";
-                return false;
-            }
-
-            if (!Directory.Exists(mapsetPathSelector.Value))
-            {
-                startButton.Tooltip = "The selected mapset folder does not exist";
-                return false;
-            }
-
-            if (Directory.GetFiles(mapsetPathSelector.Value, "*.osu", SearchOption.TopDirectoryOnly).Length == 0)
-            {
-                startButton.Tooltip = $"No .osu found in the selected mapset folder";
-                return false;
-            }
-
-            startButton.Tooltip = string.Empty;
-            return true;
+            startButton.Tooltip = $"No .osu found in the selected mapset folder";
+            return false;
         }
+
+        startButton.Tooltip = "";
+        return true;
     }
 }

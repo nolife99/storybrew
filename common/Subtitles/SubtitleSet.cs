@@ -1,15 +1,9 @@
 ﻿using System.Collections.Generic;
 
-namespace StorybrewCommon.Subtitles
-{
-    public class SubtitleSet
-    {
-        private readonly List<SubtitleLine> lines = new List<SubtitleLine>();
-        public IEnumerable<SubtitleLine> Lines => lines;
+namespace StorybrewCommon.Subtitles;
 
-        public SubtitleSet(IEnumerable<SubtitleLine> lines)
-        {
-            this.lines = new List<SubtitleLine>(lines);
-        }
-    }
+#pragma warning disable CS1591
+public readonly struct SubtitleSet(IEnumerable<SubtitleLine> lines)
+{
+    public IEnumerable<SubtitleLine> Lines => lines;
 }

@@ -1,7 +1,6 @@
-﻿namespace StorybrewCommon.Storyboarding.Commands
+﻿namespace StorybrewCommon.Storyboarding.Commands;
+
+internal interface IOffsetable
 {
-    internal interface IOffsetable
-    {
-        void Offset(double offset);
-    }
+    void Offset(double offset);
 }

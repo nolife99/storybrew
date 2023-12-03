@@ -1,15 +1,16 @@
 using System;
 using System.IO;
 
-namespace StorybrewCommon.Storyboarding.Commands
-{
-    public interface ICommand : IComparable<ICommand>
-    {
-        double StartTime { get; }
-        double EndTime { get; }
-        bool Active { get; }
-        int Cost { get; }
+namespace StorybrewCommon.Storyboarding.Commands;
 
-        void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation);
-    }
+#pragma warning disable CS1591
+public interface ICommand : IComparable<ICommand>
+{
+    double StartTime { get; }
+    double EndTime { get; }
+    bool Active { get; }
+    int Cost { get; }
+
+    void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation);
+    int GetHashCode();
 }

@@ -1,72 +1,47 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using StorybrewCommon.Util;
+﻿using BrewLib.Util;
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
 
-namespace StorybrewCommon.Subtitles
+namespace StorybrewCommon.Subtitles;
+
+///<summary> A font glow effect. </summary>
+///<remarks> Creates a new <see cref="FontGlow"/> descriptor with information about a Gaussian blur effect. </remarks>
+///<param name="radius"> The radius of the glow. </param>
+///<param name="power"> The intensity of the glow. </param>
+///<param name="color"> The coloring tint of the glow. </param>
+public class FontGlow(int radius = 6, double power = 0, FontColor color = default) : FontEffect
 {
-    public class FontGlow : FontEffect
+    ///<summary> The radius of the glow. </summary>
+    public int Radius => radius;
+
+    ///<summary> The intensity of the glow. </summary>
+    public double Power => power;
+
+    ///<summary> The coloring tint of the glow. </summary>
+    public FontColor Color => color;
+
+    ///<inheritdoc/>
+    public bool Overlay => false;
+
+    ///<inheritdoc/>
+    public SizeF Measure => new(Radius * 2, Radius * 2);
+
+    ///<inheritdoc/>
+    public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
     {
-        private double[,] kernel;
+        if (Radius < 1) return;
 
-        private int radius = 6;
-        public int Radius
+        using Bitmap src = new(bitmap.Width, bitmap.Height, bitmap.PixelFormat);
+        using (SolidBrush brush = new(FontColor.White)) using (var graphics = Graphics.FromImage(src))
         {
-            get { return radius; }
-            set
-            {
-                if (radius == value) return;
-                radius = value;
-                kernel = null;
-            }
+            graphics.TextRenderingHint = textGraphics.TextRenderingHint;
+            graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            graphics.DrawString(text, font, brush, x, y, stringFormat);
         }
 
-        private double power = 0;
-        public double Power
-        {
-            get { return power; }
-            set
-            {
-                if (power == value) return;
-                power = value;
-                kernel = null;
-            }
-        }
-
-        public Color4 Color = new Color4(255, 255, 255, 100);
-
-        public bool Overlay => false;
-        public Vector2 Measure() => new Vector2(Radius * 2);
-
-        public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
-        {
-            if (Radius < 1)
-                return;
-
-            using (var blurSource = new Bitmap(bitmap.Width, bitmap.Height, PixelFormat.Format32bppArgb))
-            {
-                using (var brush = new SolidBrush(System.Drawing.Color.White))
-                using (var graphics = Graphics.FromImage(blurSource))
-                {
-                    graphics.TextRenderingHint = textGraphics.TextRenderingHint;
-                    graphics.SmoothingMode = SmoothingMode.HighQuality;
-                    graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                    graphics.DrawString(text, font, brush, x, y, stringFormat);
-                }
-
-                if (kernel == null)
-                {
-                    var radius = Math.Min(Radius, 24);
-                    var power = Power >= 1 ? Power : Radius * 0.5;
-                    kernel = BitmapHelper.CalculateGaussianKernel(radius, power);
-                }
-
-                using (var blurredBitmap = BitmapHelper.ConvoluteAlpha(blurSource, kernel, System.Drawing.Color.FromArgb(Color.ToArgb())))
-                    textGraphics.DrawImage(blurredBitmap.Bitmap, 0, 0);
-            }
-        }
+        using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? (float)Power : Radius * .5f, Color); 
+        textGraphics.DrawImage(blur.Bitmap, new Rectangle(default, blur.Bitmap.Size));
     }
 }

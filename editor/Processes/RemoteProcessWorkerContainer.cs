@@ -1,108 +1,94 @@
 ﻿using System;
-using System.Collections;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Reflection;
-using System.Runtime.Remoting.Channels;
-using System.Runtime.Remoting.Channels.Ipc;
-using System.Threading;
+using System.Threading.Tasks;
 
-namespace StorybrewEditor.Processes
+namespace StorybrewEditor.Processes;
+
+public class RemoteProcessWorkerContainer : IDisposable
 {
-    public class RemoteProcessWorkerContainer : IDisposable
+    NamedPipeServerStream server;
+    Process process;
+
+    public RemoteProcessWorker Worker { get; private set; }
+
+    public RemoteProcessWorkerContainer()
     {
-        private IChannel channel;
-        private Process process;
+        var identifier = Guid.NewGuid().ToString();
+        var workerUrl = $"sbrew-worker-{identifier}";
 
-        public RemoteProcessWorker Worker { get; private set; }
+        server = new(workerUrl);
+        startProcess(identifier);
+        Worker = retrieveWorker(workerUrl);
+    }
 
-        public RemoteProcessWorkerContainer()
+    private void startProcess(string identifier)
+    {
+        var executablePath = Assembly.GetExecutingAssembly().Location;
+        var workingDirectory = Path.GetDirectoryName(executablePath);
+        process = new()
         {
-            var identifier = $"{Guid.NewGuid().ToString()}";
-            var workerUrl = $"ipc://sbrew-worker-{identifier}/worker";
-
-            channel = new IpcChannel(
-                new Hashtable()
-                {
-                    ["name"] = $"sbrew-{identifier}",
-                    ["portName"] = $"sbrew-{identifier}",
-                },
-                new BinaryClientFormatterSinkProvider(),
-                null
-            );
-            ChannelServices.RegisterChannel(channel, false);
-
-            startProcess(identifier);
-            Worker = retrieveWorker(workerUrl);
-        }
-
-        private void startProcess(string identifier)
-        {
-            var executablePath = Assembly.GetExecutingAssembly().Location;
-            var workingDirectory = Path.GetDirectoryName(executablePath);
-            process = new Process()
+            StartInfo = new(executablePath, $"worker \"{identifier}\"")
             {
-                StartInfo = new ProcessStartInfo(executablePath, $"worker \"{identifier}\"")
-                {
-                    WorkingDirectory = workingDirectory,
-                },
-            };
-            process.Start();
-        }
+                WorkingDirectory = workingDirectory
+            }
+        };
+        process.Start();
+    }
 
-        private RemoteProcessWorker retrieveWorker(string workerUrl)
+    RemoteProcessWorker retrieveWorker(string workerUrl)
+    {
+        while (true)
         {
-            while (true)
+            using (var delay = Task.Delay(250)) delay.Wait();
+            try
             {
-                Thread.Sleep(250);
+                Trace.WriteLine($"Retrieving {workerUrl}");
+                var worker = (RemoteProcessWorker)Activator.CreateInstance(typeof(RemoteProcessWorker));
+                return worker;
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine($"Couldn't start ipc: {e}");
+            }
+        }
+    }
+
+    #region IDisposable Support
+
+    bool disposed;
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing)
+            {
                 try
                 {
-                    Trace.WriteLine($"Retrieving {workerUrl}");
-                    var worker = (RemoteProcessWorker)Activator.GetObject(typeof(RemoteProcessWorker), workerUrl);
-                    worker.CheckIpc();
-                    return worker;
+                    Worker.Dispose();
                 }
                 catch (Exception e)
                 {
-                    Trace.WriteLine($"Couldn't start ipc: {e}");
+                    Trace.WriteLine($"Failed to dispose the worker: {e}");
                 }
+
+                if (!process.WaitForExit(3000)) process.Kill();
+                server.Close();
             }
+
+            Worker = null;
+
+            process.Close();
+            process = null;
+
+            server = null;
+            disposed = true;
         }
-
-        #region IDisposable Support
-
-        private bool disposedValue = false;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    try
-                    {
-                        Worker.Dispose();
-                    }
-                    catch (Exception e)
-                    {
-                        Trace.WriteLine($"Failed to dispose the worker: {e}");
-                    }
-                    if (!process.WaitForExit(3000))
-                        process.Kill();
-                    ChannelServices.UnregisterChannel(channel);
-                }
-                Worker = null;
-                process = null;
-                channel = null;
-                disposedValue = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        #endregion
     }
+
+    public void Dispose() => Dispose(true);
+
+    #endregion
 }

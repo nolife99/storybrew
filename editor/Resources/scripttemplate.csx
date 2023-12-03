@@ -1,23 +1,15 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Scripting;
+﻿using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.Util;
-using StorybrewCommon.Subtitles;
-using StorybrewCommon.Util;
+using System.Numerics;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace StorybrewScripts
+namespace StorybrewScripts;
+
+class %CLASSNAME% : StoryboardObjectGenerator
 {
-    public class %CLASSNAME% : StoryboardObjectGenerator
+    protected override void Generate()
     {
-        public override void Generate()
-        {
-		    
-            
-        }
+        
+        
     }
 }

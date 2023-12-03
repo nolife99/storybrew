@@ -2,20 +2,18 @@
 using System;
 using System.Collections.Generic;
 
-namespace StorybrewEditor.Scripting
+namespace StorybrewEditor.Scripting;
+
+public interface ScriptContainer<TScript> : IDisposable where TScript : Script
 {
-    public interface ScriptContainer<TScript> : IDisposable
-        where TScript : Script
-    {
-        string Name { get; }
-        string ScriptTypeName { get; }
-        string MainSourcePath { get; }
-        IEnumerable<string> ReferencedAssemblies { get; set; }
-        bool HasScript { get; }
+    string Name { get; }
+    string ScriptTypeName { get; }
+    string MainSourcePath { get; }
+    IEnumerable<string> ReferencedAssemblies { get; set; }
+    bool HasScript { get; }
 
-        event EventHandler OnScriptChanged;
+    event EventHandler OnScriptChanged;
 
-        TScript CreateScript();
-        void ReloadScript();
-    }
+    TScript CreateScript();
+    void ReloadScript();
 }

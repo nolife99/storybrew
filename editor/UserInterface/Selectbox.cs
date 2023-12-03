@@ -1,109 +1,98 @@
 ﻿using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
-using OpenTK;
+using System.Numerics;
 using StorybrewCommon.Util;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.UserInterface.Skinning.Styles;
 using System;
 
-namespace StorybrewEditor.UserInterface
+namespace StorybrewEditor.UserInterface;
+
+public class Selectbox : Widget, Field
 {
-    public class Selectbox : Widget, Field
+    readonly Button button;
+
+    public override Vector2 MinSize => button.MinSize;
+    public override Vector2 MaxSize => button.MaxSize;
+    public override Vector2 PreferredSize => button.PreferredSize;
+
+    NamedValue[] options;
+    public NamedValue[] Options
     {
-        private readonly Button button;
-
-        public override Vector2 MinSize => button.MinSize;
-        public override Vector2 MaxSize => button.MaxSize;
-        public override Vector2 PreferredSize => button.PreferredSize;
-
-        private NamedValue[] options;
-        public NamedValue[] Options
+        get => options;
+        set
         {
-            get { return options; }
-            set
-            {
-                if (options == value) return;
-                options = value;
+            if (options == value) return;
+            options = value;
 
-                button.Text = findValueName(this.value);
-            }
+            button.Text = findValueName(this.value);
         }
+    }
 
-        private object value;
-        public object Value
+    object value;
+    public object Value
+    {
+        get => value;
+        set
         {
-            get { return value; }
-            set
-            {
-                if (this.value == value) return;
-                this.value = value;
+            if (this.value == value) return;
+            this.value = value;
 
-                button.Text = findValueName(this.value);
-                OnValueChanged?.Invoke(this, EventArgs.Empty);
-            }
+            button.Text = findValueName(this.value);
+            OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
-        public object FieldValue
-        {
-            get { return Value; }
-            set { Value = value; }
-        }
+    }
+    public object FieldValue
+    {
+        get => Value;
+        set => Value = value;
+    }
 
-        public event EventHandler OnValueChanged;
+    public event EventHandler OnValueChanged;
 
-        public Selectbox(WidgetManager manager) : base(manager)
+    public Selectbox(WidgetManager manager) : base(manager)
+    {
+        Add(button = new(manager));
+        button.OnClick += (sender, e) =>
         {
-            Add(button = new Button(manager));
-            button.OnClick += (sender, e) =>
+            if (options is null) return;
+            else if (options.Length > 2) Manager.ScreenLayerManager.ShowContextMenu("Select a value", optionValue => Value = optionValue.Value, options);
+            else
             {
-                if (options == null)
-                    return;
-                else if (options.Length > 2)
-                    Manager.ScreenLayerManager.ShowContextMenu("Select a value", optionValue => Value = optionValue.Value, options);
-                else
+                var optionFound = false;
+                foreach (var option in options)
                 {
-                    var optionFound = false;
-                    foreach (var option in options)
-                    {
-                        if (optionFound)
-                        {
-                            Value = option.Value;
-                            optionFound = false;
-                            break;
-                        }
-                        else if (option.Value.Equals(value))
-                            optionFound = true;
-                    }
                     if (optionFound)
-                        Value = options[0].Value;
+                    {
+                        Value = option.Value;
+                        optionFound = false;
+                        break;
+                    }
+                    else if (option.Value.Equals(value)) optionFound = true;
                 }
-            };
-        }
-
-        protected override WidgetStyle Style => Manager.Skin.GetStyle<SelectboxStyle>(BuildStyleName());
-
-        protected override void ApplyStyle(WidgetStyle style)
-        {
-            base.ApplyStyle(style);
-            var selectboxStyle = (SelectboxStyle)style;
-
-            button.StyleName = selectboxStyle.ButtonStyle;
-        }
-
-        protected override void Layout()
-        {
-            base.Layout();
-            button.Size = Size;
-        }
-
-        private string findValueName(object value)
-        {
-            if (options == null) return string.Empty;
-            foreach (var option in options)
-            {
-                if (option.Value.Equals(value))
-                    return option.Name;
+                if (optionFound) Value = options[0].Value;
             }
-            return string.Empty;
-        }
+        };
+    }
+
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<SelectboxStyle>(BuildStyleName());
+
+    protected override void ApplyStyle(WidgetStyle style)
+    {
+        base.ApplyStyle(style);
+        var selectboxStyle = (SelectboxStyle)style;
+
+        button.StyleName = selectboxStyle.ButtonStyle;
+    }
+    protected override void Layout()
+    {
+        base.Layout();
+        button.Size = Size;
+    }
+    string findValueName(object value)
+    {
+        if (options is null) return string.Empty;
+        foreach (var option in options) if (option.Value.Equals(value)) return option.Name;
+        return string.Empty;
     }
 }

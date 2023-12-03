@@ -1,16 +1,18 @@
-﻿namespace StorybrewCommon.Subtitles
-{
-    public class SubtitleLine
-    {
-        public double StartTime { get; }
-        public double EndTime { get; }
-        public string Text { get; }
+﻿namespace StorybrewCommon.Subtitles;
 
-        public SubtitleLine(double startTime, double endTime, string text)
-        {
-            StartTime = startTime;
-            EndTime = endTime;
-            Text = text;
-        }
-    }
+///<summary> Interpreted lines for subtitle files. </summary>
+///<remarks> Constructs a <see cref="SubtitleLine"/>. </remarks>
+///<param name="startTime"> The start time of the subtitle line. </param>
+///<param name="endTime"> The end time of the subtitle line. </param>
+///<param name="text"> The text in the subtitle line. </param>
+public struct SubtitleLine(double startTime, double endTime, string text)
+{
+    ///<summary> The start time of the subtitle line. </summary>
+    public double StartTime = startTime;
+
+    ///<summary> The end time of the subtitle line. </summary>
+    public double EndTime = endTime;
+
+    ///<summary> The text in the subtitle line. </summary>
+    public string Text = text;
 }

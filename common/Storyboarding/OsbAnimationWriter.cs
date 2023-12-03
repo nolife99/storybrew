@@ -5,102 +5,87 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace StorybrewCommon.Storyboarding
+namespace StorybrewCommon.Storyboarding;
+
+///<summary> Base class for writing and exporting an <see cref="OsbAnimation"/>. </summary>
+public class OsbAnimationWriter(OsbAnimation animation,
+    AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX, AnimatedValue<CommandDecimal> moveY,
+    AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
+    AnimatedValue<CommandDecimal> rotate,
+    AnimatedValue<CommandDecimal> fade,
+    AnimatedValue<CommandColor> color,
+    TextWriter writer, ExportSettings exportSettings, OsbLayer layer) : OsbSpriteWriter(animation,
+        move, moveX, moveY,
+        scale, scaleVec,
+        rotate,
+        fade,
+        color,
+        writer, exportSettings, layer)
 {
-    public class OsbAnimationWriter : OsbSpriteWriter
+    readonly OsbAnimation animation = animation;
+
+#pragma warning disable CS1591
+    protected override OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
     {
-        private readonly OsbAnimation osbAnimation;
-        public OsbAnimationWriter(OsbAnimation osbAnimation, AnimatedValue<CommandPosition> moveTimeline,
-                                                             AnimatedValue<CommandDecimal> moveXTimeline,
-                                                             AnimatedValue<CommandDecimal> moveYTimeline,
-                                                             AnimatedValue<CommandDecimal> scaleTimeline,
-                                                             AnimatedValue<CommandScale> scaleVecTimeline,
-                                                             AnimatedValue<CommandDecimal> rotateTimeline,
-                                                             AnimatedValue<CommandDecimal> fadeTimeline,
-                                                             AnimatedValue<CommandColor> colorTimeline,
-                                                             TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
-                                        : base(osbAnimation, moveTimeline,
-                                                             moveXTimeline,
-                                                             moveYTimeline,
-                                                             scaleTimeline,
-                                                             scaleVecTimeline,
-                                                             rotateTimeline,
-                                                             fadeTimeline,
-                                                             colorTimeline,
-                                                             writer, exportSettings, layer)
+        if (animation.LoopType == OsbLoopType.LoopOnce && segment.Min(c => c.StartTime) >= animation.AnimationEndTime)
         {
-            this.osbAnimation = osbAnimation;
-        }
-
-        protected override OsbSprite CreateSprite(List<IFragmentableCommand> segment)
-        {
-            if (osbAnimation.LoopType == OsbLoopType.LoopOnce && segment.Min(c => c.StartTime) >= osbAnimation.AnimationEndTime)
+            OsbSprite sprite = new()
             {
-                //this shouldn't loop again so we need a sprite instead
-                var sprite = new OsbSprite()
-                {
-                    InitialPosition = osbAnimation.InitialPosition,
-                    Origin = osbAnimation.Origin,
-                    TexturePath = getLastFramePath(),
-                };
+                InitialPosition = animation.InitialPosition,
+                Origin = animation.Origin,
+                TexturePath = getLastFramePath(),
+            };
 
-                foreach (var command in segment)
-                    sprite.AddCommand(command);
-
-                return sprite;
-            }
-            else
-            {
-                var animation = new OsbAnimation()
-                {
-                    TexturePath = osbAnimation.TexturePath,
-                    InitialPosition = osbAnimation.InitialPosition,
-                    Origin = osbAnimation.Origin,
-                    FrameCount = osbAnimation.FrameCount,
-                    FrameDelay = osbAnimation.FrameDelay,
-                    LoopType = osbAnimation.LoopType,
-                };
-
-                foreach (var command in segment)
-                    animation.AddCommand(command);
-
-                return animation;
-            }
+            foreach (var command in segment) sprite.AddCommand(command);
+            return sprite;
         }
-
-        protected override void WriteHeader(OsbSprite sprite)
+        else
         {
-            if (sprite is OsbAnimation animation)
+            OsbAnimation animation = new()
             {
-                var frameDelay = animation.FrameDelay;
-                TextWriter.WriteLine($"Animation,{OsbLayer},{animation.Origin},\"{animation.TexturePath.Trim()}\",{animation.InitialPosition.X.ToString(ExportSettings.NumberFormat)},{animation.InitialPosition.Y.ToString(ExportSettings.NumberFormat)},{animation.FrameCount},{frameDelay.ToString(ExportSettings.NumberFormat)},{animation.LoopType}");
-            }
-            else base.WriteHeader(sprite);
-        }
+                TexturePath = this.animation.TexturePath,
+                InitialPosition = this.animation.InitialPosition,
+                Origin = this.animation.Origin,
+                FrameCount = this.animation.FrameCount,
+                FrameDelay = this.animation.FrameDelay,
+                LoopType = this.animation.LoopType,
+            };
 
-        protected override HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragmentableCommands)
+            foreach (var command in segment) animation.AddCommand(command);
+            return animation;
+        }
+    }
+    protected override void WriteHeader(OsbSprite sprite)
+    {
+        if (sprite is OsbAnimation animation)
         {
-            var fragmentationTimes = base.GetFragmentationTimes(fragmentableCommands);
-
-            var tMax = fragmentationTimes.Max();
-            var nonFragmentableTimes = new HashSet<int>();
-
-            for (double d = osbAnimation.StartTime; d < osbAnimation.AnimationEndTime; d += osbAnimation.LoopDuration)
-            {
-                var range = Enumerable.Range((int)d + 1, (int)(osbAnimation.LoopDuration - 1));
-                nonFragmentableTimes.UnionWith(range);
-            }
-
-            fragmentationTimes.RemoveWhere(t => nonFragmentableTimes.Contains(t) && t < tMax);
-
-            return fragmentationTimes;
+            var frameDelay = animation.FrameDelay;
+            TextWriter.WriteLine($"Animation,{Layer},{animation.Origin},\"{animation.TexturePath.Trim()}\",{animation.InitialPosition.X},{animation.InitialPosition.Y},{animation.FrameCount},{frameDelay.ToString(ExportSettings.NumberFormat)},{animation.LoopType}");
         }
+        else base.WriteHeader(sprite);
+    }
+    protected override HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
+    {
+        var fragmentationTimes = base.GetFragmentationTimes(fragCommands);
 
-        private string getLastFramePath()
+        var tMax = fragmentationTimes.Max();
+        HashSet<int> nonFragmentableTimes = [];
+
+        for (var d = animation.StartTime; d < animation.AnimationEndTime; d += animation.LoopDuration)
         {
-            var directory = Path.GetDirectoryName(osbAnimation.TexturePath);
-            var file = string.Concat(Path.GetFileNameWithoutExtension(osbAnimation.TexturePath), osbAnimation.FrameCount - 1, Path.GetExtension(osbAnimation.TexturePath));
-            return Path.Combine(directory, file);
+            var range = Enumerable.Range((int)d + 1, (int)(animation.LoopDuration - 1));
+            nonFragmentableTimes.UnionWith(range);
         }
+
+        fragmentationTimes.RemoveWhere(t => nonFragmentableTimes.Contains(t) && t < tMax);
+        return fragmentationTimes;
+    }
+#pragma warning restore CS1591
+    string getLastFramePath()
+    {
+        var directory = Path.GetDirectoryName(animation.TexturePath);
+        var file = string.Concat(Path.GetFileNameWithoutExtension(animation.TexturePath), animation.FrameCount - 1, Path.GetExtension(animation.TexturePath));
+
+        return Path.Combine(directory, file);
     }
 }

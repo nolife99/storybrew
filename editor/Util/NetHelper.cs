@@ -1,141 +1,127 @@
 ﻿using System;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
-using System.Text;
+using System.Net.Http;
 
-namespace StorybrewEditor.Util
+namespace StorybrewEditor.Util;
+
+public static class NetHelper
 {
-    public static class NetHelper
+    internal static HttpClient Client;
+
+    public static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url.Replace("&", "^&"))
     {
-        public static void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action)
+        UseShellExecute = true
+    });
+
+    public static void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action = null)
+    {
+        try
         {
-            try
+            var fullPath = Path.GetFullPath(cachePath);
+            var folder = Path.GetDirectoryName(fullPath);
+
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            else if (File.Exists(cachePath) && File.GetLastWriteTimeUtc(cachePath).AddSeconds(cacheDuration) > DateTime.UtcNow)
             {
-                var fullPath = Path.GetFullPath(cachePath);
-                var folder = Path.GetDirectoryName(fullPath);
+                action?.Invoke(File.ReadAllText(cachePath), null);
+                return;
+            }
 
-                if (!Directory.Exists(folder))
-                    Directory.CreateDirectory(folder);
-                else if (File.Exists(cachePath) && File.GetLastWriteTimeUtc(cachePath).AddSeconds(cacheDuration) > DateTime.UtcNow)
-                {
-                    Program.Schedule(() => action(File.ReadAllText(cachePath), null));
-                    return;
-                }
+            Trace.WriteLine($"Requesting {url}");
 
-                using (var webClient = new WebClient())
+            var result = Client.GetStringAsync(url).Result;
+            File.WriteAllText(cachePath, result);
+            action?.Invoke(result, null);
+        }
+        catch (Exception e)
+        {
+            action?.Invoke(null, e);
+        }
+    }
+    public static void Post(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
+    {
+        try
+        {
+            Trace.WriteLine($"Post {url}");
+
+            FormUrlEncodedContent content = new(data);
+            using var response = Client.PostAsync(url, content).Result;
+            response.EnsureSuccessStatusCode();
+            var responseContent = response.Content.ReadAsStringAsync().Result;
+            action?.Invoke(responseContent, null);
+        }
+        catch (Exception e)
+        {
+            action?.Invoke(null, e);
+        }
+    }
+    public static void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
+    {
+        try
+        {
+            Trace.WriteLine($"Post {url}");
+
+            FormUrlEncodedContent content = new(data);
+            var response = Client.PostAsync(url, content).Result;
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = response.Content.ReadAsStringAsync().Result;
+            action?.Invoke(responseContent, null);
+        }
+        catch (Exception e)
+        {
+            action?.Invoke(null, e);
+        }
+    }
+    public static void Download(string url, string filename, Func<float, bool> progressFunc, Action<Exception> completedAction = null)
+    {
+        try
+        {
+            var fullPath = Path.GetFullPath(filename);
+            var folder = Path.GetDirectoryName(fullPath);
+
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            else if (File.Exists(filename)) File.Delete(filename);
+
+            Trace.WriteLine($"Downloading {url}");
+
+            using (var response = Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).Result)
+            {
+                response.EnsureSuccessStatusCode();
+
+                using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                var bytesRead = 0L;
+                var isMoreToRead = true;
+
+                do
                 {
-                    Debug.Print($"Requesting {url}");
-                    webClient.Headers.Add("user-agent", Program.Name);
-                    webClient.DownloadStringCompleted += (sender, e) =>
+                    var read = response.Content.ReadAsByteArrayAsync().Result;
+                    fileStream.Write(read, 0, read.Length);
+
+                    bytesRead += read.Length;
+                    isMoreToRead = read.Length != 0;
+
+                    if (totalBytes != -1L)
                     {
-                        if (e.Error == null)
+                        var progressPercentage = (float)bytesRead / totalBytes * 100;
+                        if (!progressFunc(progressPercentage))
                         {
-                            var result = e.Result;
-                            Program.Schedule(() =>
-                            {
-                                File.WriteAllText(cachePath, result);
-                                action(result, null);
-                            });
+                            isMoreToRead = false;
+                            completedAction(new HttpRequestException("Download cancelled"));
                         }
-                        else Program.Schedule(() => action(null, e.Error));
-                    };
-                    webClient.DownloadStringAsync(new Uri(url));
+                    }
+
                 }
+                while (isMoreToRead);
             }
-            catch (Exception e)
-            {
-                Program.Schedule(() => action(null, e));
-            }
+            completedAction?.Invoke(null);
         }
-
-        public static void Post(string url, NameValueCollection data, Action<string, Exception> action)
+        catch (Exception e)
         {
-            try
-            {
-                using (var webClient = new WebClient())
-                {
-                    Debug.Print($"Post {url}");
-                    webClient.Headers.Add("user-agent", Program.Name);
-                    webClient.UploadValuesCompleted += (sender, e) =>
-                    {
-                        if (e.Error == null)
-                        {
-                            var response = Encoding.UTF8.GetString(e.Result);
-                            Program.Schedule(() => action(response, null));
-                        }
-                        else Program.Schedule(() => action(null, e.Error));
-                    };
-                    webClient.UploadValuesAsync(new Uri(url), "POST", data);
-                }
-            }
-            catch (Exception e)
-            {
-                Program.Schedule(() => action(null, e));
-            }
-        }
-
-        public static void BlockingPost(string url, NameValueCollection data, Action<string, Exception> action)
-        {
-            try
-            {
-                using (var webClient = new WebClient())
-                {
-                    Debug.Print($"Post {url}");
-                    webClient.Headers.Add("user-agent", Program.Name);
-                    var result = webClient.UploadValues(new Uri(url), "POST", data);
-                    var response = Encoding.UTF8.GetString(result);
-                    action(response, null);
-                }
-            }
-            catch (Exception e)
-            {
-                action(null, e);
-            }
-        }
-
-        public static void Download(string url, string filename, Func<float, bool> progressFunc, Action<Exception> completedAction)
-        {
-            try
-            {
-                var fullPath = Path.GetFullPath(filename);
-                var folder = Path.GetDirectoryName(fullPath);
-
-                if (!Directory.Exists(folder))
-                    Directory.CreateDirectory(folder);
-                else if (File.Exists(filename))
-                    File.Delete(filename);
-
-                using (var webClient = new WebClient())
-                {
-                    Debug.Print($"Downloading {url}");
-                    webClient.Headers.Add("user-agent", Program.Name);
-                    webClient.DownloadProgressChanged += (sender, e) =>
-                        Program.Schedule(() =>
-                        {
-                            if (!progressFunc((float)e.BytesReceived / e.TotalBytesToReceive))
-                                webClient.CancelAsync();
-                        });
-                    webClient.DownloadFileCompleted += (sender, e) =>
-                        Program.Schedule(() =>
-                        {
-                            if (e.Cancelled)
-                            {
-                                Debug.Print($"Download cancelled {url}");
-                                return;
-                            }
-                            if (e.Error == null)
-                                completedAction(null);
-                            else completedAction(e.Error);
-                        });
-                    webClient.DownloadFileAsync(new Uri(url), filename);
-                }
-            }
-            catch (Exception e)
-            {
-                Program.Schedule(() => completedAction(e));
-            }
+            completedAction?.Invoke(e);
         }
     }
 }

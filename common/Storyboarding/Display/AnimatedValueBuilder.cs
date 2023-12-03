@@ -2,58 +2,45 @@
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 
-namespace StorybrewCommon.Storyboarding.Display
+namespace StorybrewCommon.Storyboarding.Display;
+
+#pragma warning disable CS1591
+public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimatedValueBuilder where TValue : CommandValue
 {
-    public class AnimatedValueBuilder<TValue> : IAnimatedValueBuilder
-        where TValue : CommandValue
+    readonly AnimatedValue<TValue> value = value;
+    CompositeCommand<TValue> composite;
+    Func<ITypedCommand<TValue>, ITypedCommand<TValue>> decorate;
+
+    public void Add(ICommand command) => Add(command as Command<TValue>);
+    public void Add(Command<TValue> command)
     {
-        private readonly AnimatedValue<TValue> value;
-        private CompositeCommand<TValue> composite;
-        private Func<ITypedCommand<TValue>, ITypedCommand<TValue>> decorate;
+        if (command is null) return;
+        (composite ?? value).Add(command);
+    }
+    public void StartDisplayLoop(LoopCommand loop)
+    {
+        if (composite is not null) throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
 
-        public AnimatedValueBuilder(AnimatedValue<TValue> value)
+        decorate = command =>
         {
-            this.value = value;
-        }
+            if (loop.CommandsStartTime != 0) throw new InvalidOperationException($"Commands in a loop must start at 0ms, but start at {loop.CommandsStartTime}ms");
+            return new LoopDecorator<TValue>(command, loop.StartTime, loop.CommandsDuration, loop.LoopCount);
+        };
+        composite = new();
+    }
+    public void StartDisplayTrigger(TriggerCommand triggerCommand)
+    {
+        if (composite is not null) throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
 
-        public void Add(ICommand command)
-            => Add(command as Command<TValue>);
+        decorate = command => new TriggerDecorator<TValue>(command);
+        composite = new();
+    }
+    public void EndDisplayComposite()
+    {
+        if (composite is null) throw new InvalidOperationException("Cannot complete loop or trigger: Not inside one");
+        if (composite.HasCommands) value.Add(decorate(composite));
 
-        public void Add(Command<TValue> command)
-        {
-            if (command == null) return;
-            (composite ?? value).Add(command);
-        }
-
-        public void StartDisplayLoop(LoopCommand loopCommand)
-        {
-            if (composite != null) throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
-
-            decorate = (command) =>
-            {
-                if (loopCommand.CommandsStartTime != 0) throw new InvalidOperationException($"Commands in a loop must start at 0ms, but start at {loopCommand.CommandsStartTime}ms");
-                return new LoopDecorator<TValue>(command, loopCommand.StartTime, loopCommand.CommandsDuration, loopCommand.LoopCount);
-            };
-            composite = new CompositeCommand<TValue>();
-        }
-
-        public void StartDisplayTrigger(TriggerCommand triggerCommand)
-        {
-            if (composite != null) throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
-
-            decorate = (command) => new TriggerDecorator<TValue>(command);
-            composite = new CompositeCommand<TValue>();
-        }
-
-        public void EndDisplayComposite()
-        {
-            if (composite == null) throw new InvalidOperationException("Cannot complete loop or trigger: Not inside one");
-
-            if (composite.HasCommands)
-                value.Add(decorate(composite));
-
-            composite = null;
-            decorate = null;
-        }
+        composite = null;
+        decorate = null;
     }
 }
