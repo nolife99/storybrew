@@ -37,11 +37,9 @@ public static class BitmapHelper
     public static PinnedBitmap Premultiply(Bitmap source)
     {
         PinnedBitmap result = new(source);
-
-        var pixels = source.Width * source.Height;
-        for (var index = 0; index < pixels; ++index)
+        for (int y = 0, index = 0; y < source.Height; ++y) for (var x = 0; y < source.Width; ++x)
         {
-            var color = result[index];
+            var color = result[y * source.Width + x];
 
             var alpha = (color >> 24) & 0xFF;
             var red = (color >> 16) & 0xFF;
@@ -53,7 +51,7 @@ public static class BitmapHelper
             green = byte.CreateTruncating(green * a);
             blue = byte.CreateTruncating(blue * a);
 
-            result[index] = (alpha << 24) | (red << 16) | (green << 8) | blue;
+            result[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
         }
 
         return result;
@@ -82,13 +80,12 @@ public static class BitmapHelper
 
         var width = source.Width;
         var height = source.Height;
-
-        var index = 0;
+        
         var halfWidth = kernelWidth >> 1;
         var halfHeight = kernelHeight >> 1;
 
         PinnedBitmap result = new(width, height);
-        using (PinnedBitmap src = new(source)) for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+        using (PinnedBitmap src = new(source)) for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
         {
             float a = 0f, r = 0f, g = 0f, b = 0f;
             for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
@@ -126,14 +123,13 @@ public static class BitmapHelper
         var width = source.Width;
         var height = source.Height;
 
-        var index = 0;
         var halfWidth = kernelWidth >> 1;
         var halfHeight = kernelHeight >> 1;
 
         var rgb = (color.R << 16) | (color.G << 8) | color.B;
 
         PinnedBitmap result = new(width, height);
-        using (PinnedBitmap src = new(source)) for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+        using (PinnedBitmap src = new(source)) for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
         {
             var a = 0f;
             for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
@@ -225,7 +221,7 @@ public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
             ArgumentOutOfRangeException.ThrowIfNegative(pixelIndex, nameof(pixelIndex));
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(pixelIndex, Count, nameof(pixelIndex));
 
-            return *(data + pixelIndex);
+            return data[pixelIndex];
         }
         set
         {
@@ -233,7 +229,7 @@ public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
             ArgumentOutOfRangeException.ThrowIfNegative(pixelIndex, nameof(pixelIndex));
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(pixelIndex, Count, nameof(pixelIndex));
 
-            *(data + pixelIndex) = value;
+            data[pixelIndex] = value;
         }
     }
 

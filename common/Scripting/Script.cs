@@ -2,7 +2,7 @@
 
 namespace StorybrewCommon.Scripting;
 
-///<summary> Base class for all scripts. </summary>
+///<summary> Defines a script to execute. </summary>
 public abstract class Script : MarshalByRefObject
 {
     string identifier;

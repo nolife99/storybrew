@@ -41,10 +41,10 @@ public class CommandGenerator
     public double RotationTolerance = 1;
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
-    public double ColorTolerance = 1.5;
+    public double ColorTolerance = 1;
 
     ///<summary> The tolerance threshold for opacity keyframe simplification. </summary>
-    public double OpacityTolerance = .1;
+    public double OpacityTolerance = 1;
 
     ///<summary> The amount of decimal digits for position keyframes. </summary>
     public int PositionDecimals = 1;
@@ -130,7 +130,7 @@ public class CommandGenerator
     }
     void commitKeyframes(SizeF imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => (float)f);
+        fades.Simplify1dKeyframes(OpacityTolerance, f => (float)(f * 100));
         if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
         if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalfades);
@@ -143,7 +143,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)(r * 180 / Math.PI));
+        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)osuTK.MathHelper.RadiansToDegrees(r));
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 
@@ -232,9 +232,8 @@ public class CommandGenerator
         // try to reduce the amount of Bitmap in memory
         if (StoryboardObjectGenerator.Current.fonts.Count > 0)
         {
-            var font = StoryboardObjectGenerator.Current.fonts.Values.SelectMany(gen => gen.cache.Values).FirstOrDefault(texture => texture.Path == sprite.TexturePath);
-
-            if (font == default(FontTexture) || font is null) return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
+            var font = StoryboardObjectGenerator.Current.fonts.SelectMany(g => g.Value.cache.Values).FirstOrDefault(tex => tex.Path == sprite.TexturePath);
+            if (font == default(FontTexture)) return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
             return new(font.Width, font.Height);
         }
         else return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
@@ -257,7 +256,7 @@ public class State : IComparer<State>
     public CommandPosition Position = new(320, 240);
 
     ///<summary> Represents the scale, in osu!pixels, of this state. </summary>
-    public CommandScale Scale = Vector2.One;
+    public CommandScale Scale = CommandScale.One;
 
     ///<summary> Represents the color, in RGB values, of this state. </summary>
     public CommandColor Color = CommandColor.White;

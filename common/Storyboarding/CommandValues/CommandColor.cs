@@ -55,21 +55,15 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public float DistanceFrom(object obj)
     {
         var other = (CommandColor)obj;
-        float diffR = R - other.R;
-        float diffG = G - other.G;
-        float diffB = B - other.B;
+        float diffR = R - other.R, diffG = G - other.G, diffB = B - other.B;
         return MathF.Sqrt((diffR * diffR) + (diffG * diffG) + (diffB * diffB));
     }
 
     ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
     public bool Equals(CommandColor other) => r == other.r && g == other.g && b == other.b;
 
-    ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
-    public override bool Equals(object other)
-    {
-        if (other is null) return false;
-        return other is CommandColor color && Equals(color);
-    }
+    ///<summary> Returns whether or not this instance and <paramref name="obj"/> are equal to each other. </summary>
+    public override bool Equals(object obj) => obj is not null && obj is CommandColor color && Equals(color);
 
     ///<summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
     public override int GetHashCode() => ((Color)this).ToArgb();
@@ -86,41 +80,38 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     ///<summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
     public static CommandColor FromRgb(byte r, byte g, byte b) => new(r / 255d, g / 255d, b / 255d);
 
-    ///<summary> Creates a <see cref="CommandColor"/> from HSB values. <para>Hue: 0 - 180.0 | Saturation: 0 - 1.0 | Brightness: 0 - 1.0</para></summary>
+    ///<summary> Creates a <see cref="CommandColor"/> from HSB values. <para>Hue: 0 - 360 | Saturation: 0 - 1 | Brightness: 0 - 1</para></summary>
     public static CommandColor FromHsb(double hue, double saturation, double brightness)
     {
         var hi = (int)(hue / 60) % 6;
         var f = hue / 60 - (int)(hue / 60);
 
         var v = brightness;
-        var p = brightness * (1 - saturation);
-        var q = brightness * (1 - (f * saturation));
-        var t = brightness * (1 - ((1 - f) * saturation));
+        var p = v * (1 - saturation);
+        var q = v * (1 - f * saturation);
+        var t = v * (1 - (1 - f) * saturation);
 
-        if (hi == 0) return new CommandColor(v, t, p);
-        if (hi == 1) return new CommandColor(q, v, p);
-        if (hi == 2) return new CommandColor(p, v, t);
-        if (hi == 3) return new CommandColor(p, q, v);
-        if (hi == 4) return new CommandColor(t, p, v);
-        return new CommandColor(v, p, q);
+        return hi switch
+        {
+            0 => new(v, t, p),
+            1 => new(q, v, p),
+            2 => new(p, v, t),
+            3 => new(p, q, v),
+            4 => new(t, p, v),
+            _ => new(v, p, q)
+        };
     }
 
     ///<summary> Creates a <see cref="CommandColor"/> from a hex-code color. </summary>
     public static CommandColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
 
-    static byte toByte(double x)
-    {
-        x *= 255;
-        if (x > 255) return 255;
-        if (x < 0) return 0;
-        return (byte)x;
-    }
+    static byte toByte(double x) => byte.CreateTruncating(x * 255);
 
 #pragma warning disable CS1591
     public static implicit operator Color4(CommandColor obj) => new(obj.R, obj.G, obj.B, 255);
     public static implicit operator CommandColor(Color4 obj) => new(obj.R, obj.G, obj.B);
     public static implicit operator CommandColor(Color obj) => new(obj.R / 255d, obj.G / 255d, obj.B / 255d);
-    public static implicit operator Color(CommandColor obj) => Color.FromArgb(255, obj.R, obj.G, obj.B);
+    public static implicit operator Color(CommandColor obj) => Color.FromArgb(obj.R, obj.G, obj.B);
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
     public static bool operator ==(CommandColor left, CommandColor right) => left.Equals(right);
     public static bool operator !=(CommandColor left, CommandColor right) => !left.Equals(right);

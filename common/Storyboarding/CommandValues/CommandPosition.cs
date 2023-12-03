@@ -64,10 +64,8 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public static implicit operator osuTK.Vector2d(CommandPosition position) => new(position.x, position.y);
     public static implicit operator Vector2(CommandPosition position) => new(position.x, position.y);
     public static implicit operator PointF(CommandPosition position) => new(position.x, position.y);
-    public static implicit operator CommandScale(CommandPosition position) => new(position.x, position.y);
     public static implicit operator CommandPosition(osuTK.Vector2 vector) => new(vector.X, vector.Y);
     public static implicit operator CommandPosition(osuTK.Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator CommandPosition(Vector2 vector) => new(vector.X, vector.Y);
     public static implicit operator CommandPosition(PointF vector) => new(vector.X, vector.Y);
-    public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
 }

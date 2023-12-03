@@ -21,7 +21,7 @@ using System.Threading;
 
 namespace StorybrewCommon.Scripting;
 
-///<summary> Base abstract class for all storyboarding scripts. </summary>
+///<summary> Defines a storyboard script to run and generate. </summary>
 public abstract class StoryboardObjectGenerator : Script
 {
     static readonly AsyncLocal<StoryboardObjectGenerator> instance = new();
@@ -32,21 +32,20 @@ public abstract class StoryboardObjectGenerator : Script
     readonly List<ConfigurableField> configurableFields;
     GeneratorContext context;
 
-    ///<summary> Set to true if this script uses multiple threads. </summary>
-    ///<remarks> It will prevent other effects from updating in parallel to this one. </remarks>
+    ///<summary> Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating in parallel to this one. </summary>
     public bool Multithreaded { get; protected set; }
     
-    ///<summary> Gets the texture and image compressor for this instance. </summary>
+    ///<summary> Gets the texture and image compressor for this script. </summary>
     public ImageCompressor Compressor { get; private set; }
 
     ///<summary> Creates or retrieves a layer. </summary>
-    ///<remarks> The identifier will be shown in the editor as "Effect name (Identifier)". </remarks>
+    ///<remarks> The identifier will be shown in the editor as <b>Effect name (<paramref name="name"/>)</b>. </remarks>
     public StoryboardLayer GetLayer(string name) => context.GetLayer(name);
 
-    ///<summary> The current beatmap. </summary>
+    ///<summary> Gets the currently selected beatmap. </summary>
     public Beatmap Beatmap => context.Beatmap;
 
-    ///<summary> Gets the beatmap with the specified difficulty name, or if not found, gets a default value. </summary>
+    ///<summary> Gets the beatmap with the specified difficulty name, or if not found, the default beatmap. </summary>
     public Beatmap GetBeatmap(string name) => context.Beatmaps.FirstOrDefault(b => b.Name == name);
 
     ///<summary> Path to the directory of this project. </summary>
@@ -55,10 +54,10 @@ public abstract class StoryboardObjectGenerator : Script
     ///<summary> Path to the asset library directory of this project. </summary>
     public string AssetPath => context.ProjectAssetPath;
 
-    ///<summary> Path to the mapset target of this project. </summary>
+    ///<summary> Path to the mapset of this project. </summary>
     public string MapsetPath => context.MapsetPath;
 
-    ///<summary> Reserved </summary>
+    ///<summary>Reserved</summary>
     protected StoryboardObjectGenerator()
     {
         var fields = GetType().GetFields();
@@ -75,7 +74,7 @@ public abstract class StoryboardObjectGenerator : Script
         }
     }
 
-    ///<summary> Adds a dependency at the given <paramref name="path"/>. </summary>
+    ///<summary> Watches a dependency at <paramref name="path"/>. </summary>
     public void AddDependency(string path) => context.AddDependency(path);
 
     ///<summary> Logs a message on the effect. </summary>
@@ -96,9 +95,13 @@ public abstract class StoryboardObjectGenerator : Script
     readonly Dictionary<string, Bitmap> bitmaps = [];
 
     ///<summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
+    ///<param name="path"> The image path, relative to the project's folder. </param>
+    ///<param name="watch"> Watch the file as a dependency. </param>
     public Bitmap GetProjectBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
 
     ///<summary> Returns a <see cref="Bitmap"/> from the mapset's directory. </summary>
+    ///<param name="path"> The image path, relative to the mapset's folder. </param>
+    ///<param name="watch"> Watch the file as a dependency. </param>
     public Bitmap GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path), Path.Combine(context.ProjectAssetPath, path), watch);
 
     Bitmap getBitmap(string path, string alternatePath, bool watch)
@@ -106,8 +109,6 @@ public abstract class StoryboardObjectGenerator : Script
         path = Path.GetFullPath(path);
         if (!bitmaps.TryGetValue(path, out var bitmap)) using (var stream = File.OpenRead(path))
         {
-            if (watch) context.AddDependency(path);
-
             if (alternatePath is not null && !File.Exists(path))
             {
                 alternatePath = Path.GetFullPath(alternatePath);
@@ -122,15 +123,21 @@ public abstract class StoryboardObjectGenerator : Script
                     throw new FileNotFoundException(path, e);
                 }
             }
-            else bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
+            else
+            {
+                if (watch) context.AddDependency(path);
+                bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
+            }
         }
         return bitmap;
     }
 
-    ///<summary> Opens a project file in read-only mode. You are responsible for disposing it. </summary>
+    ///<summary> Opens a file, relative to the project folder, in read-only mode. </summary>
+    ///<remarks> Dispose of the returned <see cref="Stream"/> as soon as possible. </remarks>
     public Stream OpenProjectFile(string path, bool watch = true) => openFile(Path.Combine(context.ProjectPath, path), watch);
 
-    ///<summary> Opens a mapset file in read-only mode. You are responsible for disposing it. </summary>
+    ///<summary> Opens a file, relative to the mapset folder, in read-only mode. </summary>
+    ///<remarks> Dispose of the returned <see cref="Stream"/> as soon as possible. </remarks>
     public Stream OpenMapsetFile(string path, bool watch = true) => openFile(Path.Combine(context.MapsetPath, path), watch);
 
     FileStream openFile(string path, bool watch)
@@ -150,15 +157,15 @@ public abstract class StoryboardObjectGenerator : Script
 
     FastRandom rnd;
 
-    ///<summary> Gets a pseudo-random integer with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
+    ///<summary> Gets a random integer between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Random(int minValue, int maxValue) => rnd.Next(minValue, maxValue);
 
-    ///<summary> Gets a pseudo-random integer with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
+    ///<summary> Gets a random integer between 0 and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Random(int maxValue) => rnd.Next(maxValue);
 
-    ///<summary> Gets a pseudo-random number with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
+    ///<summary> Gets a random double-precision floating-point number between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double Random(double minValue, double maxValue)
     {
@@ -166,7 +173,7 @@ public abstract class StoryboardObjectGenerator : Script
         return minValue + (maxValue - minValue) * rnd.NextDouble();
     }
 
-    ///<summary> Gets a pseudo-random number with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
+    ///<summary> Gets a random double-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double Random(double maxValue)
     {
@@ -174,11 +181,11 @@ public abstract class StoryboardObjectGenerator : Script
         return rnd.NextDouble() * maxValue;
     }
 
-    ///<summary> Gets a pseudo-random float with minimum value <paramref name="minValue"/> and maximum value <paramref name="maxValue"/>. </summary>
+    ///<summary> Gets a random single-precision floating-point number between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float Random(float minValue, float maxValue) => (float)Random((double)minValue, maxValue);
 
-    ///<summary> Gets a pseudo-random float with minimum value 0 and maximum value <paramref name="maxValue"/>. </summary>
+    ///<summary> Gets a random single-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public float Random(float maxValue) => (float)Random((double)maxValue);
 
@@ -251,7 +258,7 @@ public abstract class StoryboardObjectGenerator : Script
 
     ///<summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
     ///<param name="directory"> The relative path to place the font textures. </param>
-    ///<param name="asAsset"> Whether to place textures in the asset library directory or the beatmap's storyboard directory. </param>
+    ///<param name="asAsset"> Output textures in the asset library directory. </param>
     ///<param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
     ///<param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
     ///<exception cref="InvalidOperationException"/>
@@ -261,12 +268,12 @@ public abstract class StoryboardObjectGenerator : Script
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
         if (fonts.ContainsKey(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
 
-        var fontGenerator = new FontGenerator(directory, description, effects, context.ProjectPath, assetDirectory);
+        FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
         fonts.Add(fontDirectory, fontGenerator);
 
         var cachePath = $"{fontCacheDirectory}/font.dat";
-        if (File.Exists(cachePath)) using (var file = new FileStream($"{fontCacheDirectory}/font.dat", FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
-        using (var cache = new ZipArchive(file, ZipArchiveMode.Read))
+        if (File.Exists(cachePath)) using (FileStream file = new($"{fontCacheDirectory}/font.dat", FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
+        using (ZipArchive cache = new(file, ZipArchiveMode.Read))
         {
             var path = cache.GetEntry(HashHelper.GetMd5(directory));
             if (path is not null)
@@ -391,7 +398,6 @@ public abstract class StoryboardObjectGenerator : Script
             this.context = context;
             rnd = new(RandomSeed);
             Compressor = new IntegratedCompressor();
-
             instance.Value = this;
 
             Generate();
@@ -400,7 +406,6 @@ public abstract class StoryboardObjectGenerator : Script
         finally
         {
             instance.Value = null;
-
             if (fonts.Count > 0) saveFontCache();
             this.context = null;
 

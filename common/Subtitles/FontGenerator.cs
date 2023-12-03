@@ -223,8 +223,8 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
     static byte toByte(float x) => byte.CreateTruncating(x * 255);
 
 #pragma warning disable CS1591
-    public static implicit operator FontColor(CommandColor obj) => new(obj.R, obj.G, obj.B);
-    public static implicit operator CommandColor(FontColor obj) => new(obj.R, obj.G, obj.B);
+    public static implicit operator FontColor(CommandColor obj) => new(obj.R / 255f, obj.G / 255f, obj.B / 255f);
+    public static implicit operator CommandColor(FontColor obj) => new(obj.r, obj.g, obj.b);
     public static implicit operator FontColor(Color obj) => new(obj.R / 255f, obj.G / 255f, obj.B / 255f, obj.A / 255f);
     public static implicit operator Color(FontColor obj) => Color.FromArgb(obj.A, obj.R, obj.G, obj.B);
     public static implicit operator FontColor(Color4 obj) => new(obj.R, obj.G, obj.B, obj.A);
@@ -365,7 +365,7 @@ public class FontGenerator(string directory, FontDescription description, FontEf
 
         if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0) return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
 
-        Bitmap realText = new(width, height);
+        using Bitmap realText = new(width, height);
         using (var textGraphics = Graphics.FromImage(realText))
         {
             textGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
@@ -405,13 +405,11 @@ public class FontGenerator(string directory, FontDescription description, FontEf
 
         if (!trimExist)
         {
-            using (var stream = File.Create(path, realText.Width * realText.Height))
+            using (FileStream stream = new(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
-                if (validBounds) using (var trim = realText.Clone(bounds, realText.PixelFormat)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
+                if (validBounds) using (var trim = realText.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
                 else Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
             }
-            realText.Dispose();
-
             StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(
                 path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath) ? 7 : 2));
         }
