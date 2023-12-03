@@ -14,7 +14,7 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
+using System.Windows.Forms;
 
 namespace StorybrewEditor;
 
@@ -136,18 +136,16 @@ public static class Program
     }
     static GameWindow createWindow(DisplayDevice displayDevice)
     {
-        Rectangle primaryScreenArea = new(
-            (int)SystemParameters.WorkArea.Left, (int)SystemParameters.WorkArea.Top,
-            (int)SystemParameters.FullPrimaryScreenWidth, (int)SystemParameters.FullPrimaryScreenHeight);
+        var workArea = Screen.PrimaryScreen.WorkingArea;
 
         var ratio = displayDevice.Width / (float)displayDevice.Height;
-        double windowWidth = 1366, windowHeight = windowWidth / ratio;
-        if (windowHeight >= primaryScreenArea.Height)
+        float windowWidth = 1366, windowHeight = windowWidth / ratio;
+        if (windowHeight >= workArea.Height)
         {
             windowWidth = 1024;
             windowHeight = windowWidth / ratio;
 
-            if (windowWidth >= primaryScreenArea.Width)
+            if (windowWidth >= workArea.Width)
             {
                 windowWidth = 800;
                 windowHeight = windowWidth / ratio;
@@ -155,19 +153,16 @@ public static class Program
         }
 
         GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible);
-        var scale = window.Height / windowHeight;
-        Trace.WriteLine($"Window dpi scale: {scale}");
+        Native.InitializeHandle(Name, window.WindowInfo.Handle);
+        Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
-        window.X = (int)(primaryScreenArea.X + (primaryScreenArea.Width - window.Width / scale) * .5f);
-        window.Y = (int)(primaryScreenArea.Y + (primaryScreenArea.Height - window.Height / scale) * .5f);
-
+        window.Location = new(workArea.X + (workArea.Width - window.Size.Width) / 2, workArea.Y + (workArea.Height - window.Size.Height) / 2);
         if (window.Location.X < 0 || window.Location.Y < 0)
         {
-            window.Location = primaryScreenArea.Location;
-            window.Size = primaryScreenArea.Size;
-            window.WindowState = osuTK.WindowState.Maximized;
+            window.Location = workArea.Location;
+            window.Size = workArea.Size;
+            window.WindowState = WindowState.Maximized;
         }
-        Native.InitializeHandle(Name, window.WindowInfo.Handle);
 
         return window;
     }
@@ -208,7 +203,7 @@ public static class Program
             if (!window.Exists || window.IsExiting) return;
 
             window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
-            if (window.WindowState != osuTK.WindowState.Minimized)
+            if (window.WindowState != WindowState.Minimized)
             {
                 var tween = Math.Min((cur - fixedRate) / fixedRateUpdate, 1);
                 editor.Draw(tween);
@@ -224,7 +219,7 @@ public static class Program
             RunScheduledTasks();
 
             var active = (float)watch.Elapsed.TotalMilliseconds - cur;
-            if (window.WindowState != osuTK.WindowState.Minimized)
+            if (window.WindowState != WindowState.Minimized)
             {
                 var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
                 if (sleepTime > 0) using (var wait = Task.Delay((int)sleepTime)) wait.Wait();
@@ -370,8 +365,8 @@ public static class Program
                 if (reportType is not null) Report(reportType, e);
                 if (show)
                 {
-                    var result = MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButton.OKCancel);
-                    if (result == MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
+                    var result = MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButtons.OKCancel);
+                    if (result == DialogResult.OK) NetHelper.OpenUrl(DiscordUrl);
                 }
             }
             catch (Exception e2)

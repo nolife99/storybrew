@@ -5,8 +5,8 @@ using BrewLib.Util;
 using System.Numerics;
 using osuTK.Input;
 using System;
-using System.Windows;
 using System.Drawing;
+using System.Windows.Forms;
 
 namespace BrewLib.UserInterface;
 

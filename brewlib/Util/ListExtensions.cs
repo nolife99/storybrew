@@ -34,7 +34,7 @@ public static class ListExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Dispose<TKey, TValue>(this IDictionary<TKey, TValue> disposable) where TValue : IDisposable
     {
-        foreach (var reference in disposable.Values) reference.Dispose();
+        foreach (var reference in disposable.Values) reference?.Dispose();
         disposable.Clear();
     }
 }

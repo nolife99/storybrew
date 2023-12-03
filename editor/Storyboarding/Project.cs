@@ -619,7 +619,7 @@ public sealed class Project : IDisposable
                 { "Multithreaded", effect.Multithreaded }
             };
 
-            TinyObject configRoot = new();
+            TinyObject configRoot = [];
             effectRoot.Add("Config", configRoot);
 
             foreach (var field in effect.Config.SortedFields)

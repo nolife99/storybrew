@@ -16,14 +16,13 @@ using StorybrewEditor.ScreenLayers;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Windows;
-using System.Windows.Interop;
 
 namespace StorybrewEditor;
 
 public sealed class Editor(GameWindow window) : IDisposable
 {
     public GameWindow Window => window;
+    public readonly System.Windows.Forms.IWin32Window FormsWindow = new DialogParent();
 
     readonly FrameClock clock = new();
     public FrameTimeSource TimeSource => clock;
@@ -236,5 +235,9 @@ public sealed class Editor(GameWindow window) : IDisposable
         var virtualWidth = width * virtualHeight / height;
         overlayCamera.VirtualWidth = (int)virtualWidth;
         overlay.Size = new(virtualWidth, virtualHeight);
+    }
+    class DialogParent : System.Windows.Forms.IWin32Window
+    {
+        public nint Handle => Native.MainWindowHandle;
     }
 }

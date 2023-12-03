@@ -4,10 +4,12 @@
     <OutputType>Library</OutputType>
     <RootNamespace>scripts</RootNamespace>
     <AssemblyName>StorybrewScripts</AssemblyName>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <Company>storybrew</Company>
     <Product>storybrew scripts</Product>
     <Copyright>Copyright © Damnae 2016</Copyright>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
   </PropertyGroup>
 
   <ItemGroup>
