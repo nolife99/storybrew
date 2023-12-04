@@ -89,16 +89,16 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
     readonly float r, g, b, a;
 
     ///<summary> Gets the red value of this instance. </summary>
-    public byte R => toByte(r);
+    public byte R => byte.CreateTruncating(r * 255);
 
     ///<summary> Gets the green value of this instance. </summary>
-    public byte G => toByte(g);
+    public byte G => byte.CreateTruncating(g * 255);
 
     ///<summary> Gets the blue value of this instance. </summary>
-    public byte B => toByte(b);
+    public byte B => byte.CreateTruncating(b * 255);
 
     ///<summary> Gets the blue value of this instance. </summary>
-    public byte A => toByte(a);
+    public byte A => byte.CreateTruncating(a * 255);
 
     ///<summary> Constructs a new <see cref="CommandColor"/> from red, green, and blue values from 0.0 to 1.0. </summary>
     public FontColor(float r = 1, float g = 1, float b = 1, float a = 1)
@@ -220,8 +220,6 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
     ///<summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
     public static FontColor FromHtml(string htmlColor) => ColorTranslator.FromHtml(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
 
-    static byte toByte(float x) => byte.CreateTruncating(x * 255);
-
 #pragma warning disable CS1591
     public static implicit operator FontColor(CommandColor obj) => new(obj.R / 255f, obj.G / 255f, obj.B / 255f);
     public static implicit operator CommandColor(FontColor obj) => new(obj.r, obj.g, obj.b);
@@ -299,7 +297,7 @@ public class FontGenerator(string directory, FontDescription description, FontEf
     {
         // wtf is this
         var filename = text.Length == 1 ?
-            $"{(!PathHelper.IsValidFilename(text[0].ToString(CultureInfo.InvariantCulture)) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' : text[0].ToString(CultureInfo.InvariantCulture)))}.png" :
+            $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' : text[0]))}.png" :
             $"_{cache.Count(l => l.Key.Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
         var trimExist = false;
@@ -320,27 +318,22 @@ public class FontGenerator(string directory, FontDescription description, FontEf
         float offsetX = 0, offsetY = 0;
         int baseWidth, baseHeight, width, height;
 
-        FontFamily family = null;
-        PrivateFontCollection collection = new();
+        using PrivateFontCollection collection = new();
 
-        if (File.Exists(fontPath))
-        {
-            collection.AddFontFile(fontPath);
-            family = collection.Families[0];
-        }
+        if (File.Exists(fontPath)) collection.AddFontFile(fontPath);
+        using var family = File.Exists(fontPath) ? collection.Families[0] : null;
 
-        var graphics = Graphics.FromHwnd(0);
+        using var graphics = Graphics.FromHwnd(0);
         var dpiScale = 96 / graphics.DpiY;
         using Font font = family is not null ? new(family, description.FontSize * dpiScale, description.FontStyle) : new(fontPath, description.FontSize * dpiScale, description.FontStyle);
 
-        StringFormat format = new(StringFormat.GenericTypographic)
+        using StringFormat format = new(StringFormat.GenericTypographic)
         {
             Alignment = StringAlignment.Center,
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
 
         var measuredSize = graphics.MeasureString(text, font, 0, format);
-        graphics.Dispose();
 
         baseWidth = (int)Math.Ceiling(measuredSize.Width);
         baseHeight = (int)Math.Ceiling(measuredSize.Height);
@@ -381,10 +374,6 @@ public class FontGenerator(string directory, FontDescription description, FontEf
             for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(realText, textGraphics, font, format, text, x, y);
             if (!description.EffectsOnly) using (SolidBrush draw = new(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
             for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(realText, textGraphics, font, format, text, x, y);
-
-            font.Dispose();
-            collection.Dispose();
-            format.Dispose();
 
             if (description.Debug) using (Pen pen = new(Color.Red))
             {

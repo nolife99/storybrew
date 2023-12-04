@@ -13,8 +13,6 @@ namespace StorybrewCommon.Animations;
 public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpolate = null, TValue defaultValue = default) : MarshalByRefObject, IEnumerable<Keyframe<TValue>>
 {
     List<Keyframe<TValue>> keyframes = [];
-    readonly Func<TValue, TValue, double, TValue> interpolate = interpolate;
-    readonly TValue defaultValue = defaultValue;
 
     ///<summary> Returns the start time of the first keyframe in the keyframed value. </summary>
     public double StartTime => keyframes.Count == 0 ? int.MinValue : keyframes[0].Time;
@@ -313,9 +311,9 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
                 else if (j == count - 1) i = j;
             }
         }
-        simplifiedKeyframes.Capacity = simplifiedKeyframes.Count;
 
         Clear(true);
+        simplifiedKeyframes.Capacity = simplifiedKeyframes.Count;
         keyframes = simplifiedKeyframes;
     }
 
@@ -334,41 +332,39 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         var firstPoint = 0;
         var lastPoint = keyframes.Count - 1;
 
-        SortedSet<int> keyframesToKeep = [firstPoint, lastPoint];
-        getSimplifiedKeyframeIndexes(ref keyframesToKeep, firstPoint, lastPoint, tolerance, getDistance);
+        List<int> keepIndex = [firstPoint, lastPoint];
+        getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, lastPoint, tolerance, getDistance);
 
-        if (keyframesToKeep.Count == keyframes.Count) return;
+        if (keepIndex.Count == keyframes.Count) return;
 
-        List<Keyframe<TValue>> simplifiedKeyframes = new(keyframesToKeep.Count);
-        foreach (var keep in keyframesToKeep)
-        {
-            var keyframe = keyframes[keep];
-            simplifiedKeyframes.Add(new(keyframe.Time, keyframe.Value));
-        }
+        List<Keyframe<TValue>> simplifiedKeyframes = new(keepIndex.Count);
+        keepIndex.Sort(new Comparison<int>((x, y) => x - y));
+
+        for (var i = 0; i < keepIndex.Count; ++i) simplifiedKeyframes.Add(keyframes[keepIndex[i]]);
+        Clear(true);
         keyframes = simplifiedKeyframes;
     }
-    void getSimplifiedKeyframeIndexes(ref SortedSet<int> keyframesToKeep, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
+    void getSimplifiedKeyframeIndexes(ref List<int> keepIndex, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
     {
         var start = keyframes[firstPoint];
         var end = keyframes[lastPoint];
 
-        var maxDistance = 0d;
-        var indexFarthest = 0;
+        var maxDistance = 0f;
+        var indexFurthest = 0;
         for (var i = firstPoint; i < lastPoint; ++i)
         {
-            var middle = keyframes[i];
-            var distance = getDistance(start, middle, end);
+            var distance = getDistance(start, keyframes[i], end);
             if (distance > maxDistance)
             {
                 maxDistance = distance;
-                indexFarthest = i;
+                indexFurthest = i;
             }
         }
-        if (maxDistance > tolerance && indexFarthest > 0)
+        if (maxDistance > tolerance && indexFurthest > 0)
         {
-            keyframesToKeep.Add(indexFarthest);
-            getSimplifiedKeyframeIndexes(ref keyframesToKeep, firstPoint, indexFarthest, tolerance, getDistance);
-            getSimplifiedKeyframeIndexes(ref keyframesToKeep, indexFarthest, lastPoint, tolerance, getDistance);
+            keepIndex.Add(indexFurthest);
+            getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, indexFurthest, tolerance, getDistance);
+            getSimplifiedKeyframeIndexes(ref keepIndex, indexFurthest, lastPoint, tolerance, getDistance);
         }
     }
 

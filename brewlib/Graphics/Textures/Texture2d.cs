@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures;
@@ -82,17 +81,23 @@ public class Texture2d(int textureId, int width, int height, string description)
         if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
 
         textureOptions ??= TextureOptions.Default;
+
+        var channel = color.ToArgb();
         if (textureOptions.PreMultiply)
         {
             var ratio = color.A / 255f;
-            color = Color.FromArgb(color.A, (int)(color.R * ratio), (int)(color.G * ratio), (int)(color.B * ratio));
+            channel = (color.A << 24) | ((int)(color.R * ratio) << 16) | ((int)(color.G * ratio) << 8) | (int)(color.B * ratio);
         }
         
         var textureId = GL.GenTexture();
         try
         {
             DrawState.BindTexture(textureId);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, Enumerable.Repeat(color.ToArgb(), width * height).ToArray());
+
+            var array = GC.AllocateUninitializedArray<int>(width * height);
+            new Span<int>(array).Fill(channel);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, array);
+            
             if (textureOptions.GenerateMipmaps)
             {
                 GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
@@ -117,8 +122,8 @@ public class Texture2d(int textureId, int width, int height, string description)
         textureOptions ??= TextureOptions.Default;
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
-        var textureWidth = Math.Min(DrawState.MaxTextureSize, bitmap.Width);
-        var textureHeight = Math.Min(DrawState.MaxTextureSize, bitmap.Height);
+        var width = Math.Min(DrawState.MaxTextureSize, bitmap.Width);
+        var height = Math.Min(DrawState.MaxTextureSize, bitmap.Height);
 
         var textureId = GL.GenTexture();
         try
@@ -127,11 +132,12 @@ public class Texture2d(int textureId, int width, int height, string description)
 
             textureOptions.WithBitmap(bitmap, b =>
             {
-                var bitmapData = b.LockBits(new Rectangle(0, 0, textureWidth, textureHeight), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, b.Width, b.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, bitmapData.Scan0);
+                var data = b.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, b.Width, b.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
                 if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
                 GL.Finish();
-                b.UnlockBits(bitmapData);
+                b.UnlockBits(data);
             });
             DrawState.CheckError("specifying texture");
 
@@ -143,6 +149,6 @@ public class Texture2d(int textureId, int width, int height, string description)
             DrawState.UnbindTexture(textureId);
             throw;
         }
-        return new(textureId, textureWidth, textureHeight, description);
+        return new(textureId, width, height, description);
     }
 }
