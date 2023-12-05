@@ -6,7 +6,6 @@ namespace BrewLib.Input;
 
 public class GamepadManager(int gamepadIndex)
 {
-    readonly int gamepadIndex = gamepadIndex;
     GamePadState state = GamePad.GetState(gamepadIndex);
     KeyboardState? keyboardState;
     Vector2 thumb, thumbAlt;

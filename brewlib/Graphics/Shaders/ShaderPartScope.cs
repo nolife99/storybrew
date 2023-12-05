@@ -9,7 +9,6 @@ public class ShaderPartScope(string variablePrefix)
     int lastId;
     string nextGenericName => $"_{variablePrefix}_{lastId++:000}";
 
-    readonly string variablePrefix = variablePrefix;
     readonly List<ShaderVariable> variables = [];
 
     public ShaderVariable AddVariable(ShaderContext context, string shaderTypeName)

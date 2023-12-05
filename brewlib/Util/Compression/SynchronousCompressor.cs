@@ -120,7 +120,7 @@ namespace BrewLib.Util.Compression
         }
         protected override void ensureTool()
         {
-            ObjectDisposedException.ThrowIf(disposed, typeof(SynchronousCompressor));
+            ObjectDisposedException.ThrowIf(disposed, this);
 
             var path = GetUtility();
             File.WriteAllBytes(path, container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));

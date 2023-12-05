@@ -63,7 +63,7 @@ public class OsbSprite : StoryboardObject
         }
     }
 
-    ///<summary> Gets the list of commands on this sprite. </summary>
+    ///<summary> Gets a list of commands on this sprite. </summary>
     public IEnumerable<ICommand> Commands => commands;
 
     ///<returns> The total amount of commands being run on this instance of the <see cref="OsbSprite"/>. </returns>

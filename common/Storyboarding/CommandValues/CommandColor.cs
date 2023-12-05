@@ -66,7 +66,8 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public override bool Equals(object obj) => obj is not null && obj is CommandColor color && Equals(color);
 
     ///<summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
-    public override int GetHashCode() => ((Color)this).ToArgb();
+    ///<remarks> Some color information could be lost. </remarks>
+    public override int GetHashCode() => 0 | (B << 16) | (G << 8) | R;
 
     ///<summary> Converts this instance into a string, formatted as "R, G, B". </summary>
     public override string ToString() => $"{R}, {G}, {B}";
@@ -75,10 +76,11 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public string ToOsbString(ExportSettings exportSettings) => $"{R},{G},{B}";
 
     ///<summary> Returns a <see cref="CommandColor"/> structure that represents the hash code's color information. </summary>
-    public static CommandColor FromHashCode(int code) => Color.FromArgb(code);
+    ///<remarks> Some color information could be lost. </remarks>
+    public static CommandColor FromHashCode(int code) => FromRgb(code & 0xFF, (code >> 8) & 0xFF, (code >> 16) & 0xFF);
 
     ///<summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
-    public static CommandColor FromRgb(byte r, byte g, byte b) => new(r / 255d, g / 255d, b / 255d);
+    public static CommandColor FromRgb(int r, int g, int b) => new(r / 255d, g / 255d, b / 255d);
 
     ///<summary> Creates a <see cref="CommandColor"/> from HSB values. <para>Hue: 0 - 360 | Saturation: 0 - 1 | Brightness: 0 - 1</para></summary>
     public static CommandColor FromHsb(double hue, double saturation, double brightness)

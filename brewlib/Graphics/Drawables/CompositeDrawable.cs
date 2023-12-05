@@ -17,12 +17,12 @@ public class CompositeDrawable : Drawable
             var minWidth = 0f;
             var minHeight = 0f;
 
-            Drawables.ForEach(drawable =>
+            for (var i = 0; i < Drawables.Count; ++i) 
             {
-                var minSize = drawable.MinSize;
+                var minSize = Drawables[i].MinSize;
                 minWidth = Math.Min(minWidth, minSize.X);
                 minHeight = Math.Min(minWidth, minSize.Y);
-            });
+            }
             return new(minWidth, minHeight);
         }
     }
@@ -33,12 +33,12 @@ public class CompositeDrawable : Drawable
             var maxWidth = 0f;
             var maxHeight = 0f;
 
-            Drawables.ForEach(drawable =>
+            for (var i = 0; i < Drawables.Count; ++i)
             {
-                var preferredSize = drawable.PreferredSize;
+                var preferredSize = Drawables[i].PreferredSize;
                 maxWidth = Math.Min(maxWidth, preferredSize.X);
                 maxHeight = Math.Min(maxHeight, preferredSize.Y);
-            });
+            }
             return new(maxWidth, maxHeight);
         }
     }

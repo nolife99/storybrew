@@ -7,6 +7,7 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using BrewLib.Util;
+using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Storyboarding3d;
 
@@ -69,7 +70,9 @@ public class Object3d
             Opacity.ValueAt(time) * (InheritsOpacity ? parent3dState.Opacity : 1));
 
         GenerateStates(time, cameraState, object3dState);
-        for (var i = 0; i < children.Count; ++i) children[i].GenerateTreeStates(time, cameraState, object3dState);
+
+        var span = CollectionsMarshal.AsSpan(children);
+        for (var i = 0; i < span.Length; ++i) span[i].GenerateTreeStates(time, cameraState, object3dState);
     }
 
     ///<summary> Generates commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
@@ -81,7 +84,9 @@ public class Object3d
     public void GenerateTreeCommands(Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
     {
         GenerateCommands(action, startTime, endTime, timeOffset, loopable);
-        for (var i = 0; i < children.Count; ++i) children[i].GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
+
+        var span = CollectionsMarshal.AsSpan(children);
+        for (var i = 0; i < span.Length; ++i) span[i].GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
     }
 
     ///<summary> Generates loop commands on this instance's base sprites based on its <see cref="State"/>s. </summary>

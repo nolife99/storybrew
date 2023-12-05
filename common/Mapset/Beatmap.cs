@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
 
 namespace StorybrewCommon.Mapset;
 
 ///<summary> Represents an osu! beatmap difficulty. </summary>
-public abstract class Beatmap : MarshalByRefObject
+public abstract class Beatmap
 {
     ///<summary> In milliseconds </summary>
     public const int ControlPointLeniency = 5;

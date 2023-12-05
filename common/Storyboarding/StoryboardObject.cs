@@ -1,10 +1,9 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace StorybrewCommon.Storyboarding;
 
 ///<summary> Basic class for storyboarding objects. </summary>
-public abstract class StoryboardObject : MarshalByRefObject
+public abstract class StoryboardObject
 {
     ///<summary> Start time of this storyboard object. </summary>
     public abstract double StartTime { get; }

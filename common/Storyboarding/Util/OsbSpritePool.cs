@@ -344,9 +344,7 @@ namespace StorybrewCommon.Storyboarding.Util
         OsbSpritePool getPool(string path, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes, int group)
         {
             var key = getKey(path, origin, attributes, group);
-            if (!pools.TryGetValue(key, out var pool))
-                pools[key] = pool = new(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
-
+            if (!pools.TryGetValue(key, out var pool)) pools[key] = pool = new(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
             return pool;
         }
         OsbAnimationPool getPool(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition position, Action<OsbSprite, double, double> attributes, int group)

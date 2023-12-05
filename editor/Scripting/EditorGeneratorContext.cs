@@ -1,15 +1,17 @@
 ﻿using BrewLib.Audio;
 using BrewLib.Util;
 using StorybrewCommon.Mapset;
+using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewEditor.Mapset;
+using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace StorybrewEditor.Storyboarding;
+namespace StorybrewEditor.Scripting;
 
 public sealed class EditorGeneratorContext(Effect effect, string projectPath, string projectAssetPath, string mapsetPath, EditorBeatmap beatmap, IEnumerable<EditorBeatmap> beatmaps, MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {

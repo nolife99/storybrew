@@ -82,13 +82,13 @@ public class ScriptedEffect : Effect
         }
         catch (ScriptCompilationException e)
         {
-            Debug.Print($"Script compilation failed for {BaseName}\n{e.Message}");
+            Trace.TraceWarning($"Script compilation failed for {BaseName}\n{e.Message}");
             changeStatus(EffectStatus.CompilationFailed, e.Message, context.Log);
             return;
         }
         catch (ScriptLoadingException e)
         {
-            Debug.Print($"Script load failed for {BaseName}\n{e}");
+            Trace.TraceWarning($"Script load failed for {BaseName}\n{e}");
             changeStatus(EffectStatus.LoadingFailed, e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message, context.Log);
             return;
         }

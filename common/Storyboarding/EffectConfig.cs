@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 namespace StorybrewCommon.Storyboarding;
 
 #pragma warning disable CS1591
-public class EffectConfig : MarshalByRefObject
+public class EffectConfig
 {
     readonly Dictionary<string, ConfigField> fields = [];
 

@@ -22,15 +22,15 @@ public class AudioStream : AudioChannel
             {
                 FileProcedures procedures = new()
                 {
-                    Read = (buffer, length, user) =>
+                    Read = (buffer, _, _) =>
                     {
                         int read, readBytes = 0;
                         while ((read = resourceStream.ReadByte()) != -1) Marshal.WriteByte(buffer + readBytes++, (byte)read);
                         return readBytes;
                     },
-                    Length = user => resourceStream.Length,
-                    Seek = (offset, user) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
-                    Close = user => resourceStream.Dispose()
+                    Length = _ => resourceStream.Length,
+                    Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
+                    Close = _ => resourceStream.Dispose()
                 };
                 decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, procedures);
             }

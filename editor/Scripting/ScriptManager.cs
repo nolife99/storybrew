@@ -83,7 +83,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
     public ScriptContainer<TScript> Get(string scriptName)
     {
-        ObjectDisposedException.ThrowIf(disposed, GetType());
+        ObjectDisposedException.ThrowIf(disposed, this);
         if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
 
         var scriptTypeName = $"{scriptsNamespace}.{scriptName}";

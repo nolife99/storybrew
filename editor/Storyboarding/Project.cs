@@ -3,9 +3,7 @@ using BrewLib.Data;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
-using BrewLib.UserInterface;
 using BrewLib.Util;
-using osuTK;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
@@ -19,9 +17,9 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.Loader;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Tiny;
 
 namespace StorybrewEditor.Storyboarding;
@@ -184,7 +182,7 @@ public sealed class Project : IDisposable
 
     public Effect AddScriptedEffect(string scriptName, bool multithreaded = false)
     {
-        ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
+        ObjectDisposedException.ThrowIf(Disposed, this);
 
         ScriptedEffect effect = new(this, scriptManager.Get(scriptName), multithreaded)
         {
@@ -203,7 +201,7 @@ public sealed class Project : IDisposable
     }
     public void Remove(Effect effect)
     {
-        ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
+        ObjectDisposedException.ThrowIf(Disposed, this);
 
         effects.Remove(effect);
         effect?.Dispose();
@@ -231,7 +229,7 @@ public sealed class Project : IDisposable
     void refreshEffectsStatus()
     {
         var previousStatus = EffectsStatus;
-        var isUpdating = effectUpdateQueue.TaskCount > 0;
+        var isUpdating = effectUpdateQueue?.TaskCount > 0;
         var hasError = false;
 
         effects.ForEach(effect =>
@@ -382,23 +380,17 @@ public sealed class Project : IDisposable
 
     #region Assemblies
 
-    static readonly string[] defaultAssemblies =
-    [
-        "System.Runtime.dll",
-        "System.Numerics.Vectors.dll",
-        "netstandard.dll",
-        typeof(Label).Assembly.Location,
-        typeof(Enumerable).Assembly.Location,
-        typeof(object).Assembly.Location,
-        typeof(Box2).Assembly.Location,
-        typeof(Script).Assembly.Location,
-        typeof(Font).Assembly.Location,
-        typeof(Size).Assembly.Location,
-        typeof(Parallel).Assembly.Location
-    ];
-    public static IEnumerable<string> DefaultAssemblies => defaultAssemblies;
+    public static IEnumerable<string> DefaultAssemblies
+    {
+        get
+        {
+            HashSet<string> distinct = [];
+            foreach (var asm in AssemblyLoadContext.Default.Assemblies) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
+            return distinct;
+        }
+    }
 
-    List<string> importedAssemblies = [];
+    HashSet<string> importedAssemblies = [];
     public IEnumerable<string> ImportedAssemblies
     {
         get => importedAssemblies;
@@ -406,12 +398,12 @@ public sealed class Project : IDisposable
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
 
-            importedAssemblies = value as List<string> ?? value.ToList();
+            importedAssemblies = value as HashSet<string> ?? value.ToHashSet();
             scriptManager.ReferencedAssemblies = ReferencedAssemblies;
         }
     }
 
-    public IEnumerable<string> ReferencedAssemblies => defaultAssemblies.Union(importedAssemblies);
+    public IEnumerable<string> ReferencedAssemblies => DefaultAssemblies.Union(importedAssemblies);
 
     #endregion
 
@@ -449,7 +441,7 @@ public sealed class Project : IDisposable
     }
     void saveBinary(string path)
     {
-        ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
+        ObjectDisposedException.ThrowIf(Disposed, this);
 
         using var file = File.Create(path); 
         using DeflateStream dfl = new(file, CompressionLevel.Optimal); 
@@ -574,7 +566,7 @@ public sealed class Project : IDisposable
     }
     void saveText(string path)
     {
-        ObjectDisposedException.ThrowIf(Disposed, typeof(Project));
+        ObjectDisposedException.ThrowIf(Disposed, this);
 
         if (!File.Exists(path)) File.WriteAllText(path, "# This file is used to open the project\n# Project data is contained in /.sbrew");
 
@@ -685,7 +677,6 @@ public sealed class Project : IDisposable
             if (userVersion > Version) throw new InvalidOperationException("This project's user settings were saved with a newer version; you need to update.");
 
             var savedBy = userRoot.Value<string>("Editor");
-            Debug.Print($"Project saved by {savedBy}");
 
             ExportSettings.UseFloatForTime = userRoot.Value<bool>("ExportTimeAsFloatingPoint");
             OwnsOsb = userRoot.Value<bool>("OwnsOsb");
@@ -785,7 +776,7 @@ public sealed class Project : IDisposable
 
     public void ExportToOsb(bool exportOsb = true)
     {
-        ObjectDisposedException.ThrowIf(Disposed, GetType());
+        ObjectDisposedException.ThrowIf(Disposed, this);
 
         string osuPath = null, osbPath = null;
         IEnumerable<EditorStoryboardLayer> localLayers = null, diffSpecific = null, sbLayer;

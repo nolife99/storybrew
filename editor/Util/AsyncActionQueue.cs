@@ -49,7 +49,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
     public void Queue(T target, string uniqueKey, Action<T> action, bool mustRunAlone = false)
     {
-        ObjectDisposedException.ThrowIf(disposed, GetType());
+        ObjectDisposedException.ThrowIf(disposed, this);
 
         Parallel.ForEach(actionRunners, runner => runner.EnsureThreadAlive());
         lock (context.Queue)

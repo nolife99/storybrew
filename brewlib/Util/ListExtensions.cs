@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BrewLib.Util;
 
@@ -20,9 +21,10 @@ public static class ListExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
     {
+        var span = CollectionsMarshal.AsSpan(list);
         try
         {
-            for (var i = 0; i < list.Count; ++i) if (condition(list[i])) action(list[i]);
+            for (var i = 0; i < span.Length; ++i) if (condition(span[i])) action(span[i]);
         }
         catch
         {

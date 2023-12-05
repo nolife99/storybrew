@@ -1,6 +1,5 @@
 ﻿using osuTK.Graphics.OpenGL;
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
@@ -97,9 +96,6 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> wh
     }
     public void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
     {
-        Debug.Assert(primitiveCount <= primitives.Length);
-        Debug.Assert((drawCount & primitiveCount) == 0);
-
         GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * primitiveSize, primitives, BufferUsageHint.StreamDraw);
         ++DiscardedBufferCount;
 

@@ -5,19 +5,19 @@ namespace StorybrewCommon.Animations;
 
 /// <summary> Represents a basic keyframe with a time and value. </summary>
 /// <typeparam name="TValue"> A type that represents the value of this keyframe. </typeparam>
-public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, IComparable<Keyframe<TValue>>, IComparer<Keyframe<TValue>>
+public readonly struct Keyframe<TValue>(double time, TValue value, Func<double, double> easing, bool until) : IEquatable<Keyframe<TValue>>, IComparable<Keyframe<TValue>>, IComparer<Keyframe<TValue>>
 {
     ///<summary> Time of this keyframe. </summary>
-    public readonly double Time;
+    public readonly double Time = time;
 
     ///<summary> Type value of this keyframe. </summary>
-    public readonly TValue Value;
+    public readonly TValue Value = value;
 
     ///<summary> <see cref="EasingFunctions"/> type of this keyframe. </summary>
-    public readonly Func<double, double> Ease;
+    public readonly Func<double, double> Ease = easing ?? EasingFunctions.Linear;
 
     ///<summary> Reserved for <see cref="Storyboarding.Util.CommandGenerator"/>. Do not use. </summary>
-    internal readonly bool Until;
+    internal readonly bool Until = until;
 
     ///<summary> Initializes a new keyframe with default type value. </summary>
     ///<param name="time"> Time of the keyframe. </param>
@@ -28,14 +28,6 @@ public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, ICompara
     ///<param name="value"> Any type value to be assigned to the keyframe. </param>
     ///<param name="easing"> An <see cref="EasingFunctions"/> type to be assigned. </param>
     public Keyframe(double time, TValue value, Func<double, double> easing = null) : this(time, value, easing, false) { }
-
-    internal Keyframe(double time, TValue value, Func<double, double> easing, bool until)
-    {
-        Time = time;
-        Value = value;
-        Ease = easing ?? EasingFunctions.Linear;
-        Until = until;
-    }
 
     ///<summary> Overrides a keyframe with a new time. </summary>
     ///<param name="time"> The time to be overriden with. </param>

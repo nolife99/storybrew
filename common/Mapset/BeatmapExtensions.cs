@@ -48,32 +48,29 @@ public static class BeatmapExtensions
     }
     public static void AsSliderNodes(this IEnumerable<OsuHitObject> hitobjects, Action<OsuSliderNode, OsuHitObject> action)
     {
-        foreach (var hitobject in hitobjects)
+        foreach (var hitobject in hitobjects) switch (hitobject)
         {
-            switch (hitobject)
+            case OsuCircle circle: action(new()
             {
-                case OsuCircle circle: action(new()
-                {
-                    Time = circle.StartTime,
-                    Additions = circle.Additions,
-                    SampleSet = circle.SampleSet,
-                    AdditionsSampleSet = circle.AdditionsSampleSet,
-                    CustomSampleSet = circle.CustomSampleSet,
-                    Volume = circle.Volume
-                }, hitobject); break;
+                Time = circle.StartTime,
+                Additions = circle.Additions,
+                SampleSet = circle.SampleSet,
+                AdditionsSampleSet = circle.AdditionsSampleSet,
+                CustomSampleSet = circle.CustomSampleSet,
+                Volume = circle.Volume
+            }, hitobject); break;
 
-                case OsuSlider slider: foreach (var node in slider.Nodes) action(node, hitobject); break;
+            case OsuSlider slider: foreach (var node in slider.Nodes) action(node, hitobject); break;
 
-                case OsuSpinner spinner: action(new()
-                {
-                    Time = spinner.EndTime,
-                    Additions = spinner.Additions,
-                    SampleSet = spinner.SampleSet,
-                    AdditionsSampleSet = spinner.AdditionsSampleSet,
-                    CustomSampleSet = spinner.CustomSampleSet,
-                    Volume = spinner.Volume
-                }, hitobject); break;
-            }
+            case OsuSpinner spinner: action(new()
+            {
+                Time = spinner.EndTime,
+                Additions = spinner.Additions,
+                SampleSet = spinner.SampleSet,
+                AdditionsSampleSet = spinner.AdditionsSampleSet,
+                CustomSampleSet = spinner.CustomSampleSet,
+                Volume = spinner.Volume
+            }, hitobject); break;
         }
     }
 }

@@ -5,7 +5,7 @@ using System.IO;
 namespace StorybrewCommon.Storyboarding.Commands;
 
 #pragma warning disable CS1591
-public abstract class CommandGroup : MarshalByRefObject, ICommand
+public abstract class CommandGroup : ICommand
 {
     bool ended;
 

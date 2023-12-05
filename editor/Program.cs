@@ -8,7 +8,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Runtime.CompilerServices;
@@ -153,7 +152,7 @@ public static class Program
         }
 
         GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible);
-        Native.InitializeHandle(Name, window.WindowInfo.Handle);
+        Native.InitializeHandle(Name);
         Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
         window.Location = new(workArea.X + (workArea.Width - window.Size.Width) / 2, workArea.Y + (workArea.Height - window.Size.Height) / 2);

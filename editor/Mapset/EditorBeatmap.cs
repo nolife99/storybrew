@@ -8,6 +8,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace StorybrewEditor.Mapset;
 
@@ -82,21 +84,14 @@ public class EditorBeatmap(string path) : Beatmap
     readonly List<ControlPoint> controlPoints = [];
 
     public override IEnumerable<ControlPoint> ControlPoints => controlPoints;
-    public override IEnumerable<ControlPoint> TimingPoints
-    {
-        get
-        {
-            var timingPoints = new List<ControlPoint>();
-            foreach (var controlPoint in controlPoints) if (!controlPoint.IsInherited) timingPoints.Add(controlPoint);
-            return timingPoints;
-        }
-    }
+    public override IEnumerable<ControlPoint> TimingPoints => controlPoints.Where(c => !c.IsInherited);
 
-    public ControlPoint GetControlPointAt(int time, Predicate<ControlPoint> predicate)
+    public ControlPoint GetControlPointAt(int time, Func<ControlPoint, bool> predicate)
     {
         if (controlPoints is null) return null;
-        var closestTimingPoint = (ControlPoint)null;
-        foreach (var controlPoint in controlPoints)
+
+        ControlPoint closestTimingPoint = null;
+        foreach (var controlPoint in CollectionsMarshal.AsSpan(controlPoints))
         {
             if (predicate is not null && !predicate(controlPoint)) continue;
             if (closestTimingPoint is null || controlPoint.Offset - time <= ControlPointLeniency) closestTimingPoint = controlPoint;
@@ -118,7 +113,7 @@ public class EditorBeatmap(string path) : Beatmap
         try
         {
             EditorBeatmap beatmap = new(path);
-            using (var stream = File.OpenRead(path)) using (var reader = new StreamReader(stream, Project.Encoding)) reader.ParseSections(section =>
+            using (var reader = File.OpenText(path)) reader.ParseSections(section =>
             {
                 switch (section)
                 {

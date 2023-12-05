@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 
 namespace BrewLib.Util;
@@ -16,8 +15,6 @@ public class LineBreaker
         void completeLine()
         {
             var length = endIndex - startIndex + 1;
-            Debug.Assert(length > 0);
-
             lines.Add(new string(textArray, startIndex, length));
 
             startIndex = endIndex + 1;

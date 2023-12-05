@@ -3,7 +3,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections;
 
@@ -11,21 +10,15 @@ namespace BrewLib.Util;
 
 public static class BitmapHelper
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap Blur(Bitmap source, int radius, float power) => Convolute(source, CalculateGaussianKernel(radius, power));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap BlurAlpha(Bitmap source, int radius, float power, Color color) => ConvoluteAlpha(source, CalculateGaussianKernel(radius, power), color);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void LosslessCompress(string path, ImageCompressor compressor = null)
     {
         LosslessInputSettings defaultSettings = new(7);
         if (compressor is null) using (compressor = new IntegratedCompressor()) compressor.LosslessCompress(path, defaultSettings);
         else compressor.LosslessCompress(path, defaultSettings);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Compress(string path, ImageCompressor compressor = null)
     {
         LossyInputSettings defaultSettings = new(75, 100, 1);
@@ -33,7 +26,6 @@ public static class BitmapHelper
         else compressor.Compress(path, defaultSettings);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap Premultiply(Bitmap source)
     {
         PinnedBitmap result = new(source);
@@ -56,8 +48,6 @@ public static class BitmapHelper
 
         return result;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float[,] CalculateGaussianKernel(int radius, float weight)
     {
         var length = radius * 2 + 1;
@@ -69,8 +59,6 @@ public static class BitmapHelper
         for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] /= total;
         return kernel;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap Convolute(Bitmap source, float[,] kernel)
     {
         var kernelHeight = kernel.GetUpperBound(0) + 1;
@@ -111,8 +99,6 @@ public static class BitmapHelper
 
         return result;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap ConvoluteAlpha(Bitmap source, float[,] kernel, Color color)
     {
         var kernelHeight = kernel.GetUpperBound(0) + 1;
@@ -146,7 +132,6 @@ public static class BitmapHelper
         return result;
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
         ArgumentNullException.ThrowIfNull(src);
@@ -176,7 +161,6 @@ public static class BitmapHelper
         return dest;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsFullyTransparent(Bitmap source)
     {
         if (source is null) return true;
@@ -187,8 +171,6 @@ public static class BitmapHelper
 
         return true;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Rectangle FindTransparencyBounds(Bitmap source)
     {
         if (source is null) return default;
@@ -209,33 +191,21 @@ public static class BitmapHelper
 }
 public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
 {
-    public Bitmap Bitmap { get; }
-    public int Count { get; }
+    public Bitmap Bitmap { get; private set; }
+    public int Count { get; private set; }
 
     readonly int* data;
+    bool disposed;
+
     public int this[int pixelIndex]
     {
-        get
-        {
-            ObjectDisposedException.ThrowIf(disposed, this);
-            ArgumentOutOfRangeException.ThrowIfNegative(pixelIndex, nameof(pixelIndex));
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(pixelIndex, Count, nameof(pixelIndex));
-
-            return data[pixelIndex];
-        }
-        set
-        {
-            ObjectDisposedException.ThrowIf(disposed, this);
-            ArgumentOutOfRangeException.ThrowIfNegative(pixelIndex, nameof(pixelIndex));
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(pixelIndex, Count, nameof(pixelIndex));
-
-            data[pixelIndex] = value;
-        }
+        get => new Span<int>(data, Count)[pixelIndex];
+        set => new Span<int>(data, Count)[pixelIndex] = value;
     }
 
     public PinnedBitmap(int width, int height)
     {
-        data = (int*)NativeMemory.AllocZeroed((uint)(Count = width * height), sizeof(int));
+        data = (int*)NativeMemory.AllocZeroed((nuint)(Count = width * height), sizeof(int));
         Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, (nint)data);
     }
     public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
@@ -243,15 +213,18 @@ public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
         using (var graphics = System.Drawing.Graphics.FromImage(Bitmap)) graphics.DrawImage(bitmap, 0, 0, bitmap.Width, bitmap.Height);
     }
 
-    bool disposed;
     public void Dispose()
     {
         if (disposed) return;
+        Count = 0;
+
         Bitmap.Dispose();
+        Bitmap = null;
+
         NativeMemory.Free(data);
         disposed = true;
     }
 
-    IEnumerator<int> IEnumerable<int>.GetEnumerator() => (IEnumerator<int>)new Span<int>(data, Count).ToArray().GetEnumerator();
+    IEnumerator<int> IEnumerable<int>.GetEnumerator() => ((IEnumerable<int>)new Span<int>(data, Count).ToArray()).GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => new Span<int>(data, Count).ToArray().GetEnumerator();
 }

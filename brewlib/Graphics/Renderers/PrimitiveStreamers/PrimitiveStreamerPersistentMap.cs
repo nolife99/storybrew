@@ -1,8 +1,6 @@
 ﻿using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
@@ -18,13 +16,10 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, default,
-            BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
+        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
+        bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
 
-        bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, default, vertexBufferSize,
-            BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
-
-        DrawState.CheckError("mapping vertex buffer", bufferPointer == default);
+        DrawState.CheckError("mapping vertex buffer", bufferPointer == 0);
         GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
     }
     protected override void internalDispose()
@@ -41,12 +36,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     {
         if (!Bound) throw new InvalidOperationException("Not bound");
 
-        Debug.Assert(primitiveCount <= primitives.Length);
-        Debug.Assert((drawCount & primitiveCount) == 0);
-
         var vertexDataSize = primitiveCount * PrimitiveSize;
-        Debug.Assert(vertexDataSize <= vertexBufferSize);
-
         if (bufferOffset + vertexDataSize > vertexBufferSize)
         {
             bufferOffset = 0;
@@ -58,11 +48,8 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        var pinnedVertexData = GCHandle.Alloc(primitives, GCHandleType.Pinned);
         Native.CopyMemory(primitives.AddrOfPinnedArray(), bufferPointer + bufferOffset, vertexDataSize);
-        pinnedVertexData.Free();
-
-        if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));
+        if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset << 1);
         else GL.DrawArrays(primitiveType, drawOffset, drawCount);
 
         commandSync.LockRange(bufferOffset, vertexDataSize);

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
 using StorybrewCommon.Subtitles;
+using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Storyboarding.Util;
 
@@ -62,13 +63,14 @@ public class CommandGenerator
     public void Add(State state)
     {
         var count = states.Count;
-        if (count == 0 || states[count - 1].Time < state.Time)
+        if (count == 0 || states[count - 1].Time <= state.Time)
         {
             states.Add(state);
             return;
         }
 
-        var i = states.BinarySearch(state, state);
+        var span = CollectionsMarshal.AsSpan(states);
+        var i = span.BinarySearch(state, state);
         if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) ++i;
         else i = ~i;
 
@@ -87,9 +89,10 @@ public class CommandGenerator
     {
         State previousState = null;
         bool wasVisible = false, everVisible = false, stateAdded = false;
-
         var imageSize = BitmapDimensions(sprite);
-        states.ForEach(state =>
+
+        var span = CollectionsMarshal.AsSpan(states);
+        foreach (var state in span)
         {
             var time = state.Time + timeOffset;
             var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
@@ -116,7 +119,7 @@ public class CommandGenerator
 
             previousState = state;
             wasVisible = isVisible;
-        });
+        }
 
         if (wasVisible) commitKeyframes(imageSize);
         if (everVisible)
@@ -130,7 +133,7 @@ public class CommandGenerator
     }
     void commitKeyframes(SizeF imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => (float)(f * 100));
+        fades.Simplify1dKeyframes(OpacityTolerance, f => (float)osuTK.MathHelper.Clamp(f * 100, 0, 100));
         if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
         if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalfades);

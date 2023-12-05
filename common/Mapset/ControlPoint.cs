@@ -10,28 +10,28 @@ namespace StorybrewCommon.Mapset;
     public static readonly ControlPoint Default = new();
 
     ///<summary> The offset, or time, of this control point. </summary>
-    public double Offset { get; internal set; }
+    public double Offset { get; init; }
 
     ///<summary> Beats per measure, or bar, of this control point. </summary>
-    public int BeatPerMeasure { get; internal set; } = 4;
+    public int BeatPerMeasure { get; init; } = 4;
 
     ///<summary> The default sample set of this control point. </summary>
-    public SampleSet SampleSet { get; internal set; } = SampleSet.Normal;
+    public SampleSet SampleSet { get; init; } = SampleSet.Normal;
 
     ///<summary> The custom sample set index of this control point. </summary>
-    public int CustomSampleSet { get; internal set; }
+    public int CustomSampleSet { get; init; }
 
     ///<summary> The object volume of this control point. </summary>
-    public float Volume { get; internal set; } = 100;
+    public float Volume { get; init; } = 100;
 
     ///<summary> Whether this control point is inherited (is green line). </summary>
-    public bool IsInherited { get; internal set; }
+    public bool IsInherited { get; init; }
 
     ///<summary> Whether this control point has kiai enabled. </summary>
-    public bool IsKiai { get; internal set; }
+    public bool IsKiai { get; init; }
 
     ///<summary> Whether this control point has "Omit first bar line" enabled. </summary>
-    public bool OmitFirstBarLine { get; internal set; }
+    public bool OmitFirstBarLine { get; init; }
 
     double beatDurationSV = 500;
 
@@ -53,6 +53,9 @@ namespace StorybrewCommon.Mapset;
 
     ///<summary> Converts this control point to a <see cref="string"/> representation. </summary>
     public override string ToString() => (IsInherited ? $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4" : $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") + (IsKiai ? " Kiai" : "");
+
+    ///<inheritdoc/>
+    public override int GetHashCode() => ToString().GetHashCode();
 
     ///<summary> Parses a control point from a given line. </summary>
     public static ControlPoint Parse(string line)

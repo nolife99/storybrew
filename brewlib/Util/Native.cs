@@ -30,8 +30,8 @@ public static partial class Native
     ///<typeparam name="TResult"> The return type, which is platform-dependent. </typeparam>
     ///<param name="windowHandle"> The window to send the message to. </param>
     ///<param name="message"> The type of message to send. </param>
-    ///<param name="param1"> The first value to wrap within the message. </param>
-    ///<param name="param2"> The second value to wrap within the message. </param>
+    ///<param name="wParam"> The first value to wrap within the message. </param> 
+    ///<param name="lParam"> The second value to wrap within the message. </param>
     ///<returns> The result from the call procedure. </returns>
     ///<exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint"/>. </exception>
     ///<exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
@@ -56,7 +56,6 @@ public static partial class Native
         {
             var buffer = stackalloc byte[length * 2 + 1];
             SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buffer);
-
             return new string((sbyte*)buffer);
         }
     }
@@ -66,23 +65,16 @@ public static partial class Native
     [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("user32")] [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
-    static nint hWnd;
-    public static nint MainWindowHandle 
-    { 
-        get
-        {
-            if (hWnd == 0) throw new InvalidOperationException("hWnd isn't initialized");
-            return hWnd;
-        }
-    }
+    static nint handle;
+    public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void InitializeHandle(string windowTitle, nint hWndFallback = 0)
     {
-        var handle = nint.Zero;
         var cont = true;
         var threads = Process.GetCurrentProcess().Threads;
 
+        handle = hWndFallback;
         for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, lParam) =>
         {
             if (GetWindowText(hWnd) == windowTitle)
@@ -92,8 +84,6 @@ public static partial class Native
             }
             return cont;
         }, default);
-
-        hWnd = handle != 0 ? handle : hWndFallback;
     }
 
     #endregion

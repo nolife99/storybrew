@@ -209,7 +209,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
                 needsAnchorUpdate = false;
                 if (anchoringIteration - iterationBefore > 8)
                 {
-                    Debug.Print("Could not resolve ui layout");
+                    Trace.TraceWarning("Could not resolve ui layout");
                     break;
                 }
                 rootContainer.UpdateAnchoring(++anchoringIteration);

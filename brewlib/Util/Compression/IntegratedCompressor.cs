@@ -71,7 +71,7 @@ namespace BrewLib.Util.Compression
         }
         protected override void ensureTool()
         {
-            ObjectDisposedException.ThrowIf(disposed, typeof(IntegratedCompressor));
+            ObjectDisposedException.ThrowIf(disposed, this);
 
             var utility = GetUtility();
             if (!File.Exists(utility))

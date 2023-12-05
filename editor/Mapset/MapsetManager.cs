@@ -11,7 +11,7 @@ public sealed class MapsetManager : IDisposable
     readonly string path;
     readonly bool logLoadingExceptions;
 
-    readonly HashSet<EditorBeatmap> beatmaps = [];
+    readonly List<EditorBeatmap> beatmaps = [];
     public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
     public int BeatmapCount => beatmaps.Count;
 

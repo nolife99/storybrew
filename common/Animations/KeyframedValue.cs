@@ -2,15 +2,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Animations;
 
-///<summary> A mechanism for handling groups of keyframes. </summary>
-///<typeparam name="TValue"> The type value of the keyframed value. </typeparam>
-///<remarks> Constructs a new keyframed value. </remarks>
+///<summary> Defines a set of keyframes which can be converted to commands. </summary>
+///<typeparam name="TValue"> The type of values of the keyframed value. </typeparam>
 ///<param name="interpolate"> The <see cref="InterpolatingFunctions"/> to use to interpolate between values. Required to use <see cref="ValueAt(double)"/> </param>
 ///<param name="defaultValue"> The default value of the type of this keyframed value. </param>
-public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpolate = null, TValue defaultValue = default) : MarshalByRefObject, IEnumerable<Keyframe<TValue>>
+public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpolate = null, TValue defaultValue = default) : IEnumerable<Keyframe<TValue>>
 {
     List<Keyframe<TValue>> keyframes = [];
 
@@ -29,7 +29,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     ///<summary> Gets or sets the <see cref="Keyframe{TValue}"/> at the current index. </summary>
     public Keyframe<TValue> this[int index]
     {
-        get => keyframes[index];
+        get => CollectionsMarshal.AsSpan(keyframes)[index];
         set => keyframes[index] = value;
     }
 
@@ -97,17 +97,19 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     ///<summary> Returns the value of the keyframed value at <paramref name="time"/>. </summary>
     public TValue ValueAt(double time)
     {
-        var count = keyframes.Count;
+        var span = CollectionsMarshal.AsSpan(keyframes);
+
+        var count = span.Length;
         if (count == 0) return defaultValue;
-        if (count == 1) return keyframes[0].Value;
+        if (count == 1) return span[0].Value;
 
         var index = indexAt(time, false);
-        if (index == 0) return keyframes[0].Value;
-        else if (index == count) return keyframes[count - 1].Value;
+        if (index == 0) return span[0].Value;
+        else if (index == count) return span[count - 1].Value;
         else
         {
-            var from = keyframes[index - 1];
-            var to = keyframes[index];
+            var from = span[index - 1];
+            var to = span[index];
             if (from.Time == to.Time) return to.Value;
 
             var progress = to.Ease((time - from.Time) / (to.Time - from.Time));
@@ -116,27 +118,28 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     }
 
     ///<summary> Converts keyframes to commands. </summary>
-    ///<param name="pair"> A delegate encapsulating the start and end keyframe of a pair. </param>
-    ///<param name="defaultValue"> The default value if there are no keyframes. </param>
-    ///<param name="edit"> A delegate encapsulating edits to the pairs' values. </param>
-    ///<param name="explicitStartTime"> The explicit start time for the keyframed value in this method. </param>
-    ///<param name="explicitEndTime"> The explicit end time for the keyframed value in this method. </param>
-    ///<param name="loopable"> Whether <paramref name="pair"/> is encapsulated in a <see cref="Storyboarding.Commands.LoopCommand"/>. </param>
+    ///<param name="pair"> A function to utilize the start and end keyframe of a pair. </param>
+    ///<param name="defaultValue"> Pairs with this default value are skipped. </param>
+    ///<param name="edit"> A function that edits each keyframe before being paired. </param>
+    ///<param name="explicitStartTime"> The explicit start time for the keyframe set to pair. </param>
+    ///<param name="explicitEndTime"> The explicit end time for the keyframed set to pair. </param>
+    ///<param name="loopable"> Enable if <paramref name="pair"/> is encapsulated in or uses a trigger/loop group. </param>
     public void ForEachPair(Action<Keyframe<TValue>, Keyframe<TValue>> pair,
         TValue defaultValue = default, Func<TValue, TValue> edit = null,
         double? explicitStartTime = null, double? explicitEndTime = null, bool loopable = false)
     {
-        if (keyframes.Count == 0) return;
+        var span = CollectionsMarshal.AsSpan(keyframes);
+        if (span.Length == 0) return;
 
-        var startTime = explicitStartTime ?? keyframes[0].Time;
-        var endTime = explicitEndTime ?? keyframes[^1].Time;
+        var startTime = explicitStartTime ?? span[0].Time;
+        var endTime = explicitEndTime ?? span[^1].Time;
 
         bool hasPair = false, forceNextFlat = loopable;
         Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;
 
-        for (var i = 0; i < keyframes.Count; ++i)
+        for (var i = 0; i < span.Length; ++i)
         {
-            var endKeyframe = editKeyframe(keyframes[i], edit);
+            var endKeyframe = editKeyframe(span[i], edit);
             if (previous.HasValue)
             {
                 var startKeyframe = previous.Value;
@@ -190,9 +193,9 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             stepStart = null;
             hasPair = true;
         }
-        if (!hasPair && keyframes.Count > 0)
+        if (!hasPair && span.Length > 0)
         {
-            var first = editKeyframe(keyframes[0], edit).WithTime(startTime);
+            var first = editKeyframe(span[0], edit).WithTime(startTime);
             if (!first.Value.Equals(defaultValue))
             {
                 var last = loopable ? first.WithTime(endTime) : first;
@@ -224,11 +227,13 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
 
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
-        var i = keyframes.BinarySearch(keyframe, keyframe);
+        var span = CollectionsMarshal.AsSpan(keyframes);
+        var i = span.BinarySearch(keyframe, keyframe);
+
         if (i >= 0)
         {
-            if (before) while (i > 0 && keyframes[i].Time >= keyframe.Time) --i;
-            else while (i < keyframes.Count && keyframes[i].Time <= keyframe.Time) ++i;
+            if (before) while (i > 0 && span[i].Time >= keyframe.Time) --i;
+            else while (i < span.Length && span[i].Time <= keyframe.Time) ++i;
         }
         else i = ~i;
         return i;
@@ -237,73 +242,63 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
 
     #region Manipulation
 
-    ///<summary> Simplifies keyframes on 1-parameter commands. </summary>
+    ///<summary> Simplifies keyframes with 1-parameter values. </summary>
     ///<param name="tolerance"> Distance threshold from which keyframes can be removed.  </param>
-    ///<param name="getComponent"> Converts the keyframe values to a <b>valid</b> <see cref="float"/> that the method can use. </param>
-    public void Simplify1dKeyframes(double tolerance, Func<TValue, float> getComponent)
-        => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
+    ///<param name="getComponent"> Converts the keyframe values to a canonical <see cref="float"/> that the method can use. </param>
+    public void Simplify1dKeyframes(double tolerance, Func<TValue, float> getComponent) => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
     {
         Vector2 start = new((float)startKeyframe.Time, getComponent(startKeyframe.Value)),
             middle = new((float)middleKeyframe.Time, getComponent(middleKeyframe.Value)),
             end = new((float)endKeyframe.Time, getComponent(endKeyframe.Value));
 
-        var area = Math.Abs((start.X * end.Y + end.X * middle.Y + middle.X * start.Y - end.X * start.Y - middle.X * end.Y - start.X * middle.Y) * .5f);
-        var bottom = MathF.Sqrt((start.X - end.X) * (start.X - end.X) + (start.Y - end.Y) * (start.Y - end.Y));
-        return area / bottom * 2;
+        Vector2 startToMiddle = middle - start, startToEnd = end - start;
+        return (startToMiddle - Vector2.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).LengthSquared();
     });
 
-    ///<summary> Simplifies keyframes on 2-parameter commands. </summary>
+    ///<summary> Simplifies keyframes with 2-parameter values. </summary>
     ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
-    ///<param name="getComponent"> Converts the keyframe values to a <b>valid</b> <see cref="Vector2"/> that the method can use. </param>
-    public void Simplify2dKeyframes(double tolerance, Func<TValue, Vector2> getComponent)
-        => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
+    ///<param name="getComponent"> Converts the keyframe values to a canonical <see cref="Vector2"/> that the method can use. </param>
+    public void Simplify2dKeyframes(double tolerance, Func<TValue, Vector2> getComponent) => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
     {
-        var startComponent = getComponent(startKeyframe.Value);
-        var middleComponent = getComponent(middleKeyframe.Value);
-        var endComponent = getComponent(endKeyframe.Value);
-
+        Vector2 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value), endComponent = getComponent(endKeyframe.Value);
         Vector3 start = new((float)startKeyframe.Time, startComponent.X, startComponent.Y),
             middle = new((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y),
             end = new((float)endKeyframe.Time, endComponent.X, endComponent.Y);
 
-        var startToMiddle = middle - start;
-        var startToEnd = end - start;
-        return (startToMiddle - Vector3.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).Length();
+        Vector3 startToMiddle = middle - start, startToEnd = end - start;
+        return (startToMiddle - Vector3.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).LengthSquared();
     });
 
-    ///<summary> Simplifies keyframes on 3-parameter commands. </summary>
+    ///<summary> Simplifies keyframes with 3-parameter values. </summary>
     ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
-    ///<param name="getComponent"> Converts the keyframe values to a <b>valid</b> <see cref="Vector3"/> that the method can use. </param>
-    public void Simplify3dKeyframes(double tolerance, Func<TValue, Vector3> getComponent)
-        => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
+    ///<param name="getComponent"> Converts the keyframe values to a canonical <see cref="Vector3"/> that the method can use. </param>
+    public void Simplify3dKeyframes(double tolerance, Func<TValue, Vector3> getComponent) => SimplifyKeyframes(tolerance, (startKeyframe, middleKeyframe, endKeyframe) =>
     {
-        var startComponent = getComponent(startKeyframe.Value);
-        var middleComponent = getComponent(middleKeyframe.Value);
-        var endComponent = getComponent(endKeyframe.Value);
-
+        Vector3 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value), endComponent = getComponent(endKeyframe.Value);
         Vector4 start = new((float)startKeyframe.Time, startComponent.X, startComponent.Y, startComponent.Z),
             middle = new((float)middleKeyframe.Time, middleComponent.X, middleComponent.Y, middleComponent.Z),
             end = new((float)endKeyframe.Time, endComponent.X, endComponent.Y, endComponent.Z);
 
-        var startToMiddle = middle - start;
-        var startToEnd = end - start;
-        return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).Length();
+        Vector4 startToMiddle = middle - start, startToEnd = end - start;
+        return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).LengthSquared();
     });
 
     void SimplifyEqualKeyframes()
     {
         List<Keyframe<TValue>> simplifiedKeyframes = [];
-        for (int i = 0, count = keyframes.Count; i < count; i++)
+        var span = CollectionsMarshal.AsSpan(keyframes);
+
+        for (int i = 0, count = span.Length; i < count; i++)
         {
-            var startKeyframe = keyframes[i];
+            var startKeyframe = span[i];
             simplifiedKeyframes.Add(startKeyframe);
 
             for (var j = i + 1; j < count; j++)
             {
-                var endKeyframe = keyframes[j];
+                var endKeyframe = span[j];
                 if (!startKeyframe.Value.Equals(endKeyframe.Value))
                 {
-                    if (i < j - 1) simplifiedKeyframes.Add(keyframes[j - 1]);
+                    if (i < j - 1) simplifiedKeyframes.Add(span[j - 1]);
                     simplifiedKeyframes.Add(endKeyframe);
                     i = j;
                     break;
@@ -318,11 +313,11 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     }
 
     ///<summary> Simplifies keyframes on commands. </summary>
-    ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
-    ///<param name="getDistance"> A function that gets the distance between three specific keyframes. </param>
-    public void SimplifyKeyframes(double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
+    ///<param name="tolerance"> Distance threshold (epsilon) from which keyframes can be removed. </param>
+    ///<param name="getDistanceSq"> A function that gets the distance, squared, between three specific keyframes. </param>
+    public void SimplifyKeyframes(double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
     {
-        if (tolerance <= 0)
+        if (tolerance <= .00001)
         {
             SimplifyEqualKeyframes();
             return;
@@ -330,41 +325,45 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         if (keyframes.Count < 3) return;
 
         var firstPoint = 0;
-        var lastPoint = keyframes.Count - 1;
+        var span = CollectionsMarshal.AsSpan(keyframes);
+        var lastPoint = span.Length - 1;
 
         List<int> keepIndex = [firstPoint, lastPoint];
-        getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, lastPoint, tolerance, getDistance);
+        getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, lastPoint, tolerance * tolerance, getDistanceSq);
 
-        if (keepIndex.Count == keyframes.Count) return;
+        var iSpan = CollectionsMarshal.AsSpan(keepIndex);
+        if (iSpan.Length == span.Length) return;
 
-        List<Keyframe<TValue>> simplifiedKeyframes = new(keepIndex.Count);
-        keepIndex.Sort(new Comparison<int>((x, y) => x - y));
+        List<Keyframe<TValue>> simplifiedKeyframes = new(iSpan.Length);
+        iSpan.Sort(new Comparison<int>((x, y) => x - y));
+        for (var i = 0; i < iSpan.Length; ++i) simplifiedKeyframes.Add(span[iSpan[i]]);
 
-        for (var i = 0; i < keepIndex.Count; ++i) simplifiedKeyframes.Add(keyframes[keepIndex[i]]);
         Clear(true);
         keyframes = simplifiedKeyframes;
     }
-    void getSimplifiedKeyframeIndexes(ref List<int> keepIndex, int firstPoint, int lastPoint, double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
+    void getSimplifiedKeyframeIndexes(ref List<int> keepIndex, int firstPoint, int lastPoint, double toleranceSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
     {
-        var start = keyframes[firstPoint];
-        var end = keyframes[lastPoint];
+        var span = CollectionsMarshal.AsSpan(keyframes);
+        var start = span[firstPoint];
+        var end = span[lastPoint];
 
-        var maxDistance = 0f;
+        var maxDistanceSq = 0f;
         var indexFurthest = 0;
+
         for (var i = firstPoint; i < lastPoint; ++i)
         {
-            var distance = getDistance(start, keyframes[i], end);
-            if (distance > maxDistance)
+            var distanceSq = getDistance(start, span[i], end);
+            if (distanceSq > maxDistanceSq)
             {
-                maxDistance = distance;
+                maxDistanceSq = distanceSq;
                 indexFurthest = i;
             }
         }
-        if (maxDistance > tolerance && indexFurthest > 0)
+        if (maxDistanceSq > toleranceSq && indexFurthest > 0)
         {
+            getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, indexFurthest, toleranceSq, getDistance);
             keepIndex.Add(indexFurthest);
-            getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, indexFurthest, tolerance, getDistance);
-            getSimplifiedKeyframeIndexes(ref keepIndex, indexFurthest, lastPoint, tolerance, getDistance);
+            getSimplifiedKeyframeIndexes(ref keepIndex, indexFurthest, lastPoint, toleranceSq, getDistance);
         }
     }
 

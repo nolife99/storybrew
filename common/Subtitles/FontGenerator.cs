@@ -120,19 +120,17 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
     public bool Equals(FontColor other) => r == other.r && g == other.g && b == other.b;
 
     ///<summary> Returns whether or not this instance and <paramref name="obj"/> are equal to each other. </summary>
-    public override bool Equals(object obj)
-    {
-        if (obj is null) return false;
-        return obj is CommandColor color && Equals(color);
-    }
+    public override bool Equals(object obj) => obj is not null && obj is CommandColor color && Equals(color);
 
     ///<summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
+    ///<remarks> Some color information could be lost. </remarks>
     public override int GetHashCode() => (A << 24) | (B << 16) | (G << 8) | R;
 
     ///<summary> Converts this instance into a string, formatted as "R, G, B". </summary>
     public override string ToString() => $"{R}, {G}, {B}";
 
     ///<summary> Returns a <see cref="FontColor"/> structure that represents the hash code's color information. </summary>
+    ///<remarks> Some color information could be lost. </remarks>
     public static FontColor FromHashCode(int code) => FromRgba(code & 0xFF, (code >> 8) & 0xFF, (code >> 16) & 0xFF, (code >> 24) & 0xFF);
 
     ///<summary> Creates a <see cref="FontColor"/> from RGB byte values. </summary>
@@ -154,7 +152,7 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
 
         var saturation = float.IsNegative(max) ? 0 : 1 - (min / max);
 
-        return new Vector4(hue, saturation, max, rgb.a);
+        return new(hue, saturation, max, rgb.a);
     }
 
     ///<summary> Creates a <see cref="Vector4"/> containing the hue, saturation, brightness, and alpha values from a <see cref="FontColor"/>. </summary>

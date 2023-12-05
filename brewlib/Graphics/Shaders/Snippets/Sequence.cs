@@ -5,8 +5,6 @@ namespace BrewLib.Graphics.Shaders.Snippets;
 
 public class Sequence(params ShaderSnippet[] snippets) : ShaderSnippet
 {
-    readonly ShaderSnippet[] snippets = snippets;
-
     public override IEnumerable<string> RequiredExtensions
     {
         get
