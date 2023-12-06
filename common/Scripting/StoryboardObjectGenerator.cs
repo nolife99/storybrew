@@ -269,8 +269,7 @@ public abstract class StoryboardObjectGenerator : Script
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
         if (fonts.ContainsKey(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
 
-        if (Directory.Exists(fontDirectory)) foreach (var file in Directory.GetFiles(fontDirectory, "*.png")) PathHelper.SafeDelete(file);
-        else Directory.CreateDirectory(fontDirectory);
+        if (!Directory.Exists(fontDirectory)) Directory.CreateDirectory(fontDirectory);
 
         FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
         fonts.Add(fontDirectory, fontGenerator);

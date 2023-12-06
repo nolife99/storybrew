@@ -120,7 +120,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 {
                     StyleName = "icon",
                     Icon = IconFont.Play,
-                    Tooltip = "Play/Pause\nShortcut: Space",
+                    Tooltip = "Play/Pause\nShortcut: Space/K",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
                 }
@@ -372,30 +372,28 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 return true;
         }
 
-        if (!e.IsRepeat)
+        if (!e.IsRepeat) switch (e.Key)
         {
-            switch (e.Key)
-            {
-                case Key.Space: playB.Click(); return true;
-                case Key.O: withSavePrompt(Manager.ShowOpenProject); return true;
-                case Key.S:
-                    if (e.Control)
-                    {
-                        saveProject();
-                        return true;
-                    }
-                    break;
-                case Key.C:
-                    if (e.Control)
-                    {
-                        if (e.Shift) ClipboardHelper.SetText(TimeSpan.FromMilliseconds(timeSource.Current * 1000).ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
-                        else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
-                        else ClipboardHelper.SetText(((int)(timeSource.Current * 1000)).ToString(CultureInfo.InvariantCulture));
-                        return true;
-                    }
-                    break;
-            }
+            case Key.Space: case Key.K: playB.Click(); return true;
+            case Key.O: withSavePrompt(Manager.ShowOpenProject); return true;
+            case Key.S:
+                if (e.Control)
+                {
+                    saveProject();
+                    return true;
+                }
+                break;
+            case Key.C:
+                if (e.Control)
+                {
+                    if (e.Shift) ClipboardHelper.SetText(TimeSpan.FromMilliseconds(timeSource.Current * 1000).ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
+                    else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
+                    else ClipboardHelper.SetText((timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
+                    return true;
+                }
+                break;
         }
+
         return base.OnKeyDown(e);
     }
     public override void OnMouseMove(MouseMoveEventArgs e)

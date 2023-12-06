@@ -70,8 +70,12 @@ public class Line3d : Node3d, HasOsbSprites
 
         var position = sprite.Origin switch
         {
-            OsbOrigin.TopCentre or OsbOrigin.Centre or OsbOrigin.BottomCentre => new Vector2(startVector.X, startVector.Y) + delta / 2,
-            OsbOrigin.TopRight or OsbOrigin.CentreRight or OsbOrigin.BottomRight => new(endVector.X, endVector.Y),
+            OsbOrigin.TopCentre => new(startVector.X + delta.X / 2, startVector.Y),
+            OsbOrigin.Centre => new Vector2(startVector.X, startVector.Y) + delta / 2,
+            OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
+            OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
+            OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
+            OsbOrigin.BottomRight => new(endVector.X, endVector.Y),
             _ => new(startVector.X, startVector.Y),
         };
 

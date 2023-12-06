@@ -51,14 +51,6 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     ///<summary> Constructs a new <see cref="CommandColor"/> from a <see cref="Vector3"/> containing red, green, and blue values from 0.0 to 1.0. </summary>
     public CommandColor(Vector3 vector) : this(vector.X, vector.Y, vector.Z) { }
 
-    ///<summary> Returns the combined distance from each color value. </summary>
-    public float DistanceFrom(object obj)
-    {
-        var other = (CommandColor)obj;
-        float diffR = R - other.R, diffG = G - other.G, diffB = B - other.B;
-        return MathF.Sqrt((diffR * diffR) + (diffG * diffG) + (diffB * diffB));
-    }
-
     ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
     public bool Equals(CommandColor other) => r == other.r && g == other.g && b == other.b;
 

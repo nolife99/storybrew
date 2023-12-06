@@ -36,7 +36,7 @@ public class Sprite3d : Node3d, HasOsbSprites
     public CommandScale? UseDefaultScale;
 
     ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
-    public readonly KeyframedValue<Vector2> SpriteScale = new(InterpolatingFunctions.Vector2, Vector2.One);
+    public readonly KeyframedValue<CommandScale> SpriteScale = new(InterpolatingFunctions.Scale, Vector2.One);
 
     ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
     public readonly KeyframedValue<double> SpriteRotation = new(InterpolatingFunctions.DoubleAngle, 0);
@@ -78,7 +78,7 @@ public class Sprite3d : Node3d, HasOsbSprites
             }
         }
 
-        var scale = SpriteScale.ValueAt(time) * new Vector2(
+        var scale = (Vector2)SpriteScale.ValueAt(time) * new Vector2(
             new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13).Length(),
             new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length()) *
         (float)(cameraState.FocusDistance / screenPosition.W) * (float)cameraState.ResolutionScale;

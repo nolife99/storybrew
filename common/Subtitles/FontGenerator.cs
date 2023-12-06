@@ -33,7 +33,7 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
     public string Path => path;
 
     ///<returns> <see langword="true"/> if the texture does not exist. </returns>
-    public bool IsEmpty => Path is null;
+    public bool IsEmpty => !File.Exists(path);
 
     ///<summary> The texture offset in X-units. </summary>
     public float OffsetX => offsetX;
@@ -463,7 +463,7 @@ public class FontGenerator(string directory, FontDescription description, FontEf
                 if (cache.Value<byte>($"{field.Name}R") != color.R ||
                     cache.Value<byte>($"{field.Name}G") != color.G ||
                     cache.Value<byte>($"{field.Name}B") != color.B ||
-                    cache.Value<byte>($"{field.Name}R") != color.A)
+                    cache.Value<byte>($"{field.Name}A") != color.A)
                     return false;
             }
             else if (fieldType == typeof(Vector3))

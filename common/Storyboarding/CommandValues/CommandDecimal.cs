@@ -28,7 +28,6 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 
     public override int GetHashCode() => value.GetHashCode();
     public override string ToString() => ToOsbString(ExportSettings.Default);
-    public float DistanceFrom(object obj) => (float)Math.Abs(value - ((CommandDecimal)obj).value);
     public string ToOsbString(ExportSettings exportSettings) => ((float)value).ToString(exportSettings.NumberFormat);
 
     static CommandDecimal INumberBase<CommandDecimal>.Abs(CommandDecimal value) => double.Abs(value.value);
