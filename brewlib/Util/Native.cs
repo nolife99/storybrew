@@ -39,7 +39,6 @@ public static partial class Native
         where T1 : INumberBase<T1> where T2 : INumberBase<T2> where TResult : INumberBase<TResult>
         => TResult.CreateChecked(SendMessageA(windowHandle, (uint)message, nuint.CreateChecked(wParam), nint.CreateChecked(lParam)));
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void SetWindowIcon(nint iconHandle)
     {
         SendMessage<int, nint, int>(MainWindowHandle, Message.SetIcon, 0, iconHandle);
@@ -47,7 +46,7 @@ public static partial class Native
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static string GetWindowText(nint hWnd)
+    static string GetWindowText(nint hWnd)
     {
         var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
         if (length == 0) return "";
@@ -68,7 +67,6 @@ public static partial class Native
     static nint handle;
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void InitializeHandle(string windowTitle, nint hWndFallback = 0)
     {
         var cont = true;

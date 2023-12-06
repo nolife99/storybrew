@@ -12,10 +12,10 @@ public class FastRandom
     uint x, y, z, w;
 
     ///<summary> Initializes a new instance of the <see cref="FastRandom"/> class, using a time-dependent seed value. </summary>
-    public FastRandom() => Reinitialise(Environment.TickCount);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public FastRandom() => Reinitialise(Environment.TickCount);
 
     ///<summary> Initializes a new instance of the <see cref="FastRandom"/> class, using the specified seed value. </summary>
-    public FastRandom(int seed) => Reinitialise(seed);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public FastRandom(int seed) => Reinitialise(seed);
 
     ///<summary> Resets this instance with a new seed value. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public void Reinitialise(int seed)
@@ -80,158 +80,58 @@ public class FastRandom
     }
 
     ///<inheritdoc cref="Random.NextBytes"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public unsafe void NextBytes(byte[] buffer)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public void NextBytes(byte[] buffer)
     {
-        uint x = this.x, y = this.y, z = this.z, w = this.w;
-        if ((buffer.Length & 7) != 0)
+        uint x = this.x, y = this.y, z = this.z, w = this.w, t;
+        var i = 0;
+
+        Span<byte> span = new(buffer);
+        for (var bound = span.Length - 3; i < bound;)
         {
-            var i = 0;
-            uint t;
+            t = x ^ (x << 11);
+            x = y;
+            y = z;
+            z = w;
+            w = w ^ (w >> 19) ^ t ^ (t >> 8);
 
-            for (var bound = buffer.Length - 3; i < bound;)
-            {
-                t = x ^ (x << 11);
-                x = y;
-                y = z;
-                z = w;
-                w = w ^ (w >> 19) ^ t ^ (t >> 8);
-
-                buffer[i++] = (byte)w;
-                buffer[i++] = (byte)(w >> 8);
-                buffer[i++] = (byte)(w >> 16);
-                buffer[i++] = (byte)(w >> 24);
-            }
-
-            while (i < buffer.Length)
-            {
-                t = x ^ (x << 11);
-                x = y;
-                y = z;
-                z = w;
-                w = w ^ (w >> 19) ^ t ^ (t >> 8);
-
-                buffer[i++] = (byte)w;
-                if (i >= buffer.Length) break;
-
-                buffer[i++] = (byte)(w >> 8);
-                if (i >= buffer.Length) break;
-
-                buffer[i++] = (byte)(w >> 16);
-                if (i >= buffer.Length) break;
-
-                buffer[i++] = (byte)(w >> 24);
-            }
-
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.w = w;
+            span[i++] = (byte)w;
+            span[i++] = (byte)(w >> 8);
+            span[i++] = (byte)(w >> 16);
+            span[i++] = (byte)(w >> 24);
         }
-        else
+
+        while (i < span.Length)
         {
-            fixed (byte* pByte0 = buffer)
-            {
-                var pDWord = (uint*)pByte0;
-                for (int i = 0, len = buffer.Length >> 2; i < len; i += 2)
-                {
-                    var t = x ^ (x << 11);
-                    x = y;
-                    y = z;
-                    z = w;
-                    pDWord[i] = w = w ^ (w >> 19) ^ t ^ (t >> 8);
+            t = x ^ (x << 11);
+            x = y;
+            y = z;
+            z = w;
+            w = w ^ (w >> 19) ^ t ^ (t >> 8);
 
-                    t = x ^ (x << 11);
-                    x = y;
-                    y = z;
-                    z = w;
-                    pDWord[i + 1] = w = w ^ (w >> 19) ^ t ^ (t >> 8);
-                }
-            }
+            span[i++] = (byte)w;
+            if (i >= span.Length) break;
 
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.w = w;
+            span[i++] = (byte)(w >> 8);
+            if (i >= span.Length) break;
+
+            span[i++] = (byte)(w >> 16);
+            if (i >= span.Length) break;
+
+            span[i++] = (byte)(w >> 24);
         }
+
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.w = w;
     }
 
     ///<inheritdoc cref="Random.NextBytes"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public unsafe byte[] NextBytes(int length)
+    public byte[] NextBytes(int length)
     {
-        uint x = this.x, y = this.y, z = this.z, w = this.w;
-        var buffer = new byte[length];
-
-        if ((length & 7) != 0)
-        {
-            var i = 0;
-            uint t;
-
-            for (var bound = length - 3; i < bound;)
-            {
-                t = x ^ (x << 11);
-                x = y;
-                y = z;
-                z = w;
-                w = w ^ (w >> 19) ^ t ^ (t >> 8);
-
-                buffer[i++] = (byte)w;
-                buffer[i++] = (byte)(w >> 8);
-                buffer[i++] = (byte)(w >> 16);
-                buffer[i++] = (byte)(w >> 24);
-            }
-
-            while (i < length)
-            {
-                t = x ^ (x << 11);
-                x = y;
-                y = z;
-                z = w;
-                w = w ^ (w >> 19) ^ t ^ (t >> 8);
-
-                buffer[i++] = (byte)w;
-                if (i >= length) break;
-
-                buffer[i++] = (byte)(w >> 8);
-                if (i >= length) break;
-
-                buffer[i++] = (byte)(w >> 16);
-                if (i >= length) break;
-
-                buffer[i++] = (byte)(w >> 24);
-            }
-
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.w = w;
-        }
-        else
-        {
-            fixed (byte* pByte0 = buffer)
-            {
-                var pDWord = (uint*)pByte0;
-                for (int i = 0, len = length >> 2; i < len; i += 2)
-                {
-                    var t = x ^ (x << 11);
-                    x = y;
-                    y = z;
-                    z = w;
-                    pDWord[i] = w = w ^ (w >> 19) ^ t ^ (t >> 8);
-
-                    t = x ^ (x << 11);
-                    x = y;
-                    y = z;
-                    z = w;
-                    pDWord[i + 1] = w = w ^ (w >> 19) ^ t ^ (t >> 8);
-                }
-            }
-
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.w = w;
-        }
+        var buffer = GC.AllocateUninitializedArray<byte>(length);
+        NextBytes(buffer);
         return buffer;
     }
 

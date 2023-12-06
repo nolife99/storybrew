@@ -2,15 +2,19 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using BrewLib.Util.Compression;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System.Collections;
+using System.Buffers;
+using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util;
 
 public static class BitmapHelper
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap Blur(Bitmap source, int radius, float power) => Convolute(source, CalculateGaussianKernel(radius, power));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap BlurAlpha(Bitmap source, int radius, float power, Color color) => ConvoluteAlpha(source, CalculateGaussianKernel(radius, power), color);
 
     public static void LosslessCompress(string path, ImageCompressor compressor = null)
@@ -194,19 +198,20 @@ public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public Bitmap Bitmap { get; private set; }
     public int Count { get; private set; }
 
-    readonly int* data;
+    readonly int[] data;
     bool disposed;
 
     public int this[int pixelIndex]
     {
-        get => new Span<int>(data, Count)[pixelIndex];
-        set => new Span<int>(data, Count)[pixelIndex] = value;
+        get => new ReadOnlySpan<int>(data, 0, Count)[pixelIndex];
+        set => new Span<int>(data, 0, Count)[pixelIndex] = value;
     }
 
     public PinnedBitmap(int width, int height)
     {
-        data = (int*)NativeMemory.AllocZeroed((nuint)(Count = width * height), sizeof(int));
-        Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, (nint)data);
+        data = ArrayPool<int>.Shared.Rent(Count = width * height);
+        new Span<int>(data, 0, Count).Clear();
+        Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, data.AddrOfPinnedArray());
     }
     public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)
     {
@@ -221,10 +226,10 @@ public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
         Bitmap.Dispose();
         Bitmap = null;
 
-        NativeMemory.Free(data);
+        ArrayPool<int>.Shared.Return(data);
         disposed = true;
     }
 
-    IEnumerator<int> IEnumerable<int>.GetEnumerator() => ((IEnumerable<int>)new Span<int>(data, Count).ToArray()).GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => new Span<int>(data, Count).ToArray().GetEnumerator();
+    IEnumerator<int> IEnumerable<int>.GetEnumerator() => ((IEnumerable<int>)data).GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
 }

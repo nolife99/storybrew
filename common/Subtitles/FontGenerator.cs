@@ -293,30 +293,13 @@ public class FontGenerator(string directory, FontDescription description, FontEf
     }
     FontTexture generateTexture(string text)
     {
-        // wtf is this
-        var filename = text.Length == 1 ?
-            $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' : text[0]))}.png" :
-            $"_{cache.Count(l => l.Key.Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
-
-        var trimExist = false;
-        if (description.TrimTransparency && cache.TryGetValue(text.Trim(), out var texture))
-        {
-            trimExist = true;
-            filename = Path.GetFileName(texture.Path);
-        }
-
-        var path = Path.Combine(assetDirectory, Directory, filename);
-
-        var dir = Path.GetDirectoryName(path);
-        if (!System.IO.Directory.Exists(dir)) System.IO.Directory.CreateDirectory(dir);
-
-        var fontPath = Path.Combine(projectDirectory, description.FontPath);
-        if (!File.Exists(fontPath)) fontPath = description.FontPath;
-
         float offsetX = 0, offsetY = 0;
         int baseWidth, baseHeight, width, height;
 
         using PrivateFontCollection collection = new();
+
+        var fontPath = Path.Combine(projectDirectory, description.FontPath);
+        if (!File.Exists(fontPath)) fontPath = description.FontPath;
 
         if (File.Exists(fontPath)) collection.AddFontFile(fontPath);
         using var family = File.Exists(fontPath) ? collection.Families[0] : null;
@@ -390,6 +373,20 @@ public class FontGenerator(string directory, FontDescription description, FontEf
             height = bounds.Height;
         }
 
+        string filename = null;
+        var trimExist = false;
+        if (description.TrimTransparency && cache.TryGetValue(text.Trim(), out var texture))
+        {
+            trimExist = true;
+            filename = Path.GetFileName(texture.Path);
+        }
+
+        filename ??= (description.TrimTransparency ? text.Trim() : text).Length == 1 ?
+            $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') : 
+                (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' : char.ToString(text[0])))}.png" :
+            $"_{cache.Count(l => l.Key.Trim().Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
+
+        var path = Path.Combine(assetDirectory, Directory, filename);
         if (!trimExist)
         {
             using (FileStream stream = new(path, FileMode.Create, FileAccess.Write, FileShare.Read))
@@ -432,10 +429,10 @@ public class FontGenerator(string directory, FontDescription description, FontEf
     {
         if (cachedFontRoot.Value<string>("FontPath") == description.FontPath &&
             cachedFontRoot.Value<int>("FontSize") == description.FontSize &&
-            MathUtil.FloatEquals(cachedFontRoot.Value<float>("ColorR"), description.Color.R, .00001f) &&
-            MathUtil.FloatEquals(cachedFontRoot.Value<float>("ColorG"), description.Color.G, .00001f) &&
-            MathUtil.FloatEquals(cachedFontRoot.Value<float>("ColorB"), description.Color.B, .00001f) &&
-            MathUtil.FloatEquals(cachedFontRoot.Value<float>("ColorA"), description.Color.A, .00001f) &&
+            cachedFontRoot.Value<float>("ColorR") == description.Color.R &&
+            cachedFontRoot.Value<float>("ColorG") == description.Color.G &&
+            cachedFontRoot.Value<float>("ColorB") == description.Color.B &&
+            cachedFontRoot.Value<float>("ColorA") == description.Color.A &&
             MathUtil.FloatEquals(cachedFontRoot.Value<float>("PaddingX"), description.Padding.X, .00001f) &&
             MathUtil.FloatEquals(cachedFontRoot.Value<float>("PaddingY"), description.Padding.Y, .00001f) &&
             cachedFontRoot.Value<FontStyle>("FontStyle") == description.FontStyle &&
@@ -463,10 +460,10 @@ public class FontGenerator(string directory, FontDescription description, FontEf
             if (fieldType == typeof(FontColor))
             {
                 var color = (FontColor)field.GetValue(fontEffect);
-                if (!MathUtil.FloatEquals(cache.Value<float>($"{field.Name}R"), color.R, .00001f) ||
-                    !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}G"), color.G, .00001f) ||
-                    !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}B"), color.B, .00001f) ||
-                    !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}A"), color.A, .00001f))
+                if (cache.Value<byte>($"{field.Name}R") != color.R ||
+                    cache.Value<byte>($"{field.Name}G") != color.G ||
+                    cache.Value<byte>($"{field.Name}B") != color.B ||
+                    cache.Value<byte>($"{field.Name}R") != color.A)
                     return false;
             }
             else if (fieldType == typeof(Vector3))

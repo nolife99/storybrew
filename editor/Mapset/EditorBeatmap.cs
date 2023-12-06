@@ -1,7 +1,6 @@
 ﻿using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
-using StorybrewEditor.Storyboarding;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

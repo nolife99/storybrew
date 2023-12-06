@@ -8,144 +8,143 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BrewLib.Util.Compression
+namespace BrewLib.Util.Compression;
+
+public class SynchronousCompressor : ImageCompressor
 {
-    public class SynchronousCompressor : ImageCompressor
+    public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
+
+    public SynchronousCompressor(string utilityPath = null) : base(utilityPath) 
+        => container = new AssemblyResourceContainer(typeof(SynchronousCompressor).Assembly, "BrewLib");
+
+    List<Argument> toCompress = [], lossyCompress = [];
+    List<string> toCleanup = [];
+
+    protected override void compress(Argument arg, bool useLossy) => (useLossy ? lossyCompress : toCompress).Add(arg);
+    async Task doCompress()
     {
-        public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
+        UtilityName = "oxipng32.exe";
+        ensureTool();
 
-        public SynchronousCompressor(string utilityPath = null) : base(utilityPath) 
-            => container = new AssemblyResourceContainer(typeof(SynchronousCompressor).Assembly, "BrewLib");
-
-        List<Argument> toCompress = [], lossyCompress = [];
-        List<string> toCleanup = [];
-
-        protected override void compress(Argument arg, bool useLossy) => (useLossy ? lossyCompress : toCompress).Add(arg);
-        async Task doCompress()
+        var startInfo = new ProcessStartInfo(GetUtility())
         {
-            UtilityName = "oxipng32.exe";
-            ensureTool();
+            WindowStyle = ProcessWindowStyle.Hidden,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetDirectoryName(UtilityPath),
+            RedirectStandardInput = true,
+            RedirectStandardError = true,
+        };
 
-            var startInfo = new ProcessStartInfo(GetUtility())
+        using (Task losslessTask = new(() =>
+        { 
+            foreach (var arg in toCompress) if (File.Exists(arg.path)) try
             {
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                WorkingDirectory = Path.GetDirectoryName(UtilityPath),
-                RedirectStandardInput = true,
-                RedirectStandardError = true,
-            };
-
-            using (Task losslessTask = new(() =>
-            { 
-                foreach (var arg in toCompress) if (File.Exists(arg.path)) try
-                {
-                    startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
-                    process ??= Process.Start(startInfo);
-                    var error = process.StandardError.ReadToEnd();
-                    if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
-                }
-                finally
-                {
-                    ensureStop();
-                }
-            }, TaskCreationOptions.AttachedToParent))
-            {
-                losslessTask.Start();
-                await losslessTask;
+                startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
+                process ??= Process.Start(startInfo);
+                var error = process.StandardError.ReadToEnd();
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
             }
-
-            UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
-            ensureTool();
-            startInfo.FileName = GetUtility();
-
-            using (Task lossyTask = new(() =>
+            finally
             {
-                foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
-                {
-                    startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
-                    process ??= Process.Start(startInfo);
-                    var error = process.StandardError.ReadToEnd();
-                    if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
-                }
-                finally
-                {
-                    ensureStop();
-                }
-            }, TaskCreationOptions.AttachedToParent))
-            {
-                lossyTask.Start();
-                await lossyTask;
+                ensureStop();
             }
+        }, TaskCreationOptions.AttachedToParent))
+        {
+            losslessTask.Start();
+            await losslessTask;
         }
-        protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
+
+        UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
+        ensureTool();
+        startInfo.FileName = GetUtility();
+
+        using (Task lossyTask = new(() =>
         {
-            var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
-            var str = new StringBuilder();
-
-            if (Environment.Is64BitOperatingSystem)
+            foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
             {
-                if (useLossy)
-                {
-                    str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
-                    if (lossy is not null)
-                    {
-                        if (lossy.MinQuality >= 0 && lossy.MaxQuality > 0 && lossy.MaxQuality <= 100)
-                            str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossy.MinQuality, lossy.MaxQuality);
+                startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
+                process ??= Process.Start(startInfo);
+                var error = process.StandardError.ReadToEnd();
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
+            }
+            finally
+            {
+                ensureStop();
+            }
+        }, TaskCreationOptions.AttachedToParent))
+        {
+            lossyTask.Start();
+            await lossyTask;
+        }
+    }
+    protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
+    {
+        var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
+        var str = new StringBuilder();
 
-                        if (lossy.Speed > 0 && lossy.Speed <= 10)
-                            str.AppendFormat(CultureInfo.InvariantCulture, " -s{0} ", lossy.Speed);
-
-                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossy.CustomInputArgs);
-                    }
-                }
-                else
+        if (Environment.Is64BitOperatingSystem)
+        {
+            if (useLossy)
+            {
+                str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
+                if (lossy is not null)
                 {
-                    if (lossless is not null)
-                    {
-                        var lvl = (byte)lossless.OptimizationLevel;
-                        str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
-                        str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless.CustomInputArgs);
-                    }
-                    str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
+                    if (lossy.MinQuality >= 0 && lossy.MaxQuality > 0 && lossy.MaxQuality <= 100)
+                        str.AppendFormat(CultureInfo.InvariantCulture, " --quality {0}-{1} ", lossy.MinQuality, lossy.MaxQuality);
+
+                    if (lossy.Speed > 0 && lossy.Speed <= 10)
+                        str.AppendFormat(CultureInfo.InvariantCulture, " -s{0} ", lossy.Speed);
+
+                    str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossy.CustomInputArgs);
                 }
             }
             else
             {
-                var lvl = lossless is not null ? lossless.OptimizationLevel : 4;
-                str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
-                str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless?.CustomInputArgs);
+                if (lossless is not null)
+                {
+                    var lvl = (byte)lossless.OptimizationLevel;
+                    str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
+                    str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless.CustomInputArgs);
+                }
                 str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
             }
-            return str.ToString();
         }
-        protected override void ensureTool()
+        else
         {
-            ObjectDisposedException.ThrowIf(disposed, this);
-
-            var path = GetUtility();
-            File.WriteAllBytes(path, container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
-            toCleanup.Add(path);
+            var lvl = lossless is not null ? lossless.OptimizationLevel : 4;
+            str.AppendFormat(CultureInfo.InvariantCulture, " -o {0} ", lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture));
+            str.AppendFormat(CultureInfo.InvariantCulture, " {0} ", lossless?.CustomInputArgs);
+            str.AppendFormat(CultureInfo.InvariantCulture, "−s -a {0}", input);
         }
-        protected override async void Dispose(bool disposing)
+        return str.ToString();
+    }
+    protected override void ensureTool()
+    {
+        ObjectDisposedException.ThrowIf(disposed, this);
+
+        var path = GetUtility();
+        File.WriteAllBytes(path, container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
+        toCleanup.Add(path);
+    }
+    protected override async void Dispose(bool disposing)
+    {
+        if (disposed) return;
+
+        try
         {
-            if (disposed) return;
+            await doCompress();
+        }
+        finally
+        {
+            base.Dispose(disposing);
 
-            try
-            {
-                await doCompress();
-            }
-            finally
-            {
-                base.Dispose(disposing);
-
-                for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) File.Delete(toCleanup[i]);
-                toCleanup.Clear();
-                toCompress.Clear();
-                lossyCompress.Clear();
-                toCleanup = null;
-                toCompress = null;
-                lossyCompress = null;
-            }
+            for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) File.Delete(toCleanup[i]);
+            toCleanup.Clear();
+            toCompress.Clear();
+            lossyCompress.Clear();
+            toCleanup = null;
+            toCompress = null;
+            lossyCompress = null;
         }
     }
 }

@@ -35,7 +35,7 @@ public class Line3d : Node3d, HasOsbSprites
     ///<summary> The segment end position of this <see cref="Line3d"/>. </summary>
     public readonly KeyframedValue<Vector3> EndPosition = new(InterpolatingFunctions.Vector3);
 
-    ///<summary> The thickness of this <see cref="Line3d"/>, in osu!pixels, relative to 3D transformations. </summary>
+    ///<summary> The thickness of this <see cref="Line3d"/>, in absolute osu!pixels. </summary>
     public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1);
 
     SizeF spriteBitmap;

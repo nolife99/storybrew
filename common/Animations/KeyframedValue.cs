@@ -30,7 +30,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     public Keyframe<TValue> this[int index]
     {
         get => CollectionsMarshal.AsSpan(keyframes)[index];
-        set => keyframes[index] = value;
+        set => CollectionsMarshal.AsSpan(keyframes)[index] = value;
     }
 
     ///<summary> Returns the amount of keyframes in the keyframed value. </summary>
@@ -217,6 +217,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     ///<summary> Removes all keyframes in the keyframed value. </summary>
     public void Clear(bool trim = false)
     {
+        if (keyframes.Count == 0) return;
+
         keyframes.Clear();
         if (trim) keyframes.Capacity = 0;
     }
@@ -322,10 +324,11 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             SimplifyEqualKeyframes();
             return;
         }
-        if (keyframes.Count < 3) return;
+
+        var span = CollectionsMarshal.AsSpan(keyframes);
+        if (span.Length < 3) return;
 
         var firstPoint = 0;
-        var span = CollectionsMarshal.AsSpan(keyframes);
         var lastPoint = span.Length - 1;
 
         List<int> keepIndex = [firstPoint, lastPoint];

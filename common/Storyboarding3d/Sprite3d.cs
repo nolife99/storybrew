@@ -81,8 +81,7 @@ public class Sprite3d : Node3d, HasOsbSprites
         var scale = SpriteScale.ValueAt(time) * new Vector2(
             new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13).Length(),
             new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length()) *
-        (float)(cameraState.FocusDistance / screenPosition.W) *
-        (float)cameraState.ResolutionScale;
+        (float)(cameraState.FocusDistance / screenPosition.W) * (float)cameraState.ResolutionScale;
 
         var opacity = screenPosition.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= cameraState.OpacityAt(screenPosition.W);

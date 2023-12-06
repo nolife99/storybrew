@@ -8,7 +8,7 @@ using System.Drawing;
 
 namespace StorybrewCommon.Storyboarding3d;
 
-///<summary> Represents a triangle with 3D functionality. </summary>
+///<summary> Represents two triangles which form complex 3D geometry. </summary>
 public class Triangle3d : Node3d, HasOsbSprites
 {
     Action<OsbSprite> finalize;

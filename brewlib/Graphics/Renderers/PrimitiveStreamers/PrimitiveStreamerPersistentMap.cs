@@ -64,7 +64,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         // Prevent the vertex buffer from becoming too large (maxes at 8mb * grow factor)
         if (MinRenderableVertexCount * VertexDeclaration.VertexSize > 8388608) return;
 
-        MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.75);
+        MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.75f);
         if (commandSync.WaitForAll()) ++BufferWaitCount;
 
         Unbind();

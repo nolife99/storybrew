@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using BrewLib.Util;
+using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Storyboarding.Util
 {
@@ -121,12 +122,13 @@ namespace StorybrewCommon.Storyboarding.Util
         {
             if (!disposed)
             {
-                if (attributes is not null) pooled.ForEach(pooledSprite =>
+                var span = CollectionsMarshal.AsSpan(pooled);
+                if (attributes is not null) foreach (var pooledSprite in span)
                 {
                     var sprite = pooledSprite.Sprite;
                     attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
-                });
-                pooled.Clear();
+                }
+                span.Clear();
 
                 disposed = true;
             }

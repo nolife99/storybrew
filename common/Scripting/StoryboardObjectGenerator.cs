@@ -18,6 +18,7 @@ using Tiny;
 using System.IO.Compression;
 using System.Globalization;
 using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Scripting;
 
@@ -268,11 +269,14 @@ public abstract class StoryboardObjectGenerator : Script
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
         if (fonts.ContainsKey(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
 
+        if (Directory.Exists(fontDirectory)) foreach (var file in Directory.GetFiles(fontDirectory, "*.png")) PathHelper.SafeDelete(file);
+        else Directory.CreateDirectory(fontDirectory);
+
         FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
         fonts.Add(fontDirectory, fontGenerator);
 
         var cachePath = $"{fontCacheDirectory}/font.dat";
-        if (File.Exists(cachePath)) using (FileStream file = new($"{fontCacheDirectory}/font.dat", FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
+        if (File.Exists(cachePath)) using (FileStream file = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
         using (ZipArchive cache = new(file, ZipArchiveMode.Read))
         {
             var path = cache.GetEntry(HashHelper.GetMd5(directory));
@@ -289,7 +293,8 @@ public abstract class StoryboardObjectGenerator : Script
         if (!Directory.Exists(fontCacheDirectory)) Directory.CreateDirectory(fontCacheDirectory);
 
         using FileStream file = new($"{fontCacheDirectory}/font.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-        using ZipArchive cache = new(file, ZipArchiveMode.Update); foreach (var fontGenerator in fonts.Values)
+        using ZipArchive cache = new(file, ZipArchiveMode.Update);
+        foreach (var fontGenerator in fonts.Values)
         {
             var fontRoot = fontGenerator.ToTinyObject();
             var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory)) ?? cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
@@ -314,7 +319,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (context is not null) throw new InvalidOperationException();
 
         var remainingFieldNames = config.FieldNames.ToList();
-        configurableFields.ForEach(configurableField =>
+        foreach (var configurableField in CollectionsMarshal.AsSpan(configurableFields))
         {
             var field = configurableField.Field;
             NamedValue[] allowedValues = null;
@@ -352,7 +357,7 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 Trace.WriteLine($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
             }
-        });
+        }
         remainingFieldNames.ForEach(config.RemoveField);
     }
 
@@ -361,7 +366,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         if (context is not null) throw new InvalidOperationException();
 
-        configurableFields.ForEach(configurableField =>
+        foreach (var configurableField in CollectionsMarshal.AsSpan(configurableFields))
         {
             var field = configurableField.Field;
             try
@@ -373,7 +378,7 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 Trace.WriteLine($"Failed to apply configuration for {field.Name}:\n{e}");
             }
-        });
+        }
     }
 
     struct ConfigurableField(FieldInfo field, ConfigurableAttribute attribute, object initialValue, string beginsGroup, string description, int order)

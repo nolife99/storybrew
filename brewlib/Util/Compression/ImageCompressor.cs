@@ -3,65 +3,64 @@ using System.Diagnostics;
 using System.IO;
 using BrewLib.Data;
 
-namespace BrewLib.Util.Compression
+namespace BrewLib.Util.Compression;
+
+public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 {
-    public abstract class ImageCompressor(string utilityPath = null) : IDisposable
+    protected Process process;
+    protected ResourceContainer container;
+
+    public string UtilityPath { get; protected set; } = utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
+
+    protected string utilName;
+    public virtual string UtilityName
     {
-        protected Process process;
-        protected ResourceContainer container;
+        get => HashHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
+        protected set => utilName = value;
+    }
 
-        public string UtilityPath { get; protected set; } = utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
+    public void LosslessCompress(string path) => compress(new Argument(path), false);
+    public void Compress(string path) => compress(new Argument(path), true);
+    public void LosslessCompress(string path, LosslessInputSettings settings) => compress(new Argument(path, settings), false);
+    public void Compress(string path, LossyInputSettings settings) => compress(new Argument(path, null, settings), true);
 
-        protected string utilName;
-        public virtual string UtilityName
+    protected abstract void compress(Argument arg, bool useLossy);
+    protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
+    protected abstract void ensureTool();
+
+    protected void ensureStop()
+    {
+        if (process is null) return;
+        process.Close();
+        process = null;
+    }
+
+    protected virtual string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
+
+    protected bool disposed;
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposed)
         {
-            get => HashHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
-            protected set => utilName = value;
+            if (disposing) ensureStop();
+            container = null;
+            disposed = true;
         }
+    }
 
-        public void LosslessCompress(string path) => compress(new Argument(path), false);
-        public void Compress(string path) => compress(new Argument(path), true);
-        public void LosslessCompress(string path, LosslessInputSettings settings) => compress(new Argument(path, settings), false);
-        public void Compress(string path, LossyInputSettings settings) => compress(new Argument(path, null, settings), true);
+    public void Dispose() => Dispose(true);
 
-        protected abstract void compress(Argument arg, bool useLossy);
-        protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
-        protected abstract void ensureTool();
+    protected readonly struct Argument
+    {
+        internal readonly string path;
+        internal readonly LosslessInputSettings lossless;
+        internal readonly LossyInputSettings lossy;
 
-        protected void ensureStop()
+        internal Argument(string path, LosslessInputSettings lossless = null, LossyInputSettings lossy = null)
         {
-            if (process is null) return;
-            process.Close();
-            process = null;
-        }
-
-        protected virtual string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
-
-        protected bool disposed;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposed)
-            {
-                if (disposing) ensureStop();
-                container = null;
-                disposed = true;
-            }
-        }
-
-        public void Dispose() => Dispose(true);
-
-        protected readonly struct Argument
-        {
-            internal readonly string path;
-            internal readonly LosslessInputSettings lossless;
-            internal readonly LossyInputSettings lossy;
-
-            internal Argument(string path, LosslessInputSettings lossless = null, LossyInputSettings lossy = null)
-            {
-                this.path = path;
-                this.lossless = lossless;
-                this.lossy = lossy;
-            }
+            this.path = path;
+            this.lossless = lossless;
+            this.lossy = lossy;
         }
     }
 }

@@ -390,7 +390,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     {
                         if (e.Shift) ClipboardHelper.SetText(TimeSpan.FromMilliseconds(timeSource.Current * 1000).ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
                         else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
-                        else ClipboardHelper.SetText((timeSource.Current * 1000).ToString("n0", CultureInfo.InvariantCulture));
+                        else ClipboardHelper.SetText(((int)(timeSource.Current * 1000)).ToString(CultureInfo.InvariantCulture));
                         return true;
                     }
                     break;

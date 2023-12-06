@@ -9,7 +9,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
-using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Text;
 
@@ -109,7 +108,6 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
             var bytes = resourceContainer.GetBytes(name, ResourceSource.Embedded);
             if (bytes is not null)
             {
-                var pinnedArray = GCHandle.Alloc(bytes, GCHandleType.Pinned);
                 try
                 {
                     if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
@@ -121,10 +119,6 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
                 catch (Exception e)
                 {
                     Trace.WriteLine($"Failed to load font {name}: {e.Message}");
-                }
-                finally
-                {
-                    pinnedArray.Free();
                 }
             }
             fontFamilies.Add(name, fontFamily);
