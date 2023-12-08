@@ -25,7 +25,7 @@ public class OsbSprite : StoryboardObject
     ///<returns> True if the sprite is in a command group, else returns false. </returns>
     public bool InGroup => currentCommandGroup is not null;
 
-    ///<summary> If the sprite has more commands than <see cref="CommandSplitThreshold"/>, they will be split between multiple sprites. </summary>
+    ///<summary> If the sprite has more commands than this amount, they will be split between multiple sprites. </summary>
     ///<remarks> Does not apply when the sprite has triggers. </remarks>
     public int CommandSplitThreshold;
 
@@ -626,10 +626,9 @@ public class OsbSprite : StoryboardObject
     ///<remarks> Command times inside the loop are relative to the <paramref name="startTime"/> of the loop. </remarks>
     ///<param name="startTime"> Start time of the loop. </param>
     ///<param name="loopCount"> How many times the loop should repeat. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public LoopCommand StartLoopGroup(double startTime, int loopCount)
     {
-        var loopCommand = new LoopCommand(startTime, loopCount);
+        LoopCommand loopCommand = new(startTime, loopCount);
         addCommand(loopCommand);
         startDisplayLoop(loopCommand);
         return loopCommand;
@@ -641,10 +640,9 @@ public class OsbSprite : StoryboardObject
     ///<param name="startTime"> Start time of the loop. </param>
     ///<param name="endTime"> End time of the loop. </param>
     ///<param name="group"> Group number of the loop. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TriggerCommand StartTriggerGroup(string triggerName, double startTime, double endTime, int group = 0)
     {
-        var triggerCommand = new TriggerCommand(triggerName, startTime, endTime, group);
+        TriggerCommand triggerCommand = new(triggerName, startTime, endTime, group);
         addCommand(triggerCommand);
         startDisplayTrigger(triggerCommand);
         return triggerCommand;
@@ -704,24 +702,18 @@ public class OsbSprite : StoryboardObject
 
     readonly List<KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>> displayValueBuilders = [];
     readonly AnimatedValue<CommandPosition> moveTimeline = new();
-    readonly AnimatedValue<CommandDecimal> moveXTimeline = new();
-    readonly AnimatedValue<CommandDecimal> moveYTimeline = new();
-    readonly AnimatedValue<CommandDecimal> scaleTimeline = new(1);
+    readonly AnimatedValue<CommandDecimal> moveXTimeline = new(), moveYTimeline = new(), scaleTimeline = new(1), rotateTimeline = new(), fadeTimeline = new(1);
     readonly AnimatedValue<CommandScale> scaleVecTimeline = new(Vector2.One);
-    readonly AnimatedValue<CommandDecimal> rotateTimeline = new();
-    readonly AnimatedValue<CommandDecimal> fadeTimeline = new(1);
     readonly AnimatedValue<CommandColor> colorTimeline = new(CommandColor.White);
-    readonly AnimatedValue<CommandParameter> additiveTimeline = new(CommandParameter.None);
-    readonly AnimatedValue<CommandParameter> flipHTimeline = new(CommandParameter.None);
-    readonly AnimatedValue<CommandParameter> flipVTimeline = new(CommandParameter.None);
+    readonly AnimatedValue<CommandParameter> additiveTimeline = new(CommandParameter.None), flipHTimeline = new(CommandParameter.None), flipVTimeline = new(CommandParameter.None);
 
     ///<summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
     ///<param name="time"> Time to retrieve the information at. </param>
-    public CommandPosition PositionAt(double time) => moveTimeline.HasCommands ? moveTimeline.ValueAtTime(time) : new CommandPosition(moveXTimeline.ValueAtTime(time), moveYTimeline.ValueAtTime(time));
+    public CommandPosition PositionAt(double time) => moveTimeline.HasCommands ? moveTimeline.ValueAtTime(time) : new(moveXTimeline.ValueAtTime(time), moveYTimeline.ValueAtTime(time));
 
     ///<summary> Retrieves the <see cref="CommandScale"/> of a sprite at a given time. </summary>
     ///<param name="time"> Time to retrieve the information at. </param>
-    public CommandScale ScaleAt(double time) => scaleVecTimeline.HasCommands ? scaleVecTimeline.ValueAtTime(time) : new CommandScale(scaleTimeline.ValueAtTime(time));
+    public CommandScale ScaleAt(double time) => scaleVecTimeline.HasCommands ? scaleVecTimeline.ValueAtTime(time) : new(scaleTimeline.ValueAtTime(time));
 
     ///<summary> Retrieves the rotation, in radians, of a sprite at a given time. </summary>
     ///<param name="time"> Time to retrieve the information at. </param>
@@ -749,17 +741,17 @@ public class OsbSprite : StoryboardObject
 
     void initializeDisplayValueBuilders()
     {
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is MoveCommand, new AnimatedValueBuilder<CommandPosition>(moveTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(moveXTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(moveYTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(scaleTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(scaleVecTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(rotateTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(fadeTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(colorTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending }, new AnimatedValueBuilder<CommandParameter>(additiveTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal }, new AnimatedValueBuilder<CommandParameter>(flipHTimeline)));
-        displayValueBuilders.Add(new KeyValuePair<Predicate<ICommand>, IAnimatedValueBuilder>(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, new AnimatedValueBuilder<CommandParameter>(flipVTimeline)));
+        displayValueBuilders.Add(new(c => c is MoveCommand, new AnimatedValueBuilder<CommandPosition>(moveTimeline)));
+        displayValueBuilders.Add(new(c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(moveXTimeline)));
+        displayValueBuilders.Add(new(c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(moveYTimeline)));
+        displayValueBuilders.Add(new(c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(scaleTimeline)));
+        displayValueBuilders.Add(new(c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(scaleVecTimeline)));
+        displayValueBuilders.Add(new(c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(rotateTimeline)));
+        displayValueBuilders.Add(new(c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(fadeTimeline)));
+        displayValueBuilders.Add(new(c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(colorTimeline)));
+        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending }, new AnimatedValueBuilder<CommandParameter>(additiveTimeline)));
+        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal }, new AnimatedValueBuilder<CommandParameter>(flipHTimeline)));
+        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, new AnimatedValueBuilder<CommandParameter>(flipVTimeline)));
     }
     void addDisplayCommand(ICommand command) => displayValueBuilders.ForEach(builders =>
     {
@@ -778,15 +770,13 @@ public class OsbSprite : StoryboardObject
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
     {
         if (commands.Count == 0) return;
-        var osbSpriteWriter = OsbWriterFactory.CreateWriter(this,
+        OsbWriterFactory.CreateWriter(this,
             moveTimeline, moveXTimeline, moveYTimeline,
             scaleTimeline, scaleVecTimeline,
             rotateTimeline,
             fadeTimeline,
             colorTimeline,
-            writer, exportSettings, layer);
-
-        osbSpriteWriter.WriteOsb();
+            writer, exportSettings, layer).WriteOsb();
     }
 
     ///<summary> Returns whether or not the sprite is within widescreen storyboard bounds. </summary>

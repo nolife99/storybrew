@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BrewLib.Util;
 
@@ -58,7 +59,7 @@ public static class BitmapHelper
         var kernel = new float[length, length];
         var total = 0f;
 
-        var scale = 1 / (weight * weight * 2 * MathF.PI);
+        var scale = 1 / (weight * weight * MathF.Tau);
         for (var y = -radius; y <= radius; ++y) for (var x = -radius; x <= radius; ++x) total += kernel[y + radius, x + radius] = scale * MathF.Exp(-(x * x + y * y) / (2 * weight * weight));
         for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] /= total;
         return kernel;
@@ -79,13 +80,13 @@ public static class BitmapHelper
         PinnedBitmap result = new(width, height);
         using (PinnedBitmap src = new(source)) for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
         {
-            float a = 0f, r = 0f, g = 0f, b = 0f;
+            float a = 0, r = 0, g = 0, b = 0;
             for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
             {
-                var pixelX = osuTK.MathHelper.Clamp(kernelX + x, 0, width - 1);
+                var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
                 for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                 {
-                    var color = src[osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                    var color = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
                     var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
 
                     a += ((color >> 24) & 0xFF) * k;
@@ -124,10 +125,10 @@ public static class BitmapHelper
             var a = 0f;
             for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
             {
-                var pixelX = osuTK.MathHelper.Clamp(kernelX + x, 0, width - 1);
+                var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
                 for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                 {
-                    var col = src[osuTK.MathHelper.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                    var col = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
                     a += ((col >> 24) & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
                 }
             }
@@ -193,7 +194,7 @@ public static class BitmapHelper
         return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
     }
 }
-public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
+public sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
 {
     public Bitmap Bitmap { get; private set; }
     public int Count { get; private set; }
@@ -203,14 +204,17 @@ public unsafe sealed class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     public int this[int pixelIndex]
     {
-        get => new ReadOnlySpan<int>(data, 0, Count)[pixelIndex];
-        set => new Span<int>(data, 0, Count)[pixelIndex] = value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(data), Count)[pixelIndex];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(data), Count)[pixelIndex] = value;
     }
 
     public PinnedBitmap(int width, int height)
     {
         data = ArrayPool<int>.Shared.Rent(Count = width * height);
-        new Span<int>(data, 0, Count).Clear();
+        MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(data), Count).Clear();
         Bitmap = new(width, height, width << 2, PixelFormat.Format32bppArgb, data.AddrOfPinnedArray());
     }
     public PinnedBitmap(Bitmap bitmap) : this(bitmap.Width, bitmap.Height)

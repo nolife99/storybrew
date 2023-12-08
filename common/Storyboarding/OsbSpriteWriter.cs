@@ -26,7 +26,8 @@ public class OsbSpriteWriter(OsbSprite sprite,
     {
         if (ExportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 && sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
         {
-            var commands = sprite.Commands.Select(c => (IFragmentableCommand)c).ToHashSet();
+            HashSet<IFragmentableCommand> commands = [];
+            foreach (var cmd in commands) commands.Add(cmd);
             var fragmentationTimes = GetFragmentationTimes(commands);
 
             while (commands.Count > 0)
@@ -76,7 +77,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
     }
     protected virtual HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
     {
-        var fragTimes = Enumerable.Range((int)sprite.StartTime, (int)(sprite.EndTime - sprite.StartTime) + 1).ToHashSet();
+        HashSet<int> fragTimes = new(Enumerable.Range((int)sprite.StartTime, (int)(sprite.EndTime - sprite.StartTime) + 1));
         foreach (var command in fragCommands) fragTimes.ExceptWith(command.GetNonFragmentableTimes());
         return fragTimes;
     }

@@ -121,7 +121,6 @@ public class HsbColorPicker : Widget, Field
                 }
             }
         });
-        updateWidgets();
 
         hueSlider.OnValueChanged += slider_OnValueChanged;
         saturationSlider.OnValueChanged += slider_OnValueChanged;
@@ -133,6 +132,8 @@ public class HsbColorPicker : Widget, Field
         brightnessSlider.OnValueCommited += slider_OnValueCommited;
         alphaSlider.OnValueCommited += slider_OnValueCommited;
         htmlTextbox.OnValueCommited += htmlTextbox_OnValueCommited;
+
+        updateWidgets();
     }
 
     void slider_OnValueChanged(object sender, EventArgs e) => Value = FontColor.FromHsb(new(hueSlider.Value % 1, saturationSlider.Value, brightnessSlider.Value, alphaSlider.Value));
@@ -153,20 +154,19 @@ public class HsbColorPicker : Widget, Field
             updateWidgets();
             return;
         }
-        Value = new(color.R / 255f, color.G / 255f, color.B / 255f, alphaSlider.Value);
+
+        Value = new(color.R / 255d, color.G / 255d, color.B / 255d, alphaSlider.Value);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
     void updateWidgets()
     {
-        previewSprite.Color = value;
-
         var hsba = FontColor.ToHsb(value);
         if (hsba.Z > 0)
         {
             if (!float.IsNaN(hsba.X))
             {
                 hueSlider.SetValueSilent(hsba.X);
-                hueSlider.Tooltip = $"{hueSlider.Value * 360:F0}°";
+                hueSlider.Tooltip = $"{hsba.X * 360:F0}°";
                 hueSlider.Disabled = false;
             }
             else
@@ -176,7 +176,7 @@ public class HsbColorPicker : Widget, Field
             }
 
             saturationSlider.SetValueSilent(hsba.Y);
-            saturationSlider.Tooltip = $"{saturationSlider.Value:.%}";
+            saturationSlider.Tooltip = $"{hsba.Y:.%}";
             saturationSlider.Disabled = false;
         }
         else
@@ -189,12 +189,13 @@ public class HsbColorPicker : Widget, Field
         }
 
         brightnessSlider.SetValueSilent(hsba.Z);
-        brightnessSlider.Tooltip = $"{brightnessSlider.Value:.%}";
+        brightnessSlider.Tooltip = $"{hsba.Z:.%}";
 
         alphaSlider.SetValueSilent(hsba.W);
-        alphaSlider.Tooltip = $"{alphaSlider.Value:.%}";
+        alphaSlider.Tooltip = $"{hsba.W:.%}";
 
-        htmlTextbox.SetValueSilent(ColorTranslator.ToHtml(Color.FromArgb(value.GetHashCode())));
+        previewSprite.Color = value;
+        htmlTextbox.SetValueSilent(ColorTranslator.ToHtml(previewSprite.Color));
     }
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());

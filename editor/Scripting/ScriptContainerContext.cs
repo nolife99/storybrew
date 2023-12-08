@@ -8,9 +8,9 @@ public class ScriptContainerContext<TScript>(string scriptTypeName, string mainS
 {
     protected override ScriptProvider<TScript> LoadScript()
     {
-        /* This implementation is empty due to a replacement (ScriptContainerAppDomain -> ScriptContainerContext)
-           Currently we use AsyncLocal instead of AppDomain, which seems to work
-           However compatibility hasn't been thoroughly tested */ 
+        /* This implementation is empty due to a replacement. (ScriptContainerAppDomain -> ScriptContainerContext)
+           Currently we use AsyncLocal instead of AppDomain, which seems to work.
+           However, compatibility hasn't been thoroughly tested. */ 
         try
         {
             ScriptProvider<TScript> scriptProvider = new();

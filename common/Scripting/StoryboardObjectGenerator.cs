@@ -18,7 +18,6 @@ using Tiny;
 using System.IO.Compression;
 using System.Globalization;
 using System.Threading;
-using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Scripting;
 
@@ -68,9 +67,7 @@ public abstract class StoryboardObjectGenerator : Script
         {
             var field = fields[i];
             var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-            if (!field.FieldType.IsEnum && !ObjectSerializer.Supports(field.FieldType.FullName) || configurable is null) continue;
-
-            configurableFields.Add(new(field, configurable, field.GetValue(this),
+            if (configurable is not null) configurableFields.Add(new(field, configurable, field.GetValue(this),
                 field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(), field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order++));
         }
     }
@@ -269,7 +266,7 @@ public abstract class StoryboardObjectGenerator : Script
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
         if (fonts.ContainsKey(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
 
-        if (!Directory.Exists(fontDirectory)) Directory.CreateDirectory(fontDirectory);
+        if (Directory.Exists(fontDirectory)) foreach (var file in Directory.GetFiles(fontDirectory, "*.png")) PathHelper.SafeDelete(file);
 
         FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
         fonts.Add(fontDirectory, fontGenerator);
@@ -290,21 +287,22 @@ public abstract class StoryboardObjectGenerator : Script
     void saveFontCache()
     {
         if (!Directory.Exists(fontCacheDirectory)) Directory.CreateDirectory(fontCacheDirectory);
+        var cachePath = $"{fontCacheDirectory}/font.dat";
 
-        using FileStream file = new($"{fontCacheDirectory}/font.dat", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read);
-        using ZipArchive cache = new(file, ZipArchiveMode.Update);
-        foreach (var fontGenerator in fonts.Values)
+        try
         {
-            var fontRoot = fontGenerator.ToTinyObject();
-            var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory)) ?? cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
-            try
+            using (FileStream file = new(cachePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read))
+            using (ZipArchive cache = new(file, ZipArchiveMode.Update)) foreach (var fontGenerator in fonts.Values)
             {
+                var fontRoot = fontGenerator.ToTinyObject();
+                var path = cache.GetEntry(HashHelper.GetMd5(fontGenerator.Directory)) ?? cache.CreateEntry(HashHelper.GetMd5(fontGenerator.Directory), CompressionLevel.Optimal);
                 fontRoot.Write(path.Open(), TinyToken.Yaml);
             }
-            catch (Exception e)
-            {
-                Trace.WriteLine($"Failed to save font cache for {path.Name} ({e.GetType().FullName})");
-            }
+        }
+        catch (Exception e)
+        {
+            Trace.WriteLine($"Failed to save font cache ({e.GetType().FullName}) {e.Message}");
+            Misc.WithRetries(() => File.Delete(cachePath), canThrow: false);
         }
     }
 
@@ -318,7 +316,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (context is not null) throw new InvalidOperationException();
 
         var remainingFieldNames = config.FieldNames.ToList();
-        foreach (var configurableField in CollectionsMarshal.AsSpan(configurableFields))
+        foreach (var configurableField in configurableFields)
         {
             var field = configurableField.Field;
             NamedValue[] allowedValues = null;
@@ -329,7 +327,7 @@ public abstract class StoryboardObjectGenerator : Script
                 var enumValues = Enum.GetValues(fieldType);
                 fieldType = Enum.GetUnderlyingType(fieldType);
 
-                allowedValues = new NamedValue[enumValues.Length];
+                allowedValues = GC.AllocateUninitializedArray<NamedValue>(enumValues.Length);
                 for (var i = 0; i < enumValues.Length; ++i)
                 {
                     var value = enumValues.GetValue(i);
@@ -365,7 +363,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         if (context is not null) throw new InvalidOperationException();
 
-        foreach (var configurableField in CollectionsMarshal.AsSpan(configurableFields))
+        foreach (var configurableField in configurableFields)
         {
             var field = configurableField.Field;
             try

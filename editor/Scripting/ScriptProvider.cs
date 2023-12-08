@@ -8,7 +8,7 @@ public class ScriptProvider<TScript> where TScript : Script
 {
     Type type;
 
-    public void Initialize(byte[] stream, string typeName) => type = Assembly.Load(stream).GetType(typeName, true);
+    public void Initialize(Assembly assembly, string typeName) => type = assembly.GetType(typeName, true);
     public TScript CreateScript()
     {
         var script = (TScript)Activator.CreateInstance(type, true);

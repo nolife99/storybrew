@@ -2,7 +2,6 @@
 using BrewLib.Graphics.Cameras;
 using BrewLib.ScreenLayers;
 using BrewLib.UserInterface;
-using osuTK;
 using System;
 
 namespace StorybrewEditor.ScreenLayers;
@@ -38,7 +37,7 @@ public class UiScreenLayer : ScreenLayer
         {
             var targetOpacity = isTop ? 1 : .3f;
             if (Math.Abs(opacity - targetOpacity) <= .07) opacity = targetOpacity;
-            else opacity = MathHelper.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);
+            else opacity = Math.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);
         }
         WidgetManager.Opacity = opacity * (float)TransitionProgress;
     }

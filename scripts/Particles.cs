@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Drawing;
 using System.Linq;
 using StorybrewCommon.Storyboarding.CommandValues;
+using osuTK.Graphics;
 
 namespace StorybrewScripts;
 
@@ -82,7 +83,7 @@ class Particles : StoryboardObjectGenerator
             var color = Color;
             if (ColorVariance > 0)
             {
-                ColorVariance = osuTK.MathHelper.Clamp(ColorVariance, 0, 1);
+                ColorVariance = Math.Clamp(ColorVariance, 0, 1);
 
                 var hsba = Color4.ToHsl(color);
                 var sMin = Math.Max(0, hsba.Y - ColorVariance * .5f);

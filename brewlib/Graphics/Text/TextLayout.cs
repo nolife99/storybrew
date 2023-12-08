@@ -84,13 +84,13 @@ public class TextLayout
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var index = 0;
-        lines.ForEach(line =>
+        for (var i = 0; i < lines.Count; ++i)
         {
             var topLeft = Vector2.Zero;
             var bottomRight = Vector2.Zero;
             var hasBounds = false;
 
-            foreach (var layoutGlyph in line.Glyphs)
+            foreach (var layoutGlyph in lines[i].Glyphs)
             {
                 if (!hasBounds && startIndex <= index)
                 {
@@ -101,7 +101,7 @@ public class TextLayout
                 ++index;
             }
             if (hasBounds) action(RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y));
-        });
+        }
     }
     public int GetCharacterIndexAbove(int index)
     {

@@ -4,6 +4,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using StorybrewCommon.Storyboarding.CommandValues;
+using System.Drawing;
 
 namespace StorybrewCommon.Util;
 
@@ -23,6 +25,44 @@ public abstract class ObjectSerializer
         new SimpleObjectSerializer<double>(r => r.ReadDouble(), (w, v) => w.Write((double)v), v => double.Parse(v, CultureInfo.InvariantCulture), v => ((double)v).ToString(CultureInfo.InvariantCulture)),
         new SimpleObjectSerializer<string>(r => r.ReadString(), (w, v) => w.Write((string)v)),
         new SimpleObjectSerializer<bool>(r => r.ReadBoolean(), (w, v) => w.Write((bool)v), v => bool.Parse(v), v => v.ToString()),
+        new SimpleObjectSerializer<CommandScale>(r =>
+        {
+            var x = r.ReadSingle();
+            var y = r.ReadSingle();
+            return new Vector2(x, y);
+        }, (w, v) =>
+        {
+            var vector = (Vector2)v;
+            w.Write(vector.X);
+            w.Write(vector.Y);
+        }, v =>
+        {
+            var split = v.Split(',');
+            return new Vector2(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture));
+        }, v =>
+        {
+            var vector = (Vector2)v;
+            return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture);
+        }),
+        new SimpleObjectSerializer<CommandPosition>(r =>
+        {
+            var x = r.ReadSingle();
+            var y = r.ReadSingle();
+            return new Vector2(x, y);
+        }, (w, v) =>
+        {
+            var vector = (Vector2)v;
+            w.Write(vector.X);
+            w.Write(vector.Y);
+        }, v =>
+        {
+            var split = v.Split(',');
+            return new Vector2(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture));
+        }, v =>
+        {
+            var vector = (Vector2)v;
+            return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture);
+        }),
         new SimpleObjectSerializer<Vector2>(r =>
         {
             var x = r.ReadSingle();
@@ -117,6 +157,29 @@ public abstract class ObjectSerializer
             w.Write((byte)(color.G * 255));
             w.Write((byte)(color.B * 255));
             w.Write((byte)(color.A * 255));
+        }, v =>
+        {
+            var split = v.Split(',');
+            return new Color4(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture), float.Parse(split[3], CultureInfo.InvariantCulture));
+        }, v =>
+        {
+            var color = (Color4)v;
+            return color.R.ToString(CultureInfo.InvariantCulture) + "," + color.G.ToString(CultureInfo.InvariantCulture) + "," + color.B.ToString(CultureInfo.InvariantCulture) + "," + color.A.ToString(CultureInfo.InvariantCulture);
+        }),
+        new SimpleObjectSerializer<Color>(r =>
+        {
+            var red = r.ReadByte();
+            var green = r.ReadByte();
+            var blue = r.ReadByte();
+            var alpha = r.ReadByte();
+            return Color.FromArgb(alpha, red, green, blue);
+        }, (w, v) =>
+        {
+            var color = (Color)v;
+            w.Write(color.R);
+            w.Write(color.G);
+            w.Write(color.B);
+            w.Write(color.A);
         }, v =>
         {
             var split = v.Split(',');

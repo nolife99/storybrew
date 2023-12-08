@@ -398,7 +398,7 @@ public sealed class Project : IDisposable
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
 
-            importedAssemblies = value as HashSet<string> ?? value.ToHashSet();
+            importedAssemblies = value as HashSet<string> ?? new(value);
             scriptManager.ReferencedAssemblies = ReferencedAssemblies;
         }
     }

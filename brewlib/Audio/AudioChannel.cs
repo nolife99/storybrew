@@ -1,5 +1,4 @@
 ﻿using ManagedBass;
-using osuTK;
 using System;
 
 namespace BrewLib.Audio;
@@ -124,7 +123,7 @@ public class AudioChannel : IDisposable
         get => pan;
         set
         {
-            value = MathHelper.Clamp(value, -1, 1);
+            value = Math.Clamp(value, -1, 1);
             if (pan == value) return;
 
             pan = value;
@@ -162,7 +161,7 @@ public class AudioChannel : IDisposable
     void updatePitch()
     {
         if (channel == 0 || frequency <= 0) return;
-        Bass.ChannelSetAttribute(channel, ChannelAttribute.Frequency, MathHelper.Clamp(frequency * pitch, 100, 100000));
+        Bass.ChannelSetAttribute(channel, ChannelAttribute.Frequency, Math.Clamp(frequency * pitch, 100, 100000));
     }
     void updatePan()
     {

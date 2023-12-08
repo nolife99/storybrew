@@ -133,7 +133,7 @@ public class CommandGenerator
     }
     void commitKeyframes(SizeF imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => (float)osuTK.MathHelper.Clamp(f * 100, 0, 100));
+        fades.Simplify1dKeyframes(OpacityTolerance, f => (float)Math.Clamp(f * 100, 0, 100));
         if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
         if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalfades);

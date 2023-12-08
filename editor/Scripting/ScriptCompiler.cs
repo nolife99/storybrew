@@ -8,20 +8,22 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 
 namespace StorybrewEditor.Scripting;
 
 public class ScriptCompiler
 {
-    static readonly string[] environmentDirectories =
+    static readonly List<string> environmentDirectories =
     [
         Path.GetDirectoryName(typeof(object).Assembly.Location),
         Path.GetDirectoryName(typeof(Brush).Assembly.Location),
         Environment.CurrentDirectory
     ];
 
-    public static byte[] Compile(IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
+    public static Assembly Compile(IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
     {
         Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
         foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
@@ -29,18 +31,24 @@ public class ScriptCompiler
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
             trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(src, sourceText);
         }
-        HashSet<MetadataReference> references = [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)];
+        List<MetadataReference> references = [];
 
+        var loadedAsm = AssemblyLoadContext.Default.Assemblies.Select(d => d.Location);
         foreach (var referencedAssembly in referencedAssemblies)
         {
             var asmPath = referencedAssembly;
             try
             {
-                if (Path.IsPathRooted(asmPath)) references.Add(MetadataReference.CreateFromFile(asmPath));
+                if (Path.IsPathRooted(asmPath)) using (var stream = File.OpenRead(asmPath))
+                {
+                    if (!loadedAsm.Contains(asmPath)) AssemblyLoadContext.Default.LoadFromStream(stream);
+                    stream.Position = 0;
+                    references.Add(MetadataReference.CreateFromStream(stream));
+                }
                 else
                 {
                     var isExist = false;
-                    for (var i = 0; i < environmentDirectories.Length; ++i)
+                    for (var i = 0; i < environmentDirectories.Count; ++i)
                     {
                         var actualAsmPath = Path.Combine(environmentDirectories[i], referencedAssembly);
                         if (!File.Exists(actualAsmPath)) continue;
@@ -49,7 +57,12 @@ public class ScriptCompiler
                         break;
                     }
 
-                    if (isExist) references.Add(MetadataReference.CreateFromFile(asmPath));
+                    if (isExist) using (var stream = File.OpenRead(asmPath))
+                    {
+                        if (!loadedAsm.Contains(asmPath)) AssemblyLoadContext.Default.LoadFromStream(stream);
+                        stream.Position = 0;
+                        references.Add(MetadataReference.CreateFromStream(stream));
+                    }
                     else throw new IOException($"Could not resolve dependency: \"{referencedAssembly}\". " +
                         $"Searched directories: {string.Join(";", environmentDirectories.Select(k => $"\"{k}\""))}");
                 }
@@ -62,23 +75,15 @@ public class ScriptCompiler
             }
         }
 
-        var compilation = CSharpCompilation.Create(Path.GetFileName(asmName), trees.Keys, references, 
-            new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release));
-
-        MemoryStream assemblyStream = new();
-
-        var result = compilation.Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), 
-            options: new(debugInformationFormat: DebugInformationFormat.Embedded));
+        using MemoryStream assemblyStream = new();
+        var result = CSharpCompilation.Create(Path.GetFileName(asmName), trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
+            .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
         if (result.Success)
         {
-            trees.Clear();
-            var arr = assemblyStream.ToArray();
-            assemblyStream.Dispose();
-
-            return arr;
+            assemblyStream.Position = 0;
+            return AssemblyLoadContext.Default.LoadFromStream(assemblyStream);
         }
-        assemblyStream.Dispose();
 
         var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
         {
@@ -86,8 +91,6 @@ public class ScriptCompiler
             if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
             return "";
         }).ToDictionary(k => k.Key, k => k);
-
-        trees.Clear();
 
         StringBuilder error = new("Compilation error\n\n");
         foreach (var kvp in failureGroup)

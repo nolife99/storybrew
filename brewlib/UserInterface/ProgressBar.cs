@@ -23,7 +23,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         get => value;
         set
         {
-            value = Math.Min(Math.Max(MinValue, value), MaxValue);
+            value = Math.Clamp(value, MinValue, MaxValue);
 
             if (this.value == value) return;
             this.value = value;

@@ -1,13 +1,11 @@
 using System.Numerics;
 using System;
 using System.Drawing;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Base structure for movement commands.</summary>
-[Serializable] public readonly unsafe struct CommandPosition(CommandDecimal x, CommandDecimal y) : 
+[Serializable] public readonly struct CommandPosition(CommandDecimal x, CommandDecimal y) : 
     CommandValue, IEquatable<CommandPosition>, 
     IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
     ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,
@@ -50,7 +48,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public static CommandPosition operator -(CommandPosition pos) => -pos.internalVec;
     public static CommandPosition operator *(CommandPosition left, CommandPosition right) => left.internalVec * right.internalVec;
     public static CommandPosition operator *(CommandPosition left, double right) => new(left.internalVec.X * right, left.internalVec.Y * right);
-    public static CommandPosition operator *(double left, CommandPosition right) => right * left;
+    public static CommandPosition operator *(double left, CommandPosition right) => new(right.internalVec.X * left, right.internalVec.Y * left);
     public static CommandPosition operator /(CommandPosition left, CommandPosition right) => left.internalVec / right.internalVec;
     public static CommandPosition operator /(CommandPosition left, double right) => new(left.internalVec.X / right, left.internalVec.Y / right);
     public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);

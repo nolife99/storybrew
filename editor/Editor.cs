@@ -174,7 +174,7 @@ public sealed class Editor(GameWindow window) : IDisposable
             var altOpacity = altOverlayTop.Opacity;
             var targetOpacity = showAltOverlayTop ? 1f : 0;
             if (Math.Abs(altOpacity - targetOpacity) <= .07) altOpacity = targetOpacity;
-            else altOpacity = MathHelper.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
+            else altOpacity = Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
 
             overlayTop.Opacity = 1 - altOpacity;
             overlayTop.Displayed = altOpacity < 1;

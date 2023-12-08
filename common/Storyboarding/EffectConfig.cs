@@ -20,7 +20,7 @@ public class EffectConfig
     public void UpdateField(string name, string displayName, string description, int order, Type fieldType, object defaultValue, NamedValue[] allowedValues, string beginsGroup)
     {
         if (fieldType is null) return;
-        if (displayName is null)
+        if (string.IsNullOrWhiteSpace(displayName))
         {
             displayName = Regex.Replace(name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2");
             displayName = Regex.Replace(displayName, @"(\p{Ll})(\P{Ll})", "$1 $2");

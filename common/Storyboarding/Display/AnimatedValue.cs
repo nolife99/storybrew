@@ -2,7 +2,7 @@
 using StorybrewCommon.Storyboarding.CommandValues;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Storyboarding.Display;
 
@@ -28,18 +28,17 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     {
         if (command is not TriggerDecorator<TValue> triggerable)
         {
-            if (command.EndTime < command.StartTime) Trace.TraceWarning($"'{command}' ends before it starts");
-
             var found = findCommandIndex(command.StartTime, out int index);
-            while (index < commands.Count)
+            var span = CollectionsMarshal.AsSpan(commands);
+            while (index < span.Length)
             {
-                if (commands[index].CompareTo(command) < 0) ++index;
+                if (span[index].CompareTo(command) < 0) ++index;
                 else break;
             }
 
             HasOverlap |=
-                (index > 0 && Math.Round(command.StartTime) < Math.Round(commands[index - 1].EndTime)) ||
-                (index < commands.Count && Math.Round(commands[index].StartTime) < Math.Round(command.EndTime));
+                (index > 0 && Math.Round(command.StartTime) < Math.Round(span[index - 1].EndTime)) ||
+                (index < span.Length && Math.Round(span[index].StartTime) < Math.Round(command.EndTime));
 
             commands.Insert(index, command);
         }
@@ -55,9 +54,10 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     public TValue ValueAtTime(double time)
     {
         if (commands.Count == 0) return DefaultValue;
+        var span = CollectionsMarshal.AsSpan(commands);
 
         if (!findCommandIndex(time, out int index) && index > 0) --index;
-        if (HasOverlap) for (var i = 0; i < index; ++i) if (time < commands[i].EndTime)
+        if (HasOverlap) for (var i = 0; i < index; ++i) if (time < span[i].EndTime)
         {
             index = i;
             break;
@@ -68,12 +68,13 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     bool findCommandIndex(double time, out int index)
     {
         var left = 0;
-        var right = commands.Count - 1;
+        var span = CollectionsMarshal.AsSpan(commands);
+        var right = span.Length - 1;
 
         while (left <= right)
         {
             index = left + ((right - left) >> 1);
-            var commandTime = commands[index].StartTime;
+            var commandTime = span[index].StartTime;
             if (commandTime == time) return true;
             else if (commandTime < time) left = index + 1;
             else right = index - 1;

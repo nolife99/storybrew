@@ -40,16 +40,7 @@ public static class PathHelper
 
         return path.Length >= folder.Length + 1 && path[folder.Length] == '/' && path.StartsWith(folder, StringComparison.Ordinal);
     }
-    public static string GetRelativePath(string folder, string path)
-    {
-        folder = WithStandardSeparators(Path.GetFullPath(folder)).TrimEnd('/');
-        path = WithStandardSeparators(Path.GetFullPath(path)).TrimEnd('/');
-
-        if (path.Length < folder.Length + 1 || path[folder.Length] != '/' || !path.StartsWith(folder, StringComparison.Ordinal))
-            throw new ArgumentException(path + " isn't contained in " + folder);
-
-        return path[(folder.Length + 1)..];
-    }
+    public static string GetRelativePath(string folder, string path) => Path.GetRelativePath(folder, path);
 
     static readonly HashSet<char> invalidChars =
     [

@@ -102,7 +102,7 @@ public class Vector2Picker : Widget, Field
             updateWidgets();
             return;
         }
-        Value = new(x, value.Y);
+        value = new(x, value.Y);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
     void yTextbox_OnValueCommited(object sender, EventArgs e)
@@ -119,7 +119,7 @@ public class Vector2Picker : Widget, Field
             updateWidgets();
             return;
         }
-        Value = new(value.X, y);
+        value = new(value.X, y);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
     void updateWidgets()
