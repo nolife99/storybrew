@@ -54,7 +54,7 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
-        if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) return new Bitmap(stream, false);
+        if (File.Exists(filename)) using (FileStream stream = new(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) return new Bitmap(stream, false);
 
         if (resourceContainer is null) return null;
         using (var stream = resourceContainer.GetStream(filename, ResourceSource.Embedded))

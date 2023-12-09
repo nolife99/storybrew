@@ -14,7 +14,7 @@ public class AssParser : SubtitleParser
     ///<inheritdoc/>
     public SubtitleSet Parse(string path)
     {
-        using var stream = BrewLib.Util.Misc.WithRetries(() => File.OpenRead(path)); 
+        using var stream = BrewLib.Util.Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)); 
         return Parse(stream);
     }
 

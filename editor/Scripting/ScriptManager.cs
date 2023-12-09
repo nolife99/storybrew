@@ -25,7 +25,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         set
         {
             referencedAssemblies = (value as List<string>) ?? value.ToList();
-            foreach (var scriptContainer in scriptContainers.Values) scriptContainer.ReferencedAssemblies = referencedAssemblies;
+            foreach (var scriptContainer in scriptContainers) scriptContainer.Value.ReferencedAssemblies = referencedAssemblies;
             updateSolutionFiles();
         }
     }
@@ -104,7 +104,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     }
     public IEnumerable<string> GetScriptNames()
     {
-        var projectScriptNames = new List<string>();
+        HashSet<string> projectScriptNames = [];
         foreach (var scriptPath in Directory.GetFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
         {
             var name = Path.GetFileNameWithoutExtension(scriptPath);
@@ -128,7 +128,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             if (disposed) return;
             var scriptName = Path.GetFileNameWithoutExtension(e.Name);
 
-            if (scriptContainers.TryGetValue(scriptName, out ScriptContainer<TScript> container)) container.ReloadScript();
+            if (scriptContainers.TryGetValue(scriptName, out var container)) container.ReloadScript();
         });
     }
     void libraryWatcher_Changed(object sender, FileSystemEventArgs e)
@@ -153,19 +153,19 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         Trace.WriteLine($"Updating solution files");
 
         var slnPath = Path.Combine(ScriptsPath, "storyboard.sln");
-        File.WriteAllBytes(slnPath, resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative));
+        Misc.WithRetries(() => File.WriteAllBytes(slnPath, resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative)));
 
         var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
-        var document = new XmlDocument() { PreserveWhitespace = false };
+        XmlDocument document = new() { PreserveWhitespace = false };
         try
         {
             using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
-            using (var sr = new XmlTextReader(stream) { DtdProcessing = default, XmlResolver = null }) document.Load(sr);
-
+            using (XmlTextReader sr = new(stream) { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }) document.Load(sr);
             var xmlns = document.DocumentElement.GetAttribute("xmlns");
 
             var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
             document.DocumentElement.AppendChild(referencedAssembliesGroup);
+
             foreach (var path in referencedAssemblies) if (!Project.DefaultAssemblies.Contains(path))
             {
                 var isSystem = path.StartsWith("System.", StringComparison.Ordinal);

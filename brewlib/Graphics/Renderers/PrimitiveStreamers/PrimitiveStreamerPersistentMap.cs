@@ -1,6 +1,9 @@
 ﻿using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
@@ -48,7 +51,12 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        Native.CopyMemory(primitives.AddrOfPinnedArray(), bufferPointer + bufferOffset, vertexDataSize);
+        unsafe
+        {
+            fixed (void* pinned = &Unsafe.As<TPrimitive, byte>(ref MemoryMarshal.GetArrayDataReference(primitives)))
+                Native.CopyMemory((nint)pinned, bufferPointer + bufferOffset, vertexDataSize);
+        }
+
         if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset << 1);
         else GL.DrawArrays(primitiveType, drawOffset, drawCount);
 

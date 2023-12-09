@@ -72,7 +72,7 @@ public abstract class TinyToken
     }
     public static TinyToken Read(string path)
     {
-        using var stream = File.OpenRead(path); 
+        using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); 
         return Read(stream, GetFormat(path));
     }
 

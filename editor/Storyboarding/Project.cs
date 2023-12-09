@@ -385,7 +385,7 @@ public sealed class Project : IDisposable
         get
         {
             HashSet<string> distinct = [];
-            foreach (var asm in AssemblyLoadContext.Default.Assemblies) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
             return distinct;
         }
     }
@@ -497,7 +497,7 @@ public sealed class Project : IDisposable
     }
     void loadBinary(string path)
     {
-        using var file = File.OpenRead(path); 
+        using FileStream file = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); 
         using DeflateStream dfl = new(file, CompressionMode.Decompress); 
         using BinaryReader r = new(dfl, Encoding);
 

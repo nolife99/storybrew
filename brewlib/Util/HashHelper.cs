@@ -29,6 +29,7 @@ public static class HashHelper
     }
     public static byte[] GetFileMd5Bytes(string path)
     {
-        using var stream = File.OpenRead(path); return MD5.HashData(stream);
+        using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); 
+        return MD5.HashData(stream);
     }
 }

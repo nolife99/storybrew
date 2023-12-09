@@ -11,10 +11,7 @@ public static partial class Native
     #region Memory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(nint source, nint destination, int count) => NativeMemory.Copy(source.ToPointer(), destination.ToPointer(), (uint)count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public unsafe static nint AddrOfPinnedArray(this Array arr) => (nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
+    public static unsafe void CopyMemory(nint source, nint destination, int count) => NativeMemory.Copy(source.ToPointer(), destination.ToPointer(), nuint.CreateChecked(count));
 
     #endregion
 
@@ -35,8 +32,8 @@ public static partial class Native
     ///<returns> The result from the call procedure. </returns>
     ///<exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint"/>. </exception>
     ///<exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
-    public static TResult SendMessage<T1, T2, TResult>(nint windowHandle, Message message, T1 wParam, T2 lParam) 
-        where T1 : INumberBase<T1> where T2 : INumberBase<T2> where TResult : INumberBase<TResult>
+    public static TResult SendMessage<TWide, TLong, TResult>(nint windowHandle, Message message, TWide wParam, TLong lParam) 
+        where TWide : INumberBase<TWide> where TLong : INumberBase<TLong> where TResult : INumberBase<TResult>
         => TResult.CreateChecked(SendMessageA(windowHandle, (uint)message, nuint.CreateChecked(wParam), nint.CreateChecked(lParam)));
 
     public static void SetWindowIcon(nint iconHandle)
@@ -53,9 +50,9 @@ public static partial class Native
 
         unsafe
         {
-            var buffer = stackalloc byte[length * 2 + 1];
+            var buffer = stackalloc sbyte[length * 2 + 1];
             SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buffer);
-            return new string((sbyte*)buffer);
+            return new string(buffer);
         }
     }
 

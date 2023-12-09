@@ -18,7 +18,7 @@ public class ScriptContainerProcess<TScript>(string scriptTypeName, string mainS
             workerProcess = new();
 
             var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
-            scriptProvider.Initialize(ScriptCompiler.Compile(SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies), ScriptTypeName);
+            scriptProvider.Initialize(ScriptCompiler.Compile(null, SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies), ScriptTypeName);
             return scriptProvider;
         }
         catch (ScriptCompilationException)

@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace BrewLib.Data;
@@ -32,7 +33,7 @@ public class AssemblyResourceContainer : ResourceContainer
         {
             if (sources.HasFlag(ResourceSource.Absolute))
             {
-                if (File.Exists(path)) using (var mem = MemoryMappedFile.CreateFromFile(path)) return mem.CreateViewStream();
+                if (File.Exists(path)) return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             }
             else throw new InvalidOperationException($"Resource paths must be relative ({path})");
         }
@@ -41,7 +42,7 @@ public class AssemblyResourceContainer : ResourceContainer
             if (sources.HasFlag(ResourceSource.Relative))
             {
                 var combinedPath = basePath is not null ? Path.Combine(basePath, path) : path;
-                if (File.Exists(combinedPath)) using (var mem = MemoryMappedFile.CreateFromFile(combinedPath)) return mem.CreateViewStream();
+                if (File.Exists(combinedPath)) return new FileStream(combinedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             }
             if (sources.HasFlag(ResourceSource.Embedded))
             {
@@ -58,8 +59,8 @@ public class AssemblyResourceContainer : ResourceContainer
         using var stream = GetStream(path, sources);
         if (stream is null) return null;
 
-        var buffer = new byte[stream.Length];
-        stream.Read(buffer, 0, buffer.Length);
+        var buffer = GC.AllocateUninitializedArray<byte>((int)stream.Length);
+        stream.Read(MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(buffer), buffer.Length));
         return buffer;
     }
     public string GetString(string path, ResourceSource sources = ResourceSource.Embedded)

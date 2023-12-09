@@ -9,6 +9,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Text;
 
@@ -36,39 +37,32 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
             _ => StringAlignment.Center,
         };
 
-        StringFormat stringFormat = new(StringFormat.GenericTypographic)
+        using StringFormat stringFormat = new(StringFormat.GenericTypographic)
         {
             Alignment = horizontalAlignment,
             LineAlignment = verticalAlignment,
             Trimming = trimming,
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
+        using var graphics = System.Drawing.Graphics.FromHwnd(0);
 
-        var graphics = System.Drawing.Graphics.FromHwnd(0);
         var font = getFont(fontName, 96 / graphics.DpiY * fontSize, FontStyle.Regular);
         var measuredSize = graphics.MeasureString(text, font, new SizeF(maxSize.X, maxSize.Y), stringFormat);
-        graphics.Dispose();
 
-        var width = (int)(measuredSize.Width + padding.X * 2 + 1);
-        var height = (int)(measuredSize.Height + padding.Y * 2 + 1);
-
-        var offsetX = padding.X;
-        var offsetY = padding.Y;
+        var width = measuredSize.Width + padding.X * 2 + 1;
+        var height = measuredSize.Height + padding.Y * 2 + 1;
 
         textureSize = new(width, height);
         if (measureOnly) return null;
 
-        Bitmap bitmap = new(width, height, PixelFormat.Format32bppArgb);
+        Bitmap bitmap = new((int)width, (int)height, PixelFormat.Format32bppArgb);
         try
         {
             using var textGraphics = System.Drawing.Graphics.FromImage(bitmap);
             textGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
-            textGraphics.SmoothingMode = SmoothingMode.None;
-            textGraphics.InterpolationMode = InterpolationMode.High;
 
-            textGraphics.DrawString(text, font, shadowBrush, new RectangleF(offsetX + 1, offsetY + 1, width, height), stringFormat);
-            textGraphics.DrawString(text, font, textBrush, new RectangleF(offsetX, offsetY, width, height), stringFormat);
-            stringFormat.Dispose();
+            textGraphics.DrawString(text, font, shadowBrush, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
+            textGraphics.DrawString(text, font, textBrush, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
         }
         catch
         {
@@ -106,12 +100,12 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         if (!fontFamilies.TryGetValue(name, out var fontFamily))
         {
             var bytes = resourceContainer.GetBytes(name, ResourceSource.Embedded);
-            if (bytes is not null)
+            if (bytes is not null) unsafe
             {
                 try
                 {
                     if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
-                    fontCollection.AddMemoryFont(bytes.AddrOfPinnedArray(), bytes.Length);
+                    fixed (void* pinned = &MemoryMarshal.GetArrayDataReference(bytes)) fontCollection.AddMemoryFont((nint)pinned, bytes.Length);
 
                     if (fontCollection.Families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = fontCollection.Families[0]).Name} for {name}");
                     else Trace.WriteLine($"Failed to load font {name}: Expected one family, got {fontCollection.Families.Length}");

@@ -33,8 +33,8 @@ public static class Misc
                 }
 
                 var retryDelay = timeout / 10;
+                Task.Delay(retryDelay).Wait();
                 sleepTime += retryDelay;
-                using var wait = Task.Delay(retryDelay); wait.Wait();
             }
         }
     }

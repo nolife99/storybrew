@@ -21,7 +21,7 @@ using System.Threading;
 
 namespace StorybrewCommon.Scripting;
 
-///<summary> Defines a storyboard script to run and generate. </summary>
+///<summary> Defines a storyboard script to be generated. </summary>
 public abstract class StoryboardObjectGenerator : Script
 {
     static readonly AsyncLocal<StoryboardObjectGenerator> instance = new();
@@ -105,7 +105,7 @@ public abstract class StoryboardObjectGenerator : Script
     Bitmap getBitmap(string path, string alternatePath, bool watch)
     {
         path = Path.GetFullPath(path);
-        if (!bitmaps.TryGetValue(path, out var bitmap)) using (var stream = File.OpenRead(path))
+        if (!bitmaps.TryGetValue(path, out var bitmap)) using (FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         {
             if (alternatePath is not null && !File.Exists(path))
             {
@@ -142,7 +142,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         path = Path.GetFullPath(path);
         if (watch) context.AddDependency(path);
-        return Misc.WithRetries(() => File.OpenRead(path));
+        return Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
     }
 
     #endregion
@@ -267,11 +267,12 @@ public abstract class StoryboardObjectGenerator : Script
         if (fonts.ContainsKey(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
 
         if (Directory.Exists(fontDirectory)) foreach (var file in Directory.GetFiles(fontDirectory, "*.png")) PathHelper.SafeDelete(file);
+        else Directory.CreateDirectory(fontDirectory);
 
         FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
         fonts.Add(fontDirectory, fontGenerator);
 
-        var cachePath = $"{fontCacheDirectory}/font.dat";
+        /* var cachePath = $"{fontCacheDirectory}/font.dat";
         if (File.Exists(cachePath)) using (FileStream file = new(cachePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) 
         using (ZipArchive cache = new(file, ZipArchiveMode.Read))
         {
@@ -281,7 +282,7 @@ public abstract class StoryboardObjectGenerator : Script
                 var cachedFontRoot = Misc.WithRetries(() => TinyToken.Read(path.Open(), TinyToken.Yaml), canThrow: false);
                 if (cachedFontRoot is not null) fontGenerator.HandleCache(cachedFontRoot);
             }
-        }
+        } */
         return fontGenerator;
     }
     void saveFontCache()
@@ -408,7 +409,7 @@ public abstract class StoryboardObjectGenerator : Script
         finally
         {
             instance.Value = null;
-            if (fonts.Count > 0) saveFontCache();
+            // if (fonts.Count > 0) saveFontCache();
             this.context = null;
 
             bitmaps.Dispose();

@@ -23,25 +23,27 @@ public class ScriptCompiler
         Environment.CurrentDirectory
     ];
 
-    public static Assembly Compile(IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
+    public static Assembly Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
     {
         Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
-        foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
+        foreach (var src in sourcePaths) using (FileStream sourceStream = new(src, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         {
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
             trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(src, sourceText);
         }
         List<MetadataReference> references = [];
 
-        var loadedAsm = AssemblyLoadContext.Default.Assemblies.Select(d => d.Location);
+        var loadedAsm = AppDomain.CurrentDomain.GetAssemblies().Select(d => d.Location);
+        context ??= AssemblyLoadContext.Default;
+
         foreach (var referencedAssembly in referencedAssemblies)
         {
             var asmPath = referencedAssembly;
             try
             {
-                if (Path.IsPathRooted(asmPath)) using (var stream = File.OpenRead(asmPath))
+                if (Path.IsPathRooted(asmPath)) using (FileStream stream = new(asmPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    if (!loadedAsm.Contains(asmPath)) AssemblyLoadContext.Default.LoadFromStream(stream);
+                    if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
                     stream.Position = 0;
                     references.Add(MetadataReference.CreateFromStream(stream));
                 }
@@ -57,9 +59,9 @@ public class ScriptCompiler
                         break;
                     }
 
-                    if (isExist) using (var stream = File.OpenRead(asmPath))
-                    {
-                        if (!loadedAsm.Contains(asmPath)) AssemblyLoadContext.Default.LoadFromStream(stream);
+                    if (isExist) using (FileStream stream = new(asmPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
+                        if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
                         stream.Position = 0;
                         references.Add(MetadataReference.CreateFromStream(stream));
                     }
@@ -82,7 +84,7 @@ public class ScriptCompiler
         if (result.Success)
         {
             assemblyStream.Position = 0;
-            return AssemblyLoadContext.Default.LoadFromStream(assemblyStream);
+            return context.LoadFromStream(assemblyStream);
         }
 
         var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
