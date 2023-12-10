@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Drawing;
+using StorybrewCommon.Scripting;
 
 namespace StorybrewCommon.Storyboarding3d;
 
@@ -52,7 +53,7 @@ public class Line3d : Node3d, HasOsbSprites
     public override void GenerateSprite(StoryboardSegment segment)
     {
         sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
-        spriteBitmap = CommandGenerator.BitmapDimensions(sprite);
+        spriteBitmap = CommandGenerator.BitmapDimensions(SpritePath);
     }
 
     ///<inheritdoc/>
@@ -150,19 +151,19 @@ public class Line3dEx : Node3d, HasOsbSprites
     public override void GenerateSprite(StoryboardSegment segment)
     {
         spriteBody ??= segment.CreateSprite(SpritePathBody, OsbOrigin.Centre);
-        spriteBitmaps[0] = CommandGenerator.BitmapDimensions(spriteBody);
+        spriteBitmaps[0] = CommandGenerator.BitmapDimensions(SpritePathBody);
 
         if (SpritePathEdge is not null)
         {
             spriteTopEdge ??= segment.CreateSprite(SpritePathEdge, OsbOrigin.BottomCentre);
             spriteBottomEdge ??= segment.CreateSprite(SpritePathEdge, OsbOrigin.TopCentre);
-            spriteBitmaps[1] = CommandGenerator.BitmapDimensions(spriteTopEdge);
+            spriteBitmaps[1] = CommandGenerator.BitmapDimensions(SpritePathEdge);
         }
         if (SpritePathCap is not null)
         {
             spriteStartCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
             spriteEndCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
-            spriteBitmaps[2] = CommandGenerator.BitmapDimensions(spriteEndCap);
+            spriteBitmaps[2] = CommandGenerator.BitmapDimensions(SpritePathCap);
         }
     }
 

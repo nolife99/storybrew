@@ -11,7 +11,7 @@ public static partial class Native
     #region Memory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(nint source, nint destination, int count) => NativeMemory.Copy(source.ToPointer(), destination.ToPointer(), nuint.CreateChecked(count));
+    public static unsafe void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source.ToPointer(), (uint)count);
 
     #endregion
 
@@ -22,8 +22,8 @@ public static partial class Native
 
     ///<summary> Sends the specified message to a window or windows. </summary>
     ///<remarks> Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage"/></remarks>
-    ///<typeparam name="T1"> The type of the first parameter, which is platform-dependent. </typeparam>
-    ///<typeparam name="T2"> The type of the second parameter, which is platform-dependent. </typeparam>
+    ///<typeparam name="TWide"> The type of the first parameter, which is platform-dependent. </typeparam>
+    ///<typeparam name="TLong"> The type of the second parameter, which is platform-dependent. </typeparam>
     ///<typeparam name="TResult"> The return type, which is platform-dependent. </typeparam>
     ///<param name="windowHandle"> The window to send the message to. </param>
     ///<param name="message"> The type of message to send. </param>

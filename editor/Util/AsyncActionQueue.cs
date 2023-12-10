@@ -230,7 +230,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             if (!localThread.Join((int)millisecondsTimeout))
             {
                 tokenSrc.Cancel();
-                localThread.Interrupt();
+                if (localThread.IsAlive) localThread.Interrupt();
             }
             tokenSrc.Dispose();
         }

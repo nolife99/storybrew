@@ -17,7 +17,6 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Runtime.Loader;
 using System.Text;
 using System.Text.RegularExpressions;
 using Tiny;

@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Subtitles;
 
@@ -17,5 +18,5 @@ public class FontBackground(FontColor color = default) : FontEffect
     public SizeF Measure => default;
 
     ///<inheritdoc/>
-    public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y) => textGraphics.Clear(Color);
+    public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y) => textGraphics.Clear(Color);
 }

@@ -43,7 +43,7 @@ public static class KeyframedValueExtensions
     ///<param name="y"> The <see cref="CommandScale.Y"/> value of the keyframe. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<CommandScale> Add(this KeyframedValue<CommandScale> keyframes, double time, double x, double y, Func<double, double> easing = null)
-        => keyframes.Add(time, new CommandScale(x, y), easing);
+        => keyframes.Add(time, new(x, y), easing);
 
     ///<summary> Adds a manually constructed <see cref="Vector2"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -51,7 +51,7 @@ public static class KeyframedValueExtensions
     ///<param name="scale"> The scale value of this <see cref="Keyframe{T}"/>. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<CommandScale> Add(this KeyframedValue<CommandScale> keyframes, double time, double scale, Func<double, double> easing = null)
-        => keyframes.Add(time, new CommandScale(scale), easing);
+        => keyframes.Add(time, new(scale), easing);
 
     ///<summary> Adds a manually constructed <see cref="CommandPosition"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -60,7 +60,7 @@ public static class KeyframedValueExtensions
     ///<param name="y"> The <see cref="CommandPosition.Y"/> value of the keyframe. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<CommandPosition> Add(this KeyframedValue<CommandPosition> keyframes, double time, double x, double y, Func<double, double> easing = null)
-        => keyframes.Add(time, new CommandPosition(x, y), easing);
+        => keyframes.Add(time, new(x, y), easing);
 
     ///<summary> Adds a manually constructed <see cref="CommandPosition"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -68,7 +68,7 @@ public static class KeyframedValueExtensions
     ///<param name="xy"> The x and y value of this <see cref="Keyframe{T}"/>. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<CommandPosition> Add(this KeyframedValue<CommandPosition> keyframes, double time, double xy, Func<double, double> easing = null)
-        => keyframes.Add(time, new CommandPosition(xy, xy), easing);
+        => keyframes.Add(time, new(xy, xy), easing);
 
     ///<summary> Adds a manually constructed <see cref="Vector2"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -77,7 +77,7 @@ public static class KeyframedValueExtensions
     ///<param name="y"> The <see cref="Vector2.Y"/> value of the keyframe. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<Vector2> Add(this KeyframedValue<Vector2> keyframes, double time, float x, float y, Func<double, double> easing = null)
-        => keyframes.Add(time, new Vector2(x, y), easing);
+        => keyframes.Add(time, new(x, y), easing);
 
     ///<summary> Adds a manually constructed <see cref="Vector2"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -85,7 +85,7 @@ public static class KeyframedValueExtensions
     ///<param name="scale"> The scale value of this <see cref="Keyframe{T}"/>. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<Vector2> Add(this KeyframedValue<Vector2> keyframes, double time, float scale, Func<double, double> easing = null)
-        => keyframes.Add(time, new Vector2(scale), easing);
+        => keyframes.Add(time, new(scale), easing);
 
     ///<summary> Adds a manually constructed <see cref="Vector3"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -95,7 +95,7 @@ public static class KeyframedValueExtensions
     ///<param name="z"> The <see cref="Vector3.Z"/> value of the keyframe. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<Vector3> Add(this KeyframedValue<Vector3> keyframes, double time, float x, float y, float z, Func<double, double> easing = null)
-        => keyframes.Add(time, new Vector3(x, y, z), easing);
+        => keyframes.Add(time, new(x, y, z), easing);
 
     ///<summary> Adds a manually constructed <see cref="Vector3"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -103,7 +103,7 @@ public static class KeyframedValueExtensions
     ///<param name="scale"> The scale value of this <see cref="Keyframe{T}"/>. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> to apply to this <see cref="Keyframe{T}"/>. </param>
     public static KeyframedValue<Vector3> Add(this KeyframedValue<Vector3> keyframes, double time, float scale, Func<double, double> easing = null)
-        => keyframes.Add(time, new Vector3(scale), easing);
+        => keyframes.Add(time, new(scale), easing);
 
     ///<summary> Adds a manually constructed <see cref="Quaternion"/> keyframe to <paramref name="keyframes"/>. </summary>
     ///<param name="keyframes"> The keyframed value to be added to. </param>
@@ -115,7 +115,7 @@ public static class KeyframedValueExtensions
     {
         var half = angle * .5;
         var sin = Math.Sin(half);
-        return keyframes.Add(time, new Quaternion((float)(axis.X * sin), (float)(axis.Y * sin), (float)(axis.Z * sin), (float)Math.Cos(half)), easing);
+        return keyframes.Add(time, new((float)(axis.X * sin), (float)(axis.Y * sin), (float)(axis.Z * sin), (float)Math.Cos(half)), easing);
     }
 
     ///<summary> Adds a manually constructed <see cref="Quaternion"/> keyframe to <paramref name="keyframes"/>. </summary>

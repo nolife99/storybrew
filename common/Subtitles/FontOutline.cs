@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Subtitles;
 
@@ -23,26 +24,17 @@ public class FontOutline(int thickness = 1, FontColor color = default) : FontEff
     public SizeF Measure => new(Thickness * diagonal * 2, Thickness * diagonal * 2);
 
     ///<inheritdoc/>
-    public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
+    public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
         if (Thickness < 1) return;
 
-        using SolidBrush brush = new(Color);
+        using var outlined = (GraphicsPath)path.Clone();
+        using (Pen outlinePen = new(Color, 1)) outlined.Widen(outlinePen);
 
-        for (var i = 1; i <= Thickness; ++i)
-        if ((i & 1) == 0)
+        using Pen pen = new(Color, thickness)
         {
-            textGraphics.DrawString(text, font, brush, x - i * diagonal, y, stringFormat);
-            textGraphics.DrawString(text, font, brush, x, y - i * diagonal, stringFormat);
-            textGraphics.DrawString(text, font, brush, x + i * diagonal, y, stringFormat);
-            textGraphics.DrawString(text, font, brush, x, y + i * diagonal, stringFormat);
-        }
-        else
-        {
-            textGraphics.DrawString(text, font, brush, x - i, y - i, stringFormat);
-            textGraphics.DrawString(text, font, brush, x - i, y + i, stringFormat);
-            textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
-            textGraphics.DrawString(text, font, brush, x + i, y - i, stringFormat);
-        }
+            LineJoin = LineJoin.Round
+        };
+        textGraphics.DrawPath(pen, outlined);
     }
 }

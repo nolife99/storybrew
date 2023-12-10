@@ -7,8 +7,6 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Drawing.Drawing2D;
-using System.Net.Sockets;
-using System.Numerics;
 
 namespace BrewLib.Util;
 
@@ -36,9 +34,11 @@ public static class BitmapHelper
     public static PinnedBitmap Premultiply(Bitmap source)
     {
         PinnedBitmap result = new(source);
+        var resultSpan = result.AsSpan();
+
         for (int y = 0, index = 0; y < source.Height; ++y) for (var x = 0; y < source.Width; ++x)
         {
-            var color = result[y * source.Width + x];
+            var color = resultSpan[y * source.Width + x];
 
             var alpha = (color >> 24) & 0xFF;
             var red = (color >> 16) & 0xFF;
@@ -46,11 +46,7 @@ public static class BitmapHelper
             var blue = color & 0xFF;
 
             var a = alpha / 255f;
-            red = byte.CreateTruncating(red * a);
-            green = byte.CreateTruncating(green * a);
-            blue = byte.CreateTruncating(blue * a);
-
-            result[index++] = (alpha << 24) | (red << 16) | (green << 8) | blue;
+            resultSpan[index++] = (alpha << 24) | ((int)(red * a) << 16) | ((int)(green * a) << 8) | (int)(blue * a);
         }
 
         return result;
@@ -80,28 +76,35 @@ public static class BitmapHelper
         var halfHeight = kernelHeight >> 1;
 
         PinnedBitmap result = new(width, height);
-        using (PinnedBitmap src = new(source)) for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+
+        using (PinnedBitmap src = new(source))
         {
-            float a = 0, r = 0, g = 0, b = 0;
-            for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
+            var srcSpan = src.AsReadOnlySpan();
+            var destSpan = result.AsSpan();
+
+            for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
             {
-                var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
-                for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                float a = 0, r = 0, g = 0, b = 0;
+                for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
-                    var color = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
-                    var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
+                    var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
+                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                    {
+                        var color = srcSpan[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                        var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
 
-                    a += ((color >> 24) & 0xFF) * k;
-                    r += ((color >> 16) & 0xFF) * k;
-                    g += ((color >> 8) & 0xFF) * k;
-                    b += (color & 0xFF) * k;
+                        a += ((color >> 24) & 0xFF) * k;
+                        r += ((color >> 16) & 0xFF) * k;
+                        g += ((color >> 8) & 0xFF) * k;
+                        b += (color & 0xFF) * k;
+                    }
                 }
+
+                var alpha = byte.CreateTruncating(a);
+                if (alpha == 1) alpha = 0;
+
+                destSpan[index++] = (alpha << 24) | (byte.CreateTruncating(r) << 16) | (byte.CreateTruncating(g) << 8) | byte.CreateTruncating(b);
             }
-
-            var alpha = byte.CreateTruncating(a);
-            if (alpha == 1) alpha = 0;
-
-            result[index++] = (alpha << 24) | (byte.CreateTruncating(r) << 16) | (byte.CreateTruncating(g) << 8) | byte.CreateTruncating(b);
         }
 
         return result;
@@ -122,19 +125,25 @@ public static class BitmapHelper
         var rgb = (color.R << 16) | (color.G << 8) | color.B;
 
         PinnedBitmap result = new(width, height);
-        using (PinnedBitmap src = new(source)) for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+        using (PinnedBitmap src = new(source))
         {
-            var a = 0f;
-            for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
+            var srcSpan = src.AsReadOnlySpan();
+            var destSpan = result.AsSpan();
+
+            for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
             {
-                var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
-                for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                var a = 0f;
+                for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
-                    var col = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
-                    a += ((col >> 24) & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
+                    var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
+                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                    {
+                        var col = srcSpan[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                        a += ((col >> 24) & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
+                    }
                 }
+                destSpan[index++] = (byte.CreateTruncating(a) << 24) | rgb;
             }
-            result[index++] = (byte.CreateTruncating(a) << 24) | rgb;
         }
         return result;
     }
@@ -171,7 +180,9 @@ public static class BitmapHelper
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
 
         using PinnedBitmap src = new(source);
-        for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((src[y * source.Width + x] >> 24) & 0xFF) != 0) return false;
+        var srcSpan = src.AsReadOnlySpan();
+
+        for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((srcSpan[y * source.Width + x] >> 24) & 0xFF) != 0) return false;
 
         return true;
     }
@@ -182,12 +193,16 @@ public static class BitmapHelper
 
         int xMin = source.Width, yMin = source.Height, xMax = -1, yMax = -1;
 
-        using (PinnedBitmap src = new(source)) for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((src[y * source.Width + x] >> 24) & 0xFF) > 0)
+        using (PinnedBitmap src = new(source))
         {
-            if (x < xMin) xMin = x;
-            if (x > xMax) xMax = x;
-            if (y < yMin) yMin = y;
-            if (y > yMax) yMax = y;
+            var srcSpan = src.AsReadOnlySpan();
+            for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((srcSpan[y * source.Width + x] >> 24) & 0xFF) > 0)
+            {
+                if (x < xMin) xMin = x;
+                if (x > xMax) xMax = x;
+                if (y < yMin) yMin = y;
+                if (y > yMax) yMax = y;
+            }
         }
 
         return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
@@ -206,10 +221,10 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     ///<summary> The total amount of pixels of the underlying bitmap. </summary>
     public int Count { get; private set; }
 
-    ///<summary> The width of the underlying bitmap. </summary>
+    ///<summary> The width, in pixels, of the underlying bitmap. </summary>
     public int Width { get; private set; }
 
-    ///<summary> The height of the underlying bitmap. </summary>
+    ///<summary> The height, in pixels, of the underlying bitmap. </summary>
     public int Height { get; private set; }
 
     ///<summary> Gets or sets the pixel color at the given pixel index as a 32-bit ARGB channel (AARRGGBB). </summary>
@@ -217,41 +232,27 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int this[int pixelIndex]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => unchecked(new ReadOnlySpan<int>(scan0, Count)[pixelIndex]);
+        get => unchecked(AsReadOnlySpan()[pixelIndex]);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set => new Span<int>(scan0, Count)[pixelIndex] = unchecked(value);
+        set => AsSpan()[pixelIndex] = unchecked(value);
     }
 
-    ///<summary> Creates a new pinned bitmap. </summary>
+    ///<summary> Creates a new pinned bitmap from the given dimensions. </summary>
     public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width << 2, PixelFormat.Format32bppArgb, 
-        (nint)(scan0 = (int*)NativeMemory.AlignedAlloc((nuint)(Count = width * height) << 2, sizeof(int))));
+        (nint)(scan0 = (int*)NativeMemory.AlignedAlloc((uint)(Count = width * height) << 2, sizeof(int))));
 
-    ///<summary> Creates a new pinned bitmap from a copy of the given bitmap. </summary>
+    ///<summary> Creates a new pinned bitmap from a copy of the given image. </summary>
     public PinnedBitmap(Image image) : this(image.Width, image.Height)
     {
-        if (image.PixelFormat is PixelFormat.Format32bppArgb && image is Bitmap bitmap)
-        {
-            var data = bitmap.LockBits(new(default, image.Size), ImageLockMode.ReadOnly, image.PixelFormat);
-            try
-            {
-                Native.CopyMemory(data.Scan0, (nint)scan0, Count << 2);
-                return;
-            }
-            finally
-            {
-                bitmap.UnlockBits(data);
-            }
-        }
-
         using var graphics = System.Drawing.Graphics.FromImage(Bitmap);
         graphics.CompositingMode = CompositingMode.SourceCopy;
         graphics.DrawImage(image, 0, 0, image.Width, image.Height);
     }
 
-    ///<summary> Creates a new pinned bitmap from the given 32-bit ARGB color data. </summary>
+    ///<summary> Creates a new pinned bitmap from a copy of the given 32-bit ARGB color data and dimensions. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height) => data.CopyTo(new(scan0, Count));
+    public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height) => data.CopyTo(AsSpan());
 
     ///<summary> Sets the pixel color at the given coordinates. </summary>
     ///<param name="x"> The X coordinate of the pixel. </param>
@@ -314,9 +315,19 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int[] ToArray()
     {
         var array = GC.AllocateUninitializedArray<int>(Count);
-        fixed (void* arrAddr = &MemoryMarshal.GetArrayDataReference(array)) Native.CopyMemory((nint)scan0, (nint)arrAddr, Count);
+        fixed (void* arrAddr = &MemoryMarshal.GetArrayDataReference(array)) Native.CopyMemory((nint)scan0, (nint)arrAddr, Count << 2);
         return array;
     }
+
+    ///<summary> Gets a span view of the entire bitmap. </summary>
+    ///<remarks> It is highly recommended to use this method in a loop instead of directly accessing the pixel data. </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Span<int> AsSpan() => MemoryMarshal.CreateSpan(ref *scan0, Count);
+
+    ///<summary> Gets a read-only span view of the entire bitmap. </summary>
+    ///<remarks> It is highly recommended to use this method in a loop instead of directly accessing the pixel data. </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<int> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref *scan0, Count);
 
     ///<summary> Releases the underlying bitmap and frees the allocated memory. </summary>
     ///<remarks> Disposing invalidates all data. Attempts to read/write after disposal can cause fatal errors. </remarks>

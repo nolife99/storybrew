@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
-using StorybrewCommon.Subtitles;
 using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Storyboarding.Util;
@@ -89,7 +88,7 @@ public class CommandGenerator
     {
         State previousState = null;
         bool wasVisible = false, everVisible = false, stateAdded = false;
-        var imageSize = BitmapDimensions(sprite);
+        var imageSize = BitmapDimensions(sprite.TexturePath);
 
         var span = CollectionsMarshal.AsSpan(states);
         foreach (var state in span)
@@ -142,7 +141,7 @@ public class CommandGenerator
         finalPositions.Until(positions.StartTime);
         positions.TransferKeyframes(finalPositions);
 
-        scales.Simplify2dKeyframes(ScaleTolerance, v => v * imageSize);
+        scales.Simplify2dKeyframes(ScaleTolerance, v => new(v.X * imageSize.Width, v.Y * imageSize.Height));
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
@@ -230,16 +229,15 @@ public class CommandGenerator
         flipV.Clear(true);
         additive.Clear(true);
     }
-    internal static SizeF BitmapDimensions(OsbSprite sprite)
+    internal static SizeF BitmapDimensions(string path)
     {
-        // try to reduce the amount of Bitmap in memory
         if (StoryboardObjectGenerator.Current.fonts.Count > 0)
         {
-            var font = StoryboardObjectGenerator.Current.fonts.SelectMany(g => g.Value.cache.Values).FirstOrDefault(tex => tex.Path == sprite.TexturePath);
-            if (font == default(FontTexture)) return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
+            var font = StoryboardObjectGenerator.Current.fonts.SelectMany(g => g.Value.cache.Values).FirstOrDefault(tex => tex.Path == path);
+            if (font is null) return StoryboardObjectGenerator.Current.GetMapsetBitmap(path).PhysicalDimension;
             return new(font.Width, font.Height);
         }
-        else return StoryboardObjectGenerator.Current.GetMapsetBitmap(sprite.TexturePath).PhysicalDimension;
+        else return StoryboardObjectGenerator.Current.GetMapsetBitmap(path).PhysicalDimension;
     }
 }
 

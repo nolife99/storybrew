@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Subtitles;
 
@@ -21,11 +22,17 @@ public class FontShadow(int thickness = 1, FontColor color = default) : FontEffe
     public SizeF Measure => new(Thickness * 2, Thickness * 2);
 
     ///<inheritdoc/>
-    public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
+    public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
         if (Thickness < 1) return;
 
-        using SolidBrush brush = new(Color); 
-        for (var i = 1; i <= Thickness; ++i) textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
+        using SolidBrush brush = new(Color);
+        using var transformed = (GraphicsPath)path.Clone();
+
+        Matrix translate = new();
+        translate.Translate(thickness, thickness);
+        transformed.Transform(translate);
+
+        textGraphics.FillPath(brush, transformed);
     }
 }

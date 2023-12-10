@@ -30,13 +30,13 @@ public class FontGradient(PointF offset = default, SizeF size = default, FontCol
     public SizeF Measure => default;
 
     ///<inheritdoc/>
-    public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
+    public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
         var transparentColor = FontColor.FromRgba(Color.R, Color.G, Color.B, 0);
         using LinearGradientBrush brush = new(new PointF(x + Offset.X, y + Offset.Y), new(x + Offset.X + Size.Width, y + Offset.Y + Size.Height), Color, transparentColor)
         { 
             WrapMode = WrapMode 
         };
-        textGraphics.DrawString(text, font, brush, x, y, stringFormat);
+        textGraphics.FillPath(brush, path);
     }
 }

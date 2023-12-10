@@ -5,6 +5,7 @@ using System;
 using System.Numerics;
 using System.Collections.Generic;
 using System.Drawing;
+using StorybrewCommon.Scripting;
 
 namespace StorybrewCommon.Storyboarding3d;
 
@@ -52,7 +53,7 @@ public class Triangle3d : Node3d, HasOsbSprites
     {
         sprite0 ??= segment.CreateSprite(SpritePath, OsbOrigin.BottomLeft);
         sprite1 ??= segment.CreateSprite(SpritePath, OsbOrigin.BottomRight);
-        spriteBitmap = CommandGenerator.BitmapDimensions(sprite0);
+        spriteBitmap = CommandGenerator.BitmapDimensions(SpritePath);
     }
 
     ///<inheritdoc/>

@@ -3,7 +3,6 @@ using osuTK.Graphics.OpenGL;
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 

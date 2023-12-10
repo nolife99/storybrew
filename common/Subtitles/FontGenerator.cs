@@ -12,7 +12,6 @@ using System.Drawing.Text;
 using System.Numerics;
 using System.IO;
 using System.Linq;
-using Tiny;
 using System.Globalization;
 using osuTK.Graphics;
 
@@ -27,7 +26,8 @@ namespace StorybrewCommon.Subtitles;
 ///<param name="baseHeight"> The base height of the texture in pixels. </param>
 ///<param name="width"> The actual width of the texture in pixels. </param>
 ///<param name="height"> The actual width of the texture in pixels. </param>
-public class FontTexture(string path, float offsetX, float offsetY, int baseWidth, int baseHeight, int width, int height)
+///<param name="paths"> The path data which comprises this font. </param>
+public class FontTexture(string path, float offsetX, float offsetY, int baseWidth, int baseHeight, int width, int height, PathData paths)
 {
     ///<summary> The path to the font texture. </summary>
     public string Path => path;
@@ -52,6 +52,9 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
 
     ///<summary> The actual width of the texture in pixels. </summary>
     public int Height => height;
+
+    ///<summary> The line segments that comprise this text. </summary>
+    public PathData PathData => paths;
 
     ///<summary> Gets the font offset for the given <see cref="OsbOrigin"/>. </summary>
     public Vector2 OffsetFor(OsbOrigin origin) => origin switch
@@ -293,11 +296,10 @@ public class FontGenerator(string directory, FontDescription description, FontEf
         float offsetX = 0, offsetY = 0;
         int baseWidth, baseHeight, width, height;
 
-        using PrivateFontCollection collection = new();
-
         var fontPath = Path.Combine(projectDirectory, description.FontPath);
         if (!File.Exists(fontPath)) fontPath = description.FontPath;
 
+        using PrivateFontCollection collection = new();
         if (File.Exists(fontPath)) collection.AddFontFile(fontPath);
         using var family = File.Exists(fontPath) ? collection.Families[0] : null;
 
@@ -312,9 +314,8 @@ public class FontGenerator(string directory, FontDescription description, FontEf
         };
 
         var measuredSize = graphics.MeasureString(text, font, 0, format);
-
-        baseWidth = (int)Math.Ceiling(measuredSize.Width);
-        baseHeight = (int)Math.Ceiling(measuredSize.Height);
+        baseWidth = (int)MathF.Ceiling(measuredSize.Width);
+        baseHeight = (int)MathF.Ceiling(measuredSize.Height);
 
         float effectsWidth = 0, effectsHeight = 0;
         for (var i = 0; i < effects.Length; ++i)
@@ -323,8 +324,8 @@ public class FontGenerator(string directory, FontDescription description, FontEf
             effectsWidth = Math.Max(effectsWidth, effectSize.Width);
             effectsHeight = Math.Max(effectsHeight, effectSize.Height);
         }
-        width = (int)Math.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
-        height = (int)Math.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
+        width = (int)MathF.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
+        height = (int)MathF.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
 
         var paddingX = description.Padding.X + effectsWidth / 2;
         var paddingY = description.Padding.Y + effectsHeight / 2;
@@ -334,14 +335,18 @@ public class FontGenerator(string directory, FontDescription description, FontEf
         offsetX = -paddingX;
         offsetY = -paddingY;
 
-        if (text.Length == 1 && char.IsWhiteSpace(text[0]) || width == 0 || height == 0) return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height);
+        if (string.IsNullOrWhiteSpace(text) || width == 0 || height == 0) return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height, null);
 
-        using Bitmap realText = new(width, height);
+        Bitmap realText = new(width, height);
+        using GraphicsPath segments = new(FillMode.Winding);
+
         using (var textGraphics = Graphics.FromImage(realText))
         {
             textGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-            textGraphics.SmoothingMode = SmoothingMode.AntiAlias;
+            textGraphics.SmoothingMode = SmoothingMode.HighQuality;
             textGraphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            textGraphics.CompositingQuality = CompositingQuality.HighQuality;
+            textGraphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
 
             if (description.Debug)
             {
@@ -349,9 +354,11 @@ public class FontGenerator(string directory, FontDescription description, FontEf
                 textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
             }
 
-            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(realText, textGraphics, font, format, text, x, y);
-            if (!description.EffectsOnly) using (SolidBrush draw = new(description.Color)) textGraphics.DrawString(text, font, draw, x, y, format);
-            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(realText, textGraphics, font, format, text, x, y);
+            segments.AddString(text, font.FontFamily, (int)description.FontStyle, graphics.DpiY * font.SizeInPoints / 72, new PointF(x, y), format);
+
+            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, y);
+            if (!description.EffectsOnly) using (SolidBrush brush = new(description.Color)) textGraphics.FillPath(brush, segments);
+            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, y);
 
             if (description.Debug) using (Pen pen = new(Color.Red))
             {
@@ -364,14 +371,15 @@ public class FontGenerator(string directory, FontDescription description, FontEf
         var validBounds = !bounds.IsEmpty && !bounds.Equals(new(default, realText.Size));
         if (validBounds)
         {
-            offsetX += bounds.Left;
-            offsetY += bounds.Top;
+            offsetX += bounds.X;
+            offsetY += bounds.Y;
             width = bounds.Width;
             height = bounds.Height;
         }
 
         string filename = null;
         var trimExist = false;
+
         if (description.TrimTransparency && cache.TryGetValue(text.Trim(), out var texture))
         {
             trimExist = true;
@@ -391,181 +399,11 @@ public class FontGenerator(string directory, FontDescription description, FontEf
                 if (validBounds) using (var trim = realText.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
                 else Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
             }
+
+            StoryboardObjectGenerator.Current.bitmaps[path] = realText;
             StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(
                 path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath) ? 7 : 2));
         }
-        return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height);
-    }
-    internal void HandleCache(TinyToken cachedFontRoot)
-    {
-        if (!matches(cachedFontRoot)) return;
-
-        foreach (var cacheEntry in cachedFontRoot.Values<TinyObject>("Cache"))
-        {
-            var path = cacheEntry.Value<string>("Path");
-            var hash = cacheEntry.Value<string>("Hash");
-
-            var fullPath = Path.Combine(assetDirectory, path);
-            if (!File.Exists(fullPath) || HashHelper.GetFileMd5(fullPath) != hash) continue;
-
-            var text = cacheEntry.Value<string>("Text");
-            if (text.Contains('\ufffd'))
-            {
-                Trace.WriteLine($"Ignoring invalid font texture \"{text}\" ({path})");
-                continue;
-            }
-            if (cache.ContainsKey(text)) throw new InvalidDataException($"The font texture for \"{text}\" ({path}) has been cached multiple times");
-
-            cache[text] = new(path,
-                cacheEntry.Value<float>("OffsetX"), cacheEntry.Value<float>("OffsetY"),
-                cacheEntry.Value<int>("BaseWidth"), cacheEntry.Value<int>("BaseHeight"),
-                cacheEntry.Value<int>("Width"), cacheEntry.Value<int>("Height"));
-        }
-    }
-    bool matches(TinyToken cachedFontRoot)
-    {
-        if (cachedFontRoot.Value<string>("FontPath") == description.FontPath &&
-            cachedFontRoot.Value<int>("FontSize") == description.FontSize &&
-            cachedFontRoot.Value<float>("ColorR") == description.Color.R &&
-            cachedFontRoot.Value<float>("ColorG") == description.Color.G &&
-            cachedFontRoot.Value<float>("ColorB") == description.Color.B &&
-            cachedFontRoot.Value<float>("ColorA") == description.Color.A &&
-            MathUtil.FloatEquals(cachedFontRoot.Value<float>("PaddingX"), description.Padding.X, .00001f) &&
-            MathUtil.FloatEquals(cachedFontRoot.Value<float>("PaddingY"), description.Padding.Y, .00001f) &&
-            cachedFontRoot.Value<FontStyle>("FontStyle") == description.FontStyle &&
-            cachedFontRoot.Value<bool>("TrimTransparency") == description.TrimTransparency &&
-            cachedFontRoot.Value<bool>("EffectsOnly") == description.EffectsOnly &&
-            cachedFontRoot.Value<bool>("Debug") == description.Debug)
-        {
-            var effectsRoot = cachedFontRoot.Value<TinyArray>("Effects");
-            if (effectsRoot.Count != effects.Length) return false;
-
-            for (var i = 0; i < effects.Length; ++i) if (!matches(effects[i], effectsRoot[i].Value<TinyToken>())) return false;
-            return true;
-        }
-        return false;
-    }
-
-    static bool matches(FontEffect fontEffect, TinyToken cache)
-    {
-        var effectType = fontEffect.GetType();
-        if (cache.Value<string>("Type") != effectType.FullName) return false;
-
-        foreach (var field in effectType.GetFields())
-        {
-            var fieldType = field.FieldType;
-            if (fieldType == typeof(FontColor))
-            {
-                var color = (FontColor)field.GetValue(fontEffect);
-                if (cache.Value<byte>($"{field.Name}R") != color.R ||
-                    cache.Value<byte>($"{field.Name}G") != color.G ||
-                    cache.Value<byte>($"{field.Name}B") != color.B ||
-                    cache.Value<byte>($"{field.Name}A") != color.A)
-                    return false;
-            }
-            else if (fieldType == typeof(Vector3))
-            {
-                var vector = (Vector3)field.GetValue(fontEffect);
-                if (!MathUtil.FloatEquals(cache.Value<float>($"{field.Name}X"), vector.X, .00001f) ||
-                    !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}Y"), vector.Y, .00001f) ||
-                    !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}Z"), vector.Z, .00001f))
-                    return false;
-            }
-            else if (fieldType == typeof(Vector2))
-            {
-                var vector = (Vector2)field.GetValue(fontEffect);
-                if (!MathUtil.FloatEquals(cache.Value<float>($"{field.Name}X"), vector.X, .00001f) ||
-                    !MathUtil.FloatEquals(cache.Value<float>($"{field.Name}Y"), vector.Y, .00001f))
-                    return false;
-            }
-            else if (fieldType == typeof(double))
-            {
-                if (!MathUtil.DoubleEquals(cache.Value<double>(field.Name), (double)field.GetValue(fontEffect), .00001)) return false;
-            }
-            else if (fieldType == typeof(float))
-            {
-                if (!MathUtil.FloatEquals(cache.Value<float>(field.Name), (float)field.GetValue(fontEffect), .00001f)) return false;
-            }
-            else if (fieldType == typeof(int) || fieldType.IsEnum)
-            {
-                if (cache.Value<int>(field.Name) != (int)field.GetValue(fontEffect)) return false;
-            }
-            else if (fieldType == typeof(string))
-            {
-                if (cache.Value<string>(field.Name) != (string)field.GetValue(fontEffect)) return false;
-            }
-            else throw new InvalidDataException($"Unexpected field type {fieldType} for {field.Name} in {effectType.FullName}");
-        }
-        return true;
-    }
-    internal TinyObject ToTinyObject() => new()
-    {
-        { "FontPath", PathHelper.WithStandardSeparators(description.FontPath) },
-        { "FontSize", description.FontSize },
-        { "ColorR", description.Color.R },
-        { "ColorG", description.Color.G },
-        { "ColorB", description.Color.B },
-        { "ColorA", description.Color.A },
-        { "PaddingX", description.Padding.X },
-        { "PaddingY", description.Padding.Y },
-        { "FontStyle", description.FontStyle },
-        { "TrimTransparency", description.TrimTransparency },
-        { "EffectsOnly", description.EffectsOnly },
-        { "Debug", description.Debug },
-        { "Effects", effects.Select(fontEffectToTinyObject)},
-        { "Cache", cache.Where(l => !l.Value.IsEmpty).Select(letterToTinyObject)}
-    };
-    TinyObject letterToTinyObject(KeyValuePair<string, FontTexture> letterEntry) => new()
-    {
-        { "Text", letterEntry.Key },
-        { "Path", PathHelper.WithStandardSeparators(letterEntry.Value.Path) },
-        { "Hash", HashHelper.GetFileMd5(Path.Combine(assetDirectory, letterEntry.Value.Path)) },
-        { "OffsetX", letterEntry.Value.OffsetX },
-        { "OffsetY", letterEntry.Value.OffsetY },
-        { "BaseWidth", letterEntry.Value.BaseWidth },
-        { "BaseHeight", letterEntry.Value.BaseHeight },
-        { "Width", letterEntry.Value.Width },
-        { "Height", letterEntry.Value.Height }
-    };
-
-    static TinyObject fontEffectToTinyObject(FontEffect fontEffect)
-    {
-        var effectType = fontEffect.GetType();
-        TinyObject cache = new()
-        {
-            ["Type"] = effectType.FullName
-        };
-
-        foreach (var field in effectType.GetFields())
-        {
-            var fieldType = field.FieldType;
-            if (fieldType == typeof(FontColor))
-            {
-                var color = (FontColor)field.GetValue(fontEffect);
-                cache[$"{field.Name}R"] = color.R;
-                cache[$"{field.Name}G"] = color.G;
-                cache[$"{field.Name}B"] = color.B;
-                cache[$"{field.Name}A"] = color.A;
-            }
-            else if (fieldType == typeof(Vector3))
-            {
-                var vector = (Vector3)field.GetValue(fontEffect);
-                cache[$"{field.Name}X"] = vector.X;
-                cache[$"{field.Name}Y"] = vector.Y;
-                cache[$"{field.Name}Z"] = vector.Z;
-            }
-            else if (fieldType == typeof(Vector2))
-            {
-                var vector = (Vector2)field.GetValue(fontEffect);
-                cache[$"{field.Name}X"] = vector.X;
-                cache[$"{field.Name}Y"] = vector.Y;
-            }
-            else if (fieldType == typeof(double)) cache[field.Name] = (double)field.GetValue(fontEffect);
-            else if (fieldType == typeof(float)) cache[field.Name] = (float)field.GetValue(fontEffect);
-            else if (fieldType == typeof(int) || fieldType.IsEnum) cache[field.Name] = (int)field.GetValue(fontEffect);
-            else if (fieldType == typeof(string)) cache[field.Name] = (string)field.GetValue(fontEffect);
-            else throw new InvalidDataException($"Unexpected field type {fieldType} for {field.Name} in {effectType.FullName}");
-        }
-        return cache;
+        return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
     }
 }

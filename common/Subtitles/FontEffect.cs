@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
 namespace StorybrewCommon.Subtitles;
 
@@ -12,5 +13,5 @@ public interface FontEffect
     SizeF Measure { get; }
 
     ///<summary> Draws the font effect over the texture. </summary>
-    void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y);
+    void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y);
 }

@@ -1,18 +1,19 @@
 using System;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Base structure for scale commands. </summary>
-[Serializable] public readonly struct CommandScale(CommandDecimal x, CommandDecimal y) : 
+[Serializable] public readonly struct CommandScale : 
     CommandValue, IEquatable<CommandScale>,
     IAdditionOperators<CommandScale, CommandScale, CommandScale>,
     ISubtractionOperators<CommandScale, CommandScale, CommandScale>,
     IMultiplyOperators<CommandScale, CommandScale, CommandScale>,
     IDivisionOperators<CommandScale, CommandScale, CommandScale>
 {
-    readonly Vector2 internalVec = new(x, y);
+    readonly Vector2 internalVec;
 
     ///<summary> Represents a scale vector in which all values are 1 (one). </summary>
     public static readonly CommandScale One = new(1, 1);
@@ -23,14 +24,17 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     ///<summary> Gets the Y value of this instance. </summary>
     public readonly CommandDecimal Y => internalVec.Y;
 
+    ///<summary> Constructs a <see cref="CommandScale"/> from an X and Y value. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CommandScale(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
+
     ///<summary> Constructs a <see cref="CommandScale"/> from a value. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandScale(CommandDecimal value) : this(value, value) { }
 
-    ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="osuTK.Vector2"/>. </summary>
-    public CommandScale(osuTK.Vector2 vector) : this(vector.X, vector.Y) { }
-
     ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
-    public CommandScale(Vector2 vector) : this(vector.X, vector.Y) { }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CommandScale(Vector2 vector) => internalVec = vector;
 
     ///<inheritdoc/>
     public readonly bool Equals(CommandScale other) => internalVec == other.internalVec;
@@ -56,7 +60,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public static CommandScale operator /(CommandScale left, double right) => new(left.internalVec.X / right, left.internalVec.Y / right);
     public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
     public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
-    public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector);
+    public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector.X, vector.Y);
     public static implicit operator CommandScale(osuTK.Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator CommandScale(SizeF vector) => new(vector.Width, vector.Height);
     public static implicit operator CommandScale(Vector2 vector) => new(vector);
@@ -64,6 +68,6 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public static implicit operator osuTK.Vector2(CommandScale obj) => new(obj.X, obj.Y);
     public static implicit operator osuTK.Vector2d(CommandScale obj) => new(obj.X, obj.Y);
     public static implicit operator SizeF(CommandScale vector) => new(vector.X, vector.Y);
-    public static implicit operator Vector2(CommandScale obj) => new(obj.X, obj.Y);
+    public static implicit operator Vector2(CommandScale obj) => obj.internalVec;
     public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
 }
