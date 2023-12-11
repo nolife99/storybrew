@@ -46,7 +46,7 @@ public static class BitmapHelper
             var blue = color & 0xFF;
 
             var a = alpha / 255f;
-            resultSpan[index++] = (alpha << 24) | ((int)(red * a) << 16) | ((int)(green * a) << 8) | (int)(blue * a);
+            resultSpan[index++] = (alpha << 24) | ((byte)(red * a) << 16) | ((byte)(green * a) << 8) | (byte)(blue * a);
         }
 
         return result;
@@ -100,10 +100,10 @@ public static class BitmapHelper
                     }
                 }
 
-                var alpha = byte.CreateTruncating(a);
+                var alpha = (byte)a;
                 if (alpha == 1) alpha = 0;
 
-                destSpan[index++] = (alpha << 24) | (byte.CreateTruncating(r) << 16) | (byte.CreateTruncating(g) << 8) | byte.CreateTruncating(b);
+                destSpan[index++] = (alpha << 24) | ((byte)r << 16) | ((byte)g << 8) | (byte)b;
             }
         }
 
@@ -142,7 +142,7 @@ public static class BitmapHelper
                         a += ((col >> 24) & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
                     }
                 }
-                destSpan[index++] = (byte.CreateTruncating(a) << 24) | rgb;
+                destSpan[index++] = ((byte)a << 24) | rgb;
             }
         }
         return result;
@@ -183,7 +183,6 @@ public static class BitmapHelper
         var srcSpan = src.AsReadOnlySpan();
 
         for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((srcSpan[y * source.Width + x] >> 24) & 0xFF) != 0) return false;
-
         return true;
     }
     public static Rectangle FindTransparencyBounds(Bitmap source)

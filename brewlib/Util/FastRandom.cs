@@ -11,10 +11,10 @@ public class FastRandom
 
     uint x, y, z, w;
 
-    ///<summary> Initializes a new instance of the <see cref="FastRandom"/> class, using a time-dependent seed value. </summary>
+    ///<summary> Creates an instance of the <see cref="FastRandom"/> class using a time-dependent seed value. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public FastRandom() => Reinitialise(Environment.TickCount);
 
-    ///<summary> Initializes a new instance of the <see cref="FastRandom"/> class, using the specified seed value. </summary>
+    ///<summary> Creates an instance of the <see cref="FastRandom"/> class using the specified seed value. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public FastRandom(int seed) => Reinitialise(seed);
 
     ///<summary> Resets this instance with a new seed value. </summary>
@@ -136,7 +136,7 @@ public class FastRandom
     }
 
     ///<summary> Returns a random unsigned integer. </summary>
-    ///<returns> A 32-bit unsigned integer that is ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
+    ///<returns> A 32-bit unsigned integer ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public uint NextUInt()
     {
         var t = x ^ (x << 11);
@@ -147,7 +147,7 @@ public class FastRandom
     }
 
     ///<summary> Returns a non-negative random integer. </summary>
-    ///<returns> A 32-bit signed integer that is ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
+    ///<returns> A 32-bit signed integer ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public int NextInt()
     {
         var t = x ^ (x << 11);
