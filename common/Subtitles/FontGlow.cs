@@ -39,8 +39,9 @@ public class FontGlow(int radius = 6, float power = 0, FontColor color = default
             graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
             graphics.InterpolationMode = InterpolationMode.Bilinear;
             graphics.CompositingQuality = CompositingQuality.HighSpeed;
-            graphics.SmoothingMode = SmoothingMode.HighSpeed;
-            graphics.PixelOffsetMode = PixelOffsetMode.HighSpeed;
+            graphics.SmoothingMode = SmoothingMode.None;
+            graphics.PixelOffsetMode = PixelOffsetMode.None;
+
             graphics.FillPath(brush, path);
         }
 

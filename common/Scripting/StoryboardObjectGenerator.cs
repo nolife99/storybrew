@@ -14,8 +14,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Tiny;
-using System.IO.Compression;
 using System.Globalization;
 using System.Threading;
 
@@ -377,8 +375,8 @@ public abstract class StoryboardObjectGenerator : Script
             this.context = null;
 
             bitmaps.Dispose();
-            fonts.Clear();
             Compressor.Dispose();
+            fonts.Dispose();
         }
     }
     ///<summary> Main body for storyboard generation. </summary>

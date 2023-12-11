@@ -136,7 +136,9 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
 
     public long CalculateSize(OsbLayer osbLayer)
     {
-        using ByteCounterStream stream = new(); using StreamWriter writer = new(stream, Project.Encoding);
+        using ByteCounterStream stream = new(); 
+        using StreamWriter writer = new(stream, Project.Encoding);
+
         for (var i = 0; i < storyboardObjects.Count; ++i) storyboardObjects[i].WriteOsb(writer, Effect.Project.ExportSettings, osbLayer);
         return stream.Length;
     }

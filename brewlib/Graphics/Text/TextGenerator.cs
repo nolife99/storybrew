@@ -9,16 +9,32 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
+using System.Drawing.Drawing2D;
 
 namespace BrewLib.Graphics.Text;
 
-public sealed class TextGenerator(ResourceContainer resourceContainer) : IDisposable
+public sealed class TextGenerator : IDisposable
 {
     SolidBrush textBrush = new(Color.White), shadowBrush = new(Color.FromArgb(220, 0, 0, 0));
+    System.Drawing.Graphics metrics;
+    ResourceContainer container;
+
     Dictionary<string, Font> fonts = [];
     Dictionary<string, FontFamily> fontFamilies = [];
     Dictionary<string, PrivateFontCollection> fontCollections = [];
     readonly LinkedList<string> recentlyUsedFonts = [];
+
+    public TextGenerator(ResourceContainer resourceContainer)
+    {
+        metrics = System.Drawing.Graphics.FromHwnd(0);
+        metrics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
+        metrics.SmoothingMode = SmoothingMode.None;
+        metrics.InterpolationMode = InterpolationMode.Bilinear;
+        metrics.CompositingQuality = CompositingQuality.HighSpeed;
+        metrics.PixelOffsetMode = PixelOffsetMode.None;
+
+        container = resourceContainer;
+    }
 
     public Bitmap CreateBitmap(string text, string fontName, float fontSize, Vector2 maxSize, Vector2 padding, BoxAlignment alignment, StringTrimming trimming, out Vector2 textureSize, bool measureOnly)
     {
@@ -43,10 +59,9 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
             Trimming = trimming,
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
-        using var graphics = System.Drawing.Graphics.FromHwnd(0);
 
-        var font = getFont(fontName, 96 / graphics.DpiY * fontSize, FontStyle.Regular);
-        var measuredSize = graphics.MeasureString(text, font, new SizeF(maxSize.X, maxSize.Y), stringFormat);
+        var font = getFont(fontName, 96 / metrics.DpiY * fontSize, FontStyle.Regular);
+        var measuredSize = metrics.MeasureString(text, font, new SizeF(maxSize.X, maxSize.Y), stringFormat);
 
         var width = measuredSize.Width + padding.X * 2 + 1;
         var height = measuredSize.Height + padding.Y * 2 + 1;
@@ -98,7 +113,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
 
         if (!fontFamilies.TryGetValue(name, out var fontFamily))
         {
-            var bytes = resourceContainer.GetBytes(name, ResourceSource.Embedded);
+            var bytes = container.GetBytes(name, ResourceSource.Embedded);
             if (bytes is not null) unsafe
             {
                 try
@@ -137,15 +152,18 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         {
             textBrush.Dispose();
             shadowBrush.Dispose();
+            metrics.Dispose();
             fonts.Dispose();
-            fontCollections.Dispose();
             fontFamilies.Dispose();
+            fontCollections.Dispose();
 
             textBrush = null;
             shadowBrush = null;
+            metrics = null;
             fonts = null;
             fontCollections = null;
             fontFamilies = null;
+            container = null;
 
             disposed = true;
         }
