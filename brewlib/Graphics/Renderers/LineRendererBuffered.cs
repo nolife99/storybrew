@@ -151,7 +151,6 @@ public class LineRendererBuffered : LineRenderer
     {
         if (linesInBatch == 0) return;
 
-        // When the previous flush was bufferable, draw state should stay the same.
         if (!lastFlushWasBuffered)
         {
             var combinedMatrix = transformMatrix * Camera.ProjectionView;
@@ -162,7 +161,6 @@ public class LineRendererBuffered : LineRenderer
 
             FlushAction?.Invoke();
         }
-
         primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine, canBuffer);
 
         currentLargestBatch += linesInBatch;

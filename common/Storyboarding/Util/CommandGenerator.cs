@@ -69,7 +69,7 @@ public class CommandGenerator
         }
 
         var span = CollectionsMarshal.AsSpan(states);
-        var i = span.BinarySearch(state, state);
+        var i = span.BinarySearch(state, new State());
         if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) ++i;
         else i = ~i;
 
@@ -145,7 +145,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)osuTK.MathHelper.RadiansToDegrees(r));
+        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)(180 / Math.PI * r));
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 
@@ -229,16 +229,9 @@ public class CommandGenerator
         flipV.Clear(true);
         additive.Clear(true);
     }
-    internal static SizeF BitmapDimensions(string path)
-    {
-        if (StoryboardObjectGenerator.Current.fonts.Count > 0)
-        {
-            var font = StoryboardObjectGenerator.Current.fonts.SelectMany(g => g.Value.cache.Values).FirstOrDefault(tex => tex.Path == path);
-            if (font is null) return StoryboardObjectGenerator.Current.GetMapsetBitmap(path).PhysicalDimension;
-            return new(font.Width, font.Height);
-        }
-        else return StoryboardObjectGenerator.Current.GetMapsetBitmap(path).PhysicalDimension;
-    }
+
+    internal static SizeF BitmapDimensions(string path) 
+        => StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).PhysicalDimension;
 }
 
 ///<summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
@@ -279,8 +272,8 @@ public class State : IComparer<State>
     {
         var noGen = generator is null;
         CommandScale scale = new(
-            noGen ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals), 
-            noGen ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals));
+            noGen ? (float)Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals), 
+            noGen ? (float)Scale.Y : MathF.Round(Scale.Y, generator.ScaleDecimals));
 
         if (Additive && Color == CommandColor.Black ||
             (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
@@ -288,8 +281,8 @@ public class State : IComparer<State>
             return false;
 
         return OsbSprite.InScreenBounds(new(
-            noGen ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
-            noGen ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals)),
+            noGen ? (float)Position.X : MathF.Round(Position.X, generator.PositionDecimals),
+            noGen ? (float)Position.Y : MathF.Round(Position.Y, generator.PositionDecimals)),
             imageSize * scale, noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
     }
 

@@ -69,7 +69,7 @@ public class FontTexture(string path, float offsetX, float offsetY, int baseWidt
 }
 
 ///<summary> A class that generates and manages font textures. </summary>
-public class FontGenerator : IDisposable
+public sealed class FontGenerator : IDisposable
 {
     /// <summary> The directory to the font textures. </summary>
     public string Directory { get; }
@@ -82,12 +82,12 @@ public class FontGenerator : IDisposable
     readonly float emSize;
 
     StringFormat format;
-    Graphics graphics;
+    Graphics metrics;
     PrivateFontCollection collection;
     Font font;
     FontFamily family;
 
-    public FontGenerator(string dir, FontDescription desc, FontEffect[] fx, string projDir, string assetDir)
+    internal FontGenerator(string dir, FontDescription desc, FontEffect[] fx, string projDir, string assetDir)
     {
         Directory = dir;
         description = desc;
@@ -101,24 +101,28 @@ public class FontGenerator : IDisposable
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
 
-        graphics = Graphics.FromHwnd(0);
-        graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
-        graphics.SmoothingMode = SmoothingMode.None;
-        graphics.InterpolationMode = InterpolationMode.Bilinear;
-        graphics.CompositingQuality = CompositingQuality.HighSpeed;
-        graphics.PixelOffsetMode = PixelOffsetMode.None;
-
-        collection = new();
+        metrics = Graphics.FromHwnd(0);
+        metrics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
+        metrics.InterpolationMode = InterpolationMode.NearestNeighbor;
 
         var fontPath = Path.Combine(projectDirectory, description.FontPath);
         if (!File.Exists(fontPath)) fontPath = description.FontPath;
-        if (File.Exists(fontPath)) collection.AddFontFile(fontPath);
 
-        family = File.Exists(fontPath) ? collection.Families[0] : null;
+        if (File.Exists(fontPath))
+        {
+            collection = new();
+            collection.AddFontFile(fontPath);
 
-        var dpiScale = 96 / graphics.DpiY;
-        font = family is null ? new(fontPath, description.FontSize * dpiScale, description.FontStyle) : new(family, description.FontSize * dpiScale, description.FontStyle);
-        emSize = graphics.DpiY * font.SizeInPoints / 72;
+            var families = collection.Families;
+            family = families[0];
+
+            if (families.Length > 1) for (var i = 0; i < families.Length; ++i) families[i].Dispose();
+        }
+
+        var ptSize = 96 / metrics.DpiY * description.FontSize;
+        font = family is null ? new(fontPath, ptSize, description.FontStyle, GraphicsUnit.Point) : new(family, ptSize, description.FontStyle, GraphicsUnit.Point);
+
+        emSize = font.GetHeight(metrics) * font.FontFamily.GetEmHeight(description.FontStyle) / font.FontFamily.GetLineSpacing(description.FontStyle);
     }
 
     ///<summary> Gets the texture path of the matching item's string representation. </summary>
@@ -132,12 +136,9 @@ public class FontGenerator : IDisposable
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        float offsetX = 0, offsetY = 0;
-        int baseWidth, baseHeight, width, height;
-
-        var measuredSize = graphics.MeasureString(text, font, 0, format);
-        baseWidth = (int)MathF.Ceiling(measuredSize.Width);
-        baseHeight = (int)MathF.Ceiling(measuredSize.Height);
+        var measuredSize = metrics.MeasureString(text, font, 0, format);
+        var baseWidth = (int)MathF.Ceiling(measuredSize.Width);
+        var baseHeight = (int)MathF.Ceiling(measuredSize.Height);
 
         float effectsWidth = 0, effectsHeight = 0;
         for (var i = 0; i < effects.Length; ++i)
@@ -146,16 +147,15 @@ public class FontGenerator : IDisposable
             effectsWidth = Math.Max(effectsWidth, effectSize.Width);
             effectsHeight = Math.Max(effectsHeight, effectSize.Height);
         }
-        width = (int)MathF.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
-        height = (int)MathF.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
+        var width = (int)MathF.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
+        var height = (int)MathF.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
 
         var paddingX = description.Padding.X + effectsWidth / 2;
         var paddingY = description.Padding.Y + effectsHeight / 2;
         var x = paddingX + measuredSize.Width / 2;
-        var y = paddingY;
 
-        offsetX = -paddingX;
-        offsetY = -paddingY;
+        var offsetX = -paddingX;
+        var offsetY = -paddingY;
 
         if (string.IsNullOrWhiteSpace(text) || width == 0 || height == 0) return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height, null);
 
@@ -164,11 +164,10 @@ public class FontGenerator : IDisposable
 
         using (var textGraphics = Graphics.FromImage(realText))
         {
-            textGraphics.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-            textGraphics.SmoothingMode = SmoothingMode.HighQuality;
+            textGraphics.SmoothingMode = SmoothingMode.AntiAlias;
             textGraphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
             textGraphics.CompositingQuality = CompositingQuality.HighQuality;
-            textGraphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
 
             if (description.Debug)
             {
@@ -176,16 +175,16 @@ public class FontGenerator : IDisposable
                 textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
             }
 
-            segments.AddString(text, font.FontFamily, (int)description.FontStyle, emSize, new PointF(x, y), format);
+            segments.AddString(text, font.FontFamily, (int)description.FontStyle, emSize, new PointF(x, paddingY), format);
 
-            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, y);
+            for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, paddingY);
             if (!description.EffectsOnly) using (SolidBrush brush = new(description.Color)) textGraphics.FillPath(brush, segments);
-            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, y);
+            for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, paddingY);
 
-            if (description.Debug) using (Pen pen = new(Color.Red))
+            if (description.Debug)
             {
-                textGraphics.DrawLine(pen, x, y, x, y + baseHeight);
-                textGraphics.DrawLine(pen, x - baseWidth * .5f, y, x + baseWidth * .5f, y);
+                textGraphics.DrawLine(Pens.Red, x, paddingY, x, paddingY + baseHeight);
+                textGraphics.DrawLine(Pens.Red, x - baseWidth * .5f, paddingY, x + baseWidth * .5f, paddingY);
             }
         }
 
@@ -230,21 +229,24 @@ public class FontGenerator : IDisposable
     }
 
     bool disposed;
+
+    ///<summary> Deletes and frees all loaded fonts from memory. </summary>
+    ///<remarks> Do not call from script code. This is automatically disposed at the end of script execution </remarks>
     public void Dispose()
     {
         if (!disposed)
         {
             format.Dispose();
-            graphics.Dispose();
-            collection.Dispose();
+            metrics.Dispose();
             font.Dispose();
             family?.Dispose();
+            collection?.Dispose();
 
             format = null;
-            graphics = null;
-            collection = null;
+            metrics = null;
             font = null;
             family = null;
+            collection = null;
 
             disposed = true;
         }

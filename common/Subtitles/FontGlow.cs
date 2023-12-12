@@ -2,7 +2,6 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 
 namespace StorybrewCommon.Subtitles;
 
@@ -34,15 +33,10 @@ public class FontGlow(int radius = 6, float power = 0, FontColor color = default
         if (Radius < 1) return;
 
         using Bitmap src = new(bitmap.Width, bitmap.Height, bitmap.PixelFormat);
-        using (SolidBrush brush = new(FontColor.White)) using (var graphics = Graphics.FromImage(src))
+        using (var graphics = Graphics.FromImage(src))
         {
-            graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
             graphics.InterpolationMode = InterpolationMode.Bilinear;
-            graphics.CompositingQuality = CompositingQuality.HighSpeed;
-            graphics.SmoothingMode = SmoothingMode.None;
-            graphics.PixelOffsetMode = PixelOffsetMode.None;
-
-            graphics.FillPath(brush, path);
+            graphics.FillPath(Brushes.White, path);
         }
 
         using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5f, Color); 

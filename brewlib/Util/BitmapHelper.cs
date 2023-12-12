@@ -36,7 +36,7 @@ public static class BitmapHelper
         PinnedBitmap result = new(source);
         var resultSpan = result.AsSpan();
 
-        for (int y = 0, index = 0; y < source.Height; ++y) for (var x = 0; y < source.Width; ++x)
+        for (int y = 0, index = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x)
         {
             var color = resultSpan[y * source.Width + x];
 
@@ -176,7 +176,6 @@ public static class BitmapHelper
 
     public static bool IsFullyTransparent(Bitmap source)
     {
-        if (source is null) return true;
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
 
         using PinnedBitmap src = new(source);
@@ -187,15 +186,13 @@ public static class BitmapHelper
     }
     public static Rectangle FindTransparencyBounds(Bitmap source)
     {
-        if (source is null) return default;
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return new(default, source.Size);
 
         int xMin = source.Width, yMin = source.Height, xMax = -1, yMax = -1;
-
         using (PinnedBitmap src = new(source))
         {
             var srcSpan = src.AsReadOnlySpan();
-            for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((srcSpan[y * source.Width + x] >> 24) & 0xFF) > 0)
+            for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((srcSpan[y * source.Width + x] >> 24) & 0xFF) != 0)
             {
                 if (x < xMin) xMin = x;
                 if (x > xMax) xMax = x;
@@ -211,7 +208,7 @@ public static class BitmapHelper
 ///<summary> Encapsulates and pins bitmaps for high-performance image manipulation. </summary>
 public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 {
-    readonly int* scan0;
+    int* scan0;
     bool disposed;
 
     ///<summary> The underlying bitmap. </summary>
@@ -246,6 +243,8 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     {
         using var graphics = System.Drawing.Graphics.FromImage(Bitmap);
         graphics.CompositingMode = CompositingMode.SourceCopy;
+        graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+
         graphics.DrawImage(image, 0, 0, image.Width, image.Height);
     }
 
@@ -342,6 +341,8 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         Bitmap = null;
 
         NativeMemory.AlignedFree(scan0);
+        scan0 = null;
+
         disposed = true;
     }
 

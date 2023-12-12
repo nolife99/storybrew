@@ -40,9 +40,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Resources\Asap-Light.ttf" />
+    <EmbeddedResource Include="Resources\Asap-Regular.ttf" />
     <EmbeddedResource Include="Resources\FontAwesome.ttf" />
-    <EmbeddedResource Include="Resources\Roboto-Light.ttf" />
-    <EmbeddedResource Include="Resources\Roboto-Regular.ttf" />
     <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json" />
     <EmbeddedResource Include="Resources\ui-line-opt.json" />
     <EmbeddedResource Include="Resources\ui-stripes-opt.json" />
@@ -64,6 +64,11 @@
     <Content Include="..\brewlib\bass\$(Platform)\*.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\Asap-Light.ttf" />
+    <None Remove="Resources\Asap-Regular.ttf" />
   </ItemGroup>
 
   <ItemGroup>

@@ -55,19 +55,39 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public static CommandScale operator +(CommandScale left, CommandScale right) => left.internalVec + right.internalVec;
     public static CommandScale operator -(CommandScale left, CommandScale right) => left.internalVec - right.internalVec;
     public static CommandScale operator *(CommandScale left, CommandScale right) => left.internalVec * right.internalVec;
-    public static CommandScale operator *(CommandScale left, double right) => new(left.internalVec.X * right, left.internalVec.Y * right);
+    public static CommandScale operator *(CommandScale left, CommandDecimal right) => new(left.internalVec.X * right, left.internalVec.Y * right);
     public static CommandScale operator /(CommandScale left, CommandScale right) => left.internalVec / right.internalVec;
-    public static CommandScale operator /(CommandScale left, double right) => new(left.internalVec.X / right, left.internalVec.Y / right);
+    public static CommandScale operator /(CommandScale left, CommandDecimal right) => new(left.internalVec.X / right, left.internalVec.Y / right);
     public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
     public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector.X, vector.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(osuTK.Vector2d vector) => new(vector.X, vector.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(SizeF vector) => new(vector.Width, vector.Height);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(Vector2 vector) => new(vector);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(CommandPosition position) => new(position.X, position.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2(CommandScale obj) => new(obj.X, obj.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2d(CommandScale obj) => new(obj.X, obj.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator SizeF(CommandScale vector) => new(vector.X, vector.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector2(CommandScale obj) => obj.internalVec;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
 }

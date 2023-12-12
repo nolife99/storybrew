@@ -29,7 +29,7 @@ public class FontOutline(int thickness = 1, FontColor color = default) : FontEff
         if (Thickness < 1) return;
 
         using var outlined = (GraphicsPath)path.Clone();
-        using (Pen outlinePen = new(Color, 1)) outlined.Widen(outlinePen);
+        using (Pen outlinePen = new(Color)) outlined.Widen(outlinePen);
 
         using Pen pen = new(Color, thickness)
         {

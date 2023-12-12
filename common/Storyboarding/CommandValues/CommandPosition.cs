@@ -60,18 +60,34 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
     public static CommandPosition operator -(CommandPosition left, CommandPosition right) => left.internalVec - right.internalVec;
     public static CommandPosition operator -(CommandPosition pos) => -pos.internalVec;
     public static CommandPosition operator *(CommandPosition left, CommandPosition right) => left.internalVec * right.internalVec;
-    public static CommandPosition operator *(CommandPosition left, double right) => new(left.internalVec.X * right, left.internalVec.Y * right);
-    public static CommandPosition operator *(double left, CommandPosition right) => new(right.internalVec.X * left, right.internalVec.Y * left);
+    public static CommandPosition operator *(CommandPosition left, CommandDecimal right) => new(left.internalVec.X * right, left.internalVec.Y * right);
+    public static CommandPosition operator *(CommandDecimal left, CommandPosition right) => new(right.internalVec.X * left, right.internalVec.Y * left);
     public static CommandPosition operator /(CommandPosition left, CommandPosition right) => left.internalVec / right.internalVec;
-    public static CommandPosition operator /(CommandPosition left, double right) => new(left.internalVec.X / right, left.internalVec.Y / right);
+    public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => new(left.internalVec.X / right, left.internalVec.Y / right);
     public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
     public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2(CommandPosition position) => new(position.X, position.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2d(CommandPosition position) => new(position.X, position.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector2(CommandPosition position) => position.internalVec;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator PointF(CommandPosition position) => new(position.X, position.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandPosition(osuTK.Vector2 vector) => new(vector.X, vector.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandPosition(osuTK.Vector2d vector) => new(vector.X, vector.Y);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandPosition(Vector2 vector) => new(vector);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandPosition(PointF vector) => new(vector.X, vector.Y);
 }

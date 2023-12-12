@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
 using System.Drawing.Drawing2D;
@@ -15,7 +14,7 @@ namespace BrewLib.Graphics.Text;
 
 public sealed class TextGenerator : IDisposable
 {
-    SolidBrush textBrush = new(Color.White), shadowBrush = new(Color.FromArgb(220, 0, 0, 0));
+    SolidBrush shadowBrush = new(Color.FromArgb(220, 0, 0, 0));
     System.Drawing.Graphics metrics;
     ResourceContainer container;
 
@@ -28,10 +27,7 @@ public sealed class TextGenerator : IDisposable
     {
         metrics = System.Drawing.Graphics.FromHwnd(0);
         metrics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
-        metrics.SmoothingMode = SmoothingMode.None;
-        metrics.InterpolationMode = InterpolationMode.Bilinear;
-        metrics.CompositingQuality = CompositingQuality.HighSpeed;
-        metrics.PixelOffsetMode = PixelOffsetMode.None;
+        metrics.InterpolationMode = InterpolationMode.NearestNeighbor;
 
         container = resourceContainer;
     }
@@ -61,7 +57,7 @@ public sealed class TextGenerator : IDisposable
         };
 
         var font = getFont(fontName, 96 / metrics.DpiY * fontSize, FontStyle.Regular);
-        var measuredSize = metrics.MeasureString(text, font, new SizeF(maxSize.X, maxSize.Y), stringFormat);
+        var measuredSize = metrics.MeasureString(text, font, new SizeF(maxSize), stringFormat);
 
         var width = measuredSize.Width + padding.X * 2 + 1;
         var height = measuredSize.Height + padding.Y * 2 + 1;
@@ -69,14 +65,16 @@ public sealed class TextGenerator : IDisposable
         textureSize = new(width, height);
         if (measureOnly) return null;
 
-        Bitmap bitmap = new((int)width, (int)height, PixelFormat.Format32bppArgb);
+        Bitmap bitmap = new((int)width, (int)height);
         try
         {
             using var textGraphics = System.Drawing.Graphics.FromImage(bitmap);
             textGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
+            textGraphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+            textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
 
             textGraphics.DrawString(text, font, shadowBrush, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
-            textGraphics.DrawString(text, font, textBrush, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
+            textGraphics.DrawString(text, font, Brushes.White, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
         }
         catch
         {
@@ -92,7 +90,7 @@ public sealed class TextGenerator : IDisposable
     }
     Font getFont(string name, float emSize, FontStyle style)
     {
-        var identifier = $"{name}|{emSize}|{(int)style}";
+        var identifier = $"{name}.{emSize}.{(int)style}";
 
         if (fonts.TryGetValue(identifier, out var font))
         {
@@ -121,12 +119,17 @@ public sealed class TextGenerator : IDisposable
                     if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
                     fixed (void* pinned = &MemoryMarshal.GetArrayDataReference(bytes)) fontCollection.AddMemoryFont((nint)pinned, bytes.Length);
 
-                    if (fontCollection.Families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = fontCollection.Families[0]).Name} for {name}");
-                    else Trace.WriteLine($"Failed to load font {name}: Expected one family, got {fontCollection.Families.Length}");
+                    var families = fontCollection.Families;
+                    if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
+                    else
+                    {
+                        Trace.TraceError($"Failed to load font {name}: Expected one family, got {fontCollection.Families.Length}");
+                        if (families is not null) for (var i = 0; i < families.Length; ++i) families[i].Dispose();
+                    }
                 }
                 catch (Exception e)
                 {
-                    Trace.WriteLine($"Failed to load font {name}: {e.Message}");
+                    Trace.TraceError($"Failed to load font {name}: {e.Message}");
                 }
             }
             fontFamilies.Add(name, fontFamily);
@@ -150,14 +153,12 @@ public sealed class TextGenerator : IDisposable
     {
         if (!disposed)
         {
-            textBrush.Dispose();
             shadowBrush.Dispose();
             metrics.Dispose();
             fonts.Dispose();
             fontFamilies.Dispose();
             fontCollections.Dispose();
 
-            textBrush = null;
             shadowBrush = null;
             metrics = null;
             fonts = null;

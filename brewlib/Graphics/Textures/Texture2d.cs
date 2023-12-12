@@ -54,7 +54,7 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
-        if (File.Exists(filename)) using (FileStream stream = new(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) return new Bitmap(stream, false);
+        if (File.Exists(filename)) using (FileStream stream = new(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) return new(stream);
 
         if (resourceContainer is null) return null;
         using (var stream = resourceContainer.GetStream(filename, ResourceSource.Embedded))
@@ -64,7 +64,7 @@ public class Texture2d(int textureId, int width, int height, string description)
                 Trace.TraceError($"Texture not found: {filename}");
                 return null;
             }
-            return new(stream, false);
+            return new(stream);
         }
     }
 
@@ -134,10 +134,10 @@ public class Texture2d(int textureId, int width, int height, string description)
             {
                 var data = b.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, b.Width, b.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-                GL.Finish();
                 b.UnlockBits(data);
+
+                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                GL.Finish();
             });
             DrawState.CheckError("specifying texture");
 

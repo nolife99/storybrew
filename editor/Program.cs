@@ -136,9 +136,9 @@ public static class Program
     static GameWindow createWindow(DisplayDevice displayDevice)
     {
         var workArea = Screen.PrimaryScreen.WorkingArea;
-
         var ratio = displayDevice.Width / (float)displayDevice.Height;
-        float windowWidth = 1366, windowHeight = windowWidth / ratio;
+
+        float windowWidth = 1360, windowHeight = windowWidth / ratio;
         if (windowHeight >= workArea.Height)
         {
             windowWidth = 1024;
@@ -146,12 +146,16 @@ public static class Program
 
             if (windowWidth >= workArea.Width)
             {
-                windowWidth = 800;
+                windowWidth = 896;
                 windowHeight = windowWidth / ratio;
             }
         }
 
-        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible);
+        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible)
+        {
+            VSync = VSyncMode.Adaptive
+        };
+
         Native.InitializeHandle(Name);
         Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
@@ -177,14 +181,14 @@ public static class Program
     }
     static void runMainLoop(GameWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
     {
-        float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
+        double prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
         var windowDisplayed = false;
         var watch = Stopwatch.StartNew();
 
         while (window.Exists && !window.IsExiting)
         {
             var focused = window.Focused;
-            var cur = (float)watch.Elapsed.TotalMilliseconds;
+            var cur = watch.Elapsed.TotalMilliseconds;
             var fixedUpdates = 0;
 
             AudioManager.Update();
@@ -195,13 +199,11 @@ public static class Program
                 fixedRate += fixedRateUpdate;
                 ++fixedUpdates;
 
-                editor.Update(fixedRate / 1000);
+                editor.Update(fixedRate * 1E-3);
             }
-            if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur / 1000, false);
+            if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur * 1E-3, false);
 
             if (!window.Exists || window.IsExiting) return;
-
-            window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
             if (window.WindowState != WindowState.Minimized)
             {
                 var tween = Math.Min((cur - fixedRate) / fixedRateUpdate, 1);
@@ -218,7 +220,7 @@ public static class Program
             RunScheduledTasks();
 
             var active = (float)watch.Elapsed.TotalMilliseconds - cur;
-            if (window.WindowState != WindowState.Minimized)
+            if (window.WindowState != WindowState.Minimized && window.VSync is VSyncMode.Off)
             {
                 var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
                 if (sleepTime > 0) using (var wait = Task.Delay((int)sleepTime)) wait.Wait();
@@ -227,8 +229,8 @@ public static class Program
             var frameTime = cur - prev;
             prev = cur;
 
-            av = (frameTime + av) / 2;
-            avActive = (active + avActive) / 2;
+            av = (frameTime + av) * .5;
+            avActive = (active + avActive) * .5;
             longest = Math.Max(frameTime, longest);
 
             if (lastStat + 150 < cur)

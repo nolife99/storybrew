@@ -6,14 +6,14 @@ namespace BrewLib.Graphics.Text;
 
 public class TextFontManager : IDisposable
 {
-    Dictionary<string, TextFont> fonts = [];
+    Dictionary<string, TextFontAtlased> fonts = [];
     readonly Dictionary<string, int> references = [];
 
     public TextFont GetTextFont(string fontName, float fontSize, float scaling)
     {
         var identifier = $"{fontName}|{fontSize}|{scaling}";
 
-        if (!fonts.TryGetValue(identifier, out TextFont font)) fonts.Add(identifier, font = new TextFontAtlased(fontName, fontSize * scaling));
+        if (!fonts.TryGetValue(identifier, out var font)) fonts.Add(identifier, font = new(fontName, fontSize * scaling));
         if (references.TryGetValue(identifier, out int refCount)) references[identifier] = refCount + 1;
         else references[identifier] = 1;
 

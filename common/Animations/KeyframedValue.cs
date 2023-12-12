@@ -230,7 +230,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
         var span = CollectionsMarshal.AsSpan(keyframes);
-        var i = span.BinarySearch(keyframe, keyframe);
+        var i = span.BinarySearch(keyframe, new Keyframe<TValue>());
 
         if (i >= 0)
         {

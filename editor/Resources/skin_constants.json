@@ -1,8 +1,8 @@
 ﻿{
 	constants:
 	{
-		mainFont: "Roboto-Regular.ttf",
-		lightFont: "Roboto-Light.ttf",
+		mainFont: "Asap-Regular.ttf",
+		lightFont: "Asap-Light.ttf",
 		iconFont: "FontAwesome.ttf",
 		fontSizeLarge: 16,
 		fontSizeNormal: 14,

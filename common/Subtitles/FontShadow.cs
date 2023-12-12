@@ -26,13 +26,14 @@ public class FontShadow(int thickness = 1, FontColor color = default) : FontEffe
     {
         if (Thickness < 1) return;
 
-        using SolidBrush brush = new(Color);
         using var transformed = (GraphicsPath)path.Clone();
+        using (Matrix translate = new())
+        {
+            translate.Translate(thickness, thickness);
+            transformed.Transform(translate);
+        }
 
-        Matrix translate = new();
-        translate.Translate(thickness, thickness);
-        transformed.Transform(translate);
-
+        using SolidBrush brush = new(Color);
         textGraphics.FillPath(brush, transformed);
     }
 }
