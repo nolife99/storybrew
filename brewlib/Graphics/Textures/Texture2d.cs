@@ -1,10 +1,13 @@
 ﻿using BrewLib.Data;
 using osuTK.Graphics.OpenGL;
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures;
@@ -86,18 +89,22 @@ public class Texture2d(int textureId, int width, int height, string description)
         if (textureOptions.PreMultiply)
         {
             var ratio = color.A / 255f;
-            channel = (color.A << 24) | ((int)(color.R * ratio) << 16) | ((int)(color.G * ratio) << 8) | (int)(color.B * ratio);
+            channel = (color.A << 24) | ((byte)(color.R * ratio) << 16) | ((byte)(color.G * ratio) << 8) | (byte)(color.B * ratio);
         }
         
         var textureId = GL.GenTexture();
         try
         {
             DrawState.BindTexture(textureId);
+            unsafe
+            {
+                Span<int> arr = stackalloc int[width * height];
+                arr.Fill(channel);
 
-            var array = GC.AllocateUninitializedArray<int>(width * height);
-            new Span<int>(array).Fill(channel);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, array);
-            
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, 
+                    (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(arr)));
+            }
+
             if (textureOptions.GenerateMipmaps)
             {
                 GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Animations;
@@ -137,9 +138,12 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         bool hasPair = false, forceNextFlat = loopable;
         Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;
 
-        for (var i = 0; i < span.Length; ++i)
+        ref var r0 = ref MemoryMarshal.GetReference(span);
+        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
         {
-            var endKeyframe = editKeyframe(span[i], edit);
+            var endKeyframe = editKeyframe(r0, edit);
             if (previous.HasValue)
             {
                 var startKeyframe = previous.Value;
@@ -178,7 +182,9 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
                     forceNextFlat = false;
                 }
             }
+
             previous = endKeyframe;
+            r0 = ref Unsafe.Add(ref r0, 1);
         }
         if (stepStart.HasValue)
         {

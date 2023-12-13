@@ -129,7 +129,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     class ActionRunner(ActionQueueContext context, string threadName)
     {
         CancellationTokenSource tokenSrc;
-        Thread thread;
+        Task thread;
 
         internal void EnsureThreadAlive()
         {
@@ -139,10 +139,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 tokenSrc = new();
                 tokenSrc.Token.Register(() => Trace.WriteLine($"Aborting thread {threadName}"));
 
-                Thread localThread = null;
-
 #pragma warning disable SYSLIB0046
-                thread = localThread = new(() => ControlledExecution.Run(async () =>
+                thread = new(() => ControlledExecution.Run(async () =>
                 {
                     var mustSleep = false;
                     while (!tokenSrc.IsCancellationRequested)
@@ -158,7 +156,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         {
                             while (!context.Enabled || context.Queue.Count == 0)
                             {
-                                if (thread != localThread)
+                                if (thread is null)
                                 {
                                     Trace.WriteLine($"Exiting thread {threadName}");
                                     return;
@@ -207,18 +205,14 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             if (task.MustRunAlone) context.RunningLoneTask = false;
                         }
                     }
-                }, tokenSrc.Token))
-                {
-                    Name = threadName,
-                    IsBackground = true
-                };
+                }, tokenSrc.Token), tokenSrc.Token);
 #pragma warning restore SYSLIB0046
 
                 Trace.WriteLine($"Starting thread {threadName}");
                 thread.Start();
             }
         }
-        internal void JoinOrAbort(double millisecondsTimeout)
+        internal async void JoinOrAbort(double millisecondsTimeout)
         {
             if (thread is null) return;
 
@@ -227,10 +221,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-            if (!localThread.Join((int)millisecondsTimeout))
+            if (!localThread.Wait((int)millisecondsTimeout, tokenSrc.Token))
             {
                 tokenSrc.Cancel();
-                if (localThread.IsAlive) localThread.Interrupt();
+                if (!localThread.IsCompleted) await localThread;
             }
             tokenSrc.Dispose();
         }

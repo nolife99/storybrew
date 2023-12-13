@@ -12,7 +12,7 @@ public class ScriptProvider<TScript> where TScript : Script
     public TScript CreateScript()
     {
         var script = (TScript)Activator.CreateInstance(type, true);
-        script.Identifier = type.AssemblyQualifiedName + Environment.TickCount64;
+        script.Identifier = type.AssemblyQualifiedName + Environment.CurrentManagedThreadId;
         return script;
     }
 }

@@ -162,7 +162,7 @@ public static class BitmapHelper
 
         try
         {
-            for (var y = 0; y < destDat.Height; ++y) Native.CopyMemory(
+            for (var y = 0; y < sect.Height; ++y) Native.CopyMemory(
                 srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixBit), destDat.Scan0 + y * destDat.Stride, len);
         }
         finally
@@ -236,7 +236,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     ///<summary> Creates a new pinned bitmap from the given dimensions. </summary>
     public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width << 2, PixelFormat.Format32bppArgb, 
-        (nint)(scan0 = (int*)NativeMemory.Alloc((uint)(Count = width * height), (uint)Marshal.SizeOf<int>())));
+        (nint)(scan0 = (int*)NativeMemory.Alloc((uint)(Count = width * height), sizeof(int))));
 
     ///<summary> Creates a new pinned bitmap from a copy of the given image. </summary>
     public PinnedBitmap(Image image) : this(image.Width, image.Height)
@@ -309,19 +309,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Color GetPixel(int index) => Color.FromArgb(this[index]);
 
-    ///<summary> Gets the pixel color at the given coordinates as a 32-bit ARGB channel (AARRGGBB). </summary>
-    ///<param name="x"> The X coordinate of the pixel. </param>
-    ///<param name="y"> The Y coordinate of the pixel. </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetPixelArgb(int x, int y) => this[y * Width + x];
-
-    ///<summary> Gets the pixel color at the given index as a 32-bit ARGB channel (AARRGGBB). </summary>
-    ///<param name="index"> An index into the underlying bitmap. </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int GetPixelArgb(int index) => this[index];
-
     ///<summary> Gets a collection of 32-bit color channels that represent the underlying bitmap. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int[] ToArray()
@@ -360,6 +347,42 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         disposed = true;
     }
 
-    IEnumerator<int> IEnumerable<int>.GetEnumerator() => ((IEnumerable<int>)ToArray()).GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => ToArray().GetEnumerator();
+    IEnumerator<int> IEnumerable<int>.GetEnumerator() => new Enumerator(this);
+    IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
+
+    struct Enumerator(PinnedBitmap data) : IEnumerator<int>, IEnumerator
+    {
+        int _index = -1;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool IEnumerator.MoveNext()
+        {
+            var index = _index + 1;
+            if (index < data.Count)
+            {
+                _index = index;
+                return true;
+            }
+
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void IEnumerator.Reset() => _index = -1;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void IDisposable.Dispose() => _index = int.MaxValue;
+
+        int IEnumerator<int>.Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => data.scan0[_index];
+        }
+
+        object IEnumerator.Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => data.scan0[_index];
+        }
+    }
 }

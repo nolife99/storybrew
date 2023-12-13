@@ -32,7 +32,7 @@ public class SynchronousCompressor : ImageCompressor
             RedirectStandardError = true,
         };
 
-        if (toCompress.Count != 0) using (Task losslessTask = new(() =>
+        if (toCompress.Count != 0) using (Task losslessTask = new(async () =>
         {
             UtilityName = "oxipng32.exe";
             startInfo.FileName = GetUtility();
@@ -42,20 +42,20 @@ public class SynchronousCompressor : ImageCompressor
             {
                 startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
                 process ??= Process.Start(startInfo);
-                var error = process.StandardError.ReadToEnd();
+                var error = await process.StandardError.ReadToEndAsync();
                 if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
             }
             finally
             {
                 ensureStop();
             }
-        }, TaskCreationOptions.AttachedToParent))
+        }))
         {
             losslessTask.Start();
             await losslessTask;
         }
 
-        if (lossyCompress.Count != 0) using (Task lossyTask = new(() =>
+        if (lossyCompress.Count != 0) using (Task lossyTask = new(async () =>
         {
             UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
             startInfo.FileName = GetUtility();
@@ -65,14 +65,14 @@ public class SynchronousCompressor : ImageCompressor
             {
                 startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
                 process ??= Process.Start(startInfo);
-                var error = process.StandardError.ReadToEnd();
+                var error = await process.StandardError.ReadToEndAsync();
                 if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
             }
             finally
             {
                 ensureStop();
             }
-        }, TaskCreationOptions.AttachedToParent))
+        }))
         {
             lossyTask.Start();
             await lossyTask;

@@ -5,24 +5,28 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace BrewLib.Util.Compression;
 
 public class IntegratedCompressor : ImageCompressor
 {
+    List<Task> tasks = [];
     public IntegratedCompressor(string utilityPath = null) : base(utilityPath) 
         => container = new AssemblyResourceContainer(typeof(IntegratedCompressor).Assembly, "BrewLib");
 
     protected override void compress(Argument arg, bool useLossy)
     {
-        if (!File.Exists(arg.path)) return;
+        ObjectDisposedException.ThrowIf(disposed, this);
+        if (!File.Exists(arg.path)) throw new FileNotFoundException(arg.path);
 
         UtilityName = Environment.Is64BitOperatingSystem && useLossy ? "pngquant.exe" : "oxipng32.exe";
+        var path = GetUtility();
         ensureTool();
 
-        try
+        tasks.Add(Task.Run(() =>
         {
-            process ??= Process.Start(new ProcessStartInfo(GetUtility(), appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+            using var localProc = Process.Start(new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
             {
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true,
@@ -30,15 +34,18 @@ public class IntegratedCompressor : ImageCompressor
                 RedirectStandardError = true
             });
 
-            using var errorStream = process.StandardError;
-            var error = errorStream.ReadToEnd();
+            try
+            {
+                using var errorStream = localProc.StandardError;
+                var error = errorStream.ReadToEnd();
 
-            if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
-        }
-        finally
-        {
-            ensureStop();
-        }
+                if (!string.IsNullOrEmpty(error) && localProc.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {localProc.ExitCode}: {error}");
+            }
+            finally
+            {
+                localProc.WaitForExit();
+            }
+        }));
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {
@@ -68,28 +75,28 @@ public class IntegratedCompressor : ImageCompressor
         }
         return str.ToString();
     }
+
     protected override void ensureTool()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
         var utility = GetUtility();
-        if (!File.Exists(utility))
-        {
-            using var src = container.GetStream(utilName, ResourceSource.Embedded | ResourceSource.Relative);
-            using FileStream file = new(utility, FileMode.Create, FileAccess.Write, FileShare.Read);
-            src.CopyTo(file);
-        }
+        if (!File.Exists(utility)) File.WriteAllBytes(GetUtility(), container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
         toCleanup.Add(utility);
     }
 
     readonly HashSet<string> toCleanup = [];
-    protected override void Dispose(bool disposing)
+    protected override async void Dispose(bool disposing)
     {
         if (disposed) return;
 
-        base.Dispose(disposing);
-        foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);
+        if (tasks?.Count != 0) await Task.WhenAll(tasks).ContinueWith(_ =>
+        {
+            base.Dispose(disposing);
+            tasks.Clear();
 
-        toCleanup.Clear();
+            Parallel.ForEach(toCleanup, clean => PathHelper.SafeDelete(clean));
+            toCleanup.Clear();
+        });
     }
 }

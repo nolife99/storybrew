@@ -77,7 +77,7 @@ public static class Program
 
     #region Editor
 
-    public static string Stats { get; set; }
+    public static string Stats { get; private set; }
 
     static void startEditor()
     {
@@ -151,11 +151,7 @@ public static class Program
             }
         }
 
-        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible)
-        {
-            VSync = VSyncMode.Adaptive
-        };
-
+        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible);
         Native.InitializeHandle(Name);
         Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
@@ -218,12 +214,13 @@ public static class Program
             }
 
             RunScheduledTasks();
-
             var active = (float)watch.Elapsed.TotalMilliseconds - cur;
+
+            window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
             if (window.WindowState != WindowState.Minimized && window.VSync is VSyncMode.Off)
             {
                 var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
-                if (sleepTime > 0) using (var wait = Task.Delay((int)sleepTime)) wait.Wait();
+                if (sleepTime > 0) Thread.Sleep((int)sleepTime);
             }
 
             var frameTime = cur - prev;
