@@ -236,11 +236,25 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     ///<summary> Creates a new pinned bitmap from the given dimensions. </summary>
     public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width << 2, PixelFormat.Format32bppArgb, 
-        (nint)(scan0 = (int*)NativeMemory.AlignedAlloc((uint)(Count = width * height) << 2, sizeof(int))));
+        (nint)(scan0 = (int*)NativeMemory.Alloc((uint)(Count = width * height), (uint)Marshal.SizeOf<int>())));
 
     ///<summary> Creates a new pinned bitmap from a copy of the given image. </summary>
     public PinnedBitmap(Image image) : this(image.Width, image.Height)
     {
+        if (image.PixelFormat is PixelFormat.Format32bppArgb && image is Bitmap bitmap)
+        {
+            var data = bitmap.LockBits(new(default, image.Size), ImageLockMode.ReadOnly, bitmap.PixelFormat);
+            try
+            {
+                Native.CopyMemory(data.Scan0, (nint)scan0, Count << 2);
+                return;
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+        }
+
         using var graphics = System.Drawing.Graphics.FromImage(Bitmap);
         graphics.CompositingMode = CompositingMode.SourceCopy;
         graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
@@ -340,7 +354,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         Bitmap.Dispose();
         Bitmap = null;
 
-        NativeMemory.AlignedFree(scan0);
+        NativeMemory.Free(scan0);
         scan0 = null;
 
         disposed = true;

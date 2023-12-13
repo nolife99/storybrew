@@ -23,10 +23,7 @@ public class SynchronousCompressor : ImageCompressor
     protected override void compress(Argument arg, bool useLossy) => (useLossy ? lossyCompress : toCompress).Add(arg);
     async Task doCompress()
     {
-        UtilityName = "oxipng32.exe";
-        ensureTool();
-
-        var startInfo = new ProcessStartInfo(GetUtility())
+        ProcessStartInfo startInfo = new("")
         {
             WindowStyle = ProcessWindowStyle.Hidden,
             CreateNoWindow = true,
@@ -35,8 +32,12 @@ public class SynchronousCompressor : ImageCompressor
             RedirectStandardError = true,
         };
 
-        using (Task losslessTask = new(() =>
-        { 
+        if (toCompress.Count != 0) using (Task losslessTask = new(() =>
+        {
+            UtilityName = "oxipng32.exe";
+            startInfo.FileName = GetUtility();
+            ensureTool();
+
             foreach (var arg in toCompress) if (File.Exists(arg.path)) try
             {
                 startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
@@ -54,12 +55,12 @@ public class SynchronousCompressor : ImageCompressor
             await losslessTask;
         }
 
-        UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
-        ensureTool();
-        startInfo.FileName = GetUtility();
-
-        using (Task lossyTask = new(() =>
+        if (lossyCompress.Count != 0) using (Task lossyTask = new(() =>
         {
+            UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
+            startInfo.FileName = GetUtility();
+            ensureTool();
+
             foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
             {
                 startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
@@ -122,26 +123,30 @@ public class SynchronousCompressor : ImageCompressor
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        var path = GetUtility();
-        File.WriteAllBytes(path, container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
-        toCleanup.Add(path);
-    }
-    protected override async void Dispose(bool disposing)
-    {
-        if (disposed) return;
-
-        try
+        var utility = GetUtility();
+        if (!File.Exists(utility))
         {
-            await doCompress();
+            using var src = container.GetStream(utilName, ResourceSource.Embedded | ResourceSource.Relative);
+            using FileStream file = new(utility, FileMode.Create, FileAccess.Write, FileShare.Read);
+            src.CopyTo(file);
+        }
+        toCleanup.Add(utility);
+    }
+    protected override void Dispose(bool disposing)
+    {
+        if (!disposed) try
+        {
+            doCompress().Wait();
         }
         finally
         {
             base.Dispose(disposing);
+            for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) PathHelper.SafeDelete(toCleanup[i]);
 
-            for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) File.Delete(toCleanup[i]);
             toCleanup.Clear();
             toCompress.Clear();
             lossyCompress.Clear();
+
             toCleanup = null;
             toCompress = null;
             lossyCompress = null;

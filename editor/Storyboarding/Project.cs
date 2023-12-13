@@ -17,6 +17,7 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Runtime.Loader;
 using System.Text;
 using System.Text.RegularExpressions;
 using Tiny;
@@ -379,18 +380,18 @@ public sealed class Project : IDisposable
 
     #region Assemblies
 
-    public static IEnumerable<string> DefaultAssemblies
+    public static ICollection<string> DefaultAssemblies
     {
         get
         {
             HashSet<string> distinct = [];
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
+            foreach (var asm in AssemblyLoadContext.Default.Assemblies) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
             return distinct;
         }
     }
 
     HashSet<string> importedAssemblies = [];
-    public IEnumerable<string> ImportedAssemblies
+    public ICollection<string> ImportedAssemblies
     {
         get => importedAssemblies;
         set
@@ -683,7 +684,7 @@ public sealed class Project : IDisposable
 
         MapsetPath = userRoot?.Value<string>("MapsetPath") ?? indexRoot.Value<string>("MapsetPath") ?? "nul";
         SelectBeatmap(indexRoot.Value<long>("BeatmapId"), indexRoot.Value<string>("BeatmapName"));
-        ImportedAssemblies = indexRoot.Values<string>("Assemblies");
+        ImportedAssemblies = indexRoot.Values<string>("Assemblies").ToArray();
 
         // Load effects
         Dictionary<string, Action> layerInserters = [];

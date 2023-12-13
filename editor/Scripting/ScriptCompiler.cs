@@ -60,7 +60,7 @@ public class ScriptCompiler
                     }
 
                     if (isExist) using (FileStream stream = new(asmPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                        {
+                    {
                         if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
                         stream.Position = 0;
                         references.Add(MetadataReference.CreateFromStream(stream));

@@ -30,8 +30,7 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 
     protected void ensureStop()
     {
-        if (process is null) return;
-        process.Close();
+        process?.Dispose();
         process = null;
     }
 

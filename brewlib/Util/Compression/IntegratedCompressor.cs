@@ -30,9 +30,8 @@ public class IntegratedCompressor : ImageCompressor
                 RedirectStandardError = true
             });
 
-            var errorStream = process.StandardError;
+            using var errorStream = process.StandardError;
             var error = errorStream.ReadToEnd();
-            errorStream.Dispose();
 
             if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
         }

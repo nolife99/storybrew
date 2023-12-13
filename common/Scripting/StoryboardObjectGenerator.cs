@@ -375,8 +375,8 @@ public abstract class StoryboardObjectGenerator : Script
             this.context = null;
 
             bitmaps.Dispose();
-            Compressor.Dispose();
             fonts.Dispose();
+            Compressor.Dispose();
         }
     }
     ///<summary> Main body for storyboard generation. </summary>

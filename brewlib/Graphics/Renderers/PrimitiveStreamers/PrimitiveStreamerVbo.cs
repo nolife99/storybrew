@@ -1,6 +1,6 @@
 ﻿using osuTK.Graphics.OpenGL;
 using System;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
@@ -22,7 +22,7 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> wh
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
 
         this.vertexDeclaration = vertexDeclaration;
-        primitiveSize = Unsafe.SizeOf<TPrimitive>();
+        primitiveSize = Marshal.SizeOf<TPrimitive>();
 
         initializeVertexBuffer();
         if (indexes is not null) initializeIndexBuffer(indexes);

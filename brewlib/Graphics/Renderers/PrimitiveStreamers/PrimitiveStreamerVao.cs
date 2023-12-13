@@ -1,6 +1,6 @@
 ﻿using osuTK.Graphics.OpenGL;
 using System;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
@@ -22,7 +22,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
 
         MinRenderableVertexCount = minRenderableVertexCount;
         VertexDeclaration = vertexDeclaration;
-        PrimitiveSize = Unsafe.SizeOf<TPrimitive>();
+        PrimitiveSize = Marshal.SizeOf<TPrimitive>();
 
         initializeVertexBuffer();
         if (indexes is not null) initializeIndexBuffer(indexes);

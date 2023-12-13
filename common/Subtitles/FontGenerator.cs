@@ -217,13 +217,18 @@ public sealed class FontGenerator : IDisposable
         {
             using (FileStream stream = new(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
-                if (validBounds) using (var trim = realText.FastCloneSection(bounds)) Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
+                if (validBounds) using (var trim = realText.FastCloneSection(bounds))
+                {
+                    realText.Dispose();
+                    realText = trim;
+                    Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
+                }
                 else Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
             }
 
             StoryboardObjectGenerator.Current.bitmaps[path] = realText;
-            StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(
-                path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath) ? 7 : 2));
+            if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) || path.Contains(StoryboardObjectGenerator.Current.AssetPath))
+                StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(7));
         }
         return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
     }
