@@ -7,7 +7,7 @@
 
 # Licenses
 * [MIT](https://github.com/nolife99/storybrew/blob/net8/LICENSE-MIT) ([Original codebase](https://github.com/Damnae/storybrew/blob/master/LICENSE))
-* [Apache-2.0](https://github.com/nolife99/storybrew/blob/net8/LICENSE-Apache) ([Google](https://fonts.google.com/icons?icon.set=Material+Icons) [Material Icons](https://github.com/nolife99/storybrew/blob/net8/editor/Resources/MaterialIcons.otf))
+* [Apache v2.0](https://github.com/nolife99/storybrew/blob/net8/LICENSE-Apache) ([Google](https://fonts.google.com/icons?icon.set=Material+Icons) [Material Icons](https://github.com/nolife99/storybrew/blob/net8/editor/Resources/MaterialIcons.otf))
 
 # [Damnae/storybrew](https://github.com/Damnae/storybrew)
 
