@@ -78,7 +78,7 @@ public class EffectConfigUi : Widget
                         copyButton = new(Manager)
                         {
                             StyleName = "icon",
-                            Icon = IconFont.Copy,
+                            Icon = IconFont.CopyAll,
                             Tooltip = "Copy all fields",
                             AnchorFrom = BoxAlignment.Centre,
                             AnchorTo = BoxAlignment.Centre,
@@ -87,7 +87,7 @@ public class EffectConfigUi : Widget
                         pasteButton = new(Manager)
                         {
                             StyleName = "icon",
-                            Icon = IconFont.Paste,
+                            Icon = IconFont.ContentPasteGo,
                             Tooltip = "Paste all fields",
                             AnchorFrom = BoxAlignment.Centre,
                             AnchorTo = BoxAlignment.Centre,
@@ -96,7 +96,7 @@ public class EffectConfigUi : Widget
                         closeButton = new(Manager)
                         {
                             StyleName = "icon",
-                            Icon = IconFont.TimesCircle,
+                            Icon = IconFont.Cancel,
                             AnchorFrom = BoxAlignment.Centre,
                             AnchorTo = BoxAlignment.Centre,
                             CanGrow = false

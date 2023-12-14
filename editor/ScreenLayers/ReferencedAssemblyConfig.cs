@@ -156,7 +156,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                     editButton = new(WidgetManager)
                     {
                         StyleName = "icon",
-                        Icon = IconFont.PencilSquare,
+                        Icon = IconFont.FolderOpen,
                         Tooltip = "Change file",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,
@@ -165,7 +165,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                     removeButton = new(WidgetManager)
                     {
                         StyleName = "icon",
-                        Icon = IconFont.Times,
+                        Icon = IconFont.Close,
                         Tooltip = "Remove",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,

@@ -142,7 +142,7 @@ public class LayerList : Widget
                     diffSpecificButton = new(Manager)
                     {
                         StyleName = "icon",
-                        Icon = layer.DiffSpecific ? IconFont.FileO : IconFont.FilesO,
+                        Icon = layer.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy,
                         Tooltip = layer.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,
@@ -151,7 +151,7 @@ public class LayerList : Widget
                     showHideButton = new(Manager)
                     {
                         StyleName = "icon",
-                        Icon = layer.Visible ? IconFont.Eye : IconFont.EyeSlash,
+                        Icon = layer.Visible ? IconFont.Visibility : IconFont.VisibilityOff,
                         Tooltip = "Show/Hide",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,
@@ -185,9 +185,9 @@ public class LayerList : Widget
             layer.OnChanged += changedHandler = (sender, e) =>
             {
                 nameLabel.Text = la.Identifier;
-                diffSpecificButton.Icon = la.DiffSpecific ? IconFont.FileO : IconFont.FilesO;
+                diffSpecificButton.Icon = la.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy;
                 diffSpecificButton.Tooltip = la.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)";
-                showHideButton.Icon = la.Visible ? IconFont.Eye : IconFont.EyeSlash;
+                showHideButton.Icon = la.Visible ? IconFont.Visibility : IconFont.VisibilityOff;
                 showHideButton.Checked = la.Visible;
             };
             effect.OnChanged += effectChangedHandler = (sender, e) => detailsLabel.Text = getLayerDetails(la, effect);

@@ -42,7 +42,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\Asap-Light.ttf" />
     <EmbeddedResource Include="Resources\Asap-Regular.ttf" />
-    <EmbeddedResource Include="Resources\FontAwesome.ttf" />
+    <EmbeddedResource Include="Resources\MaterialIcons.otf" />
     <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json" />
     <EmbeddedResource Include="Resources\ui-line-opt.json" />
     <EmbeddedResource Include="Resources\ui-stripes-opt.json" />

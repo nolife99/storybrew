@@ -20,7 +20,7 @@ public class Button : Widget, Field
         get => label.Text; 
         set => label.Text = value; 
     }
-    public IconFont Icon 
+    public string Icon 
     {
         get => label.Icon; 
         set => label.Icon = value; 

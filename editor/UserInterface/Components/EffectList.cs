@@ -117,7 +117,7 @@ public class EffectList : Widget
                 renameButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Pencil,
+                    Icon = IconFont.Edit,
                     Tooltip = "Rename",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,
@@ -155,7 +155,7 @@ public class EffectList : Widget
                 configButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Gear,
+                    Icon = IconFont.Settings,
                     Tooltip = "Configure",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,
@@ -164,7 +164,7 @@ public class EffectList : Widget
                 editButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.PencilSquare,
+                    Icon = IconFont.EditNote,
                     Tooltip = "Edit script",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,
@@ -174,7 +174,7 @@ public class EffectList : Widget
                 removeButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Times,
+                    Icon = IconFont.Close,
                     Tooltip = "Remove",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,
@@ -246,23 +246,23 @@ public class EffectList : Widget
             case EffectStatus.Loading:
             case EffectStatus.Configuring:
             case EffectStatus.Updating:
-                button.Icon = IconFont.Spinner;
+                button.Icon = IconFont.Sync;
                 button.Disabled = true;
                 break;
 
             case EffectStatus.ReloadPending:
-                button.Icon = IconFont.ChainBroken;
+                button.Icon = IconFont.LinkOff;
                 button.Disabled = true;
                 break;
 
             case EffectStatus.CompilationFailed:
             case EffectStatus.LoadingFailed:
             case EffectStatus.ExecutionFailed:
-                button.Icon = IconFont.Bug;
+                button.Icon = IconFont.BugReport;
                 break;
 
             case EffectStatus.Ready:
-                button.Icon = IconFont.Leaf;
+                button.Icon = IconFont.Eco;
                 button.Tooltip = "Open log";
                 break;
         }

@@ -3,7 +3,7 @@
 	{
 		mainFont: "Asap-Regular.ttf",
 		lightFont: "Asap-Light.ttf",
-		iconFont: "FontAwesome.ttf",
+		iconFont: "MaterialIcons.otf",
 		fontSizeLarge: 16,
 		fontSizeNormal: 14,
 		fontSizeMedium: 12,

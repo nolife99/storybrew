@@ -68,7 +68,7 @@ public class ContextMenu<T> : UiScreenLayer
                         cancelButton = new(WidgetManager)
                         {
                             StyleName = "icon",
-                            Icon = IconFont.TimesCircle,
+                            Icon = IconFont.Cancel,
                             AnchorFrom = BoxAlignment.Centre,
                             CanGrow = false
                         }

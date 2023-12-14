@@ -102,7 +102,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 mapB = new(WidgetManager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.FilesO,
+                    Icon = IconFont.ContentCopy,
                     Tooltip = "Change beatmap",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
@@ -110,7 +110,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 fitB = new(WidgetManager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Desktop,
+                    Icon = IconFont.FitScreen,
                     Tooltip = "Fit/Fill",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false,
@@ -119,7 +119,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 playB = new(WidgetManager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Play,
+                    Icon = IconFont.PlayArrow,
                     Tooltip = "Play/Pause\nShortcut: Space/K",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
@@ -178,7 +178,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 exportB = new(WidgetManager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.PuzzlePiece,
+                    Icon = IconFont.IosShare,
                     Tooltip = "Export to .osb\n(Right click to export once for each diff)",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
@@ -468,7 +468,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var time = (float)(pendingSeek ?? timeSource.Current);
 
         mapB.Disabled = proj.MapsetManager.BeatmapCount < 2;
-        playB.Icon = timeSource.Playing ? IconFont.Pause : IconFont.Play;
+        playB.Icon = timeSource.Playing ? IconFont.Pause : IconFont.PlayArrow;
         saveB.Disabled = !proj.Changed;
         exportB.Disabled = !proj.MapsetPathIsValid;
         audio.Volume = WidgetManager.Root.Opacity;
@@ -608,14 +608,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         switch (proj.EffectsStatus)
         {
             case EffectStatus.ExecutionFailed:
-                statusIcon.Icon = IconFont.Bug;
+                statusIcon.Icon = IconFont.BugReport;
                 statusMessage.Text = "An effect failed to execute.\nClick the Effects tab and the bug icon to see the error message.";
                 statusLayout.Pack(1024 - bottomRightLayout.Width - 24);
                 statusLayout.Displayed = true;
                 break;
 
             case EffectStatus.Updating:
-                statusIcon.Icon = IconFont.Spinner;
+                statusIcon.Icon = IconFont.Sync;
                 statusMessage.Text = "Updating effects...";
                 statusLayout.Pack(1024 - bottomRightLayout.Width - 24);
                 statusLayout.Displayed = true;

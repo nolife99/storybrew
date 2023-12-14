@@ -38,10 +38,10 @@ public sealed class TextDrawable : Drawable
         }
     }
 
-    public IconFont Icon 
+    public string Icon 
     { 
-        get => text.Length == 1 ? (IconFont)text[0] : 0; 
-        set => Text = ((char)value).ToString(); 
+        get => text; 
+        set => Text = value; 
     }
 
     string fontName = "Tahoma";
