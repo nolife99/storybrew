@@ -1,19 +1,22 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
-namespace StorybrewCommon.Subtitles
+namespace StorybrewCommon.Subtitles;
+
+///<summary> A font background effect. </summary>
+///<remarks> Creates a new <see cref="FontBackground"/> descriptor with information about a font background. </remarks>
+///<param name="color"> The coloring tint of the glow. </param>
+public class FontBackground(FontColor color = default) : FontEffect
 {
-    public class FontBackground : FontEffect
-    {
-        public Color4 Color = new Color4(0, 0, 0, 255);
+    ///<summary> The coloring tint of the glow. </summary>
+    public FontColor Color => color;
 
-        public bool Overlay => false;
-        public Vector2 Measure() => Vector2.Zero;
+    ///<inheritdoc/>
+    public bool Overlay => false;
 
-        public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
-        {
-            textGraphics.Clear(System.Drawing.Color.FromArgb(Color.ToArgb()));
-        }
-    }
+    ///<inheritdoc/>
+    public SizeF Measure => default;
+
+    ///<inheritdoc/>
+    public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y) => textGraphics.Clear(Color);
 }

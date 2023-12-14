@@ -1,29 +1,53 @@
 ﻿using StorybrewCommon.Storyboarding.CommandValues;
 
-namespace StorybrewCommon.Storyboarding.Commands
+namespace StorybrewCommon.Storyboarding.Commands;
+
+#pragma warning disable CS1591
+public class MoveCommand(OsbEasing easing, double startTime, double endTime, CommandPosition startValue, CommandPosition endValue) : Command<CommandPosition>("M", easing, startTime, endTime, startValue, endValue)
 {
-    public class MoveCommand : Command<CommandPosition>
+    public override CommandPosition ValueAtProgress(double progress) => StartValue + (EndValue - StartValue) * progress;
+    public override CommandPosition Midpoint(Command<CommandPosition> endCommand, double progress) => new(StartValue.X + (endCommand.EndValue.X - StartValue.X) * progress, StartValue.Y + (endCommand.EndValue.Y - StartValue.Y) * progress);
+
+    public override IFragmentableCommand GetFragment(double startTime, double endTime)
     {
-        public MoveCommand(OsbEasing easing, double startTime, double endTime, CommandPosition startValue, CommandPosition endValue)
-            : base("M", easing, startTime, endTime, startValue, endValue)
+        if (IsFragmentable)
         {
+            var startValue = ValueAtTime(startTime);
+            var endValue = ValueAtTime(endTime);
+            return new MoveCommand(Easing, startTime, endTime, startValue, endValue);
         }
+        return this;
+    }
+}
+public class MoveXCommand(OsbEasing easing, double startTime, double endTime, CommandDecimal startValue, CommandDecimal endValue) : Command<CommandDecimal>("MX", easing, startTime, endTime, startValue, endValue)
+{
+    public override CommandDecimal ValueAtProgress(double progress) => StartValue + (EndValue - StartValue) * progress;
+    public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, double progress) => StartValue + (endCommand.EndValue - StartValue) * progress;
 
-        public override CommandPosition ValueAtProgress(double progress)
-            => StartValue + (EndValue - StartValue) * progress;
-
-        public override CommandPosition Midpoint(Command<CommandPosition> endCommand, double progress)
-            => new CommandPosition(StartValue.X + (endCommand.EndValue.X - StartValue.X) * progress, StartValue.Y + (endCommand.EndValue.Y - StartValue.Y) * progress);
-
-        public override IFragmentableCommand GetFragment(double startTime, double endTime)
+    public override IFragmentableCommand GetFragment(double startTime, double endTime)
+    {
+        if (IsFragmentable)
         {
-            if (IsFragmentable)
-            {
-                var startValue = ValueAtTime(startTime);
-                var endValue = ValueAtTime(endTime);
-                return new MoveCommand(Easing, startTime, endTime, startValue, endValue);
-            }
-            return this;
+            var startValue = ValueAtTime(startTime);
+            var endValue = ValueAtTime(endTime);
+            return new MoveXCommand(Easing, startTime, endTime, startValue, endValue);
         }
+        return this;
+    }
+}
+public class MoveYCommand(OsbEasing easing, double startTime, double endTime, CommandDecimal startValue, CommandDecimal endValue) : Command<CommandDecimal>("MY", easing, startTime, endTime, startValue, endValue)
+{
+    public override CommandDecimal ValueAtProgress(double progress) => StartValue + (EndValue - StartValue) * progress;
+    public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, double progress) => StartValue + (endCommand.EndValue - StartValue) * progress;
+
+    public override IFragmentableCommand GetFragment(double startTime, double endTime)
+    {
+        if (IsFragmentable)
+        {
+            var startValue = ValueAtTime(startTime);
+            var endValue = ValueAtTime(endTime);
+            return new MoveYCommand(Easing, startTime, endTime, startValue, endValue);
+        }
+        return this;
     }
 }

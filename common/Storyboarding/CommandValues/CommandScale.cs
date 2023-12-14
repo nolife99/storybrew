@@ -1,90 +1,93 @@
-using OpenTK;
 using System;
+using System.Drawing;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 
-namespace StorybrewCommon.Storyboarding.CommandValues
+namespace StorybrewCommon.Storyboarding.CommandValues;
+
+///<summary> Base structure for scale commands. </summary>
+[Serializable] public readonly struct CommandScale : 
+    CommandValue, IEquatable<CommandScale>,
+    IAdditionOperators<CommandScale, CommandScale, CommandScale>,
+    ISubtractionOperators<CommandScale, CommandScale, CommandScale>,
+    IMultiplyOperators<CommandScale, CommandScale, CommandScale>,
+    IDivisionOperators<CommandScale, CommandScale, CommandScale>
 {
-    [Serializable]
-    public struct CommandScale : CommandValue, IEquatable<CommandScale>
-    {
-        public static CommandScale One = new CommandScale(1, 1);
+    readonly Vector2 internalVec;
 
-        private readonly CommandDecimal x;
-        private readonly CommandDecimal y;
+    ///<summary> Represents a scale vector in which all values are 1 (one). </summary>
+    public static readonly CommandScale One = new(1, 1);
 
-        public CommandDecimal X => x;
-        public CommandDecimal Y => y;
+    ///<summary> Gets the X value of this instance. </summary>
+    public readonly CommandDecimal X => internalVec.X;
 
-        public CommandScale(CommandDecimal x, CommandDecimal y)
-        {
-            this.x = x;
-            this.y = y;
-        }
+    ///<summary> Gets the Y value of this instance. </summary>
+    public readonly CommandDecimal Y => internalVec.Y;
 
-        public CommandScale(CommandDecimal value)
-            : this(value, value)
-        {
-        }
+    ///<summary> Constructs a <see cref="CommandScale"/> from an X and Y value. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CommandScale(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
 
-        public CommandScale(Vector2 vector)
-            : this(vector.X, vector.Y)
-        {
-        }
+    ///<summary> Constructs a <see cref="CommandScale"/> from a value. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CommandScale(CommandDecimal value) : this(value, value) { }
 
-        public bool Equals(CommandScale other)
-            => x.Equals(other.x) && y.Equals(other.y);
+    ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CommandScale(Vector2 vector) => internalVec = vector;
 
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj))
-                return false;
+    ///<inheritdoc/>
+    public readonly bool Equals(CommandScale other) => internalVec == other.internalVec;
 
-            return obj is CommandScale && Equals((CommandScale)obj);
-        }
+    ///<inheritdoc/>
+    public override readonly bool Equals(object obj) => obj is CommandScale scale && Equals(scale);
 
-        public override int GetHashCode()
-            => (x.GetHashCode() * 397) ^ y.GetHashCode();
+    ///<inheritdoc/>
+    public override readonly int GetHashCode() => internalVec.GetHashCode();
 
-        public string ToOsbString(ExportSettings exportSettings)
-            => $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}";
+    ///<summary> Converts this instance to a .osb string. </summary>
+    public readonly string ToOsbString(ExportSettings exportSettings) => $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}";
 
-        public override string ToString() => ToOsbString(ExportSettings.Default);
+    ///<summary> Converts this instance to a string. </summary>
+    public override readonly string ToString() => ToOsbString(ExportSettings.Default);
 
-        public float DistanceFrom(object obj)
-        {
-            var other = (CommandScale)obj;
-            var diffX = X.DistanceFrom(other.X);
-            var diffY = Y.DistanceFrom(other.Y);
-            return (float)Math.Sqrt((diffX * diffX) + (diffY * diffY));
-        }
+#pragma warning disable CS1591
+    public static CommandScale operator +(CommandScale left, CommandScale right) => left.internalVec + right.internalVec;
+    public static CommandScale operator -(CommandScale left, CommandScale right) => left.internalVec - right.internalVec;
+    public static CommandScale operator *(CommandScale left, CommandScale right) => left.internalVec * right.internalVec;
+    public static CommandScale operator *(CommandScale left, CommandDecimal right) => new(left.internalVec.X * right, left.internalVec.Y * right);
+    public static CommandScale operator /(CommandScale left, CommandScale right) => left.internalVec / right.internalVec;
+    public static CommandScale operator /(CommandScale left, CommandDecimal right) => new(left.internalVec.X / right, left.internalVec.Y / right);
+    public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
+    public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
 
-        public static CommandScale operator +(CommandScale left, CommandScale right)
-            => new CommandScale(left.X + right.X, left.Y + right.Y);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector.X, vector.Y);
 
-        public static CommandScale operator -(CommandScale left, CommandScale right)
-            => new CommandScale(left.X - right.X, left.Y - right.Y);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator CommandScale(osuTK.Vector2d vector) => new(vector.X, vector.Y);
 
-        public static CommandScale operator *(CommandScale left, CommandScale right)
-            => new CommandScale(left.X * right.X, left.Y * right.Y);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator CommandScale(SizeF vector) => new(vector.Width, vector.Height);
 
-        public static CommandScale operator *(CommandScale left, double right)
-            => new CommandScale(left.X * right, left.Y * right);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator CommandScale(Vector2 vector) => new(vector);
 
-        public static CommandScale operator *(double left, CommandScale right)
-            => right * left;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator CommandScale(CommandPosition position) => new(position.X, position.Y);
 
-        public static CommandScale operator /(CommandScale left, double right)
-            => new CommandScale(left.X / right, left.Y / right);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator osuTK.Vector2(CommandScale obj) => new(obj.X, obj.Y);
 
-        public static bool operator ==(CommandScale left, CommandScale right)
-            => left.Equals(right);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator osuTK.Vector2d(CommandScale obj) => new(obj.X, obj.Y);
 
-        public static bool operator !=(CommandScale left, CommandScale right)
-            => !left.Equals(right);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator SizeF(CommandScale vector) => new(vector.X, vector.Y);
 
-        public static implicit operator CommandScale(Vector2 vector)
-            => new CommandScale(vector);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Vector2(CommandScale obj) => obj.internalVec;
 
-        public static implicit operator Vector2(CommandScale obj)
-            => new Vector2(obj.x, obj.y);
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
 }

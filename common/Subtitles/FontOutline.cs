@@ -1,40 +1,40 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
-using System.Drawing;
+﻿using System.Drawing;
+using System.Drawing.Drawing2D;
 
-namespace StorybrewCommon.Subtitles
+namespace StorybrewCommon.Subtitles;
+
+///<summary> A font outline effect. </summary>
+///<remarks> Creates a new <see cref="FontOutline"/> descriptor with information about an outlining effect. </remarks>
+///<param name="thickness"> The thickness of the outline. </param>
+///<param name="color"> The color of the outline. </param>
+public class FontOutline(int thickness = 1, FontColor color = default) : FontEffect
 {
-    public class FontOutline : FontEffect
+    const float diagonal = 1.41421356237f;
+
+    ///<summary> The thickness of the outline. </summary>
+    public int Thickness => thickness;
+
+    ///<summary> The color of the outline. </summary>
+    public FontColor Color => color;
+
+    ///<inheritdoc/>
+    public bool Overlay => false;
+
+    ///<inheritdoc/>
+    public SizeF Measure => new(Thickness * diagonal * 2, Thickness * diagonal * 2);
+
+    ///<inheritdoc/>
+    public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
-        private const float diagonal = 1.41421356237f;
+        if (Thickness < 1) return;
 
-        public int Thickness = 1;
-        public Color4 Color = new Color4(0, 0, 0, 100);
+        using var outlined = (GraphicsPath)path.Clone();
+        using (Pen outlinePen = new(Color)) outlined.Widen(outlinePen);
 
-        public bool Overlay => false;
-        public Vector2 Measure() => new Vector2(Thickness * diagonal * 2);
-
-        public void Draw(Bitmap bitmap, Graphics textGraphics, Font font, StringFormat stringFormat, string text, float x, float y)
+        using Pen pen = new(Color, thickness)
         {
-            if (Thickness < 1)
-                return;
-
-            using (var brush = new SolidBrush(System.Drawing.Color.FromArgb(Color.ToArgb())))
-                for (var i = 1; i <= Thickness; i++)
-                    if (i % 2 == 0)
-                    {
-                        textGraphics.DrawString(text, font, brush, x - i * diagonal, y, stringFormat);
-                        textGraphics.DrawString(text, font, brush, x, y - i * diagonal, stringFormat);
-                        textGraphics.DrawString(text, font, brush, x + i * diagonal, y, stringFormat);
-                        textGraphics.DrawString(text, font, brush, x, y + i * diagonal, stringFormat);
-                    }
-                    else
-                    {
-                        textGraphics.DrawString(text, font, brush, x - i, y - i, stringFormat);
-                        textGraphics.DrawString(text, font, brush, x - i, y + i, stringFormat);
-                        textGraphics.DrawString(text, font, brush, x + i, y + i, stringFormat);
-                        textGraphics.DrawString(text, font, brush, x + i, y - i, stringFormat);
-                    }
-        }
+            LineJoin = LineJoin.Round
+        };
+        textGraphics.DrawPath(pen, outlined);
     }
 }

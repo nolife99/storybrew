@@ -1,8 +1,8 @@
-namespace StorybrewCommon.Storyboarding.CommandValues
+namespace StorybrewCommon.Storyboarding.CommandValues;
+
+#pragma warning disable CS1591
+public interface CommandValue
 {
-    public interface CommandValue
-    {
-        float DistanceFrom(object obj);
-        string ToOsbString(ExportSettings exportSettings);
-    }
+    string ToOsbString(ExportSettings exportSettings);
+    int GetHashCode();
 }

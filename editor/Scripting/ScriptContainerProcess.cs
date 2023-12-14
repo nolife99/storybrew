@@ -1,65 +1,49 @@
-﻿using StorybrewCommon.Scripting;
-using StorybrewEditor.Processes;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using StorybrewCommon.Scripting;
+using StorybrewEditor.Processes;
 
-namespace StorybrewEditor.Scripting
+namespace StorybrewEditor.Scripting;
+
+public class ScriptContainerProcess<TScript>(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies) : ScriptContainerBase<TScript>(scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies) where TScript : Script
 {
-    public class ScriptContainerProcess<TScript> : ScriptContainerBase<TScript>
-        where TScript : Script
+    RemoteProcessWorkerContainer workerProcess;
+
+    protected override ScriptProvider<TScript> LoadScript()
     {
-        private RemoteProcessWorkerContainer workerProcess;
-
-        public ScriptContainerProcess(ScriptManager<TScript> manager, string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
-            : base(manager, scriptTypeName, mainSourcePath, libraryFolder, compiledScriptsPath, referencedAssemblies)
+        ObjectDisposedException.ThrowIf(disposed, this);
+        try
         {
-        }
+            workerProcess?.Dispose();
+            workerProcess = new();
 
-        protected override ScriptProvider<TScript> LoadScript()
+            var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
+            scriptProvider.Initialize(ScriptCompiler.Compile(null, SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies), ScriptTypeName);
+            return scriptProvider;
+        }
+        catch (ScriptCompilationException)
         {
-            if (disposedValue) throw new ObjectDisposedException(nameof(ScriptContainerAppDomain<TScript>));
-
-            try
-            {
-                var assemblyPath = Path.Combine(CompiledScriptsPath, $"{Guid.NewGuid().ToString()}.dll");
-                ScriptCompiler.Compile(SourcePaths, assemblyPath, ReferencedAssemblies);
-
-                workerProcess?.Dispose();
-                workerProcess = new RemoteProcessWorkerContainer();
-
-                var scriptProvider = workerProcess.Worker.CreateScriptProvider<TScript>();
-                scriptProvider.Initialize(assemblyPath, ScriptTypeName);
-
-                return scriptProvider;
-            }
-            catch (ScriptCompilationException)
-            {
-                throw;
-            }
-            catch (Exception e)
-            {
-                throw CreateScriptLoadingException(e);
-            }
+            throw;
         }
-
-        #region IDisposable Support
-
-        private bool disposedValue = false;
-        protected override void Dispose(bool disposing)
+        catch (Exception e)
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    workerProcess?.Dispose();
-                }
-                workerProcess = null;
-                disposedValue = true;
-            }
-            base.Dispose(disposing);
+            throw CreateScriptLoadingException(e);
         }
-
-        #endregion
     }
+
+    #region IDisposable Support
+
+    bool disposed;
+    protected override void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing) workerProcess?.Dispose();
+            workerProcess = null;
+            disposed = true;
+        }
+        base.Dispose(disposing);
+    }
+
+    #endregion
 }

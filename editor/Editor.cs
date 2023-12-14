@@ -1,4 +1,7 @@
-﻿using BrewLib.Data;
+﻿using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using BrewLib.Data;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
@@ -10,270 +13,231 @@ using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
-using OpenTK;
-using OpenTK.Graphics.OpenGL;
+using osuTK;
+using osuTK.Graphics.OpenGL;
 using StorybrewEditor.ScreenLayers;
-using System;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
-using System.Reflection;
 
-namespace StorybrewEditor
+namespace StorybrewEditor;
+
+public sealed class Editor(GameWindow window) : IDisposable
 {
-    public class Editor : IDisposable
+    public GameWindow Window => window;
+    public readonly System.Windows.Forms.IWin32Window FormsWindow = new DialogParent();
+
+    readonly FrameClock clock = new();
+    public FrameTimeSource TimeSource => clock;
+
+    public bool IsFixedRateUpdate { get; set; }
+
+    DrawContext drawContext;
+    public ResourceContainer ResourceContainer;
+    public Skin Skin;
+    public ScreenLayerManager ScreenLayerManager;
+    public InputManager InputManager;
+
+    public void Initialize(ScreenLayer initialLayer = null)
     {
-        public GameWindow Window { get; }
-        public readonly FormsWindow FormsWindow;
+        ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
+        DrawState.Initialize(ResourceContainer, Window.Width, Window.Height);
 
-        private readonly FrameClock clock = new FrameClock();
-        public FrameTimeSource TimeSource => clock;
+        drawContext = new();
+        drawContext.Register(this);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
+        drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
+        drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
 
-        public bool IsFixedRateUpdate { get; private set; }
-
-        private DrawContext drawContext;
-
-        public ResourceContainer ResourceContainer;
-        public Skin Skin;
-        public ScreenLayerManager ScreenLayerManager;
-        public InputManager InputManager;
-
-        public Editor(GameWindow window)
+        try
         {
-            Window = window;
-            FormsWindow = new FormsWindow(window.GetWindowHandle());
-        }
-
-        public void Initialize(ScreenLayer initialLayer = null)
-        {
-            ResourceContainer = new AssemblyResourceContainer(Assembly.GetEntryAssembly(), $"{nameof(StorybrewEditor)}.Resources", "resources");
-
-            DrawState.Initialize(ResourceContainer, Window.Width, Window.Height);
-            drawContext = new DrawContext();
-            drawContext.Register(this, false);
-            drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
-            drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
-            drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
-
-            try
+            var brewLibAssembly = typeof(Drawable).Assembly;
+            Skin = new(drawContext.Get<TextureContainer>())
             {
-                var brewLibAssembly = Assembly.GetAssembly(typeof(Drawable));
-                Skin = new Skin(drawContext.Get<TextureContainer>())
-                {
-                    ResolveDrawableType = (drawableTypeName) =>
-                        brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}", true, true),
-                    ResolveWidgetType = (widgetTypeName) =>
-                        Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
-                        brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true, true),
-                    ResolveStyleType = (styleTypeName) =>
-                        Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ??
-                        brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true),
-                };
-                Skin.Load("skin.json", ResourceContainer);
-            }
-            catch (Exception e)
-            {
-                Trace.WriteLine($"Failed to load skin: {e}");
-                Skin = new Skin(drawContext.Get<TextureContainer>());
-            }
+                ResolveDrawableType = drawableTypeName => brewLibAssembly.GetType(
+                    $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}", true, true),
 
-            var inputDispatcher = new InputDispatcher();
-            InputManager = new InputManager(Window, inputDispatcher);
+                ResolveWidgetType = widgetTypeName => Type.GetType(
+                    $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
+                    brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true, true),
 
-            ScreenLayerManager = new ScreenLayerManager(Window, clock, this);
-            inputDispatcher.Add(createOverlay(ScreenLayerManager));
-            inputDispatcher.Add(ScreenLayerManager.InputHandler);
-
-            Restart(initialLayer);
-
-            Window.Resize += window_Resize;
-            Window.Closing += window_Closing;
-
-            resizeToWindow();
-        }
-
-        public void Restart(ScreenLayer initialLayer = null, string message = null)
-        {
-            initializeOverlay();
-            ScreenLayerManager.Set(initialLayer ?? new StartMenu());
-            if (message != null) ScreenLayerManager.ShowMessage(message);
-        }
-
-        #region Overlay
-
-        private WidgetManager overlay;
-        private CameraOrtho overlayCamera;
-        private LinearLayout overlayTop;
-        private LinearLayout altOverlayTop;
-        private Slider volumeSlider;
-        private Label statsLabel;
-
-        private WidgetManager createOverlay(ScreenLayerManager screenLayerManager)
-        {
-            return overlay = new WidgetManager(screenLayerManager, InputManager, Skin)
-            {
-                Camera = overlayCamera = new CameraOrtho(),
+                ResolveStyleType = styleTypeName => Type.GetType(
+                    $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ??
+                    brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true),
             };
+            Skin.Load("skin.json", ResourceContainer);
+        }
+        catch (Exception e)
+        {
+            Trace.WriteLine($"Failed to load skin: {e}");
+            Skin = new(drawContext.Get<TextureContainer>());
         }
 
-        private void initializeOverlay()
+        InputDispatcher inputDispatcher = new();
+        InputManager = new(Window, inputDispatcher);
+
+        ScreenLayerManager = new(Window, clock, this);
+        inputDispatcher.Add(createOverlay(ScreenLayerManager));
+        inputDispatcher.Add(ScreenLayerManager.InputHandler);
+
+        Restart(initialLayer);
+
+        Window.Resize += window_Resize;
+        Window.Closing += window_Closing;
+
+        resizeToWindow();
+    }
+    public void Restart(ScreenLayer initialLayer = null, string message = null)
+    {
+        initializeOverlay();
+        ScreenLayerManager.Set(initialLayer ?? new StartMenu());
+        if (message is not null) ScreenLayerManager.ShowMessage(message);
+    }
+
+    #region Overlay
+
+    WidgetManager overlay;
+    CameraOrtho overlayCamera;
+    LinearLayout overlayTop, altOverlayTop;
+    Slider volumeSlider;
+    Label statsLabel;
+
+    WidgetManager createOverlay(ScreenLayerManager screenLayerManager) => overlay = new(screenLayerManager, InputManager, Skin)
+    {
+        Camera = overlayCamera = new()
+    };
+
+    void initializeOverlay()
+    {
+        overlay.Root.ClearWidgets();
+        overlay.Root.Add(overlayTop = new(overlay)
         {
-            overlay.Root.ClearWidgets();
-
-            overlay.Root.Add(overlayTop = new LinearLayout(overlay)
+            AnchorTarget = overlay.Root,
+            AnchorFrom = BoxAlignment.Top,
+            AnchorTo = BoxAlignment.Top,
+            Horizontal = true,
+            Opacity = 0,
+            Displayed = false,
+            Children = new Widget[]
             {
-                AnchorTarget = overlay.Root,
-                AnchorFrom = BoxAlignment.Top,
-                AnchorTo = BoxAlignment.Top,
-                Horizontal = true,
-                Opacity = 0,
-                Displayed = false,
-                Children = new Widget[]
+                statsLabel = new(overlay)
                 {
-                    statsLabel = new Label(overlay)
-                    {
-                        StyleName = "small",
-                        AnchorTo = BoxAlignment.Centre,
-                        Displayed = Program.Settings.ShowStats,
-                    },
+                    StyleName = "small",
+                    AnchorTarget = overlay.Root,
+                    AnchorTo = BoxAlignment.TopLeft,
+                    Displayed = Program.Settings.ShowStats
                 }
-            });
-            overlayTop.Pack(1024, 16);
-
-            overlay.Root.Add(altOverlayTop = new LinearLayout(overlay)
-            {
-                AnchorTarget = overlay.Root,
-                AnchorFrom = BoxAlignment.Top,
-                AnchorTo = BoxAlignment.Top,
-                Horizontal = true,
-                Opacity = 0,
-                Displayed = false,
-                Children = new Widget[]
-                {
-                    new Label(overlay)
-                    {
-                        StyleName = "icon",
-                        Icon = IconFont.VolumeUp,
-                        AnchorTo = BoxAlignment.Centre,
-                    },
-                    volumeSlider = new Slider(overlay)
-                    {
-                        Step = 0.01f,
-                        AnchorTo = BoxAlignment.Centre,
-                    },
-                }
-            });
-            altOverlayTop.Pack(0, 0, 1024);
-
-            Program.Settings.Volume.Bind(volumeSlider, () => volumeSlider.Tooltip = $"Volume: {volumeSlider.Value:P0}");
-            overlay.Root.OnMouseWheel += (sender, e) =>
-            {
-                if (!InputManager.AltOnly)
-                    return false;
-
-                volumeSlider.Value += e.DeltaPrecise * 0.05f;
-                return true;
-            };
-        }
-
-        private void updateOverlay()
-        {
-            if (IsFixedRateUpdate)
-            {
-                var mousePosition = overlay.MousePosition;
-                var bounds = altOverlayTop.Bounds;
-
-                var showAltOverlayTop = InputManager.AltOnly || (altOverlayTop.Displayed && bounds.Top < mousePosition.Y && mousePosition.Y < bounds.Bottom);
-
-                var altOpacity = altOverlayTop.Opacity;
-                var targetOpacity = showAltOverlayTop ? 1f : 0f;
-                if (Math.Abs(altOpacity - targetOpacity) <= 0.07f) altOpacity = targetOpacity;
-                else altOpacity = MathHelper.Clamp(altOpacity + (altOpacity < targetOpacity ? 0.07f : -0.07f), 0, 1);
-
-                overlayTop.Opacity = 1 - altOpacity;
-                overlayTop.Displayed = altOpacity < 1;
-
-                altOverlayTop.Opacity = altOpacity;
-                altOverlayTop.Displayed = altOpacity > 0;
-
-                if (statsLabel.Visible)
-                    statsLabel.Text = Program.Stats;
             }
-        }
+        });
+        overlayTop.Pack(1024, 16);
 
-        #endregion
-
-        public void Dispose()
+        overlay.Root.Add(altOverlayTop = new(overlay)
         {
-            Window.Resize -= window_Resize;
-            Window.Closing -= window_Closing;
+            AnchorTarget = overlay.Root,
+            AnchorFrom = BoxAlignment.Top,
+            AnchorTo = BoxAlignment.Top,
+            Horizontal = true,
+            Opacity = 0,
+            Displayed = false,
+            Children = new Widget[]
+            {
+                new Label(overlay)
+                {
+                    StyleName = "icon",
+                    Icon = IconFont.VolumeUp,
+                    AnchorTo = BoxAlignment.Centre
+                },
+                volumeSlider = new(overlay)
+                {
+                    Step = .01f,
+                    AnchorTo = BoxAlignment.Centre
+                }
+            }
+        });
+        altOverlayTop.Pack(0, 0, 1024);
 
-            ScreenLayerManager.Dispose();
-            overlay.Dispose();
-            overlayCamera.Dispose();
-
-            InputManager.Dispose();
-            drawContext.Dispose();
-
-            Skin.Dispose();
-
-            DrawState.Cleanup();
-        }
-
-        public void Update(double time, bool isFixedRateUpdate)
+        Program.Settings.Volume.Bind(volumeSlider, () => volumeSlider.Tooltip = $"Volume: {volumeSlider.Value:P0}");
+        overlay.Root.OnMouseWheel += (sender, e) =>
         {
-            IsFixedRateUpdate = isFixedRateUpdate;
-            clock.AdvanceFrameTo(time);
+            if (!InputManager.AltOnly) return false;
 
-            updateOverlay();
-            ScreenLayerManager.Update(IsFixedRateUpdate);
-        }
-
-        public void Draw(double tween)
+            volumeSlider.Value += e.DeltaPrecise * .05f;
+            return true;
+        };
+    }
+    void updateOverlay()
+    {
+        if (IsFixedRateUpdate)
         {
-            GL.ClearColor(ScreenLayerManager.BackgroundColor);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+            var mousePosition = overlay.MousePosition;
+            var bounds = altOverlayTop.Bounds;
 
-            ScreenLayerManager.Draw(drawContext, tween);
-            overlay.Draw(drawContext);
-            DrawState.CompleteFrame();
-        }
+            var showAltOverlayTop = InputManager.AltOnly || (altOverlayTop.Displayed && bounds.Top < mousePosition.Y && mousePosition.Y < bounds.Bottom);
 
-        public string GetStats()
-        {
-            var spriteRenderer = drawContext.Get<QuadRenderer>();
+            var altOpacity = altOverlayTop.Opacity;
+            var targetOpacity = showAltOverlayTop ? 1f : 0;
+            if (Math.Abs(altOpacity - targetOpacity) <= .07) altOpacity = targetOpacity;
+            else altOpacity = Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
 
-            return string.Format("Sprite - t:{0}k f:{1:0.0}k b:{2} w:{3} lb:{4}",
-                spriteRenderer.RenderedQuadCount / 1000, spriteRenderer.FlushedBufferCount / 1000f, spriteRenderer.DiscardedBufferCount, spriteRenderer.BufferWaitCount, spriteRenderer.LargestBatch);
-        }
+            overlayTop.Opacity = 1 - altOpacity;
+            overlayTop.Displayed = altOpacity < 1;
 
-        private void window_Resize(object sender, EventArgs e)
-            => resizeToWindow();
+            altOverlayTop.Opacity = altOpacity;
+            altOverlayTop.Displayed = altOpacity > 0;
 
-        private void window_Closing(object sender, CancelEventArgs e)
-            => e.Cancel = ScreenLayerManager.Close();
-
-        private void resizeToWindow()
-        {
-            var width = Window.Width;
-            var height = Window.Height;
-            if (width == 0 || height == 0) return;
-
-            DrawState.Viewport = new Rectangle(0, 0, width, height);
-
-            overlayCamera.VirtualHeight = (int)(height * Math.Max(1024f / width, 768f / height));
-            overlayCamera.VirtualWidth = width * overlayCamera.VirtualHeight / height;
-            overlay.Size = new Vector2(overlayCamera.VirtualWidth, overlayCamera.VirtualHeight);
+            if (statsLabel.Visible) statsLabel.Text = Program.Stats;
         }
     }
 
-    public class FormsWindow : System.Windows.Forms.IWin32Window
-    {
-        public IntPtr Handle { get; }
+    #endregion
 
-        public FormsWindow(IntPtr handle)
-        {
-            Handle = handle;
-        }
+    public void Dispose()
+    {
+        Window.Resize -= window_Resize;
+        Window.Closing -= window_Closing;
+
+        ScreenLayerManager.Dispose();
+        overlay.Dispose();
+        overlayCamera.Dispose();
+        InputManager.Dispose();
+        drawContext.Dispose();
+        Skin.Dispose();
+        DrawState.Cleanup();
+    }
+    public void Update(double time, bool isFixedRateUpdate = true)
+    {
+        IsFixedRateUpdate = isFixedRateUpdate;
+        clock.AdvanceFrameTo(time);
+
+        updateOverlay();
+        ScreenLayerManager.Update(IsFixedRateUpdate);
+    }
+    public void Draw(double tween)
+    {
+        GL.ClearColor(ScreenLayerManager.BackgroundColor);
+        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+        ScreenLayerManager.Draw(drawContext, tween);
+        overlay.Draw(drawContext);
+        DrawState.CompleteFrame();
+    }
+
+    void window_Resize(object sender, EventArgs e) => resizeToWindow();
+    void window_Closing(object sender, CancelEventArgs e) => e.Cancel = ScreenLayerManager.Close();
+    void resizeToWindow()
+    {
+        var width = Window.Width;
+        var height = Window.Height;
+        if (width == 0 || height == 0) return;
+
+        DrawState.Viewport = new(0, 0, width, height);
+
+        var virtualHeight = height * Math.Max(1024f / width, 768f / height);
+        overlayCamera.VirtualHeight = (int)virtualHeight;
+
+        var virtualWidth = width * virtualHeight / height;
+        overlayCamera.VirtualWidth = (int)virtualWidth;
+        overlay.Size = new(virtualWidth, virtualHeight);
+    }
+    class DialogParent : System.Windows.Forms.IWin32Window
+    {
+        public nint Handle => Native.MainWindowHandle;
     }
 }

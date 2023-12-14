@@ -1,58 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
+using BrewLib.Util;
 
-namespace StorybrewCommon.Subtitles.Parsers
+namespace StorybrewCommon.Subtitles.Parsers;
+
+///<summary> Parsing methods for .sbv subtitle files. </summary>
+public class SbvParser : SubtitleParser
 {
-    // YouTube's subtitle format
-    public class SbvParser
+    ///<inheritdoc/>
+    public SubtitleSet Parse(string path)
     {
-        public SubtitleSet Parse(string path)
-        {
-            using (var stream = BrewLib.Util.Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
-                return Parse(stream);
-        }
-
-        public SubtitleSet Parse(Stream stream)
-        {
-            var lines = new List<SubtitleLine>();
-            foreach (var block in parseBlocks(stream))
-            {
-                var blockLines = block.Split('\n');
-                var timestamps = blockLines[0].Split(',');
-                var startTime = parseTimestamp(timestamps[0]);
-                var endTime = parseTimestamp(timestamps[1]);
-                var text = string.Join("\n", blockLines, 1, blockLines.Length - 1);
-                lines.Add(new SubtitleLine(startTime, endTime, text));
-            }
-            return new SubtitleSet(lines);
-        }
-
-        private IEnumerable<string> parseBlocks(Stream stream)
-        {
-            using (var reader = new StreamReader(stream))
-            {
-                var sb = new StringBuilder();
-
-                string line;
-                while ((line = reader.ReadLine()) != null)
-                {
-                    if (string.IsNullOrEmpty(line.Trim()))
-                    {
-                        var block = sb.ToString().Trim();
-                        if (block.Length > 0) yield return block;
-                        sb.Clear();
-                    }
-                    else sb.AppendLine(line);
-                }
-
-                var endBlock = sb.ToString().Trim();
-                if (endBlock.Length > 0) yield return endBlock;
-            }
-        }
-
-        private double parseTimestamp(string timestamp)
-            => TimeSpan.Parse(timestamp).TotalMilliseconds;
+        using var stream = Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+        return Parse(stream);
     }
+
+    ///<inheritdoc/>
+    public SubtitleSet Parse(Stream stream)
+    {
+        HashSet<SubtitleLine> lines = [];
+        foreach (var block in parseBlocks(stream))
+        {
+            var blockLines = block.Split('\n');
+            var timestamps = blockLines[0].Split(',');
+            var startTime = parseTimestamp(timestamps[0]);
+            var endTime = parseTimestamp(timestamps[1]);
+            var text = string.Join("\n", blockLines, 1, blockLines.Length - 1);
+            lines.Add(new(startTime, endTime, text));
+        }
+        return new(lines);
+    }
+
+    static IEnumerable<string> parseBlocks(Stream stream)
+    {
+        using StreamReader reader = new(stream);
+        StringBuilder sb = new();
+
+        string line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            if (string.IsNullOrEmpty(line.Trim()))
+            {
+                var block = sb.ToString().Trim();
+                if (block.Length > 0) yield return block;
+                sb.Clear();
+            }
+            else sb.AppendLine(line);
+        }
+
+        var endBlock = sb.ToString().Trim();
+        if (endBlock.Length > 0) yield return endBlock;
+    }
+
+    static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp, CultureInfo.InvariantCulture).TotalMilliseconds;
 }

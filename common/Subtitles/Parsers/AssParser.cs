@@ -1,49 +1,48 @@
-﻿using StorybrewCommon.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using StorybrewCommon.Util;
 
-namespace StorybrewCommon.Subtitles.Parsers
+namespace StorybrewCommon.Subtitles.Parsers;
+
+///<summary> Parsing methods for .ass subtitle files. </summary>
+public class AssParser : SubtitleParser
 {
-    public class AssParser
+    ///<inheritdoc/>
+    public SubtitleSet Parse(string path)
     {
-        public SubtitleSet Parse(string path)
-        {
-            using (var stream = BrewLib.Util.Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)))
-                return Parse(stream);
-        }
+        using var stream = BrewLib.Util.Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)); 
+        return Parse(stream);
+    }
 
-        public SubtitleSet Parse(Stream stream)
+    ///<inheritdoc/>
+    public SubtitleSet Parse(Stream stream)
+    {
+        HashSet<SubtitleLine> lines = [];
+        using (StreamReader reader = new(stream, Encoding.ASCII)) reader.ParseSections(sectionName =>
         {
-            var lines = new List<SubtitleLine>();
-            using (var reader = new StreamReader(stream, Encoding.UTF8))
-                reader.ParseSections(sectionName =>
+            switch (sectionName)
+            {
+                case "Events": reader.ParseKeyValueSection((key, value) =>
                 {
-                    switch (sectionName)
+                    switch (key)
                     {
-                        case "Events":
-                            reader.ParseKeyValueSection((key, value) =>
-                            {
-                                switch (key)
-                                {
-                                    case "Dialogue":
-                                        var arguments = value.Split(',');
-                                        var startTime = parseTimestamp(arguments[1]);
-                                        var endTime = parseTimestamp(arguments[2]);
-                                        var text = string.Join("\n", string.Join(",", arguments.Skip(9)).Split(new string[] { "\\N" }, StringSplitOptions.None));
-                                        lines.Add(new SubtitleLine(startTime, endTime, text));
-                                        break;
-                                }
-                            });
-                            break;
+                        case "Dialogue":
+                            var arguments = value.Split(',');
+                            var startTime = parseTimestamp(arguments[1]);
+                            var endTime = parseTimestamp(arguments[2]);
+                            var text = string.Join("\n", string.Join(",", arguments.Skip(9)).Split("\\N", StringSplitOptions.None));
+                            lines.Add(new(startTime, endTime, text)); break;
                     }
                 });
-            return new SubtitleSet(lines);
-        }
-
-        private double parseTimestamp(string timestamp)
-            => TimeSpan.Parse(timestamp).TotalMilliseconds;
+                break;
+            }
+        });
+        return new(lines);
     }
+
+    static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp, CultureInfo.InvariantCulture).TotalMilliseconds;
 }

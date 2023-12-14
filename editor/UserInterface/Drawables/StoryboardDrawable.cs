@@ -1,65 +1,33 @@
-﻿using OpenTK;
+﻿using System.Drawing;
+using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
-using StorybrewEditor.Storyboarding;
 using BrewLib.Graphics.Renderers;
-using OpenTK.Graphics;
+using StorybrewEditor.Storyboarding;
 
-namespace StorybrewEditor.UserInterface.Drawables
+namespace StorybrewEditor.UserInterface.Drawables;
+
+public sealed class StoryboardDrawable(Project project) : Drawable
 {
-    public class StoryboardDrawable : Drawable
+    public Vector2 MinSize => Vector2.Zero;
+    public Vector2 PreferredSize => new(854, 480);
+
+    readonly RenderStates linesRenderStates = new();
+
+    public double Time;
+    public bool Clip = true, UpdateFrameStats;
+
+    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity = 1)
     {
-        public Vector2 MinSize => Vector2.Zero;
-        public Vector2 PreferredSize => new Vector2(854, 480);
-
-        private readonly Project project;
-        private readonly RenderStates linesRenderStates = new RenderStates();
-
-        public double Time;
-        public bool Clip = true;
-        public bool UpdateFrameStats;
-
-        public StoryboardDrawable(Project project)
+        project.DisplayTime = Time;
+        if (Clip) using (DrawState.Clip(bounds, camera)) project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
+        else
         {
-            this.project = project;
+            project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
+            DrawState.Prepare(drawContext.Get<LineRenderer>(), camera, linesRenderStates).DrawSquare(new(bounds.Left, bounds.Top, 0), new Vector3(bounds.Right, bounds.Bottom, 0), Color.Black);
         }
-
-        public void Draw(DrawContext drawContext, Camera camera, Box2 bounds, float opacity = 1)
-        {
-            project.DisplayTime = Time;
-            if (Clip)
-            {
-                using (DrawState.Clip(bounds, camera))
-                    project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
-            }
-            else
-            {
-                project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
-                DrawState.Prepare(drawContext.Get<LineRenderer>(), camera, linesRenderStates)
-                    .DrawSquare(new Vector3(bounds.Left, bounds.Top, 0), new Vector3(bounds.Right, bounds.Bottom, 0), Color4.Black);
-            }
-        }
-
-        #region IDisposable Support
-
-        private bool disposedValue = false;
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                }
-                disposedValue = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        #endregion
     }
+
+    public void Dispose() { }
 }

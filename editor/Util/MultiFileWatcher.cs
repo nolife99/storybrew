@@ -2,143 +2,119 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using BrewLib.Util;
 
-namespace StorybrewEditor.Util
+namespace StorybrewEditor.Util;
+
+public sealed class MultiFileWatcher : IDisposable
 {
-    public class MultiFileWatcher : IDisposable
+    readonly Dictionary<string, FileSystemWatcher> folderWatchers = [], recursiveFolderWatchers = [];
+    HashSet<string> watchedFilenames = [];
+    readonly ThrottledActionScheduler scheduler = new();
+
+    public IEnumerable<string> WatchedFilenames => watchedFilenames;
+
+    public event FileSystemEventHandler OnFileChanged;
+
+    public void Watch(IEnumerable<string> filenames)
     {
-        private Dictionary<string, FileSystemWatcher> folderWatchers = new Dictionary<string, FileSystemWatcher>();
-        private Dictionary<string, FileSystemWatcher> recursiveFolderWatchers = new Dictionary<string, FileSystemWatcher>();
-        private HashSet<string> watchedFilenames = new HashSet<string>();
-        private readonly ThrottledActionScheduler scheduler = new ThrottledActionScheduler();
+        foreach (var filename in filenames) Watch(filename);
+    }
+    public void Watch(string filename)
+    {
+        filename = Path.GetFullPath(filename);
+        var directoryPath = Path.GetDirectoryName(filename);
 
-        public IEnumerable<string> WatchedFilenames => watchedFilenames;
-
-        public event FileSystemEventHandler OnFileChanged;
-
-        public void Watch(IEnumerable<string> filenames)
+        lock (watchedFilenames)
         {
-            foreach (var filename in filenames)
-                Watch(filename);
+            if (watchedFilenames.Contains(filename)) return;
+            watchedFilenames.Add(filename);
         }
 
-        public void Watch(string filename)
+        if (Directory.Exists(directoryPath))
         {
-            filename = Path.GetFullPath(filename);
-            var directoryPath = Path.GetDirectoryName(filename);
+            // The folder containing the file to watch exists, 
+            // only watch that folder
 
-            lock (watchedFilenames)
+            if (!folderWatchers.TryGetValue(directoryPath, out FileSystemWatcher watcher))
             {
-                if (watchedFilenames.Contains(filename)) return;
-                watchedFilenames.Add(filename);
-            }
-
-            if (Directory.Exists(directoryPath))
-            {
-                // The folder containing the file to watch exists, 
-                // only watch that folder
-
-                if (!folderWatchers.TryGetValue(directoryPath, out FileSystemWatcher watcher))
+                folderWatchers[directoryPath] = watcher = new()
                 {
-                    folderWatchers.Add(directoryPath, watcher = new FileSystemWatcher()
+                    Path = directoryPath,
+                    IncludeSubdirectories = false,
+                    NotifyFilter = NotifyFilters.Size | NotifyFilters.DirectoryName
+                };
+
+                watcher.Created += watcher_Changed;
+                watcher.Changed += watcher_Changed;
+                watcher.Renamed += watcher_Changed;
+                watcher.Error += (sender, e) => Trace.WriteLine($"Watcher error: {e.GetException()}");
+                watcher.EnableRaisingEvents = true;
+
+                Trace.WriteLine($"Watching folder: {directoryPath}");
+            }
+            Trace.WriteLine($"Watching file: {filename}");
+        }
+        else
+        {
+            // The folder containing the file to watch does not exist, 
+            // find a parent to watch subfolders from
+
+            var parentDirectory = Directory.GetParent(directoryPath);
+            while (parentDirectory is not null && !parentDirectory.Exists) parentDirectory = Directory.GetParent(parentDirectory.FullName);
+
+            if (parentDirectory is not null && parentDirectory != parentDirectory.Root)
+            {
+                var parentDirectoryPath = parentDirectory.ToString();
+
+                if (!recursiveFolderWatchers.TryGetValue(parentDirectoryPath, out var watcher))
+                {
+                    recursiveFolderWatchers[parentDirectoryPath] = watcher = new()
                     {
-                        Path = directoryPath,
-                        IncludeSubdirectories = false,
-                    });
+                        Path = parentDirectoryPath,
+                        IncludeSubdirectories = true,
+                        NotifyFilter = NotifyFilters.Size | NotifyFilters.DirectoryName
+                    };
+
                     watcher.Created += watcher_Changed;
                     watcher.Changed += watcher_Changed;
                     watcher.Renamed += watcher_Changed;
                     watcher.Error += (sender, e) => Trace.WriteLine($"Watcher error: {e.GetException()}");
                     watcher.EnableRaisingEvents = true;
-                    Trace.WriteLine($"Watching folder: {directoryPath}");
+
+                    Trace.WriteLine($"Watching folder and subfolders: {parentDirectoryPath}");
                 }
-                Trace.WriteLine($"Watching file: {filename}");
             }
-            else
-            {
-                // The folder containing the file to watch does not exist, 
-                // find a parent to watch subfolders from
-
-                var parentDirectory = Directory.GetParent(directoryPath);
-                while (parentDirectory != null && !parentDirectory.Exists)
-                    parentDirectory = Directory.GetParent(parentDirectory.FullName);
-
-                if (parentDirectory != null && parentDirectory != parentDirectory.Root)
-                {
-                    var parentDirectoryPath = parentDirectory.ToString();
-                    
-                    if (!recursiveFolderWatchers.TryGetValue(parentDirectoryPath, out FileSystemWatcher watcher))
-                    {
-                        recursiveFolderWatchers.Add(parentDirectoryPath, watcher = new FileSystemWatcher()
-                        {
-                            Path = parentDirectoryPath,
-                            IncludeSubdirectories = true,
-                        });
-                        watcher.Created += watcher_Changed;
-                        watcher.Changed += watcher_Changed;
-                        watcher.Renamed += watcher_Changed;
-                        watcher.Error += (sender, e) => Trace.WriteLine($"Watcher error: {e.GetException()}");
-                        watcher.EnableRaisingEvents = true;
-                        Trace.WriteLine($"Watching folder and subfolders: {parentDirectoryPath}");
-                    }
-                }
-                else Trace.WriteLine($"Cannot watch file: {filename}, directory does not exist");
-            }
+            else Trace.WriteLine($"Cannot watch file: {filename}, directory does not exist");
         }
-
-        public void Clear()
+    }
+    void watcher_Changed(object sender, FileSystemEventArgs e)
+    {
+        Trace.WriteLine($"File {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
+        scheduler.Schedule(e.FullPath, key =>
         {
-            foreach (var folderWatcher in folderWatchers.Values)
-                folderWatcher.Dispose();
-            folderWatchers.Clear();
+            if (disposed) return;
 
-            foreach (var folderWatcher in recursiveFolderWatchers.Values)
-                folderWatcher.Dispose();
-            recursiveFolderWatchers.Clear();
+            lock (watchedFilenames) if (!watchedFilenames.Contains(e.FullPath)) return;
 
-            lock (watchedFilenames)
-                watchedFilenames.Clear();
-        }
+            Trace.WriteLine($"Watched file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
+            OnFileChanged?.Invoke(sender, e);
+        });
+    }
 
-        private void watcher_Changed(object sender, FileSystemEventArgs e)
+    bool disposed;
+    public void Dispose()
+    {
+        if (!disposed)
         {
-            Trace.WriteLine($"File {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
-            scheduler.Schedule(e.FullPath, (key) =>
-                {
-                    if (disposedValue) return;
+            folderWatchers.Dispose();
+            recursiveFolderWatchers.Dispose();
 
-                    lock (watchedFilenames)
-                        if (!watchedFilenames.Contains(e.FullPath)) return;
+            lock (watchedFilenames) watchedFilenames.Clear();
 
-                    Trace.WriteLine($"Watched file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
-                    OnFileChanged?.Invoke(sender, e);
-                });
+            watchedFilenames = null;
+            OnFileChanged = null;
+            disposed = true;
         }
-
-        #region IDisposable Support
-
-        private bool disposedValue = false;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    Clear();
-                }
-                folderWatchers = null;
-                watchedFilenames = null;
-                OnFileChanged = null;
-                disposedValue = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        #endregion
     }
 }

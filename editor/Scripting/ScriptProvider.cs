@@ -1,26 +1,18 @@
-﻿using StorybrewCommon.Scripting;
-using System;
+﻿using System;
 using System.Reflection;
+using StorybrewCommon.Scripting;
 
-namespace StorybrewEditor.Scripting
+namespace StorybrewEditor.Scripting;
+
+public class ScriptProvider<TScript> where TScript : Script
 {
-    public class ScriptProvider<TScript> : MarshalByRefObject
-        where TScript : Script
+    Type type;
+
+    public void Initialize(Assembly assembly, string typeName) => type = assembly.GetType(typeName, true);
+    public TScript CreateScript()
     {
-        private readonly string identifier = Guid.NewGuid().ToString();
-        private Type type;
-
-        public void Initialize(string assemblyPath, string typeName)
-        {
-            var assembly = Assembly.LoadFrom(assemblyPath);
-            type = assembly.GetType(typeName, true, true);
-        }
-
-        public TScript CreateScript()
-        {
-            var script = (TScript)Activator.CreateInstance(type);
-            script.Identifier = identifier;
-            return script;
-        }
+        var script = (TScript)Activator.CreateInstance(type, true);
+        script.Identifier = type.AssemblyQualifiedName + Environment.CurrentManagedThreadId;
+        return script;
     }
 }
