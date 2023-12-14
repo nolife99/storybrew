@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,7 +53,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         Parallel.ForEach(actionRunners, runner => runner.EnsureThreadAlive());
         lock (context.Queue)
         {
-            if (!allowDuplicates && context.Queue.Any(q => q.Target.Equals(target))) return;
+            if (!allowDuplicates && context.Queue.Exists(q => q.Target.Equals(target))) return;
             context.Queue.Add(new(target, uniqueKey, action, mustRunAlone));
             Monitor.PulseAll(context.Queue);
         }
@@ -67,7 +66,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (stopThreads)
         {
             var sw = Stopwatch.StartNew();
-            Parallel.ForEach(actionRunners, runner => runner.JoinOrAbort(Math.Max(1000, 5000 - sw.ElapsedMilliseconds)));
+            Parallel.ForEach(actionRunners, runner => runner.JoinOrAbort(Math.Max(1000, 5000 - sw.Elapsed.Milliseconds)));
             sw.Stop();
         }
     }
@@ -147,7 +146,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     {
                         if (mustSleep)
                         {
-                            await Task.Delay(200);
+                            await Task.Delay(200, tokenSrc.Token);
                             mustSleep = false;
                         }
 
@@ -172,7 +171,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                                     continue;
                                 }
 
-                                task = context.Queue.FirstOrDefault(t => !context.Running.Contains(t.UniqueKey) && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
+                                task = context.Queue.Find(t => context.Running.Add(t.UniqueKey) && !t.MustRunAlone || t.MustRunAlone && context.Running.Count == 0);
                                 if (task is null)
                                 {
                                     mustSleep = true;
@@ -180,7 +179,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
                                 }
 
                                 context.Queue.Remove(task);
-                                context.Running.Add(task.UniqueKey);
                                 if (task.MustRunAlone) context.RunningLoneTask = true;
                             }
                         }
@@ -196,7 +194,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         catch (Exception e)
                         {
                             var target = task.Target;
-                            if (!context.TriggerActionFailed(task.Target, e)) Trace.TraceError($"'{task.UniqueKey}' - Action failed: {e.GetType()} ({e})");
+                            context.TriggerActionFailed(task.Target, e);
                         }
 
                         lock (context.Running)
@@ -212,7 +210,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 thread.Start();
             }
         }
-        internal async void JoinOrAbort(double millisecondsTimeout)
+        internal async void JoinOrAbort(int millisecondsTimeout)
         {
             if (thread is null) return;
 
@@ -221,7 +219,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-            if (!localThread.Wait((int)millisecondsTimeout, tokenSrc.Token))
+            if (!localThread.Wait(millisecondsTimeout))
             {
                 tokenSrc.Cancel();
                 if (!localThread.IsCompleted) await localThread;

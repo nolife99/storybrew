@@ -1,15 +1,15 @@
-﻿using BrewLib.Util;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Storyboarding.Display;
-using StorybrewCommon.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using BrewLib.Util;
+using StorybrewCommon.Mapset;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
+using StorybrewCommon.Storyboarding.Display;
+using StorybrewCommon.Util;
 
 namespace StorybrewCommon.Storyboarding;
 

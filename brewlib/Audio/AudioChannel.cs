@@ -1,5 +1,5 @@
-﻿using ManagedBass;
-using System;
+﻿using System;
+using ManagedBass;
 
 namespace BrewLib.Audio;
 

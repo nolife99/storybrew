@@ -1,16 +1,16 @@
-﻿using BrewLib.Util;
-using StorybrewCommon.Scripting;
-using StorybrewCommon.Storyboarding;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
-using System.Numerics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Globalization;
+using System.Numerics;
+using BrewLib.Util;
+using StorybrewCommon.Scripting;
+using StorybrewCommon.Storyboarding;
 
 namespace StorybrewCommon.Subtitles;
 
@@ -120,7 +120,7 @@ public sealed class FontGenerator : IDisposable
         }
 
         var ptSize = 96 / metrics.DpiY * description.FontSize;
-        font = family is null ? new(fontPath, ptSize, description.FontStyle, GraphicsUnit.Point) : new(family, ptSize, description.FontStyle, GraphicsUnit.Point);
+        font = family is null ? new(fontPath, ptSize, description.FontStyle) : new(family, ptSize, description.FontStyle);
 
         emSize = font.GetHeight(metrics) * font.FontFamily.GetEmHeight(description.FontStyle) / font.FontFamily.GetLineSpacing(description.FontStyle);
     }

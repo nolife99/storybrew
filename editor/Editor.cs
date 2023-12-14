@@ -1,4 +1,7 @@
-﻿using BrewLib.Data;
+﻿using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using BrewLib.Data;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
@@ -13,9 +16,6 @@ using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics.OpenGL;
 using StorybrewEditor.ScreenLayers;
-using System;
-using System.ComponentModel;
-using System.Diagnostics;
 
 namespace StorybrewEditor;
 

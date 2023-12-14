@@ -1,8 +1,8 @@
-﻿using BrewLib.UserInterface;
-using System.Numerics;
-using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
 using System.Globalization;
+using System.Numerics;
+using BrewLib.UserInterface;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewEditor.UserInterface;
 

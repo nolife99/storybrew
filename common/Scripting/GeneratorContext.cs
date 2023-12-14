@@ -1,6 +1,6 @@
-﻿using StorybrewCommon.Mapset;
+﻿using System.Collections.Generic;
+using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
-using System.Collections.Generic;
 
 namespace StorybrewCommon.Scripting;
 

@@ -1,6 +1,6 @@
-﻿using ManagedBass;
-using System;
+﻿using System;
 using System.IO;
+using ManagedBass;
 
 namespace BrewLib.Audio;
 
@@ -36,7 +36,7 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        var data = new float[size];
+        var data = GC.AllocateUninitializedArray<float>(size);
         if (Bass.ChannelGetData(stream, data, unchecked((int)flags)) == -1) throw new InvalidDataException(Bass.LastError.ToString());
         return data;
     }

@@ -1,9 +1,9 @@
-﻿using StorybrewCommon.Animations;
+﻿using System;
+using System.Linq;
+using System.Numerics;
+using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using System.Numerics;
-using System;
-using System.Linq;
 
 namespace StorybrewScripts;
 

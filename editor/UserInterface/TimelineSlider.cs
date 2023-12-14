@@ -1,13 +1,13 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using System.Drawing;
+using System.Numerics;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using System.Numerics;
-using System.Drawing;
 using osuTK.Input;
 using StorybrewCommon.Mapset;
 using StorybrewEditor.Storyboarding;
-using System;
 
 namespace StorybrewEditor.UserInterface;
 

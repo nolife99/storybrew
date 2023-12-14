@@ -1,7 +1,7 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using BrewLib.Graphics;
 using BrewLib.Input;
 using osuTK.Input;
-using System;
 
 namespace BrewLib.ScreenLayers;
 

@@ -1,13 +1,13 @@
-﻿using BrewLib.Graphics.Cameras;
+﻿using System;
+using System.Buffers;
+using System.Diagnostics;
+using System.Numerics;
+using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
 using BrewLib.Graphics.Shaders.Snippets;
 using BrewLib.Graphics.Textures;
 using osuTK.Graphics.OpenGL;
-using System;
-using System.Buffers;
-using System.Diagnostics;
-using System.Numerics;
 
 namespace BrewLib.Graphics.Renderers;
 

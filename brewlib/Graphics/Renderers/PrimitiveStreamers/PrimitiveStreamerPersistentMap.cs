@@ -1,8 +1,8 @@
-﻿using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using BrewLib.Util;
+using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 

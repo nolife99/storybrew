@@ -1,8 +1,8 @@
-﻿using BrewLib.Graphics;
+﻿using System.Numerics;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Textures;
 using BrewLib.UserInterface.Skinning.Styles;
-using System.Numerics;
 
 namespace BrewLib.UserInterface;
 

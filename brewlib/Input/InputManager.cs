@@ -1,7 +1,7 @@
-﻿using osuTK;
-using osuTK.Input;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using osuTK;
+using osuTK.Input;
 
 namespace BrewLib.Input;
 

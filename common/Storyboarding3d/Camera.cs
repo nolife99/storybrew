@@ -1,8 +1,8 @@
-﻿using StorybrewCommon.Animations;
-using StorybrewCommon.Mapset;
-using System.Numerics;
-using System;
+﻿using System;
 using System.Drawing;
+using System.Numerics;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Mapset;
 
 namespace StorybrewCommon.Storyboarding3d;
 

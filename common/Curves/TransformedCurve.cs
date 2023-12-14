@@ -1,5 +1,5 @@
-﻿using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Curves;
 

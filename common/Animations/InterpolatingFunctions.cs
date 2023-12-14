@@ -1,7 +1,7 @@
-﻿using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
 using System.Numerics;
 using BrewLib.Util;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Animations;
 

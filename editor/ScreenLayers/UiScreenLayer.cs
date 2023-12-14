@@ -1,8 +1,8 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.ScreenLayers;
 using BrewLib.UserInterface;
-using System;
 
 namespace StorybrewEditor.ScreenLayers;
 

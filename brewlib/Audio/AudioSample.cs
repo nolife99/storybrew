@@ -1,7 +1,7 @@
-﻿using BrewLib.Data;
-using ManagedBass;
-using System;
+﻿using System;
 using System.Diagnostics;
+using BrewLib.Data;
+using ManagedBass;
 
 namespace BrewLib.Audio;
 

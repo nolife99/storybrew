@@ -1,8 +1,8 @@
-﻿using BrewLib.Graphics;
-using BrewLib.Util;
+﻿using System;
 using System.Numerics;
+using BrewLib.Graphics;
+using BrewLib.Util;
 using osuTK.Input;
-using System;
 
 namespace BrewLib.UserInterface;
 

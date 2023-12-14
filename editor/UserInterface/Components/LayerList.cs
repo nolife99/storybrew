@@ -1,10 +1,10 @@
-﻿using BrewLib.UserInterface;
-using BrewLib.Util;
+﻿using System;
+using System.Linq;
 using System.Numerics;
+using BrewLib.UserInterface;
+using BrewLib.Util;
 using StorybrewCommon.Storyboarding;
 using StorybrewEditor.Storyboarding;
-using System;
-using System.Linq;
 
 namespace StorybrewEditor.UserInterface.Components;
 

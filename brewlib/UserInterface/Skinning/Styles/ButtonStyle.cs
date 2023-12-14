@@ -1,5 +1,5 @@
-﻿using BrewLib.Util;
-using System.Numerics;
+﻿using System.Numerics;
+using BrewLib.Util;
 
 namespace BrewLib.UserInterface.Skinning.Styles;
 

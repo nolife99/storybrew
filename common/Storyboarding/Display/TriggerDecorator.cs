@@ -1,7 +1,7 @@
-﻿using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
 using System.IO;
+using StorybrewCommon.Storyboarding.Commands;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Storyboarding.Display;
 

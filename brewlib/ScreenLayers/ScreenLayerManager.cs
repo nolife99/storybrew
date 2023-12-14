@@ -1,11 +1,11 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using BrewLib.Graphics;
 using BrewLib.Input;
 using BrewLib.Time;
 using BrewLib.Util;
 using osuTK;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
 
 namespace BrewLib.ScreenLayers;
 

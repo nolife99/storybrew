@@ -1,9 +1,9 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using System.Globalization;
+using System.Numerics;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface.Skinning.Styles;
-using System.Numerics;
-using System;
-using System.Globalization;
 
 namespace BrewLib.UserInterface;
 

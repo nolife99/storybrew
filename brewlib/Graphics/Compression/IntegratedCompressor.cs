@@ -1,4 +1,3 @@
-using BrewLib.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -6,13 +5,14 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using BrewLib.Data;
+using BrewLib.Util;
 
-namespace BrewLib.Util.Compression;
+namespace BrewLib.Graphics.Compression;
 
 public class IntegratedCompressor : ImageCompressor
 {
-    List<Task> tasks = [];
-    public IntegratedCompressor(string utilityPath = null) : base(utilityPath) 
+    public IntegratedCompressor(string utilityPath = null) : base(utilityPath)
         => container = new AssemblyResourceContainer(typeof(IntegratedCompressor).Assembly, "BrewLib");
 
     protected override void compress(Argument arg, bool useLossy)
@@ -86,11 +86,13 @@ public class IntegratedCompressor : ImageCompressor
     }
 
     readonly HashSet<string> toCleanup = [];
+    readonly List<Task> tasks = [];
+
     protected override async void Dispose(bool disposing)
     {
         if (disposed) return;
 
-        if (tasks?.Count != 0) await Task.WhenAll(tasks).ContinueWith(_ =>
+        if (tasks?.Count != 0) await Task.WhenAll(tasks).ContinueWith(task =>
         {
             base.Dispose(disposing);
             tasks.Clear();

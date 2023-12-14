@@ -1,7 +1,7 @@
-﻿using System.Numerics;
-using System;
-using Bitmap = System.Drawing.Bitmap;
+﻿using System;
 using System.Drawing;
+using System.Numerics;
+using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures;
 

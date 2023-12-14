@@ -2,8 +2,9 @@
 using System.Diagnostics;
 using System.IO;
 using BrewLib.Data;
+using BrewLib.Util;
 
-namespace BrewLib.Util.Compression;
+namespace BrewLib.Graphics.Compression;
 
 public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 {

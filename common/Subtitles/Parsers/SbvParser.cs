@@ -1,9 +1,9 @@
-﻿using BrewLib.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using BrewLib.Util;
 
 namespace StorybrewCommon.Subtitles.Parsers;
 

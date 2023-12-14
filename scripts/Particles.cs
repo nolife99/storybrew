@@ -1,12 +1,12 @@
+using System;
+using System.Drawing;
+using System.Linq;
+using System.Numerics;
+using osuTK.Graphics;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using System;
-using System.Numerics;
-using System.Drawing;
-using System.Linq;
 using StorybrewCommon.Storyboarding.CommandValues;
-using osuTK.Graphics;
 
 namespace StorybrewScripts;
 

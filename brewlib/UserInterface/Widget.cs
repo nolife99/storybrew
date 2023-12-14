@@ -1,15 +1,15 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Numerics;
+using System.Text;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.Input;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using System.Numerics;
 using osuTK.Input;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-using System.Drawing;
 
 namespace BrewLib.UserInterface;
 

@@ -1,13 +1,14 @@
-﻿using StorybrewCommon.Animations;
+﻿using System;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using BrewLib.Util;
+using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.Util;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
-using System;
-using System.Numerics;
-using System.Collections.Generic;
-using BrewLib.Util;
-using System.Runtime.InteropServices;
+using StorybrewCommon.Storyboarding.Util;
 
 namespace StorybrewCommon.Storyboarding3d;
 
@@ -64,7 +65,7 @@ public class Object3d
     ///<summary> Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given <see cref="CameraState"/> and <see cref="Object3dState"/>. </summary>
     public void GenerateTreeStates(double time, CameraState cameraState, Object3dState parent3dState)
     {
-        var object3dState = new Object3dState(
+        Object3dState object3dState = new(
             WorldTransformAt(time) * parent3dState.WorldTransform,
             Coloring.ValueAt(time) * (InheritsColor ? parent3dState.Color : CommandColor.White),
             Opacity.ValueAt(time) * (InheritsOpacity ? parent3dState.Opacity : 1));
@@ -72,7 +73,14 @@ public class Object3d
         GenerateStates(time, cameraState, object3dState);
 
         var span = CollectionsMarshal.AsSpan(children);
-        for (var i = 0; i < span.Length; ++i) span[i].GenerateTreeStates(time, cameraState, object3dState);
+        ref var r0 = ref MemoryMarshal.GetReference(span);
+        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
+        {
+            r0.GenerateTreeStates(time, cameraState, object3dState);
+            r0 = ref Unsafe.Add(ref r0, 1);
+        }
     }
 
     ///<summary> Generates commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
@@ -86,7 +94,14 @@ public class Object3d
         GenerateCommands(action, startTime, endTime, timeOffset, loopable);
 
         var span = CollectionsMarshal.AsSpan(children);
-        for (var i = 0; i < span.Length; ++i) span[i].GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
+        ref var r0 = ref MemoryMarshal.GetReference(span);
+        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
+        {
+            r0.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
+            r0 = ref Unsafe.Add(ref r0, 1);
+        }
     }
 
     ///<summary> Generates loop commands on this instance's base sprites based on its <see cref="State"/>s. </summary>

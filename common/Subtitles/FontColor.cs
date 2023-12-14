@@ -1,8 +1,8 @@
-﻿using osuTK.Graphics;
-using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Numerics;
+using osuTK.Graphics;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Subtitles;
 

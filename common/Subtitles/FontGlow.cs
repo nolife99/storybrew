@@ -1,7 +1,7 @@
-﻿using BrewLib.Util;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using BrewLib.Util;
 
 namespace StorybrewCommon.Subtitles;
 

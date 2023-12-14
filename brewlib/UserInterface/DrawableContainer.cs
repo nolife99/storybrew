@@ -1,6 +1,6 @@
-﻿using BrewLib.Graphics;
+﻿using System.Numerics;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
-using System.Numerics;
 
 namespace BrewLib.UserInterface;
 

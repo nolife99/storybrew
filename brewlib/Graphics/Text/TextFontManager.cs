@@ -1,6 +1,6 @@
-﻿using BrewLib.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using BrewLib.Util;
 
 namespace BrewLib.Graphics.Text;
 

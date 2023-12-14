@@ -1,6 +1,6 @@
-﻿using System.Numerics;
+﻿using System;
 using System.Drawing;
-using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace BrewLib.Graphics.Renderers;

@@ -1,6 +1,6 @@
-﻿using BrewLib.UserInterface;
+﻿using System.Numerics;
+using BrewLib.UserInterface;
 using BrewLib.Util;
-using System.Numerics;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;

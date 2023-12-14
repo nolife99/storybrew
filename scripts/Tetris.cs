@@ -1,10 +1,10 @@
-﻿using StorybrewCommon.Mapset;
+﻿using System;
+using System.Drawing;
+using System.Numerics;
+using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
-using System.Numerics;
-using System;
-using System.Drawing;
 
 namespace StorybrewScripts;
 

@@ -1,19 +1,19 @@
-﻿using BrewLib.UserInterface;
-using BrewLib.Util;
-using System.Numerics;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Util;
-using StorybrewEditor.Storyboarding;
-using System;
+﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text.RegularExpressions;
-using StorybrewCommon.Storyboarding.CommandValues;
-using System.Drawing;
-using StorybrewCommon.Subtitles;
+using BrewLib.UserInterface;
+using BrewLib.Util;
 using osuTK.Graphics;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
+using StorybrewCommon.Subtitles;
+using StorybrewCommon.Util;
+using StorybrewEditor.Storyboarding;
 
 namespace StorybrewEditor.UserInterface.Components;
 

@@ -1,11 +1,11 @@
-﻿using BrewLib.Graphics;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Util;
-using StorybrewCommon.Storyboarding;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using BrewLib.Graphics;
+using BrewLib.Graphics.Cameras;
+using BrewLib.Util;
+using StorybrewCommon.Storyboarding;
 
 namespace StorybrewEditor.Storyboarding;
 

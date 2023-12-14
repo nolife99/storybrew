@@ -1,10 +1,10 @@
-﻿using osuTK;
-using osuTK.Graphics.OpenGL;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using osuTK;
+using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
 

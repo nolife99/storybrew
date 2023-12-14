@@ -1,6 +1,6 @@
-﻿using StorybrewCommon.Scripting;
+﻿using System.Linq;
+using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using System.Linq;
 
 namespace StorybrewScripts;
 

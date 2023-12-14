@@ -1,6 +1,6 @@
-﻿using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Curves;
 

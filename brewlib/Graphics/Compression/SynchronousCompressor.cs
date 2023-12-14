@@ -1,4 +1,3 @@
-using BrewLib.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,14 +6,16 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BrewLib.Data;
+using BrewLib.Util;
 
-namespace BrewLib.Util.Compression;
+namespace BrewLib.Graphics.Compression;
 
 public class SynchronousCompressor : ImageCompressor
 {
     public IEnumerable<string> Files => toCompress.Select(s => s.path).Concat(lossyCompress.Select(s => s.path));
 
-    public SynchronousCompressor(string utilityPath = null) : base(utilityPath) 
+    public SynchronousCompressor(string utilityPath = null) : base(utilityPath)
         => container = new AssemblyResourceContainer(typeof(SynchronousCompressor).Assembly, "BrewLib");
 
     List<Argument> toCompress = [], lossyCompress = [];
@@ -39,21 +40,21 @@ public class SynchronousCompressor : ImageCompressor
             ensureTool();
 
             foreach (var arg in toCompress) if (File.Exists(arg.path)) try
-            {
-                startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
-                process ??= Process.Start(startInfo);
-                var error = await process.StandardError.ReadToEndAsync();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
-            }
-            finally
-            {
-                ensureStop();
-            }
+                    {
+                        startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
+                        process ??= Process.Start(startInfo);
+                        var error = await process.StandardError.ReadToEndAsync();
+                        if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
+                    }
+                    finally
+                    {
+                        ensureStop();
+                    }
         }))
-        {
-            losslessTask.Start();
-            await losslessTask;
-        }
+            {
+                losslessTask.Start();
+                await losslessTask;
+            }
 
         if (lossyCompress.Count != 0) using (Task lossyTask = new(async () =>
         {
@@ -62,21 +63,21 @@ public class SynchronousCompressor : ImageCompressor
             ensureTool();
 
             foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
-            {
-                startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
-                process ??= Process.Start(startInfo);
-                var error = await process.StandardError.ReadToEndAsync();
-                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
-            }
-            finally
-            {
-                ensureStop();
-            }
+                    {
+                        startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
+                        process ??= Process.Start(startInfo);
+                        var error = await process.StandardError.ReadToEndAsync();
+                        if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
+                    }
+                    finally
+                    {
+                        ensureStop();
+                    }
         }))
-        {
-            lossyTask.Start();
-            await lossyTask;
-        }
+            {
+                lossyTask.Start();
+                await lossyTask;
+            }
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {
@@ -135,21 +136,21 @@ public class SynchronousCompressor : ImageCompressor
     protected override void Dispose(bool disposing)
     {
         if (!disposed) try
-        {
-            doCompress().Wait();
-        }
-        finally
-        {
-            base.Dispose(disposing);
-            for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) PathHelper.SafeDelete(toCleanup[i]);
+            {
+                doCompress().Wait();
+            }
+            finally
+            {
+                base.Dispose(disposing);
+                for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) PathHelper.SafeDelete(toCleanup[i]);
 
-            toCleanup.Clear();
-            toCompress.Clear();
-            lossyCompress.Clear();
+                toCleanup.Clear();
+                toCompress.Clear();
+                lossyCompress.Clear();
 
-            toCleanup = null;
-            toCompress = null;
-            lossyCompress = null;
-        }
+                toCleanup = null;
+                toCompress = null;
+                lossyCompress = null;
+            }
     }
 }

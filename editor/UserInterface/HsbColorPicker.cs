@@ -1,13 +1,13 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using System.Drawing;
+using System.Numerics;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using System.Numerics;
 using StorybrewCommon.Subtitles;
 using StorybrewEditor.UserInterface.Skinning.Styles;
-using System;
-using System.Drawing;
 
 namespace StorybrewEditor.UserInterface;
 

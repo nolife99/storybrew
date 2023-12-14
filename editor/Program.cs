@@ -1,19 +1,19 @@
-﻿using BrewLib.Audio;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using BrewLib.Audio;
 using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics;
 using StorybrewEditor.Processes;
 using StorybrewEditor.Util;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Net;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace StorybrewEditor;
 
@@ -34,10 +34,9 @@ public static class Program
         throw new InvalidOperationException($"{callerPath}:L{callerLine} {callerName} called from the thread '{Thread.CurrentThread.Name}', must be called from the main thread");
     }
 
-    [STAThread] static void Main(string[] args)
+    static void Main(string[] args)
     {
         mainThreadId = Environment.CurrentManagedThreadId;
-        ServicePointManager.SecurityProtocol |= SecurityProtocolType.SystemDefault;
 
         NetHelper.Client = new();
         NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
@@ -90,7 +89,7 @@ public static class Program
         using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager())
         using (Editor editor = new(window)) using (System.Drawing.Icon icon = new(typeof(Editor), "icon.ico"))
         {
-            Trace.WriteLine($"{Environment.OSVersion} / Handle: 0x{Native.MainWindowHandle:X}");
+            Trace.WriteLine($"{Environment.OSVersion} / Handle: 0x{Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture)}");
             Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
             Native.SetWindowIcon(icon.Handle);
@@ -177,14 +176,14 @@ public static class Program
     }
     static void runMainLoop(GameWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
     {
-        double prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
+        float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
         var windowDisplayed = false;
         var watch = Stopwatch.StartNew();
 
         while (window.Exists && !window.IsExiting)
         {
             var focused = window.Focused;
-            var cur = watch.Elapsed.TotalMilliseconds;
+            var cur = (float)watch.Elapsed.TotalMilliseconds;
             var fixedUpdates = 0;
 
             AudioManager.Update();
@@ -195,9 +194,9 @@ public static class Program
                 fixedRate += fixedRateUpdate;
                 ++fixedUpdates;
 
-                editor.Update(fixedRate * 1E-3);
+                editor.Update(fixedRate * 1E-3f);
             }
-            if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur * 1E-3, false);
+            if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur * 1E-3f, false);
 
             if (!window.Exists || window.IsExiting) return;
             if (window.WindowState != WindowState.Minimized)
@@ -214,20 +213,20 @@ public static class Program
             }
 
             RunScheduledTasks();
-            var active = (float)watch.Elapsed.TotalMilliseconds - cur;
+            var active = (float)(watch.Elapsed.TotalMilliseconds - cur);
 
             window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
             if (window.WindowState != WindowState.Minimized && window.VSync is VSyncMode.Off)
             {
                 var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
-                if (sleepTime > 0) Thread.Sleep((int)sleepTime);
+                if (sleepTime > 0) Task.Delay((int)sleepTime).Wait();
             }
 
             var frameTime = cur - prev;
             prev = cur;
 
-            av = (frameTime + av) * .5;
-            avActive = (active + avActive) * .5;
+            av = (frameTime + av) * .5f;
+            avActive = (active + avActive) * .5f;
             longest = Math.Max(frameTime, longest);
 
             if (lastStat + 150 < cur)
@@ -244,33 +243,19 @@ public static class Program
 
     #region Scheduling
 
-    public static bool SchedulingEnabled { get; internal set; }
+    public static bool SchedulingEnabled { get; private set; }
     static readonly ConcurrentQueue<Action> scheduledActions = new();
 
-    /// <summary>
-    /// Schedule the action to run in the main thread.
-    /// Exceptions will be logged.
-    /// </summary>
     public static void Schedule(Action action)
     {
         if (SchedulingEnabled) scheduledActions.Enqueue(action);
         else throw new InvalidOperationException("Scheduling isn't enabled!");
     }
-
-    /// <summary>
-    /// Schedule the action to run in the main thread after a delay (in milliseconds).
-    /// Exceptions will be logged.
-    /// </summary>
     public static void Schedule(Action action, int delay) => Task.Run(async () =>
     {
-        using (var wait = Task.Delay(delay)) await wait;
+        await Task.Delay(delay);
         Schedule(action);
     });
-
-    /// <summary>
-    /// Run the action synchronously in the main thread.
-    /// Exceptions will be thrown to the calling thread.
-    /// </summary>
     public static void RunMainThread(Action action)
     {
         if (IsMainThread)
@@ -279,8 +264,9 @@ public static class Program
             return;
         }
 
-        using ManualResetEvent completed = new(false);
         Exception ex = null;
+        using ManualResetEvent completed = new(false);
+
         Schedule(() =>
         {
             try
@@ -322,7 +308,7 @@ public static class Program
     static readonly object errorHandlerLock = new();
     static volatile bool insideErrorHandler;
 
-    static void setupLogging(string logsPath = null, string commonLogFilename = null, bool checkFrozen = false)
+    static void setupLogging(string logsPath = null, string commonLogFilename = null)
     {
         logsPath ??= DefaultLogPath;
         var tracePath = Path.Combine(logsPath, commonLogFilename ?? "trace.log");
@@ -339,9 +325,14 @@ public static class Program
         AppDomain.CurrentDomain.FirstChanceException += (sender, e) => logError(e.Exception, exceptionPath, null, false);
         AppDomain.CurrentDomain.UnhandledException += (sender, e) => logError((Exception)e.ExceptionObject, crashPath, "crash", true);
 
-        if (checkFrozen) setupFreezeCheck(e => logError(e, freezePath, null, false));
-
-        Trace.AutoFlush = true;
+        Task.Run(async () =>
+        {
+            while (true)
+            {
+                Trace.Flush();
+                await Task.Delay(10000);
+            }
+        });
     }
     static void logError(Exception e, string filename, string reportType, bool show)
     {
@@ -352,7 +343,7 @@ public static class Program
 
             try
             {
-                var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, filename);
+                var logPath = Path.Combine(Environment.CurrentDirectory, filename);
                 using (StreamWriter w = new(logPath, true))
                 {
                     w.Write(DateTime.Now + " - ");
@@ -384,61 +375,6 @@ public static class Program
         {"version", Version.ToString()},
         {"content", e.ToString()}
     });
-
-    static void setupFreezeCheck(Action<Exception> action)
-    {
-        using ManualResetEvent wait = new(false);
-
-        Thread thread = new(async () =>
-        {
-            var answered = false;
-            var frozen = 0;
-
-            while (!SchedulingEnabled) using (var delay = Task.Delay(1000)) await delay;
-            while (true)
-            {
-                answered = false;
-                Schedule(() => answered = true);
-
-                Thread.Sleep(1000);
-
-                if (!answered) ++frozen;
-                if (frozen >= 3)
-                {
-                    frozen = 0;
-
-                    wait.WaitOne();
-                    StackTrace trace = null;
-
-                    try
-                    {
-                        trace = new(true);
-                        action(new(trace.ToString()));
-                    }
-                    catch (ThreadStateException e)
-                    {
-                        action(e);
-                    }
-
-                    try
-                    {
-                        wait.Set();
-                    }
-                    catch (ThreadStateException e)
-                    {
-                        action(e);
-                    }
-                }
-            }
-        })
-        { 
-            Name = "Freeze Checker", 
-            IsBackground = true
-        };
-
-        thread.TrySetApartmentState(ApartmentState.STA);
-        thread.Start();
-    }
 
     #endregion
 }

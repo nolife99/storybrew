@@ -1,10 +1,10 @@
+using System;
+using System.Drawing;
+using System.IO;
+using System.Numerics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Subtitles;
-using System;
-using System.Numerics;
-using System.Drawing;
-using System.IO;
 
 namespace StorybrewScripts;
 

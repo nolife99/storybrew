@@ -1,6 +1,6 @@
-﻿using StorybrewCommon.Scripting;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using StorybrewCommon.Scripting;
 
 namespace StorybrewEditor.Scripting;
 

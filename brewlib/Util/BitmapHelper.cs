@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using BrewLib.Util.Compression;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Drawing.Drawing2D;
+using BrewLib.Graphics.Compression;
 
 namespace BrewLib.Util;
 

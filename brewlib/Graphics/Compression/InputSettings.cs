@@ -1,6 +1,6 @@
 using System;
 
-namespace BrewLib.Util.Compression;
+namespace BrewLib.Graphics.Compression;
 
 public sealed class LosslessInputSettings(int level, string args = "")
 {

@@ -1,5 +1,5 @@
-﻿using StorybrewCommon.Storyboarding;
-using System;
+﻿using System;
+using StorybrewCommon.Storyboarding;
 
 namespace StorybrewCommon.Animations;
 

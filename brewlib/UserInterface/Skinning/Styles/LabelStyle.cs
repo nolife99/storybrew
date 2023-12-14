@@ -1,5 +1,5 @@
-﻿using BrewLib.Util;
-using System.Drawing;
+﻿using System.Drawing;
+using BrewLib.Util;
 
 namespace BrewLib.UserInterface.Skinning.Styles;
 

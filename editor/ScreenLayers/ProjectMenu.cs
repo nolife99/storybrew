@@ -1,22 +1,22 @@
-﻿using BrewLib.Audio;
+﻿using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using System.Text;
+using System.Threading.Tasks;
+using BrewLib.Audio;
 using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using System.Numerics;
 using osuTK.Input;
 using StorybrewCommon.Mapset;
+using StorybrewEditor.Scripting;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.UserInterface;
 using StorybrewEditor.UserInterface.Components;
 using StorybrewEditor.UserInterface.Drawables;
 using StorybrewEditor.Util;
-using System;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using StorybrewEditor.Scripting;
-using System.Threading.Tasks;
-using System.Text;
 
 namespace StorybrewEditor.ScreenLayers;
 
@@ -518,7 +518,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands, unusedRatio = unusedCommands / commands;
         if ((unusedCommands >= 5000 && unusedRatio > .5f) || (unusedCommands >= 10000 && unusedRatio > .2f) || unusedCommands >= 15000)
             warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
-        else if (proj.DisplayDebugWarning)
+        else if (proj.DisplayDebugWarning && unusedCommands > 0)
             warnings.AppendLine(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
 
         var sbLoad = stats.ScreenFill;

@@ -1,16 +1,16 @@
-﻿using BrewLib.Data;
-using BrewLib.UserInterface;
-using BrewLib.Util;
-using System.Numerics;
-using StorybrewEditor.ScreenLayers;
-using StorybrewEditor.Storyboarding;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text.RegularExpressions;
+using BrewLib.Data;
+using BrewLib.UserInterface;
+using BrewLib.Util;
+using StorybrewEditor.ScreenLayers;
+using StorybrewEditor.Storyboarding;
 
 namespace StorybrewEditor.UserInterface.Components;
 

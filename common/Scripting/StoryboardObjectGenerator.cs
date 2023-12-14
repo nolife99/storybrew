@@ -1,21 +1,21 @@
-﻿using BrewLib.Util;
-using BrewLib.Util.Compression;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Util;
-using StorybrewCommon.Subtitles;
-using StorybrewCommon.Subtitles.Parsers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Globalization;
 using System.Threading;
+using BrewLib.Graphics.Compression;
+using BrewLib.Util;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Mapset;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Subtitles;
+using StorybrewCommon.Subtitles.Parsers;
+using StorybrewCommon.Util;
 
 namespace StorybrewCommon.Scripting;
 
@@ -163,19 +163,11 @@ public abstract class StoryboardObjectGenerator : Script
 
     ///<summary> Gets a random double-precision floating-point number between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public double Random(double minValue, double maxValue)
-    {
-        if (minValue == maxValue) return minValue;
-        return minValue + (maxValue - minValue) * rnd.NextDouble();
-    }
+    public double Random(double minValue, double maxValue) => minValue + (maxValue - minValue) * rnd.NextDouble();
 
     ///<summary> Gets a random double-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public double Random(double maxValue)
-    {
-        if (maxValue == 0) return 0;
-        return rnd.NextDouble() * maxValue;
-    }
+    public double Random(double maxValue) => rnd.NextDouble() * maxValue;
 
     ///<summary> Gets a random single-precision floating-point number between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -206,7 +198,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (magnitudes == fft.Length && easing is OsbEasing.None) return fft;
 
         var usedFftLength = frequencyCutOff > 0 ? (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5) * fft.Length) : fft.Length;
-        var resultFft = new float[magnitudes];
+        var resultFft = GC.AllocateUninitializedArray<float>(magnitudes);
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)

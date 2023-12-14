@@ -1,6 +1,6 @@
-using System.Numerics;
 using System;
 using System.Drawing;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace StorybrewCommon.Storyboarding.CommandValues;

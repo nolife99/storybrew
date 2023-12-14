@@ -1,6 +1,6 @@
-﻿using BrewLib.Audio;
+﻿using System.IO;
+using BrewLib.Audio;
 using StorybrewCommon.Storyboarding;
-using System.IO;
 
 namespace StorybrewEditor.Storyboarding;
 

@@ -1,9 +1,9 @@
-﻿using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
-using System.Numerics;
-using osuTK.Input;
-using System;
+﻿using System;
 using System.Globalization;
+using System.Numerics;
+using BrewLib.UserInterface.Skinning.Styles;
+using BrewLib.Util;
+using osuTK.Input;
 
 namespace BrewLib.UserInterface;
 

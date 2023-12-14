@@ -1,10 +1,10 @@
-﻿using BrewLib.Graphics.Cameras;
+﻿using System;
+using System.Drawing;
+using System.Numerics;
+using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Text;
 using BrewLib.Util;
-using System.Numerics;
-using System;
-using System.Drawing;
 
 namespace BrewLib.Graphics.Drawables;
 

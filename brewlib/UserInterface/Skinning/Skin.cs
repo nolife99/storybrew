@@ -1,17 +1,17 @@
-﻿using BrewLib.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Numerics;
+using BrewLib.Data;
 using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Textures;
 using BrewLib.UserInterface.Skinning.Styles;
-using System.Numerics;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Drawing;
+using BrewLib.Util;
 using Tiny;
 using Tiny.Formats.Json;
-using BrewLib.Util;
-using System.Linq;
 
 namespace BrewLib.UserInterface.Skinning;
 

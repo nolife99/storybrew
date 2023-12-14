@@ -1,7 +1,7 @@
-﻿using StorybrewCommon.Scripting;
-using StorybrewEditor.Scripting;
-using System;
+﻿using System;
 using System.Diagnostics;
+using StorybrewCommon.Scripting;
+using StorybrewEditor.Scripting;
 
 namespace StorybrewEditor.Processes;
 

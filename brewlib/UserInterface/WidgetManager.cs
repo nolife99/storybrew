@@ -1,16 +1,16 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Numerics;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
 using BrewLib.Input;
 using BrewLib.ScreenLayers;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
-using System.Numerics;
 using osuTK.Input;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 
 namespace BrewLib.UserInterface;
 

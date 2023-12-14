@@ -1,11 +1,11 @@
-﻿using BrewLib.Data;
-using BrewLib.Util;
-using osuTK.Graphics.OpenGL;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using BrewLib.Data;
+using BrewLib.Util;
+using osuTK.Graphics.OpenGL;
 using Tiny;
 using Tiny.Formats.Json;
 

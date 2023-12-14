@@ -1,8 +1,8 @@
-﻿using BrewLib.UserInterface;
-using BrewLib.Util;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using BrewLib.UserInterface;
+using BrewLib.Util;
 
 namespace StorybrewEditor.ScreenLayers.Util;
 

@@ -1,9 +1,9 @@
-﻿using StorybrewCommon.Scripting;
-using StorybrewEditor.Scripting;
-using StorybrewEditor.Util;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
+using StorybrewCommon.Scripting;
+using StorybrewEditor.Scripting;
+using StorybrewEditor.Util;
 
 namespace StorybrewEditor.Storyboarding;
 

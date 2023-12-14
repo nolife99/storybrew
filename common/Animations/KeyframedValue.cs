@@ -337,42 +337,44 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         var firstPoint = 0;
         var lastPoint = span.Length - 1;
 
-        List<int> keepIndex = [firstPoint, lastPoint];
-        getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, lastPoint, tolerance * tolerance, getDistanceSq);
+        List<int> keep = [firstPoint, lastPoint];
+        getSimplifiedKeyframeIndexes(ref keep, firstPoint, lastPoint, tolerance * tolerance, getDistanceSq);
 
-        var iSpan = CollectionsMarshal.AsSpan(keepIndex);
+        var iSpan = CollectionsMarshal.AsSpan(keep);
         if (iSpan.Length == span.Length) return;
 
         List<Keyframe<TValue>> simplifiedKeyframes = new(iSpan.Length);
-        iSpan.Sort(new Comparison<int>((x, y) => x - y));
+        iSpan.Sort();
         for (var i = 0; i < iSpan.Length; ++i) simplifiedKeyframes.Add(span[iSpan[i]]);
 
         Clear(true);
         keyframes = simplifiedKeyframes;
     }
-    void getSimplifiedKeyframeIndexes(ref List<int> keepIndex, int firstPoint, int lastPoint, double toleranceSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    void getSimplifiedKeyframeIndexes(ref List<int> keep, int first, int last, double epsilonSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
     {
         var span = CollectionsMarshal.AsSpan(keyframes);
-        var start = span[firstPoint];
-        var end = span[lastPoint];
+        var start = span[first];
+        var end = span[last];
 
-        var maxDistanceSq = 0f;
-        var indexFurthest = 0;
+        var maxDistSq = 0f;
+        var indexFar = 0;
 
-        for (var i = firstPoint; i < lastPoint; ++i)
+        for (var i = first; i < last; ++i)
         {
             var distanceSq = getDistance(start, span[i], end);
-            if (distanceSq > maxDistanceSq)
+            if (distanceSq > maxDistSq)
             {
-                maxDistanceSq = distanceSq;
-                indexFurthest = i;
+                maxDistSq = distanceSq;
+                indexFar = i;
             }
         }
-        if (maxDistanceSq > toleranceSq && indexFurthest > 0)
+        if (maxDistSq > epsilonSq && indexFar > 0)
         {
-            getSimplifiedKeyframeIndexes(ref keepIndex, firstPoint, indexFurthest, toleranceSq, getDistance);
-            keepIndex.Add(indexFurthest);
-            getSimplifiedKeyframeIndexes(ref keepIndex, indexFurthest, lastPoint, toleranceSq, getDistance);
+            getSimplifiedKeyframeIndexes(ref keep, first, indexFar, epsilonSq, getDistance);
+            keep.Add(indexFar);
+            getSimplifiedKeyframeIndexes(ref keep, indexFar, last, epsilonSq, getDistance);
         }
     }
 

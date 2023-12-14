@@ -22,15 +22,22 @@ public static class ListExtensions
     public static bool ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
     {
         var span = CollectionsMarshal.AsSpan(list);
+        ref var r0 = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
+        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
+
         try
         {
-            for (var i = 0; i < span.Length; ++i) if (condition(span[i])) action(span[i]);
+            while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
+            {
+                if (condition(r0)) action(r0);
+                r0 = ref Unsafe.Add(ref r0, 1);
+            }
+            return true;
         }
         catch
         {
             return false;
         }
-        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

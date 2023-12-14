@@ -1,7 +1,7 @@
-﻿using StorybrewCommon.Scripting;
+﻿using System;
+using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
-using System;
 
 namespace StorybrewScripts;
 

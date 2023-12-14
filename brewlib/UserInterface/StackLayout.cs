@@ -1,6 +1,6 @@
-﻿using BrewLib.UserInterface.Skinning.Styles;
+﻿using System;
 using System.Numerics;
-using System;
+using BrewLib.UserInterface.Skinning.Styles;
 
 namespace BrewLib.UserInterface;
 

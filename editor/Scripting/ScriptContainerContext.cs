@@ -1,7 +1,7 @@
-﻿using StorybrewCommon.Scripting;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Loader;
+using StorybrewCommon.Scripting;
 
 namespace StorybrewEditor.Scripting;
 

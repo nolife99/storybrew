@@ -1,9 +1,9 @@
-﻿using BrewLib.Data;
-using ManagedBass;
-using ManagedBass.Fx;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using BrewLib.Data;
+using ManagedBass;
+using ManagedBass.Fx;
 
 namespace BrewLib.Audio;
 

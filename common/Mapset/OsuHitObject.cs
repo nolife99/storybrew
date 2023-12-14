@@ -1,7 +1,7 @@
-﻿using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Mapset;
 

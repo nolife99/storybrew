@@ -1,4 +1,8 @@
-﻿using BrewLib.Audio;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using BrewLib.Audio;
 using BrewLib.Util;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
@@ -6,10 +10,6 @@ using StorybrewCommon.Storyboarding;
 using StorybrewEditor.Mapset;
 using StorybrewEditor.Storyboarding;
 using StorybrewEditor.Util;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 
 namespace StorybrewEditor.Scripting;
 

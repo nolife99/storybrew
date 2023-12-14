@@ -1,7 +1,7 @@
-﻿using BrewLib.Graphics.Textures;
-using System.Numerics;
-using System;
+﻿using System;
 using System.Drawing;
+using System.Numerics;
+using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 
 namespace BrewLib.Graphics.Renderers;

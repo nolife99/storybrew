@@ -1,7 +1,7 @@
-﻿using BrewLib.UserInterface.Skinning.Styles;
+﻿using System;
 using System.Numerics;
+using BrewLib.UserInterface.Skinning.Styles;
 using osuTK.Input;
-using System;
 
 namespace BrewLib.UserInterface;
 

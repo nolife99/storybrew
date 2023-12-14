@@ -1,8 +1,8 @@
-﻿using StorybrewCommon.Curves;
-using StorybrewCommon.Storyboarding.CommandValues;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using StorybrewCommon.Curves;
+using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Mapset;
 

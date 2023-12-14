@@ -1,7 +1,7 @@
-﻿using osuTK.Graphics.OpenGL;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
 

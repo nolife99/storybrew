@@ -1,6 +1,6 @@
-﻿using BrewLib.UserInterface;
+﻿using System;
+using BrewLib.UserInterface;
 using BrewLib.Util;
-using System;
 
 namespace StorybrewEditor.ScreenLayers.Util;
 

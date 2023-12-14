@@ -1,7 +1,4 @@
-﻿using StorybrewCommon.Mapset;
-using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Util;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -9,6 +6,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using StorybrewCommon.Mapset;
+using StorybrewCommon.Storyboarding.CommandValues;
+using StorybrewCommon.Util;
 
 namespace StorybrewEditor.Mapset;
 

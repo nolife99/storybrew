@@ -1,11 +1,11 @@
-﻿using System.Numerics;
-using osuTK.Graphics;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
+using osuTK.Graphics;
 using StorybrewCommon.Storyboarding.CommandValues;
-using System.Drawing;
 
 namespace StorybrewCommon.Util;
 

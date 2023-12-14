@@ -1,13 +1,14 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
-using System;
-using System.Numerics;
-using System.Collections.Generic;
-using System.Linq;
-using System.Drawing;
-using System.Runtime.InteropServices;
 
 namespace StorybrewCommon.Storyboarding.Util;
 
@@ -90,34 +91,39 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        var span = CollectionsMarshal.AsSpan(states);
-        foreach (var state in span)
+        var span = CollectionsMarshal.AsSpan(states); 
+        ref var r0 = ref MemoryMarshal.GetReference(span);
+        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
         {
-            var time = state.Time + timeOffset;
-            var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
+            var time = r0.Time + timeOffset;
+            var isVisible = r0.IsVisible(imageSize, sprite.Origin, this);
 
             if (isVisible && !everVisible) everVisible = true;
             if (!wasVisible && isVisible)
             {
                 if (!stateAdded && previousState is not null) addKeyframes(previousState, loopable ? time : (previousState.Time + timeOffset));
-                addKeyframes(state, time);
+                addKeyframes(r0, time);
                 if (!stateAdded) stateAdded = true;
             }
             else if (wasVisible && !isVisible)
             {
-                addKeyframes(state, time);
+                addKeyframes(r0, time);
                 commitKeyframes(imageSize);
                 if (!stateAdded) stateAdded = true;
             }
             else if (isVisible)
             {
-                addKeyframes(state, time);
+                addKeyframes(r0, time);
                 if (!stateAdded) stateAdded = true;
             }
             else stateAdded = false;
 
-            previousState = state;
+            previousState = r0;
             wasVisible = isVisible;
+
+            r0 = ref Unsafe.Add(ref r0, 1);
         }
 
         if (wasVisible) commitKeyframes(imageSize);
@@ -155,10 +161,12 @@ public class CommandGenerator
     }
     void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] float checkPos(float value) => MathF.Round(value, PositionDecimals);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)] float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
+
         double? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        float checkPos(float value) => MathF.Round(value, PositionDecimals);
         bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
             moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
@@ -177,7 +185,6 @@ public class CommandGenerator
             else sprite.Move(s.Time, e.Time, s.Value, e.Value);
         }, new(320, 240), p => new(MathF.Round(p.X, PositionDecimals), MathF.Round(p.Y, PositionDecimals)), startState, endState, loopable);
 
-        float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
         var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) > 1);
         finalScales.ForEachPair((s, e) =>
         {
@@ -186,7 +193,7 @@ public class CommandGenerator
         }, Vector2.One, s => new(MathF.Round(s.X, ScaleDecimals), MathF.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
 
         finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
-        finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), Color.White, null, startState, endState, loopable);
+        finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState, endState, loopable);
         finalfades.ForEachPair((s, e) =>
         {
             // what the hell???
@@ -199,6 +206,8 @@ public class CommandGenerator
         flipV.ForEachFlag(sprite.FlipV);
         additive.ForEachFlag(sprite.Additive);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void addKeyframes(State state, double time)
     {
         positions.Add(time, state.Position);
@@ -268,6 +277,7 @@ public class State : IComparer<State>
     /// Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and <see cref="OsbOrigin"/>. 
     /// </summary>
     /// <returns> <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>. </returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;
@@ -286,5 +296,6 @@ public class State : IComparer<State>
             imageSize * scale, noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
 }

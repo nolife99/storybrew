@@ -1,10 +1,10 @@
-﻿using BrewLib.UserInterface;
+﻿using System;
+using System.Numerics;
+using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
-using System.Numerics;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.UserInterface.Skinning.Styles;
-using System;
 
 namespace StorybrewEditor.UserInterface;
 

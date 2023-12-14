@@ -1,7 +1,7 @@
-﻿using BrewLib.UserInterface;
-using System.Numerics;
-using System;
+﻿using System;
 using System.Globalization;
+using System.Numerics;
+using BrewLib.UserInterface;
 
 namespace StorybrewEditor.UserInterface;
 

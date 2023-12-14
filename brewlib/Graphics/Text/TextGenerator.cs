@@ -1,14 +1,14 @@
-﻿using BrewLib.Data;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
-using System.Numerics;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Text;
-using System.Runtime.InteropServices;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using BrewLib.Data;
+using BrewLib.Graphics.Textures;
+using BrewLib.Util;
 
 namespace BrewLib.Graphics.Text;
 

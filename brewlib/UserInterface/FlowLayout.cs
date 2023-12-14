@@ -1,8 +1,8 @@
-﻿using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
-using System.Numerics;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Numerics;
+using BrewLib.UserInterface.Skinning.Styles;
+using BrewLib.Util;
 
 namespace BrewLib.UserInterface;
 

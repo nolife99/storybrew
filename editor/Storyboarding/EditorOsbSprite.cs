@@ -1,4 +1,8 @@
-﻿using BrewLib.Graphics;
+﻿using System;
+using System.Drawing;
+using System.IO;
+using System.Numerics;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
@@ -7,10 +11,6 @@ using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
-using System;
-using System.Numerics;
-using System.IO;
-using System.Drawing;
 
 namespace StorybrewEditor.Storyboarding;
 

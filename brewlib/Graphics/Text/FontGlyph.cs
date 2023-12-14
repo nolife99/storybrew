@@ -1,5 +1,5 @@
-﻿using BrewLib.Graphics.Textures;
-using System.Numerics;
+﻿using System.Numerics;
+using BrewLib.Graphics.Textures;
 
 namespace BrewLib.Graphics.Text;
 

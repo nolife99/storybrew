@@ -1,11 +1,11 @@
+using System;
+using System.Drawing;
+using System.IO;
+using System.Numerics;
+using System.Text.RegularExpressions;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Subtitles;
-using System;
-using System.Numerics;
-using System.Drawing;
-using System.IO;
-using System.Text.RegularExpressions;
 
 namespace StorybrewScripts;
 

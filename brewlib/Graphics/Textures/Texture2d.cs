@@ -1,13 +1,10 @@
-﻿using BrewLib.Data;
-using osuTK.Graphics.OpenGL;
-using System;
-using System.Buffers;
+﻿using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using BrewLib.Data;
+using osuTK.Graphics.OpenGL;
 using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures;
@@ -98,11 +95,11 @@ public class Texture2d(int textureId, int width, int height, string description)
             DrawState.BindTexture(textureId);
             unsafe
             {
-                Span<int> arr = stackalloc int[width * height];
-                arr.Fill(channel);
+                var count = width * height;
+                var arr = stackalloc int[count];
+                new Span<int>(arr, count).Fill(channel);
 
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, 
-                    (nint)Unsafe.AsPointer(ref MemoryMarshal.GetReference(arr)));
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, (nint)arr);
             }
 
             if (textureOptions.GenerateMipmaps)

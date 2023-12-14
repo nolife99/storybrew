@@ -1,4 +1,9 @@
-﻿using BrewLib.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.Linq;
+using BrewLib.Data;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Text;
@@ -6,11 +11,6 @@ using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using osuTK.Graphics;
 using osuTK.Graphics.OpenGL;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
 
 namespace BrewLib.Graphics;
 

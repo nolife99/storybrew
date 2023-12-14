@@ -1,6 +1,6 @@
-﻿using BrewLib.Graphics;
+﻿using System.Drawing;
+using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
-using System.Drawing;
 
 namespace StorybrewEditor.Storyboarding;
 

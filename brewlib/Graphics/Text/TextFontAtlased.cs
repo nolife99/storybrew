@@ -1,8 +1,8 @@
-﻿using BrewLib.Graphics.Textures;
-using BrewLib.Util;
-using System.Numerics;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
+using BrewLib.Graphics.Textures;
+using BrewLib.Util;
 
 namespace BrewLib.Graphics.Text;
 

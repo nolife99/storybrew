@@ -1,7 +1,7 @@
-﻿using BrewLib.Data;
-using ManagedBass;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using BrewLib.Data;
+using ManagedBass;
 
 namespace BrewLib.Audio;
 

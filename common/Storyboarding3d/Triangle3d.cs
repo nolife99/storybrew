@@ -1,10 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Numerics;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
-using System;
-using System.Numerics;
-using System.Collections.Generic;
-using System.Drawing;
 
 namespace StorybrewCommon.Storyboarding3d;
 
