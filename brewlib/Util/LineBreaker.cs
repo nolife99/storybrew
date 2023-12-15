@@ -9,13 +9,12 @@ public class LineBreaker
     public static List<string> Split(string text, float maxWidth, Func<char, int> measure)
     {
         List<string> lines = [];
-        var textArray = text.ToCharArray();
-
+        
         int startIndex = 0, endIndex = 0, lineWidth = 0;
         void completeLine()
         {
             var length = endIndex - startIndex + 1;
-            lines.Add(new string(textArray, startIndex, length));
+            lines.Add(text.Substring(startIndex, length));
 
             startIndex = endIndex + 1;
             endIndex = startIndex;
@@ -37,7 +36,7 @@ public class LineBreaker
             if (mustBreakAfter(text, endIndex))
             {
                 completeLine();
-                endIndex--;
+                --endIndex;
             }
         }
         if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add("");

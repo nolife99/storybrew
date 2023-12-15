@@ -2,7 +2,7 @@
 
 namespace StorybrewEditor.Mapset;
 
-[Serializable] public class BeatmapLoadingException : Exception
+public class BeatmapLoadingException : Exception
 {
     public BeatmapLoadingException() { }
     public BeatmapLoadingException(string message) : base(message) { }

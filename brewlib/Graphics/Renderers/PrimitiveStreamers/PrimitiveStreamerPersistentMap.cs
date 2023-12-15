@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
@@ -18,8 +17,10 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
-        bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
+
+        var flags = (int)(BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
+        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, (BufferStorageFlags)flags);
+        bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, (BufferAccessMask)flags);
 
         DrawState.CheckError("mapping vertex buffer", bufferPointer == 0);
         GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
@@ -52,8 +53,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         unsafe
         {
-            fixed (void* pinned = &Unsafe.As<TPrimitive, byte>(ref MemoryMarshal.GetArrayDataReference(primitives)))
-                Native.CopyMemory((nint)pinned, bufferPointer + bufferOffset, vertexDataSize);
+            fixed (void* pinned = &MemoryMarshal.GetArrayDataReference((Array)primitives)) Native.CopyMemory((nint)pinned, bufferPointer + bufferOffset, vertexDataSize);
         }
 
         if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset << 1);

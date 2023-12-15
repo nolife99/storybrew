@@ -201,8 +201,7 @@ public static class Program
             if (!window.Exists || window.IsExiting) return;
             if (window.WindowState != WindowState.Minimized)
             {
-                var tween = Math.Min((cur - fixedRate) / fixedRateUpdate, 1);
-                editor.Draw(tween);
+                editor.Draw(Math.Min((cur - fixedRate) / fixedRateUpdate, 1));
                 window.SwapBuffers();
             }
 

@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 
 namespace BrewLib.Util;
 
@@ -19,16 +18,9 @@ public class ByteCounterStream : Stream
 
     public override void Flush() { }
 
-    public override int Read(byte[] buffer, int offset, int count) => 0;
-    public override long Seek(long offset, SeekOrigin origin) => 0;
+    public override int Read(byte[] buffer, int offset, int count) => int.MinValue;
+    public override long Seek(long offset, SeekOrigin origin) => int.MinValue;
 
     public override void SetLength(long value) => length = value;
-    public override void Write(byte[] buffer, int offset, int count)
-    {
-        if (offset + count > buffer.Length) throw new OverflowException("Sum of offset and count is greater than buffer size");
-        ArgumentNullException.ThrowIfNull(buffer);
-        if (offset < 0 || count < 0) throw new ArgumentOutOfRangeException("offset/count should be greater than zero");
-
-        length += count;
-    }
+    public override void Write(byte[] buffer, int offset, int count) => length += count;
 }

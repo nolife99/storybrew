@@ -26,7 +26,7 @@ public class Label(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
-    public string Icon
+    public IconFont Icon
     {
         get => textDrawable.Icon;
         set

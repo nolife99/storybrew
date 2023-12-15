@@ -21,7 +21,7 @@ public class AssParser : SubtitleParser
     ///<inheritdoc/>
     public SubtitleSet Parse(Stream stream)
     {
-        HashSet<SubtitleLine> lines = [];
+        List<SubtitleLine> lines = [];
         using (StreamReader reader = new(stream, Encoding.ASCII)) reader.ParseSections(sectionName =>
         {
             switch (sectionName)

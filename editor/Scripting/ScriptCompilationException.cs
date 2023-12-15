@@ -2,7 +2,7 @@
 
 namespace StorybrewEditor.Scripting;
 
-[Serializable] public class ScriptCompilationException : Exception
+public class ScriptCompilationException : Exception
 {
     public ScriptCompilationException() { }
     public ScriptCompilationException(string message) : base(message) { }

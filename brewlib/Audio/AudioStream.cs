@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using BrewLib.Data;
 using ManagedBass;
 using ManagedBass.Fx;
@@ -15,25 +14,16 @@ public class AudioStream : AudioChannel
         var flags = BassFlags.Decode | BassFlags.Prescan;
 
         decodeStream = Bass.CreateStream(path, 0, 0, flags);
-        if (decodeStream == 0 && !Path.IsPathRooted(path))
+        if (decodeStream == 0 && !Path.IsPathRooted(path)) unsafe
         {
             var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
-            if (resourceStream is not null)
+            if (resourceStream is not null) decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, new()
             {
-                FileProcedures procedures = new()
-                {
-                    Read = (buffer, _, _) =>
-                    {
-                        int read, readBytes = 0;
-                        while ((read = resourceStream.ReadByte()) != -1) Marshal.WriteByte(buffer + readBytes++, (byte)read);
-                        return readBytes;
-                    },
-                    Length = _ => resourceStream.Length,
-                    Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
-                    Close = _ => resourceStream.Dispose()
-                };
-                decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, procedures);
-            }
+                Read = (buffer, _, _) => resourceStream.Read(new(buffer.ToPointer(), (int)resourceStream.Length)),
+                Length = _ => resourceStream.Length,
+                Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
+                Close = _ => resourceStream.Dispose()
+            });
         }
         if (decodeStream == 0)
         {

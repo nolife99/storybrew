@@ -112,7 +112,7 @@ public class LayerList : Widget
                     new Label(Manager)
                     {
                         StyleName = "icon",
-                        Icon = IconFont.Reorder,
+                        Icon = IconFont.Sort,
                         Tooltip = "Drag to reorder",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,

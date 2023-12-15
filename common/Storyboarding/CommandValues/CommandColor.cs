@@ -7,7 +7,7 @@ using osuTK.Graphics;
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Base struct for coloring commands. </summary>
-[Serializable] public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
+public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
 {
     ///<summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
     public static readonly CommandColor Black = new(0, 0, 0);

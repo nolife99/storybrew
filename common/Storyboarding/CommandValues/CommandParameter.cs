@@ -3,7 +3,7 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 #pragma warning disable CS1591
-[Serializable] public readonly struct CommandParameter : CommandValue
+public readonly struct CommandParameter : CommandValue
 {
     public static readonly CommandParameter None = new(ParameterType.None),
         FlipHorizontal = new(ParameterType.FlipHorizontal),

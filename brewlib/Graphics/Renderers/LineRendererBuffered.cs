@@ -25,7 +25,7 @@ public class LineRendererBuffered : LineRenderer
 
     public static Shader CreateDefaultShader()
     {
-        var sb = new ShaderBuilder(VertexDeclaration);
+        ShaderBuilder sb = new(VertexDeclaration);
 
         var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
         var color = sb.AddVarying("vec4");

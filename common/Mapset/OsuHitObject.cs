@@ -6,7 +6,7 @@ using StorybrewCommon.Storyboarding.CommandValues;
 namespace StorybrewCommon.Mapset;
 
 ///<summary> Represents a hit object in osu!. </summary>
-[Serializable] public class OsuHitObject
+public class OsuHitObject
 {
     ///<summary> Represents the playfield size in osu!. </summary>
     public static readonly SizeF PlayfieldSize = new(512, 384), StoryboardSize = new(640, 480);

@@ -121,8 +121,9 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     }
     bool updateTransition(double delta, double duration, int direction)
     {
-        var progress = duration > 0 ? delta / duration : 1.0;
+        var progress = duration > 0 ? delta / duration : 1;
         TransitionProgress += progress * direction;
+
         if (TransitionProgress <= 0)
         {
             TransitionProgress = 0;
@@ -145,7 +146,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     {
         if (!disposed)
         {
-            if (disposing) if (hasFocus) throw new InvalidOperationException(GetType().Name + " still has focus!");
+            if (disposing) if (hasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
             disposed = true;
         }
     }

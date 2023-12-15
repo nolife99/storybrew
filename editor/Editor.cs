@@ -141,13 +141,11 @@ public sealed class Editor(GameWindow window) : IDisposable
                 new Label(overlay)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.VolumeUp,
-                    AnchorTo = BoxAlignment.Centre
+                    Icon = IconFont.VolumeUp
                 },
                 volumeSlider = new(overlay)
                 {
-                    Step = .01f,
-                    AnchorTo = BoxAlignment.Centre
+                    Step = .01f
                 }
             }
         });

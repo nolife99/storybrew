@@ -1,11 +1,10 @@
-﻿using System;
-using StorybrewCommon.Storyboarding.CommandValues;
+﻿using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Curves;
 
 ///<summary> Represents any <see cref="Curves.Curve"/> that has been transformed. </summary>
 ///<remarks> Constructs a transformed curve from <paramref name="curve"/> and given transformations. </remarks>
-[Serializable] public class TransformedCurve(Curve curve, CommandPosition offset, float scale, bool reversed = false) : Curve
+public class TransformedCurve(Curve curve, CommandPosition offset, float scale, bool reversed = false) : Curve
 {
     ///<summary> The transformed curve. </summary>
     public Curve Curve => curve;

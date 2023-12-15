@@ -119,7 +119,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 playB = new(WidgetManager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.PlayArrow,
+                    Icon = IconFont.PlayCircle,
                     Tooltip = "Play/Pause\nShortcut: Space/K",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
@@ -162,7 +162,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 mapFolderB = new(WidgetManager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.FolderOpen,
+                    Icon = IconFont.FolderSpecial,
                     Tooltip = "Open mapset folder\n(Right click to change)",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
@@ -468,7 +468,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var time = (float)(pendingSeek ?? timeSource.Current);
 
         mapB.Disabled = proj.MapsetManager.BeatmapCount < 2;
-        playB.Icon = timeSource.Playing ? IconFont.Pause : IconFont.PlayArrow;
+        playB.Icon = timeSource.Playing ? IconFont.PauseCircle : IconFont.PlayCircle;
         saveB.Disabled = !proj.Changed;
         exportB.Disabled = !proj.MapsetPathIsValid;
         audio.Volume = WidgetManager.Root.Opacity;

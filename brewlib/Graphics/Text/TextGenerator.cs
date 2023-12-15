@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using BrewLib.Data;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
@@ -70,7 +69,7 @@ public sealed class TextGenerator : IDisposable
         {
             using var textGraphics = System.Drawing.Graphics.FromImage(bitmap);
             textGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
-            textGraphics.InterpolationMode = InterpolationMode.HighQualityBilinear;
+            textGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
 
             textGraphics.DrawString(text, font, shadowBrush, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
@@ -109,15 +108,24 @@ public sealed class TextGenerator : IDisposable
             fonts.Remove(lastFontIdentifier);
         }
 
-        if (!fontFamilies.TryGetValue(name, out var fontFamily))
+        if (!fontFamilies.TryGetValue(name, out var fontFamily)) unsafe
         {
-            var bytes = container.GetBytes(name, ResourceSource.Embedded);
-            if (bytes is not null) unsafe
+            void* ptr = null;
+            int len;
+
+            using (var stream = container.GetStream(name, ResourceSource.Embedded))
+            {
+                var pt = stackalloc byte[len = (int)stream.Length];
+                stream.Read(new Span<byte>(pt, len));
+                ptr = pt;
+            }
+
+            if (ptr is not null)
             {
                 try
                 {
                     if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
-                    fixed (void* pinned = &MemoryMarshal.GetArrayDataReference(bytes)) fontCollection.AddMemoryFont((nint)pinned, bytes.Length);
+                    fontCollection.AddMemoryFont((nint)ptr, len);
 
                     var families = fontCollection.Families;
                     if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");

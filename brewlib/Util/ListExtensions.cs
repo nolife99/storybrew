@@ -12,10 +12,12 @@ public static class ListExtensions
     {
         if (from == to) return;
 
-        var item = list[from];
-        if (from < to) for (var index = from; index < to; ++index) list[index] = list[index + 1];
-        else for (var index = from; index > to; --index) list[index] = list[index - 1];
-        list[to] = item;
+        var span = CollectionsMarshal.AsSpan(list);
+        var item = span[from];
+
+        if (from < to) for (var index = from; index < to; ++index) span[index] = span[index + 1];
+        else for (var index = from; index > to; --index) span[index] = span[index - 1];
+        span[to] = item;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

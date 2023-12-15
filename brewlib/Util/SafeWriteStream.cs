@@ -7,7 +7,7 @@ public class SafeWriteStream : FileStream
     readonly string temporaryPath, path;
     bool commited, disposed;
 
-    public SafeWriteStream(string path) : base(prepare(path), FileMode.OpenOrCreate, FileAccess.Write)
+    public SafeWriteStream(string path) : base(prepare(path), FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)
     {
         this.path = path;
         temporaryPath = Name;

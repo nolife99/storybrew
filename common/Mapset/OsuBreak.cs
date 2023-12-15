@@ -1,10 +1,9 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace StorybrewCommon.Mapset;
 
 #pragma warning disable CS1591
-[Serializable] public class OsuBreak
+public class OsuBreak
 {
     public double StartTime { get; internal set; }
     public double EndTime { get; internal set; }

@@ -30,10 +30,9 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
         }
         else
         {
-            atlas ??= new(512, 512, $"Font Atlas {name} {size}x");
+            atlas ??= new(512, 512, $"Font atlas {name} {size}x");
             using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, Vector2.Zero, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
-            var texture = atlas.AddRegion(bitmap, $"glyph:{c}@{Name}:{Size}");
-            return new(texture, (int)measuredSize.X, (int)measuredSize.Y);
+            return new(atlas.AddRegion(bitmap, $"glyph:{c}@{Name}:{Size}"), (int)measuredSize.X, (int)measuredSize.Y);
         }
     }
 
@@ -44,7 +43,7 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
     {
         if (!disposed)
         {
-            foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
+            foreach (var glyph in glyphs) glyph.Value.Texture?.Dispose();
             glyphs.Clear();
             atlas?.Dispose();
 

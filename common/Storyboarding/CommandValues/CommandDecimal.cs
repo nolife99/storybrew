@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Custom decimal handler for storyboarding. </summary>
-[Serializable] public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecimal>, IEquatable<CommandDecimal>
+public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecimal>, IEquatable<CommandDecimal>
 {
     readonly double value;
 

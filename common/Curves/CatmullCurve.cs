@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Curves;
 
 ///<summary> Represents a Catmull-Rom spline curve. </summary>
 ///<remarks> Constructs a Catmull-Rom curve from given control points <paramref name="points"/>. </remarks>
-[Serializable] public class CatmullCurve(CommandPosition[] points, int precision) : BaseCurve
+public class CatmullCurve(CommandPosition[] points, int precision) : BaseCurve
 {
     ///<inheritdoc/>
     public override CommandPosition StartPosition => points[0];

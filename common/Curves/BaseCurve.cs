@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Curves;
 
 ///<summary> Represents a base curve. </summary>
-[Serializable] public abstract class BaseCurve : Curve
+public abstract class BaseCurve : Curve
 {
     ///<inheritdoc/>
     public abstract CommandPosition EndPosition { get; }

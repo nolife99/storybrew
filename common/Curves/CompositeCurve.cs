@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using StorybrewCommon.Storyboarding.CommandValues;
 
@@ -7,7 +6,7 @@ namespace StorybrewCommon.Curves;
 
 ///<summary> Represents a composite curve that is constructed from multiple curves. </summary>
 ///<remarks> Constructs a composite curve from a list of curves <paramref name="curves"/>. </remarks>
-[Serializable] public class CompositeCurve(IEnumerable<Curve> curves) : Curve
+public class CompositeCurve(IEnumerable<Curve> curves) : Curve
 {
     readonly Curve[] curves = (curves as Curve[]) ?? curves.ToArray();
 

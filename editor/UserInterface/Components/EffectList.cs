@@ -117,7 +117,7 @@ public class EffectList : Widget
                 renameButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Edit,
+                    Icon = IconFont.DriveFileRenameOutline,
                     Tooltip = "Rename",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,
@@ -155,7 +155,7 @@ public class EffectList : Widget
                 configButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Settings,
+                    Icon = IconFont.Tune,
                     Tooltip = "Configure",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,
@@ -174,7 +174,7 @@ public class EffectList : Widget
                 removeButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.Close,
+                    Icon = IconFont.Delete,
                     Tooltip = "Remove",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,

@@ -16,8 +16,7 @@ namespace StorybrewEditor.Storyboarding;
 
 public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 {
-    public readonly static RenderStates AlphaBlendStates = new();
-    public readonly static RenderStates AdditiveStates = new() { BlendingFactor = new BlendingFactorState(BlendingMode.Additive) };
+    public readonly static RenderStates AlphaBlendStates = new(), AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats) => Draw(
         drawContext, camera, bounds, opacity, project, frameStats, this);
@@ -44,7 +43,8 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         if (fade < .00001f) return;
 
         var scale = (Vector2)sprite.ScaleAt(time);
-        if (scale == Vector2.Zero) return;
+        if (scale == default) return;
+
         if (sprite.FlipHAt(time)) scale.X = -scale.X;
         if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
 
@@ -74,9 +74,9 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 
         if (frameStats is not null)
         {
-            var size = (CommandScale)texture.Size * (CommandScale)scale;
+            var size = texture.Size * scale;
 
-            var spriteBox = new OrientedBoundingBox(position, origin * (CommandPosition)scale, size.X, size.Y, rotation);
+            OrientedBoundingBox spriteBox = new(position, origin * (CommandPosition)scale, size.X, size.Y, rotation);
             if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
             {
                 frameStats.EffectiveCommandCount += sprite.CommandCost;

@@ -1,10 +1,9 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace StorybrewCommon.Mapset;
 
 #pragma warning disable CS1591
-[Serializable] public class OsuHold : OsuHitObject
+public class OsuHold : OsuHitObject
 {
     double endTime;
     public override double EndTime => endTime;

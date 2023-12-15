@@ -156,7 +156,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                     editButton = new(WidgetManager)
                     {
                         StyleName = "icon",
-                        Icon = IconFont.FolderOpen,
+                        Icon = IconFont.DriveFileMove,
                         Tooltip = "Change file",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,

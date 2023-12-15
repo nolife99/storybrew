@@ -31,6 +31,7 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
         if (!disposed)
         {
             textures.Dispose();
+
             textures = null;
             disposed = true;
         }

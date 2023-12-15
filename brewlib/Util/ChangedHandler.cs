@@ -4,6 +4,6 @@ public class ChangedEventArgs(string propertyName)
 {
     public static readonly ChangedEventArgs All = new(null);
 
-    public readonly string PropertyName = propertyName;
+    public string PropertyName => propertyName;
 }
 public delegate void ChangedHandler(object sender, ChangedEventArgs e);

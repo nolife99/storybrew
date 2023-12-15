@@ -7,7 +7,7 @@ namespace StorybrewCommon.Curves;
 
 #pragma warning disable CS1591
 ///<summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
-[Serializable] public class BezierCurve(IEnumerable<CommandPosition> points, int precision) : BaseCurve
+public class BezierCurve(IEnumerable<CommandPosition> points, int precision) : BaseCurve
 {
     readonly CommandPosition[] points = points as CommandPosition[] ?? points.ToArray();
 

@@ -16,20 +16,21 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
     {
-        if (bitmap.Width < 1 || bitmap.Height < 1) throw new InvalidOperationException($"Invalid bitmap size: {bitmap.Size}");
         if (x < 0 || y < 0 || x + bitmap.Width > Width || y + bitmap.Height > Height)
-            throw new InvalidOperationException($"Invalid update bounds: {bitmap.Size} at {x},{y} overflows {Width}x{Height}");
+            throw new ArgumentException($"Invalid update bounds: {bitmap.Size} at {x},{y} overflows {Width}x{Height}");
 
         DrawState.BindPrimaryTexture(textureId, TexturingModes.Texturing2d);
 
-        textureOptions ??= TextureOptions.Default;
-        textureOptions.WithBitmap(bitmap, b =>
+        var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        try
         {
-            var data = b.LockBits(new(default, b.Size), ImageLockMode.ReadOnly, b.PixelFormat);
-            GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, b.Width, b.Height, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
+            GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
             GL.Finish();
-            b.UnlockBits(data);
-        });
+        }
+        finally
+        {
+            bitmap.UnlockBits(data);
+        }
 
         DrawState.CheckError("updating texture");
     }
@@ -86,7 +87,7 @@ public class Texture2d(int textureId, int width, int height, string description)
         if (textureOptions.PreMultiply)
         {
             var ratio = color.A / 255f;
-            channel = (color.A << 24) | ((byte)(color.R * ratio) << 16) | ((byte)(color.G * ratio) << 8) | (byte)(color.B * ratio);
+            channel = Color.FromArgb(color.A, (byte)(color.R * ratio), (byte)(color.G * ratio), (byte)(color.B * ratio)).ToArgb();
         }
         
         var textureId = GL.GenTexture();
@@ -134,17 +135,19 @@ public class Texture2d(int textureId, int width, int height, string description)
         {
             DrawState.BindTexture(textureId);
 
-            textureOptions.WithBitmap(bitmap, b =>
+            var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            try
             {
-                var data = b.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, b.Width, b.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-                b.UnlockBits(data);
-
+                GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width, data.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
                 if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
                 GL.Finish();
-            });
-            DrawState.CheckError("specifying texture");
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
 
+            DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
         }
         catch

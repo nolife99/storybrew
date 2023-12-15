@@ -6,8 +6,8 @@ namespace BrewLib.Util;
 ///<inheritdoc cref="Random"/>
 public class FastRandom
 {
-    const double UNIT_INT = 4.65661287307739E-10, UNIT_UINT = 2.3283064365387E-10;
-    const uint Y = 0x32378FC7, Z = 0xD55F8767, W = 0x104AA1AD;
+    const double UNIT_INT = 1 / (int.MaxValue + 1d), UNIT_UINT = 1 / (uint.MaxValue + 1d);
+    const uint Y = 842502087, Z = 3579807591, W = 273326509;
 
     uint x, y, z, w;
 

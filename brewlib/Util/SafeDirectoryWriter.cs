@@ -53,12 +53,10 @@ public class SafeDirectoryWriter : IDisposable
                 if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
                 Directory.Move(targetDirectory, backupDirectory);
             }
+
             Directory.Move(tempDirectory, targetDirectory);
             if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
         }
-        else
-        {
-            if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
-        }
+        else if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
     }
 }

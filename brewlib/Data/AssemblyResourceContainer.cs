@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Util;
 
@@ -55,11 +54,14 @@ public class AssemblyResourceContainer : ResourceContainer
     }
     public byte[] GetBytes(string path, ResourceSource sources = ResourceSource.Embedded)
     {
-        using var stream = GetStream(path, sources);
-        if (stream is null) return null;
+        byte[] buffer;
+        using (var stream = GetStream(path, sources))
+        {
+            if (stream is null) return null;
 
-        var buffer = GC.AllocateUninitializedArray<byte>((int)stream.Length);
-        stream.Read(MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(buffer), buffer.Length));
+            buffer = GC.AllocateUninitializedArray<byte>((int)stream.Length);
+            stream.Read(new(buffer));
+        }
         return buffer;
     }
     public string GetString(string path, ResourceSource sources = ResourceSource.Embedded)

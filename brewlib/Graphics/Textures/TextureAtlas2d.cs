@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Drawing;
 using Bitmap = System.Drawing.Bitmap;
 
 namespace BrewLib.Graphics.Textures;
 
 public sealed class TextureAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0) : IDisposable
 {
-    Texture2d texture = Texture2d.Create(Color.FromArgb(0, 0, 0, 0), description, width, height, textureOptions);
+    Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
     int currentX, currentY, nextY;
 
     public float FillRatio => (texture.Width * currentY + currentX * (nextY - currentY)) / (texture.Width * texture.Height);

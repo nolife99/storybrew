@@ -7,14 +7,14 @@ namespace BrewLib.Graphics.Text;
 public class TextFontManager : IDisposable
 {
     Dictionary<string, TextFontAtlased> fonts = [];
-    readonly Dictionary<string, int> references = [];
+    Dictionary<string, int> references = [];
 
     public TextFont GetTextFont(string fontName, float fontSize, float scaling)
     {
         var identifier = $"{fontName}|{fontSize}|{scaling}";
 
         if (!fonts.TryGetValue(identifier, out var font)) fonts.Add(identifier, font = new(fontName, fontSize * scaling));
-        if (references.TryGetValue(identifier, out int refCount)) references[identifier] = refCount + 1;
+        if (references.TryGetValue(identifier, out var refCount)) references[identifier] = refCount + 1;
         else references[identifier] = 1;
 
         return new TextFontProxy(font, () =>
@@ -37,7 +37,9 @@ public class TextFontManager : IDisposable
         {
             fonts.Dispose();
             references.Clear();
+
             fonts = null;
+            references = null;
             disposed = true;
         }
     }

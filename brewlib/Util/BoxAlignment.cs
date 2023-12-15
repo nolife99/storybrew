@@ -1,8 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Util;
 
-namespace BrewLib.Util;
-
-[Flags] public enum BoxAlignment
+[System.Flags] public enum BoxAlignment
 {
     Centre = 0,
 

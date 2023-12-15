@@ -7,7 +7,7 @@ using StorybrewCommon.Storyboarding.CommandValues;
 namespace StorybrewCommon.Mapset;
 
 #pragma warning disable CS1591
-[Serializable] public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints) : OsuHitObject
+public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints) : OsuHitObject
 {
     public IEnumerable<OsuSliderNode> Nodes => nodes;
     public int NodeCount => nodes.Length;
@@ -283,7 +283,7 @@ namespace StorybrewCommon.Mapset;
         };
     }
 }
-[Serializable] public class OsuSliderNode
+public class OsuSliderNode
 {
     public double Time;
     public HitSoundAddition Additions;
@@ -291,7 +291,7 @@ namespace StorybrewCommon.Mapset;
     public int CustomSampleSet;
     public float Volume;
 }
-[Serializable] public class OsuSliderControlPoint(CommandPosition position)
+public class OsuSliderControlPoint(CommandPosition position)
 {
     public CommandPosition PlayfieldPosition = position;
     public CommandPosition Position => PlayfieldPosition + OsuHitObject.PlayfieldToStoryboardOffset;

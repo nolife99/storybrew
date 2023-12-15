@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using BrewLib.Data;
 using ManagedBass;
 
@@ -21,10 +22,20 @@ public class AudioSample : IDisposable
         sample = Bass.SampleLoad(path, 0, 0, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
         if (sample != 0) return;
 
-        var bytes = resourceContainer?.GetBytes(path, ResourceSource.Embedded);
-        if (bytes is not null)
+        using (var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded)) if (stream is not null) unsafe
         {
-            sample = Bass.SampleLoad(bytes, 0, bytes.Length, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
+            var len = (int)stream.Length;
+            var bytes = NativeMemory.Alloc((uint)len);
+
+            try
+            {
+                stream.Read(new(bytes, len));
+                sample = Bass.SampleLoad((nint)bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
+            }
+            finally
+            {
+                NativeMemory.Free(bytes);
+            }
             if (sample != 0) return;
         }
 
@@ -33,13 +44,15 @@ public class AudioSample : IDisposable
     public void Play(float volume = 1, float pitch = 1, float pan = 0)
     {
         if (sample == 0) return;
-        var channel = new AudioChannel(manager, Bass.SampleGetChannel(sample), true)
+
+        AudioChannel channel = new(manager, Bass.SampleGetChannel(sample), true)
         {
             Volume = volume,
             Pitch = pitch,
             Pan = pan
         };
         manager.RegisterChannel(channel);
+
         channel.Playing = true;
     }
 

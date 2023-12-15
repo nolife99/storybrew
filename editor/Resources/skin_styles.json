@@ -48,6 +48,7 @@
 			},
 			"icon":
 			{
+				FontSize: "@fontSizeLarge",
 				FontName: "@iconFont",
 				TextAlignment: "Centre",
 			},
@@ -112,16 +113,19 @@
 			{
 				_parent: "buttonLabel",
 				FontName: "@iconFont",
+				FontSize: "@fontSizeLarge",
 			},
 			"buttonLabelIcon #disabled":
 			{
 				_parent: "buttonLabel #disabled",
 				FontName: "@iconFont",
+				FontSize: "@fontSizeLarge",
 			},
 			"buttonLabelIcon #hover":
 			{
 				_parent: "buttonLabel #hover",
 				FontName: "@iconFont",
+				FontSize: "@fontSizeLarge",
 			},
 
 			"textboxLabel":

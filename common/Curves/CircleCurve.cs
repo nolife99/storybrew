@@ -6,7 +6,7 @@ namespace StorybrewCommon.Curves;
 
 ///<summary> Represents a perfect circular curve. </summary>
 ///<remarks> Constructs a perfect circular curve from given control points. </remarks>
-[Serializable] public class CircleCurve(CommandPosition startPoint, CommandPosition midPoint, CommandPosition endPoint) : BaseCurve
+public class CircleCurve(CommandPosition startPoint, CommandPosition midPoint, CommandPosition endPoint) : BaseCurve
 {
     ///<inheritdoc/>
     public override CommandPosition StartPosition => startPoint;

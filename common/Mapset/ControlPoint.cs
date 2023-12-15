@@ -4,7 +4,7 @@ using System.Globalization;
 namespace StorybrewCommon.Mapset;
 
 ///<summary> Represents a control point in osu! </summary>
-[Serializable] public class ControlPoint : IComparable<ControlPoint>
+public class ControlPoint : IComparable<ControlPoint>
 {
     ///<summary> Returns a control point with default values. </summary>
     public static readonly ControlPoint Default = new();

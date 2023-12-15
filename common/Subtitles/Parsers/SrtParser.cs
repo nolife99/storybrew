@@ -20,7 +20,7 @@ public class SrtParser : SubtitleParser
     ///<inheritdoc/>
     public SubtitleSet Parse(Stream stream)
     {
-        HashSet<SubtitleLine> lines = [];
+        List<SubtitleLine> lines = [];
         foreach (var block in parseBlocks(stream))
         {
             var blockLines = block.Split('\n');

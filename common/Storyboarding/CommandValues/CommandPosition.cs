@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Base structure for movement commands.</summary>
-[Serializable] public readonly struct CommandPosition : 
+public readonly struct CommandPosition : 
     CommandValue, IEquatable<CommandPosition>, 
     IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
     ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,

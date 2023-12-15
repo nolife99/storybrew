@@ -10,6 +10,4 @@ public class FontGlyph(Texture2dRegion texture, int width, int height)
     public int Width => width;
     public int Height => height;
     public Vector2 Size => new(width, height);
-
-    public override string ToString() => $"{texture} {width}x{height}";
 }

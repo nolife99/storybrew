@@ -7,7 +7,6 @@ using StorybrewCommon.Storyboarding.CommandValues;
 namespace StorybrewCommon.Subtitles;
 
 ///<summary> Base struct for coloring commands. </summary>
-[Serializable]
 public readonly struct FontColor : IEquatable<FontColor>
 {
     ///<summary> Represents a <see cref="FontColor"/> value as the color black. </summary>

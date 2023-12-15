@@ -7,7 +7,7 @@ namespace BrewLib.Graphics.Textures;
 
 public sealed class TextureMultiAtlas2d : IDisposable
 {
-    Stack<TextureAtlas2d> atlases = new();
+    List<TextureAtlas2d> atlases = [];
     List<Texture2d> oversizeTextures;
 
     readonly int width, height, padding;
@@ -21,6 +21,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
         this.description = description;
         this.textureOptions = textureOptions;
         this.padding = padding;
+
         pushAtlas();
     }
 
@@ -35,8 +36,9 @@ public sealed class TextureMultiAtlas2d : IDisposable
             return texture;
         }
 
-        var atlas = atlases.Peek();
+        var atlas = atlases[^1];
         var region = atlas.AddRegion(bitmap, description);
+
         if (region is null)
         {
             Trace.WriteLine($"{this.description} is full, adding an atlas");
@@ -49,7 +51,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
     TextureAtlas2d pushAtlas()
     {
         TextureAtlas2d atlas = new(width, height, $"{description} #{atlases.Count + 1}", textureOptions, padding);
-        atlases.Push(atlas);
+        atlases.Add(atlas);
         return atlas;
     }
 
@@ -60,7 +62,8 @@ public sealed class TextureMultiAtlas2d : IDisposable
     {
         if (!disposed)
         {
-            while (atlases.Count > 0) atlases.Pop().Dispose();
+            atlases.ForEach(atlas => atlas.Dispose());
+            atlases.Clear();
             oversizeTextures?.ForEach(texture => texture.Dispose());
             oversizeTextures?.Clear();
 
