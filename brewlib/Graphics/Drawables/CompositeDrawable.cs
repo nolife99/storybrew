@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using BrewLib.Graphics.Cameras;
+using BrewLib.Util;
 
 namespace BrewLib.Graphics.Drawables;
 
@@ -43,7 +44,7 @@ public class CompositeDrawable : Drawable
         }
     }
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
-        => Drawables.ForEach(drawable => drawable.Draw(drawContext, camera, bounds, opacity));
+        => Drawables.ForEachUnsafe(drawable => drawable.Draw(drawContext, camera, bounds, opacity));
 
     #region IDisposable Support
 

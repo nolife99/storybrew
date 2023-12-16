@@ -16,7 +16,7 @@ namespace StorybrewEditor.Scripting;
 
 public class ScriptCompiler
 {
-    static readonly List<string> environmentDirectories =
+    static readonly string[] environmentDirectories =
     [
         Path.GetDirectoryName(typeof(object).Assembly.Location),
         Path.GetDirectoryName(typeof(Brush).Assembly.Location),
@@ -33,7 +33,7 @@ public class ScriptCompiler
         }
         List<MetadataReference> references = [];
 
-        var loadedAsm = AppDomain.CurrentDomain.GetAssemblies().Select(d => d.Location);
+        var loadedAsm = AssemblyLoadContext.Default.Assemblies.Select(d => d.Location);
         context ??= AssemblyLoadContext.Default;
 
         foreach (var referencedAssembly in referencedAssemblies)
@@ -50,7 +50,7 @@ public class ScriptCompiler
                 else
                 {
                     var isExist = false;
-                    for (var i = 0; i < environmentDirectories.Count; ++i)
+                    for (var i = 0; i < environmentDirectories.Length; ++i)
                     {
                         var actualAsmPath = Path.Combine(environmentDirectories[i], referencedAssembly);
                         if (!File.Exists(actualAsmPath)) continue;

@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -9,7 +10,6 @@ using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 
 namespace StorybrewEditor.Storyboarding;
@@ -25,16 +25,19 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
     {
         if (InGroup) EndGroup();
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats, OsbSprite sprite)
     {
         var time = project.DisplayTime * 1000;
         var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
         if (texturePath is null || !sprite.IsActive(time)) return;
 
+        var commandCost = sprite.CommandCost;
         if (frameStats is not null)
         {
             ++frameStats.SpriteCount;
-            frameStats.CommandCount += sprite.CommandCost;
+            frameStats.CommandCount += commandCost;
             frameStats.IncompatibleCommands |= sprite.HasIncompatibleCommands;
             frameStats.OverlappedCommands |= sprite.HasOverlappedCommands;
         }
@@ -76,10 +79,10 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         {
             var size = texture.Size * scale;
 
-            OrientedBoundingBox spriteBox = new(position, origin * (CommandPosition)scale, size.X, size.Y, rotation);
+            OrientedBoundingBox spriteBox = new(position, (Vector2)origin * scale, size.X, size.Y, rotation);
             if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
             {
-                frameStats.EffectiveCommandCount += sprite.CommandCost;
+                frameStats.EffectiveCommandCount += commandCost;
 
                 var aabb = spriteBox.GetAABB();
                 var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);

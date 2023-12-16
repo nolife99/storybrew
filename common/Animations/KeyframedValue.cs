@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using BrewLib.Util;
 
 namespace StorybrewCommon.Animations;
 
@@ -30,8 +31,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     ///<summary> Gets or sets the <see cref="Keyframe{TValue}"/> at the current index. </summary>
     public Keyframe<TValue> this[int index]
     {
-        get => CollectionsMarshal.AsSpan(keyframes)[index];
-        set => CollectionsMarshal.AsSpan(keyframes)[index] = value;
+        get => keyframes[index];
+        set => keyframes[index] = value;
     }
 
     ///<summary> Returns the amount of keyframes in the keyframed value. </summary>
@@ -67,7 +68,10 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     ///<summary> Adds a collection of keyframes to the keyframed value. </summary>
     public KeyframedValue<TValue> AddRange(IEnumerable<Keyframe<TValue>> collection)
     {
-        foreach (var keyframe in collection) Add(keyframe);
+        if (collection is Keyframe<TValue>[] array) array.ForEachUnsafe(keyframe => Add(keyframe));
+        else if (collection is List<Keyframe<TValue>> list) list.ForEachUnsafe(keyframe => Add(keyframe));
+        else foreach (var keyframe in collection) Add(keyframe);
+
         return this;
     }
 
@@ -91,7 +95,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     public void TransferKeyframes(KeyframedValue<TValue> to, bool clear = true)
     {
         if (Count == 0) return;
-        to.AddRange(this);
+        to.AddRange(keyframes);
         if (clear) Clear();
     }
 
@@ -129,8 +133,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         TValue defaultValue = default, Func<TValue, TValue> edit = null,
         double? explicitStartTime = null, double? explicitEndTime = null, bool loopable = false)
     {
+        if (keyframes.Count == 0) return;
         var span = CollectionsMarshal.AsSpan(keyframes);
-        if (span.Length == 0) return;
 
         var startTime = explicitStartTime ?? span[0].Time;
         var endTime = explicitEndTime ?? span[^1].Time;
@@ -316,7 +320,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         }
 
         Clear(true);
-        simplifiedKeyframes.Capacity = simplifiedKeyframes.Count;
+        if (simplifiedKeyframes.Capacity > simplifiedKeyframes.Count) simplifiedKeyframes.Capacity = simplifiedKeyframes.Count;
         keyframes = simplifiedKeyframes;
     }
 
@@ -338,7 +342,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         var lastPoint = span.Length - 1;
 
         List<int> keep = [firstPoint, lastPoint];
-        getSimplifiedKeyframeIndexes(ref keep, firstPoint, lastPoint, tolerance * tolerance, getDistanceSq);
+        getSimplifiedKeyframeIndexes(ref keep, span, firstPoint, lastPoint, tolerance * tolerance, getDistanceSq);
 
         var iSpan = CollectionsMarshal.AsSpan(keep);
         if (iSpan.Length == span.Length) return;
@@ -352,9 +356,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void getSimplifiedKeyframeIndexes(ref List<int> keep, int first, int last, double epsilonSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
+    static void getSimplifiedKeyframeIndexes(ref List<int> keep, Span<Keyframe<TValue>> span, int first, int last, double epsilonSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
     {
-        var span = CollectionsMarshal.AsSpan(keyframes);
         var start = span[first];
         var end = span[last];
 
@@ -372,9 +375,9 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         }
         if (maxDistSq > epsilonSq && indexFar > 0)
         {
-            getSimplifiedKeyframeIndexes(ref keep, first, indexFar, epsilonSq, getDistance);
+            getSimplifiedKeyframeIndexes(ref keep, span, first, indexFar, epsilonSq, getDistance);
             keep.Add(indexFar);
-            getSimplifiedKeyframeIndexes(ref keep, indexFar, last, epsilonSq, getDistance);
+            getSimplifiedKeyframeIndexes(ref keep, span, indexFar, last, epsilonSq, getDistance);
         }
     }
 

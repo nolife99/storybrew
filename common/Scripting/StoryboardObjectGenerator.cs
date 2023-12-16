@@ -185,25 +185,26 @@ public abstract class StoryboardObjectGenerator : Script
     public double AudioDuration => context.AudioDuration;
 
     ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with default magnitudes. </summary>
-    public float[] GetFft(double time, string path = null, bool splitChannels = false)
+    public Span<float> GetFft(double time, string path = null, bool splitChannels = false)
     {
         if (path is not null) AddDependency(path);
         return context.GetFft(time, path, splitChannels);
     }
 
     ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
-    public float[] GetFft(double time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Span<float> GetFft(double time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
     {
         var fft = GetFft(time, path);
         if (magnitudes == fft.Length && easing is OsbEasing.None) return fft;
 
-        var usedFftLength = frequencyCutOff > 0 ? (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5) * fft.Length) : fft.Length;
-        var resultFft = GC.AllocateUninitializedArray<float>(magnitudes);
+        var usedFftLength = frequencyCutOff > 0 ? (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) : fft.Length;
+        Span<float> resultFft = GC.AllocateUninitializedArray<float>(magnitudes);
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)
         {
-            var progress = EasingFunctions.Ease(easing, (double)i / magnitudes);
+            var progress = EasingFunctions.Ease(easing, (float)i / magnitudes);
             var index = Math.Min((int)Math.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
 
             var value = 0f;
@@ -256,7 +257,11 @@ public abstract class StoryboardObjectGenerator : Script
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
 
         FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
-        if (!fonts.TryAdd(fontDirectory, fontGenerator)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
+        if (!fonts.TryAdd(fontDirectory, fontGenerator))
+        {
+            fontGenerator.Dispose();
+            throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
+        }
 
         if (Directory.Exists(fontDirectory)) foreach (var file in Directory.GetFiles(fontDirectory, "*.png")) PathHelper.SafeDelete(file);
         else Directory.CreateDirectory(fontDirectory);
@@ -274,7 +279,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (context is not null) throw new InvalidOperationException();
 
         var remainingFieldNames = config.FieldNames.ToList();
-        foreach (var configurableField in configurableFields)
+        configurableFields.ForEachUnsafe(configurableField =>
         {
             var field = configurableField.Field;
             NamedValue[] allowedValues = null;
@@ -312,8 +317,8 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 Trace.WriteLine($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
             }
-        }
-        remainingFieldNames.ForEach(config.RemoveField);
+        });
+        remainingFieldNames.ForEachUnsafe(config.RemoveField);
     }
 
     ///<summary/>
@@ -321,7 +326,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         if (context is not null) throw new InvalidOperationException();
 
-        foreach (var configurableField in configurableFields)
+        configurableFields.ForEachUnsafe(configurableField =>
         {
             var field = configurableField.Field;
             try
@@ -333,7 +338,7 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 Trace.WriteLine($"Failed to apply configuration for {field.Name}:\n{e}");
             }
-        }
+        });
     }
 
     struct ConfigurableField(FieldInfo field, ConfigurableAttribute attribute, object initialValue, string beginsGroup, string description, int order)

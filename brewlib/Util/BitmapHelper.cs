@@ -224,6 +224,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int Height { get; private set; }
 
     ///<summary> Gets or sets the pixel color at the given pixel index as a 32-bit ARGB channel (AARRGGBB). </summary>
+    ///<remarks> Use <see cref="AsSpan"/>/<see cref="AsReadOnlySpan"/> instead when indexing within a loop for better performance. </remarks>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
     public int this[int pixelIndex]
     {
@@ -334,9 +335,9 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     {
         if (disposed) return;
 
-        Count = int.MinValue;
-        Width = int.MinValue;
-        Height = int.MinValue;
+        Count = -1;
+        Width = -1;
+        Height = -1;
 
         Bitmap.Dispose();
         Bitmap = null;

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 
@@ -19,7 +20,7 @@ public abstract class GeneratorContext
     public abstract StoryboardLayer GetLayer(string identifier);
 
     public abstract double AudioDuration { get; }
-    public abstract float[] GetFft(double time, string path = null, bool splitChannels = false);
+    public abstract Span<float> GetFft(double time, string path = null, bool splitChannels = false);
     public abstract float GetFftFrequency(string path = null);
 
     public abstract bool Multithreaded { get; set; }

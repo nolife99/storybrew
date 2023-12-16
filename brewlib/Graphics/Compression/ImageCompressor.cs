@@ -16,7 +16,7 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
     protected string utilName;
     public virtual string UtilityName
     {
-        get => HashHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
+        get => StringHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
         protected set => utilName = value;
     }
 

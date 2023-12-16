@@ -22,7 +22,7 @@ public static class DateTimeExtensions
     };
     public static string ToTimeAgo(this DateTime date)
     {
-        var seconds = (DateTime.Now.Ticks - date.Ticks) / 1E+7;
+        var seconds = (DateTime.Now.Ticks - date.Ticks) * 1E-7;
         foreach (var threshold in thresholds) if (seconds < threshold.Key)
         {
             TimeSpan timespan = new(DateTime.Now.Ticks - date.Ticks);

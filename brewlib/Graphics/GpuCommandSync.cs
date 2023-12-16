@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Threading;
 using osuTK.Graphics.OpenGL;
 
@@ -23,9 +24,11 @@ public sealed class GpuCommandSync : IDisposable
     public bool WaitForRange(int index, int length)
     {
         trimExpiredRanges();
-        for (var i = syncRanges.Count - 1; i >= 0; i--)
+
+        var span = CollectionsMarshal.AsSpan(syncRanges);
+        for (var i = span.Length - 1; i >= 0; --i)
         {
-            var syncRange = syncRanges[i];
+            var syncRange = span[i];
             if (index < syncRange.Index + syncRange.Length && syncRange.Index < index + length)
             {
                 var blocked = syncRange.Wait();
@@ -35,18 +38,19 @@ public sealed class GpuCommandSync : IDisposable
         }
         return false;
     }
-    public void LockRange(int index, int length) => syncRanges.Add(new SyncRange(index, length));
+    public void LockRange(int index, int length) => syncRanges.Add(new(index, length));
 
     void trimExpiredRanges()
     {
         var left = 0;
-        var right = syncRanges.Count - 1;
+        var span = CollectionsMarshal.AsSpan(syncRanges);
+        var right = span.Length - 1;
 
         var unblockedIndex = -1;
         while (left <= right)
         {
             var index = (left + right) / 2;
-            var wouldBlock = syncRanges[index].Wait(false);
+            var wouldBlock = span[index].Wait(false);
             if (wouldBlock) right = index - 1;
             else
             {
@@ -103,26 +107,23 @@ public sealed class GpuCommandSync : IDisposable
             var waitSyncFlags = ClientWaitSyncFlags.None;
             var timeout = 0L;
 
-            while (true)
+            while (true) switch (GL.ClientWaitSync(Fence, waitSyncFlags, timeout))
             {
-                switch (GL.ClientWaitSync(Fence, waitSyncFlags, timeout))
-                {
-                    case WaitSyncStatus.AlreadySignaled:
-                        expired = true;
-                        return blocked;
+                case WaitSyncStatus.AlreadySignaled:
+                    expired = true;
+                    return blocked;
 
-                    case WaitSyncStatus.ConditionSatisfied:
-                        expired = true;
-                        return true;
+                case WaitSyncStatus.ConditionSatisfied:
+                    expired = true;
+                    return true;
 
-                    case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
-                    case WaitSyncStatus.TimeoutExpired:
-                        if (!canBlock) return true;
-                        blocked = true;
-                        waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
-                        timeout = 1000000000;
-                        break;
-                }
+                case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
+                case WaitSyncStatus.TimeoutExpired:
+                    if (!canBlock) return true;
+                    blocked = true;
+                    waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
+                    timeout = 1000000000;
+                    break;
             }
         }
 

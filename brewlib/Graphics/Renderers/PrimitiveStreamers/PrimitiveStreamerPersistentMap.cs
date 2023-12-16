@@ -18,7 +18,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
 
-        var flags = (int)(BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
+        var flags = (int)(BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
         GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, (BufferStorageFlags)flags);
         bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, (BufferAccessMask)flags);
 
@@ -90,9 +90,8 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         GL.BindVertexArray(0);
         GL.DeleteVertexArray(VertexArrayId);
 
-        var previousShader = CurrentShader;
+        Bind(CurrentShader);
         CurrentShader = null;
-        Bind(previousShader);
 
         bufferOffset = 0;
         drawOffset = 0;

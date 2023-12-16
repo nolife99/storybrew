@@ -1,5 +1,5 @@
 ﻿using System;
-using System.IO;
+using System.Runtime.InteropServices;
 using ManagedBass;
 
 namespace BrewLib.Audio;
@@ -23,7 +23,7 @@ public class FftStream : IDisposable
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out frequency);
     }
 
-    public float[] GetFft(double time, bool splitChannels = false)
+    public unsafe Span<float> GetFft(double time, bool splitChannels = false)
     {
         Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 
@@ -36,8 +36,8 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        var data = GC.AllocateUninitializedArray<float>(size);
-        if (Bass.ChannelGetData(stream, data, unchecked((int)flags)) == -1) throw new InvalidDataException(Bass.LastError.ToString());
+        Span<float> data = GC.AllocateUninitializedArray<float>(size);
+        fixed (void* pinned = &MemoryMarshal.GetReference(data)) if (Bass.ChannelGetData(stream, (nint)pinned, unchecked((int)flags)) == -1) throw new BassException(Bass.LastError);
         return data;
     }
 

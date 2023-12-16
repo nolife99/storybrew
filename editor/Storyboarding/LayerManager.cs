@@ -41,7 +41,7 @@ public class LayerManager
     public void Replace(List<EditorStoryboardLayer> oldLayers, List<EditorStoryboardLayer> newLayers)
     {
         oldLayers = new(oldLayers);
-        newLayers.ForEach(newLayer =>
+        newLayers.ForEachUnsafe(newLayer =>
         {
             var oldLayer = oldLayers.Find(l => l.Name == newLayer.Name);
             if (oldLayer is not null)
@@ -57,7 +57,7 @@ public class LayerManager
             else layers.Insert(findLayerIndex(newLayer), newLayer);
             newLayer.OnChanged += layer_OnChanged;
         });
-        oldLayers.ForEach(oldLayer =>
+        oldLayers.ForEachUnsafe(oldLayer =>
         {
             oldLayer.OnChanged -= layer_OnChanged;
             layers.Remove(oldLayer);
@@ -69,7 +69,7 @@ public class LayerManager
         var index = layers.IndexOf(oldLayer);
         if (index != -1)
         {
-            newLayers.ForEach(newLayer =>
+            newLayers.ForEachUnsafe(newLayer =>
             {
                 newLayer.CopySettings(oldLayer, copyGuid: false);
                 newLayer.OnChanged += layer_OnChanged;
@@ -180,17 +180,14 @@ public class LayerManager
         else throw new InvalidOperationException($"Cannot move layer '{layerToMove.Name}' to the position of '{layerToMove.Name}'");
     }
     public void TriggerEvents(double startTime, double endTime)
-    {
-        foreach (var layer in Layers) layer.TriggerEvents(startTime, endTime);
-    }
+        => layers.ForEachUnsafe(layer => layer.TriggerEvents(startTime, endTime));
 
     public int GetActiveSpriteCount(double time) => layers.Sum(l => l.GetActiveSpriteCount(time));
     public int GetCommandCost(double time) => layers.Sum(l => l.GetCommandCost(time));
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
-    {
-        foreach (var layer in Layers) layer.Draw(drawContext, camera, bounds, opacity, frameStats);
-    }
+        => layers.ForEachUnsafe(layer => layer.Draw(drawContext, camera, bounds, opacity, frameStats));
+
     void layer_OnChanged(object sender, ChangedEventArgs e)
     {
         if (e.PropertyName is null || e.PropertyName == nameof(EditorStoryboardLayer.OsbLayer) || e.PropertyName == nameof(EditorStoryboardLayer.DiffSpecific))
@@ -213,7 +210,7 @@ public class LayerManager
         var index = layers.BinarySearch(layer);
         if (index >= 0)
         {
-            while (index < layers.Count && layer.CompareTo(layers[index]) == 0) index++;
+            while (index < layers.Count && layer.CompareTo(layers[index]) == 0) ++index;
             return index;
         }
         else return ~index;

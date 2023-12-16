@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using BrewLib.Util;
 using StorybrewCommon.Storyboarding.CommandValues;
 
@@ -122,13 +121,12 @@ public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin ori
     {
         if (!disposed)
         {
-            var span = CollectionsMarshal.AsSpan(pooled);
-            if (attributes is not null) foreach (var pooledSprite in span)
+            if (attributes is not null) pooled.ForEachUnsafe(pooledSprite =>
             {
                 var sprite = pooledSprite.Sprite;
                 attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
-            }
-            span.Clear();
+            });
+            pooled.Clear();
 
             disposed = true;
         }
@@ -153,7 +151,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         {
             if (maxPoolDuration == value) return;
             maxPoolDuration = value;
-            foreach (var pool in pools.Values) pool.MaxPoolDuration = maxPoolDuration;
+            foreach (var pool in pools) pool.Value.MaxPoolDuration = maxPoolDuration;
         }
     }
 
@@ -364,20 +362,16 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     static string getKey(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> action, int group)
         => $"{path}#{frameCount}#{frameDelay}#{(int)loopType}#{(int)origin}#{action?.Target}.{action?.Method.Name}#{group}";
 
-    void Clear()
-    {
-        pools.Dispose();
-        animationPools.Dispose();
-    }
-
     bool disposed;
 
-    ///<summary/>
+    ///<inheritdoc/>
     public void Dispose()
     {
         if (!disposed)
         {
-            Clear();
+            pools.Dispose();
+            animationPools.Dispose();
+
             disposed = true;
         }
     }

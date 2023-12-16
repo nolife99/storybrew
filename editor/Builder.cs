@@ -43,9 +43,9 @@ public class Builder
         addFile(archive, mainExecutablePath, appDirectory);
         addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
 
-        foreach (var path in Directory.GetFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
-        foreach (var path in Directory.GetFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
-        foreach (var path in Directory.GetFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly)) addFile(archive, path, scriptsDirectory, "scripts");
+        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
+        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
+        foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly)) addFile(archive, path, scriptsDirectory, "scripts");
     }
     /* static void testUpdate(string archiveName)
     {

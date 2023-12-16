@@ -25,7 +25,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
     public Drawable GetDrawable(string name)
     {
-        if (drawables.TryGetValue(name, out Drawable drawable)) return drawable;
+        if (drawables.TryGetValue(name, out var drawable)) return drawable;
         return NullDrawable.Instance;
     }
 
@@ -38,7 +38,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         var n = name;
         while (n is not null)
         {
-            if (styles.TryGetValue(n, out WidgetStyle style)) return style;
+            if (styles.TryGetValue(n, out var style)) return style;
             n = getImplicitParentStyleName(n);
         }
 
@@ -46,7 +46,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         {
             var flags = getStyleFlags(name);
             if (flags is not null) return GetStyle(type, $"default {flags}");
-            else return GetStyle(type, "default");
+            return GetStyle(type, "default");
         }
         return null;
     }
@@ -88,8 +88,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             if (data is not null) token = TinyToken.ReadString<JsonFormat>(data);
         }
 
-        if (token is null) throw new FileNotFoundException(filename);
         if (token is TinyObject tinyObject) return resolveIncludes(tinyObject, resourceContainer);
+        if (token is null) throw new FileNotFoundException(filename);
         throw new InvalidDataException($"{filename} does not contain an object");
     }
     TinyObject resolveIncludes(TinyObject data, ResourceContainer resourceContainer)
@@ -98,13 +98,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         if (includes is not null)
         {
             var snapshot = includes.ToArray();
-            for (var i = 0; i < snapshot.Length; ++i)
-            {
-                var path = snapshot[i].Value<string>();
-                var includedData = loadJson(path, resourceContainer);
-
-                data.Merge(includedData);
-            }
+            for (var i = 0; i < snapshot.Length; ++i) data.Merge(loadJson(snapshot[i].Value<string>(), resourceContainer));
         }
         return data;
     }
@@ -114,12 +108,9 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         foreach (var entry in data)
         {
             var name = entry.Key;
-            var value = entry.Value;
-
             try
             {
-                var drawable = loadDrawable(value, constants);
-                drawables.Add(name, drawable);
+                drawables.Add(name, loadDrawable(entry.Value, constants));
             }
             catch (TypeLoadException)
             {
@@ -133,7 +124,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     }
     Drawable loadDrawable(TinyToken data, TinyObject constants)
     {
-        if (data.Type == TinyTokenType.String)
+        if (data.Type is TinyTokenType.String)
         {
             var value = data.Value<string>();
             if (string.IsNullOrEmpty(value)) return NullDrawable.Instance;
@@ -143,7 +134,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
             return drawable;
         }
-        else if (data.Type == TinyTokenType.Array)
+        else if (data.Type is TinyTokenType.Array)
         {
             CompositeDrawable composite = new();
             foreach (var arrayDrawableData in data.Values<TinyToken>())
@@ -155,10 +146,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         }
         else
         {
-            var drawableTypeName = data.Value<string>("_type") ?? throw new InvalidDataException($"Drawable '{data}' must declare a type");
-            var drawableType = ResolveDrawableType(drawableTypeName);
-            var drawable = (Drawable)Activator.CreateInstance(drawableType);
-
+            var drawable = (Drawable)Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type") ?? throw new InvalidDataException($"Drawable '{data}' must declare a type")));
             parseFields(drawable, data.Value<TinyObject>(), null, constants);
             return drawable;
         }
@@ -259,7 +247,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     }
     static TinyToken resolveConstants(TinyToken fieldData, TinyObject constants)
     {
-        while (fieldData is not null && fieldData.Type == TinyTokenType.String)
+        while (fieldData is not null && fieldData.Type is TinyTokenType.String)
         {
             var fieldString = fieldData.Value<string>();
             if (fieldString.StartsWith('@'))
@@ -319,7 +307,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         },
         [typeof(Color)] = (data, constants, skin) =>
         {
-            if (data.Type == TinyTokenType.String)
+            if (data.Type is TinyTokenType.String)
             {
                 var value = data.Value<string>();
                 if (value.StartsWith('#')) return ColorTranslator.FromHtml(value);

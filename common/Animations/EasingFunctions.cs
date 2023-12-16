@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using StorybrewCommon.Storyboarding;
 
 namespace StorybrewCommon.Animations;
@@ -7,9 +8,11 @@ namespace StorybrewCommon.Animations;
 public static class EasingFunctions
 {
     ///<summary> Reverses an easing function. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Reverse(Func<double, double> func, double value) => 1 - func(1 - value);
 
     ///<summary> Converts an easing function to its in-out counterpart. </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double ToInOut(Func<double, double> func, double value) => (value < .5 ? func(2 * value) : (2 - func(2 - 2 * value))) * .5;
 
     ///<summary> An easing function that represents the integer value of the progression. </summary>
@@ -102,6 +105,7 @@ public static class EasingFunctions
     public static readonly Func<double, double> ElasticInOut = x => ToInOut(ElasticIn, x);
 
     ///<summary> Applies the specified <see cref="OsbEasing"/> to the progress (<paramref name="value"/>). </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double Ease(this OsbEasing easing, double value) => ToEasingFunction(easing)(value);
 
     ///<summary> Converts an <see cref="OsbEasing"/> to one of the corresponding <see cref="EasingFunctions"/>. </summary>

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using BrewLib.Util;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
@@ -62,16 +63,15 @@ public class CommandGenerator
     ///<summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
     {
-        var count = states.Count;
-        if (count == 0 || states[count - 1].Time <= state.Time)
+        var span = CollectionsMarshal.AsSpan(states);
+        if (span.IsEmpty || span[^1].Time <= state.Time)
         {
             states.Add(state);
             return;
         }
 
-        var span = CollectionsMarshal.AsSpan(states);
         var i = span.BinarySearch(state, new State());
-        if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) ++i;
+        if (i >= 0) while (i < span.Length - 1 && span[i + 1].Time <= state.Time) ++i;
         else i = ~i;
 
         states.Insert(i, state);
@@ -87,44 +87,40 @@ public class CommandGenerator
     ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
     public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
     {
+        if (states.Count == 0) return false;
+
         State previousState = null;
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        var span = CollectionsMarshal.AsSpan(states); 
-        ref var r0 = ref MemoryMarshal.GetReference(span);
-        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
-
-        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
+        states.ForEachUnsafe(state =>
         {
-            var time = r0.Time + timeOffset;
-            var isVisible = r0.IsVisible(imageSize, sprite.Origin, this);
+            var time = state.Time + timeOffset;
+            var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
 
             if (isVisible && !everVisible) everVisible = true;
             if (!wasVisible && isVisible)
             {
                 if (!stateAdded && previousState is not null) addKeyframes(previousState, loopable ? time : (previousState.Time + timeOffset));
-                addKeyframes(r0, time);
+                addKeyframes(state, time);
                 if (!stateAdded) stateAdded = true;
             }
             else if (wasVisible && !isVisible)
             {
-                addKeyframes(r0, time);
+                addKeyframes(state, time);
                 commitKeyframes(imageSize);
                 if (!stateAdded) stateAdded = true;
             }
             else if (isVisible)
             {
-                addKeyframes(r0, time);
+                addKeyframes(state, time);
                 if (!stateAdded) stateAdded = true;
             }
             else stateAdded = false;
 
-            previousState = r0;
+            previousState = state;
             wasVisible = isVisible;
-
-            r0 = ref Unsafe.Add(ref r0, 1);
-        }
+        });
 
         if (wasVisible) commitKeyframes(imageSize);
         if (everVisible)

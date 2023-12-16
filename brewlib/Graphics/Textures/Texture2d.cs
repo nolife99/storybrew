@@ -134,18 +134,13 @@ public class Texture2d(int textureId, int width, int height, string description)
         try
         {
             DrawState.BindTexture(textureId);
-
             var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            try
-            {
-                GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width, data.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-                GL.Finish();
-            }
-            finally
-            {
-                bitmap.UnlockBits(data);
-            }
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width, data.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+
+            GL.Finish();
+            bitmap.UnlockBits(data);
 
             DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);

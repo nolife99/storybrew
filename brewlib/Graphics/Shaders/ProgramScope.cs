@@ -32,13 +32,13 @@ public class ProgramScope
         varyings.Add(varying);
         return varying;
     }
-    public void DeclareTypes(StringBuilder code) => types.ForEach(type =>
+    public void DeclareTypes(StringBuilder code) => types.ForEachUnsafe(type =>
     {
         code.AppendLine(CultureInfo.InvariantCulture, $"struct {type.Name} {{");
         foreach (var field in type.Fields) code.AppendLine(CultureInfo.InvariantCulture, $"    {field.ShaderTypeName} {field.Name};");
         code.AppendLine("};");
     });
-    public void DeclareUniforms(StringBuilder code) => uniforms.ForEach(uniform =>
+    public void DeclareUniforms(StringBuilder code) => uniforms.ForEachUnsafe(uniform =>
     {
         code.Append(CultureInfo.InvariantCulture, $"uniform {uniform.ShaderTypeName} {uniform.Name}");
         if (uniform.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{uniform.ArrayCount}]");

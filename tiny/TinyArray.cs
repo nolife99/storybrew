@@ -75,7 +75,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
 
     public bool Remove(TinyToken item)
     {
-        int index = IndexOf(item);
+        var index = IndexOf(item);
         if (index >= 0)
         {
             RemoveAt(index);

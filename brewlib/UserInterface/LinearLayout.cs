@@ -143,7 +143,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             usedSpace = totalSpacing;
             scalableItems = 0;
 
-            items.ForEach(item =>
+            items.ForEachUnsafe(item =>
             {
                 if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
 
@@ -184,7 +184,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
         }
 
         var distance = horizontal ? padding.Left : padding.Top;
-        items.ForEach(item =>
+        items.ForEachUnsafe(item =>
         {
             var child = item.Widget;
             var minSize = item.MinSize;

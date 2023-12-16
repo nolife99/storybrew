@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using BrewLib.Util;
 
 namespace BrewLib.Graphics.Shaders;
 
@@ -62,7 +63,7 @@ public class ShaderBuilder
         List<string> requiredExtensions = [];
         foreach (var extensionName in VertexShader.RequiredExtensions) requiredExtensions.Add(extensionName);
         foreach (var extensionName in FragmentShader.RequiredExtensions) requiredExtensions.Add(extensionName);
-        requiredExtensions.ForEach(extensionName => code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable"));
+        requiredExtensions.ForEachUnsafe(extensionName => code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable"));
 
         code.AppendLine("#ifdef GL_ES");
         code.AppendLine("    precision mediump float;");

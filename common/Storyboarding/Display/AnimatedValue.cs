@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -30,6 +31,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
         {
             var found = findCommandIndex(command.StartTime, out int index);
             var span = CollectionsMarshal.AsSpan(commands);
+
             while (index < span.Length)
             {
                 if (span[index].CompareTo(command) < 0) ++index;
@@ -51,6 +53,8 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     }
 
     public bool IsActive(double time) => commands.Count > 0 && StartTime <= time && time <= EndTime;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TValue ValueAtTime(double time)
     {
         if (commands.Count == 0) return DefaultValue;
@@ -65,6 +69,8 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 
         return commands[index].ValueAtTime(time);
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     bool findCommandIndex(double time, out int index)
     {
         var left = 0;
@@ -80,6 +86,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
             else right = index - 1;
         }
         index = left;
+
         return false;
     }
     void triggerable_OnStateChanged(object sender, EventArgs e)

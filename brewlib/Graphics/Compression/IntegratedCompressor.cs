@@ -90,9 +90,7 @@ public class IntegratedCompressor : ImageCompressor
 
     protected override async void Dispose(bool disposing)
     {
-        if (disposed) return;
-
-        if (tasks?.Count != 0) await Task.WhenAll(tasks).ContinueWith(task =>
+        if (!disposed) if (tasks?.Count != 0) await Task.WhenAll(tasks).ContinueWith(task =>
         {
             base.Dispose(disposing);
             tasks.Clear();

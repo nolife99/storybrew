@@ -77,13 +77,13 @@ public class TinyValue : TinyToken
 
         if (targetType == typeof(TinyValue) || targetType == typeof(TinyToken)) return (T)(object)this;
 
-        if (type == TinyTokenType.Null)
+        if (type is TinyTokenType.Null)
         {
             if (targetType == typeof(TinyArray)) return (T)(object)new TinyArray();
             else if (targetType == typeof(TinyObject)) return (T)(object)new TinyObject();
         }
 
-        if (targetType.IsEnum && (type == TinyTokenType.String || type == TinyTokenType.Integer))
+        if (targetType.IsEnum && (type is TinyTokenType.String || type is TinyTokenType.Integer))
         {
             if (value is null) return default;
             return (T)Enum.Parse(targetType, value.ToString());
@@ -101,9 +101,7 @@ public class TinyValue : TinyToken
     public static TinyTokenType FindValueType(object value)
     {
         if (value is null) return TinyTokenType.Null;
-
         if (value is string) return TinyTokenType.String;
-
         if (value is sbyte || value is byte ||
             value is short || value is ushort ||
             value is int || value is uint ||
@@ -112,9 +110,7 @@ public class TinyValue : TinyToken
             return TinyTokenType.Integer;
 
         if (value is float || value is double || value is decimal) return TinyTokenType.Float;
-
         if (value is bool) return TinyTokenType.Boolean;
-
         return TinyTokenType.Invalid;
     }
 

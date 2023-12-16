@@ -232,7 +232,7 @@ public sealed class Project : IDisposable
         var isUpdating = effectUpdateQueue?.TaskCount > 0;
         var hasError = false;
 
-        effects.ForEach(effect =>
+        effects.ForEachUnsafe(effect =>
         {
             switch (effect.Status)
             {
@@ -456,7 +456,7 @@ public sealed class Project : IDisposable
         w.Write(OwnsOsb);
 
         w.Write(effects.Count);
-        effects.ForEach(effect =>
+        effects.ForEachUnsafe(effect =>
         {
             w.Write(effect.Guid.ToByteArray());
             w.Write(effect.BaseName);
@@ -601,7 +601,7 @@ public sealed class Project : IDisposable
         var userPath = directoryWriter.GetPath("user.yaml");
         userRoot.Write(userPath);
 
-        effects.ForEach(effect =>
+        effects.ForEachUnsafe(effect =>
         {
             TinyObject effectRoot = new()
             {
@@ -688,7 +688,7 @@ public sealed class Project : IDisposable
 
         // Load effects
         Dictionary<string, Action> layerInserters = [];
-        foreach (var effectPath in Directory.GetFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
+        foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
         {
             var guidMatch = effectGuidRegex.Match(effectPath);
             if (!guidMatch.Success || guidMatch.Groups.Count < 2) throw new InvalidDataException($"Could not parse effect Guid from '{effectPath}'");

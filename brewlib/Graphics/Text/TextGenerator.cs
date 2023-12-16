@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using BrewLib.Data;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
@@ -108,24 +109,28 @@ public sealed class TextGenerator : IDisposable
             fonts.Remove(lastFontIdentifier);
         }
 
-        if (!fontFamilies.TryGetValue(name, out var fontFamily)) unsafe
+        if (!fontFamilies.TryGetValue(name, out var fontFamily))
         {
-            void* ptr = null;
-            int len;
-
-            using (var stream = container.GetStream(name, ResourceSource.Embedded))
-            {
-                var pt = stackalloc byte[len = (int)stream.Length];
-                stream.Read(new Span<byte>(pt, len));
-                ptr = pt;
-            }
-
-            if (ptr is not null)
+            using (var stream = container.GetStream(name, ResourceSource.Embedded)) if (stream is not null)
             {
                 try
                 {
                     if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
-                    fontCollection.AddMemoryFont((nint)ptr, len);
+
+                    var len = (int)stream.Length;
+                    unsafe
+                    {
+                        var ptr = NativeMemory.Alloc((nuint)len);
+                        try
+                        {
+                            stream.Read(new(ptr, len));
+                            fontCollection.AddMemoryFont((nint)ptr, len);
+                        }
+                        finally
+                        {
+                            NativeMemory.Free(ptr);
+                        }
+                    }
 
                     var families = fontCollection.Families;
                     if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using BrewLib.Util;
 
 namespace BrewLib.Graphics.Textures;
 
@@ -62,10 +63,14 @@ public sealed class TextureMultiAtlas2d : IDisposable
     {
         if (!disposed)
         {
-            atlases.ForEach(atlas => atlas.Dispose());
+            atlases.ForEachUnsafe(atlas => atlas.Dispose());
             atlases.Clear();
-            oversizeTextures?.ForEach(texture => texture.Dispose());
-            oversizeTextures?.Clear();
+
+            if (oversizeTextures is not null)
+            {
+                oversizeTextures.ForEachUnsafe(texture => texture.Dispose());
+                oversizeTextures.Clear();
+            }
 
             atlases = null;
             oversizeTextures = null;

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using BrewLib.Util;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Storyboarding;
@@ -71,16 +69,7 @@ public class Object3d
             Opacity.ValueAt(time) * (InheritsOpacity ? parent3dState.Opacity : 1));
 
         GenerateStates(time, cameraState, object3dState);
-
-        var span = CollectionsMarshal.AsSpan(children);
-        ref var r0 = ref MemoryMarshal.GetReference(span);
-        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
-
-        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
-        {
-            r0.GenerateTreeStates(time, cameraState, object3dState);
-            r0 = ref Unsafe.Add(ref r0, 1);
-        }
+        children.ForEachUnsafe(child => child.GenerateTreeStates(time, cameraState, object3dState));
     }
 
     ///<summary> Generates commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
@@ -92,16 +81,7 @@ public class Object3d
     public void GenerateTreeCommands(Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
     {
         GenerateCommands(action, startTime, endTime, timeOffset, loopable);
-
-        var span = CollectionsMarshal.AsSpan(children);
-        ref var r0 = ref MemoryMarshal.GetReference(span);
-        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
-
-        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
-        {
-            r0.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
-            r0 = ref Unsafe.Add(ref r0, 1);
-        }
+        children.ForEachUnsafe(child => child.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable));
     }
 
     ///<summary> Generates loop commands on this instance's base sprites based on its <see cref="State"/>s. </summary>

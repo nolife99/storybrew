@@ -60,8 +60,10 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
             LoopType = loopType,
             InitialPosition = initialPosition
         };
+
         storyboardObjects.Add(storyboardObject);
         displayableObjects.Add(storyboardObject);
+
         return storyboardObject;
     }
 
@@ -76,16 +78,20 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
             Time = time,
             Volume = volume
         };
+
         storyboardObjects.Add(storyboardObject);
         eventObjects.Add(storyboardObject);
+
         return storyboardObject;
     }
     public override StoryboardSegment CreateSegment()
     {
         EditorStoryboardSegment segment = new(Effect, Layer);
+
         storyboardObjects.Add(segment);
         displayableObjects.Add(segment);
         segments.Add(segment);
+
         return segment;
     }
     public override void Discard(StoryboardObject storyboardObject)
@@ -97,20 +103,20 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
     }
     public void TriggerEvents(double fromTime, double toTime)
     {
-        eventObjects.ForEach(eventObject =>
+        eventObjects.ForEachUnsafe(eventObject =>
         {
             if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime) eventObject.TriggerEvent(Effect.Project, toTime);
         });
-        segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
+        segments.ForEachUnsafe(s => s.TriggerEvents(fromTime, toTime));
     }
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats)
     {
         var displayTime = project.DisplayTime * 1000;
         if (displayTime < StartTime || EndTime < displayTime) return;
 
-        if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Cos(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) / 2);
+        if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Cos(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5);
 
-        for (var i = 0; i < displayableObjects.Count; ++i) displayableObjects[i].Draw(drawContext, camera, bounds, opacity, project, frameStats);
+        displayableObjects.ForEachUnsafe(sprite => sprite.Draw(drawContext, camera, bounds, opacity, project, frameStats));
     }
     public void PostProcess()
     {
@@ -120,26 +126,24 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
             displayableObjects.Reverse();
         }
 
-        storyboardObjects.ForEach(sbo => (sbo as HasPostProcess)?.PostProcess());
+        storyboardObjects.ForEachUnsafe(sbo => (sbo as HasPostProcess)?.PostProcess());
 
         startTime = double.MaxValue;
         endTime = double.MinValue;
 
-        storyboardObjects.ForEach(sbo =>
+        storyboardObjects.ForEachUnsafe(sbo =>
         {
             startTime = Math.Min(startTime, sbo.StartTime);
             endTime = Math.Max(endTime, sbo.EndTime);
         });
     }
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer)
-        => storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
+        => storyboardObjects.ForEachUnsafe(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
 
-    public long CalculateSize(OsbLayer osbLayer)
+    public int CalculateSize(OsbLayer osbLayer)
     {
-        using ByteCounterStream stream = new(); 
-        using StreamWriter writer = new(stream, Project.Encoding);
-
-        for (var i = 0; i < storyboardObjects.Count; ++i) storyboardObjects[i].WriteOsb(writer, Effect.Project.ExportSettings, osbLayer);
-        return stream.Length;
+        using ByteCounterStream stream = new();
+        using (StreamWriter writer = new(stream, Project.Encoding)) storyboardObjects.ForEachUnsafe(sbo => sbo.WriteOsb(writer, Effect.Project.ExportSettings, osbLayer));
+        return (int)stream.Length;
     }
 }

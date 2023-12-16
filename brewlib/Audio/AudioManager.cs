@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using BrewLib.Data;
+using BrewLib.Util;
 using ManagedBass;
 
 namespace BrewLib.Audio;
@@ -18,7 +19,7 @@ public sealed class AudioManager : IDisposable
             if (volume == value) return;
 
             volume = value;
-            audioChannels.ForEach(audio => audio.UpdateVolume());
+            audioChannels.ForEachUnsafe(audio => audio.UpdateVolume());
         }
     }
     public AudioManager(nint handle)

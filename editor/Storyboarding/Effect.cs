@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using BrewLib.Util;
 using StorybrewCommon.Storyboarding;
 
 namespace StorybrewEditor.Storyboarding;
@@ -81,8 +82,10 @@ public abstract class Effect : IDisposable
             placeHolderLayer = null;
         }
         else Project.LayerManager.Replace(layers, newLayers);
+
         layers = newLayers;
         refreshLayerNames();
+
         EstimatedSize = layers.Sum(layer => layer.EstimatedSize);
         RaiseChanged();
     }
@@ -96,7 +99,7 @@ public abstract class Effect : IDisposable
 
     ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate(Effect)"/>. Doesn't run on the main thread. </summary>
     public abstract void Update();
-    void refreshLayerNames() => layers.ForEach(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
+    void refreshLayerNames() => layers.ForEachUnsafe(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
 
     #region IDisposable Support
 
@@ -105,8 +108,9 @@ public abstract class Effect : IDisposable
     {
         if (!Disposed)
         {
-            if (disposing) for (var i = 0; i < layers.Count; ++i) Project.LayerManager.Remove(layers[i]);
+            if (disposing) layers.ForEachUnsafe(layer => Project.LayerManager.Remove(layer));
             layers.Clear();
+
             layers = null;
             OnChanged = null;
             Disposed = true;

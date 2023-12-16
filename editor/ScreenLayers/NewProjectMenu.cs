@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using StorybrewEditor.Storyboarding;
@@ -123,7 +124,7 @@ public class NewProjectMenu : UiScreenLayer
             startButton.Tooltip = "The selected mapset folder does not exist";
             return false;
         }
-        if (Directory.GetFiles(mapsetPathSelector.Value, "*.osu", SearchOption.TopDirectoryOnly).Length == 0)
+        if (Directory.EnumerateFiles(mapsetPathSelector.Value, "*.osu", SearchOption.TopDirectoryOnly).Any())
         {
             startButton.Tooltip = $"No .osu found in the selected mapset folder";
             return false;

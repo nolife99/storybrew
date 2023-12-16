@@ -9,7 +9,7 @@ public static class OsuHelper
     public static string GetOsuPath()
     {
         using var registryKey = Registry.ClassesRoot.OpenSubKey("osu\\DefaultIcon");
-        if (registryKey is null) return string.Empty;
+        if (registryKey is null) return "";
 
         var value = registryKey.GetValue(null).ToString();
         var startIndex = value.IndexOf('"');

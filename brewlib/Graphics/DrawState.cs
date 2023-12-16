@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BrewLib.Data;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -121,6 +122,7 @@ public static class DrawState
         flushingRenderer = false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T Prepare<T>(T renderer, Camera camera, RenderStates renderStates) where T : Renderer
     {
         Renderer = renderer;

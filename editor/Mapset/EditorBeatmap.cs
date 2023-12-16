@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using BrewLib.Util;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
@@ -210,7 +211,7 @@ public class EditorBeatmap(string path) : Beatmap
                                 hitobject.Flags |= HitObjectFlag.NewCombo;
 
                                 var colorIncrement = hitobject.ComboOffset;
-                                if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) colorIncrement++;
+                                if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) ++colorIncrement;
                                 colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
                                 comboIndex = 1;
                             }
@@ -293,7 +294,7 @@ public class EditorBeatmap(string path) : Beatmap
         var hitObjectRadius = 64 * hitobjectScale;
         var stackOffset = hitObjectRadius / 10;
 
-        hitObjects.ForEach(h => h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex);
+        hitObjects.ForEachUnsafe(h => h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex);
     }
 
     static string removePathQuotes(string path) => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1] : path;

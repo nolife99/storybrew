@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
@@ -227,8 +229,16 @@ public class Widget(WidgetManager manager) : IDisposable
     }
     public void ClearWidgets()
     {
-        var childrenSnapshot = new List<Widget>(children);
-        childrenSnapshot.ForEach(child => child.Dispose());
+        var snapshot = children.ToArray();
+
+        ref var r0 = ref MemoryMarshal.GetArrayDataReference(snapshot);
+        ref var rEnd = ref Unsafe.Add(ref r0, snapshot.Length);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
+        {
+            r0.Dispose();
+            r0 = ref Unsafe.Add(ref r0, 1);
+        }
     }
     public bool HasAncestor(Widget widget)
     {
@@ -370,7 +380,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
             absolutePosition = manager.SnapToPixel(absolutePosition);
         }
-        if (includeChildren) children.ForEach(child => child.UpdateAnchoring(iteration));
+        if (includeChildren) children.ForEachUnsafe(child => child.UpdateAnchoring(iteration));
     }
 
     #endregion
@@ -430,7 +440,7 @@ public class Widget(WidgetManager manager) : IDisposable
         if (!needsLayout) return;
         Layout();
     }
-    public virtual void PreLayout() => children.ForEach(child => child.PreLayout());
+    public virtual void PreLayout() => children.ForEachUnsafe(child => child.PreLayout());
     protected virtual void Layout()
     {
         lastLayoutTime = manager.ScreenLayerManager.TimeSource.Current;

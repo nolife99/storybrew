@@ -25,18 +25,13 @@ public sealed class MultiFileWatcher : IDisposable
         filename = Path.GetFullPath(filename);
         var directoryPath = Path.GetDirectoryName(filename);
 
-        lock (watchedFilenames)
-        {
-            if (watchedFilenames.Contains(filename)) return;
-            watchedFilenames.Add(filename);
-        }
-
+        lock (watchedFilenames) watchedFilenames.Add(filename);
         if (Directory.Exists(directoryPath))
         {
             // The folder containing the file to watch exists, 
             // only watch that folder
 
-            if (!folderWatchers.TryGetValue(directoryPath, out FileSystemWatcher watcher))
+            if (!folderWatchers.TryGetValue(directoryPath, out var watcher))
             {
                 folderWatchers[directoryPath] = watcher = new()
                 {

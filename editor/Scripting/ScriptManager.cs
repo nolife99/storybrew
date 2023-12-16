@@ -105,13 +105,13 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     public IEnumerable<string> GetScriptNames()
     {
         HashSet<string> projectScriptNames = [];
-        foreach (var scriptPath in Directory.GetFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
+        foreach (var scriptPath in Directory.EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
         {
             var name = Path.GetFileNameWithoutExtension(scriptPath);
             projectScriptNames.Add(name);
             yield return name;
         }
-        foreach (var scriptPath in Directory.GetFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
+        foreach (var scriptPath in Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
         {
             var name = Path.GetFileNameWithoutExtension(scriptPath);
             if (!projectScriptNames.Contains(name)) yield return name;
@@ -166,22 +166,25 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
             document.DocumentElement.AppendChild(referencedAssembliesGroup);
 
-            foreach (var path in referencedAssemblies) if (!Project.DefaultAssemblies.Contains(path))
+            referencedAssemblies.ForEachUnsafe(path =>
             {
-                var isSystem = path.StartsWith("System.", StringComparison.Ordinal);
-                var relativePath = isSystem ? path : PathHelper.GetRelativePath(ScriptsPath, path);
+                if (!Project.DefaultAssemblies.Contains(path))
+                {
+                    var isSystem = path.StartsWith("System.", StringComparison.Ordinal);
+                    var relativePath = isSystem ? path : PathHelper.GetRelativePath(ScriptsPath, path);
 
-                var compileNode = document.CreateElement("Reference", xmlns);
-                compileNode.SetAttribute("Include", isSystem ? path : AssemblyName.GetAssemblyName(path).Name);
-                if (!isSystem)
-                { 
-                    var hintPath = document.CreateElement("HintPath", xmlns);
-                    hintPath.AppendChild(document.CreateTextNode(relativePath));
-                    compileNode.AppendChild(hintPath);
+                    var compileNode = document.CreateElement("Reference", xmlns);
+                    compileNode.SetAttribute("Include", isSystem ? path : AssemblyName.GetAssemblyName(path).Name);
+                    if (!isSystem)
+                    {
+                        var hintPath = document.CreateElement("HintPath", xmlns);
+                        hintPath.AppendChild(document.CreateTextNode(relativePath));
+                        compileNode.AppendChild(hintPath);
+                    }
+                    referencedAssembliesGroup.AppendChild(compileNode);
                 }
-                referencedAssembliesGroup.AppendChild(compileNode);
-            }
-            document.Save(csProjPath);
+                document.Save(csProjPath);
+            });
         }
         catch (Exception e)
         {

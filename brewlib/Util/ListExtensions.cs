@@ -15,30 +15,60 @@ public static class ListExtensions
         var span = CollectionsMarshal.AsSpan(list);
         var item = span[from];
 
-        if (from < to) for (var index = from; index < to; ++index) span[index] = span[index + 1];
-        else for (var index = from; index > to; --index) span[index] = span[index - 1];
+        if (from < to) for (var i = from; i < to; ++i) span[i] = span[i + 1];
+        else for (var i = from; i > to; --i) span[i] = span[i - 1];
         span[to] = item;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
+    public static void ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
     {
-        var span = CollectionsMarshal.AsSpan(list);
         ref var r0 = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
-        ref var rEnd = ref Unsafe.Add(ref r0, span.Length);
+        ref var rEnd = ref Unsafe.Add(ref r0, list.Count);
 
-        try
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
         {
-            while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
-            {
-                if (condition(r0)) action(r0);
-                r0 = ref Unsafe.Add(ref r0, 1);
-            }
-            return true;
+            if (condition(r0)) action(r0);
+            r0 = ref Unsafe.Add(ref r0, 1);
         }
-        catch
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ForEach<T>(this T[] array, Action<T> action, Func<T, bool> condition)
+    {
+        ref var r0 = ref MemoryMarshal.GetArrayDataReference(array);
+        ref var rEnd = ref Unsafe.Add(ref r0, array.Length);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
         {
-            return false;
+            if (condition(r0)) action(r0);
+            r0 = ref Unsafe.Add(ref r0, 1);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ForEachUnsafe<T>(this List<T> list, Action<T> action)
+    {
+        ref var r0 = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
+        ref var rEnd = ref Unsafe.Add(ref r0, list.Count);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
+        {
+            action(r0);
+            r0 = ref Unsafe.Add(ref r0, 1);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ForEachUnsafe<T>(this T[] array, Action<T> action)
+    {
+        ref var r0 = ref MemoryMarshal.GetArrayDataReference(array);
+        ref var rEnd = ref Unsafe.Add(ref r0, array.Length);
+
+        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
+        {
+            action(r0);
+            r0 = ref Unsafe.Add(ref r0, 1);
         }
     }
 

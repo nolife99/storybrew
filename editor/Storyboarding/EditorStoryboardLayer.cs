@@ -74,7 +74,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     }
 
     public bool Highlight;
-    public long EstimatedSize;
+    public int EstimatedSize;
 
     public event ChangedHandler OnChanged;
     protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new(propertyName)));
@@ -107,13 +107,11 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
 
     public void TriggerEvents(double fromTime, double toTime)
     {
-        if (!Visible) return;
-        segment.TriggerEvents(fromTime, toTime);
+        if (Visible) segment.TriggerEvents(fromTime, toTime);
     }
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
-        if (!Visible) return;
-        segment.Draw(drawContext, camera, bounds, opacity, Effect.Project, frameStats);
+        if (Visible) segment.Draw(drawContext, camera, bounds, opacity, Effect.Project, frameStats);
     }
     public void PostProcess()
     {
