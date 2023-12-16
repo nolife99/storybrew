@@ -40,21 +40,21 @@ public class SynchronousCompressor : ImageCompressor
             ensureTool();
 
             foreach (var arg in toCompress) if (File.Exists(arg.path)) try
-                    {
-                        startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
-                        process ??= Process.Start(startInfo);
-                        var error = await process.StandardError.ReadToEndAsync();
-                        if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
-                    }
-                    finally
-                    {
-                        ensureStop();
-                    }
-        }))
             {
-                losslessTask.Start();
-                await losslessTask;
+                startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
+                process ??= Process.Start(startInfo);
+                var error = await process.StandardError.ReadToEndAsync();
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
             }
+            finally
+            {
+                ensureStop();
+            }
+        }))
+        {
+            losslessTask.Start();
+            await losslessTask;
+        }
 
         if (lossyCompress.Count != 0) using (Task lossyTask = new(async () =>
         {
@@ -63,21 +63,21 @@ public class SynchronousCompressor : ImageCompressor
             ensureTool();
 
             foreach (var arg in lossyCompress) if (File.Exists(arg.path)) try
-                    {
-                        startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
-                        process ??= Process.Start(startInfo);
-                        var error = await process.StandardError.ReadToEndAsync();
-                        if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
-                    }
-                    finally
-                    {
-                        ensureStop();
-                    }
-        }))
             {
-                lossyTask.Start();
-                await lossyTask;
+                startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
+                process ??= Process.Start(startInfo);
+                var error = await process.StandardError.ReadToEndAsync();
+                if (!string.IsNullOrEmpty(error) && process.ExitCode != 0) throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
             }
+            finally
+            {
+                ensureStop();
+            }
+        }))
+        {
+            lossyTask.Start();
+            await lossyTask;
+        }
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {

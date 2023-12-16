@@ -39,7 +39,7 @@ public class IntegratedCompressor : ImageCompressor
                 using var errorStream = localProc.StandardError;
                 var error = errorStream.ReadToEnd();
 
-                if (!string.IsNullOrEmpty(error) && localProc.ExitCode != 0) throw new OperationCanceledException($"Image compression closed with code {localProc.ExitCode}: {error}");
+                if (!string.IsNullOrEmpty(error) && localProc.ExitCode != 0) Trace.TraceError($"Image compression closed with code {localProc.ExitCode}: {error}");
             }
             finally
             {
