@@ -16,7 +16,7 @@ public class TextureOptions : IEquatable<TextureOptions>
     public static readonly TextureOptions Default = new();
 
     // Settings
-    public bool Srgb = true, PreMultiply, GenerateMipmaps;
+    public bool Srgb = true, PreMultiply, GenerateMipmaps = true;
 
     // Parameters
     public int TextureLodBias;

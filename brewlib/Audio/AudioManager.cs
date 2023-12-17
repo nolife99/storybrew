@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using BrewLib.Data;
 using BrewLib.Util;
 using ManagedBass;
@@ -32,9 +33,10 @@ public sealed class AudioManager : IDisposable
 
     public void Update()
     {
-        for (var i = 0; i < audioChannels.Count; ++i)
+        var span = CollectionsMarshal.AsSpan(audioChannels);
+        for (var i = 0; i < span.Length; ++i)
         {
-            var channel = audioChannels[i];
+            var channel = span[i];
             if (channel.Temporary && channel.Completed)
             {
                 channel.Dispose();

@@ -354,8 +354,6 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         Clear(true);
         keyframes = simplifiedKeyframes;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static void getSimplifiedKeyframeIndexes(ref List<int> keep, Span<Keyframe<TValue>> span, int first, int last, double epsilonSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
     {
         var start = span[first];

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -63,7 +62,6 @@ public unsafe class GaussianBlur
         return dest;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void gaussBlur_4(ref int source, int* dest, int r, int n)
     {
         var bxs = boxesForGauss(r, n);
@@ -74,8 +72,6 @@ public unsafe class GaussianBlur
             boxBlur_4(addr, dest, _width, _height, (bxs[2] - 1) / 2);
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     static int[] boxesForGauss(int sigma, int n)
     {
         var wIdeal = Math.Sqrt((12 * sigma * sigma / n) + 1);
@@ -90,15 +86,12 @@ public unsafe class GaussianBlur
         for (var i = 0; i < n; i++) sizes[i] = i < m ? wl : wu;
         return sizes;
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void boxBlur_4(int* source, int* dest, int w, int h, int r)
     {
         Native.CopyMemory((nint)source, (nint)dest, _width * _height << 2);
         boxBlurH_4(dest, source, w, h, r);
         boxBlurT_4(source, dest, w, h, r);
     }
-
     void boxBlurH_4(int* source, int* dest, int w, int h, int r)
     {
         var iar = (double)1 / (r + r + 1);

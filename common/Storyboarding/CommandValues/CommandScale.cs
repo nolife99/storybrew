@@ -25,11 +25,9 @@ public readonly struct CommandScale :
     public readonly CommandDecimal Y => internalVec.Y;
 
     ///<summary> Constructs a <see cref="CommandScale"/> from an X and Y value. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandScale(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
 
     ///<summary> Constructs a <see cref="CommandScale"/> from a value. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandScale(CommandDecimal value) : this(value, value) { }
 
     ///<summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
@@ -61,33 +59,18 @@ public readonly struct CommandScale :
     public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
     public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector.X, vector.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(osuTK.Vector2d vector) => new(vector.X, vector.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(SizeF vector) => new(vector.Width, vector.Height);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandScale(Vector2 vector) => new(vector);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandScale(CommandPosition position) => new(position.X, position.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2(CommandScale obj) => new(obj.X, obj.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2d(CommandScale obj) => new(obj.X, obj.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator SizeF(CommandScale vector) => new(vector.X, vector.Y);
+    public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector2(CommandScale obj) => obj.internalVec;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
+    public static implicit operator CommandScale(Vector2 vector) => new(vector);
 }

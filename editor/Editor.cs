@@ -27,7 +27,7 @@ public sealed class Editor(GameWindow window) : IDisposable
     readonly FrameClock clock = new();
     public FrameTimeSource TimeSource => clock;
 
-    public bool IsFixedRateUpdate { get; set; }
+    public bool IsFixedRateUpdate;
 
     DrawContext drawContext;
     public ResourceContainer ResourceContainer;
@@ -37,7 +37,7 @@ public sealed class Editor(GameWindow window) : IDisposable
 
     public void Initialize(ScreenLayer initialLayer = null)
     {
-        ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
+        ResourceContainer = new AssemblyResourceContainer(GetType().Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
         DrawState.Initialize(ResourceContainer, Window.Width, Window.Height);
 
         drawContext = new();
@@ -171,7 +171,7 @@ public sealed class Editor(GameWindow window) : IDisposable
 
             var altOpacity = altOverlayTop.Opacity;
             var targetOpacity = showAltOverlayTop ? 1f : 0;
-            if (Math.Abs(altOpacity - targetOpacity) <= .07) altOpacity = targetOpacity;
+            if (Math.Abs(altOpacity - targetOpacity) <= .07f) altOpacity = targetOpacity;
             else altOpacity = Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
 
             overlayTop.Opacity = 1 - altOpacity;
@@ -209,8 +209,7 @@ public sealed class Editor(GameWindow window) : IDisposable
     }
     public void Draw(double tween)
     {
-        GL.ClearColor(ScreenLayerManager.BackgroundColor);
-        GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+        GL.Clear(ClearBufferMask.ColorBufferBit);
 
         ScreenLayerManager.Draw(drawContext, tween);
         overlay.Draw(drawContext);
@@ -223,7 +222,6 @@ public sealed class Editor(GameWindow window) : IDisposable
     {
         var width = Window.Width;
         var height = Window.Height;
-        if (width == 0 || height == 0) return;
 
         DrawState.Viewport = new(0, 0, width, height);
 

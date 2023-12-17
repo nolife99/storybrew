@@ -1,9 +1,4 @@
 ﻿using System.Numerics;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Scripting;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.Util;
 
 namespace StorybrewScripts;
 

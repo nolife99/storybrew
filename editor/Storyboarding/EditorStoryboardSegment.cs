@@ -33,7 +33,12 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
     readonly List<EditorStoryboardSegment> segments = [];
 
     public int GetActiveSpriteCount(double time) => storyboardObjects.Count(o => ((OsbSprite)o)?.IsActive(time) ?? false);
-    public int GetCommandCost(double time) => storyboardObjects.Select(o => (OsbSprite)o).Where(s => s?.IsActive(time) ?? false).Sum(s => s.CommandCost);
+    public int GetCommandCost(double time)
+    {
+        var sum = 0;
+        storyboardObjects.ForEach(o => sum += (o as OsbSprite)?.CommandCost ?? 0, s => (s as OsbSprite)?.IsActive(time) ?? false);
+        return sum;
+    }
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
     {

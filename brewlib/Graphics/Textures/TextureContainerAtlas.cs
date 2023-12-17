@@ -15,10 +15,8 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
 
     public Texture2dRegion Get(string filename)
     {
-        if (filename is null) return null;
-
         filename = PathHelper.WithStandardSeparators(filename);
-        if (!textures.TryGetValue(filename, out Texture2dRegion texture))
+        if (!textures.TryGetValue(filename, out var texture))
         {
             var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
             if (!atlases.TryGetValue(options, out var atlas)) atlases.Add(options, atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding));

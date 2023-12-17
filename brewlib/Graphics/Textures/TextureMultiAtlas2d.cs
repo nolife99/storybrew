@@ -70,10 +70,10 @@ public sealed class TextureMultiAtlas2d : IDisposable
             {
                 oversizeTextures.ForEachUnsafe(texture => texture.Dispose());
                 oversizeTextures.Clear();
+                oversizeTextures = null;
             }
 
             atlases = null;
-            oversizeTextures = null;
             disposed = true;
         }
     }

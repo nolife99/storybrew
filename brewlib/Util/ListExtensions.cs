@@ -7,7 +7,6 @@ namespace BrewLib.Util;
 
 public static class ListExtensions
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Move<T>(this List<T> list, int from, int to)
     {
         if (from == to) return;
@@ -20,7 +19,6 @@ public static class ListExtensions
         span[to] = item;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
     {
         ref var r0 = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
@@ -32,8 +30,6 @@ public static class ListExtensions
             r0 = ref Unsafe.Add(ref r0, 1);
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ForEach<T>(this T[] array, Action<T> action, Func<T, bool> condition)
     {
         ref var r0 = ref MemoryMarshal.GetArrayDataReference(array);
@@ -45,8 +41,6 @@ public static class ListExtensions
             r0 = ref Unsafe.Add(ref r0, 1);
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ForEachUnsafe<T>(this List<T> list, Action<T> action)
     {
         ref var r0 = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(list));
@@ -58,8 +52,6 @@ public static class ListExtensions
             r0 = ref Unsafe.Add(ref r0, 1);
         }
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ForEachUnsafe<T>(this T[] array, Action<T> action)
     {
         ref var r0 = ref MemoryMarshal.GetArrayDataReference(array);
@@ -72,7 +64,6 @@ public static class ListExtensions
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Dispose<TKey, TValue>(this IDictionary<TKey, TValue> disposable) where TValue : IDisposable
     {
         foreach (var reference in disposable) try

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -54,7 +53,6 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 
     public bool IsActive(double time) => commands.Count > 0 && StartTime <= time && time <= EndTime;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TValue ValueAtTime(double time)
     {
         if (commands.Count == 0) return DefaultValue;
@@ -69,8 +67,6 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 
         return commands[index].ValueAtTime(time);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     bool findCommandIndex(double time, out int index)
     {
         var left = 0;

@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Numerics;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Scripting;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewScripts;
 

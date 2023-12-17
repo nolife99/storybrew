@@ -291,7 +291,5 @@ public class State : IComparer<State>
             noGen ? (float)Position.Y : MathF.Round(Position.Y, generator.PositionDecimals)),
             imageSize * scale, noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
 }

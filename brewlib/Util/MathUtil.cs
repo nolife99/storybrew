@@ -11,6 +11,7 @@ public static class MathUtil
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool DoubleEquals(double a, double b, double epsilon) => Math.Abs(a - b) < epsilon;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static double ShortestAngleDelta(double from, double to)
     {
         if (from == to) return 0;

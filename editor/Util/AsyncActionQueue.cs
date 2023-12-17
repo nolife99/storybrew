@@ -42,7 +42,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         runnerCount = Math.Max(1, runnerCount);
 
         actionRunners = [];
-        for (var i = 0; i < runnerCount; i++) actionRunners.Add(new(context, $"{threadName} #{i + 1}"));
+        Parallel.For(0, runnerCount, i => actionRunners.Add(new(context, $"{threadName} #{i + 1}")));
     }
 
     public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
@@ -222,7 +222,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             if (!localThread.Wait(millisecondsTimeout))
             {
                 tokenSrc.Cancel();
-                if (!localThread.IsCompleted) await localThread;
+                if (!localThread.IsCompleted) await localThread.ConfigureAwait(false);
             }
             tokenSrc.Dispose();
         }

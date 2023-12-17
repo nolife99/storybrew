@@ -13,7 +13,7 @@ namespace StorybrewEditor.ScreenLayers;
 public class StartMenu : UiScreenLayer
 {
     LinearLayout mainLayout, bottomRightLayout, bottomLayout;
-    Button newProjectButton, openProjectButton, preferencesButton, closeButton, discordButton, wikiButton, updateButton;
+    Button newProjectButton, openProjectButton, closeButton, discordButton, wikiButton, updateButton;
     Label versionLabel;
 
     public override void Load()
@@ -40,7 +40,7 @@ public class StartMenu : UiScreenLayer
                     Text = "Open project",
                     AnchorFrom = BoxAlignment.Centre
                 },
-                preferencesButton = new(WidgetManager)
+                new Button(WidgetManager)
                 {
                     Text = "Preferences",
                     AnchorFrom = BoxAlignment.Centre,
@@ -138,7 +138,7 @@ public class StartMenu : UiScreenLayer
                 if (isDraft || isPrerelease) continue;
 
                 var name = release.Value<string>("name");
-                var version = new Version(name);
+                Version version = new(name);
 
                 if (!hasLatest)
                 {

@@ -704,6 +704,7 @@ public sealed class Project : IDisposable
 
             var configRoot = effectRoot.Value<TinyObject>("Config");
             var fieldIndex = 0;
+
             foreach (var fieldProperty in configRoot)
             {
                 var fieldRoot = fieldProperty.Value;

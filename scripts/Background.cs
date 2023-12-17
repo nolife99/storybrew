@@ -1,6 +1,4 @@
 ﻿using System.Linq;
-using StorybrewCommon.Scripting;
-using StorybrewCommon.Storyboarding;
 
 namespace StorybrewScripts;
 

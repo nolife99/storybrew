@@ -38,8 +38,25 @@ public abstract class Effect : IDisposable
     public virtual bool Multithreaded { get; }
     public virtual bool BeatmapDependant { get; }
 
-    public double StartTime => layers.Select(l => l.StartTime).DefaultIfEmpty().Min();
-    public double EndTime => layers.Select(l => l.EndTime).DefaultIfEmpty().Max();
+    public double StartTime
+    {
+        get
+        {
+            var min = double.MaxValue;
+            layers.ForEachUnsafe(l => min = Math.Min(l.StartTime, min));
+            return min == double.MaxValue ? 0 : min;
+        }
+    }
+    public double EndTime
+    {
+        get
+        {
+            var max = double.MinValue;
+            layers.ForEachUnsafe(l => max = Math.Max(l.EndTime, max));
+            return max == double.MinValue ? 0 : max;
+        }
+    }
+
     public bool Highlight;
 
     public long EstimatedSize;

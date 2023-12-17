@@ -2,7 +2,6 @@
 using System.Drawing;
 using System.IO;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -18,15 +17,13 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 {
     public readonly static RenderStates AlphaBlendStates = new(), AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats) => Draw(
-        drawContext, camera, bounds, opacity, project, frameStats, this);
+    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats) 
+        => Draw(drawContext, camera, bounds, opacity, project, frameStats, this);
 
     public void PostProcess()
     {
         if (InGroup) EndGroup();
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats, OsbSprite sprite)
     {
         var time = project.DisplayTime * 1000;

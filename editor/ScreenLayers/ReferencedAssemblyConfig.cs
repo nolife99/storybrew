@@ -278,8 +278,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                 return;
             }
 
-            var assemblies = selectedAssemblies.Where(ass => ass != assembly).ToList();
-
+            var assemblies = selectedAssemblies.Where(ass => ass != assembly);
             if (validateAssembly(path, assemblies))
             {
                 var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);

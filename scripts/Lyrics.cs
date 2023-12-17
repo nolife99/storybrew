@@ -2,9 +2,6 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
-using StorybrewCommon.Scripting;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Subtitles;
 
 namespace StorybrewScripts;
 

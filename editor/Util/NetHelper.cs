@@ -15,7 +15,7 @@ public static class NetHelper
         UseShellExecute = true
     });
 
-    public static void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action = null)
+    public static async void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action = null)
     {
         try
         {
@@ -31,7 +31,7 @@ public static class NetHelper
 
             Trace.WriteLine($"Requesting {url}");
 
-            var result = Client.GetStringAsync(url).Result;
+            var result = await Client.GetStringAsync(url).ConfigureAwait(false);
             File.WriteAllText(cachePath, result);
             action?.Invoke(result, null);
         }
@@ -40,16 +40,16 @@ public static class NetHelper
             action?.Invoke(null, e);
         }
     }
-    public static void Post(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
+    public static async void Post(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
     {
         try
         {
             Trace.WriteLine($"Post {url}");
 
             FormUrlEncodedContent content = new(data);
-            using var response = Client.PostAsync(url, content).Result;
+            using var response = await Client.PostAsync(url, content).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            var responseContent = response.Content.ReadAsStringAsync().Result;
+            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             action?.Invoke(responseContent, null);
         }
         catch (Exception e)
@@ -57,17 +57,17 @@ public static class NetHelper
             action?.Invoke(null, e);
         }
     }
-    public static void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
+    public static async void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
     {
         try
         {
             Trace.WriteLine($"Post {url}");
 
             FormUrlEncodedContent content = new(data);
-            var response = Client.PostAsync(url, content).Result;
+            var response = await Client.PostAsync(url, content).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
-            var responseContent = response.Content.ReadAsStringAsync().Result;
+            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             action?.Invoke(responseContent, null);
         }
         catch (Exception e)

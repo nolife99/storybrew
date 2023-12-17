@@ -50,8 +50,6 @@ public class Texture2dRegion : Texture
     #region IDisposable Support
 
     bool disposed;
-    public bool Disposed => disposed;
-
     protected virtual void Dispose(bool disposing)
     {
         if (!disposed)

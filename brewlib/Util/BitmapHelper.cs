@@ -12,10 +12,7 @@ namespace BrewLib.Util;
 
 public static class BitmapHelper
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap Blur(Bitmap source, int radius, float power) => Convolute(source, CalculateGaussianKernel(radius, power));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static PinnedBitmap BlurAlpha(Bitmap source, int radius, float power, Color color) => ConvoluteAlpha(source, CalculateGaussianKernel(radius, power), color);
 
     public static void LosslessCompress(string path, ImageCompressor compressor = null)
@@ -264,7 +261,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     }
 
     ///<summary> Creates a new pinned bitmap from a copy of the given 32-bit ARGB color data and dimensions. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height) => data.CopyTo(AsSpan());
 
     ///<summary> Sets the pixel color at the given coordinates. </summary>
@@ -272,7 +268,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     ///<param name="y"> The Y coordinate of the pixel. </param>
     ///<param name="color"> The new color of the pixel. </param>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int x, int y, Color color) => SetPixel(x, y, color.ToArgb());
 
     ///<summary> Sets the pixel color at the given coordinates. </summary>
@@ -280,38 +275,32 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     ///<param name="y"> The Y coordinate of the pixel. </param>
     ///<param name="color"> The new color of the pixel as a 32-bit ARGB channel (AARRGGBB). </param>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int x, int y, int color) => SetPixel(y * Width + x, color);
 
     ///<summary> Sets the pixel color at the given index. </summary>
     ///<param name="index"> An index into the underlying bitmap. </param>
     ///<param name="color"> The new color of the pixel as a 32-bit ARGB channel (AARRGGBB). </param>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int index, int color) => this[index] = color;
 
     ///<summary> Sets the pixel color at the given index. </summary>
     ///<param name="index"> An index into the underlying bitmap. </param>
     ///<param name="color"> The new color of the pixel. </param>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int index, Color color) => this[index] = color.ToArgb();
 
     ///<summary> Gets the pixel color at the given coordinates. </summary>
     ///<param name="x"> The X coordinate of the pixel. </param>
     ///<param name="y"> The Y coordinate of the pixel. </param>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Color GetPixel(int x, int y) => Color.FromArgb(this[y * Width + x]);
 
     ///<summary> Gets the pixel color at the given index. </summary>
     ///<param name="index"> An index into the underlying bitmap. </param>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Color GetPixel(int index) => Color.FromArgb(this[index]);
 
     ///<summary> Gets a collection of 32-bit color channels that represent the underlying bitmap. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int[] ToArray()
     {
         var array = GC.AllocateUninitializedArray<int>(Count);
@@ -355,7 +344,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     {
         int _index = -1;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         bool IEnumerator.MoveNext()
         {
             var index = _index + 1;
@@ -368,22 +356,10 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
             return false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void IEnumerator.Reset() => _index = -1;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void IDisposable.Dispose() => _index = int.MaxValue;
 
-        int IEnumerator<int>.Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => data.scan0[_index];
-        }
-
-        object IEnumerator.Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => data.scan0[_index];
-        }
+        int IEnumerator<int>.Current => data.scan0[_index];
+        object IEnumerator.Current => data.scan0[_index];
     }
 }

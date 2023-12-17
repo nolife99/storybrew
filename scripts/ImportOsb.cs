@@ -4,9 +4,6 @@ using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Text;
-using StorybrewCommon.Scripting;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Util;
 
 namespace StorybrewScripts;
 

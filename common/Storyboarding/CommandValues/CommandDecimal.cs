@@ -1,7 +1,6 @@
 using System;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
@@ -18,7 +17,6 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
     static CommandDecimal IMultiplicativeIdentity<CommandDecimal, CommandDecimal>.MultiplicativeIdentity => 1;
 
 #pragma warning disable CS1591
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandDecimal(double value)
     {
         if (double.IsNaN(value) || double.IsInfinity(value)) this.value = 0;
@@ -161,12 +159,7 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
     public static bool operator ==(CommandDecimal left, CommandDecimal right) => left.value.Equals(right.value);
     public static bool operator !=(CommandDecimal left, CommandDecimal right) => !left.value.Equals(right.value);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandDecimal(double value) => new(value);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator double(CommandDecimal obj) => obj.value;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator float(CommandDecimal obj) => unchecked((float)obj.value);
+    public static implicit operator float(CommandDecimal obj) => (float)obj.value;
 }

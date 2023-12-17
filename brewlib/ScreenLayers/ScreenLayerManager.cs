@@ -24,7 +24,7 @@ public sealed class ScreenLayerManager : IDisposable
     readonly InputDispatcher inputDispatcher = new();
     public InputHandler InputHandler => inputDispatcher;
 
-    public static Color BackgroundColor => Color.Black;
+    public static readonly Color BackgroundColor = Color.Black;
     public event Action<ScreenLayer> LayerAdded;
 
     public ScreenLayerManager(GameWindow window, FrameTimeSource timeSource, object context)

@@ -29,11 +29,9 @@ public readonly struct CommandPosition :
     public readonly float Length => internalVec.Length();
 
     ///<summary> Constructs a <see cref="CommandPosition"/> from an X and Y value. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
 
     ///<summary> Constructs a <see cref="CommandPosition"/> from a value. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition(CommandDecimal value) : this(value, value) { }
 
     ///<summary> Constructs a <see cref="CommandPosition"/> from a <see cref="Vector2"/>. </summary>
@@ -67,27 +65,16 @@ public readonly struct CommandPosition :
     public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
     public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2(CommandPosition position) => new(position.X, position.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator osuTK.Vector2d(CommandPosition position) => new(position.X, position.Y);
+    public static implicit operator PointF(CommandPosition position) => new(position.X, position.Y);
+    public static implicit operator CommandPosition(osuTK.Vector2 vector) => new(vector.X, vector.Y);
+    public static implicit operator CommandPosition(osuTK.Vector2d vector) => new(vector.X, vector.Y);
+    public static implicit operator CommandPosition(PointF vector) => new(vector.X, vector.Y);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector2(CommandPosition position) => position.internalVec;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator PointF(CommandPosition position) => new(position.X, position.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandPosition(osuTK.Vector2 vector) => new(vector.X, vector.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandPosition(osuTK.Vector2d vector) => new(vector.X, vector.Y);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator CommandPosition(Vector2 vector) => new(vector);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandPosition(PointF vector) => new(vector.X, vector.Y);
 }

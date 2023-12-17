@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 
 namespace BrewLib.Util;
 
@@ -12,13 +11,13 @@ public class FastRandom
     uint x, y, z, w;
 
     ///<summary> Creates an instance of the <see cref="FastRandom"/> class using a time-dependent seed value. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public FastRandom() => Reinitialise(Environment.TickCount);
+    public FastRandom() => Reinitialise(Environment.TickCount);
 
     ///<summary> Creates an instance of the <see cref="FastRandom"/> class using the specified seed value. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public FastRandom(int seed) => Reinitialise(seed);
+    public FastRandom(int seed) => Reinitialise(seed);
 
     ///<summary> Resets this instance with a new seed value. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public void Reinitialise(int seed)
+    public void Reinitialise(int seed)
     {
         x = (uint)seed;
         y = Y;
@@ -27,7 +26,7 @@ public class FastRandom
     }
 
     ///<inheritdoc cref="Random.Next"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int Next()
+    public int Next()
     {
         int rtn;
         do
@@ -45,7 +44,7 @@ public class FastRandom
     }
 
     ///<inheritdoc cref="Random.Next(int)"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int Next(int maxValue)
+    public int Next(int maxValue)
     {
         var t = x ^ (x << 11);
         x = y;
@@ -56,7 +55,7 @@ public class FastRandom
     }
 
     ///<inheritdoc cref="Random.Next(int, int)"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int Next(int minValue, int maxValue)
+    public int Next(int minValue, int maxValue)
     {
         var t = x ^ (x << 11);
         x = y;
@@ -69,7 +68,7 @@ public class FastRandom
     }
 
     ///<inheritdoc cref="Random.NextDouble"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public double NextDouble()
+    public double NextDouble()
     {
         var t = x ^ (x << 11);
         x = y;
@@ -80,7 +79,7 @@ public class FastRandom
     }
 
     ///<inheritdoc cref="Random.NextBytes"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public void NextBytes(byte[] buffer)
+    public void NextBytes(byte[] buffer)
     {
         uint x = this.x, y = this.y, z = this.z, w = this.w, t;
         var i = 0;
@@ -127,7 +126,6 @@ public class FastRandom
     }
 
     ///<inheritdoc cref="Random.NextBytes"/>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public byte[] NextBytes(int length)
     {
         var buffer = GC.AllocateUninitializedArray<byte>(length);
@@ -137,7 +135,7 @@ public class FastRandom
 
     ///<summary> Returns a random unsigned integer. </summary>
     ///<returns> A 32-bit unsigned integer ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public uint NextUInt()
+    public uint NextUInt()
     {
         var t = x ^ (x << 11);
         x = y;
@@ -148,7 +146,7 @@ public class FastRandom
 
     ///<summary> Returns a non-negative random integer. </summary>
     ///<returns> A 32-bit signed integer ≥ 0 and ≤ <see cref="uint.MaxValue"/>. </returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public int NextInt()
+    public int NextInt()
     {
         var t = x ^ (x << 11);
         x = y;
@@ -161,7 +159,7 @@ public class FastRandom
 
     ///<summary> Returns a random bit. </summary>
     ///<returns> A random bit that is equal to <see langword="true"/> or <see langword="false"/>. </returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public bool NextBool()
+    public bool NextBool()
     {
         if (bitMask == 1)
         {

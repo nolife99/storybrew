@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -37,17 +36,10 @@ public static class Program
     static void Main(string[] args)
     {
         mainThreadId = Environment.CurrentManagedThreadId;
-
-        NetHelper.Client = new();
-        NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
-
         if (args.Length != 0 && handleArguments(args)) return;
 
         setupLogging();
         startEditor();
-
-        NetHelper.Client?.Dispose();
-        foreach (IDisposable listener in Trace.Listeners) listener?.Dispose();
     }
     static bool handleArguments(string[] args)
     {
@@ -82,6 +74,10 @@ public static class Program
     {
         SchedulingEnabled = true;
         Settings = new();
+
+        NetHelper.Client = new();
+        NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
+
         Updater.NotifyEditorRun();
 
         var displayDevice = findDisplayDevice();
@@ -100,13 +96,15 @@ public static class Program
             };
 
             editor.Initialize();
-
             runMainLoop(window, editor,
                 1000f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
                 1000f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
 
             Settings.Save();
         }
+
+        NetHelper.Client?.Dispose();
+        foreach (IDisposable listener in Trace.Listeners) listener?.Dispose();
     }
 
     static DisplayDevice findDisplayDevice()
@@ -177,7 +175,6 @@ public static class Program
     static void runMainLoop(GameWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
     {
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
-        var windowDisplayed = false;
         var watch = Stopwatch.StartNew();
 
         while (window.Exists && !window.IsExiting)
@@ -186,9 +183,7 @@ public static class Program
             var cur = (float)watch.Elapsed.TotalMilliseconds;
             var fixedUpdates = 0;
 
-            AudioManager.Update();
             window.ProcessEvents();
-
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates < 2)
             {
                 fixedRate += fixedRateUpdate;
@@ -204,37 +199,36 @@ public static class Program
                 editor.Draw(Math.Min((cur - fixedRate) / fixedRateUpdate, 1));
                 window.SwapBuffers();
             }
-
-            if (!windowDisplayed)
-            {
-                window.Visible = true;
-                windowDisplayed = true;
-            }
+            if (!window.Visible) window.Visible = true;
 
             RunScheduledTasks();
-            var active = (float)(watch.Elapsed.TotalMilliseconds - cur);
-
             window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
-            if (window.WindowState != WindowState.Minimized && window.VSync is VSyncMode.Off)
+
+            var active = (float)(watch.Elapsed.TotalMilliseconds - cur);
+            if (window.WindowState != WindowState.Minimized)
             {
                 var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
                 if (sleepTime > 0) Task.Delay((int)sleepTime).Wait();
             }
 
-            var frameTime = cur - prev;
-            prev = cur;
-
-            av = (frameTime + av) * .5f;
-            avActive = (active + avActive) * .5f;
-            longest = Math.Max(frameTime, longest);
-
-            if (lastStat + 150 < cur)
+            Task.Run(() =>
             {
-                Stats = $"fps:{1000 / av:0}/{1000 / avActive:0} (act:{avActive:0} avg:{av:0} hi:{longest:0})";
+                var frameTime = cur - prev;
+                prev = cur;
 
-                longest = 0;
-                lastStat = cur;
-            }
+                av = (frameTime + av) * .5f;
+                avActive = (active + avActive) * .5f;
+                longest = Math.Max(frameTime, longest);
+
+                if (lastStat + 150 < cur)
+                {
+                    Stats = $"fps:{1000 / av:0}/{1000 / avActive:0} (act:{avActive:0} avg:{av:0} hi:{longest:0})";
+
+                    longest = 0;
+                    lastStat = cur;
+                }
+                AudioManager.Update();
+            });
         }
     }
 
@@ -264,33 +258,31 @@ public static class Program
         }
 
         Exception ex = null;
-        using ManualResetEvent completed = new(false);
-
-        Schedule(() =>
+        using (ManualResetEventSlim completed = new(false))
         {
-            try
+            Schedule(() =>
             {
-                action();
-            }
-            catch (Exception e)
-            {
-                ex = e;
-            }
-            completed.Set();
-        });
-        completed.WaitOne();
-
+                try
+                {
+                    action();
+                }
+                catch (Exception e)
+                {
+                    ex = e;
+                }
+                completed.Set();
+            });
+            completed.Wait();
+        }
         if (ex is not null) throw ex;
     }
     public static void RunScheduledTasks()
     {
-        CheckMainThread();
+        if (scheduledActions.IsEmpty || !IsMainThread) return;
 
-        Action action = null;
-        for (var i = 0; i < scheduledActions.Count; ++i) try
+        while (scheduledActions.TryDequeue(out var action)) try
         {
-            if (scheduledActions.TryDequeue(out action)) action();
-            else throw new InvalidOperationException("Retrieving task failed");
+            action();
         }
         catch (Exception e)
         {
@@ -351,11 +343,8 @@ public static class Program
                 }
 
                 if (reportType is not null) Report(reportType, e);
-                if (show)
-                {
-                    var result = MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButtons.OKCancel);
-                    if (result == DialogResult.OK) NetHelper.OpenUrl(DiscordUrl);
-                }
+                if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButtons.OKCancel) is DialogResult.OK) 
+                    NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)
             {
@@ -367,7 +356,7 @@ public static class Program
             }
         }
     }
-    public static void Report(string type, Exception e) => NetHelper.BlockingPost("http://a-damnae.rhcloud.com/storybrew/report.php", new Dictionary<string, string>
+    public static void Report(string type, Exception e) => NetHelper.BlockingPost("http://a-damnae.rhcloud.com/storybrew/report.php", new()
     {
         {"reporttype", type},
         {"source", Settings?.Id ?? "-"},

@@ -154,28 +154,22 @@ public abstract class StoryboardObjectGenerator : Script
     FastRandom rnd;
 
     ///<summary> Gets a random integer between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Random(int minValue, int maxValue) => rnd.Next(minValue, maxValue);
 
     ///<summary> Gets a random integer between 0 and <paramref name="maxValue"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int Random(int maxValue) => rnd.Next(maxValue);
 
     ///<summary> Gets a random double-precision floating-point number between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double Random(double minValue, double maxValue) => minValue + (maxValue - minValue) * rnd.NextDouble();
 
     ///<summary> Gets a random double-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public double Random(double maxValue) => rnd.NextDouble() * maxValue;
 
     ///<summary> Gets a random single-precision floating-point number between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public float Random(float minValue, float maxValue) => (float)Random((double)minValue, maxValue);
+    public float Random(float minValue, float maxValue) => (float)(minValue + (maxValue - minValue) * rnd.NextDouble());
 
     ///<summary> Gets a random single-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public float Random(float maxValue) => (float)Random((double)maxValue);
+    public float Random(float maxValue) => (float)(rnd.NextDouble() * maxValue);
 
     #endregion
 
@@ -192,7 +186,6 @@ public abstract class StoryboardObjectGenerator : Script
     }
 
     ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<float> GetFft(double time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
     {
         var fft = GetFft(time, path);

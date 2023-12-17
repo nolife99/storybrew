@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
@@ -14,18 +15,18 @@ public class RenderStates
     public static readonly RenderStates Default = new();
     public BlendingFactorState BlendingFactor = BlendingFactorState.Default;
 
-    static readonly HashSet<FieldInfo> fields = new(typeof(RenderStates).GetFields());
+    static readonly FieldInfo[] fields = typeof(RenderStates).GetFields();
     static readonly Dictionary<Type, RenderState> currentStates = [];
 
     public void Apply()
     {
         var flushed = false;
-        foreach (var field in fields)
+        fields.ForEachUnsafe(field =>
         {
-            if (field.IsStatic) continue;
+            if (field.IsStatic) return;
 
             var newState = (RenderState)field.GetValue(this);
-            if (currentStates.TryGetValue(field.FieldType, out RenderState currentState) && currentState.Equals(newState)) continue;
+            if (currentStates.TryGetValue(field.FieldType, out RenderState currentState) && currentState.Equals(newState)) return;
 
             if (!flushed)
             {
@@ -35,7 +36,7 @@ public class RenderStates
 
             newState.Apply();
             currentStates[field.FieldType] = newState;
-        }
+        });
     }
 
     public override string ToString() => string.Join("\n", currentStates.Values);

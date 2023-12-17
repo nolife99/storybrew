@@ -137,7 +137,7 @@ public sealed class TextGenerator : IDisposable
                     else
                     {
                         Trace.TraceError($"Failed to load font {name}: Expected one family, got {fontCollection.Families.Length}");
-                        if (families is not null) for (var i = 0; i < families.Length; ++i) families[i].Dispose();
+                        families?.ForEachUnsafe(family => family.Dispose());
                     }
                 }
                 catch (Exception e)

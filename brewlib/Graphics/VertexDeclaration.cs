@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
@@ -20,35 +21,29 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
         this.vertexAttributes = vertexAttributes;
 
         VertexSize = 0;
-        foreach (var attribute in vertexAttributes)
+        vertexAttributes.ForEachUnsafe(attribute =>
         {
             attribute.Offset = VertexSize;
             VertexSize += attribute.Size;
-        }
+        });
     }
 
     public VertexAttribute GetAttribute(AttributeUsage usage) => vertexAttributes.FirstOrDefault(a => a.Usage == usage);
     public IEnumerable<VertexAttribute> GetAttributes(AttributeUsage usage) => vertexAttributes.Where(a => a.Usage == usage);
-    public void ActivateAttributes(Shader shader)
+    public void ActivateAttributes(Shader shader) => vertexAttributes.ForEachUnsafe(attribute =>
     {
-        foreach (var attribute in vertexAttributes)
+        var attributeLocation = shader.GetAttributeLocation(attribute.Name);
+        if (attributeLocation >= 0)
         {
-            var attributeLocation = shader.GetAttributeLocation(attribute.Name);
-            if (attributeLocation >= 0)
-            {
-                GL.EnableVertexAttribArray(attributeLocation);
-                GL.VertexAttribPointer(attributeLocation, attribute.ComponentCount, attribute.Type, attribute.Normalized, VertexSize, attribute.Offset);
-            }
+            GL.EnableVertexAttribArray(attributeLocation);
+            GL.VertexAttribPointer(attributeLocation, attribute.ComponentCount, attribute.Type, attribute.Normalized, VertexSize, attribute.Offset);
         }
-    }
-    public void DeactivateAttributes(Shader shader)
+    });
+    public void DeactivateAttributes(Shader shader) => vertexAttributes.ForEachUnsafe(attribute =>
     {
-        for (var i = 0; i < vertexAttributes.Length; ++i)
-        {
-            var attributeLocation = shader.GetAttributeLocation(vertexAttributes[i].Name);
-            if (attributeLocation >= 0) GL.DisableVertexAttribArray(attributeLocation);
-        }
-    }
+        var attributeLocation = shader.GetAttributeLocation(attribute.Name);
+        if (attributeLocation >= 0) GL.DisableVertexAttribArray(attributeLocation);
+    });
     public override bool Equals(object obj)
     {
         if (obj == this) return true;
