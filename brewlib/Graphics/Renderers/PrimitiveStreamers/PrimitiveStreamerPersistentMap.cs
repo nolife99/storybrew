@@ -5,7 +5,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
-public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes), PrimitiveStreamer<TPrimitive> where TPrimitive : struct
+public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes), PrimitiveStreamer<TPrimitive> where TPrimitive : unmanaged
 {
     GpuCommandSync commandSync = new();
     nint bufferPointer;
@@ -35,7 +35,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         base.internalDispose();
     }
-    public override void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
+    public unsafe override void Render(PrimitiveType primitiveType, TPrimitive* primitives, int primitiveCount, int drawCount, bool canBuffer = false)
     {
         if (!Bound) throw new InvalidOperationException("Not bound");
 
@@ -51,10 +51,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        unsafe
-        {
-            fixed (void* pinned = &MemoryMarshal.GetArrayDataReference((Array)primitives)) Native.CopyMemory((nint)pinned, bufferPointer + bufferOffset, vertexDataSize);
-        }
+        Native.CopyMemory((nint)primitives, bufferPointer + bufferOffset, vertexDataSize);
 
         if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset << 1);
         else GL.DrawArrays(primitiveType, drawOffset, drawCount);
@@ -66,10 +63,8 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     }
     void expandVertexBuffer()
     {
-        if (IndexBufferId != -1) return;
-
         // Prevent the vertex buffer from becoming too large (maxes at 8mb * grow factor)
-        if (MinRenderableVertexCount * VertexDeclaration.VertexSize > 8388608) return;
+        if (IndexBufferId != -1 || MinRenderableVertexCount * VertexDeclaration.VertexSize > 8388608) return;
 
         MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.75f);
         if (commandSync.WaitForAll()) ++BufferWaitCount;

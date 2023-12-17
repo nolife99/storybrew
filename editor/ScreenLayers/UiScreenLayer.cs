@@ -36,10 +36,10 @@ public class UiScreenLayer : ScreenLayer
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
             var targetOpacity = isTop ? 1 : .3f;
-            if (Math.Abs(opacity - targetOpacity) <= .07) opacity = targetOpacity;
+            if (Math.Abs(opacity - targetOpacity) <= .07f) opacity = targetOpacity;
             else opacity = Math.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);
         }
-        WidgetManager.Opacity = opacity * (float)TransitionProgress;
+        WidgetManager.Opacity = opacity * TransitionProgress;
     }
     public override void Draw(DrawContext drawContext, double tween)
     {

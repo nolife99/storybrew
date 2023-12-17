@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
@@ -12,7 +13,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers;
 
-public class SpriteRendererBuffered : SpriteRenderer
+public unsafe class SpriteRendererBuffered : SpriteRenderer
 {
     public const int VertexPerSprite = 4;
     public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
@@ -27,7 +28,7 @@ public class SpriteRendererBuffered : SpriteRenderer
 
     public static Shader CreateDefaultShader()
     {
-        var sb = new ShaderBuilder(VertexDeclaration);
+        ShaderBuilder sb = new(VertexDeclaration);
 
         var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
         var texture = sb.AddUniform(TextureUniformName, "sampler2D");
@@ -59,7 +60,7 @@ public class SpriteRendererBuffered : SpriteRenderer
     }
 
     PrimitiveStreamer<SpritePrimitive> primitiveStreamer;
-    SpritePrimitive[] spriteArray;
+    SpritePrimitive* spriteArray;
 
     Camera camera;
     public Camera Camera
@@ -120,7 +121,7 @@ public class SpriteRendererBuffered : SpriteRenderer
         var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
-        spriteArray = ArrayPool<SpritePrimitive>.Shared.Rent(maxSpritesPerBatch);
+        spriteArray = (SpritePrimitive*)NativeMemory.Alloc((nuint)(maxSpritesPerBatch * Marshal.SizeOf<SpritePrimitive>()));
     }
 
     public void Dispose()
@@ -134,7 +135,7 @@ public class SpriteRendererBuffered : SpriteRenderer
 
         if (rendering) EndRendering();
 
-        ArrayPool<SpritePrimitive>.Shared.Return(spriteArray);
+        NativeMemory.Free(spriteArray);
         spriteArray = null;
 
         primitiveStreamer.Dispose();
@@ -168,10 +169,9 @@ public class SpriteRendererBuffered : SpriteRenderer
     public void Flush(bool canBuffer = false)
     {
         if (spritesInBatch == 0) return;
-        if (currentTexture is null) throw new InvalidOperationException("currentTexture is null");
 
         // When the previous flush was bufferable, draw state should stay the same.
-        if (!lastFlushWasBuffered)
+        if (!lastFlushWasBuffered) unsafe
         {
             var combinedMatrix = transformMatrix * Camera.ProjectionView;
 
@@ -182,11 +182,7 @@ public class SpriteRendererBuffered : SpriteRenderer
                 GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
             }
             
-            unsafe
-            {
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-            }
-
+            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
             flushAction?.Invoke();
         }
 
@@ -200,7 +196,7 @@ public class SpriteRendererBuffered : SpriteRenderer
         }
 
         spritesInBatch = 0;
-        FlushedBufferCount++;
+        ++FlushedBufferCount;
 
         lastFlushWasBuffered = canBuffer;
     }
@@ -211,8 +207,6 @@ public class SpriteRendererBuffered : SpriteRenderer
     public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color color, float textureX0, float textureY0, float textureX1, float textureY1)
     {
         if (!rendering) throw new InvalidOperationException("Not rendering");
-        ArgumentNullException.ThrowIfNull(texture);
-
         if (currentTexture != texture.BindableTexture)
         {
             DrawState.FlushRenderer();
@@ -230,6 +224,7 @@ public class SpriteRendererBuffered : SpriteRenderer
 
         var flipX = false;
         var flipY = false;
+
         if (scaleX != 1 || scaleY != 1)
         {
             flipX = scaleX < 0;
@@ -330,7 +325,6 @@ public class SpriteRendererBuffered : SpriteRenderer
         spritePrimitive.v3 = v1;
         spritePrimitive.u4 = u1;
         spritePrimitive.v4 = v0;
-
         spritePrimitive.color1 = spritePrimitive.color2 = spritePrimitive.color3 = spritePrimitive.color4 = color.ToRgba();
 
         spriteArray[spritesInBatch] = spritePrimitive;

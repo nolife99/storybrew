@@ -2,18 +2,13 @@
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
-public static class PrimitiveStreamerUtil<TPrimitive> where TPrimitive : struct
+public static class PrimitiveStreamerUtil<TPrimitive> where TPrimitive : unmanaged
 {
-    public static readonly Func<VertexDeclaration, int, PrimitiveStreamer<TPrimitive>> DefaultCreatePrimitiveStreamer = (vertexDeclaration, minRenderableVertexCount) =>
+    public static readonly Func<VertexDeclaration, int, PrimitiveStreamer<TPrimitive>> DefaultCreatePrimitiveStreamer = (vertDec, minVert) =>
     {
-        if (PrimitiveStreamerPersistentMap<TPrimitive>.HasCapabilities())
-            return new PrimitiveStreamerPersistentMap<TPrimitive>(vertexDeclaration, minRenderableVertexCount);
-
-        else if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities())
-            return new PrimitiveStreamerBufferData<TPrimitive>(vertexDeclaration, minRenderableVertexCount);
-
-        else if (PrimitiveStreamerVbo<TPrimitive>.HasCapabilities())
-            return new PrimitiveStreamerVbo<TPrimitive>(vertexDeclaration);
+        if (PrimitiveStreamerPersistentMap<TPrimitive>.HasCapabilities()) return new PrimitiveStreamerPersistentMap<TPrimitive>(vertDec, minVert);
+        if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities()) return new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert);
+        if (PrimitiveStreamerVbo<TPrimitive>.HasCapabilities()) return new PrimitiveStreamerVbo<TPrimitive>(vertDec);
 
         throw new NotSupportedException();
     };

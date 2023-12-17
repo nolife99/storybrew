@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BrewLib.Util;
@@ -14,6 +15,8 @@ public static class Misc
     public static T WithRetries<T>(Func<T> action, int timeout = 1500, bool canThrow = true)
     {
         var sleepTime = 0;
+
+        using ManualResetEventSlim wait = new();
         while (true)
         {
             try
@@ -33,7 +36,7 @@ public static class Misc
                 }
 
                 var retryDelay = timeout / 10;
-                Task.Delay(retryDelay).Wait();
+                wait.Wait(retryDelay);
                 sleepTime += retryDelay;
             }
         }

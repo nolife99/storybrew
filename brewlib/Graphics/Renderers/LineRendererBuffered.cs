@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
@@ -12,7 +13,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers;
 
-public class LineRendererBuffered : LineRenderer
+public unsafe class LineRendererBuffered : LineRenderer
 {
     public const int VertexPerLine = 2;
     public const string CombinedMatrixUniformName = "u_combinedMatrix";
@@ -48,7 +49,7 @@ public class LineRendererBuffered : LineRenderer
     readonly bool ownsShader;
 
     PrimitiveStreamer<LinePrimitive> primitiveStreamer;
-    LinePrimitive[] primitives;
+    LinePrimitive* primitives;
 
     Camera camera;
     public Camera Camera
@@ -105,7 +106,7 @@ public class LineRendererBuffered : LineRenderer
         var primitiveBatchSize = Math.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerLine);
 
-        primitives = ArrayPool<LinePrimitive>.Shared.Rent(maxLinesPerBatch);
+        primitives = (LinePrimitive*)NativeMemory.Alloc((nuint)(maxLinesPerBatch * Marshal.SizeOf<LinePrimitive>()));
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
     }
     public void Dispose()
@@ -118,7 +119,7 @@ public class LineRendererBuffered : LineRenderer
         if (!disposing) return;
         if (rendering) EndRendering();
 
-        ArrayPool<LinePrimitive>.Shared.Return(primitives);
+        NativeMemory.Free(primitives);
         primitives = null;
 
         primitiveStreamer.Dispose();
@@ -151,13 +152,10 @@ public class LineRendererBuffered : LineRenderer
     {
         if (linesInBatch == 0) return;
 
-        if (!lastFlushWasBuffered)
+        if (!lastFlushWasBuffered) unsafe
         {
             var combinedMatrix = transformMatrix * Camera.ProjectionView;
-            unsafe
-            {
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-            }
+            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
 
             FlushAction?.Invoke();
         }
@@ -182,7 +180,7 @@ public class LineRendererBuffered : LineRenderer
         if (!rendering) throw new InvalidOperationException("Not rendering");
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-        LinePrimitive linePrimitive = new()
+        primitives[linesInBatch] = new()
         {
             x1 = start.X,
             y1 = start.Y,
@@ -194,8 +192,6 @@ public class LineRendererBuffered : LineRenderer
             z2 = end.Z,
             color2 = endColor.ToRgba()
         };
-
-        primitives[linesInBatch] = linePrimitive;
 
         ++RenderedLineCount;
         ++linesInBatch;

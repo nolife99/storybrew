@@ -20,12 +20,12 @@ public static class DateTimeExtensions
         [63072000] = "a year ago",
         [long.MaxValue] = "{0} years ago",
     };
-    public static string ToTimeAgo(this DateTime date)
+    public static string ToTimeAgo(this DateTimeOffset date)
     {
-        var seconds = (DateTime.Now.Ticks - date.Ticks) * 1E-7;
+        var seconds = (DateTimeOffset.Now.Ticks - date.Ticks) * 1E-7;
         foreach (var threshold in thresholds) if (seconds < threshold.Key)
         {
-            TimeSpan timespan = new(DateTime.Now.Ticks - date.Ticks);
+            TimeSpan timespan = new(DateTimeOffset.Now.Ticks - date.Ticks);
             return string.Format(CultureInfo.InvariantCulture, threshold.Value,
                 (timespan.Days > 365 ? timespan.Days / 365 :
                 (timespan.Days > 30 ? timespan.Days / 30 :

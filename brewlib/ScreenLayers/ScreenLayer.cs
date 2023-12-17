@@ -9,8 +9,8 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 {
     public ScreenLayerManager Manager { get; set; }
 
-    protected double TransitionInDuration = .25, TransitionOutDuration = .25, TransitionProgress;
-    public double MinTween;
+    protected float TransitionInDuration = .25f, TransitionOutDuration = .25f, TransitionProgress;
+    public float MinTween;
 
     public State CurrentState = State.Hidden;
 
@@ -119,7 +119,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
         if (skipTransition || TransitionOutDuration == 0) Manager.Remove(this);
     }
-    bool updateTransition(double delta, double duration, int direction)
+    bool updateTransition(float delta, float duration, int direction)
     {
         var progress = duration > 0 ? delta / duration : 1;
         TransitionProgress += progress * direction;
@@ -146,7 +146,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     {
         if (!disposed)
         {
-            if (disposing) if (hasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
+            if (disposing && hasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
             disposed = true;
         }
     }

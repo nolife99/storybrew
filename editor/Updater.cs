@@ -139,7 +139,7 @@ public static class Updater
                 if (fromVersion < readOnlyVersion) return;
 
                 Trace.WriteLine($"  Creating backup for {destinationFilename}");
-                var backupFilename = destinationFilename + $".{DateTime.UtcNow.Ticks}.bak";
+                var backupFilename = destinationFilename + $".{DateTimeOffset.UtcNow.Ticks}.bak";
                 File.Move(destinationFilename, backupFilename);
             }
             else File.SetAttributes(destinationFilename, attributes & ~FileAttributes.ReadOnly);

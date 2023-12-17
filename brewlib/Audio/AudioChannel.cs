@@ -28,19 +28,13 @@ public class AudioChannel : IDisposable
             updateTimeFactor();
         }
     }
-    public double Time
+    public float Time
     {
-        get
-        {
-            if (channel == 0) return 0;
-            var position = Bass.ChannelGetPosition(channel, PositionFlags.Bytes);
-            return Bass.ChannelBytes2Seconds(channel, position);
-        }
+        get => channel != 0 ? (float)Bass.ChannelBytes2Seconds(channel, Bass.ChannelGetPosition(channel, PositionFlags.Bytes)) : 0;
         set
         {
             if (channel == 0) return;
-            var position = Bass.ChannelSeconds2Bytes(channel, value);
-            Bass.ChannelSetPosition(channel, position);
+            Bass.ChannelSetPosition(channel, Bass.ChannelSeconds2Bytes(channel, value));
         }
     }
     public double Duration { get; set; }
@@ -93,8 +87,8 @@ public class AudioChannel : IDisposable
         }
     }
 
-    double timeFactor = 1;
-    public double TimeFactor
+    float timeFactor = 1;
+    public float TimeFactor
     {
         get => timeFactor;
         set
@@ -131,14 +125,7 @@ public class AudioChannel : IDisposable
         }
     }
 
-    public int AvailableData
-    {
-        get
-        {
-            if (channel == 0) return 0;
-            return Bass.ChannelGetData(channel, nint.Zero, (int)DataFlags.Available);
-        }
-    }
+    public int AvailableData => channel == 0 ? 0 : Bass.ChannelGetData(channel, nint.Zero, (int)DataFlags.Available);
     public bool Temporary { get; }
 
     internal AudioChannel(AudioManager audioManager, int channel = 0, bool temporary = false)
@@ -156,7 +143,7 @@ public class AudioChannel : IDisposable
     void updateTimeFactor()
     {
         if (channel == 0) return;
-        Bass.ChannelSetAttribute(channel, ChannelAttribute.Tempo, (int)((timeFactor - 1) * 100));
+        Bass.ChannelSetAttribute(channel, ChannelAttribute.Tempo, (timeFactor - 1) * 100);
     }
     void updatePitch()
     {

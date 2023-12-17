@@ -37,7 +37,7 @@ public sealed class AudioManager : IDisposable
         for (var i = 0; i < span.Length; ++i)
         {
             var channel = span[i];
-            if (channel.Temporary && channel.Completed)
+            if (channel is not null && channel.Temporary && channel.Completed)
             {
                 channel.Dispose();
                 --i;

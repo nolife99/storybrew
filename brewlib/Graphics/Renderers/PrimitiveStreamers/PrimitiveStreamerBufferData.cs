@@ -2,11 +2,11 @@
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
-public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes) where TPrimitive : struct
+public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes) where TPrimitive : unmanaged
 {
-    public override void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
+    public unsafe override void Render(PrimitiveType primitiveType, TPrimitive* primitives, int primitiveCount, int drawCount, bool canBuffer = false)
     {
-        GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * PrimitiveSize, primitives, BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * PrimitiveSize, (nint)primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;
 
         if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);

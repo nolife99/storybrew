@@ -218,7 +218,7 @@ public class TimelineSlider : Slider
     }
     public void Scroll(float direction)
     {
-        var time = Value * 1000d;
+        var time = Value * 1E+3;
         var timingPoint = project.MainBeatmap.GetTimingPointAt((int)time);
 
         var stepDuration = timingPoint.BeatDuration / SnapDivisor;

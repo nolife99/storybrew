@@ -115,7 +115,7 @@ public class StartMenu : UiScreenLayer
         bottomLayout.Pack(600);
         bottomRightLayout.Pack((1024 - bottomLayout.Width) / 2);
     }
-    void checkLatestVersion() => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", "cache/net/releases", 900, (r, e) =>
+    void checkLatestVersion() => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", (r, e) =>
     {
         if (IsDisposed) return;
         if (e is not null)
@@ -158,7 +158,7 @@ public class StartMenu : UiScreenLayer
                 if (Program.Version < version || Program.Version >= latestVersion)
                 {
                     var publishedAt = release.Value<string>("published_at");
-                    var publishDate = DateTime.ParseExact(publishedAt, @"yyyy-MM-dd\THH:mm:ss\Z", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+                    var publishDate = DateTimeOffset.ParseExact(publishedAt, @"yyyy-MM-dd\THH:mm:ss\Z", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
                     var authorName = release.Value<string>("author", "login");
 
                     var body = release.Value<string>("body");

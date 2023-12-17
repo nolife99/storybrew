@@ -5,12 +5,12 @@ namespace BrewLib.Time;
 public class Clock : TimeSource
 {
     readonly Stopwatch stopwatch = new();
-    double timeOrigin;
+    float timeOrigin;
 
-    public double Current => timeOrigin + stopwatch.Elapsed.TotalSeconds * timeFactor;
+    public float Current => (float)(timeOrigin + stopwatch.Elapsed.TotalSeconds * timeFactor);
 
-    double timeFactor = 1;
-    public double TimeFactor
+    float timeFactor = 1;
+    public float TimeFactor
     {
         get => timeFactor;
         set
@@ -20,7 +20,7 @@ public class Clock : TimeSource
             var elapsed = stopwatch.Elapsed.TotalSeconds;
             var previousTime = timeOrigin + elapsed * timeFactor;
             timeFactor = value;
-            timeOrigin = previousTime - elapsed * timeFactor;
+            timeOrigin = (float)(previousTime - elapsed * timeFactor);
         }
     }
 
@@ -38,9 +38,9 @@ public class Clock : TimeSource
         }
     }
 
-    public bool Seek(double time)
+    public bool Seek(float time)
     {
-        timeOrigin = time - stopwatch.Elapsed.TotalSeconds * timeFactor;
+        timeOrigin = (float)(time - stopwatch.Elapsed.TotalSeconds * timeFactor);
         return true;
     }
 }

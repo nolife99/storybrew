@@ -92,10 +92,10 @@ public class Vector2Picker : Widget, Field
     {
         var xCommit = xTextbox.Value;
 
-        float x;
+        double x;
         try
         {
-            x = float.Parse(xCommit, CultureInfo.InvariantCulture);
+            x = double.Parse(xCommit, CultureInfo.InvariantCulture);
         }
         catch
         {
@@ -109,10 +109,10 @@ public class Vector2Picker : Widget, Field
     {
         var yCommit = yTextbox.Value;
 
-        float y;
+        double y;
         try
         {
-            y = float.Parse(yCommit, CultureInfo.InvariantCulture);
+            y = double.Parse(yCommit, CultureInfo.InvariantCulture);
         }
         catch
         {

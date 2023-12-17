@@ -37,7 +37,7 @@ public sealed class Editor(GameWindow window) : IDisposable
 
     public void Initialize(ScreenLayer initialLayer = null)
     {
-        ResourceContainer = new AssemblyResourceContainer(GetType().Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
+        ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
         DrawState.Initialize(ResourceContainer, Window.Width, Window.Height);
 
         drawContext = new();
@@ -199,7 +199,7 @@ public sealed class Editor(GameWindow window) : IDisposable
         Skin.Dispose();
         DrawState.Cleanup();
     }
-    public void Update(double time, bool isFixedRateUpdate = true)
+    public void Update(float time, bool isFixedRateUpdate = true)
     {
         IsFixedRateUpdate = isFixedRateUpdate;
         clock.AdvanceFrameTo(time);
@@ -207,7 +207,7 @@ public sealed class Editor(GameWindow window) : IDisposable
         updateOverlay();
         ScreenLayerManager.Update(IsFixedRateUpdate);
     }
-    public void Draw(double tween)
+    public void Draw(float tween)
     {
         GL.Clear(ClearBufferMask.ColorBufferBit);
 

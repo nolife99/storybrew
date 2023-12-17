@@ -146,7 +146,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     {
                         if (mustSleep)
                         {
-                            await Task.Delay(200, tokenSrc.Token);
+                            await Task.Delay(200, tokenSrc.Token).ConfigureAwait(false);
                             mustSleep = false;
                         }
 
@@ -222,7 +222,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
             if (!localThread.Wait(millisecondsTimeout))
             {
                 tokenSrc.Cancel();
-                if (!localThread.IsCompleted) await localThread.ConfigureAwait(false);
+                if (!localThread.IsCompleted) try
+                {
+                    await localThread.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) { }
             }
             tokenSrc.Dispose();
         }

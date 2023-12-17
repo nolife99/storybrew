@@ -15,24 +15,13 @@ public static class NetHelper
         UseShellExecute = true
     });
 
-    public static async void Request(string url, string cachePath, int cacheDuration, Action<string, Exception> action = null)
+    public static async void Request(string url, Action<string, Exception> action = null)
     {
         try
         {
-            var fullPath = Path.GetFullPath(cachePath);
-            var folder = Path.GetDirectoryName(fullPath);
-
-            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-            else if (File.Exists(cachePath) && File.GetLastWriteTimeUtc(cachePath).AddSeconds(cacheDuration) > DateTime.UtcNow)
-            {
-                action?.Invoke(File.ReadAllText(cachePath), null);
-                return;
-            }
-
             Trace.WriteLine($"Requesting {url}");
 
             var result = await Client.GetStringAsync(url).ConfigureAwait(false);
-            File.WriteAllText(cachePath, result);
             action?.Invoke(result, null);
         }
         catch (Exception e)
@@ -49,6 +38,7 @@ public static class NetHelper
             FormUrlEncodedContent content = new(data);
             using var response = await Client.PostAsync(url, content).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
+
             var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             action?.Invoke(responseContent, null);
         }
@@ -57,17 +47,17 @@ public static class NetHelper
             action?.Invoke(null, e);
         }
     }
-    public static async void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
+    public static void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
     {
         try
         {
             Trace.WriteLine($"Post {url}");
 
             FormUrlEncodedContent content = new(data);
-            var response = await Client.PostAsync(url, content).ConfigureAwait(false);
+            var response = Client.PostAsync(url, content).Result;
             response.EnsureSuccessStatusCode();
 
-            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseContent = response.Content.ReadAsStringAsync().Result;
             action?.Invoke(responseContent, null);
         }
         catch (Exception e)
@@ -75,7 +65,7 @@ public static class NetHelper
             action?.Invoke(null, e);
         }
     }
-    public static void Download(string url, string filename, Func<float, bool> progressFunc, Action<Exception> completedAction = null)
+    public static async void Download(string url, string filename, Func<float, bool> progressFunc, Action<Exception> completedAction = null)
     {
         try
         {
@@ -87,7 +77,7 @@ public static class NetHelper
 
             Trace.WriteLine($"Downloading {url}");
 
-            using (var response = Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).Result)
+            using (var response = await Client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
 
@@ -98,8 +88,8 @@ public static class NetHelper
 
                 do
                 {
-                    var read = response.Content.ReadAsByteArrayAsync().Result;
-                    fileStream.Write(read, 0, read.Length);
+                    var read = await response.Content.ReadAsByteArrayAsync();
+                    await fileStream.WriteAsync(read);
 
                     bytesRead += read.Length;
                     isMoreToRead = read.Length != 0;

@@ -33,15 +33,13 @@ public static class LineRendererExtensions
 
     public static void DrawSquare(this LineRenderer line, Vector3 from, Vector3 to, Color color)
     {
-        var topLeft = from;
         Vector3 topRight = new(to.X, from.Y, from.Z);
         Vector3 bottomLeft = new(from.X, to.Y, from.Z);
-        var bottomRight = to;
 
-        line.Draw(topLeft, topRight, color);
-        line.Draw(topRight, bottomRight, color);
-        line.Draw(bottomRight, bottomLeft, color);
-        line.Draw(bottomLeft, topLeft, color);
+        line.Draw(from, topRight, color);
+        line.Draw(topRight, to, color);
+        line.Draw(to, bottomLeft, color);
+        line.Draw(bottomLeft, from, color);
     }
 
     public static void DrawSquare(this LineRenderer line, RectangleF box, Color color)

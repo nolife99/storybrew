@@ -29,14 +29,13 @@ public static class Program
     public static bool IsMainThread => Environment.CurrentManagedThreadId == mainThreadId;
     public static void CheckMainThread([CallerFilePath] string callerPath = "", [CallerLineNumber] int callerLine = -1, [CallerMemberName] string callerName = "")
     {
-        if (IsMainThread) return;
-        throw new InvalidOperationException($"{callerPath}:L{callerLine} {callerName} called from the thread '{Thread.CurrentThread.Name}', must be called from the main thread");
+        if (!IsMainThread) throw new InvalidOperationException($"{callerPath}:L{callerLine} {callerName} called from the thread '{Thread.CurrentThread.Name}', must be called from the main thread");
     }
 
     static void Main(string[] args)
     {
-        mainThreadId = Environment.CurrentManagedThreadId;
         if (args.Length != 0 && handleArguments(args)) return;
+        mainThreadId = Environment.CurrentManagedThreadId;
 
         setupLogging();
         startEditor();
@@ -58,7 +57,7 @@ public static class Program
 
             case "worker":
                 if (args.Length < 2) return false;
-                setupLogging(null, $"worker-{DateTime.UtcNow:yyyyMMddHHmmssfff}.log");
+                setupLogging(null, $"worker-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.log");
                 SchedulingEnabled = true;
                 ProcessWorker.Run(args[1]);
                 return true;
@@ -75,36 +74,35 @@ public static class Program
         SchedulingEnabled = true;
         Settings = new();
 
-        NetHelper.Client = new();
-        NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
-
         Updater.NotifyEditorRun();
 
         var displayDevice = findDisplayDevice();
-
-        using (var window = createWindow(displayDevice)) using (AudioManager = createAudioManager())
-        using (Editor editor = new(window)) using (System.Drawing.Icon icon = new(typeof(Editor), "icon.ico"))
+        using (var window = createWindow(displayDevice))
         {
             Trace.WriteLine($"{Environment.OSVersion} / Handle: 0x{Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture)}");
             Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
+            using System.Drawing.Icon icon = new(typeof(Editor), "icon.ico");
             Native.SetWindowIcon(icon.Handle);
+
+            using Editor editor = new(window);
             window.Resize += (sender, e) =>
             {
                 editor.Draw(1);
                 window.SwapBuffers();
             };
 
-            editor.Initialize();
-            runMainLoop(window, editor,
-                1000f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
-                1000f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
+            using (NetHelper.Client = new())
+            {
+                NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
+                editor.Initialize();
 
-            Settings.Save();
+                using (AudioManager = createAudioManager()) runMainLoop(window, editor,
+                    1000f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
+                    1000f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
+            }
         }
-
-        NetHelper.Client?.Dispose();
-        foreach (IDisposable listener in Trace.Listeners) listener?.Dispose();
+        Settings.Save();
     }
 
     static DisplayDevice findDisplayDevice()
@@ -177,21 +175,24 @@ public static class Program
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
         var watch = Stopwatch.StartNew();
 
+        using ManualResetEventSlim wait = new(); 
         while (window.Exists && !window.IsExiting)
         {
+            var cur = watch.ElapsedMilliseconds;
             var focused = window.Focused;
-            var cur = (float)watch.Elapsed.TotalMilliseconds;
             var fixedUpdates = 0;
 
             window.ProcessEvents();
+            AudioManager.Update();
+
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates < 2)
             {
                 fixedRate += fixedRateUpdate;
                 ++fixedUpdates;
 
-                editor.Update(fixedRate * 1E-3f);
+                editor.Update(fixedRate * .001f);
             }
-            if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur * 1E-3f, false);
+            if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur * .001f, false);
 
             if (!window.Exists || window.IsExiting) return;
             if (window.WindowState != WindowState.Minimized)
@@ -204,31 +205,27 @@ public static class Program
             RunScheduledTasks();
             window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
 
-            var active = (float)(watch.Elapsed.TotalMilliseconds - cur);
-            if (window.WindowState != WindowState.Minimized)
+            var active = watch.ElapsedMilliseconds - cur;
+            if (window.VSync is VSyncMode.Off && window.WindowState != WindowState.Minimized)
             {
-                var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
-                if (sleepTime > 0) Task.Delay((int)sleepTime).Wait();
+                var sleepTime = (int)((focused ? targetFrame : fixedRateUpdate) - active);
+                if (sleepTime > 0) wait.Wait(sleepTime);
             }
 
-            Task.Run(() =>
-            {
-                var frameTime = cur - prev;
-                prev = cur;
+            var frameTime = cur - prev;
+            prev = cur;
 
+            if (lastStat + 150 < cur)
+            {
                 av = (frameTime + av) * .5f;
                 avActive = (active + avActive) * .5f;
                 longest = Math.Max(frameTime, longest);
 
-                if (lastStat + 150 < cur)
-                {
-                    Stats = $"fps:{1000 / av:0}/{1000 / avActive:0} (act:{avActive:0} avg:{av:0} hi:{longest:0})";
+                Stats = $"fps:{1000 / av:0}/{1000 / avActive:0} (act:{avActive:0} avg:{av:0} hi:{longest:0})";
 
-                    longest = 0;
-                    lastStat = cur;
-                }
-                AudioManager.Update();
-            });
+                longest = 0;
+                lastStat = cur;
+            }
         }
     }
 
@@ -246,7 +243,7 @@ public static class Program
     }
     public static void Schedule(Action action, int delay) => Task.Run(async () =>
     {
-        await Task.Delay(delay);
+        await Task.Delay(delay).ConfigureAwait(false);
         Schedule(action);
     });
     public static void RunMainThread(Action action)
@@ -310,19 +307,19 @@ public static class Program
         if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
         else if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
 
-        Trace.Listeners.Add(new TextWriterTraceListener(File.CreateText(tracePath), Name));
-        Trace.WriteLine($"{FullName}\n");
+        TextWriterTraceListener listener = new(File.CreateText(tracePath), Name);
+        AppDomain.CurrentDomain.ProcessExit += (sender, e) => listener.Dispose();
 
         AppDomain.CurrentDomain.FirstChanceException += (sender, e) => logError(e.Exception, exceptionPath, null, false);
         AppDomain.CurrentDomain.UnhandledException += (sender, e) => logError((Exception)e.ExceptionObject, crashPath, "crash", true);
 
+        Trace.Listeners.Add(listener);
+        Trace.WriteLine($"{FullName}\n");
+
         Task.Run(async () =>
         {
-            while (true)
-            {
-                Trace.Flush();
-                await Task.Delay(10000);
-            }
+            using PeriodicTimer timer = new(TimeSpan.FromSeconds(10));
+            while (await timer.WaitForNextTickAsync()) Trace.Flush();
         });
     }
     static void logError(Exception e, string filename, string reportType, bool show)
@@ -337,7 +334,7 @@ public static class Program
                 var logPath = Path.Combine(Environment.CurrentDirectory, filename);
                 using (StreamWriter w = new(logPath, true))
                 {
-                    w.Write(DateTime.Now + " - ");
+                    w.Write(DateTimeOffset.Now + " - ");
                     w.WriteLine(e);
                     w.WriteLine();
                 }

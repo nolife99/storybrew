@@ -5,7 +5,7 @@ namespace BrewLib.Time;
 public class TimeSourceExtender(TimeSource timeSource) : TimeSource
 {
     readonly Clock clock = new();
-    public double Current => timeSource.Playing ? timeSource.Current : clock.Current;
+    public float Current => timeSource.Playing ? timeSource.Current : clock.Current;
 
     public bool Playing
     {
@@ -18,7 +18,7 @@ public class TimeSourceExtender(TimeSource timeSource) : TimeSource
             clock.Playing = value;
         }
     }
-    public double TimeFactor
+    public float TimeFactor
     {
         get => clock.TimeFactor;
         set
@@ -28,7 +28,7 @@ public class TimeSourceExtender(TimeSource timeSource) : TimeSource
         }
     }
 
-    public bool Seek(double time)
+    public bool Seek(float time)
     {
         if (!timeSource.Seek(time)) timeSource.Playing = false;
         return clock.Seek(time);

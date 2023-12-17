@@ -2,15 +2,15 @@
 
 public interface ReadOnlyTimeSource
 {
-    double Current { get; }
+    float Current { get; }
 
-    double TimeFactor { get; }
+    float TimeFactor { get; }
     bool Playing { get; }
 }
 public interface TimeSource : ReadOnlyTimeSource
 {
-    new double TimeFactor { get; set; }
+    new float TimeFactor { get; set; }
     new bool Playing { get; set; }
 
-    bool Seek(double time);
+    bool Seek(float time);
 }

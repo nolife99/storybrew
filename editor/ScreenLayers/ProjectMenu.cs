@@ -4,11 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using ManagedBass;
 using osuTK.Input;
 using StorybrewCommon.Mapset;
 using StorybrewEditor.Scripting;
@@ -40,7 +42,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     AudioStream audio;
     TimeSourceExtender timeSource;
-    double? pendingSeek;
+    float? pendingSeek;
 
     int defaultDiv = 4;
     Vector2 storyboardPosition;
@@ -207,7 +209,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (effect is not null) timeline.Highlight(effect.StartTime, effect.EndTime);
             else timeline.ClearHighlight();
         };
-        effects.OnEffectSelected += effect => timeline.Value = (float)effect.StartTime / 1000;
+        effects.OnEffectSelected += effect => timeline.Value = (float)(effect.StartTime * .001f);
 
         WidgetManager.Root.Add(layers = new(WidgetManager, proj.LayerManager)
         {
@@ -221,7 +223,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (layer is not null) timeline.Highlight(layer.StartTime, layer.EndTime);
             else timeline.ClearHighlight();
         };
-        layers.OnLayerSelected += layer => timeline.Value = (float)layer.StartTime / 1000;
+        layers.OnLayerSelected += layer => timeline.Value = (float)(layer.StartTime * .001f);
 
         WidgetManager.Root.Add(settings = new(WidgetManager, proj)
         {
@@ -271,11 +273,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             AnchorTo = BoxAlignment.Top,
             Hoverable = false,
             Displayed = false,
-            Size = new Vector2(16, 9) * 16
+            Size = new(256, 144)
         });
         timeB.OnClick += (sender, e) => Manager.ShowPrompt("Skip to...", value =>
         {
-            if (float.TryParse(value, out float time)) timeline.Value = time / 1000;
+            if (float.TryParse(value, out float time)) timeline.Value = time * .001f;
         });
 
         resizeTimeline();
@@ -303,23 +305,28 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         };
         audioTimeB.OnClick += (sender, e) =>
         {
-            if (e == MouseButton.Left)
+            switch (e)
             {
-                var speed = timeSource.TimeFactor;
-                if (speed > 1) speed = 2;
-                speed /= 2;
-                if (speed < .2) speed = 1;
-                timeSource.TimeFactor = speed;
+                case MouseButton.Left:
+                {
+                    var speed = timeSource.TimeFactor;
+                    if (speed > 1) speed = 2;
+                    speed /= 2;
+                    if (speed < .2) speed = 1;
+                    timeSource.TimeFactor = speed;
+                    break;
+                }
+                case MouseButton.Right:
+                {
+                    var speed = timeSource.TimeFactor;
+                    if (speed < 1) speed = 1;
+                    speed += speed >= 2 ? 1 : .5f;
+                    if (speed > 8) speed = 1;
+                    timeSource.TimeFactor = speed;
+                    break;
+                }
+                case MouseButton.Middle: timeSource.TimeFactor = timeSource.TimeFactor == 8 ? 1 : 8; break;
             }
-            else if (e == MouseButton.Right)
-            {
-                var speed = timeSource.TimeFactor;
-                if (speed < 1) speed = 1;
-                speed += speed >= 2 ? 1 : .5;
-                if (speed > 8) speed = 1;
-                timeSource.TimeFactor = speed;
-            }
-            else if (e == MouseButton.Middle) timeSource.TimeFactor = timeSource.TimeFactor == 8 ? 1 : 8;
 
             audioTimeB.Text = $"{timeSource.TimeFactor:P0}";
         };
@@ -376,8 +383,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         {
             case Key.Space: case Key.K: playB.Click(); return true;
             case Key.O: withSavePrompt(Manager.ShowOpenProject); return true;
-            case Key.S:
-                if (e.Control)
+            case Key.S: if (e.Control)
                 {
                     saveProject();
                     return true;
@@ -404,7 +410,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var scale = OsuHitObject.StoryboardSize.Height / bounds.Height;
 
         storyboardPosition = (WidgetManager.MousePosition - new Vector2(bounds.Left, bounds.Top)) * scale;
-        storyboardPosition.X -= (bounds.Width * scale - OsuHitObject.StoryboardSize.Width) / 2;
+        storyboardPosition.X -= (bounds.Width * scale - OsuHitObject.StoryboardSize.Width) * .5f;
     }
     public override bool OnMouseWheel(MouseWheelEventArgs e)
     {
@@ -423,6 +429,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             else Manager.ShowMessage("Invalid mapset path.");
         });
     }
+
     void saveProject() => Manager.AsyncLoading("Saving", () => Program.RunMainThread(() => proj.Save()));
     void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
     void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
@@ -431,9 +438,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var mainBeatmap = proj.MainBeatmap;
 
         var maps = proj.MapsetManager.Beatmaps.ToArray();
-        for (var i = 0; i < maps.Length; ++i)
+        using (ManualResetEventSlim wait = new()) maps.ForEachUnsafe(map =>
         {
-            Program.RunMainThread(() => proj.MainBeatmap = maps[i]);
+            Program.RunMainThread(() => proj.MainBeatmap = map);
             while (proj.EffectsStatus != EffectStatus.Ready)
             {
                 switch (proj.EffectsStatus)
@@ -442,12 +449,12 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     case EffectStatus.ExecutionFailed:
                     case EffectStatus.LoadingFailed: throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
                 }
-                Task.Delay(200).Wait();
+                wait.Wait(200);
             }
 
             proj.ExportToOsb(first);
             first = false;
-        }
+        });
 
         if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.RunMainThread(() => proj.MainBeatmap = mainBeatmap);
     });

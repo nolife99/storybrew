@@ -130,7 +130,7 @@ public sealed class ScreenLayerManager : IDisposable
 
         if (layers.Count == 0) window.Exit();
     }
-    public void Draw(DrawContext drawContext, double tween) => layers.ForEach(layer =>
+    public void Draw(DrawContext drawContext, float tween) => layers.ForEach(layer =>
     {
         var layerTween = Math.Max(layer.MinTween, tween);
         layer.MinTween = layerTween;
