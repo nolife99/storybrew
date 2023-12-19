@@ -125,7 +125,7 @@ public abstract class Effect : IDisposable
     {
         if (!Disposed)
         {
-            if (disposing) layers.ForEachUnsafe(layer => Project.LayerManager.Remove(layer));
+            if (disposing) layers.ForEachUnsafe(Project.LayerManager.Remove);
             layers.Clear();
 
             layers = null;

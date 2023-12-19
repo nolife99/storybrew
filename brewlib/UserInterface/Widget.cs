@@ -246,12 +246,9 @@ public class Widget(WidgetManager manager) : IDisposable
         if (parent == widget) return true;
         return parent.HasAncestor(widget);
     }
-    public bool HasDescendant(Widget widget)
-    {
-        foreach (var child in children) if (child == widget || child.HasDescendant(widget)) return true;
-        return false;
-    }
-    public List<Widget> GetAncestors()
+    public bool HasDescendant(Widget widget) => children.Find(c => c == widget || c.HasDescendant(widget)) is not null;
+
+    public Span<Widget> GetAncestors()
     {
         List<Widget> ancestors = [];
         var ancestor = parent;
@@ -261,7 +258,7 @@ public class Widget(WidgetManager manager) : IDisposable
             ancestors.Add(ancestor);
             ancestor = ancestor.Parent;
         }
-        return ancestors;
+        return CollectionsMarshal.AsSpan(ancestors);
     }
 
     #endregion
@@ -552,28 +549,32 @@ public class Widget(WidgetManager manager) : IDisposable
     #region IDisposable Support
 
     public bool IsDisposed => disposed;
-
     bool disposed;
+
+    ~Widget() => Dispose(false);
     protected virtual void Dispose(bool disposing)
     {
         if (!disposed)
         {
             if (disposing)
             {
-                Tooltip = null;
-
                 parent?.Remove(this);
                 manager.NotifyWidgetDisposed(this);
                 ClearWidgets();
             }
-            children.Clear();
-            children.Capacity = 0;
 
-            disposed = true;
+            children.Clear();
+            Tooltip = null;
+
             if (disposing) OnDisposed?.Invoke(this, EventArgs.Empty);
+            disposed = true;
         }
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 

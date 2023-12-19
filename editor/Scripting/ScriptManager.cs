@@ -192,19 +192,28 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
     }
 
+    ~ScriptManager() => Dispose(false);
+
     bool disposed;
     public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
     {
         if (!disposed)
         {
             scriptWatcher.Dispose();
             libraryWatcher.Dispose();
-            scriptContainers.Dispose();
 
-            scheduler = null;
-            scriptWatcher = null;
+            if (disposing)
+            {
+                scriptContainers.Dispose();
+                scheduler = null;
 
-            disposed = true;
+                disposed = true;
+            }
         }
     }
 }

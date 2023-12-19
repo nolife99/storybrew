@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Numerics;
 using BrewLib.Graphics.Cameras;
 
@@ -13,5 +14,5 @@ public class NullDrawable : Drawable
 
     NullDrawable() { }
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity = 1) { }
-    public void Dispose() { }
+    public void Dispose() => GC.SuppressFinalize(this);
 }

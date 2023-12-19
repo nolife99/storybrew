@@ -1,5 +1,5 @@
 ﻿using System;
-using Bitmap = System.Drawing.Bitmap;
+using System.Drawing;
 
 namespace BrewLib.Graphics.Textures;
 
@@ -12,19 +12,22 @@ public sealed class TextureAtlas2d(int width, int height, string description, Te
 
     public Texture2dRegion AddRegion(Bitmap bitmap, string description)
     {
-        if (currentY + bitmap.Height > texture.Height) return null;
-        if (currentX + bitmap.Width > texture.Width)
+        var width = bitmap.Width;
+        var height = bitmap.Height;
+
+        if (currentY + height > texture.Height) return null;
+        if (currentX + width > texture.Width)
         {
-            if (nextY + bitmap.Height > texture.Height) return null;
+            if (nextY + height > texture.Height) return null;
             currentX = 0;
             currentY = nextY;
         }
 
         texture.Update(bitmap, currentX, currentY, textureOptions);
-        Texture2dRegion region = new(texture, new(currentX, currentY, bitmap.Width, bitmap.Height), description);
+        Texture2dRegion region = new(texture, new(currentX, currentY, width, height), description);
 
-        currentX += bitmap.Width + padding;
-        nextY = Math.Max(nextY, currentY + bitmap.Height + padding);
+        currentX += width + padding;
+        nextY = Math.Max(nextY, currentY + height + padding);
 
         return region;
     }
@@ -38,6 +41,8 @@ public sealed class TextureAtlas2d(int width, int height, string description, Te
         {
             texture.Dispose();
             texture = null;
+
+            GC.SuppressFinalize(this);
             disposed = true;
         }
     }

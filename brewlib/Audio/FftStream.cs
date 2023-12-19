@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using ManagedBass;
 
 namespace BrewLib.Audio;
@@ -37,28 +36,32 @@ public class FftStream : IDisposable
         }
 
         Span<float> data = GC.AllocateUninitializedArray<float>(size);
-        fixed (void* pinned = &MemoryMarshal.GetReference(data)) if (Bass.ChannelGetData(stream, (nint)pinned, unchecked((int)flags)) == -1) throw new BassException(Bass.LastError);
+        fixed (void* pinned = &data[0]) if (Bass.ChannelGetData(stream, (nint)pinned, unchecked((int)flags)) == -1) throw new BassException(Bass.LastError);
         return data;
     }
 
     #region IDisposable Support
 
-    bool disposed;
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposed)
-        {
-            Bass.StreamFree(stream);
-            stream = 0;
-            disposed = true;
-        }
-    }
-
     ~FftStream() => Dispose(false);
+
+    bool disposed;
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            Bass.StreamFree(stream);
+            if (disposing)
+            {
+                stream = 0;
+                disposed = true;
+            }
+        }
     }
 
     #endregion

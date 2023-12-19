@@ -37,40 +37,39 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
 
+    ~PrimitiveStreamerVao() => Dispose(false);
     public void Dispose()
     {
-        dispose(true);
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
-    void dispose(bool disposing)
+    protected virtual void Dispose(bool disposing)
     {
-        if (!disposing) return;
-        if (Bound) Unbind();
-
-        internalDispose();
-    }
-    protected virtual void internalDispose()
-    {
+        Unbind();
         if (VertexArrayId != -1)
         {
             GL.BindVertexArray(0);
             GL.DeleteVertexArray(VertexArrayId);
-            VertexArrayId = -1;
         }
         if (VertexBufferId != -1)
         {
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.DeleteBuffer(VertexBufferId);
-            VertexBufferId = -1;
         }
         if (IndexBufferId != -1)
         {
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
             GL.DeleteBuffer(IndexBufferId);
-            IndexBufferId = -1;
         }
 
-        CurrentShader = null;
+        if (disposing)
+        {
+            VertexArrayId = -1;
+            VertexBufferId = -1;
+            IndexBufferId = -1;
+
+            CurrentShader = null;
+        }
     }
     public void Bind(Shader shader)
     {

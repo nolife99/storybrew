@@ -81,15 +81,25 @@ public sealed class MapsetManager : IDisposable
 
     #endregion
 
+    ~MapsetManager() => Dispose(false);
+
     bool disposed;
     public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
     {
         if (!disposed)
         {
             fileWatcher?.Dispose();
-            beatmaps.Clear();
-            fileWatcher = null;
-            disposed = true;
+            if (disposing)
+            {
+                beatmaps.Clear();
+                fileWatcher = null;
+                disposed = true;
+            }
         }
     }
 }

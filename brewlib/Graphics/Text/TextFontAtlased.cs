@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using BrewLib.Graphics.Textures;
@@ -38,8 +39,16 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
 
     #region IDisposable Support
 
+    ~TextFontAtlased() => Dispose(false);
+
     bool disposed;
     public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    void Dispose(bool disposing)
     {
         if (!disposed)
         {
@@ -47,9 +56,12 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
             glyphs.Clear();
             atlas?.Dispose();
 
-            glyphs = null;
-            atlas = null;
-            disposed = true;
+            if (disposing)
+            {
+                glyphs = null;
+                atlas = null;
+                disposed = true;
+            }
         }
     }
 

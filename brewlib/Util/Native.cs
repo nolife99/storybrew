@@ -11,7 +11,16 @@ public static partial class Native
     #region Memory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlock(destination.ToPointer(), source.ToPointer(), (uint)count);
+    public static unsafe void CopyMemory(nint source, nint destination, int count) => CopyMemory(source.ToPointer(), destination.ToPointer(), count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void CopyMemory(void* source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source, (uint)count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void CopyMemory(nint source, void* destination, int count) => CopyMemory(source.ToPointer(), destination, count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe void CopyMemory(void* source, nint destination, int count) => CopyMemory(source, destination.ToPointer(), count);
 
     #endregion
 

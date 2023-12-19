@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Scripting;
+using StorybrewCommon.Storyboarding;
 
 namespace StorybrewScripts;
 
@@ -53,7 +56,7 @@ class Spectrum : StoryboardObjectGenerator
             var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
             for (var i = 0; i < BarCount; ++i)
             {
-                var height = (float)Math.Log10(1 + fft[i] * LogScale) * SpriteScale.Y / bitmap.Height;
+                var height = MathF.Log10(1 + fft[i] * LogScale) * SpriteScale.Y / bitmap.Height;
                 if (height < MinimalHeight) height = MinimalHeight;
 
                 heightKeyframes[i].Add(time, height);

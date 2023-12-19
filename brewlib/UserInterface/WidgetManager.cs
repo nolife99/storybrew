@@ -136,7 +136,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
     }
     public void UnregisterTooltip(Widget widget)
     {
-        if (tooltips.TryGetValue(widget, out Widget tooltip))
+        if (tooltips.TryGetValue(widget, out var tooltip))
         {
             tooltips.Remove(widget);
             tooltip.Dispose();
@@ -371,7 +371,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
         widgetEvent.Listener = target;
         if (notify(target, widgetEvent)) return widgetEvent;
 
-        if (ancestors is not null) for (var i = 0; i < ancestors.Count; ++i)
+        if (!ancestors.IsEmpty) for (var i = 0; i < ancestors.Length; ++i)
         {
             widgetEvent.Listener = ancestors[i];
             if (notify(ancestors[i], widgetEvent)) return widgetEvent;
@@ -384,13 +384,28 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
     #region IDisposable Support
 
+    bool disposed;
     public void Dispose()
     {
-        if (camera is not null) camera.Changed -= camera_Changed;
-        rootContainer.Dispose();
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-        camera = null;
-        rootContainer = null;
+    void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            rootContainer.Dispose();
+            if (camera is not null) camera.Changed -= camera_Changed;
+
+            if (disposing)
+            {
+                camera = null;
+                rootContainer = null;
+
+                disposed = true;
+            }
+        }
     }
 
     #endregion

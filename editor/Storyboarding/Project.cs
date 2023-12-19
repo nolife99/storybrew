@@ -860,25 +860,34 @@ public sealed class Project : IDisposable
     public bool Disposed { get; private set; }
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
+    {
         if (!Disposed)
         {
-            effectUpdateQueue.Dispose();
             assetWatcher.Dispose();
-            MapsetManager?.Dispose();
-            scriptManager.Dispose();
-            TextureContainer.Dispose();
-            AudioContainer.Dispose();
+            if (disposing)
+            {
+                effectUpdateQueue.Dispose();
+                effects.ForEachUnsafe(effect => effect.Dispose());
+                effects.Clear();
 
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true);
+                MapsetManager?.Dispose();
+                scriptManager.Dispose();
+                TextureContainer.Dispose();
+                AudioContainer.Dispose();
 
-            effectUpdateQueue = null;
-            assetWatcher = null;
-            MapsetManager = null;
-            scriptManager = null;
-            TextureContainer = null;
-            AudioContainer = null;
+                effectUpdateQueue = null;
+                assetWatcher = null;
+                MapsetManager = null;
+                scriptManager = null;
+                TextureContainer = null;
+                AudioContainer = null;
 
-            Disposed = true;
+                Disposed = true;
+            }
         }
     }
 

@@ -9,20 +9,14 @@ using BrewLib.Util;
 
 namespace BrewLib.Data;
 
-public class AssemblyResourceContainer : ResourceContainer
+public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null) : ResourceContainer
 {
-    readonly Assembly assembly;
-    readonly string baseNamespace, basePath;
+    readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
+    readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources", basePath = basePath ?? "resources";
 
     public IEnumerable<string> ResourceNames => assembly.GetManifestResourceNames()
         .Where(name => name.StartsWith($"{baseNamespace}.", StringComparison.Ordinal)).Select(name => name[(baseNamespace.Length + 1)..]);
 
-    public AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null)
-    {
-        this.assembly = assembly ?? Assembly.GetEntryAssembly();
-        this.baseNamespace = baseNamespace ?? $"{this.assembly.EntryPoint.DeclaringType.Namespace}.Resources";
-        this.basePath = basePath ?? "resources";
-    }
     public Stream GetStream(string path, ResourceSource sources)
     {
         if (path is null) return null;

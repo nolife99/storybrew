@@ -88,7 +88,7 @@ public unsafe class GaussianBlur
     }
     void boxBlur_4(int* source, int* dest, int w, int h, int r)
     {
-        Native.CopyMemory((nint)source, (nint)dest, _width * _height << 2);
+        Native.CopyMemory(source, dest, _width * _height << 2);
         boxBlurH_4(dest, source, w, h, r);
         boxBlurT_4(source, dest, w, h, r);
     }

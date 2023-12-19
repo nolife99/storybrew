@@ -11,7 +11,7 @@ namespace BrewLib.Graphics.Drawables;
 public class Sprite : Drawable
 {
     public Texture2dRegion Texture;
-    public readonly RenderStates RenderStates = new();
+    public RenderStates RenderStates { get; private set; } = new();
     public float Rotation;
     public Color Color = Color.White;
     public ScaleMode ScaleMode = ScaleMode.None;
@@ -78,7 +78,16 @@ public class Sprite : Drawable
 
     #region IDisposable Support
 
-    public void Dispose() => Texture = null;
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    protected virtual void Dispose(bool disposing)
+    {
+        Texture = null;
+        RenderStates = null;
+    }
 
     #endregion
 }

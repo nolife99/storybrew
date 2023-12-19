@@ -90,7 +90,7 @@ public sealed class ScreenLayerManager : IDisposable
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
-        for (var i = 0; i < layers.Count; ++i) updateQueue.Add(layers[i]);
+        layers.ForEachUnsafe(updateQueue.Add);
 
         bool covered = false, top = true, hasFocus = active;
         while (updateQueue.Count > 0)
@@ -124,7 +124,7 @@ public sealed class ScreenLayerManager : IDisposable
 
         if (removedLayers.Count > 0)
         {
-            for (var i = 0; i < removedLayers.Count; ++i) removedLayers[i].Dispose();
+            removedLayers.ForEachUnsafe(layer => layer.Dispose());
             removedLayers.Clear();
         }
 
@@ -158,7 +158,7 @@ public sealed class ScreenLayerManager : IDisposable
         var height = window.Height;
 
         if (width == 0 || height == 0) return;
-        for (var i = 0; i < layers.Count; ++i) layers[i].Resize(width, height);
+        layers.ForEachUnsafe(layer => layer.Resize(width, height));
     }
 
     #region IDisposable Support

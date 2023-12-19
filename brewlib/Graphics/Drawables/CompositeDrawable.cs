@@ -18,12 +18,12 @@ public class CompositeDrawable : Drawable
             var minWidth = 0f;
             var minHeight = 0f;
 
-            for (var i = 0; i < Drawables.Count; ++i) 
+            Drawables.ForEachUnsafe(drawable =>
             {
-                var minSize = Drawables[i].MinSize;
+                var minSize = drawable.MinSize;
                 minWidth = Math.Min(minWidth, minSize.X);
                 minHeight = Math.Min(minWidth, minSize.Y);
-            }
+            });
             return new(minWidth, minHeight);
         }
     }
@@ -34,12 +34,12 @@ public class CompositeDrawable : Drawable
             var maxWidth = 0f;
             var maxHeight = 0f;
 
-            for (var i = 0; i < Drawables.Count; ++i)
+            Drawables.ForEachUnsafe(drawable =>
             {
-                var preferredSize = Drawables[i].PreferredSize;
+                var preferredSize = drawable.PreferredSize;
                 maxWidth = Math.Min(maxWidth, preferredSize.X);
                 maxHeight = Math.Min(maxHeight, preferredSize.Y);
-            }
+            });
             return new(maxWidth, maxHeight);
         }
     }
@@ -48,8 +48,11 @@ public class CompositeDrawable : Drawable
 
     #region IDisposable Support
 
-    protected virtual void Dispose(bool disposing) { }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Drawables.Clear();
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

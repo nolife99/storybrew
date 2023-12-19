@@ -146,7 +146,7 @@ public static class Program
             }
         }
 
-        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 3, 0, GraphicsContextFlags.ForwardCompatible);
+        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 2, 1, GraphicsContextFlags.ForwardCompatible);
         Native.InitializeHandle(Name);
         Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 

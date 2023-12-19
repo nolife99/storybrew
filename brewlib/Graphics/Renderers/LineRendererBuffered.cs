@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
@@ -106,27 +105,8 @@ public unsafe class LineRendererBuffered : LineRenderer
         var primitiveBatchSize = Math.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerLine);
 
-        primitives = (LinePrimitive*)NativeMemory.Alloc((nuint)(maxLinesPerBatch * Marshal.SizeOf<LinePrimitive>()));
+        primitives = (LinePrimitive*)NativeMemory.Alloc((nuint)maxLinesPerBatch, (nuint)Marshal.SizeOf<LinePrimitive>());
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
-    }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    public void Dispose(bool disposing)
-    {
-        if (!disposing) return;
-        if (rendering) EndRendering();
-
-        NativeMemory.Free(primitives);
-        primitives = null;
-
-        primitiveStreamer.Dispose();
-        primitiveStreamer = null;
-
-        if (ownsShader) shader.Dispose();
-        shader = null;
     }
     public void BeginRendering()
     {
@@ -152,7 +132,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     {
         if (linesInBatch == 0) return;
 
-        if (!lastFlushWasBuffered) unsafe
+        if (!lastFlushWasBuffered)
         {
             var combinedMatrix = transformMatrix * Camera.ProjectionView;
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
@@ -195,5 +175,34 @@ public unsafe class LineRendererBuffered : LineRenderer
 
         ++RenderedLineCount;
         ++linesInBatch;
+    }
+
+    ~LineRendererBuffered() => Dispose(false);
+
+    bool disposed;
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        if (rendering) EndRendering();
+
+        NativeMemory.Free(primitives);
+        if (disposing)
+        {
+            primitives = null;
+
+            primitiveStreamer.Dispose();
+            primitiveStreamer = null;
+
+            if (ownsShader) shader.Dispose();
+            shader = null;
+
+            FlushAction = null;
+            disposed = true;
+        }
     }
 }

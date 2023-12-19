@@ -33,9 +33,9 @@ public static class BitmapHelper
         PinnedBitmap result = new(source);
         var resultSpan = result.AsSpan();
 
-        for (int y = 0, index = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x)
+        for (int y = 0, index = 0; y < result.Height; ++y) for (var x = 0; x < result.Width; ++x)
         {
-            var color = resultSpan[y * source.Width + x];
+            var color = resultSpan[y * result.Width + x];
 
             var alpha = (color >> 24) & 0xFF;
             var red = (color >> 16) & 0xFF;
@@ -55,8 +55,22 @@ public static class BitmapHelper
         var total = 0f;
 
         var scale = 1 / (weight * weight * MathF.Tau);
-        for (var y = -radius; y <= radius; ++y) for (var x = -radius; x <= radius; ++x) total += kernel[y + radius, x + radius] = scale * MathF.Exp(-(x * x + y * y) / (2 * weight * weight));
-        for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[y, x] /= total;
+        var expFactor = 2 * weight * weight;
+
+        for (var y = 0; y <= radius; ++y) for (var x = 0; x <= radius; ++x)
+        {
+            var value = scale * MathF.Exp(-(x * x + y * y) / expFactor);
+            kernel[radius + y, radius + x] = value;
+            kernel[radius + y, radius - x] = value;
+            kernel[radius - y, radius + x] = value;
+            kernel[radius - y, radius - x] = value;
+
+            total += 4 * value;
+        }
+
+        var factor = 1 / total;
+        for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[x, y] *= factor;
+
         return kernel;
     }
     public static PinnedBitmap Convolute(Bitmap source, float[,] kernel)
@@ -73,7 +87,6 @@ public static class BitmapHelper
         var halfHeight = kernelHeight >> 1;
 
         PinnedBitmap result = new(width, height);
-
         using (PinnedBitmap src = new(source))
         {
             var srcSpan = src.AsReadOnlySpan();
@@ -153,9 +166,9 @@ public static class BitmapHelper
         var pixBit = Image.GetPixelFormatSize(src.PixelFormat) >> 3;
         var len = (int)(sect.Width * pixBit);
 
-        var srcDat = src.LockBits(new(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
+        var srcDat = src.LockBits(new(0, 0, src.Width, src.Height), ImageLockMode.ReadOnly, src.PixelFormat);
         Bitmap dest = new((int)sect.Width, (int)sect.Height, src.PixelFormat);
-        var destDat = dest.LockBits(new(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
+        var destDat = dest.LockBits(new(0, 0, (int)sect.Width, (int)sect.Height), ImageLockMode.WriteOnly, src.PixelFormat);
 
         try
         {
@@ -171,25 +184,74 @@ public static class BitmapHelper
         return dest;
     }
 
-    public static bool IsFullyTransparent(Bitmap source)
+    public static bool IsFullyTransparent(Image source)
     {
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
 
-        using PinnedBitmap src = new(source);
-        var srcSpan = src.AsReadOnlySpan();
+        if (source.PixelFormat is PixelFormat.Format32bppArgb && source is Bitmap bitmap) unsafe
+        {
+            var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            try
+            {
+                var buf = (byte*)data.Scan0;
+                for (var y = 0; y < data.Height; ++y)
+                {
+                    for (var x = 0; x < data.Width; ++x)
+                    {
+                        if (*buf != 0) return false;
+                        buf += 4;
+                    }
+                    buf += data.Stride - (data.Width << 2);
+                }
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+            return true;
+        }
+        else
+        {
+            using PinnedBitmap src = new(source);
+            var srcSpan = src.AsReadOnlySpan();
 
-        for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((srcSpan[y * source.Width + x] >> 24) & 0xFF) != 0) return false;
-        return true;
+            for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((srcSpan[y * src.Width + x] >> 24) & 0xFF) != 0) return false;
+            return true;
+        }
     }
-    public static Rectangle FindTransparencyBounds(Bitmap source)
+    public static Rectangle FindTransparencyBounds(Image source)
     {
-        if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return new(default, source.Size);
+        var size = source.Size;
+        if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return new(default, size);
 
-        int xMin = source.Width, yMin = source.Height, xMax = -1, yMax = -1;
-        using (PinnedBitmap src = new(source))
+        int xMin = size.Width, yMin = size.Height, xMax = -1, yMax = -1;
+        if (source.PixelFormat is PixelFormat.Format32bppArgb && source is Bitmap bitmap) unsafe
+        {
+            var data = bitmap.LockBits(new(default, size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            try
+            {
+                var buf = (byte*)data.Scan0;
+                for (var y = 0; y < data.Height; ++y)
+                {
+                    var row = buf + (y * data.Stride);
+                    for (var x = 0; x < data.Width; ++x) if (row[(x << 2) + 3] > 0)
+                    {
+                        if (x < xMin) xMin = x;
+                        if (x > xMax) xMax = x;
+                        if (y < yMin) yMin = y;
+                        if (y > yMax) yMax = y;
+                    }
+                }
+            }
+            finally
+            {
+                bitmap.UnlockBits(data);
+            }
+        }
+        else using (PinnedBitmap src = new(source))
         {
             var srcSpan = src.AsReadOnlySpan();
-            for (var y = 0; y < source.Height; ++y) for (var x = 0; x < source.Width; ++x) if (((srcSpan[y * source.Width + x] >> 24) & 0xFF) != 0)
+            for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((srcSpan[y * src.Width + x] >> 24) & 0xFF) != 0)
             {
                 if (x < xMin) xMin = x;
                 if (x > xMax) xMax = x;
@@ -208,7 +270,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     int* scan0;
     bool disposed;
 
-    ///<summary> The underlying bitmap. </summary>
+    ///<summary> The underlying bitmap, subject to operations performed on this class. </summary>
     public Bitmap Bitmap { get; private set; }
 
     ///<summary> The total amount of pixels of the underlying bitmap. </summary>
@@ -234,17 +296,18 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     ///<summary> Creates a new pinned bitmap from the given dimensions. </summary>
     public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width << 2, PixelFormat.Format32bppArgb, 
-        (nint)(scan0 = (int*)NativeMemory.Alloc((uint)(Count = width * height), sizeof(int))));
+        (nint)(scan0 = (int*)NativeMemory.Alloc((nuint)(Count = width * height), sizeof(int))));
 
     ///<summary> Creates a new pinned bitmap from a copy of the given image. </summary>
     public PinnedBitmap(Image image) : this(image.Width, image.Height)
     {
+        var imageSize = image.Size;
         if (image.PixelFormat is PixelFormat.Format32bppArgb && image is Bitmap bitmap)
         {
-            var data = bitmap.LockBits(new(default, image.Size), ImageLockMode.ReadOnly, bitmap.PixelFormat);
+            var data = bitmap.LockBits(new(default, imageSize), ImageLockMode.ReadOnly, bitmap.PixelFormat);
             try
             {
-                Native.CopyMemory(data.Scan0, (nint)scan0, Count << 2);
+                Native.CopyMemory(data.Scan0, scan0, Count << 2);
                 return;
             }
             finally
@@ -257,7 +320,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         graphics.CompositingMode = CompositingMode.SourceCopy;
         graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
 
-        graphics.DrawImage(image, 0, 0, image.Width, image.Height);
+        graphics.DrawImage(image, 0, 0, imageSize.Width, imageSize.Height);
     }
 
     ///<summary> Creates a new pinned bitmap from a copy of the given 32-bit ARGB color data and dimensions. </summary>
@@ -304,7 +367,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int[] ToArray()
     {
         var array = GC.AllocateUninitializedArray<int>(Count);
-        fixed (void* arrAddr = &MemoryMarshal.GetArrayDataReference(array)) Native.CopyMemory((nint)scan0, (nint)arrAddr, Count << 2);
+        fixed (void* arrAddr = &array[0]) Native.CopyMemory(scan0, arrAddr, Count << 2);
         return array;
     }
 
@@ -318,23 +381,34 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<int> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref *scan0, Count);
 
+    ~PinnedBitmap() => Dispose(false);
+
     ///<summary> Releases the underlying bitmap and frees the allocated memory. </summary>
     ///<remarks> Disposing invalidates all data. Attempts to read/write after disposal can cause fatal errors. </remarks>
     public void Dispose()
     {
-        if (disposed) return;
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-        Count = -1;
-        Width = -1;
-        Height = -1;
+    void Dispose(bool disposing)
+    {
+        if (!disposed)
+        {
+            if (disposing)
+            {
+                Bitmap.Dispose();
+                Bitmap = null;
+                scan0 = null;
 
-        Bitmap.Dispose();
-        Bitmap = null;
+                Count = -1;
+                Width = -1;
+                Height = -1;
 
-        NativeMemory.Free(scan0);
-        scan0 = null;
-
-        disposed = true;
+                disposed = true;
+            }
+            NativeMemory.Free(scan0);
+        }
     }
 
     IEnumerator<int> IEnumerable<int>.GetEnumerator() => new Enumerator(this);

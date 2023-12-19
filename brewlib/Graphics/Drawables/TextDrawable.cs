@@ -116,7 +116,7 @@ public sealed class TextDrawable : Drawable
         }
     }
 
-    public readonly RenderStates RenderStates = new();
+    public RenderStates RenderStates { get; private set; } = new();
     public Color Color = Color.White;
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
@@ -197,9 +197,20 @@ public sealed class TextDrawable : Drawable
         textLayout = new(text ?? "", font, alignment, MaxSize * scaling);
     }
 
+    ~TextDrawable() => Dispose(false);
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
+    {
         font?.Dispose();
-        font = null;
+        if (disposing)
+        {
+            font = null;
+            textLayout = null;
+            RenderStates = null;
+        }
     }
 }

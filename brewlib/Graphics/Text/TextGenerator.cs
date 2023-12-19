@@ -14,7 +14,6 @@ namespace BrewLib.Graphics.Text;
 
 public sealed class TextGenerator : IDisposable
 {
-    SolidBrush shadowBrush = new(Color.FromArgb(220, 0, 0, 0));
     System.Drawing.Graphics metrics;
     ResourceContainer container;
 
@@ -73,7 +72,6 @@ public sealed class TextGenerator : IDisposable
             textGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
 
-            textGraphics.DrawString(text, font, shadowBrush, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
             textGraphics.DrawString(text, font, Brushes.White, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
         }
         catch
@@ -136,7 +134,7 @@ public sealed class TextGenerator : IDisposable
                     if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
                     else
                     {
-                        Trace.TraceError($"Failed to load font {name}: Expected one family, got {fontCollection.Families.Length}");
+                        Trace.TraceError($"Failed to load font {name}: Expected one family, got {families?.Length}");
                         families?.ForEachUnsafe(family => family.Dispose());
                     }
                 }
@@ -161,23 +159,34 @@ public sealed class TextGenerator : IDisposable
 
     #region IDisposable Support
 
+    ~TextGenerator() => Dispose(false);
+
     bool disposed;
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    void Dispose(bool disposing)
+    {
         if (!disposed)
         {
-            shadowBrush.Dispose();
             metrics.Dispose();
             fonts.Dispose();
             fontFamilies.Dispose();
             fontCollections.Dispose();
 
-            shadowBrush = null;
-            metrics = null;
-            fonts = null;
-            fontCollections = null;
-            fontFamilies = null;
-            container = null;
+            if (disposing)
+            {
+                recentlyUsedFonts.Clear();
+                container = null;
+
+                metrics = null;
+                fonts = null;
+                fontCollections = null;
+                fontFamilies = null;
+            }
 
             disposed = true;
         }

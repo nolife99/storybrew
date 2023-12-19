@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 
@@ -25,15 +24,18 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         DrawState.CheckError("mapping vertex buffer", bufferPointer == 0);
         GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
     }
-    protected override void internalDispose()
+    protected override void Dispose(bool disposing)
     {
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
         GL.UnmapBuffer(BufferTarget.ArrayBuffer);
 
-        commandSync.Dispose();
-        commandSync = null;
+        if (disposing)
+        {
+            commandSync.Dispose();
+            commandSync = null;
+        }
 
-        base.internalDispose();
+        base.Dispose(disposing);
     }
     public unsafe override void Render(PrimitiveType primitiveType, TPrimitive* primitives, int primitiveCount, int drawCount, bool canBuffer = false)
     {
@@ -51,7 +53,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        Native.CopyMemory((nint)primitives, bufferPointer + bufferOffset, vertexDataSize);
+        Native.CopyMemory(primitives, bufferPointer + bufferOffset, vertexDataSize);
 
         if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset << 1);
         else GL.DrawArrays(primitiveType, drawOffset, drawCount);

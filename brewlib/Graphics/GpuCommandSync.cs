@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
@@ -76,9 +77,8 @@ public sealed class GpuCommandSync : IDisposable
     {
         if (!disposed)
         {
-            var span = CollectionsMarshal.AsSpan(syncRanges);
-            for (var i = 0; i < span.Length; ++i) span[i].Dispose();
-            span.Clear();
+            syncRanges.ForEachUnsafe(sync => sync.Dispose());
+            syncRanges.Clear();
 
             syncRanges = null;
             disposed = true;
@@ -126,20 +126,23 @@ public sealed class GpuCommandSync : IDisposable
         #region IDisposable Support
 
         bool disposed;
-        void dispose()
+        void Dispose(bool disposing)
         {
             if (!disposed)
             {
                 GL.DeleteSync(Fence);
-                Fence = 0;
-                disposed = true;
+                if (disposing)
+                {
+                    Fence = 0;
+                    disposed = true;
+                }
             }
         }
 
-        ~SyncRange() => dispose();
+        ~SyncRange() => Dispose(false);
         public void Dispose()
         {
-            dispose();
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
 

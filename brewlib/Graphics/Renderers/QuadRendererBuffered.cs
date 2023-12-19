@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -117,23 +116,8 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         var primitiveBatchSize = Math.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerQuad);
 
-        primitives = (QuadPrimitive*)NativeMemory.Alloc((nuint)(maxQuadsPerBatch * Marshal.SizeOf<QuadPrimitive>()));
+        primitives = (QuadPrimitive*)NativeMemory.Alloc((nuint)maxQuadsPerBatch, (nuint)Marshal.SizeOf<QuadPrimitive>());
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
-    }
-    public void Dispose()
-    {
-        if (rendering) EndRendering();
-
-        NativeMemory.Free(primitives);
-        primitives = null;
-
-        primitiveStreamer.Dispose();
-        primitiveStreamer = null;
-
-        if (ownsShader) shader.Dispose();
-        shader = null;
-
-        GC.SuppressFinalize(this);
     }
     public void BeginRendering()
     {
@@ -191,6 +175,35 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
         lastFlushWasBuffered = canBuffer;
     }
+
+    ~QuadRendererBuffered() => Dispose(false);
+
+    bool disposed;
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        if (rendering) EndRendering();
+
+        NativeMemory.Free(primitives);
+        if (disposing)
+        {
+            primitives = null;
+
+            primitiveStreamer.Dispose();
+            primitiveStreamer = null;
+
+            if (ownsShader) shader.Dispose();
+            shader = null;
+
+            disposed = true;
+        }
+    }
+
     public void Draw(ref QuadPrimitive quad, Texture2dRegion texture)
     {
         if (!rendering) throw new InvalidOperationException("Not rendering");

@@ -41,34 +41,6 @@ public class Shader : IDisposable
         retrieveAttributes();
         retrieveUniforms();
     }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    public void Dispose(bool disposing)
-    {
-        isInitialized = false;
-
-        if (!disposing) return;
-        if (started) End();
-
-        if (programId != -1)
-        {
-            GL.DeleteProgram(programId);
-            programId = -1;
-        }
-        if (vertexShaderId != -1)
-        {
-            GL.DeleteShader(vertexShaderId);
-            vertexShaderId = -1;
-        }
-        if (fragmentShaderId != -1)
-        {
-            GL.DeleteShader(fragmentShaderId);
-            fragmentShaderId = -1;
-        }
-    }
     public void Begin()
     {
         if (started) throw new InvalidOperationException("Already started");
@@ -174,6 +146,34 @@ public class Shader : IDisposable
             var name = GL.GetActiveUniform(programId, i, out var size, out var type);
             var location = GL.GetUniformLocation(programId, name);
             uniforms[name] = new(name, size, type, location);
+        }
+    }
+
+    ~Shader() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    protected virtual void Dispose(bool disposing)
+    {
+        if (isInitialized) isInitialized = false;
+        else return;
+
+        if (started) End();
+
+        if (programId != -1) GL.DeleteProgram(programId);
+        if (vertexShaderId != -1) GL.DeleteShader(vertexShaderId);
+        if (fragmentShaderId != -1) GL.DeleteShader(fragmentShaderId);
+
+        if (disposing)
+        {
+            programId = -1;
+            vertexShaderId = -1;
+            fragmentShaderId = -1;
+
+            attributes.Clear();
+            uniforms.Clear();
         }
     }
 

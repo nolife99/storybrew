@@ -114,21 +114,30 @@ public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin ori
         internal double StartTime = startTime, EndTime = endTime;
     }
 
+    ~OsbSpritePool() => Dispose(false);
+
     bool disposed;
 
     ///<inheritdoc/>
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    internal virtual void Dispose(bool disposing)
+    {
         if (!disposed)
         {
-            if (attributes is not null) pooled.ForEachUnsafe(pooledSprite =>
+            if (attributes is not null && disposing)
             {
-                var sprite = pooledSprite.Sprite;
-                attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
-            });
+                pooled.ForEachUnsafe(pooledSprite =>
+                {
+                    var sprite = pooledSprite.Sprite;
+                    attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
+                });
+                disposed = true;
+            }
             pooled.Clear();
-
-            disposed = true;
         }
     }
 }
@@ -362,17 +371,31 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     static string getKey(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> action, int group)
         => $"{path}#{frameCount}#{frameDelay}#{(int)loopType}#{(int)origin}#{action?.Target}.{action?.Method.Name}#{group}";
 
+    ~OsbSpritePools() => Dispose(false);
+
     bool disposed;
 
     ///<inheritdoc/>
     public void Dispose()
     {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    void Dispose(bool disposing)
+    {
         if (!disposed)
         {
-            pools.Dispose();
-            animationPools.Dispose();
+            foreach (var pool in pools) pool.Value.Dispose(disposing);
+            foreach (var pool in animationPools) pool.Value.Dispose(disposing);
 
-            disposed = true;
+            if (disposing)
+            {
+                pools.Clear();
+                animationPools.Clear();
+
+                disposed = true;
+            }
         }
     }
 }

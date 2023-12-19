@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Numerics;
 using BrewLib.Util;
 
@@ -17,17 +18,11 @@ public class TextLayout
     Vector2 size;
     public Vector2 Size => size;
 
-    public IEnumerable<TextLayoutGlyph> Glyphs
-    {
-        get 
-        { 
-            for (var i = 0; i < lines.Count; ++i) foreach (var glyph in lines[i].Glyphs) yield return glyph; 
-        }
-    }
+    public IEnumerable<TextLayoutGlyph> Glyphs => lines.SelectMany(line => line.Glyphs);
     public IEnumerable<TextLayoutGlyph> VisibleGlyphs
     {
         get 
-        { 
+        {
             for (var i = 0; i < lines.Count; ++i) foreach (var glyph in lines[i].Glyphs) if (!glyph.Glyph.IsEmpty) yield return glyph; 
         }
     }

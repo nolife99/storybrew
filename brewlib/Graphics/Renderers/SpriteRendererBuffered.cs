@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -121,30 +120,8 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
-        spriteArray = (SpritePrimitive*)NativeMemory.Alloc((nuint)(maxSpritesPerBatch * Marshal.SizeOf<SpritePrimitive>()));
+        spriteArray = (SpritePrimitive*)NativeMemory.Alloc((nuint)maxSpritesPerBatch, (nuint)Marshal.SizeOf<SpritePrimitive>());
     }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    public void Dispose(bool disposing)
-    {
-        if (!disposing) return;
-
-        if (rendering) EndRendering();
-
-        NativeMemory.Free(spriteArray);
-        spriteArray = null;
-
-        primitiveStreamer.Dispose();
-        primitiveStreamer = null;
-
-        if (ownsShader) shader.Dispose();
-        shader = null;
-    }
-
     public void BeginRendering()
     {
         if (rendering) throw new InvalidOperationException("Already rendering");
@@ -199,6 +176,34 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         ++FlushedBufferCount;
 
         lastFlushWasBuffered = canBuffer;
+    }
+
+    ~SpriteRendererBuffered() => Dispose(false);
+
+    bool disposed;
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    public void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        if (rendering) EndRendering();
+
+        NativeMemory.Free(spriteArray);
+        if (disposing)
+        {
+            spriteArray = null;
+
+            primitiveStreamer.Dispose();
+            primitiveStreamer = null;
+
+            if (ownsShader) shader.Dispose();
+            shader = null;
+
+            disposed = true;
+        }
     }
 
     public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color color)

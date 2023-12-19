@@ -36,44 +36,16 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> wh
         GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), indexes, BufferUsageHint.StaticDraw);
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
-    public void Dispose()
-    {
-        dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    void dispose(bool disposing)
-    {
-        if (!disposing) return;
-        if (bound) Unbind();
-
-        internalDispose();
-    }
-    protected virtual void internalDispose()
-    {
-        if (vertexBufferId != -1)
-        {
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.DeleteBuffer(vertexBufferId);
-            vertexBufferId = -1;
-        }
-        if (indexBufferId != -1)
-        {
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-            GL.DeleteBuffer(indexBufferId);
-            indexBufferId = -1;
-        }
-    }
     public void Bind(Shader shader)
     {
-        ArgumentNullException.ThrowIfNull(shader);
-        if (bound) throw new InvalidOperationException("Already bound");
+        if (bound) return;
 
         internalBind(shader);
         bound = true;
     }
     public void Unbind()
     {
-        if (!bound) throw new InvalidOperationException("Not bound");
+        if (!bound) return;
 
         internalUnbind();
         bound = false;
@@ -102,5 +74,38 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> wh
         if (indexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);
         else GL.DrawArrays(primitiveType, 0, drawCount);
     }
+
+    ~PrimitiveStreamerVbo() => Dispose(false);
+
+    bool disposed;
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposed) return;
+
+        Unbind();
+        if (vertexBufferId != -1)
+        {
+            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            GL.DeleteBuffer(vertexBufferId);
+        }
+        if (indexBufferId != -1)
+        {
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            GL.DeleteBuffer(indexBufferId);
+        }
+
+        if (disposing)
+        {
+            vertexBufferId = -1;
+            indexBufferId = -1;
+            disposed = true;
+        }
+    }
+
     public static bool HasCapabilities() => DrawState.HasCapabilities(2, 0);
 }

@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.Numerics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -10,7 +11,7 @@ namespace BrewLib.Graphics.Drawables;
 public class NinePatch : Drawable
 {
     public Texture2dRegion Texture;
-    public readonly RenderStates RenderStates = new();
+    public RenderStates RenderStates { get; private set; } = new();
     public Color Color = Color.White;
     public FourSide Borders, Outset;
     public bool BordersOnly;
@@ -64,12 +65,17 @@ public class NinePatch : Drawable
 
     #region IDisposable Support
 
+    ~NinePatch() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
     protected virtual void Dispose(bool disposing)
     {
-        if (disposing) { }
         Texture = null;
+        RenderStates = null;
     }
-    public void Dispose() => Dispose(true);
 
     #endregion
 }

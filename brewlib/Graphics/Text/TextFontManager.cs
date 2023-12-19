@@ -30,20 +30,29 @@ public class TextFontManager : IDisposable
 
     #region IDisposable Support
 
+    ~TextFontManager() => Dispose(false);
+
     bool disposed;
     protected virtual void Dispose(bool disposing)
     {
         if (!disposed)
         {
             fonts.Dispose();
-            references.Clear();
+            if (disposing)
+            {
+                references.Clear();
 
-            fonts = null;
-            references = null;
-            disposed = true;
+                fonts = null;
+                references = null;
+                disposed = true;
+            }
         }
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

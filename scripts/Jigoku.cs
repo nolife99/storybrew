@@ -1,4 +1,7 @@
 ﻿using System;
+using StorybrewCommon.Scripting;
+using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.Util;
 
 namespace StorybrewScripts;
 
@@ -637,7 +640,8 @@ class Jigoku : StoryboardObjectGenerator
     }
 
     void MakeCharacters(int t, double baseScale) => MakeCharacters(t, -1, baseScale);
-    void MakeCharacters(int t, int interruptTime, double baseScale)
+
+    static void MakeCharacters(int t, int interruptTime, double baseScale)
     {
         var t0 = t;
         var t1 = t0 + BeatDuration * 3 / 2;

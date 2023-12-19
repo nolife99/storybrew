@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
 using BrewLib.Data;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -27,8 +26,6 @@ public static class DrawState
     {
         retrieveRendererInfo();
         setupDebugOutput();
-
-        GL.Hint(HintTarget.PerspectiveCorrectionHint, HintMode.Nicest);
         SetCapability(EnableCap.Lighting, false);
 
         if (UseSrgb && HasCapabilities(3, 0, "GL_ARB_framebuffer_object"))
@@ -196,7 +193,7 @@ public static class DrawState
     public static void UnbindTexture(BindableTexture texture) => UnbindTexture(texture.TextureId);
     public static void UnbindTexture(int textureId)
     {
-        for (int samplerIndex = 0, samplerCount = samplerTextureIds.Length; samplerIndex < samplerCount; ++samplerIndex) if (samplerTextureIds[samplerIndex] == textureId)
+        for (var samplerIndex = 0; samplerIndex < samplerTextureIds.Length; ++samplerIndex) if (samplerTextureIds[samplerIndex] == textureId)
         {
             ActiveTextureUnit = samplerIndex;
             GL.BindTexture(ToTextureTarget(samplerTexturingModes[samplerIndex]), 0);
@@ -204,12 +201,12 @@ public static class DrawState
         }
     }
 
-    public static int[] BindTextures(params BindableTexture[] textures)
+    public static Span<int> BindTextures(params BindableTexture[] textures)
     {
-        var samplerIndexes = new int[textures.Length];
+        Span<int> samplerIndexes = GC.AllocateUninitializedArray<int>(textures.Length);
         var samplerCount = samplerTextureIds.Length;
 
-        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
+        for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)
         {
             var textureId = textures[textureIndex].TextureId;
 
@@ -220,15 +217,16 @@ public static class DrawState
                 break;
             }
         }
-        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
+        for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)
         {
             if (samplerIndexes[textureIndex] != -1) continue;
 
             var texture = textures[textureIndex];
-            int textureId = texture.TextureId;
+            var textureId = texture.TextureId;
 
             var first = true;
             var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
+
             for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex; samplerIndex = (samplerIndex + 1) % samplerCount)
             {
                 first = false;
@@ -265,7 +263,7 @@ public static class DrawState
             if (viewport == value) return;
             viewport = value;
 
-            GL.Viewport(viewport);
+            GL.Viewport(viewport.X, viewport.Y, viewport.Width, viewport.Height);
             ViewportChanged?.Invoke();
         }
     }
@@ -358,7 +356,7 @@ public static class DrawState
         CheckError("initializing");
 
         var openGlVersionString = GL.GetString(StringName.Version);
-        openGlVersion = new Version(openGlVersionString.Split(' ')[0]);
+        openGlVersion = new(openGlVersionString.Split(' ')[0]);
         CheckError("retrieving openGL version");
         Trace.WriteLine($"gl version: {openGlVersionString}");
 
@@ -370,7 +368,7 @@ public static class DrawState
         if (!HasCapabilities(2, 0)) throw new NotSupportedException($"This application requires at least OpenGL 2.0 (version {openGlVersion} found)\n{rendererName} ({rendererVendor})");
 
         var glslVersionString = GL.GetString(StringName.ShadingLanguageVersion);
-        glslVersion = string.IsNullOrEmpty(glslVersionString) ? new Version() : new Version(glslVersionString.Split(' ')[0]);
+        glslVersion = string.IsNullOrEmpty(glslVersionString) ? new() : new(glslVersionString.Split(' ')[0]);
         CheckError("retrieving glsl version");
         Trace.WriteLine($"glsl version: {glslVersionString}");
 
@@ -408,7 +406,7 @@ public static class DrawState
     public static bool HasCapabilities(int major, int minor, params string[] extensions) => openGlVersion >= new Version(major, minor) || HasExtensions(extensions);
     public static bool HasExtensions(params string[] extensions)
     {
-        for (var i = 0; i < extensions.Length; ++i) if (!supportedExtensions.Contains(extensions[i])) return false;
+        for (var i = 0; i < extensions.Length; ++i) if (Array.BinarySearch(supportedExtensions, extensions[i]) < 0) return false;
         return true;
     }
     public static bool HasShaderCapabilities(int major, int minor) => glslVersion >= new Version(major, minor);

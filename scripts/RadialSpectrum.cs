@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
+using StorybrewCommon.Animations;
+using StorybrewCommon.Scripting;
+using StorybrewCommon.Storyboarding;
 
 namespace StorybrewScripts;
 
@@ -53,7 +56,7 @@ class RadialSpectrum : StoryboardObjectGenerator
             for (var i = 0; i < BarCount; ++i)
             {
                 var height = Radius + MathF.Log10(1 + fft[i] * LogScale) * Scale;
-                var angle = i * osuTK.MathHelper.TwoPi / BarCount;
+                var angle = i * MathF.Tau / BarCount;
 
                 positionKeyframes[i].Add(time, Position + new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * height);
             }

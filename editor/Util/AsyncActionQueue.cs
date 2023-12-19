@@ -10,7 +10,7 @@ namespace StorybrewEditor.Util;
 public sealed class AsyncActionQueue<T> : IDisposable
 {
     readonly ActionQueueContext context;
-    readonly List<ActionRunner> actionRunners;
+    List<ActionRunner> actionRunners;
     readonly bool allowDuplicates;
 
     public event Action<T, Exception> OnActionFailed
@@ -73,14 +73,26 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     #region IDisposable Support
 
+    ~AsyncActionQueue() => Dispose(false);
+
     bool disposed;
     public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
     {
         if (!disposed)
         {
             context.Enabled = false;
             CancelQueuedActions(true);
-            actionRunners.Clear();
+
+            if (disposing)
+            {
+                actionRunners.Clear();
+                actionRunners = null;
+            }
 
             disposed = true;
         }

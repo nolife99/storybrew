@@ -25,7 +25,7 @@ public class AudioSample : IDisposable
         using (var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded)) if (stream is not null) unsafe
         {
             var len = (int)stream.Length;
-            var bytes = NativeMemory.Alloc((uint)len);
+            var bytes = NativeMemory.Alloc((nuint)len);
 
             try
             {
@@ -66,9 +66,9 @@ public class AudioSample : IDisposable
             if (sample != 0)
             {
                 Bass.SampleFree(sample);
-                sample = 0;
+                if (disposing) sample = 0;
             }
-            disposed = true;
+            if (disposing) disposed = true;
         }
     }
 
