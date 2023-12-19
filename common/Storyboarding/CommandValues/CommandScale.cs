@@ -61,11 +61,11 @@ public readonly struct CommandScale :
 
     public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector.X, vector.Y);
     public static implicit operator CommandScale(osuTK.Vector2d vector) => new(vector.X, vector.Y);
-    public static implicit operator CommandScale(SizeF vector) => new(vector.Width, vector.Height);
+    public static implicit operator CommandScale(SizeF vector) => vector.ToVector2();
     public static implicit operator CommandScale(CommandPosition position) => new(position.X, position.Y);
     public static implicit operator osuTK.Vector2(CommandScale obj) => new(obj.X, obj.Y);
     public static implicit operator osuTK.Vector2d(CommandScale obj) => new(obj.X, obj.Y);
-    public static implicit operator SizeF(CommandScale vector) => new(vector.X, vector.Y);
+    public static implicit operator SizeF(CommandScale vector) => new(vector.internalVec);
     public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

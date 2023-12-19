@@ -67,10 +67,10 @@ public readonly struct CommandPosition :
 
     public static implicit operator osuTK.Vector2(CommandPosition position) => new(position.X, position.Y);
     public static implicit operator osuTK.Vector2d(CommandPosition position) => new(position.X, position.Y);
-    public static implicit operator PointF(CommandPosition position) => new(position.X, position.Y);
+    public static implicit operator PointF(CommandPosition position) => new(position.internalVec);
     public static implicit operator CommandPosition(osuTK.Vector2 vector) => new(vector.X, vector.Y);
     public static implicit operator CommandPosition(osuTK.Vector2d vector) => new(vector.X, vector.Y);
-    public static implicit operator CommandPosition(PointF vector) => new(vector.X, vector.Y);
+    public static implicit operator CommandPosition(PointF vector) => vector.ToVector2();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector2(CommandPosition position) => position.internalVec;

@@ -14,6 +14,7 @@ namespace BrewLib.Graphics.Text;
 
 public sealed class TextGenerator : IDisposable
 {
+    SolidBrush shadow = new(Color.FromArgb(220, 0, 0, 0));
     System.Drawing.Graphics metrics;
     ResourceContainer container;
 
@@ -72,6 +73,7 @@ public sealed class TextGenerator : IDisposable
             textGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
 
+            textGraphics.DrawString(text, font, shadow, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
             textGraphics.DrawString(text, font, Brushes.White, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
         }
         catch
@@ -173,6 +175,7 @@ public sealed class TextGenerator : IDisposable
         if (!disposed)
         {
             metrics.Dispose();
+            shadow.Dispose();
             fonts.Dispose();
             fontFamilies.Dispose();
             fontCollections.Dispose();
