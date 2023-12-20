@@ -111,7 +111,11 @@ public abstract class ScriptContainerBase<TScript> : ScriptContainer<TScript> wh
             disposed = true;
         }
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

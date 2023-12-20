@@ -37,14 +37,14 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
             if (previousMatch is not null && bestMatch.StartIndex < previousMatch.EndIndex)
                 continue;
 
-            yield return new Token<TokenType>(bestMatch.Type, bestMatch.Value)
+            yield return new(bestMatch.Type, bestMatch.Value)
             {
                 CharNumber = bestMatch.StartIndex,
             };
             previousMatch = bestMatch;
         }
 
-        if (endLineToken.HasValue) yield return new Token<TokenType>(endLineToken.Value);
+        if (endLineToken.HasValue) yield return new(endLineToken.Value);
     }
 
     public class Definition(TokenType matchType, string regexPattern, int captureGroup = 1)
@@ -56,7 +56,7 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
         public IEnumerable<Match> FindMatches(string input, int priority)
         {
             var matches = regex.Matches(input);
-            foreach (System.Text.RegularExpressions.Match match in matches) yield return new Match
+            foreach (System.Text.RegularExpressions.Match match in matches) yield return new()
             {
                 StartIndex = match.Index,
                 EndIndex = match.Index + match.Length,

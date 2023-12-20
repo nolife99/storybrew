@@ -384,6 +384,8 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
     #region IDisposable Support
 
+    ~WidgetManager() => Dispose(false);
+
     bool disposed;
     public void Dispose()
     {

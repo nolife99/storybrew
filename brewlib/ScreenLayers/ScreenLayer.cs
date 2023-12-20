@@ -150,7 +150,11 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
             disposed = true;
         }
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 

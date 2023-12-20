@@ -1,6 +1,7 @@
 # Changes
 * upgrade to .NET 8 and update dependencies
     - Significantly better performance
+    - No support below Windows 10, no support for 32-bit
 * code formatting and optimization
 * merge BrewLib and Tiny to this project
 * add XML documentation for scripting (still WIP)

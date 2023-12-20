@@ -6,8 +6,10 @@ namespace BrewLib.UserInterface;
 public sealed class ClickBehavior : IDisposable
 {
     Widget widget;
+
     bool hovered;
     public bool Hovered => !disabled && hovered;
+
     bool pressed;
     public bool Pressed => !disabled && pressed;
 

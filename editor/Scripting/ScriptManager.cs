@@ -210,8 +210,10 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             if (disposing)
             {
                 scriptContainers.Dispose();
-                scheduler = null;
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+                GC.WaitForPendingFinalizers();
 
+                scheduler = null;
                 disposed = true;
             }
         }

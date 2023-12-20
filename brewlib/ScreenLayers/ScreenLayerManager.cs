@@ -73,17 +73,11 @@ public sealed class ScreenLayerManager : IDisposable
         }
         return false;
     }
-    public void Exit()
+    public void Exit() => layers.ToArray().ForEachUnsafe(layer =>
     {
-        var snapshot = layers.ToArray();
-        for (var i = snapshot.Length - 1; i >= 0; --i)
-        {
-            var layer = snapshot[i];
-            if (layer.IsExiting) continue;
-
-            layer.Exit();
-        }
-    }
+        if (layer.IsExiting) return;
+        layer.Exit();
+    });
     public void Update(bool isFixedRateUpdate)
     {
         var active = window.Focused;
@@ -122,7 +116,7 @@ public sealed class ScreenLayerManager : IDisposable
             top = false;
         }
 
-        if (removedLayers.Count > 0)
+        if (removedLayers.Count != 0)
         {
             removedLayers.ForEachUnsafe(layer => layer.Dispose());
             removedLayers.Clear();
@@ -163,16 +157,31 @@ public sealed class ScreenLayerManager : IDisposable
 
     #region IDisposable Support
 
+    ~ScreenLayerManager() => Dispose(false);
+
     bool disposed;
     public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    void Dispose(bool disposing)
     {
         if (!disposed)
         {
             changeFocus(null);
-            for (var i = layers.Count - 1; i >= 0; --i) layers[i].Dispose();
-            window.Resize -= window_Resize;
+            if (disposing)
+            {
+                layers.ForEachUnsafe(layer => layer.Dispose());
+                removedLayers.ForEachUnsafe(layer => layer.Dispose());
 
-            disposed = true;
+                layers.Clear();
+                removedLayers.Clear();
+
+                window.Resize -= window_Resize;
+
+                disposed = true;
+            }
         }
     }
 

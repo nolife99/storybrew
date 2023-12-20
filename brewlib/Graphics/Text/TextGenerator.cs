@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
@@ -118,18 +119,19 @@ public sealed class TextGenerator : IDisposable
                     if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
 
                     var len = (int)stream.Length;
-                    unsafe
+                    var arr = ArrayPool<byte>.Shared.Rent(len);
+
+                    try
                     {
-                        var ptr = NativeMemory.Alloc((nuint)len);
-                        try
+                        stream.Read(MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr), len));
+                        unsafe
                         {
-                            stream.Read(new(ptr, len));
-                            fontCollection.AddMemoryFont((nint)ptr, len);
+                            fixed (void* pinned = &MemoryMarshal.GetArrayDataReference(arr)) fontCollection.AddMemoryFont((nint)pinned, len);
                         }
-                        finally
-                        {
-                            NativeMemory.Free(ptr);
-                        }
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(arr);
                     }
 
                     var families = fontCollection.Families;

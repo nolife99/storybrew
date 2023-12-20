@@ -12,7 +12,7 @@ public static class ListExtensions
         if (from == to) return;
 
         var span = CollectionsMarshal.AsSpan(list);
-        var item = span[from];
+        ref var item = ref span[from];
 
         if (from < to) for (var i = from; i < to; ++i) span[i] = span[i + 1];
         else for (var i = from; i > to; --i) span[i] = span[i - 1];

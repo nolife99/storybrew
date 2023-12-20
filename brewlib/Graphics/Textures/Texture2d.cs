@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 using BrewLib.Data;
 using osuTK.Graphics.OpenGL;
 
@@ -19,17 +21,11 @@ public class Texture2d(int textureId, int width, int height, string description)
             throw new ArgumentException($"Invalid update bounds: {bitmap.Size} at {x},{y} overflows {Width}x{Height}");
 
         DrawState.BindPrimaryTexture(textureId, TexturingModes.Texturing2d);
-        var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-        try
-        {
-            GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, osuTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data.Scan0);
-            GL.Finish();
-        }
-        finally
-        {
-            bitmap.UnlockBits(data);
-        }
+        var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+        GL.Finish();
+        bitmap.UnlockBits(data);
 
         DrawState.CheckError("updating texture");
     }
@@ -89,22 +85,24 @@ public class Texture2d(int textureId, int width, int height, string description)
         try
         {
             DrawState.BindTexture(textureId);
-            unsafe
-            {
-                var count = width * height;
-                var arr = stackalloc int[count];
-                new Span<int>(arr, count).Fill(channel);
 
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, (nint)arr);
+            var area = width * height;
+            var arr = ArrayPool<int>.Shared.Rent(area);
+
+            try
+            {
+                MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr), area).Fill(channel);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
+            }
+            finally
+            {
+                ArrayPool<int>.Shared.Return(arr);
             }
 
-            if (textureOptions.GenerateMipmaps)
-            {
-                GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-                GL.Finish();
-            }
+            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            GL.Finish();
+
             DrawState.CheckError("specifying texture");
-
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
         }
         catch (Exception)
@@ -126,13 +124,15 @@ public class Texture2d(int textureId, int width, int height, string description)
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
-        var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
         try
         {
+            var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width, data.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+            
             if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
             GL.Finish();
 
+            bitmap.UnlockBits(data);
             DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
         }
@@ -141,10 +141,6 @@ public class Texture2d(int textureId, int width, int height, string description)
             GL.DeleteTexture(textureId);
             DrawState.UnbindTexture(textureId);
             throw;
-        }
-        finally
-        {
-            bitmap.UnlockBits(data);
         }
         return new(textureId, width, height, description);
     }

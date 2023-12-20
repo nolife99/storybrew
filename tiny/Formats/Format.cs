@@ -24,11 +24,6 @@ public abstract class Format<TokenType> : Format
     protected abstract Tokenizer<TokenType> Tokenizer { get; }
     protected abstract TokenParser<TokenType> TokenParser { get; }
 
-    public TinyToken Read(TextReader reader)
-    {
-        var tokens = Tokenizer.Tokenize(reader);
-        return TokenParser.Parse(tokens);
-    }
-
+    public TinyToken Read(TextReader reader) => TokenParser.Parse(Tokenizer.Tokenize(reader));
     public abstract void Write(TextWriter writer, TinyToken value);
 }

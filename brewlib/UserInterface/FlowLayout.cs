@@ -242,9 +242,21 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
             height += firstLine ? line.Height : line.Height + lineSpacing;
             firstLine = false;
         });
+
         flowWidth = Math.Max(flowWidth, width + padding.Horizontal);
         preferredSize = new(flowWidth, height + padding.Vertical);
     }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            lines.ForEachUnsafe(line => line.Items.Clear());
+            lines.Clear();
+        }
+        base.Dispose(disposing);
+    }
+
     class LayoutLine
     {
         public List<LayoutItem> Items = [];

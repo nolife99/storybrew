@@ -27,7 +27,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
         if (ExportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 && sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
         {
             HashSet<IFragmentableCommand> commands = [];
-            foreach (var cmd in commands) commands.Add(cmd);
+            foreach (var cmd in sprite.Commands) commands.Add((IFragmentableCommand)cmd);
             var fragmentationTimes = GetFragmentationTimes(commands);
 
             while (commands.Count > 0)

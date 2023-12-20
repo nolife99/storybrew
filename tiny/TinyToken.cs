@@ -54,7 +54,7 @@ public abstract class TinyToken
         {
             if (value is IDictionary dictionary)
             {
-                var o = new TinyObject();
+                TinyObject o = [];
                 foreach (var key in dictionary.Keys) o.Add((string)key, ToToken(dictionary[key]));
                 return o;
             }

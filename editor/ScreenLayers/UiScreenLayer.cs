@@ -74,10 +74,11 @@ public class UiScreenLayer : ScreenLayer
             {
                 WidgetManager.Dispose();
                 uiCamera.Dispose();
+                disposed = true;
             }
+
             WidgetManager = null;
             uiCamera = null;
-            disposed = true;
         }
         base.Dispose(disposing);
     }

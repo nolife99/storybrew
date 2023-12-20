@@ -63,6 +63,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
             drawables = null;
             disposed = true;
+
+            GC.SuppressFinalize(this);
         }
     }
 

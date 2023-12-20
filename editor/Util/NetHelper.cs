@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util;
 
@@ -22,11 +23,11 @@ public static class NetHelper
             Trace.WriteLine($"Requesting {url}");
 
             var result = await Client.GetStringAsync(url).ConfigureAwait(false);
-            action?.Invoke(result, null);
+            await Task.Run(() => action?.Invoke(result, null));
         }
         catch (Exception e)
         {
-            action?.Invoke(null, e);
+            await Task.Run(() => action?.Invoke(null, e));
         }
     }
     public static async void Post(string url, Dictionary<string, string> data, Action<string, Exception> action = null)

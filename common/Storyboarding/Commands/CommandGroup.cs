@@ -51,7 +51,9 @@ public abstract class CommandGroup : ICommand
         }
     }
 
+    public bool Contains(ICommand command) => commands.Contains(command);
     public bool Add(ICommand command) => ended ? throw new InvalidOperationException("Cannot add commands to a group after it ended") : commands.Add(command);
+
     public virtual void EndGroup() => ended = true;
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 

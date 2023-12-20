@@ -22,14 +22,14 @@ public class TinyArray : TinyToken, IList<TinyToken>
     public TinyArray()
     {
         const int InitialCapacity = 4;
-        tokens = new TinyToken[InitialCapacity];
+        tokens = GC.AllocateUninitializedArray<TinyToken>(InitialCapacity);
         count = 0;
     }
 
     public TinyArray(IEnumerable values)
     {
         const int InitialCapacity = 4;
-        tokens = new TinyToken[InitialCapacity];
+        tokens = GC.AllocateUninitializedArray<TinyToken>(InitialCapacity);
         count = 0;
 
         foreach (var value in values) Add(ToToken(value));
@@ -90,10 +90,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
         --count;
     }
 
-    public IEnumerator<TinyToken> GetEnumerator()
-    {
-        for (var i = 0; i < count; ++i) yield return tokens[i];
-    }
+    public IEnumerator<TinyToken> GetEnumerator() => ((IEnumerable<TinyToken>)tokens).GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => tokens.GetEnumerator();
 
     public override T Value<T>(object key)
@@ -110,7 +107,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
     {
         if (tokens.Length >= capacity) return;
 
-        var newTokens = new TinyToken[Math.Max(capacity, tokens.Length * 2)];
+        var newTokens = GC.AllocateUninitializedArray<TinyToken>(Math.Max(capacity, tokens.Length * 2));
         Array.Copy(tokens, newTokens, count);
         tokens = newTokens;
     }

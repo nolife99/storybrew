@@ -526,7 +526,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         else if (proj.DisplayDebugWarning && unusedCommands > 0)
             warnings.AppendLine(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
 
-        var sbLoad = stats.ScreenFill;
+        var sbLoad = (float)stats.ScreenFill;
         if (sbLoad > 0 && sbLoad < 5 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.InvariantCulture, $"{sbLoad:f0}x Screen Fill");
         else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f0}x Screen Fill");
 

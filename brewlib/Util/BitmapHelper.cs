@@ -324,7 +324,10 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     }
 
     ///<summary> Creates a new pinned bitmap from a copy of the given 32-bit ARGB color data and dimensions. </summary>
-    public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height) => data.CopyTo(AsSpan());
+    public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height)
+    {
+        fixed (void* pinned = &MemoryMarshal.GetReference(data)) Native.CopyMemory(pinned, scan0, Count << 2);
+    }
 
     ///<summary> Sets the pixel color at the given coordinates. </summary>
     ///<param name="x"> The X coordinate of the pixel. </param>
@@ -395,6 +398,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     {
         if (!disposed)
         {
+            NativeMemory.Free(scan0);
             if (disposing)
             {
                 Bitmap.Dispose();
@@ -407,7 +411,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
                 disposed = true;
             }
-            NativeMemory.Free(scan0);
         }
     }
 

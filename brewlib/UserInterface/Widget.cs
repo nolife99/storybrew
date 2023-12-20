@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Graphics;
@@ -227,19 +226,8 @@ public class Widget(WidgetManager manager) : IDisposable
 
         InvalidateAncestorLayout();
     }
-    public void ClearWidgets()
-    {
-        var snapshot = children.ToArray();
+    public void ClearWidgets() => children.ToArray().ForEachUnsafe(child => child.Dispose());
 
-        ref var r0 = ref MemoryMarshal.GetArrayDataReference(snapshot);
-        ref var rEnd = ref Unsafe.Add(ref r0, snapshot.Length);
-
-        while (Unsafe.IsAddressLessThan(ref r0, ref rEnd))
-        {
-            r0.Dispose();
-            r0 = ref Unsafe.Add(ref r0, 1);
-        }
-    }
     public bool HasAncestor(Widget widget)
     {
         if (parent is null) return false;
@@ -251,13 +239,7 @@ public class Widget(WidgetManager manager) : IDisposable
     public Span<Widget> GetAncestors()
     {
         List<Widget> ancestors = [];
-        var ancestor = parent;
-
-        while (ancestor is not null)
-        {
-            ancestors.Add(ancestor);
-            ancestor = ancestor.Parent;
-        }
+        for (var ancestor = parent; ancestor is not null; ancestor = ancestor.Parent) ancestors.Add(ancestor);
         return CollectionsMarshal.AsSpan(ancestors);
     }
 

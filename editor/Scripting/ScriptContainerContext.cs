@@ -23,18 +23,10 @@ public class ScriptContainerContext<TScript>(string scriptTypeName, string mainS
             catch
             {
                 scriptDomain.Unload();
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
-                GC.WaitForPendingFinalizers();
-
                 throw;
             }
 
-            if (appDomain != null)
-            {
-                scriptDomain.Unload();
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
-                GC.WaitForPendingFinalizers();
-            }
+            if (appDomain != null) scriptDomain.Unload();
             appDomain = scriptDomain;
 
             return scriptProvider;
@@ -56,14 +48,11 @@ public class ScriptContainerContext<TScript>(string scriptTypeName, string mainS
     {
         if (!disposed)
         {
-            if (appDomain != null)
+            if (appDomain is not null)
             {
                 appDomain.Unload();
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive);
-                GC.WaitForPendingFinalizers();
+                appDomain = null;
             }
-
-            appDomain = null;
             disposed = true;
         }
         base.Dispose(disposing);

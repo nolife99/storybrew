@@ -121,7 +121,8 @@ class Karaoke : StoryboardObjectGenerator
             }
         }
     }
-    void applyKaraoke(OsbSprite sprite, double startTime, double endTime)
+
+    static void applyKaraoke(OsbSprite sprite, double startTime, double endTime)
     {
         sprite.Color(startTime - 100, startTime, new(.2f, .2f, .2f), Color.White);
         sprite.Color(endTime - 100, endTime, Color.White, new(.6f, .6f, .6f));

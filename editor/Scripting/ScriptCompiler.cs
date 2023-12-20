@@ -78,7 +78,7 @@ public class ScriptCompiler
         }
 
         using MemoryStream assemblyStream = new();
-        var result = CSharpCompilation.Create(Path.GetFileName(asmName), trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
+        var result = CSharpCompilation.Create(asmName, trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
             .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
         if (result.Success)

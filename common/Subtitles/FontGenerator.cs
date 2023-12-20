@@ -116,7 +116,7 @@ public sealed class FontGenerator : IDisposable
             var families = collection.Families;
             family = families[0];
 
-            if (families.Length > 1) for (var i = 0; i < families.Length; ++i) families[i].Dispose();
+            if (families.Length > 1) for (var i = 1; i < families.Length; ++i) families[i].Dispose();
         }
 
         var ptSize = 96 / metrics.DpiY * description.FontSize;

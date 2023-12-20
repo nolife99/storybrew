@@ -10,17 +10,17 @@ public class YamlFormat : Format<YamlTokenType>
 
     static readonly RegexTokenizer<YamlTokenType>.Definition[] definitions =
     [
-        new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.Indent, "^(  )+", captureGroup: 0),
+        new(YamlTokenType.Indent, "^(  )+", captureGroup: 0),
 
-        new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
-        new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),
+        new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
+        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),
 
-        new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.ArrayIndicator, "- "),
+        new(YamlTokenType.ArrayIndicator, "- "),
 
-        new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"),
-        new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.Word, "[^\\s:]+"),
+        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"),
+        new(YamlTokenType.Word, "[^\\s:]+"),
 
-        new RegexTokenizer<YamlTokenType>.Definition(YamlTokenType.EndLine, "\n"),
+        new(YamlTokenType.EndLine, "\n"),
     ];
 
     protected override Tokenizer<YamlTokenType> Tokenizer { get; } = new RegexTokenizer<YamlTokenType>(definitions, YamlTokenType.EndLine);
