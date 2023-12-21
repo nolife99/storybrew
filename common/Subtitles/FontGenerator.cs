@@ -83,9 +83,9 @@ public sealed class FontGenerator : IDisposable
 
     StringFormat format;
     Graphics metrics;
-    PrivateFontCollection collection;
     Font font;
-    FontFamily family;
+    PrivateFontCollection collection;
+    SolidBrush textBrush;
 
     internal FontGenerator(string dir, FontDescription desc, FontEffect[] fx, string projDir, string assetDir)
     {
@@ -100,6 +100,7 @@ public sealed class FontGenerator : IDisposable
             Alignment = StringAlignment.Center,
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
+        textBrush = new(description.Color);
 
         metrics = Graphics.FromHwnd(0);
         metrics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
@@ -108,19 +109,17 @@ public sealed class FontGenerator : IDisposable
         var fontPath = Path.Combine(projectDirectory, description.FontPath);
         if (!File.Exists(fontPath)) fontPath = description.FontPath;
 
+        FontFamily[] family = null;
         if (File.Exists(fontPath))
         {
             collection = new();
             collection.AddFontFile(fontPath);
-
-            var families = collection.Families;
-            family = families[0];
-
-            if (families.Length > 1) for (var i = 1; i < families.Length; ++i) families[i].Dispose();
+            family = collection.Families;
         }
 
         var ptSize = 96 / metrics.DpiY * description.FontSize;
-        font = family is null ? new(fontPath, ptSize, description.FontStyle) : new(family, ptSize, description.FontStyle);
+        font = family is null ? new(fontPath, ptSize, description.FontStyle) : new(family[0], ptSize, description.FontStyle);
+        if (family is not null) for (var i = 0; i < family.Length; ++i) family[i].Dispose();
 
         emSize = font.GetHeight(metrics) * font.FontFamily.GetEmHeight(description.FontStyle) / font.FontFamily.GetLineSpacing(description.FontStyle);
     }
@@ -178,7 +177,7 @@ public sealed class FontGenerator : IDisposable
             segments.AddString(text, font.FontFamily, (int)description.FontStyle, emSize, new PointF(x, paddingY), format);
 
             for (var i = 0; i < effects.Length; ++i) if (!effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, paddingY);
-            if (!description.EffectsOnly) using (SolidBrush brush = new(description.Color)) textGraphics.FillPath(brush, segments);
+            if (!description.EffectsOnly) textGraphics.FillPath(textBrush, segments);
             for (var i = 0; i < effects.Length; ++i) if (effects[i].Overlay) effects[i].Draw(realText, textGraphics, segments, x, paddingY);
 
             if (description.Debug)
@@ -246,19 +245,18 @@ public sealed class FontGenerator : IDisposable
     {
         if (!disposed)
         {
-            format.Dispose();
-            metrics.Dispose();
-
             if (disposing)
             {
+                format.Dispose();
+                metrics.Dispose();
+                textBrush.Dispose();
                 font.Dispose();
-                family?.Dispose();
                 collection?.Dispose();
 
                 format = null;
                 metrics = null;
+                textBrush = null;
                 font = null;
-                family = null;
                 collection = null;
 
                 disposed = true;

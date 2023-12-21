@@ -160,19 +160,20 @@ public static class BitmapHelper
     
     public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
-        if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
+        var srcSize = src.Size;
+        if (sect.Left < 0 || sect.Top < 0 || sect.Right > srcSize.Width || sect.Bottom > srcSize.Height || sect.Width <= 0 || sect.Height <= 0)
             throw new ArgumentOutOfRangeException(nameof(sect), "Invalid dimensions");
 
         var pixBit = Image.GetPixelFormatSize(src.PixelFormat) >> 3;
         var len = (int)(sect.Width * pixBit);
 
-        var srcDat = src.LockBits(new(0, 0, src.Width, src.Height), ImageLockMode.ReadOnly, src.PixelFormat);
+        var srcDat = src.LockBits(new(default, srcSize), ImageLockMode.ReadOnly, src.PixelFormat);
         Bitmap dest = new((int)sect.Width, (int)sect.Height, src.PixelFormat);
-        var destDat = dest.LockBits(new(0, 0, (int)sect.Width, (int)sect.Height), ImageLockMode.WriteOnly, src.PixelFormat);
+        var destDat = dest.LockBits(new(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
 
         try
         {
-            for (var y = 0; y < sect.Height; ++y) Native.CopyMemory(
+            for (var y = 0; y < destDat.Height; ++y) Native.CopyMemory(
                 srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixBit), destDat.Scan0 + y * destDat.Stride, len);
         }
         finally
@@ -201,7 +202,7 @@ public static class BitmapHelper
                         if (*buf != 0) return false;
                         buf += 4;
                     }
-                    buf += data.Stride - (data.Width << 2);
+                    buf += data.Stride - data.Width * 4;
                 }
             }
             finally
@@ -234,7 +235,7 @@ public static class BitmapHelper
                 for (var y = 0; y < data.Height; ++y)
                 {
                     var row = buf + (y * data.Stride);
-                    for (var x = 0; x < data.Width; ++x) if (row[(x << 2) + 3] > 0)
+                    for (var x = 0; x < data.Width; ++x) if (row[x * 4 + 3] > 0)
                     {
                         if (x < xMin) xMin = x;
                         if (x > xMax) xMax = x;

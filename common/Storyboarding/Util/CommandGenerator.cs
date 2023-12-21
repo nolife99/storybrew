@@ -233,7 +233,7 @@ public class CommandGenerator
     }
 
     internal static SizeF BitmapDimensions(string path) 
-        => StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts is null).PhysicalDimension;
+        => StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).PhysicalDimension;
 }
 
 ///<summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>

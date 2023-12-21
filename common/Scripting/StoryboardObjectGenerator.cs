@@ -215,7 +215,7 @@ public abstract class StoryboardObjectGenerator : Script
 
     static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
 
-    internal Dictionary<string, FontGenerator> fonts;
+    internal readonly Dictionary<string, FontGenerator> fonts = [];
     string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache");
 
     ///<summary> Loads subtitles from a given subtitle file. </summary>
@@ -249,16 +249,12 @@ public abstract class StoryboardObjectGenerator : Script
         var assetDirectory = asAsset ? context.ProjectAssetPath : context.MapsetPath;
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
 
-        FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
-        if (!(fonts ??= []).TryAdd(fontDirectory, fontGenerator))
-        {
-            fontGenerator.Dispose();
-            throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
-        }
-
+        if (fonts.ContainsKey(fontDirectory)) throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
         if (Directory.Exists(fontDirectory)) foreach (var file in Directory.GetFiles(fontDirectory, "*.png")) PathHelper.SafeDelete(file);
         else Directory.CreateDirectory(fontDirectory);
 
+        FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
+        fonts[fontDirectory] = fontGenerator;
         return fontGenerator;
     }
 
@@ -365,7 +361,7 @@ public abstract class StoryboardObjectGenerator : Script
             this.context = null;
 
             bitmaps.Dispose();
-            fonts?.Dispose();
+            fonts.Dispose();
             Compressor.Dispose();
         }
     }

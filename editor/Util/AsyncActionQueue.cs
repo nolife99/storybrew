@@ -50,7 +50,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        Parallel.ForEach(actionRunners, runner => runner.EnsureThreadAlive());
+        Parallel.ForEach(actionRunners, runner => runner?.EnsureThreadAlive());
         lock (context.Queue)
         {
             if (!allowDuplicates && context.Queue.Exists(q => q.Target.Equals(target))) return;

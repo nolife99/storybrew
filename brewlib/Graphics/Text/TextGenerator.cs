@@ -185,6 +185,7 @@ public sealed class TextGenerator : IDisposable
                 container = null;
 
                 metrics = null;
+                shadow = null;
                 fonts = null;
                 fontCollections = null;
                 fontFamilies = null;
