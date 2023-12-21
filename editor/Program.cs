@@ -279,7 +279,7 @@ public static class Program
 
         while (scheduledActions.TryDequeue(out var action)) try
         {
-            action();
+            action?.Invoke();
         }
         catch (Exception e)
         {

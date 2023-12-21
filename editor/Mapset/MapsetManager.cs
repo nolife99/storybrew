@@ -81,8 +81,6 @@ public sealed class MapsetManager : IDisposable
 
     #endregion
 
-    ~MapsetManager() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {

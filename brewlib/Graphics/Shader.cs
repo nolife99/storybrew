@@ -149,7 +149,6 @@ public class Shader : IDisposable
         }
     }
 
-    ~Shader() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);

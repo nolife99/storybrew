@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading;
-using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
@@ -15,22 +13,19 @@ public sealed class GpuCommandSync : IDisposable
     {
         if (syncRanges.Count == 0) return false;
 
-        var span = CollectionsMarshal.AsSpan(syncRanges);
-        var blocked = span[^1].Wait();
+        var blocked = syncRanges[^1].Wait();
 
-        for (var i = 0; i < span.Length; ++i) span[i].Dispose();
-        span.Clear();
+        syncRanges.ForEach(range => range.Dispose());
+        syncRanges.Clear();
 
         return blocked;
     }
     public bool WaitForRange(int index, int length)
     {
         trimExpiredRanges();
-
-        var span = CollectionsMarshal.AsSpan(syncRanges);
-        for (var i = span.Length - 1; i >= 0; --i)
+        for (var i = syncRanges.Count - 1; i >= 0; --i)
         {
-            var syncRange = span[i];
+            var syncRange = syncRanges[i];
             if (index < syncRange.Index + syncRange.Length && syncRange.Index < index + length)
             {
                 var blocked = syncRange.Wait();
@@ -45,14 +40,13 @@ public sealed class GpuCommandSync : IDisposable
     void trimExpiredRanges()
     {
         var left = 0;
-        var span = CollectionsMarshal.AsSpan(syncRanges);
-        var right = span.Length - 1;
+        var right = syncRanges.Count - 1;
 
         var unblockedIndex = -1;
         while (left <= right)
         {
             var index = (left + right) / 2;
-            var wouldBlock = span[index].Wait(false);
+            var wouldBlock = syncRanges[index].Wait(false);
             if (wouldBlock) right = index - 1;
             else
             {
@@ -63,10 +57,10 @@ public sealed class GpuCommandSync : IDisposable
 
         if (unblockedIndex >= 0) clearToIndex(unblockedIndex);
     }
+
     void clearToIndex(int index)
     {
-        var span = CollectionsMarshal.AsSpan(syncRanges);
-        for (var i = 0; i <= index; ++i) span[i].Dispose();
+        for (var i = 0; i <= index; ++i) syncRanges[i].Dispose();
         syncRanges.RemoveRange(0, index + 1);
     }
 
@@ -77,10 +71,9 @@ public sealed class GpuCommandSync : IDisposable
     {
         if (!disposed)
         {
-            syncRanges.ForEachUnsafe(sync => sync.Dispose());
+            syncRanges.ForEach(sync => sync.Dispose());
             syncRanges.Clear();
 
-            syncRanges = null;
             disposed = true;
         }
     }
@@ -125,6 +118,8 @@ public sealed class GpuCommandSync : IDisposable
 
         #region IDisposable Support
 
+        ~SyncRange() => Dispose(false);
+
         bool disposed;
         void Dispose(bool disposing)
         {
@@ -138,8 +133,6 @@ public sealed class GpuCommandSync : IDisposable
                 }
             }
         }
-
-        ~SyncRange() => Dispose(false);
         public void Dispose()
         {
             Dispose(true);

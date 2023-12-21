@@ -73,8 +73,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     #region IDisposable Support
 
-    ~AsyncActionQueue() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {

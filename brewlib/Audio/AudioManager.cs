@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using BrewLib.Data;
-using BrewLib.Util;
 using ManagedBass;
 
 namespace BrewLib.Audio;
@@ -20,7 +18,7 @@ public sealed class AudioManager : IDisposable
             if (volume == value) return;
 
             volume = value;
-            audioChannels.ForEachUnsafe(audio => audio.UpdateVolume());
+            audioChannels.ForEach(audio => audio.UpdateVolume());
         }
     }
     public AudioManager(nint handle)
@@ -33,10 +31,9 @@ public sealed class AudioManager : IDisposable
 
     public void Update()
     {
-        var span = CollectionsMarshal.AsSpan(audioChannels);
-        for (var i = 0; i < span.Length; ++i)
+        for (var i = 0; i < audioChannels.Count; ++i)
         {
-            var channel = span[i];
+            var channel = audioChannels[i];
             if (channel is not null && channel.Temporary && channel.Completed)
             {
                 channel.Dispose();

@@ -49,7 +49,6 @@ public static class QuadRendererExtensions
         var p4y = fy;
 
         float x1, y1, x2, y2, x3, y3, x4, y4;
-
         if (rotation != 0)
         {
             var (sin, cos) = MathF.SinCos(rotation);
@@ -73,7 +72,7 @@ public static class QuadRendererExtensions
             x4 = p4x;
             y4 = p4y;
         }
-
+        
         QuadPrimitive primitive = new()
         {
             x1 = x1 + x,

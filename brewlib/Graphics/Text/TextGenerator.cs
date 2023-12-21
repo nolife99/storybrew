@@ -163,15 +163,12 @@ public sealed class TextGenerator : IDisposable
 
     #region IDisposable Support
 
-    ~TextGenerator() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-
     void Dispose(bool disposing)
     {
         if (!disposed)

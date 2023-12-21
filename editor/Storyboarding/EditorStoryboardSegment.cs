@@ -108,11 +108,11 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
     }
     public void TriggerEvents(double fromTime, double toTime)
     {
-        eventObjects.ForEachUnsafe(eventObject =>
+        eventObjects.ForEach(eventObject =>
         {
             if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime) eventObject.TriggerEvent(Effect.Project, toTime);
         });
-        segments.ForEachUnsafe(s => s.TriggerEvents(fromTime, toTime));
+        segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
     }
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats)
     {
@@ -121,7 +121,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
 
         if (Layer.Highlight || Effect.Highlight) opacity *= (float)((Math.Cos(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5);
 
-        displayableObjects.ForEachUnsafe(sprite => sprite.Draw(drawContext, camera, bounds, opacity, project, frameStats));
+        displayableObjects.ForEach(sprite => sprite.Draw(drawContext, camera, bounds, opacity, project, frameStats));
     }
     public void PostProcess()
     {
@@ -131,24 +131,24 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer)
             displayableObjects.Reverse();
         }
 
-        storyboardObjects.ForEachUnsafe(sbo => (sbo as HasPostProcess)?.PostProcess());
+        storyboardObjects.ForEach(sbo => (sbo as HasPostProcess)?.PostProcess());
 
         startTime = double.MaxValue;
         endTime = double.MinValue;
 
-        storyboardObjects.ForEachUnsafe(sbo =>
+        storyboardObjects.ForEach(sbo =>
         {
             startTime = Math.Min(startTime, sbo.StartTime);
             endTime = Math.Max(endTime, sbo.EndTime);
         });
     }
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer)
-        => storyboardObjects.ForEachUnsafe(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
+        => storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, exportSettings, osbLayer));
 
     public int CalculateSize(OsbLayer osbLayer)
     {
         using ByteCounterStream stream = new();
-        using (StreamWriter writer = new(stream, Project.Encoding)) storyboardObjects.ForEachUnsafe(sbo => sbo.WriteOsb(writer, Effect.Project.ExportSettings, osbLayer));
+        using (StreamWriter writer = new(stream, Project.Encoding)) storyboardObjects.ForEach(sbo => sbo.WriteOsb(writer, Effect.Project.ExportSettings, osbLayer));
         return (int)stream.Length;
     }
 }

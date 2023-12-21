@@ -30,8 +30,6 @@ public class TextFontManager : IDisposable
 
     #region IDisposable Support
 
-    ~TextFontManager() => Dispose(false);
-
     bool disposed;
     protected virtual void Dispose(bool disposing)
     {

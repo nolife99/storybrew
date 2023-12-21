@@ -233,12 +233,10 @@ public sealed class FontGenerator : IDisposable
         return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
     }
 
-    ~FontGenerator() => Dispose(false);
-
     bool disposed;
 
     ///<summary> Deletes and frees all loaded fonts from memory. </summary>
-    ///<remarks> Do not call from script code. This is automatically disposed at the end of script execution </remarks>
+    ///<remarks> Do not call from script code. This is automatically disposed at the end of script execution. </remarks>
     public void Dispose()
     {
         Dispose(true);

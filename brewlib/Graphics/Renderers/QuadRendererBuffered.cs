@@ -176,8 +176,6 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         lastFlushWasBuffered = canBuffer;
     }
 
-    ~QuadRendererBuffered() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {

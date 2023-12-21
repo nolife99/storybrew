@@ -39,8 +39,6 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
 
     #region IDisposable Support
 
-    ~TextFontAtlased() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {

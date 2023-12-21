@@ -178,8 +178,6 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         lastFlushWasBuffered = canBuffer;
     }
 
-    ~SpriteRendererBuffered() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {

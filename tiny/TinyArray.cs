@@ -18,20 +18,14 @@ public class TinyArray : TinyToken, IList<TinyToken>
         get => tokens[index];
         set => tokens[index] = value;
     }
-
     public TinyArray()
     {
         const int InitialCapacity = 4;
         tokens = GC.AllocateUninitializedArray<TinyToken>(InitialCapacity);
         count = 0;
     }
-
-    public TinyArray(IEnumerable values)
+    public TinyArray(IEnumerable values) : this()
     {
-        const int InitialCapacity = 4;
-        tokens = GC.AllocateUninitializedArray<TinyToken>(InitialCapacity);
-        count = 0;
-
         foreach (var value in values) Add(ToToken(value));
     }
 
@@ -43,13 +37,11 @@ public class TinyArray : TinyToken, IList<TinyToken>
         if (count == tokens.Length) EnsureCapacity(count * 2);
         tokens[count++] = item;
     }
-
     public void Clear()
     {
         Array.Clear(tokens, 0, count);
         count = 0;
     }
-
     public bool Contains(TinyToken item)
     {
         for (var i = 0; i < count; ++i) if (tokens[i] == item) return true;
@@ -63,7 +55,6 @@ public class TinyArray : TinyToken, IList<TinyToken>
         for (var i = 0; i < count; ++i) if (tokens[i] == item) return i;
         return -1;
     }
-
     public void Insert(int index, TinyToken item)
     {
         if (count == tokens.Length) EnsureCapacity(count * 2);
@@ -72,7 +63,6 @@ public class TinyArray : TinyToken, IList<TinyToken>
         tokens[index] = item;
         ++count;
     }
-
     public bool Remove(TinyToken item)
     {
         var index = IndexOf(item);
@@ -83,14 +73,16 @@ public class TinyArray : TinyToken, IList<TinyToken>
         }
         return false;
     }
-
     public void RemoveAt(int index)
     {
         Array.Copy(tokens, index + 1, tokens, index, count - index - 1);
         --count;
     }
 
-    public IEnumerator<TinyToken> GetEnumerator() => ((IEnumerable<TinyToken>)tokens).GetEnumerator();
+    public IEnumerator<TinyToken> GetEnumerator()
+    {
+        for (var i = 0; i < count; ++i) yield return tokens[i];
+    }
     IEnumerator IEnumerable.GetEnumerator() => tokens.GetEnumerator();
 
     public override T Value<T>(object key)

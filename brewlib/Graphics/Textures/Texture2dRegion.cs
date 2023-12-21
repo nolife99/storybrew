@@ -57,8 +57,6 @@ public class Texture2dRegion : Texture
             disposed = true;
         }
     }
-    ~Texture2dRegion() => Dispose(false);
-
     public void Dispose()
     {
         Dispose(true);

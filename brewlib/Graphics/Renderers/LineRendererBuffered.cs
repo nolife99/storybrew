@@ -177,8 +177,6 @@ public unsafe class LineRendererBuffered : LineRenderer
         ++linesInBatch;
     }
 
-    ~LineRendererBuffered() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {

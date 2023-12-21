@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using BrewLib.Util;
 using osuTK;
 using osuTK.Input;
 
@@ -14,7 +13,7 @@ public class InputDispatcher : InputHandler
     public void Remove(InputHandler handler) => handlers.Remove(handler);
     public void Clear() => handlers.Clear();
 
-    public void OnFocusChanged(FocusChangedEventArgs e) => handlers.ForEachUnsafe(handler => handler.OnFocusChanged(e));
+    public void OnFocusChanged(FocusChangedEventArgs e) => handlers.ForEach(handler => handler.OnFocusChanged(e));
     public bool OnClickDown(MouseButtonEventArgs e)
     {
         for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnClickDown(e)) return true;
@@ -30,7 +29,7 @@ public class InputDispatcher : InputHandler
         for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnMouseWheel(e)) return true;
         return false;
     }
-    public void OnMouseMove(MouseMoveEventArgs e) => handlers.ForEachUnsafe(handler => handler.OnMouseMove(e));
+    public void OnMouseMove(MouseMoveEventArgs e) => handlers.ForEach(handler => handler.OnMouseMove(e));
     public bool OnKeyDown(KeyboardKeyEventArgs e)
     {
         for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnKeyDown(e)) return true;
@@ -46,7 +45,7 @@ public class InputDispatcher : InputHandler
         for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnKeyPress(e)) return true;
         return false;
     }
-    public virtual void OnGamepadConnected(GamepadEventArgs e) => handlers.ForEachUnsafe(handler => handler.OnGamepadConnected(e));
+    public virtual void OnGamepadConnected(GamepadEventArgs e) => handlers.ForEach(handler => handler.OnGamepadConnected(e));
     public virtual bool OnGamepadButtonDown(GamepadButtonEventArgs e)
     {
         for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnGamepadButtonDown(e)) return true;

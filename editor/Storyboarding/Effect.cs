@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using BrewLib.Util;
 using StorybrewCommon.Storyboarding;
 
 namespace StorybrewEditor.Storyboarding;
@@ -43,7 +42,7 @@ public abstract class Effect : IDisposable
         get
         {
             var min = double.MaxValue;
-            layers.ForEachUnsafe(l => min = Math.Min(l.StartTime, min));
+            layers.ForEach(l => min = Math.Min(l.StartTime, min));
             return min == double.MaxValue ? 0 : min;
         }
     }
@@ -52,7 +51,7 @@ public abstract class Effect : IDisposable
         get
         {
             var max = double.MinValue;
-            layers.ForEachUnsafe(l => max = Math.Max(l.EndTime, max));
+            layers.ForEach(l => max = Math.Max(l.EndTime, max));
             return max == double.MinValue ? 0 : max;
         }
     }
@@ -116,7 +115,7 @@ public abstract class Effect : IDisposable
 
     ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate(Effect)"/>. Doesn't run on the main thread. </summary>
     public abstract void Update();
-    void refreshLayerNames() => layers.ForEachUnsafe(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
+    void refreshLayerNames() => layers.ForEach(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
 
     #region IDisposable Support
 
@@ -125,7 +124,7 @@ public abstract class Effect : IDisposable
     {
         if (!Disposed)
         {
-            if (disposing) layers.ForEachUnsafe(Project.LayerManager.Remove);
+            if (disposing) layers.ForEach(Project.LayerManager.Remove);
             layers.Clear();
 
             layers = null;

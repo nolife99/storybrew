@@ -232,7 +232,7 @@ public sealed class Project : IDisposable
         var isUpdating = effectUpdateQueue?.TaskCount > 0;
         var hasError = false;
 
-        effects.ForEachUnsafe(effect =>
+        effects.ForEach(effect =>
         {
             switch (effect.Status)
             {
@@ -456,7 +456,7 @@ public sealed class Project : IDisposable
         w.Write(OwnsOsb);
 
         w.Write(effects.Count);
-        effects.ForEachUnsafe(effect =>
+        effects.ForEach(effect =>
         {
             w.Write(effect.Guid.ToByteArray());
             w.Write(effect.BaseName);
@@ -601,7 +601,7 @@ public sealed class Project : IDisposable
         var userPath = directoryWriter.GetPath("user.yaml");
         userRoot.Write(userPath);
 
-        effects.ForEachUnsafe(effect =>
+        effects.ForEach(effect =>
         {
             TinyObject effectRoot = new()
             {
@@ -871,7 +871,7 @@ public sealed class Project : IDisposable
             if (disposing)
             {
                 effectUpdateQueue.Dispose();
-                effects.ForEachUnsafe(effect => effect.Dispose());
+                effects.ForEach(effect => effect.Dispose());
                 effects.Clear();
 
                 MapsetManager?.Dispose();

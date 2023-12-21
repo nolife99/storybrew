@@ -75,8 +75,6 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> wh
         else GL.DrawArrays(primitiveType, 0, drawCount);
     }
 
-    ~PrimitiveStreamerVbo() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {

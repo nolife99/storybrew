@@ -65,7 +65,6 @@ public class NinePatch : Drawable
 
     #region IDisposable Support
 
-    ~NinePatch() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);

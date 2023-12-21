@@ -133,10 +133,10 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
         }
 
         var y = padding.Top;
-        lines.ForEachUnsafe(line =>
+        lines.ForEach(line =>
         {
             var x = padding.Left;
-            line.Items.ForEachUnsafe(item =>
+            line.Items.ForEach(item =>
             {
                 var child = item.Widget;
                 var minSize = item.MinSize;
@@ -203,7 +203,7 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
         }
 
         var firstLine = true;
-        lines.ForEachUnsafe(line =>
+        lines.ForEach(line =>
         {
             var scalableItems = line.Items.Count;
             while (scalableItems > 0 && Math.Abs(innerSizeWidth - line.Width) > .001f)
@@ -215,7 +215,7 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
                 line.Width = line.GetTotalSpacing(spacing);
                 scalableItems = 0;
 
-                line.Items.ForEachUnsafe(item =>
+                line.Items.ForEach(item =>
                 {
                     if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
 
@@ -251,7 +251,7 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
     {
         if (disposing)
         {
-            lines.ForEachUnsafe(line => line.Items.Clear());
+            lines.ForEach(line => line.Items.Clear());
             lines.Clear();
         }
         base.Dispose(disposing);

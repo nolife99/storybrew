@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Text;
-using BrewLib.Util;
 
 namespace BrewLib.Graphics.Shaders;
 
@@ -60,10 +59,8 @@ public class ShaderBuilder
         StringBuilder code = new();
         code.AppendLine(CultureInfo.InvariantCulture, $"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
-        List<string> requiredExtensions = [];
-        foreach (var extensionName in VertexShader.RequiredExtensions) requiredExtensions.Add(extensionName);
-        foreach (var extensionName in FragmentShader.RequiredExtensions) requiredExtensions.Add(extensionName);
-        requiredExtensions.ForEachUnsafe(extensionName => code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable"));
+        var extensions = FragmentShader.RequiredExtensions.Union(VertexShader.RequiredExtensions);
+        foreach (var extensionName in extensions) code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable");
 
         code.AppendLine("#ifdef GL_ES");
         code.AppendLine("    precision mediump float;");

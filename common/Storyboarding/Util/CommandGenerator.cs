@@ -4,8 +4,6 @@ using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using BrewLib.Util;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
@@ -63,15 +61,14 @@ public class CommandGenerator
     ///<summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
     {
-        var span = CollectionsMarshal.AsSpan(states);
-        if (span.IsEmpty || span[^1].Time <= state.Time)
+        if (states.Count == 0 || states[^1].Time <= state.Time)
         {
             states.Add(state);
             return;
         }
 
-        var i = span.BinarySearch(state, new State());
-        if (i >= 0) while (i < span.Length - 1 && span[i + 1].Time <= state.Time) ++i;
+        var i = states.BinarySearch(state, new State());
+        if (i >= 0) while (i < states.Count - 1 && states[i + 1].Time <= state.Time) ++i;
         else i = ~i;
 
         states.Insert(i, state);
@@ -93,7 +90,7 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        states.ForEachUnsafe(state =>
+        states.ForEach(state =>
         {
             var time = state.Time + timeOffset;
             var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
@@ -220,23 +217,23 @@ public class CommandGenerator
         states.Clear();
         states.Capacity = 0;
 
-        positions.Clear(true);
-        scales.Clear(true);
-        rotations.Clear(true);
-        colors.Clear(true);
-        fades.Clear(true);
-        finalPositions.Clear(true);
-        finalScales.Clear(true);
-        finalRotations.Clear(true);
-        finalColors.Clear(true);
-        finalfades.Clear(true);
-        flipH.Clear(true);
-        flipV.Clear(true);
-        additive.Clear(true);
+        positions.Clear();
+        scales.Clear();
+        rotations.Clear();
+        colors.Clear();
+        fades.Clear();
+        finalPositions.Clear();
+        finalScales.Clear();
+        finalRotations.Clear();
+        finalColors.Clear();
+        finalfades.Clear();
+        flipH.Clear();
+        flipV.Clear();
+        additive.Clear();
     }
 
     internal static SizeF BitmapDimensions(string path) 
-        => StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).PhysicalDimension;
+        => StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts is null).PhysicalDimension;
 }
 
 ///<summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>

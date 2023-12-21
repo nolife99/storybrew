@@ -371,10 +371,10 @@ public sealed class WidgetManager : InputHandler, IDisposable
         widgetEvent.Listener = target;
         if (notify(target, widgetEvent)) return widgetEvent;
 
-        if (!ancestors.IsEmpty) for (var i = 0; i < ancestors.Length; ++i)
+        foreach (var ancestor in ancestors)
         {
-            widgetEvent.Listener = ancestors[i];
-            if (notify(ancestors[i], widgetEvent)) return widgetEvent;
+            widgetEvent.Listener = ancestor;
+            if (notify(ancestor, widgetEvent)) return widgetEvent;
         }
 
         return widgetEvent;
@@ -383,8 +383,6 @@ public sealed class WidgetManager : InputHandler, IDisposable
     #endregion
 
     #region IDisposable Support
-
-    ~WidgetManager() => Dispose(false);
 
     bool disposed;
     public void Dispose()

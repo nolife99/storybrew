@@ -114,8 +114,6 @@ public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin ori
         internal double StartTime = startTime, EndTime = endTime;
     }
 
-    ~OsbSpritePool() => Dispose(false);
-
     bool disposed;
 
     ///<inheritdoc/>
@@ -130,7 +128,7 @@ public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin ori
         {
             if (attributes is not null && disposing)
             {
-                pooled.ForEachUnsafe(pooledSprite =>
+                pooled.ForEach(pooledSprite =>
                 {
                     var sprite = pooledSprite.Sprite;
                     attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
@@ -370,8 +368,6 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 
     static string getKey(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, double, double> action, int group)
         => $"{path}#{frameCount}#{frameDelay}#{(int)loopType}#{(int)origin}#{action?.Target}.{action?.Method.Name}#{group}";
-
-    ~OsbSpritePools() => Dispose(false);
 
     bool disposed;
 

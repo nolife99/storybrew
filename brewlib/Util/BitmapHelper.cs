@@ -374,20 +374,18 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         return array;
     }
 
-    ///<summary> Gets a span view of the entire bitmap. </summary>
+    ///<summary> Gets a span of the entire bitmap. </summary>
     ///<remarks> It is highly recommended to use this method in a loop instead of directly accessing the pixel data. </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<int> AsSpan() => MemoryMarshal.CreateSpan(ref *scan0, Count);
 
-    ///<summary> Gets a read-only span view of the entire bitmap. </summary>
+    ///<summary> Gets a read-only span of the entire bitmap. </summary>
     ///<remarks> It is highly recommended to use this method in a loop instead of directly accessing the pixel data. </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<int> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref *scan0, Count);
 
-    ~PinnedBitmap() => Dispose(false);
-
     ///<summary> Releases the underlying bitmap and frees the allocated memory. </summary>
-    ///<remarks> Disposing invalidates all data. Attempts to read/write after disposal can cause fatal errors. </remarks>
+    ///<remarks> Disposing invalidates all data and leaves values in an unusable state. </remarks>
     public void Dispose()
     {
         Dispose(true);

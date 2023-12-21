@@ -30,11 +30,10 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
         if (texturePath is null || !sprite.IsActive(time)) return;
 
-        var commandCost = sprite.CommandCost;
         if (frameStats is not null)
         {
             ++frameStats.SpriteCount;
-            frameStats.CommandCount += commandCost;
+            frameStats.CommandCount += sprite.CommandCost;
             frameStats.IncompatibleCommands |= sprite.HasIncompatibleCommands;
             frameStats.OverlappedCommands |= sprite.HasOverlappedCommands;
         }
@@ -79,7 +78,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
             OrientedBoundingBox spriteBox = new(position, (Vector2)origin * scale, size.X, size.Y, rotation);
             if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
             {
-                frameStats.EffectiveCommandCount += commandCost;
+                frameStats.EffectiveCommandCount += sprite.CommandCost;
 
                 var aabb = spriteBox.GetAABB();
                 var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);

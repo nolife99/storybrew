@@ -166,7 +166,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
             document.DocumentElement.AppendChild(referencedAssembliesGroup);
 
-            referencedAssemblies.ForEachUnsafe(path =>
+            referencedAssemblies.ForEach(path =>
             {
                 if (!Project.DefaultAssemblies.Contains(path))
                 {
@@ -192,8 +192,6 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
     }
 
-    ~ScriptManager() => Dispose(false);
-
     bool disposed;
     public void Dispose()
     {
@@ -210,8 +208,6 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             if (disposing)
             {
                 scriptContainers.Dispose();
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-                GC.WaitForPendingFinalizers();
 
                 scheduler = null;
                 disposed = true;

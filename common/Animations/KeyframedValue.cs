@@ -113,8 +113,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         else if (index == count) return span[count - 1].Value;
         else
         {
-            var from = span[index - 1];
-            var to = span[index];
+            ref var from = ref span[index - 1];
+            ref var to = ref span[index];
             if (from.Time == to.Time) return to.Value;
 
             var progress = to.Ease((time - from.Time) / (to.Time - from.Time));
@@ -203,7 +203,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             stepStart = null;
             hasPair = true;
         }
-        if (!hasPair && span.Length > 0)
+        if (!hasPair && span.Length != 0)
         {
             var first = editKeyframe(span[0], edit).WithTime(startTime);
             if (!first.Value.Equals(defaultValue))
@@ -302,12 +302,12 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
 
         for (int i = 0, count = span.Length; i < count; i++)
         {
-            var startKeyframe = span[i];
+            ref var startKeyframe = ref span[i];
             simplifiedKeyframes.Add(startKeyframe);
 
             for (var j = i + 1; j < count; j++)
             {
-                var endKeyframe = span[j];
+                ref var endKeyframe = ref span[j];
                 if (!startKeyframe.Value.Equals(endKeyframe.Value))
                 {
                     if (i < j - 1) simplifiedKeyframes.Add(span[j - 1]);
@@ -319,8 +319,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             }
         }
 
-        Clear(true);
-        if (simplifiedKeyframes.Capacity > simplifiedKeyframes.Count) simplifiedKeyframes.Capacity = simplifiedKeyframes.Count;
+        Clear();
         keyframes = simplifiedKeyframes;
     }
 
@@ -351,13 +350,13 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         iSpan.Sort();
         for (var i = 0; i < iSpan.Length; ++i) simplifiedKeyframes.Add(span[iSpan[i]]);
 
-        Clear(true);
+        Clear();
         keyframes = simplifiedKeyframes;
     }
     static void getSimplifiedKeyframeIndexes(ref List<int> keep, Span<Keyframe<TValue>> span, int first, int last, double epsilonSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
     {
-        var start = span[first];
-        var end = span[last];
+        ref var start = ref span[first];
+        ref var end = ref span[last];
 
         var maxDistSq = 0f;
         var indexFar = 0;

@@ -497,7 +497,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
             warningsLabel.Text = buildWarningMessage();
             warningsLabel.Displayed = warningsLabel.Text.Length > 0;
-            warningsLabel.Pack(width: 600);
+            warningsLabel.Pack(600);
             warningsLabel.Pack();
         }
 
@@ -513,25 +513,25 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
-        if (activeSprites > 0 && activeSprites < 1500 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites");
-        else if (activeSprites >= 1500) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {activeSprites:n0} Sprites");
+        if (activeSprites > 0 && activeSprites < 1500 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{activeSprites:n0} Sprites");
+        else if (activeSprites >= 1500) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {activeSprites:n0} Sprites");
 
         var commands = stats.CommandCount;
-        if (commands > 0 && commands < 15000 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.InvariantCulture, $"{commands:n0} Commands");
-        else if (commands >= 15000) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {commands:n0} Commands");
+        if (commands > 0 && commands < 15000 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{commands:n0} Commands");
+        else if (commands >= 15000) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {commands:n0} Commands");
 
         float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands, unusedRatio = unusedCommands / commands;
         if ((unusedCommands >= 5000 && unusedRatio > .5f) || (unusedCommands >= 10000 && unusedRatio > .2f) || unusedCommands >= 15000)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
+            warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
         else if (proj.DisplayDebugWarning && unusedCommands > 0)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
+            warnings.AppendLine(CultureInfo.CurrentCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
 
         var sbLoad = (float)stats.ScreenFill;
-        if (sbLoad > 0 && sbLoad < 5 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.InvariantCulture, $"{sbLoad:f0}x Screen Fill");
-        else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f0}x Screen Fill");
+        if (sbLoad > 0 && sbLoad < 5 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{sbLoad:f0}x Screen Fill");
+        else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {sbLoad:f0}x Screen Fill");
 
-        if (stats.OverlappedCommands) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ Overlapped Commands");
-        if (stats.IncompatibleCommands) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ Incompatible Commands");
+        if (stats.OverlappedCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Overlapped Commands");
+        if (stats.IncompatibleCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Incompatible Commands");
 
         return warnings.ToString().TrimEnd();
     }

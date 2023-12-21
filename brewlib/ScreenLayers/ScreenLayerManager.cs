@@ -73,7 +73,7 @@ public sealed class ScreenLayerManager : IDisposable
         }
         return false;
     }
-    public void Exit() => layers.ToArray().ForEachUnsafe(layer =>
+    public void Exit() => Array.ForEach(layers.ToArray(), layer =>
     {
         if (layer.IsExiting) return;
         layer.Exit();
@@ -84,7 +84,7 @@ public sealed class ScreenLayerManager : IDisposable
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
-        layers.ForEachUnsafe(updateQueue.Add);
+        layers.ForEach(updateQueue.Add);
 
         bool covered = false, top = true, hasFocus = active;
         while (updateQueue.Count > 0)
@@ -118,7 +118,7 @@ public sealed class ScreenLayerManager : IDisposable
 
         if (removedLayers.Count != 0)
         {
-            removedLayers.ForEachUnsafe(layer => layer.Dispose());
+            removedLayers.ForEach(layer => layer.Dispose());
             removedLayers.Clear();
         }
 
@@ -152,12 +152,10 @@ public sealed class ScreenLayerManager : IDisposable
         var height = window.Height;
 
         if (width == 0 || height == 0) return;
-        layers.ForEachUnsafe(layer => layer.Resize(width, height));
+        layers.ForEach(layer => layer.Resize(width, height));
     }
 
     #region IDisposable Support
-
-    ~ScreenLayerManager() => Dispose(false);
 
     bool disposed;
     public void Dispose()
@@ -172,8 +170,8 @@ public sealed class ScreenLayerManager : IDisposable
             changeFocus(null);
             if (disposing)
             {
-                layers.ForEachUnsafe(layer => layer.Dispose());
-                removedLayers.ForEachUnsafe(layer => layer.Dispose());
+                layers.ForEach(layer => layer.Dispose());
+                removedLayers.ForEach(layer => layer.Dispose());
 
                 layers.Clear();
                 removedLayers.Clear();

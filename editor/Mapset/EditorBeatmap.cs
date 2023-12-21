@@ -5,8 +5,6 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using BrewLib.Util;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
@@ -91,7 +89,7 @@ public class EditorBeatmap(string path) : Beatmap
         if (controlPoints is null) return null;
 
         ControlPoint closestTimingPoint = null;
-        foreach (var controlPoint in CollectionsMarshal.AsSpan(controlPoints))
+        foreach (var controlPoint in controlPoints)
         {
             if (predicate is not null && !predicate(controlPoint)) continue;
             if (closestTimingPoint is null || controlPoint.Offset - time <= ControlPointLeniency) closestTimingPoint = controlPoint;
@@ -294,7 +292,7 @@ public class EditorBeatmap(string path) : Beatmap
         var hitObjectRadius = 64 * hitobjectScale;
         var stackOffset = hitObjectRadius / 10;
 
-        hitObjects.ForEachUnsafe(h => h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex);
+        hitObjects.ForEach(h => h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex);
     }
 
     static string removePathQuotes(string path) => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1] : path;

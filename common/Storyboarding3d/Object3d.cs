@@ -69,7 +69,7 @@ public class Object3d
             Opacity.ValueAt(time) * (InheritsOpacity ? parent3dState.Opacity : 1));
 
         GenerateStates(time, cameraState, object3dState);
-        children.ForEachUnsafe(child => child.GenerateTreeStates(time, cameraState, object3dState));
+        children.ForEach(child => child.GenerateTreeStates(time, cameraState, object3dState));
     }
 
     ///<summary> Generates commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
@@ -81,7 +81,7 @@ public class Object3d
     public void GenerateTreeCommands(Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
     {
         GenerateCommands(action, startTime, endTime, timeOffset, loopable);
-        children.ForEachUnsafe(child => child.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable));
+        children.ForEach(child => child.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable));
     }
 
     ///<summary> Generates loop commands on this instance's base sprites based on its <see cref="State"/>s. </summary>

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using BrewLib.Util;
 using StorybrewCommon.Scripting;
 using StorybrewEditor.Scripting;
 using StorybrewEditor.Util;
@@ -77,7 +76,7 @@ public class ScriptedEffect : Effect
             changeStatus(EffectStatus.Updating);
 
             script.Generate(context);
-            context.EditorLayers.ForEachUnsafe(layer => layer.PostProcess());
+            context.EditorLayers.ForEach(layer => layer.PostProcess());
 
             success = true;
         }

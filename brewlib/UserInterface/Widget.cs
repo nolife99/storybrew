@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
@@ -236,11 +235,11 @@ public class Widget(WidgetManager manager) : IDisposable
     }
     public bool HasDescendant(Widget widget) => children.Find(c => c == widget || c.HasDescendant(widget)) is not null;
 
-    public Span<Widget> GetAncestors()
+    public IEnumerable<Widget> GetAncestors()
     {
         List<Widget> ancestors = [];
         for (var ancestor = parent; ancestor is not null; ancestor = ancestor.Parent) ancestors.Add(ancestor);
-        return CollectionsMarshal.AsSpan(ancestors);
+        return ancestors;
     }
 
     #endregion
@@ -359,7 +358,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
             absolutePosition = manager.SnapToPixel(absolutePosition);
         }
-        if (includeChildren) children.ForEachUnsafe(child => child.UpdateAnchoring(iteration));
+        if (includeChildren) children.ForEach(child => child.UpdateAnchoring(iteration));
     }
 
     #endregion
@@ -419,7 +418,7 @@ public class Widget(WidgetManager manager) : IDisposable
         if (!needsLayout) return;
         Layout();
     }
-    public virtual void PreLayout() => children.ForEachUnsafe(child => child.PreLayout());
+    public virtual void PreLayout() => children.ForEach(child => child.PreLayout());
     protected virtual void Layout()
     {
         lastLayoutTime = manager.ScreenLayerManager.TimeSource.Current;
@@ -533,7 +532,6 @@ public class Widget(WidgetManager manager) : IDisposable
     public bool IsDisposed => disposed;
     bool disposed;
 
-    ~Widget() => Dispose(false);
     protected virtual void Dispose(bool disposing)
     {
         if (!disposed)

@@ -197,7 +197,6 @@ public sealed class TextDrawable : Drawable
         textLayout = new(text ?? "", font, alignment, MaxSize * scaling);
     }
 
-    ~TextDrawable() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);
