@@ -696,13 +696,13 @@ public class OsbSprite : StoryboardObject
         displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal }, new AnimatedValueBuilder<CommandParameter>(flipHTimeline)));
         displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, new AnimatedValueBuilder<CommandParameter>(flipVTimeline)));
     }
-    void addDisplayCommand(ICommand command) => displayValueBuilders.ForEachUnsafe(builders =>
+    void addDisplayCommand(ICommand command) => displayValueBuilders.ForEach(builders =>
     {
         if (builders.Key(command)) builders.Value.Add(command);
     });
-    void startDisplayLoop(LoopCommand loopCommand) => displayValueBuilders.ForEachUnsafe(builders => builders.Value.StartDisplayLoop(loopCommand));
-    void startDisplayTrigger(TriggerCommand triggerCommand) => displayValueBuilders.ForEachUnsafe(builders => builders.Value.StartDisplayTrigger(triggerCommand));
-    void endDisplayComposites() => displayValueBuilders.ForEachUnsafe(builders => builders.Value.EndDisplayComposite());
+    void startDisplayLoop(LoopCommand loopCommand) => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayLoop(loopCommand));
+    void startDisplayTrigger(TriggerCommand triggerCommand) => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayTrigger(triggerCommand));
+    void endDisplayComposites() => displayValueBuilders.ForEach(builders => builders.Value.EndDisplayComposite());
 
     #endregion
 

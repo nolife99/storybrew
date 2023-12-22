@@ -61,14 +61,15 @@ public class CommandGenerator
     ///<summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
     {
-        if (states.Count == 0 || states[^1].Time <= state.Time)
+        var count = states.Count;
+        if (count == 0 || states[count - 1].Time <= state.Time)
         {
             states.Add(state);
             return;
         }
 
-        var i = states.BinarySearch(state, new State());
-        if (i >= 0) while (i < states.Count - 1 && states[i + 1].Time <= state.Time) ++i;
+        var i = states.BinarySearch(state, state);
+        if (i >= 0) while (i < count - 1 && states[i + 1].Time <= state.Time) ++i;
         else i = ~i;
 
         states.Insert(i, state);
@@ -154,8 +155,8 @@ public class CommandGenerator
     }
     void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] float checkPos(float value) => MathF.Round(value, PositionDecimals);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
+        float checkPos(float value) => MathF.Round(value, PositionDecimals);
+        float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
 
         double? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
@@ -200,7 +201,6 @@ public class CommandGenerator
         additive.ForEachFlag(sprite.Additive);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     void addKeyframes(State state, double time)
     {
         positions.Add(time, state.Position);
@@ -215,8 +215,6 @@ public class CommandGenerator
     void clearKeyframes()
     {
         states.Clear();
-        states.Capacity = 0;
-
         positions.Clear();
         scales.Clear();
         rotations.Clear();
@@ -270,7 +268,6 @@ public class State : IComparer<State>
     /// Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and <see cref="OsbOrigin"/>. 
     /// </summary>
     /// <returns> <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>. </returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;

@@ -22,7 +22,7 @@ public class FftStream : IDisposable
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out frequency);
     }
 
-    public unsafe Span<float> GetFft(double time, bool splitChannels = false)
+    public float[] GetFft(double time, bool splitChannels = false)
     {
         Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 
@@ -35,8 +35,8 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        Span<float> data = GC.AllocateUninitializedArray<float>(size);
-        fixed (void* pinned = &data[0]) if (Bass.ChannelGetData(stream, (nint)pinned, unchecked((int)flags)) == -1) throw new BassException(Bass.LastError);
+        var data = GC.AllocateUninitializedArray<float>(size);
+        if (Bass.ChannelGetData(stream, data, unchecked((int)flags)) == -1) throw new BassException(Bass.LastError);
         return data;
     }
 

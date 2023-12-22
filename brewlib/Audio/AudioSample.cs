@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using BrewLib.Data;
@@ -25,16 +26,16 @@ public class AudioSample : IDisposable
         using (var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded)) if (stream is not null) unsafe
         {
             var len = (int)stream.Length;
-            var bytes = NativeMemory.Alloc((nuint)len);
+            var bytes = ArrayPool<byte>.Shared.Rent(len);
 
             try
             {
-                stream.Read(new(bytes, len));
-                sample = Bass.SampleLoad((nint)bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
+                stream.Read(bytes, 0, len);
+                sample = Bass.SampleLoad(bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
             }
             finally
             {
-                NativeMemory.Free(bytes);
+                ArrayPool<byte>.Shared.Return(bytes);
             }
             if (sample != 0) return;
         }

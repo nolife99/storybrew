@@ -59,7 +59,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
     }
 
     PrimitiveStreamer<SpritePrimitive> primitiveStreamer;
-    SpritePrimitive* spriteArray;
+    SpritePrimitive* primitives;
 
     Camera camera;
     public Camera Camera
@@ -120,7 +120,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
-        spriteArray = (SpritePrimitive*)NativeMemory.Alloc((nuint)maxSpritesPerBatch, (nuint)Marshal.SizeOf<SpritePrimitive>());
+        primitives = (SpritePrimitive*)NativeMemory.Alloc((nuint)maxSpritesPerBatch, (nuint)Marshal.SizeOf<SpritePrimitive>());
     }
     public void BeginRendering()
     {
@@ -163,7 +163,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
             flushAction?.Invoke();
         }
 
-        primitiveStreamer.Render(PrimitiveType.Quads, spriteArray, spritesInBatch, spritesInBatch * VertexPerSprite, canBuffer);
+        primitiveStreamer.Render(PrimitiveType.Quads, primitives, spritesInBatch, spritesInBatch * VertexPerSprite, canBuffer);
 
         currentLargestBatch += spritesInBatch;
         if (!canBuffer)
@@ -189,10 +189,10 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        NativeMemory.Free(spriteArray);
+        NativeMemory.Free(primitives);
         if (disposing)
         {
-            spriteArray = null;
+            primitives = null;
 
             primitiveStreamer.Dispose();
             primitiveStreamer = null;
@@ -217,42 +217,22 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         }
         else if (spritesInBatch == maxSpritesPerBatch) DrawState.FlushRenderer(true);
 
-        var width = textureX1 - textureX0;
-        var height = textureY1 - textureY0;
-
-        var fx = -originX;
-        var fy = -originY;
-        var fx2 = width - originX;
-        var fy2 = height - originY;
-
-        var flipX = false;
-        var flipY = false;
+        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY, fx2 = width - originX, fy2 = height - originY;
+        bool flipX = false, flipY = false;
 
         if (scaleX != 1 || scaleY != 1)
         {
             flipX = scaleX < 0;
             flipY = scaleY < 0;
 
-            var absScaleX = flipX ? -scaleX : scaleX;
-            var absScaleY = flipY ? -scaleY : scaleY;
-
+            float absScaleX = flipX ? -scaleX : scaleX, absScaleY = flipY ? -scaleY : scaleY;
             fx *= absScaleX;
             fy *= absScaleY;
             fx2 *= absScaleX;
             fy2 *= absScaleY;
         }
 
-        var p1x = fx;
-        var p1y = fy;
-        var p2x = fx;
-        var p2y = fy2;
-        var p3x = fx2;
-        var p3y = fy2;
-        var p4x = fx2;
-        var p4y = fy;
-
-        float x1, y1, x2, y2, x3, y3, x4, y4;
-
+        float p1x = fx, p1y = fy, p2x = fx, p2y = fy2, p3x = fx2, p3y = fy2, p4x = fx2, p4y = fy, x1, y1, x2, y2, x3, y3, x4, y4;
         if (rotation != 0)
         {
             var (sin, cos) = MathF.SinCos(rotation);
@@ -293,12 +273,10 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         var textureUvBounds = texture.UvBounds;
         var textureUvRatio = texture.UvRatio;
 
-        var textureU0 = textureUvBounds.Left + textureX0 * textureUvRatio.X;
-        var textureV0 = textureUvBounds.Top + textureY0 * textureUvRatio.Y;
-        var textureU1 = textureUvBounds.Left + textureX1 * textureUvRatio.X;
-        var textureV1 = textureUvBounds.Top + textureY1 * textureUvRatio.Y;
+        float textureU0 = textureUvBounds.X + textureX0 * textureUvRatio.X, textureV0 = textureUvBounds.Y + textureY0 * textureUvRatio.Y,
+            textureU1 = textureUvBounds.X + textureX1 * textureUvRatio.X, textureV1 = textureUvBounds.Y + textureY1 * textureUvRatio.Y,
+            u0, v0, u1, v1;
 
-        float u0, v0, u1, v1;
         if (flipX)
         {
             u0 = textureU1;
@@ -330,7 +308,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         spritePrimitive.v4 = v0;
         spritePrimitive.color1 = spritePrimitive.color2 = spritePrimitive.color3 = spritePrimitive.color4 = color.ToRgba();
 
-        spriteArray[spritesInBatch] = spritePrimitive;
+        primitives[spritesInBatch] = spritePrimitive;
 
         ++RenderedSpriteCount;
         ++spritesInBatch;

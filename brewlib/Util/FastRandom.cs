@@ -84,8 +84,7 @@ public class FastRandom
         uint x = this.x, y = this.y, z = this.z, w = this.w, t;
         var i = 0;
 
-        Span<byte> span = new(buffer);
-        for (var bound = span.Length - 3; i < bound;)
+        for (var bound = buffer.Length - 3; i < bound;)
         {
             t = x ^ (x << 11);
             x = y;
@@ -93,13 +92,13 @@ public class FastRandom
             z = w;
             w = w ^ (w >> 19) ^ t ^ (t >> 8);
 
-            span[i++] = (byte)w;
-            span[i++] = (byte)(w >> 8);
-            span[i++] = (byte)(w >> 16);
-            span[i++] = (byte)(w >> 24);
+            buffer[i++] = (byte)w;
+            buffer[i++] = (byte)(w >> 8);
+            buffer[i++] = (byte)(w >> 16);
+            buffer[i++] = (byte)(w >> 24);
         }
 
-        while (i < span.Length)
+        while (i < buffer.Length)
         {
             t = x ^ (x << 11);
             x = y;
@@ -107,16 +106,16 @@ public class FastRandom
             z = w;
             w = w ^ (w >> 19) ^ t ^ (t >> 8);
 
-            span[i++] = (byte)w;
-            if (i >= span.Length) break;
+            buffer[i++] = (byte)w;
+            if (i >= buffer.Length) break;
 
-            span[i++] = (byte)(w >> 8);
-            if (i >= span.Length) break;
+            buffer[i++] = (byte)(w >> 8);
+            if (i >= buffer.Length) break;
 
-            span[i++] = (byte)(w >> 16);
-            if (i >= span.Length) break;
+            buffer[i++] = (byte)(w >> 16);
+            if (i >= buffer.Length) break;
 
-            span[i++] = (byte)(w >> 24);
+            buffer[i++] = (byte)(w >> 24);
         }
 
         this.x = x;

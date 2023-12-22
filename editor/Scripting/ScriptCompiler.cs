@@ -73,12 +73,11 @@ public class ScriptCompiler
             {
                 StringBuilder message = new("Compilation error\n\n");
                 message.AppendLine(e.ToString());
-                throw new ScriptCompilationException(message.ToString());
             }
         }
 
         using MemoryStream assemblyStream = new();
-        var result = CSharpCompilation.Create(asmName, trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
+        var result = CSharpCompilation.Create(asmName, trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Debug))
             .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
         if (result.Success)

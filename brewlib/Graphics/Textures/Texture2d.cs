@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -89,13 +90,20 @@ public class Texture2d(int textureId, int width, int height, string description)
             DrawState.BindTexture(textureId);
 
             var area = width * height;
-            var arr = stackalloc int[area];
+            var arr = ArrayPool<int>.Shared.Rent(area);
 
-            new Span<int>(arr, area).Fill(color.ToArgb());
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, (nint)arr);
+            try
+            {
+                Array.Fill(arr, color.ToArgb());
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
 
-            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-            GL.Finish();
+                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                GL.Finish();
+            }
+            finally
+            {
+                ArrayPool<int>.Shared.Return(arr);
+            }
 
             DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);

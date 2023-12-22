@@ -8,7 +8,7 @@ namespace StorybrewCommon.Util;
 #pragma warning disable CS1591
 public class OrientedBoundingBox
 {
-    readonly CommandPosition[] corners = new CommandPosition[4], axis = new CommandPosition[2];
+    readonly Vector2[] corners = new Vector2[4], axis = new Vector2[2];
     readonly double[] origins = new double[2];
 
     public OrientedBoundingBox(CommandPosition position, CommandPosition origin, double width, double height, double angle)
@@ -28,20 +28,20 @@ public class OrientedBoundingBox
         axis[1] = corners[3] - corners[0];
         for (var a = 0; a < 2; ++a)
         {
-            axis[a] /= axis[a].LengthSquared;
+            axis[a] /= axis[a].LengthSquared();
             origins[a] = Vector2.Dot(corners[0], axis[a]);
         }
     }
     public RectangleF GetAABB()
     {
         float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
-        foreach (var corner in corners)
+        Array.ForEach(corners, corner =>
         {
             minX = Math.Min(minX, corner.X);
             maxX = Math.Max(maxX, corner.X);
             minY = Math.Min(minY, corner.Y);
             maxY = Math.Max(maxY, corner.Y);
-        }
+        });
         return RectangleF.FromLTRB(minX, minY, maxX, maxY);
     }
 

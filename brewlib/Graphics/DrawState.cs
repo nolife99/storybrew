@@ -201,9 +201,9 @@ public static class DrawState
         }
     }
 
-    public static Span<int> BindTextures(params BindableTexture[] textures)
+    public static int[] BindTextures(params BindableTexture[] textures)
     {
-        Span<int> samplerIndexes = GC.AllocateUninitializedArray<int>(textures.Length);
+        var samplerIndexes = GC.AllocateUninitializedArray<int>(textures.Length);
         var samplerCount = samplerTextureIds.Length;
 
         for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)

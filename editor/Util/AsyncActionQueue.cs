@@ -50,7 +50,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        Parallel.ForEach(actionRunners, runner => runner?.EnsureThreadAlive());
+        actionRunners.ForEach(runner => runner.EnsureThreadAlive());
         lock (context.Queue)
         {
             if (!allowDuplicates && context.Queue.Exists(q => q.Target.Equals(target))) return;
@@ -66,7 +66,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (stopThreads)
         {
             var sw = Stopwatch.StartNew();
-            Parallel.ForEach(actionRunners, runner => runner.JoinOrAbort(Math.Max(1000, 5000 - sw.Elapsed.Milliseconds)));
+            actionRunners.ForEach(runner => runner.JoinOrAbort(Math.Max(1000, 5000 - sw.Elapsed.Milliseconds)));
             sw.Stop();
         }
     }
@@ -138,7 +138,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     class ActionRunner(ActionQueueContext context, string threadName)
     {
         CancellationTokenSource tokenSrc;
-        Task thread;
+        Thread thread;
 
         internal void EnsureThreadAlive()
         {
@@ -213,14 +213,18 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             if (task.MustRunAlone) context.RunningLoneTask = false;
                         }
                     }
-                }, tokenSrc.Token), tokenSrc.Token);
+                }, tokenSrc.Token))
+                {
+                    Name = threadName,
+                    IsBackground = true
+                };
 #pragma warning restore SYSLIB0046
 
                 Trace.WriteLine($"Starting thread {threadName}");
                 thread.Start();
             }
         }
-        internal async void JoinOrAbort(int millisecondsTimeout)
+        internal void JoinOrAbort(int millisecondsTimeout)
         {
             if (thread is null) return;
 
@@ -229,14 +233,14 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-            if (!localThread.Wait(millisecondsTimeout))
+            if (!localThread.Join(millisecondsTimeout))
             {
                 tokenSrc.Cancel();
-                if (!localThread.IsCompleted) try
+                if (localThread.IsAlive) try
                 {
-                    await localThread.ConfigureAwait(false);
+                    localThread.Interrupt();
                 }
-                catch (OperationCanceledException) { }
+                catch (ThreadInterruptedException) { }
             }
             tokenSrc.Dispose();
         }

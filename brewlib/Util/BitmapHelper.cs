@@ -160,16 +160,15 @@ public static class BitmapHelper
     
     public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
-        var srcSize = src.Size;
-        if (sect.Left < 0 || sect.Top < 0 || sect.Right > srcSize.Width || sect.Bottom > srcSize.Height || sect.Width <= 0 || sect.Height <= 0)
+        if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
             throw new ArgumentOutOfRangeException(nameof(sect), "Invalid dimensions");
 
-        var pixBit = Image.GetPixelFormatSize(src.PixelFormat) >> 3;
-        var len = (int)(sect.Width * pixBit);
-
-        var srcDat = src.LockBits(new(default, srcSize), ImageLockMode.ReadOnly, src.PixelFormat);
+        var srcDat = src.LockBits(new(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
         Bitmap dest = new((int)sect.Width, (int)sect.Height, src.PixelFormat);
         var destDat = dest.LockBits(new(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
+
+        var pixBit = Image.GetPixelFormatSize(src.PixelFormat) * .125f;
+        var len = (int)(destDat.Width * pixBit);
 
         try
         {
@@ -189,36 +188,11 @@ public static class BitmapHelper
     {
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
 
-        if (source.PixelFormat is PixelFormat.Format32bppArgb && source is Bitmap bitmap) unsafe
-        {
-            var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            try
-            {
-                var buf = (byte*)data.Scan0;
-                for (var y = 0; y < data.Height; ++y)
-                {
-                    for (var x = 0; x < data.Width; ++x)
-                    {
-                        if (*buf != 0) return false;
-                        buf += 4;
-                    }
-                    buf += data.Stride - data.Width * 4;
-                }
-            }
-            finally
-            {
-                bitmap.UnlockBits(data);
-            }
-            return true;
-        }
-        else
-        {
-            using PinnedBitmap src = new(source);
-            var srcSpan = src.AsReadOnlySpan();
+        using PinnedBitmap src = new(source);
+        var srcSpan = src.AsReadOnlySpan();
 
-            for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((srcSpan[y * src.Width + x] >> 24) & 0xFF) != 0) return false;
-            return true;
-        }
+        for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((srcSpan[y * src.Width + x] >> 24) & 0xFF) != 0) return false;
+        return true;
     }
     public static Rectangle FindTransparencyBounds(Image source)
     {
@@ -226,30 +200,7 @@ public static class BitmapHelper
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return new(default, size);
 
         int xMin = size.Width, yMin = size.Height, xMax = -1, yMax = -1;
-        if (source.PixelFormat is PixelFormat.Format32bppArgb && source is Bitmap bitmap) unsafe
-        {
-            var data = bitmap.LockBits(new(default, size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            try
-            {
-                var buf = (byte*)data.Scan0;
-                for (var y = 0; y < data.Height; ++y)
-                {
-                    var row = buf + (y * data.Stride);
-                    for (var x = 0; x < data.Width; ++x) if (row[x * 4 + 3] > 0)
-                    {
-                        if (x < xMin) xMin = x;
-                        if (x > xMax) xMax = x;
-                        if (y < yMin) yMin = y;
-                        if (y > yMax) yMax = y;
-                    }
-                }
-            }
-            finally
-            {
-                bitmap.UnlockBits(data);
-            }
-        }
-        else using (PinnedBitmap src = new(source))
+        using (PinnedBitmap src = new(source))
         {
             var srcSpan = src.AsReadOnlySpan();
             for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((srcSpan[y * src.Width + x] >> 24) & 0xFF) != 0)
@@ -302,26 +253,10 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     ///<summary> Creates a new pinned bitmap from a copy of the given image. </summary>
     public PinnedBitmap(Image image) : this(image.Width, image.Height)
     {
-        var imageSize = image.Size;
-        if (image.PixelFormat is PixelFormat.Format32bppArgb && image is Bitmap bitmap)
-        {
-            var data = bitmap.LockBits(new(default, imageSize), ImageLockMode.ReadOnly, bitmap.PixelFormat);
-            try
-            {
-                Native.CopyMemory(data.Scan0, scan0, Count << 2);
-                return;
-            }
-            finally
-            {
-                bitmap.UnlockBits(data);
-            }
-        }
-
         using var graphics = System.Drawing.Graphics.FromImage(Bitmap);
         graphics.CompositingMode = CompositingMode.SourceCopy;
-        graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
 
-        graphics.DrawImage(image, 0, 0, imageSize.Width, imageSize.Height);
+        graphics.DrawImage(image, 0, 0, Width, Height);
     }
 
     ///<summary> Creates a new pinned bitmap from a copy of the given 32-bit ARGB color data and dimensions. </summary>
@@ -392,7 +327,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-
     void Dispose(bool disposing)
     {
         if (!disposed)

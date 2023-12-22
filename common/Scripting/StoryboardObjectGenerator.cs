@@ -179,20 +179,20 @@ public abstract class StoryboardObjectGenerator : Script
     public double AudioDuration => context.AudioDuration;
 
     ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with default magnitudes. </summary>
-    public Span<float> GetFft(double time, string path = null, bool splitChannels = false)
+    public float[] GetFft(double time, string path = null, bool splitChannels = false)
     {
         if (path is not null) AddDependency(path);
         return context.GetFft(time, path, splitChannels);
     }
 
     ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
-    public Span<float> GetFft(double time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
+    public float[] GetFft(double time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
     {
         var fft = GetFft(time, path);
         if (magnitudes == fft.Length && easing is OsbEasing.None) return fft;
 
         var usedFftLength = frequencyCutOff > 0 ? (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) : fft.Length;
-        Span<float> resultFft = GC.AllocateUninitializedArray<float>(magnitudes);
+        var resultFft = GC.AllocateUninitializedArray<float>(magnitudes);
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)
@@ -268,7 +268,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (context is not null) throw new InvalidOperationException();
 
         var remainingFieldNames = config.FieldNames.ToList();
-        configurableFields.ForEachUnsafe(configurableField =>
+        configurableFields.ForEach(configurableField =>
         {
             var field = configurableField.Field;
             NamedValue[] allowedValues = null;

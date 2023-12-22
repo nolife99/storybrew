@@ -119,7 +119,7 @@ public sealed class FontGenerator : IDisposable
 
         var ptSize = 96 / metrics.DpiY * description.FontSize;
         font = family is null ? new(fontPath, ptSize, description.FontStyle) : new(family[0], ptSize, description.FontStyle);
-        if (family is not null) for (var i = 0; i < family.Length; ++i) family[i].Dispose();
+        if (family is not null && family.Length > 1) for (var i = 1; i < family.Length; ++i) family[i].Dispose();
 
         emSize = font.GetHeight(metrics) * font.FontFamily.GetEmHeight(description.FontStyle) / font.FontFamily.GetLineSpacing(description.FontStyle);
     }

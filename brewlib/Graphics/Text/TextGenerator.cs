@@ -123,10 +123,10 @@ public sealed class TextGenerator : IDisposable
 
                     try
                     {
-                        stream.Read(MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(arr), len));
+                        stream.Read(arr, 0, len);
                         unsafe
                         {
-                            fixed (void* pinned = &MemoryMarshal.GetArrayDataReference(arr)) fontCollection.AddMemoryFont((nint)pinned, len);
+                            fixed (void* pinned = &arr[0]) fontCollection.AddMemoryFont((nint)pinned, len);
                         }
                     }
                     finally
@@ -139,7 +139,7 @@ public sealed class TextGenerator : IDisposable
                     else
                     {
                         Trace.TraceError($"Failed to load font {name}: Expected one family, got {families?.Length}");
-                        families?.ForEachUnsafe(family => family.Dispose());
+                        if (families is not null) foreach (var family in families) family.Dispose();
                     }
                 }
                 catch (Exception e)
