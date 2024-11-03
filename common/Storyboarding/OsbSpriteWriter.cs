@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using StorybrewCommon.Storyboarding.Commands;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Storyboarding.Display;
@@ -22,7 +23,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
     protected readonly ExportSettings ExportSettings = exportSettings;
     protected readonly OsbLayer Layer = layer;
 
-    public void WriteOsb()
+    public void WriteOsb(StoryboardTransform transform)
     {
         if (ExportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 && sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
         {
@@ -34,10 +35,10 @@ public class OsbSpriteWriter(OsbSprite sprite,
             {
                 var segment = getNextSegment(fragmentationTimes, commands);
                 var sprite = CreateSprite(segment);
-                writeOsbSprite(sprite);
+                writeOsbSprite(sprite, transform);
             }
         }
-        else writeOsbSprite(sprite);
+        else writeOsbSprite(sprite, transform);
     }
     protected virtual OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
     {
@@ -50,19 +51,28 @@ public class OsbSpriteWriter(OsbSprite sprite,
         foreach (var command in segment) spr.AddCommand(command);
         return spr;
     }
-    void writeOsbSprite(OsbSprite sprite)
+    void writeOsbSprite(OsbSprite sprite, StoryboardTransform transform)
     {
-        WriteHeader(sprite);
-        foreach (var command in sprite.Commands) command.WriteOsb(TextWriter, ExportSettings, 1);
+        WriteHeader(sprite, transform);
+        foreach (var command in sprite.Commands) command.WriteOsb(TextWriter, ExportSettings, transform, 1);
     }
-    protected virtual void WriteHeader(OsbSprite sprite)
+    protected virtual void WriteHeader(OsbSprite sprite, StoryboardTransform transform)
     {
-        TextWriter.Write($"Sprite,{Layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
-        if (!move.HasCommands && !moveX.HasCommands) TextWriter.Write($",{sprite.InitialPosition.X}");
-        else TextWriter.Write($",0");
+        TextWriter.Write($"Sprite");
+        WriteHeaderCommon(sprite, transform);
+        TextWriter.WriteLine();
+    }
+    protected virtual void WriteHeaderCommon(OsbSprite sprite, StoryboardTransform transform)
+    {
+        TextWriter.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
 
-        if (!move.HasCommands && !moveY.HasCommands) TextWriter.WriteLine($",{sprite.InitialPosition.Y}");
-        else TextWriter.WriteLine($",0");
+        var transformedInitialPosition = transform is null ?
+            (Vector2)sprite.InitialPosition : sprite.HasMoveXYCommands ? transform.ApplyToPositionXY(sprite.InitialPosition) : transform.ApplyToPosition(sprite.InitialPosition);
+
+        if (!move.HasCommands && !moveX.HasCommands) TextWriter.Write($",{transformedInitialPosition.X.ToString(ExportSettings.NumberFormat)}");
+        else TextWriter.Write($",0");
+        if (!move.HasCommands && !moveY.HasCommands) TextWriter.Write($",{transformedInitialPosition.Y.ToString(ExportSettings.NumberFormat)}");
+        else TextWriter.Write($",0");
     }
     protected virtual bool IsFragmentable()
     {
@@ -89,12 +99,12 @@ public class OsbSpriteWriter(OsbSprite sprite,
         var endTime = getSegmentEndTime(fragmentationTimes, commands);
 
         foreach (var cmd in commands) if (cmd.StartTime < endTime)
-        {
-            var sTime = Math.Max(startTime, (int)Math.Round(cmd.StartTime));
-            var eTime = Math.Min(endTime, (int)Math.Round(cmd.EndTime));
+            {
+                var sTime = Math.Max(startTime, (int)Math.Round(cmd.StartTime));
+                var eTime = Math.Min(endTime, (int)Math.Round(cmd.EndTime));
 
-            segment.Add(sTime != (int)Math.Round(cmd.StartTime) || eTime != (int)Math.Round(cmd.EndTime) ? cmd.GetFragment(sTime, eTime) : cmd);
-        }
+                segment.Add(sTime != (int)Math.Round(cmd.StartTime) || eTime != (int)Math.Round(cmd.EndTime) ? cmd.GetFragment(sTime, eTime) : cmd);
+            }
         addStaticCommands(segment, startTime);
 
         fragmentationTimes.RemoveWhere(t => t < endTime);

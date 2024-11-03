@@ -18,7 +18,7 @@ public sealed class AudioManager : IDisposable
             if (volume == value) return;
 
             volume = value;
-            audioChannels.ForEach(audio => audio.UpdateVolume());
+            foreach (var channel in audioChannels) channel.UpdateVolume();
         }
     }
     public AudioManager(nint handle)
@@ -66,11 +66,7 @@ public sealed class AudioManager : IDisposable
     }
 
     ~AudioManager() => dispose();
-    public void Dispose()
-    {
-        dispose();
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => dispose();
 
     #endregion
 }

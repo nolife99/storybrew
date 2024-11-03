@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using BrewLib.Graphics.Textures;
@@ -7,7 +6,7 @@ using BrewLib.Util;
 
 namespace BrewLib.Graphics.Text;
 
-public sealed class TextFontAtlased(string name, float size) : TextFont
+public class TextFontAtlased(string name, float size) : TextFont
 {
     Dictionary<char, FontGlyph> glyphs = [];
     TextureMultiAtlas2d atlas;
@@ -26,42 +25,35 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
         Vector2 measuredSize;
         if (char.IsWhiteSpace(c))
         {
-            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, Vector2.Zero, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, true);
+            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, SizeF.Empty, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, true);
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }
         else
         {
-            atlas ??= new(512, 512, $"Font atlas {name} {size}x");
-            using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, Vector2.Zero, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
-            return new(atlas.AddRegion(bitmap, $"glyph:{c}@{Name}:{Size}"), (int)measuredSize.X, (int)measuredSize.Y);
+            atlas ??= new(512, 512, $"FontAtlas {name} {size}x");
+            using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, SizeF.Empty, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
+            return new(atlas.AddRegion(bitmap, $"{c}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
         }
     }
 
     #region IDisposable Support
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    void Dispose(bool disposing)
+    protected virtual void Dispose(bool disposing)
     {
         if (!disposed)
         {
-            foreach (var glyph in glyphs) glyph.Value.Texture?.Dispose();
-            glyphs.Clear();
-            atlas?.Dispose();
-
             if (disposing)
             {
-                glyphs = null;
-                atlas = null;
-                disposed = true;
+                foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
+                atlas?.Dispose();
             }
+            glyphs = null;
+            atlas = null;
+            disposed = true;
         }
     }
+    public void Dispose() => Dispose(true);
 
     #endregion
 }

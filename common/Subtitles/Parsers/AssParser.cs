@@ -14,7 +14,7 @@ public class AssParser : SubtitleParser
     ///<inheritdoc/>
     public SubtitleSet Parse(string path)
     {
-        using var stream = BrewLib.Util.Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)); 
+        using var stream = BrewLib.Util.Misc.WithRetries(() => File.OpenRead(path));
         return Parse(stream);
     }
 
@@ -26,7 +26,8 @@ public class AssParser : SubtitleParser
         {
             switch (sectionName)
             {
-                case "Events": reader.ParseKeyValueSection((key, value) =>
+                case "Events":
+                    reader.ParseKeyValueSection((key, value) =>
                 {
                     switch (key)
                     {
@@ -38,7 +39,7 @@ public class AssParser : SubtitleParser
                             lines.Add(new(startTime, endTime, text)); break;
                     }
                 });
-                break;
+                    break;
             }
         });
         return new(lines);

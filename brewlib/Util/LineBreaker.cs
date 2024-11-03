@@ -9,7 +9,7 @@ public class LineBreaker
     public static List<string> Split(string text, float maxWidth, Func<char, int> measure)
     {
         List<string> lines = [];
-        
+
         int startIndex = 0, endIndex = 0, lineWidth = 0;
         void completeLine()
         {

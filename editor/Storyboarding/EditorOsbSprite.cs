@@ -17,14 +17,14 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 {
     public readonly static RenderStates AlphaBlendStates = new(), AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats) 
-        => Draw(drawContext, camera, bounds, opacity, project, frameStats, this);
+    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, StoryboardTransform transform, Project project, FrameStats frameStats)
+        => Draw(drawContext, camera, bounds, opacity, transform, project, frameStats, this);
 
     public void PostProcess()
     {
         if (InGroup) EndGroup();
     }
-    public static void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, Project project, FrameStats frameStats, OsbSprite sprite)
+    public static void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, StoryboardTransform transform, Project project, FrameStats frameStats, OsbSprite sprite)
     {
         var time = project.DisplayTime * 1000;
         var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
@@ -65,12 +65,19 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         }
         if (texture is null) return;
 
+        var additive = sprite.AdditiveAt(time);
         var position = sprite.PositionAt(time);
         var rotation = sprite.RotationAt(time);
         var finalColor = ((Color)sprite.ColorAt(time)).LerpColor(System.Drawing.Color.Black, project.DimFactor).WithOpacity(opacity * fade);
 
         var origin = GetOriginVector(sprite.Origin, texture.Width, texture.Height);
-
+        if (transform is not null)
+        {
+            if (sprite.HasMoveXYCommands) position = transform.ApplyToPositionXY(position);
+            else position = transform.ApplyToPosition(position);
+            if (sprite.HasRotateCommands) rotation = transform.ApplyToRotation(rotation);
+            if (sprite.HasScalingCommands) scale = transform.ApplyToScale(scale);
+        }
         if (frameStats is not null)
         {
             var size = texture.Size * scale;
@@ -85,6 +92,18 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 
                 var intersectionArea = size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
                 frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) / OsuHitObject.WidescreenStoryboardArea;
+            }
+            if (frameStats.LastTexture != fullPath)
+            {
+                frameStats.LastTexture = fullPath;
+                ++frameStats.Batches;
+
+                if (frameStats.LoadedPaths.Add(fullPath)) frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
+            }
+            else if (frameStats.LastBlendingMode != additive)
+            {
+                frameStats.LastBlendingMode = additive;
+                ++frameStats.Batches;
             }
         }
 

@@ -61,11 +61,11 @@ public class Sprite : Drawable
             case ScaleMode.Repeat:
             case ScaleMode.RepeatFit:
                 for (var y = bounds.Top; y < bounds.Bottom; y += Texture.Height * scale) for (var x = bounds.Left; x < bounds.Right; x += Texture.Width * scale)
-                {
-                    var textureX = Math.Min((bounds.Right - x) / scale, Texture.Width);
-                    var textureY = Math.Min((bounds.Bottom - y) / scale, Texture.Height);
-                    renderer.Draw(Texture, x, y, 0, 0, scale, scale, 0, color, 0, 0, textureX, textureY);
-                }
+                    {
+                        var textureX = Math.Min((bounds.Right - x) / scale, Texture.Width);
+                        var textureY = Math.Min((bounds.Bottom - y) / scale, Texture.Height);
+                        renderer.Draw(Texture, x, y, 0, 0, scale, scale, 0, color, 0, 0, textureX, textureY);
+                    }
                 break;
 
             default:

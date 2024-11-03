@@ -36,7 +36,7 @@ public class Settings
         var type = GetType();
         try
         {
-            using var reader = File.OpenText(path); 
+            using var reader = File.OpenText(path);
             reader.ParseKeyValueSection((key, value) =>
             {
                 var field = type.GetField(key);
@@ -63,7 +63,7 @@ public class Settings
     {
         Trace.WriteLine($"Saving settings at '{path}'");
 
-        using SafeWriteStream stream = new(path); 
+        using SafeWriteStream stream = new(path);
         using StreamWriter writer = new(stream, Project.Encoding);
 
         foreach (var field in GetType().GetFields())

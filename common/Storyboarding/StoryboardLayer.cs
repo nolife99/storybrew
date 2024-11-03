@@ -6,5 +6,5 @@
 public abstract class StoryboardLayer(string name) : StoryboardSegment
 {
     ///<summary> The name of the layer. </summary>
-    public string Name => name;
+    public override string Name => name;
 }

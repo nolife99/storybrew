@@ -41,15 +41,15 @@ public class Vector2Picker : Widget, Field
         Add(layout = new LinearLayout(manager)
         {
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new LinearLayout(manager)
                 {
                     Horizontal = true,
                     FitChildren = true,
                     Fill = true,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         new Label(Manager)
                         {
                             StyleName = "small",
@@ -60,15 +60,15 @@ public class Vector2Picker : Widget, Field
                         {
                             EnterCommits = true
                         }
-                    }
+                    ]
                 },
                 new LinearLayout(manager)
                 {
                     Horizontal = true,
                     FitChildren = true,
                     Fill = true,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         new Label(Manager)
                         {
                             StyleName = "small",
@@ -79,9 +79,9 @@ public class Vector2Picker : Widget, Field
                         {
                             EnterCommits = true
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         });
         updateWidgets();
 

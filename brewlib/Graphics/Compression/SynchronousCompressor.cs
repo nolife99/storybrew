@@ -136,21 +136,21 @@ public class SynchronousCompressor : ImageCompressor
     protected override void Dispose(bool disposing)
     {
         if (!disposed) try
-            {
-                doCompress().Wait();
-            }
-            finally
-            {
-                base.Dispose(disposing);
-                for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) PathHelper.SafeDelete(toCleanup[i]);
+        {
+            doCompress().Wait();
+        }
+        finally
+        {
+            base.Dispose(disposing);
+            for (var i = 0; i < toCleanup.Count; ++i) if (File.Exists(toCleanup[i])) PathHelper.SafeDelete(toCleanup[i]);
 
-                toCleanup.Clear();
-                toCompress.Clear();
-                lossyCompress.Clear();
+            toCleanup.Clear();
+            toCompress.Clear();
+            lossyCompress.Clear();
 
-                toCleanup = null;
-                toCompress = null;
-                lossyCompress = null;
-            }
+            toCleanup = null;
+            toCompress = null;
+            lossyCompress = null;
+        }
     }
 }

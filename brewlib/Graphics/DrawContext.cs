@@ -23,7 +23,7 @@ public sealed class DrawContext : IDisposable
     {
         if (!disposed)
         {
-            disposables.ForEach(disposable => disposable.Dispose());
+            foreach (var disposable in disposables) disposable.Dispose();
             references = null;
             disposables = null;
             disposed = true;

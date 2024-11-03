@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
@@ -67,6 +69,26 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override double StartTime => startTime;
     public override double EndTime => endTime;
 
+    public override Vector2 Origin
+    {
+        get => segment.Origin;
+        set => segment.Origin = value;
+    }
+    public override Vector2 Position
+    {
+        get => segment.Position;
+        set => segment.Position = value;
+    }
+    public override float Rotation
+    {
+        get => segment.Rotation;
+        set => segment.Rotation = value;
+    }
+    public override float Scale
+    {
+        get => segment.Scale;
+        set => segment.Scale = value;
+    }
     public override bool ReverseDepth
     {
         get => segment.ReverseDepth;
@@ -84,11 +106,8 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public EditorStoryboardLayer(string identifier, Effect effect) : base(identifier)
     {
         Effect = effect;
-        segment = new(effect, this);
+        segment = new(effect, this, "Root");
     }
-
-    public int GetActiveSpriteCount(double time) => Visible ? segment.GetActiveSpriteCount(time) : 0;
-    public int GetCommandCost(double time) => Visible ? segment.GetCommandCost(time) : 0;
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition) => segment.CreateSprite(path, origin, initialPosition);
     public override OsbSprite CreateSprite(string path, OsbOrigin origin) => segment.CreateSprite(path, origin, new(320, 240));
@@ -102,7 +121,9 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override OsbSample CreateSample(string path, double time, double volume)
         => segment.CreateSample(path, time, volume);
 
-    public override StoryboardSegment CreateSegment() => segment.CreateSegment();
+    public override IEnumerable<StoryboardSegment> NamedSegments => segment.NamedSegments;
+    public override StoryboardSegment CreateSegment(string identifier = null) => segment.CreateSegment(identifier);
+    public override StoryboardSegment GetSegment(string identifier) => segment.GetSegment(identifier);
     public override void Discard(StoryboardObject storyboardObject) => segment.Discard(storyboardObject);
 
     public void TriggerEvents(double fromTime, double toTime)
@@ -111,7 +132,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     }
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
-        if (Visible) segment.Draw(drawContext, camera, bounds, opacity, Effect.Project, frameStats);
+        if (Visible) segment.Draw(drawContext, camera, bounds, opacity, null, Effect.Project, frameStats);
     }
     public void PostProcess()
     {
@@ -126,8 +147,9 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         EstimatedSize = segment.CalculateSize(osbLayer);
     }
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings) => WriteOsb(writer, exportSettings, osbLayer);
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer) => segment.WriteOsb(writer, exportSettings, layer);
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings) => WriteOsb(writer, exportSettings, osbLayer, null);
+    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
+        => segment.WriteOsb(writer, exportSettings, layer, transform);
 
     public void CopySettings(EditorStoryboardLayer other, bool copyGuid = false)
     {

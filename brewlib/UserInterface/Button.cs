@@ -15,15 +15,15 @@ public class Button : Widget, Field
     public override Vector2 MinSize => new(label.MinSize.X + padding.Horizontal, label.MinSize.Y + padding.Vertical);
     public override Vector2 PreferredSize => new(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
 
-    public string Text 
-    { 
-        get => label.Text; 
-        set => label.Text = value; 
-    }
-    public IconFont Icon 
+    public string Text
     {
-        get => label.Icon; 
-        set => label.Icon = value; 
+        get => label.Text;
+        set => label.Text = value;
+    }
+    public IconFont Icon
+    {
+        get => label.Icon;
+        set => label.Icon = value;
     }
 
     FourSide padding;

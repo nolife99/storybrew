@@ -57,12 +57,12 @@ public abstract class CommandGroup : ICommand
     public virtual void EndGroup() => ended = true;
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation)
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
     {
         if (commands.Count <= 0) return;
 
         writer.WriteLine(new string(' ', indentation) + GetCommandGroupHeader(exportSettings));
-        foreach (var command in commands) command.WriteOsb(writer, exportSettings, indentation + 1);
+        foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, indentation + 1);
     }
     protected abstract string GetCommandGroupHeader(ExportSettings exportSettings);
 

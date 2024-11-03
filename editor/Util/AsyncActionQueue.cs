@@ -50,7 +50,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        actionRunners.ForEach(runner => runner.EnsureThreadAlive());
+        foreach (var runner in actionRunners) runner.EnsureThreadAlive();
         lock (context.Queue)
         {
             if (!allowDuplicates && context.Queue.Exists(q => q.Target.Equals(target))) return;
@@ -66,7 +66,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (stopThreads)
         {
             var sw = Stopwatch.StartNew();
-            actionRunners.ForEach(runner => runner.JoinOrAbort(Math.Max(1000, 5000 - sw.Elapsed.Milliseconds)));
+            foreach (var runner in actionRunners)
+            {
+                runner.msTimeout = Math.Max(1000, 5000 - sw.Elapsed.Milliseconds);
+                runner.Dispose();
+            }
             sw.Stop();
         }
     }
@@ -74,11 +78,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     #region IDisposable Support
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
         if (!disposed)
@@ -135,10 +135,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
         }
     }
 
-    class ActionRunner(ActionQueueContext context, string threadName)
+    class ActionRunner(ActionQueueContext context, string threadName) : IDisposable
     {
+        internal int msTimeout;
         CancellationTokenSource tokenSrc;
-        Thread thread;
+        Task thread;
 
         internal void EnsureThreadAlive()
         {
@@ -149,7 +150,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 tokenSrc.Token.Register(() => Trace.WriteLine($"Aborting thread {threadName}"));
 
 #pragma warning disable SYSLIB0046
-                thread = new(() => ControlledExecution.Run(async () =>
+                thread = Task.Run(() => ControlledExecution.Run(async () =>
                 {
                     var mustSleep = false;
                     while (!tokenSrc.IsCancellationRequested)
@@ -213,18 +214,13 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             if (task.MustRunAlone) context.RunningLoneTask = false;
                         }
                     }
-                }, tokenSrc.Token))
-                {
-                    Name = threadName,
-                    IsBackground = true
-                };
+                }, tokenSrc.Token), tokenSrc.Token);
 #pragma warning restore SYSLIB0046
 
-                Trace.WriteLine($"Starting thread {threadName}");
-                thread.Start();
+                Trace.WriteLine($"Starting thread {threadName} ({thread.Id})");
             }
         }
-        internal void JoinOrAbort(int millisecondsTimeout)
+        public void Dispose()
         {
             if (thread is null) return;
 
@@ -233,14 +229,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-            if (!localThread.Join(millisecondsTimeout))
+            if (!localThread.Wait(msTimeout))
             {
                 tokenSrc.Cancel();
-                if (localThread.IsAlive) try
-                {
-                    localThread.Interrupt();
-                }
-                catch (ThreadInterruptedException) { }
+                if (!localThread.IsCompleted) localThread.Dispose();
             }
             tokenSrc.Dispose();
         }

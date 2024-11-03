@@ -21,7 +21,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
     public TinyArray()
     {
         const int InitialCapacity = 4;
-        tokens = GC.AllocateUninitializedArray<TinyToken>(InitialCapacity);
+        tokens = new TinyToken[InitialCapacity];
         count = 0;
     }
     public TinyArray(IEnumerable values) : this()
@@ -99,7 +99,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
     {
         if (tokens.Length >= capacity) return;
 
-        var newTokens = GC.AllocateUninitializedArray<TinyToken>(Math.Max(capacity, tokens.Length * 2));
+        var newTokens = new TinyToken[Math.Max(capacity, tokens.Length * 2)];
         Array.Copy(tokens, newTokens, count);
         tokens = newTokens;
     }

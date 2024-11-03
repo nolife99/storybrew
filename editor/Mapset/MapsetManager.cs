@@ -36,14 +36,14 @@ public sealed class MapsetManager : IDisposable
         Array.Sort(maps);
 
         foreach (var beatmapPath in maps) try
-        {
-            beatmaps.Add(EditorBeatmap.Load(beatmapPath));
-        }
-        catch (Exception e)
-        {
-            if (logLoadingExceptions) Trace.WriteLine($"Failed to load beatmap: {e}");
-            else throw;
-        }
+            {
+                beatmaps.Add(EditorBeatmap.Load(beatmapPath));
+            }
+            catch (Exception e)
+            {
+                if (logLoadingExceptions) Trace.WriteLine($"Failed to load beatmap: {e}");
+                else throw;
+            }
     }
 
     #endregion
@@ -82,11 +82,7 @@ public sealed class MapsetManager : IDisposable
     #endregion
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
         if (!disposed)

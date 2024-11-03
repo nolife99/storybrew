@@ -25,7 +25,7 @@ public static class InterpolatingFunctions
 
     ///<summary> Represents a function that interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
     public static readonly Func<CommandPosition, CommandPosition, double, CommandPosition> Position = (from, to, progress) => Vector2(from, to, progress);
-    
+
     ///<summary> Represents a function that interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
     public static readonly Func<CommandScale, CommandScale, double, CommandScale> Scale = (from, to, progress) => Vector2(from, to, progress);
 

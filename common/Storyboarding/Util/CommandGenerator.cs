@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding.Commands;
@@ -91,7 +90,7 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        states.ForEach(state =>
+        foreach (var state in states)
         {
             var time = state.Time + timeOffset;
             var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
@@ -118,7 +117,7 @@ public class CommandGenerator
 
             previousState = state;
             wasVisible = isVisible;
-        });
+        }
 
         if (wasVisible) commitKeyframes(imageSize);
         if (everVisible)
@@ -161,7 +160,7 @@ public class CommandGenerator
         double? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)), 
+        bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)),
             moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
         finalPositions.ForEachPair((s, e) =>
@@ -215,22 +214,24 @@ public class CommandGenerator
     void clearKeyframes()
     {
         states.Clear();
-        positions.Clear();
-        scales.Clear();
-        rotations.Clear();
-        colors.Clear();
-        fades.Clear();
-        finalPositions.Clear();
-        finalScales.Clear();
-        finalRotations.Clear();
-        finalColors.Clear();
-        finalfades.Clear();
-        flipH.Clear();
-        flipV.Clear();
-        additive.Clear();
+        states.Capacity = 0;
+
+        positions.Clear(true);
+        scales.Clear(true);
+        rotations.Clear(true);
+        colors.Clear(true);
+        fades.Clear(true);
+        finalPositions.Clear(true);
+        finalScales.Clear(true);
+        finalRotations.Clear(true);
+        finalColors.Clear(true);
+        finalfades.Clear(true);
+        flipH.Clear(true);
+        flipV.Clear(true);
+        additive.Clear(true);
     }
 
-    internal static SizeF BitmapDimensions(string path) 
+    internal static SizeF BitmapDimensions(string path)
         => StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).PhysicalDimension;
 }
 
@@ -272,7 +273,7 @@ public class State : IComparer<State>
     {
         var noGen = generator is null;
         CommandScale scale = new(
-            noGen ? (float)Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals), 
+            noGen ? (float)Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals),
             noGen ? (float)Scale.Y : MathF.Round(Scale.Y, generator.ScaleDecimals));
 
         if (Additive && Color == CommandColor.Black ||

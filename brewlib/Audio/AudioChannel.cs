@@ -170,11 +170,7 @@ public class AudioChannel : IDisposable
     }
 
     ~AudioChannel() => Dispose(false);
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
 
     #endregion
 }

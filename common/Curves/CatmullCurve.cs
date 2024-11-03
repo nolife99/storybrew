@@ -26,21 +26,21 @@ public class CatmullCurve(CommandPosition[] points, int precision) : BaseCurve
         var previousPosition = StartPosition;
 
         for (var lineIndex = 0; lineIndex < points.Length - 1; ++lineIndex) for (var i = 1; i <= linePrecision; ++i)
-        {
-            var delta = (float)i / (linePrecision + 1);
+            {
+                var delta = (float)i / (linePrecision + 1);
 
-            var p1 = lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex];
-            var p2 = points[lineIndex];
-            var p3 = points[lineIndex + 1];
-            var p4 = lineIndex < points.Length - 2 ? points[lineIndex + 2] : points[lineIndex + 1];
+                var p1 = lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex];
+                var p2 = points[lineIndex];
+                var p3 = points[lineIndex + 1];
+                var p4 = lineIndex < points.Length - 2 ? points[lineIndex + 2] : points[lineIndex + 1];
 
-            var nextPosition = positionAtDelta(p1, p2, p3, p4, delta);
+                var nextPosition = positionAtDelta(p1, p2, p3, p4, delta);
 
-            distance += (nextPosition - previousPosition).Length;
-            distancePosition.Add((distance, nextPosition));
+                distance += (nextPosition - previousPosition).Length;
+                distancePosition.Add((distance, nextPosition));
 
-            previousPosition = nextPosition;
-        }
+                previousPosition = nextPosition;
+            }
         distance += (EndPosition - previousPosition).Length;
         length = distance;
     }

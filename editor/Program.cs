@@ -18,7 +18,7 @@ namespace StorybrewEditor;
 
 public static class Program
 {
-    public const string Name = "storybrew editor", Repository = "Damnae/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
+    public const string Name = "storybrew editor", Repository = "nolife99/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
     public readonly static Version Version = typeof(Editor).Assembly.GetName().Version;
     public readonly static string FullName = $"{Name} {Version} ({Repository})";
 
@@ -117,14 +117,14 @@ public static class Program
 
             var deviceIndex = 0;
             while (deviceIndex <= (int)DisplayIndex.Sixth) try
-            {
-                return DisplayDevice.GetDisplay((DisplayIndex)deviceIndex);
-            }
-            catch (Exception e2)
-            {
-                Trace.WriteLine($"Failed to use display device #{deviceIndex}: {e2}");
-                ++deviceIndex;
-            }
+                {
+                    return DisplayDevice.GetDisplay((DisplayIndex)deviceIndex);
+                }
+                catch (Exception e2)
+                {
+                    Trace.WriteLine($"Failed to use display device #{deviceIndex}: {e2}");
+                    ++deviceIndex;
+                }
         }
         throw new InvalidOperationException("Failed to find a display device");
     }
@@ -147,7 +147,7 @@ public static class Program
         }
 
         GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 2, 1, GraphicsContextFlags.ForwardCompatible);
-        Native.InitializeHandle(Name);
+        Native.InitializeHandle(Name, window.WindowInfo.Handle);
         Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
         window.Location = new(workArea.X + (workArea.Width - window.Size.Width) / 2, workArea.Y + (workArea.Height - window.Size.Height) / 2);
@@ -175,7 +175,7 @@ public static class Program
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
         var watch = Stopwatch.StartNew();
 
-        using ManualResetEventSlim wait = new(); 
+        using ManualResetEventSlim wait = new();
         while (window.Exists && !window.IsExiting)
         {
             var cur = watch.ElapsedMilliseconds;
@@ -278,13 +278,13 @@ public static class Program
         if (scheduledActions.IsEmpty || !IsMainThread) return;
 
         while (scheduledActions.TryDequeue(out var action)) try
-        {
-            action?.Invoke();
-        }
-        catch (Exception e)
-        {
-            Trace.WriteLine($"Scheduled task {action.Method} failed:\n{e}");
-        }
+            {
+                action?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine($"Scheduled task {action.Method} failed:\n{e}");
+            }
     }
 
     #endregion
@@ -340,7 +340,7 @@ public static class Program
                 }
 
                 if (reportType is not null) Report(reportType, e);
-                if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButtons.OKCancel) is DialogResult.OK) 
+                if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name})\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.", FullName, MessageBoxButtons.OKCancel) is DialogResult.OK)
                     NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)

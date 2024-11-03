@@ -138,13 +138,13 @@ public class ScriptedEffect : Effect
     {
         var duration = statusStopwatch.ElapsedMilliseconds;
         if (duration > 0) switch (this.status)
-        {
-            case EffectStatus.Ready:
-            case EffectStatus.CompilationFailed:
-            case EffectStatus.LoadingFailed:
-            case EffectStatus.ExecutionFailed: break;
-            default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
-        }
+            {
+                case EffectStatus.Ready:
+                case EffectStatus.CompilationFailed:
+                case EffectStatus.LoadingFailed:
+                case EffectStatus.ExecutionFailed: break;
+                default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
+            }
 
         this.status = status;
         statusMessage = message ?? "";
@@ -158,7 +158,7 @@ public class ScriptedEffect : Effect
 
         statusStopwatch.Restart();
     });
-    string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ? 
+    string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?
         $"File not found while {status.ToString().ToLowerInvariant()}. Make sure this path is correct:\n{exception.FileName}\n\nDetails:\n{e}" :
         $"Unexpected error during {status.ToString().ToLowerInvariant()}:\n{e}";
 

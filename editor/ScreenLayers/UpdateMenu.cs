@@ -28,8 +28,8 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             AnchorTo = BoxAlignment.Centre,
             Padding = new(16),
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 actionLabel = new(WidgetManager)
                 {
                     Text = "Updating",
@@ -46,7 +46,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                     Value = 0,
                     AnchorFrom = BoxAlignment.Centre
                 }
-            }
+            ]
         });
         NetHelper.Download(downloadUrl, Updater.UpdateArchivePath, progress =>
         {
@@ -59,7 +59,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             if (exception is not null)
             {
                 Trace.WriteLine($"Failed to download the new version.\n\n{exception}");
-                Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}", () => Updater.OpenLastestReleasePage());
+                Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}", () => Updater.OpenLatestReleasePage());
 
                 Exit();
                 return;
@@ -105,14 +105,14 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 if (process.Start()) Manager.Exit();
                 else
                 {
-                    Manager.ShowMessage("Failed to start the update process, please update manually.", () => Updater.OpenLastestReleasePage());
+                    Manager.ShowMessage("Failed to start the update process, please update manually.", () => Updater.OpenLatestReleasePage());
                     Exit();
                 }
             }
             catch (Exception e)
             {
                 Trace.WriteLine($"Failed to start the update process.\n\n{e}");
-                Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}", () => Updater.OpenLastestReleasePage());
+                Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}", () => Updater.OpenLatestReleasePage());
                 Exit();
             }
         });

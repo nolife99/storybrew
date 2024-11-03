@@ -24,16 +24,16 @@ public static class DateTimeExtensions
     {
         var seconds = (DateTimeOffset.Now.Ticks - date.Ticks) * 1E-7;
         foreach (var threshold in thresholds) if (seconds < threshold.Key)
-        {
-            TimeSpan timespan = new(DateTimeOffset.Now.Ticks - date.Ticks);
-            return string.Format(CultureInfo.InvariantCulture, threshold.Value,
-                (timespan.Days > 365 ? timespan.Days / 365 :
-                (timespan.Days > 30 ? timespan.Days / 30 :
-                (timespan.Days > 0 ? timespan.Days :
-                (timespan.Hours > 0 ? timespan.Hours :
-                (timespan.Minutes > 0 ? timespan.Minutes :
-                (timespan.Seconds > 0 ? timespan.Seconds : 0)))))).ToString(CultureInfo.InvariantCulture));
-        }
+            {
+                TimeSpan timespan = new(DateTimeOffset.Now.Ticks - date.Ticks);
+                return string.Format(CultureInfo.InvariantCulture, threshold.Value,
+                    (timespan.Days > 365 ? timespan.Days / 365 :
+                    (timespan.Days > 30 ? timespan.Days / 30 :
+                    (timespan.Days > 0 ? timespan.Days :
+                    (timespan.Hours > 0 ? timespan.Hours :
+                    (timespan.Minutes > 0 ? timespan.Minutes :
+                    (timespan.Seconds > 0 ? timespan.Seconds : 0)))))).ToString(CultureInfo.InvariantCulture));
+            }
         throw new InvalidOperationException();
     }
 }

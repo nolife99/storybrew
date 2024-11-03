@@ -24,8 +24,8 @@ public class PromptBox(string title, string description, string initialText, Act
             AnchorFrom = BoxAlignment.Centre,
             AnchorTo = BoxAlignment.Centre,
             Padding = new(16),
-            Children = new Widget[]
-            {
+            Children =
+            [
                 descriptionLabel = new(WidgetManager)
                 {
                     StyleName = "small",
@@ -42,8 +42,8 @@ public class PromptBox(string title, string description, string initialText, Act
                 {
                     Horizontal = true,
                     AnchorFrom = BoxAlignment.Centre,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         okButton = new(WidgetManager)
                         {
                             Text = "Ok",
@@ -54,9 +54,9 @@ public class PromptBox(string title, string description, string initialText, Act
                             Text = "Cancel",
                             AnchorFrom = BoxAlignment.Centre
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         });
 
         if (string.IsNullOrWhiteSpace(description)) descriptionLabel.Dispose();

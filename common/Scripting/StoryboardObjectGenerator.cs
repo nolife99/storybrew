@@ -32,7 +32,7 @@ public abstract class StoryboardObjectGenerator : Script
 
     ///<summary> Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating in parallel to this one. </summary>
     public bool Multithreaded { get; protected set; }
-    
+
     ///<summary> Gets the texture and image compressor for this script. </summary>
     public ImageCompressor Compressor { get; private set; }
 
@@ -103,7 +103,7 @@ public abstract class StoryboardObjectGenerator : Script
     Bitmap getBitmap(string path, string alternatePath, bool watch)
     {
         path = Path.GetFullPath(path);
-        if (!bitmaps.TryGetValue(path, out var bitmap)) using (FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        if (!bitmaps.TryGetValue(path, out var bitmap)) using (var stream = File.OpenRead(path))
         {
             if (alternatePath is not null && !File.Exists(path))
             {
@@ -140,7 +140,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         path = Path.GetFullPath(path);
         if (watch) context.AddDependency(path);
-        return Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+        return Misc.WithRetries(() => File.OpenRead(path));
     }
 
     #endregion
@@ -148,7 +148,8 @@ public abstract class StoryboardObjectGenerator : Script
     #region Random
 
     ///<summary/>
-    [Group("Common")][Description("Changes the result of Random(...) calls.")]
+    [Group("Common")]
+    [Description("Changes the result of Random(...) calls.")]
     [Configurable] public int RandomSeed;
 
     FastRandom rnd;
@@ -235,7 +236,7 @@ public abstract class StoryboardObjectGenerator : Script
     ///<param name="directory"> The path to the font file. </param>
     ///<param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
     ///<param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
-    public FontGenerator LoadFont(string directory, FontDescription description, params FontEffect[] effects) 
+    public FontGenerator LoadFont(string directory, FontDescription description, params FontEffect[] effects)
         => LoadFont(directory, false, description, effects);
 
     ///<summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
@@ -268,7 +269,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (context is not null) throw new InvalidOperationException();
 
         var remainingFieldNames = config.FieldNames.ToList();
-        configurableFields.ForEach(configurableField =>
+        foreach (var configurableField in configurableFields)
         {
             var field = configurableField.Field;
             NamedValue[] allowedValues = null;
@@ -279,7 +280,7 @@ public abstract class StoryboardObjectGenerator : Script
                 var enumValues = Enum.GetValues(fieldType);
                 fieldType = Enum.GetUnderlyingType(fieldType);
 
-                allowedValues = GC.AllocateUninitializedArray<NamedValue>(enumValues.Length);
+                allowedValues = new NamedValue[enumValues.Length];
                 for (var i = 0; i < enumValues.Length; ++i)
                 {
                     var value = enumValues.GetValue(i);
@@ -306,7 +307,7 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 Trace.WriteLine($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
             }
-        });
+        }
         remainingFieldNames.ForEach(config.RemoveField);
     }
 
@@ -315,7 +316,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         if (context is not null) throw new InvalidOperationException();
 
-        configurableFields.ForEach(configurableField =>
+        foreach (var configurableField in configurableFields)
         {
             var field = configurableField.Field;
             try
@@ -327,7 +328,7 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 Trace.WriteLine($"Failed to apply configuration for {field.Name}:\n{e}");
             }
-        });
+        }
     }
 
     struct ConfigurableField(FieldInfo field, ConfigurableAttribute attribute, object initialValue, string beginsGroup, string description, int order)

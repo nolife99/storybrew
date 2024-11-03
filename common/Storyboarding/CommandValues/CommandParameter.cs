@@ -21,7 +21,7 @@ public readonly struct CommandParameter : CommandValue
         _ => throw new InvalidOperationException($"Parameter command cannot be None."),
     };
     public override string ToString() => ToOsbString(ExportSettings.Default);
-    
+
     public bool Equals(CommandParameter obj) => Type == obj.Type;
     public override bool Equals(object obj) => obj is CommandParameter parameter && Equals(parameter);
     public override int GetHashCode() => ToOsbString(ExportSettings.Default)[0];

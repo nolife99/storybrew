@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Numerics;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 namespace StorybrewCommon.Storyboarding;
@@ -5,11 +7,25 @@ namespace StorybrewCommon.Storyboarding;
 ///<summary> Storyboarding segments for storyboard objects. </summary>
 public abstract class StoryboardSegment : StoryboardObject
 {
+    public abstract string Name { get; }
+    public abstract Vector2 Origin { get; set; }
+    public abstract Vector2 Position { get; set; }
+    public abstract float Rotation { get; set; }
+    public float RotationDegrees
+    {
+        get => osuTK.MathHelper.RadiansToDegrees(Rotation);
+        set => Rotation = osuTK.MathHelper.DegreesToRadians(value);
+    }
+    public abstract float Scale { get; set; }
+
     ///<summary> Reverses the order of sprites, from newer sprites being placed at the bottom of the list. </summary>
     public abstract bool ReverseDepth { get; set; }
 
+    public abstract IEnumerable<StoryboardSegment> NamedSegments { get; }
+
     ///<summary> Creates a new storyboard segment. </summary>
-    public abstract StoryboardSegment CreateSegment();
+    public abstract StoryboardSegment CreateSegment(string identifier = null);
+    public abstract StoryboardSegment GetSegment(string identifier);
 
     ///<summary> Creates an <see cref="OsbSprite"/>. </summary>
     ///<param name="path"> Path to the image of this sprite. </param>

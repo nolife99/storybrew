@@ -66,26 +66,26 @@ public class Triangle3d : Node3d, HasOsbSprites
         switch (edgeIndex)
         {
             case 0:
-            {
-                vector0 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
-                vector1 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
-                vector2 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
-                break;
-            }
+                {
+                    vector0 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector1 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector2 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
+                    break;
+                }
             case 1:
-            {
-                vector2 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
-                vector0 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
-                vector1 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
-                break;
-            }
+                {
+                    vector2 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector0 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector1 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
+                    break;
+                }
             case 2:
-            {
-                vector1 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
-                vector2 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
-                vector0 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
-                break;
-            }
+                {
+                    vector1 = CameraState.ToScreen(wvp, Position0.ValueAt(time));
+                    vector2 = CameraState.ToScreen(wvp, Position1.ValueAt(time));
+                    vector0 = CameraState.ToScreen(wvp, Position2.ValueAt(time));
+                    break;
+                }
             default: throw new InvalidOperationException();
         }
 

@@ -66,9 +66,9 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> wh
         vertexDeclaration.DeactivateAttributes(currentShader);
         currentShader = null;
     }
-    public unsafe void Render(PrimitiveType primitiveType, TPrimitive* primitives, int primitiveCount, int drawCount, bool canBuffer = false)
+    public void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
     {
-        GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * primitiveSize, (nint)primitives, BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * primitiveSize, primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;
 
         if (indexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);

@@ -14,7 +14,7 @@ public static class Updater
 
     static readonly Version readOnlyVersion = new(1, 8);
 
-    public static void OpenLastestReleasePage() => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/releases/latest");
+    public static void OpenLatestReleasePage() => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/releases/latest");
     public static void Update(string destinationFolder, Version fromVersion)
     {
         Trace.WriteLine($"Updating from version {fromVersion} to {Program.Version}");
@@ -28,7 +28,7 @@ public static class Updater
         {
             Trace.WriteLine($"Failed to replace files: {e}");
             MessageBox.Show($"Update failed, please update manually.\n\n{e}", Program.FullName);
-            OpenLastestReleasePage();
+            OpenLatestReleasePage();
             Program.Report("updatefail", e);
             return;
         }

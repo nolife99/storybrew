@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Base structure for movement commands.</summary>
-public readonly struct CommandPosition : 
-    CommandValue, IEquatable<CommandPosition>, 
+public readonly struct CommandPosition :
+    CommandValue, IEquatable<CommandPosition>,
     IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
     ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,
     IMultiplyOperators<CommandPosition, CommandPosition, CommandPosition>,
@@ -49,7 +49,7 @@ public readonly struct CommandPosition :
 
     ///<summary> Converts this instance to a .osb string. </summary>
     public readonly string ToOsbString(ExportSettings exportSettings) => exportSettings.UseFloatForMove ? $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}" : $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
-    
+
     ///<summary> Converts this instance to a string. </summary>
     public override readonly string ToString() => internalVec.ToString();
 

@@ -50,7 +50,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
 
     TextureAtlas2d pushAtlas()
     {
-        TextureAtlas2d atlas = new(width, height, $"{description} #{atlases.Count + 1}", textureOptions, padding);
+        TextureAtlas2d atlas = new(width, height, $"{description}#{atlases.Count + 1}", textureOptions, padding);
         atlases.Add(atlas);
         return atlas;
     }
@@ -62,12 +62,12 @@ public sealed class TextureMultiAtlas2d : IDisposable
     {
         if (!disposed)
         {
-            atlases.ForEach(atlas => atlas.Dispose());
+            foreach (var atlas in atlases) atlas.Dispose();
             atlases.Clear();
 
             if (oversizeTextures is not null)
             {
-                oversizeTextures.ForEach(texture => texture.Dispose());
+                foreach (var texture in oversizeTextures) texture.Dispose();
                 oversizeTextures.Clear();
                 oversizeTextures = null;
             }

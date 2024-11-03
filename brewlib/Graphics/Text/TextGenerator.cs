@@ -6,9 +6,9 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Data;
-using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 
 namespace BrewLib.Graphics.Text;
@@ -33,63 +33,49 @@ public sealed class TextGenerator : IDisposable
         container = resourceContainer;
     }
 
-    public Bitmap CreateBitmap(string text, string fontName, float fontSize, Vector2 maxSize, Vector2 padding, BoxAlignment alignment, StringTrimming trimming, out Vector2 textureSize, bool measureOnly)
+    public Bitmap CreateBitmap(string text, string fontName, float fontSize, SizeF maxSize, Vector2 padding, BoxAlignment alignment, StringTrimming trimming, out Vector2 textureSize, bool measureOnly)
     {
         if (string.IsNullOrEmpty(text)) text = " ";
-        var horizontalAlignment = (alignment & BoxAlignment.Horizontal) switch
-        {
-            BoxAlignment.Left => StringAlignment.Near,
-            BoxAlignment.Right => StringAlignment.Far,
-            _ => StringAlignment.Center,
-        };
-        var verticalAlignment = (alignment & BoxAlignment.Vertical) switch
-        {
-            BoxAlignment.Top => StringAlignment.Near,
-            BoxAlignment.Bottom => StringAlignment.Far,
-            _ => StringAlignment.Center,
-        };
-
         using StringFormat stringFormat = new(StringFormat.GenericTypographic)
         {
-            Alignment = horizontalAlignment,
-            LineAlignment = verticalAlignment,
+            Alignment = (alignment & BoxAlignment.Horizontal) switch
+            {
+                BoxAlignment.Left => StringAlignment.Near,
+                BoxAlignment.Right => StringAlignment.Far,
+                _ => StringAlignment.Center
+            },
+            LineAlignment = (alignment & BoxAlignment.Vertical) switch
+            {
+                BoxAlignment.Top => StringAlignment.Near,
+                BoxAlignment.Bottom => StringAlignment.Far,
+                _ => StringAlignment.Center
+            },
             Trimming = trimming,
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
 
         var font = getFont(fontName, 96 / metrics.DpiY * fontSize, FontStyle.Regular);
-        var measuredSize = metrics.MeasureString(text, font, new SizeF(maxSize), stringFormat);
+        var measuredSize = metrics.MeasureString(text, font, maxSize, stringFormat);
 
-        var width = measuredSize.Width + padding.X * 2 + 1;
-        var height = measuredSize.Height + padding.Y * 2 + 1;
+        var width = (int)(measuredSize.Width + padding.X * 2 + 1);
+        var height = (int)(measuredSize.Height + padding.Y * 2 + 1);
 
         textureSize = new(width, height);
         if (measureOnly) return null;
 
-        Bitmap bitmap = new((int)width, (int)height);
-        try
-        {
-            using var textGraphics = System.Drawing.Graphics.FromImage(bitmap);
-            textGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
-            textGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
-            textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
+        Bitmap bitmap = new(width, height);
+        using var textGraphics = System.Drawing.Graphics.FromImage(bitmap);
 
-            textGraphics.DrawString(text, font, shadow, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
-            textGraphics.DrawString(text, font, Brushes.White, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
-        }
-        catch
-        {
-            bitmap.Dispose();
-            throw;
-        }
+        textGraphics.TextRenderingHint = TextRenderingHint.AntiAlias;
+        textGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
+        textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
+
+        textGraphics.DrawString(text, font, shadow, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
+        textGraphics.DrawString(text, font, Brushes.White, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
+
         return bitmap;
     }
-    public Texture2d CreateTexture(string text, string fontName, float fontSize, Vector2 maxSize, Vector2 padding, BoxAlignment alignment, StringTrimming trimming, out Vector2 textureSize)
-    {
-        using var bitmap = CreateBitmap(text, fontName, fontSize, maxSize, padding, alignment, trimming, out textureSize, false);
-        return Texture2d.Load(bitmap, $"text:{text}@{fontName}:{fontSize}");
-    }
-    Font getFont(string name, float emSize, FontStyle style)
+    unsafe Font getFont(string name, float emSize, FontStyle style)
     {
         var identifier = $"{name}.{emSize}.{(int)style}";
 
@@ -102,49 +88,33 @@ public sealed class TextGenerator : IDisposable
         else recentlyUsedFonts.AddFirst(identifier);
 
         if (recentlyUsedFonts.Count > 64) while (recentlyUsedFonts.Count > 32)
-        {
-            var lastFontIdentifier = recentlyUsedFonts.Last.Value;
-            recentlyUsedFonts.RemoveLast();
+            {
+                var lastFontIdentifier = recentlyUsedFonts.Last.Value;
+                recentlyUsedFonts.RemoveLast();
 
-            fonts[lastFontIdentifier].Dispose();
-            fonts.Remove(lastFontIdentifier);
-        }
+                fonts[lastFontIdentifier].Dispose();
+                fonts.Remove(lastFontIdentifier);
+            }
 
         if (!fontFamilies.TryGetValue(name, out var fontFamily))
         {
             using (var stream = container.GetStream(name, ResourceSource.Embedded)) if (stream is not null)
             {
-                try
+                if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
+
+                var len = (int)stream.Length;
+                var arr = ArrayPool<byte>.Shared.Rent(len);
+                stream.Read(arr, 0, len);
+
+                fontCollection.AddMemoryFont((nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr)), len);
+                ArrayPool<byte>.Shared.Return(arr);
+
+                var families = fontCollection.Families;
+                if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
+                else
                 {
-                    if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
-
-                    var len = (int)stream.Length;
-                    var arr = ArrayPool<byte>.Shared.Rent(len);
-
-                    try
-                    {
-                        stream.Read(arr, 0, len);
-                        unsafe
-                        {
-                            fixed (void* pinned = &arr[0]) fontCollection.AddMemoryFont((nint)pinned, len);
-                        }
-                    }
-                    finally
-                    {
-                        ArrayPool<byte>.Shared.Return(arr);
-                    }
-
-                    var families = fontCollection.Families;
-                    if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
-                    else
-                    {
-                        Trace.TraceError($"Failed to load font {name}: Expected one family, got {families?.Length}");
-                        if (families is not null) foreach (var family in families) family.Dispose();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Trace.TraceError($"Failed to load font {name}: {e.Message}");
+                    Trace.TraceError($"Failed to load font {name}: Expected one family, got {families?.Length}");
+                    if (families is not null) foreach (var family in families) family.Dispose();
                 }
             }
             fontFamilies.Add(name, fontFamily);

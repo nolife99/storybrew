@@ -29,8 +29,8 @@ public class LayerList : Widget
             Padding = new(16),
             FitChildren = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new Label(manager)
                 {
                     Text = "Layers",
@@ -40,7 +40,7 @@ public class LayerList : Widget
                 {
                     FitChildren = true
                 })
-            }
+            ]
         });
 
         layerManager.OnLayersChanged += layerManager_OnLayersChanged;
@@ -107,8 +107,8 @@ public class LayerList : Widget
                 Horizontal = true,
                 FitChildren = true,
                 Fill = true,
-                Children = new Widget[]
-                {
+                Children =
+                [
                     new Label(Manager)
                     {
                         StyleName = "icon",
@@ -121,8 +121,8 @@ public class LayerList : Widget
                     new LinearLayout(Manager)
                     {
                         StyleName = "condensed",
-                        Children = new Widget[]
-                        {
+                        Children =
+                        [
                             nameLabel = new(Manager)
                             {
                                 StyleName = "listItem",
@@ -137,7 +137,7 @@ public class LayerList : Widget
                                 AnchorFrom = BoxAlignment.Left,
                                 AnchorTo = BoxAlignment.Left
                             }
-                        }
+                        ]
                     },
                     diffSpecificButton = new(Manager)
                     {
@@ -159,7 +159,7 @@ public class LayerList : Widget
                         Checked = layer.Visible,
                         CanGrow = false
                     }
-                }
+                ]
             });
 
             var la = layer;

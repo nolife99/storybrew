@@ -221,6 +221,7 @@ public sealed class Project : IDisposable
     }
     void effect_OnChanged(object sender, EventArgs e)
     {
+        if (Disposed) return;
         Changed = true;
 
         refreshEffectsStatus();
@@ -318,10 +319,10 @@ public sealed class Project : IDisposable
     public void SelectBeatmap(long id, string name)
     {
         foreach (var beatmap in MapsetManager.Beatmaps) if ((id > 0 && beatmap.Id == id) || (name.Length > 0 && beatmap.Name == name))
-        {
-            MainBeatmap = beatmap;
-            break;
-        }
+            {
+                MainBeatmap = beatmap;
+                break;
+            }
     }
     void refreshMapset()
     {
@@ -385,7 +386,7 @@ public sealed class Project : IDisposable
         get
         {
             HashSet<string> distinct = [];
-            foreach (var asm in AssemblyLoadContext.Default.Assemblies) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
             return distinct;
         }
     }
@@ -443,8 +444,8 @@ public sealed class Project : IDisposable
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        using var file = File.Create(path); 
-        using DeflateStream dfl = new(file, CompressionLevel.Optimal); 
+        using var file = File.Create(path);
+        using DeflateStream dfl = new(file, CompressionLevel.Optimal);
         using BinaryWriter w = new(dfl, Encoding);
 
         w.Write(Version);
@@ -472,10 +473,10 @@ public sealed class Project : IDisposable
 
                 w.Write(field.AllowedValues?.Length ?? 0);
                 if (field.AllowedValues is not null) for (var i = 0; i < field.AllowedValues.Length; ++i)
-                {
-                    w.Write(field.AllowedValues[i].Name);
-                    ObjectSerializer.Write(w, field.AllowedValues[i].Value);
-                }
+                    {
+                        w.Write(field.AllowedValues[i].Name);
+                        ObjectSerializer.Write(w, field.AllowedValues[i].Value);
+                    }
             }
         });
 
@@ -497,8 +498,8 @@ public sealed class Project : IDisposable
     }
     void loadBinary(string path)
     {
-        using FileStream file = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); 
-        using DeflateStream dfl = new(file, CompressionMode.Decompress); 
+        using FileStream file = File.OpenRead(path);
+        using DeflateStream dfl = new(file, CompressionMode.Decompress);
         using BinaryReader r = new(dfl, Encoding);
 
         var version = r.ReadInt32();
@@ -638,16 +639,16 @@ public sealed class Project : IDisposable
             effectRoot.Add("Layers", layersRoot);
 
             foreach (var layer in LayerManager.Layers) if (layer.Effect == effect)
-            {
-                TinyObject layerRoot = new()
+                {
+                    TinyObject layerRoot = new()
                 {
                     { "Name", layer.Name },
                     { "OsbLayer", layer.OsbLayer },
                     { "DiffSpecific", layer.DiffSpecific },
                     { "Visible", layer.Visible }
                 };
-                layersRoot.Add(layer.Guid.ToString("N"), layerRoot);
-            }
+                    layersRoot.Add(layer.Guid.ToString("N"), layerRoot);
+                }
 
             var effectPath = directoryWriter.GetPath("effect." + effect.Guid.ToString("N") + ".yaml");
             effectRoot.Write(effectPath);
@@ -755,10 +756,10 @@ public sealed class Project : IDisposable
 
         var hasInvalidCharacters = false;
         foreach (var character in Path.GetInvalidFileNameChars()) if (projectFolderName.Contains(character))
-        {
-            hasInvalidCharacters = true;
-            break;
-        }
+            {
+                hasInvalidCharacters = true;
+                break;
+            }
 
         if (hasInvalidCharacters || string.IsNullOrWhiteSpace(projectFolderName)) throw new InvalidOperationException($"'{projectFolderName}' isn't a valid project folder name");
 
@@ -858,11 +859,7 @@ public sealed class Project : IDisposable
     #region IDisposable Support
 
     public bool Disposed { get; private set; }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
         if (!Disposed)
@@ -871,7 +868,7 @@ public sealed class Project : IDisposable
             if (disposing)
             {
                 effectUpdateQueue.Dispose();
-                effects.ForEach(effect => effect.Dispose());
+                foreach (var effect in effects) effect.Dispose();
                 effects.Clear();
 
                 MapsetManager?.Dispose();

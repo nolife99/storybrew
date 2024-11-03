@@ -38,8 +38,8 @@ public class EffectList : Widget
             Padding = new(16),
             FitChildren = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new Label(manager)
                 {
                     Text = "Effects",
@@ -55,8 +55,8 @@ public class EffectList : Widget
                     FitChildren = true,
                     Horizontal = true,
                     CanGrow = false,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         addEffectButton = new(Manager)
                         {
                             StyleName = "small",
@@ -71,9 +71,9 @@ public class EffectList : Widget
                             AnchorFrom = BoxAlignment.Centre,
                             AnchorTo = BoxAlignment.Centre
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         });
 
         addEffectButton.OnClick += (sender, e) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect", (effectName) => project.AddScriptedEffect(effectName), project.GetEffectNames());
@@ -112,8 +112,8 @@ public class EffectList : Widget
             Horizontal = true,
             FitChildren = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 renameButton = new(Manager)
                 {
                     StyleName = "icon",
@@ -126,8 +126,8 @@ public class EffectList : Widget
                 new LinearLayout(Manager)
                 {
                     StyleName = "condensed",
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         nameLabel = new(Manager)
                         {
                             StyleName = "listItem",
@@ -142,7 +142,7 @@ public class EffectList : Widget
                             AnchorFrom = BoxAlignment.Left,
                             AnchorTo = BoxAlignment.Left
                         }
-                    }
+                    ]
                 },
                 statusButton = new(Manager)
                 {
@@ -180,7 +180,7 @@ public class EffectList : Widget
                     AnchorTo = BoxAlignment.Centre,
                     CanGrow = false
                 }
-            }
+            ]
         };
 
         updateStatusButton(statusButton, effect);
@@ -321,31 +321,31 @@ public class EffectList : Widget
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code Insiders", "bin", "code-insiders")
         ];
         foreach (var path in Environment.GetEnvironmentVariable("path").Split(';')) if (PathHelper.IsValidPath(path))
-        {
-            paths.Add(Path.Combine(path, "code"));
-            paths.Add(Path.Combine(path, "code-insiders"));
-        }
-        else Trace.WriteLine($"Invalid path in environment variables: {path}");
+            {
+                paths.Add(Path.Combine(path, "code"));
+                paths.Add(Path.Combine(path, "code-insiders"));
+            }
+            else Trace.WriteLine($"Invalid path in environment variables: {path}");
 
         var arguments = $"\"{solutionFolder}\" \"{effect.Path}\" -r";
         if (Program.Settings.VerboseVsCode) arguments += " --verbose";
 
         foreach (var path in paths) try
-        {
-            if (!File.Exists(path)) continue;
-
-            Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
-            var process = Process.Start(new ProcessStartInfo(path, arguments)
             {
-                UseShellExecute = true,
-                WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
-            });
-            return;
-        }
-        catch (Exception e)
-        {
-            Trace.WriteLine($"Could not open vscode:\n{e}");
-        }
+                if (!File.Exists(path)) continue;
+
+                Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
+                var process = Process.Start(new ProcessStartInfo(path, arguments)
+                {
+                    UseShellExecute = true,
+                    WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
+                });
+                return;
+            }
+            catch (Exception e)
+            {
+                Trace.WriteLine($"Could not open vscode:\n{e}");
+            }
         Manager.ScreenLayerManager.ShowMessage($"Visual Studio Code could not be found, do you want to install it?\n(You may have to restart after installing)",
             () => Process.Start("https://code.visualstudio.com/"), true);
     }

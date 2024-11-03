@@ -27,7 +27,7 @@ public class Texture2d(int textureId, int width, int height, string description)
         {
             var data = b.LockBits(new(default, size), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-            
+
             GL.Finish();
             b.UnlockBits(data);
         });
@@ -55,7 +55,7 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
-        if (File.Exists(filename)) using (FileStream stream = new(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) return new(stream);
+        if (File.Exists(filename)) using (var stream = File.OpenRead(filename)) return new(stream);
         using (var stream = resourceContainer?.GetStream(filename, ResourceSource.Embedded))
         {
             if (stream is not null) return new(stream);
@@ -70,7 +70,7 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     public static Texture2d Load(string filename, ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
     {
-        using var bitmap = LoadBitmap(filename, resourceContainer); 
+        using var bitmap = LoadBitmap(filename, resourceContainer);
         return bitmap is not null ? Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
     }
     public static unsafe Texture2d Create(Color color, string description, int width = 1, int height = 1, TextureOptions textureOptions = null)
@@ -83,27 +83,20 @@ public class Texture2d(int textureId, int width, int height, string description)
             var ratio = color.A / 255f;
             color = Color.FromArgb(color.A, (byte)(color.R * ratio), (byte)(color.G * ratio), (byte)(color.B * ratio));
         }
-        
+
         var textureId = GL.GenTexture();
+        var area = width * height;
+        var arr = ArrayPool<int>.Shared.Rent(area);
+
         try
         {
             DrawState.BindTexture(textureId);
 
-            var area = width * height;
-            var arr = ArrayPool<int>.Shared.Rent(area);
+            Array.Fill(arr, color.ToArgb(), 0, area);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
 
-            try
-            {
-                Array.Fill(arr, color.ToArgb());
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
-
-                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-                GL.Finish();
-            }
-            finally
-            {
-                ArrayPool<int>.Shared.Return(arr);
-            }
+            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            GL.Finish();
 
             DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
@@ -113,6 +106,10 @@ public class Texture2d(int textureId, int width, int height, string description)
             GL.DeleteTexture(textureId);
             DrawState.UnbindTexture(textureId);
             throw;
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(arr);
         }
         return new(textureId, width, height, description);
     }
@@ -134,7 +131,7 @@ public class Texture2d(int textureId, int width, int height, string description)
                 var data = b.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
                 GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width, data.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
                 if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-                
+
                 GL.Finish();
                 b.UnlockBits(data);
             });

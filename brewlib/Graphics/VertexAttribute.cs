@@ -4,7 +4,7 @@ namespace BrewLib.Graphics;
 
 public class VertexAttribute
 {
-    public const string PositionAttributeName = "a_position", 
+    public const string PositionAttributeName = "a_position",
         NormalAttributeName = "a_normal",
         TextureCoordAttributeName = "a_textureCoord",
         ColorAttributeName = "a_color",

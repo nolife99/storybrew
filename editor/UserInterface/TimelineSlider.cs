@@ -20,7 +20,7 @@ public class TimelineSlider : Slider
         tickWhite = Color.FromArgb(220, 255, 255, 255),
         tickMagenta = Color.FromArgb(225, 144, 64, 144),
         tickGrey = Color.FromArgb(225, 160, 160, 160),
-        
+
         kiaiColor = Color.FromArgb(140, 255, 146, 18),
         breakColor = Color.FromArgb(140, 255, 255, 255),
         bookmarkColor = Color.FromArgb(240, 58, 110, 170),
@@ -164,22 +164,22 @@ public class TimelineSlider : Slider
 
         // HitObjects
         if (project.ShowHitObjects) foreach (var hitObject in project.MainBeatmap.HitObjects) if (leftTime < hitObject.EndTime && hitObject.StartTime < rightTime)
-        {
-            var left = Math.Max(0, (hitObject.StartTime - leftTime) * timeScale);
-            var right = Math.Min((hitObject.EndTime - leftTime) * timeScale, Bounds.Width);
-            var height = Math.Max(Bounds.Height * .1f - pixelSize, pixelSize);
+                {
+                    var left = Math.Max(0, (hitObject.StartTime - leftTime) * timeScale);
+                    var right = Math.Min((hitObject.EndTime - leftTime) * timeScale, Bounds.Width);
+                    var height = Math.Max(Bounds.Height * .1f - pixelSize, pixelSize);
 
-            drawLine(drawContext, offset + new Vector2((float)Manager.SnapToPixel(left - height / 2), hitObjectsY),
-                new((float)Manager.SnapToPixel(right - left + height), height), hitObject.Color, actualOpacity);
-        }
+                    drawLine(drawContext, offset + new Vector2((float)Manager.SnapToPixel(left - height / 2), hitObjectsY),
+                        new((float)Manager.SnapToPixel(right - left + height), height), hitObject.Color, actualOpacity);
+                }
 
         // Bookmarks
         foreach (var bookmark in project.MainBeatmap.Bookmarks)
         {
             drawLine(drawContext, new(timeToXTop(bookmark * .001f), offset.Y + Bounds.Height * .1f), new(pixelSize, Bounds.Height * .3f), bookmarkColor, actualOpacity);
 
-            if (leftTime < bookmark && bookmark < rightTime) drawLine(drawContext, 
-                offset + new Vector2((float)Manager.SnapToPixel((bookmark - leftTime) * timeScale), lineBottomY), 
+            if (leftTime < bookmark && bookmark < rightTime) drawLine(drawContext,
+                offset + new Vector2((float)Manager.SnapToPixel((bookmark - leftTime) * timeScale), lineBottomY),
                 new(pixelSize, Bounds.Height * .5f), bookmarkColor, actualOpacity);
         }
 

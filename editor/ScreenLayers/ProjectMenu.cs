@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime;
 using System.Text;
 using System.Threading;
 using BrewLib.Audio;
@@ -68,8 +69,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Padding = new(16, 8, 16, 16),
             Horizontal = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 timeB = new(WidgetManager)
                 {
                     StyleName = "small",
@@ -124,7 +125,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
                 }
-            }
+            ]
         });
         WidgetManager.Root.Add(bottomRightLayout = new(WidgetManager)
         {
@@ -134,8 +135,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Padding = new(16, 16, 16, 8),
             Horizontal = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 effectB = new(WidgetManager)
                 {
                     StyleName = "small",
@@ -183,7 +184,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
                 }
-            }
+            ]
         });
         WidgetManager.Root.Add(effectUI = new(WidgetManager)
         {
@@ -240,8 +241,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Horizontal = true,
             Hoverable = false,
             Displayed = false,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 statusIcon = new(WidgetManager)
                 {
                     StyleName = "icon",
@@ -252,7 +253,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 {
                     AnchorFrom = BoxAlignment.Left
                 }
-            }
+            ]
         });
         WidgetManager.Root.Add(warningsLabel = new(WidgetManager)
         {
@@ -306,23 +307,23 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             switch (e)
             {
                 case MouseButton.Left:
-                {
-                    var speed = timeSource.TimeFactor;
-                    if (speed > 1) speed = 2;
-                    speed /= 2;
-                    if (speed < .2) speed = 1;
-                    timeSource.TimeFactor = speed;
-                    break;
-                }
+                    {
+                        var speed = timeSource.TimeFactor;
+                        if (speed > 1) speed = 2;
+                        speed /= 2;
+                        if (speed < .2) speed = 1;
+                        timeSource.TimeFactor = speed;
+                        break;
+                    }
                 case MouseButton.Right:
-                {
-                    var speed = timeSource.TimeFactor;
-                    if (speed < 1) speed = 1;
-                    speed += speed >= 2 ? 1 : .5f;
-                    if (speed > 8) speed = 1;
-                    timeSource.TimeFactor = speed;
-                    break;
-                }
+                    {
+                        var speed = timeSource.TimeFactor;
+                        if (speed < 1) speed = 1;
+                        speed += speed >= 2 ? 1 : .5f;
+                        if (speed > 8) speed = 1;
+                        timeSource.TimeFactor = speed;
+                        break;
+                    }
                 case MouseButton.Middle: timeSource.TimeFactor = timeSource.TimeFactor == 8 ? 1 : 8; break;
             }
 
@@ -378,25 +379,26 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         }
 
         if (!e.IsRepeat) switch (e.Key)
-        {
-            case Key.Space: case Key.K: playB.Click(); return true;
-            case Key.O: withSavePrompt(Manager.ShowOpenProject); return true;
-            case Key.S: if (e.Control)
-                {
-                    saveProject();
-                    return true;
-                }
-                break;
-            case Key.C:
-                if (e.Control)
-                {
-                    if (e.Shift) ClipboardHelper.SetText(TimeSpan.FromMilliseconds(timeSource.Current * 1000).ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
-                    else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
-                    else ClipboardHelper.SetText((timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
-                    return true;
-                }
-                break;
-        }
+            {
+                case Key.Space: case Key.K: playB.Click(); return true;
+                case Key.O: withSavePrompt(Manager.ShowOpenProject); return true;
+                case Key.S:
+                    if (e.Control)
+                    {
+                        saveProject();
+                        return true;
+                    }
+                    break;
+                case Key.C:
+                    if (e.Control)
+                    {
+                        if (e.Shift) ClipboardHelper.SetText(TimeSpan.FromMilliseconds(timeSource.Current * 1000).ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
+                        else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
+                        else ClipboardHelper.SetText((timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
+                        return true;
+                    }
+                    break;
+            }
 
         return base.OnKeyDown(e);
     }
@@ -435,25 +437,23 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var first = true;
         var mainBeatmap = proj.MainBeatmap;
 
-        var maps = proj.MapsetManager.Beatmaps.ToArray();
-        using (ManualResetEventSlim wait = new()) maps.ForEachUnsafe(map =>
-        {
-            Program.RunMainThread(() => proj.MainBeatmap = map);
-            while (proj.EffectsStatus != EffectStatus.Ready)
+        using (ManualResetEventSlim wait = new()) foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
             {
-                switch (proj.EffectsStatus)
+                Program.RunMainThread(() => proj.MainBeatmap = map);
+                while (proj.EffectsStatus != EffectStatus.Ready)
                 {
-                    case EffectStatus.CompilationFailed:
-                    case EffectStatus.ExecutionFailed:
-                    case EffectStatus.LoadingFailed: throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
+                    switch (proj.EffectsStatus)
+                    {
+                        case EffectStatus.CompilationFailed:
+                        case EffectStatus.ExecutionFailed:
+                        case EffectStatus.LoadingFailed: throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus})\nCheck its log for the actual error.");
+                    }
+                    wait.Wait(200);
                 }
-                wait.Wait(200);
+
+                proj.ExportToOsb(first);
+                first = false;
             }
-
-            proj.ExportToOsb(first);
-            first = false;
-        });
-
         if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.RunMainThread(() => proj.MainBeatmap = mainBeatmap);
     });
     public override void FixedUpdate()
@@ -507,28 +507,42 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         storyboardDrawable.Clip = !Manager.GetContext<Editor>().InputManager.Alt;
         if (previewContainer.Visible) previewDrawable.Time = timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
     }
+
+    readonly StringBuilder warnings = new();
     string buildWarningMessage()
     {
-        StringBuilder warnings = new();
+        warnings.Clear();
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
-        if (activeSprites > 0 && activeSprites < 1500 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{activeSprites:n0} Sprites");
+        if (proj.DisplayDebugWarning && activeSprites < 1500) warnings.AppendLine(CultureInfo.CurrentCulture, $"{activeSprites:n0} Sprites");
         else if (activeSprites >= 1500) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {activeSprites:n0} Sprites");
 
+        var batches = proj.FrameStats.Batches;
+        if (proj.DisplayDebugWarning && batches < 500) warnings.AppendLine(CultureInfo.CurrentCulture, $"{batches:0} Batches");
+        else if (batches >= 500) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {batches:0} Batches");
+
         var commands = stats.CommandCount;
-        if (commands > 0 && commands < 15000 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{commands:n0} Commands");
+        if (proj.DisplayDebugWarning && commands < 15000) warnings.AppendLine(CultureInfo.CurrentCulture, $"{commands:n0} Commands");
         else if (commands >= 15000) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {commands:n0} Commands");
 
         float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands, unusedRatio = unusedCommands / commands;
         if ((unusedCommands >= 5000 && unusedRatio > .5f) || (unusedCommands >= 10000 && unusedRatio > .2f) || unusedCommands >= 15000)
             warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
-        else if (proj.DisplayDebugWarning && unusedCommands > 0)
+        else if (proj.DisplayDebugWarning)
             warnings.AppendLine(CultureInfo.CurrentCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
 
         var sbLoad = (float)stats.ScreenFill;
-        if (sbLoad > 0 && sbLoad < 5 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{sbLoad:f0}x Screen Fill");
-        else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {sbLoad:f0}x Screen Fill");
+        if (sbLoad > 0 && sbLoad < 5 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{sbLoad:f2}x Screen Fill");
+        else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {sbLoad:f2}x Screen Fill");
+
+        var frameGpuMemory = stats.GpuMemoryFrameMb;
+        if (proj.DisplayDebugWarning && frameGpuMemory < 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"{frameGpuMemory:0.0}MB Texture Memory (Frame)");
+        else if (frameGpuMemory >= 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {frameGpuMemory:0.0}MB Texture Mem. (Frame)");
+
+        var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
+        if (proj.DisplayDebugWarning && totalGpuMemory < 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"{totalGpuMemory:0.0}MB Texture Memory (Total)");
+        else if (totalGpuMemory >= 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {totalGpuMemory:0.0}MB Texture Memory");
 
         if (stats.OverlappedCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Overlapped Commands");
         if (stats.IncompatibleCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Incompatible Commands");
@@ -573,6 +587,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             proj.CancelEffectUpdates(true);
             Program.Schedule(() => Manager.GetContext<Editor>().Restart());
         });
+
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GCSettings.LatencyMode = GCLatencyMode.Batch;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
     });
     void withSavePrompt(Action action)
     {

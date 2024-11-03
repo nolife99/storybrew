@@ -35,8 +35,8 @@ public abstract class ScriptContainerBase<TScript> : ScriptContainer<TScript> wh
     {
         get
         {
-            if (LibraryFolder is null || !Directory.Exists(LibraryFolder)) return new[] { MainSourcePath };
-            return Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union(new[] { MainSourcePath });
+            if (LibraryFolder is null || !Directory.Exists(LibraryFolder)) return [MainSourcePath];
+            return Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union([MainSourcePath]);
         }
     }
 
@@ -111,11 +111,7 @@ public abstract class ScriptContainerBase<TScript> : ScriptContainer<TScript> wh
             disposed = true;
         }
     }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
 
     #endregion
 }

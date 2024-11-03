@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 
@@ -37,7 +39,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         base.Dispose(disposing);
     }
-    public unsafe override void Render(PrimitiveType primitiveType, TPrimitive* primitives, int primitiveCount, int drawCount, bool canBuffer = false)
+    public unsafe override void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
     {
         if (!Bound) throw new InvalidOperationException("Not bound");
 
@@ -53,9 +55,9 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        Native.CopyMemory(primitives, bufferPointer + bufferOffset, vertexDataSize);
+        Native.CopyMemory(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(primitives)), bufferPointer + bufferOffset, vertexDataSize);
 
-        if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset << 1);
+        if (IndexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset * 2);
         else GL.DrawArrays(primitiveType, drawOffset, drawCount);
 
         commandSync.LockRange(bufferOffset, vertexDataSize);

@@ -17,12 +17,12 @@ public class CompositeDrawable : Drawable
             var minWidth = 0f;
             var minHeight = 0f;
 
-            Drawables.ForEach(drawable =>
+            foreach (var drawable in Drawables)
             {
                 var minSize = drawable.MinSize;
                 minWidth = Math.Min(minWidth, minSize.X);
                 minHeight = Math.Min(minWidth, minSize.Y);
-            });
+            }
             return new(minWidth, minHeight);
         }
     }
@@ -33,17 +33,19 @@ public class CompositeDrawable : Drawable
             var maxWidth = 0f;
             var maxHeight = 0f;
 
-            Drawables.ForEach(drawable =>
+            foreach (var drawable in Drawables)
             {
                 var preferredSize = drawable.PreferredSize;
                 maxWidth = Math.Min(maxWidth, preferredSize.X);
                 maxHeight = Math.Min(maxHeight, preferredSize.Y);
-            });
+            }
             return new(maxWidth, maxHeight);
         }
     }
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
-        => Drawables.ForEach(drawable => drawable.Draw(drawContext, camera, bounds, opacity));
+    {
+        foreach (var drawable in Drawables) drawable.Draw(drawContext, camera, bounds, opacity);
+    }
 
     #region IDisposable Support
 

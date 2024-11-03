@@ -19,7 +19,7 @@ public class Line3d : Node3d, HasOsbSprites
 
     ///<summary> The path to the image of this <see cref="Line3d"/>. </summary>
     public string SpritePath;
-    
+
     ///<summary> The <see cref="OsbOrigin"/> of this <see cref="Line3d"/>. </summary>
     public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
 
@@ -181,7 +181,7 @@ public class Line3dEx : Node3d, HasOsbSprites
 
         var thickness = Thickness.ValueAt(time);
         var matrix = object3dState.WorldTransform;
-        var scaleFactor = new Vector3(matrix.M21, matrix.M22, matrix.M23).Length() * (float)cameraState.ResolutionScale;
+        var scaleFactor = new Vector3(matrix.M21, matrix.M22, matrix.M23).Length() * cameraState.ResolutionScale;
         var startScale = scaleFactor * (float)(cameraState.FocusDistance / startVector.W) * thickness * StartThickness.ValueAt(time);
         var endScale = scaleFactor * (float)(cameraState.FocusDistance / endVector.W) * thickness * EndThickness.ValueAt(time);
 
@@ -195,7 +195,7 @@ public class Line3dEx : Node3d, HasOsbSprites
 
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
-        
+
         var length = delta.Length();
 
         var positionBody = new Vector2(startVector.X, startVector.Y) + delta / 2;

@@ -31,20 +31,18 @@ public static class BitmapHelper
     public static PinnedBitmap Premultiply(Bitmap source)
     {
         PinnedBitmap result = new(source);
-        var resultSpan = result.AsSpan();
-
         for (int y = 0, index = 0; y < result.Height; ++y) for (var x = 0; x < result.Width; ++x)
-        {
-            var color = resultSpan[y * result.Width + x];
+            {
+                var color = result[y * result.Width + x];
 
-            var alpha = (color >> 24) & 0xFF;
-            var red = (color >> 16) & 0xFF;
-            var green = (color >> 8) & 0xFF;
-            var blue = color & 0xFF;
+                var alpha = (color >> 24) & 0xFF;
+                var red = (color >> 16) & 0xFF;
+                var green = (color >> 8) & 0xFF;
+                var blue = color & 0xFF;
 
-            var a = alpha / 255f;
-            resultSpan[index++] = (alpha << 24) | ((byte)(red * a) << 16) | ((byte)(green * a) << 8) | (byte)(blue * a);
-        }
+                var a = alpha / 255f;
+                result[index++] = (alpha << 24) | ((byte)(red * a) << 16) | ((byte)(green * a) << 8) | (byte)(blue * a);
+            }
 
         return result;
     }
@@ -58,15 +56,15 @@ public static class BitmapHelper
         var expFactor = 2 * weight * weight;
 
         for (var y = 0; y <= radius; ++y) for (var x = 0; x <= radius; ++x)
-        {
-            var value = scale * MathF.Exp(-(x * x + y * y) / expFactor);
-            kernel[radius + y, radius + x] = value;
-            kernel[radius + y, radius - x] = value;
-            kernel[radius - y, radius + x] = value;
-            kernel[radius - y, radius - x] = value;
+            {
+                var value = scale * MathF.Exp(-(x * x + y * y) / expFactor);
+                kernel[radius + y, radius + x] = value;
+                kernel[radius + y, radius - x] = value;
+                kernel[radius - y, radius + x] = value;
+                kernel[radius - y, radius - x] = value;
 
-            total += 4 * value;
-        }
+                total += 4 * value;
+            }
 
         var factor = 1 / total;
         for (var y = 0; y < length; ++y) for (var x = 0; x < length; ++x) kernel[x, y] *= factor;
@@ -82,40 +80,34 @@ public static class BitmapHelper
 
         var width = source.Width;
         var height = source.Height;
-        
+
         var halfWidth = kernelWidth >> 1;
         var halfHeight = kernelHeight >> 1;
 
         PinnedBitmap result = new(width, height);
-        using (PinnedBitmap src = new(source))
-        {
-            var srcSpan = src.AsReadOnlySpan();
-            var destSpan = result.AsSpan();
-
-            for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
-            {
-                float a = 0, r = 0, g = 0, b = 0;
-                for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
+        using (PinnedBitmap src = new(source)) for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
-                    var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
-                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                    float a = 0, r = 0, g = 0, b = 0;
+                    for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                     {
-                        var color = srcSpan[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
-                        var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
+                        var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
+                        for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                        {
+                            var color = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                            var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
 
-                        a += ((color >> 24) & 0xFF) * k;
-                        r += ((color >> 16) & 0xFF) * k;
-                        g += ((color >> 8) & 0xFF) * k;
-                        b += (color & 0xFF) * k;
+                            a += ((color >> 24) & 0xFF) * k;
+                            r += ((color >> 16) & 0xFF) * k;
+                            g += ((color >> 8) & 0xFF) * k;
+                            b += (color & 0xFF) * k;
+                        }
                     }
+
+                    var alpha = (byte)a;
+                    if (alpha == 1) alpha = 0;
+
+                    result[index++] = (alpha << 24) | ((byte)r << 16) | ((byte)g << 8) | (byte)b;
                 }
-
-                var alpha = (byte)a;
-                if (alpha == 1) alpha = 0;
-
-                destSpan[index++] = (alpha << 24) | ((byte)r << 16) | ((byte)g << 8) | (byte)b;
-            }
-        }
 
         return result;
     }
@@ -137,27 +129,24 @@ public static class BitmapHelper
         PinnedBitmap result = new(width, height);
         using (PinnedBitmap src = new(source))
         {
-            var srcSpan = src.AsReadOnlySpan();
-            var destSpan = result.AsSpan();
-
             for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
-            {
-                var a = 0f;
-                for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                 {
-                    var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
-                    for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                    var a = 0f;
+                    for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
                     {
-                        var col = srcSpan[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
-                        a += ((col >> 24) & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
+                        var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
+                        for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
+                        {
+                            var col = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                            a += ((col >> 24) & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
+                        }
                     }
+                    result[index++] = ((byte)a << 24) | rgb;
                 }
-                destSpan[index++] = ((byte)a << 24) | rgb;
-            }
         }
         return result;
     }
-    
+
     public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
         if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
@@ -189,9 +178,7 @@ public static class BitmapHelper
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
 
         using PinnedBitmap src = new(source);
-        var srcSpan = src.AsReadOnlySpan();
-
-        for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((srcSpan[y * src.Width + x] >> 24) & 0xFF) != 0) return false;
+        for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((src[y * src.Width + x] >> 24) & 0xFF) != 0) return false;
         return true;
     }
     public static Rectangle FindTransparencyBounds(Image source)
@@ -202,14 +189,13 @@ public static class BitmapHelper
         int xMin = size.Width, yMin = size.Height, xMax = -1, yMax = -1;
         using (PinnedBitmap src = new(source))
         {
-            var srcSpan = src.AsReadOnlySpan();
-            for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((srcSpan[y * src.Width + x] >> 24) & 0xFF) != 0)
-            {
-                if (x < xMin) xMin = x;
-                if (x > xMax) xMax = x;
-                if (y < yMin) yMin = y;
-                if (y > yMax) yMax = y;
-            }
+            for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((src[y * src.Width + x] >> 24) & 0xFF) != 0)
+                    {
+                        if (x < xMin) xMin = x;
+                        if (x > xMax) xMax = x;
+                        if (y < yMin) yMin = y;
+                        if (y > yMax) yMax = y;
+                    }
         }
 
         return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
@@ -235,20 +221,23 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int Height { get; private set; }
 
     ///<summary> Gets or sets the pixel color at the given pixel index as a 32-bit ARGB channel (AARRGGBB). </summary>
-    ///<remarks> Use <see cref="AsSpan"/>/<see cref="AsReadOnlySpan"/> instead when indexing within a loop for better performance. </remarks>
     ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
     public int this[int pixelIndex]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => unchecked(AsReadOnlySpan()[pixelIndex]);
+        get => (uint)pixelIndex < (uint)Count ? scan0[pixelIndex] : throw new ArgumentOutOfRangeException(nameof(pixelIndex));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        set => AsSpan()[pixelIndex] = unchecked(value);
+        set
+        {
+            if ((uint)pixelIndex >= (uint)Count) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+            scan0[pixelIndex] = value;
+        }
     }
 
     ///<summary> Creates a new pinned bitmap from the given dimensions. </summary>
-    public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width << 2, PixelFormat.Format32bppArgb, 
-        (nint)(scan0 = (int*)NativeMemory.Alloc((nuint)(Count = width * height), sizeof(int))));
+    public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width * sizeof(int), PixelFormat.Format32bppArgb,
+        (nint)(scan0 = (int*)NativeMemory.Alloc((nuint)((Count = width * height) * sizeof(int)))));
 
     ///<summary> Creates a new pinned bitmap from a copy of the given image. </summary>
     public PinnedBitmap(Image image) : this(image.Width, image.Height)
@@ -262,7 +251,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     ///<summary> Creates a new pinned bitmap from a copy of the given 32-bit ARGB color data and dimensions. </summary>
     public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height)
     {
-        fixed (void* pinned = &MemoryMarshal.GetReference(data)) Native.CopyMemory(pinned, scan0, Count << 2);
+        fixed (void* pinned = &MemoryMarshal.GetReference(data)) Native.CopyMemory(pinned, scan0, Count * sizeof(int));
     }
 
     ///<summary> Sets the pixel color at the given coordinates. </summary>
@@ -306,7 +295,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int[] ToArray()
     {
         var array = GC.AllocateUninitializedArray<int>(Count);
-        fixed (void* arrAddr = &array[0]) Native.CopyMemory(scan0, arrAddr, Count << 2);
+        fixed (void* arrAddr = &array[0]) Native.CopyMemory(scan0, arrAddr, Count * sizeof(int));
         return array;
     }
 

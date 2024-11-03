@@ -24,8 +24,8 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             AnchorFrom = BoxAlignment.Centre,
             AnchorTo = BoxAlignment.Centre,
             Padding = new(16),
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new ScrollArea(WidgetManager, new Label(WidgetManager)
                 {
                     Text = message,
@@ -39,7 +39,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
                     Horizontal = true,
                     AnchorFrom = BoxAlignment.Centre
                 }
-            }
+            ]
         });
         Button yesButton = new(WidgetManager)
         {

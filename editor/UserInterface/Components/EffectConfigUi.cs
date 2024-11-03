@@ -61,16 +61,16 @@ public class EffectConfigUi : Widget
             Padding = new(16),
             FitChildren = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new LinearLayout(manager)
                 {
                     Fill = true,
                     FitChildren = true,
                     Horizontal = true,
                     CanGrow = false,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         titleLabel = new(manager)
                         {
                             Text = "Configuration"
@@ -101,13 +101,13 @@ public class EffectConfigUi : Widget
                             AnchorTo = BoxAlignment.Centre,
                             CanGrow = false
                         }
-                    }
+                    ]
                 },
                 new ScrollArea(manager, configFieldsLayout = new(manager)
                 {
                     FitChildren = true
                 })
-            }
+            ]
         });
 
         copyButton.OnClick += (sender, e) => copyConfiguration();
@@ -169,8 +169,8 @@ public class EffectConfigUi : Widget
                 AnchorTo = BoxAlignment.Centre,
                 Horizontal = true,
                 Fill = true,
-                Children = new Widget[]
-                {
+                Children =
+                [
                     new Label(Manager)
                     {
                         StyleName = "listItem",
@@ -180,7 +180,7 @@ public class EffectConfigUi : Widget
                         Tooltip = description
                     },
                     buildFieldEditor(field)
-                }
+                ]
             });
         }
     }
@@ -206,15 +206,15 @@ public class EffectConfigUi : Widget
                 Value = field.Value,
                 Options =
                 [
-                    new() 
+                    new()
                     {
-                        Name = bool.TrueString, 
-                        Value = true 
+                        Name = bool.TrueString,
+                        Value = true
                     },
-                    new() 
-                    { 
-                        Name = bool.FalseString, 
-                        Value = false 
+                    new()
+                    {
+                        Name = bool.FalseString,
+                        Value = false
                     }
                 ],
                 AnchorFrom = BoxAlignment.Right,
@@ -258,7 +258,7 @@ public class EffectConfigUi : Widget
             widget.OnValueCommited += (sender, e) =>
             {
                 var ctor = field.Type.GetConstructor([typeof(float), typeof(float), typeof(float)]);
-                setFieldValue(field, ctor.Invoke(new object[] { widget.Value[0], widget.Value[1], widget.Value[2] }));
+                setFieldValue(field, ctor.Invoke([widget.Value[0], widget.Value[1], widget.Value[2]]));
 
                 var configVal = effect.Config.GetValue(field.Name);
                 widget.Value = [(float)x.GetValue(configVal), (float)y.GetValue(configVal), (float)z.GetValue(configVal)];
@@ -377,7 +377,7 @@ public class EffectConfigUi : Widget
     }
     void copyConfiguration()
     {
-        using MemoryStream stream = new(); 
+        using MemoryStream stream = new();
         using BinaryWriter writer = new(stream);
         writer.Write(effect.Config.FieldCount);
 
@@ -393,7 +393,7 @@ public class EffectConfigUi : Widget
         var changed = false;
         try
         {
-            using var stream = (Stream)ClipboardHelper.GetData(effectConfigFormat); 
+            using var stream = (Stream)ClipboardHelper.GetData(effectConfigFormat);
             using BinaryReader reader = new(stream);
 
             var fieldCount = reader.ReadInt32();

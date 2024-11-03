@@ -30,10 +30,10 @@ public class EffectConfig
 
         var isAllowed = allowedValues is null;
         if (!isAllowed) for (var i = 0; i < allowedValues.Length; ++i) if (value.Equals(allowedValues[i].Value))
-        {
-            isAllowed = true;
-            break;
-        }
+                {
+                    isAllowed = true;
+                    break;
+                }
         if (!isAllowed) value = defaultValue;
 
         fields[name] = new()

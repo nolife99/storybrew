@@ -22,7 +22,7 @@ class HitObjectHighlight : StoryboardObjectGenerator
 
     protected override void Generate()
     {
-        using OsbSpritePool pool = new(GetLayer(""), SpritePath, Additive); 
+        using OsbSpritePool pool = new(GetLayer(""), SpritePath, Additive);
         foreach (var hitobject in Beatmap.HitObjects)
         {
             if ((StartTime != 0 || EndTime != 0) && (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime)) continue;

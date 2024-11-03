@@ -27,8 +27,8 @@ public class SettingsMenu : Widget
             Padding = new(16),
             FitChildren = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new Label(manager)
                 {
                     Text = "Settings",
@@ -39,8 +39,8 @@ public class SettingsMenu : Widget
                     Fill = true,
                     FitChildren = true,
                     CanGrow = false,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         helpButton = new(manager)
                         {
                             Text = "Help!",
@@ -57,8 +57,8 @@ public class SettingsMenu : Widget
                         {
                             StyleName = "condensed",
                             FitChildren = true,
-                            Children = new Widget[]
-                            {
+                            Children =
+                            [
                                 dimLabel = new(manager)
                                 {
                                     StyleName = "small",
@@ -72,7 +72,7 @@ public class SettingsMenu : Widget
                                     Value = 0,
                                     Step = .05f
                                 }
-                            }
+                            ]
                         },
                         floatingPointTimeButton = new(manager)
                         {
@@ -101,9 +101,9 @@ public class SettingsMenu : Widget
                             Checked = project.ShowHitObjects,
                             Tooltip = "Displays hit objects of the current beatmap on\nthe timeline."
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         });
 
         helpButton.OnClick += (sender, e) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");

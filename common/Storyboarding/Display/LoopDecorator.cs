@@ -21,26 +21,20 @@ public class LoopDecorator<TValue>(ITypedCommand<TValue> command, double startTi
 
     public TValue ValueAtTime(double time)
     {
-        if (time < StartTime) return command.ValueAtTime(command.EndTime);
+        if (time < StartTime) return command.ValueAtTime(command.StartTime);
         if (EndTime < time) return command.ValueAtTime(command.EndTime);
 
         var repeatDuration = RepeatDuration;
         var repeatTime = time - StartTime;
-        var repeated = false;
-        while (repeatTime > repeatDuration)
-        {
-            repeatTime -= repeatDuration;
-            repeated = true;
-        }
+        var repeated = repeatTime > repeatDuration;
+        repeatTime %= repeatDuration;
 
-        if (repeatTime < command.StartTime) if (repeated && repeatTime < command.StartTime) return command.ValueAtTime(command.EndTime);
-        else return command.ValueAtTime(command.StartTime);
-
+        if (repeated && repeatTime < command.StartTime) return command.ValueAtTime(repeated ? command.EndTime : command.StartTime);
         if (command.EndTime < repeatTime) return command.ValueAtTime(command.EndTime);
         return command.ValueAtTime(repeatTime);
     }
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation) => throw new InvalidOperationException();
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation) => throw new InvalidOperationException();
     public override string ToString() => $"loop x{repeats} ({StartTime}s - {EndTime}s)";
 }

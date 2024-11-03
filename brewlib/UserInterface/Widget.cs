@@ -225,7 +225,10 @@ public class Widget(WidgetManager manager) : IDisposable
 
         InvalidateAncestorLayout();
     }
-    public void ClearWidgets() => children.ToArray().ForEachUnsafe(child => child.Dispose());
+    public void ClearWidgets()
+    {
+        foreach (var child in children.ToArray()) child.Dispose();
+    }
 
     public bool HasAncestor(Widget widget)
     {
@@ -358,7 +361,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
             absolutePosition = manager.SnapToPixel(absolutePosition);
         }
-        if (includeChildren) children.ForEach(child => child.UpdateAnchoring(iteration));
+        if (includeChildren) foreach (var child in children) child.UpdateAnchoring(iteration);
     }
 
     #endregion
@@ -385,8 +388,6 @@ public class Widget(WidgetManager manager) : IDisposable
 
     bool needsLayout = true;
     public bool NeedsLayout => needsLayout;
-
-    double lastLayoutTime = double.MinValue;
 
     public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
     {
@@ -418,12 +419,11 @@ public class Widget(WidgetManager manager) : IDisposable
         if (!needsLayout) return;
         Layout();
     }
-    public virtual void PreLayout() => children.ForEach(child => child.PreLayout());
-    protected virtual void Layout()
+    public virtual void PreLayout()
     {
-        lastLayoutTime = manager.ScreenLayerManager.TimeSource.Current;
-        needsLayout = false;
+        foreach (var child in children) child.PreLayout();
     }
+    protected virtual void Layout() => needsLayout = false;
 
     #endregion
 
@@ -492,25 +492,25 @@ public class Widget(WidgetManager manager) : IDisposable
     protected static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
     {
         if (handler is not null) foreach (var handlerDelegate in handler.GetInvocationList())
-        {
-            try
             {
-                if (!Array.Exists(handler.GetInvocationList(), h => h == handlerDelegate)) continue;
-                if (((HandleableWidgetEventHandler<T>)handlerDelegate)(evt, e))
+                try
                 {
-                    evt.Handled = true;
-                    break;
+                    if (!Array.Exists(handler.GetInvocationList(), h => h == handlerDelegate)) continue;
+                    if (((HandleableWidgetEventHandler<T>)handlerDelegate)(evt, e))
+                    {
+                        evt.Handled = true;
+                        break;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Trace.WriteLine($"Event handler '{handler.Method}' for '{handler.Target}' raised an exception:\n{exception}");
                 }
             }
-            catch (Exception exception)
-            {
-                Trace.WriteLine($"Event handler '{handler.Method}' for '{handler.Target}' raised an exception:\n{exception}");
-            }
-        }
 
         return evt.Handled;
     }
-    protected static void Raise<T>(WidgetEventHandler<T> handler, WidgetEvent evt, T e) 
+    protected static void Raise<T>(WidgetEventHandler<T> handler, WidgetEvent evt, T e)
         => EventHelper.InvokeStrict(() => handler, d => ((WidgetEventHandler<T>)d)(evt, e));
 
     public event EventHandler OnDisposed;

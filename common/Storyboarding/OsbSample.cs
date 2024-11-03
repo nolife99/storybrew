@@ -31,6 +31,6 @@ public class OsbSample : StoryboardObject
     public override double EndTime => Time;
 
     ///<summary/>
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer) => writer.WriteLine(
+    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform) => writer.WriteLine(
         $"Sample,{((int)Time).ToString(exportSettings.NumberFormat)},{layer},\"{AudioPath.Trim()}\",{((int)Volume).ToString(exportSettings.NumberFormat)}");
 }

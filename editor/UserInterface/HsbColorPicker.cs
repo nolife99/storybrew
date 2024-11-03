@@ -65,8 +65,8 @@ public class HsbColorPicker : Widget, Field
         {
             StyleName = "condensed",
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new Label(manager)
                 {
                     StyleName = "small",
@@ -119,7 +119,7 @@ public class HsbColorPicker : Widget, Field
                 {
                     EnterCommits = true
                 }
-            }
+            ]
         });
 
         hueSlider.OnValueChanged += slider_OnValueChanged;

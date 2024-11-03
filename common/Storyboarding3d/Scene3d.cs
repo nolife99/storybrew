@@ -33,7 +33,7 @@ public class Scene3d
         beatmap.ForEachTick((int)startTime, (int)endTime, divisor, (t, time, b, tC) => Root.GenerateTreeStates(time, camera));
         Root.GenerateTreeCommands();
     }
-    
+
     /// <summary> 
     /// Generates a looping 3D scene from <paramref name="startTime"/> to <paramref name="endTime"/> with given iteration period <paramref name="timeStep"/> and loop count <paramref name="loopCount"/>.
     /// </summary>

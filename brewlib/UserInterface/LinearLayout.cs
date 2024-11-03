@@ -143,7 +143,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             usedSpace = totalSpacing;
             scalableItems = 0;
 
-            items.ForEach(item =>
+            foreach (var item in items)
             {
                 if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
 
@@ -180,11 +180,11 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                     }
                 }
                 usedSpace += item.Length;
-            });
+            }
         }
 
         var distance = horizontal ? padding.Left : padding.Top;
-        items.ForEach(item =>
+        foreach (var item in items)
         {
             var child = item.Widget;
             var minSize = item.MinSize;
@@ -207,7 +207,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                 PlaceChildren(child, new(padding.GetHorizontalOffset(anchor), distance), new(childBreadth, item.Length), anchor);
             }
             distance += item.Length + spacing;
-        });
+        }
     }
     protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
     {

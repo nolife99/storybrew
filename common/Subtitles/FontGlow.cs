@@ -39,7 +39,7 @@ public class FontGlow(int radius = 6, float power = 0, FontColor color = default
             graphics.FillPath(Brushes.White, path);
         }
 
-        using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5f, Color); 
+        using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5f, Color);
         textGraphics.DrawImage(blur.Bitmap, 0, 0, bitmap.Width, bitmap.Height);
     }
 }

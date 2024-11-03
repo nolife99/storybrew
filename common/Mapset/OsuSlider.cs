@@ -150,11 +150,11 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         var previousPoint = PlayfieldPosition;
         for (var i = 0; i < controlPoints.Length; ++i)
         {
-            curves[i] = new(new CommandPosition[]
-            {
+            curves[i] = new(
+            [
                 previousPoint,
                 controlPoints[i].PlayfieldPosition
-            }, 0);
+            ], 0);
             previousPoint = controlPoints[i].PlayfieldPosition;
         }
         return new(curves);

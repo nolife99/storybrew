@@ -66,7 +66,9 @@ public partial class YamlTokenParser : TokenParser<YamlTokenType>
 
             switch (context.LookaheadToken.Type)
             {
-                case YamlTokenType.ArrayIndicator: case YamlTokenType.Property: case YamlTokenType.PropertyQuoted:
+                case YamlTokenType.ArrayIndicator:
+                case YamlTokenType.Property:
+                case YamlTokenType.PropertyQuoted:
                     throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
             }
 
@@ -134,26 +136,26 @@ public partial class YamlTokenParser : TokenParser<YamlTokenType>
             switch (context.CurrentToken.Type)
             {
                 case YamlTokenType.Word:
-                {
-                    var value = context.CurrentToken.Value;
-                    Match match;
-                    if ((match = floatRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if ((match = integerRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
-                    else if ((match = boolRegex.Match(value)).Success) Callback(new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.OrdinalIgnoreCase)));
-                    else Callback(new TinyValue(value));
-                    context.ConsumeToken();
-                    context.PopParser();
-                }
-                return;
+                    {
+                        var value = context.CurrentToken.Value;
+                        Match match;
+                        if ((match = floatRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Float));
+                        else if ((match = integerRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
+                        else if ((match = boolRegex.Match(value)).Success) Callback(new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.OrdinalIgnoreCase)));
+                        else Callback(new TinyValue(value));
+                        context.ConsumeToken();
+                        context.PopParser();
+                    }
+                    return;
 
                 case YamlTokenType.WordQuoted:
-                {
-                    var value = YamlUtil.UnescapeString(context.CurrentToken.Value);
-                    Callback(new TinyValue(value));
-                    context.ConsumeToken();
-                    context.PopParser();
-                }
-                return;
+                    {
+                        var value = YamlUtil.UnescapeString(context.CurrentToken.Value);
+                        Callback(new TinyValue(value));
+                        context.ConsumeToken();
+                        context.PopParser();
+                    }
+                    return;
             }
 
             throw new InvalidDataException("Unexpected token: " + context.CurrentToken);

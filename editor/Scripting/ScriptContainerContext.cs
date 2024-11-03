@@ -22,11 +22,11 @@ public class ScriptContainerContext<TScript>(string scriptTypeName, string mainS
             }
             catch
             {
-                UnloadDomain(scriptDomain);
+                scriptDomain.Unload();
                 throw;
             }
 
-            if (appDomain != null) UnloadDomain(scriptDomain);
+            if (appDomain != null) scriptDomain.Unload();
             appDomain = scriptDomain;
 
             return scriptProvider;
@@ -50,19 +50,12 @@ public class ScriptContainerContext<TScript>(string scriptTypeName, string mainS
         {
             if (appDomain is not null)
             {
-                UnloadDomain(appDomain);
+                appDomain.Unload();
                 appDomain = null;
             }
             disposed = true;
         }
         base.Dispose(disposing);
-    }
-
-    static void UnloadDomain(AssemblyLoadContext context)
-    {
-        context.Unload();
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
     }
 
     #endregion

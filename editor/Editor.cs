@@ -42,7 +42,7 @@ public sealed class Editor(GameWindow window) : IDisposable
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, width: 1024, height: 1024), true);
         drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
 
@@ -115,8 +115,8 @@ public sealed class Editor(GameWindow window) : IDisposable
             Horizontal = true,
             Opacity = 0,
             Displayed = false,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 statsLabel = new(overlay)
                 {
                     StyleName = "small",
@@ -124,7 +124,7 @@ public sealed class Editor(GameWindow window) : IDisposable
                     AnchorTo = BoxAlignment.TopLeft,
                     Displayed = Program.Settings.ShowStats
                 }
-            }
+            ]
         });
         overlayTop.Pack(1024, 16);
 
@@ -136,8 +136,8 @@ public sealed class Editor(GameWindow window) : IDisposable
             Horizontal = true,
             Opacity = 0,
             Displayed = false,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new Label(overlay)
                 {
                     StyleName = "icon",
@@ -147,7 +147,7 @@ public sealed class Editor(GameWindow window) : IDisposable
                 {
                     Step = .01f
                 }
-            }
+            ]
         });
         altOverlayTop.Pack(0, 0, 1024);
 

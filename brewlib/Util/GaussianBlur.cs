@@ -53,7 +53,7 @@ public unsafe class GaussianBlur
             () => gaussBlur_4(ref MemoryMarshal.GetArrayDataReference(_blue), newBlue, radius, weight));
 
         PinnedBitmap dest = new(_width, _height);
-        Parallel.For(0, dest.Count, _pOptions, i => dest[i] = 
+        Parallel.For(0, dest.Count, _pOptions, i => dest[i] =
             ((byte)newAlpha[i] << 24) |
             ((byte)newRed[i] << 16) |
             ((byte)newGreen[i] << 8) |

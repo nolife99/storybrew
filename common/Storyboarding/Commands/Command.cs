@@ -7,7 +7,7 @@ using StorybrewCommon.Storyboarding.CommandValues;
 namespace StorybrewCommon.Storyboarding.Commands;
 
 #pragma warning disable CS1591
-public abstract class Command<TValue>(string identifier, OsbEasing easing, double startTime, double endTime, TValue startValue, TValue endValue) 
+public abstract class Command<TValue>(string identifier, OsbEasing easing, double startTime, double endTime, TValue startValue, TValue endValue)
     : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
 {
     public string Identifier { get; set; } = identifier;
@@ -21,6 +21,9 @@ public abstract class Command<TValue>(string identifier, OsbEasing easing, doubl
     public virtual bool ExportEndValue => true;
     public bool Active => true;
     public int Cost => 1;
+
+    public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
+    public virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
 
     public void Offset(double offset)
     {
@@ -51,29 +54,28 @@ public abstract class Command<TValue>(string identifier, OsbEasing easing, doubl
     public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
 
     public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
-    public bool Equals(Command<TValue> obj) => Identifier == obj.Identifier && Easing == obj.Easing && 
+    public bool Equals(Command<TValue> obj) => Identifier == obj.Identifier && Easing == obj.Easing &&
         StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) && EndValue.Equals(obj.EndValue);
 
-    public virtual string ToOsbString(ExportSettings exportSettings)
+    public virtual string ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
     {
         var startTimeString = (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);
         var endTimeString = (exportSettings.UseFloatForTime ? EndTime : (int)EndTime).ToString(exportSettings.NumberFormat);
-        var startValueString = StartValue.ToOsbString(exportSettings);
-        var endValueString = (ExportEndValue ? EndValue : StartValue).ToOsbString(exportSettings);
+
+        var tranformedStartValue = transform is not null ? GetTransformedStartValue(transform) : StartValue;
+        var tranformedEndValue = transform is not null ? GetTransformedEndValue(transform) : EndValue;
+        var startValueString = tranformedStartValue.ToOsbString(exportSettings);
+        var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
         if (startTimeString == endTimeString) endTimeString = "";
-
-        string[] parameters =
-        [
-            Identifier, ((int)Easing).ToString(exportSettings.NumberFormat),
-            startTimeString, endTimeString, startValueString
-        ];
+        string[] parameters = [Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString, endTimeString, startValueString];
 
         var result = string.Join(",", parameters);
         if (startValueString != endValueString) result += "," + endValueString;
         return result;
     }
+    public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
+        => writer.WriteLine(new string(' ', indentation) + ToOsbString(exportSettings, transform));
 
-    public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation) => writer.WriteLine(new string(' ', indentation) + ToOsbString(exportSettings));
-    public override string ToString() => ToOsbString(ExportSettings.Default);
+    public override string ToString() => ToOsbString(ExportSettings.Default, null);
 }

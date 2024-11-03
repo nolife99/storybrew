@@ -118,7 +118,7 @@ public sealed class ScreenLayerManager : IDisposable
 
         if (removedLayers.Count != 0)
         {
-            removedLayers.ForEach(layer => layer.Dispose());
+            foreach (var layer in removedLayers) layer.Dispose();
             removedLayers.Clear();
         }
 
@@ -152,7 +152,7 @@ public sealed class ScreenLayerManager : IDisposable
         var height = window.Height;
 
         if (width == 0 || height == 0) return;
-        layers.ForEach(layer => layer.Resize(width, height));
+        foreach (var layer in layers) layer.Resize(width, height);
     }
 
     #region IDisposable Support
@@ -170,8 +170,8 @@ public sealed class ScreenLayerManager : IDisposable
             changeFocus(null);
             if (disposing)
             {
-                layers.ForEach(layer => layer.Dispose());
-                removedLayers.ForEach(layer => layer.Dispose());
+                foreach (var layer in layers) layer.Dispose();
+                foreach (var layer in removedLayers) layer.Dispose();
 
                 layers.Clear();
                 removedLayers.Clear();

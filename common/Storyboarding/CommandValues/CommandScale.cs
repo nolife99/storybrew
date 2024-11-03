@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Base structure for scale commands. </summary>
-public readonly struct CommandScale : 
+public readonly struct CommandScale :
     CommandValue, IEquatable<CommandScale>,
     IAdditionOperators<CommandScale, CommandScale, CommandScale>,
     ISubtractionOperators<CommandScale, CommandScale, CommandScale>,

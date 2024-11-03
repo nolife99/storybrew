@@ -26,14 +26,14 @@ public class ScriptCompiler
     public static Assembly Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
     {
         Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
-        foreach (var src in sourcePaths) using (FileStream sourceStream = new(src, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
         {
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
             trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(src, sourceText);
         }
         List<MetadataReference> references = [];
 
-        var loadedAsm = AssemblyLoadContext.Default.Assemblies.Select(d => d.Location);
+        var loadedAsm = AppDomain.CurrentDomain.GetAssemblies().Select(d => d.Location);
         context ??= AssemblyLoadContext.Default;
 
         foreach (var referencedAssembly in referencedAssemblies)
@@ -41,7 +41,7 @@ public class ScriptCompiler
             var asmPath = referencedAssembly;
             try
             {
-                if (Path.IsPathRooted(asmPath)) using (FileStream stream = new(asmPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                if (Path.IsPathRooted(asmPath)) using (var stream = File.OpenRead(asmPath))
                 {
                     if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
                     stream.Position = 0;
@@ -59,7 +59,7 @@ public class ScriptCompiler
                         break;
                     }
 
-                    if (isExist) using (FileStream stream = new(asmPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    if (isExist) using (var stream = File.OpenRead(asmPath))
                     {
                         if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
                         stream.Position = 0;
@@ -77,7 +77,7 @@ public class ScriptCompiler
         }
 
         using MemoryStream assemblyStream = new();
-        var result = CSharpCompilation.Create(asmName, trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Debug))
+        var result = CSharpCompilation.Create(asmName, trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
             .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
         if (result.Success)

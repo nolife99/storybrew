@@ -30,11 +30,11 @@ public static class BeatmapExtensions
                 var sectionStartTime = timingPoint.Offset;
                 var sectionEndTime = Math.Min(nextTimingPoint?.Offset ?? endTime, endTime);
                 if (timingPoint == leftTimingPoint) while (startTime < sectionStartTime)
-                {
-                    sectionStartTime -= step;
-                    --tickCount;
-                    if (tickCount % snapDivisor == 0) --beatCount;
-                }
+                    {
+                        sectionStartTime -= step;
+                        --tickCount;
+                        if (tickCount % snapDivisor == 0) --beatCount;
+                    }
 
                 for (var time = sectionStartTime; time < sectionEndTime + Beatmap.ControlPointLeniency; time += step)
                 {
@@ -49,28 +49,30 @@ public static class BeatmapExtensions
     public static void AsSliderNodes(this IEnumerable<OsuHitObject> hitobjects, Action<OsuSliderNode, OsuHitObject> action)
     {
         foreach (var hitobject in hitobjects) switch (hitobject)
-        {
-            case OsuCircle circle: action(new()
             {
-                Time = circle.StartTime,
-                Additions = circle.Additions,
-                SampleSet = circle.SampleSet,
-                AdditionsSampleSet = circle.AdditionsSampleSet,
-                CustomSampleSet = circle.CustomSampleSet,
-                Volume = circle.Volume
-            }, hitobject); break;
+                case OsuCircle circle:
+                    action(new()
+                    {
+                        Time = circle.StartTime,
+                        Additions = circle.Additions,
+                        SampleSet = circle.SampleSet,
+                        AdditionsSampleSet = circle.AdditionsSampleSet,
+                        CustomSampleSet = circle.CustomSampleSet,
+                        Volume = circle.Volume
+                    }, hitobject); break;
 
-            case OsuSlider slider: foreach (var node in slider.Nodes) action(node, hitobject); break;
+                case OsuSlider slider: foreach (var node in slider.Nodes) action(node, hitobject); break;
 
-            case OsuSpinner spinner: action(new()
-            {
-                Time = spinner.EndTime,
-                Additions = spinner.Additions,
-                SampleSet = spinner.SampleSet,
-                AdditionsSampleSet = spinner.AdditionsSampleSet,
-                CustomSampleSet = spinner.CustomSampleSet,
-                Volume = spinner.Volume
-            }, hitobject); break;
-        }
+                case OsuSpinner spinner:
+                    action(new()
+                    {
+                        Time = spinner.EndTime,
+                        Additions = spinner.Additions,
+                        SampleSet = spinner.SampleSet,
+                        AdditionsSampleSet = spinner.AdditionsSampleSet,
+                        CustomSampleSet = spinner.CustomSampleSet,
+                        Volume = spinner.Volume
+                    }, hitobject); break;
+            }
     }
 }

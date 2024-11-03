@@ -35,8 +35,8 @@ public class PathSelector : Widget
             Horizontal = true,
             Fill = true,
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 textbox = new(manager)
                 {
                     AnchorFrom = BoxAlignment.BottomLeft,
@@ -50,7 +50,7 @@ public class PathSelector : Widget
                     AnchorTo = BoxAlignment.BottomRight,
                     CanGrow = false
                 }
-            }
+            ]
         });
 
         textbox.OnValueChanged += (sender, e) => OnValueChanged?.Invoke(this, EventArgs.Empty);

@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using BrewLib.Util;
 
 namespace StorybrewCommon.Animations;
 
@@ -98,17 +96,16 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     ///<summary> Returns the value of the keyframed value at <paramref name="time"/>. </summary>
     public TValue ValueAt(double time)
     {
-        var count = keyframes.Count;
-        if (count == 0) return defaultValue;
-        if (count == 1) return keyframes[0].Value;
+        if (keyframes.Count == 0) return defaultValue;
+        if (keyframes.Count == 1) return keyframes[0].Value;
 
-        var index = indexAt(time, false);
-        if (index == 0) return keyframes[0].Value;
-        else if (index == count) return keyframes[count - 1].Value;
+        var i = indexAt(time, false);
+        if (i == 0) return keyframes[0].Value;
+        else if (i == keyframes.Count) return keyframes[^1].Value;
         else
         {
-            var from = keyframes[index - 1];
-            var to = keyframes[index];
+            var from = keyframes[i - 1];
+            var to = keyframes[i];
             if (from.Time == to.Time) return to.Value;
 
             var progress = to.Ease((time - from.Time) / (to.Time - from.Time));
@@ -141,7 +138,6 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             if (previous.HasValue)
             {
                 var startKeyframe = previous.Value;
-
                 var isFlat = startKeyframe.Value.Equals(endKeyframe.Value);
                 var isStep = !isFlat && startKeyframe.Time == endKeyframe.Time;
 
@@ -227,7 +223,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
 
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
-        var i = keyframes.BinarySearch(keyframe, new Keyframe<TValue>());
+        var i = keyframes.BinarySearch(keyframe, keyframe);
         if (i >= 0)
         {
             if (before) while (i > 0 && keyframes[i].Time >= keyframe.Time) --i;
@@ -303,7 +299,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             }
         }
 
-        Clear();
+        Clear(true);
         keyframes = simplifiedKeyframes;
     }
 
@@ -330,7 +326,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         keep.Sort();
         for (var i = 0; i < keep.Count; ++i) simplifiedKeyframes.Add(keyframes[keep[i]]);
 
-        Clear();
+        Clear(true);
         keyframes = simplifiedKeyframes;
     }
     void getSimplifiedKeyframeIndexes(ref List<int> keep, int first, int last, double epsilonSq, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)

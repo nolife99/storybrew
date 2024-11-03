@@ -37,7 +37,7 @@ class Tetris : StoryboardObjectGenerator
     {
         internal int X, Y;
         internal OsbSprite Sprite, Shadow;
-        internal bool HasSprite => Sprite is not null; 
+        internal bool HasSprite => Sprite is not null;
     }
     Cell[,] cells;
 
@@ -56,7 +56,7 @@ class Tetris : StoryboardObjectGenerator
         }
 
         for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) if (cells[x, y].HasSprite)
-            killCell(EndTime, EndTime + timestep, x, y);
+                    killCell(EndTime, EndTime + timestep, x, y);
     }
     void addBlock(double startTime, double endTime)
     {
@@ -118,10 +118,10 @@ class Tetris : StoryboardObjectGenerator
         {
             var combo = true;
             for (var x = 0; x < GridWidth; ++x) if (!cells[x, y].HasSprite)
-            {
-                combo = false;
-                break;
-            }
+                {
+                    combo = false;
+                    break;
+                }
 
             if (combo)
             {
@@ -189,7 +189,7 @@ class Tetris : StoryboardObjectGenerator
         shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset, transform(targetPosition) + ShadowOffset);
     }
     Vector2 transform(Vector2 position) => Vector2.Transform(
-        new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize), 
+        new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize),
         Quaternion.CreateFromYawPitchRoll(0, (float)osuTK.MathHelper.DegreesToRadians(Rotation), 0));
 
     void shuffle(int[] array)

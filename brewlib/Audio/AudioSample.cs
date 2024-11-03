@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Buffers;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using BrewLib.Data;
 using ManagedBass;
 
@@ -15,7 +14,7 @@ public class AudioSample : IDisposable
     readonly AudioManager manager;
     public string Path { get; }
 
-    internal AudioSample(AudioManager audioManager, string path, ResourceContainer resourceContainer)
+    internal unsafe AudioSample(AudioManager audioManager, string path, ResourceContainer resourceContainer)
     {
         manager = audioManager;
         Path = path;
@@ -23,20 +22,13 @@ public class AudioSample : IDisposable
         sample = Bass.SampleLoad(path, 0, 0, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
         if (sample != 0) return;
 
-        using (var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded)) if (stream is not null) unsafe
+        using (var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded)) if (stream is not null)
         {
             var len = (int)stream.Length;
             var bytes = ArrayPool<byte>.Shared.Rent(len);
 
-            try
-            {
-                stream.Read(bytes, 0, len);
-                sample = Bass.SampleLoad(bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(bytes);
-            }
+            stream.Read(bytes, 0, len);
+            sample = Bass.SampleLoad(bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
             if (sample != 0) return;
         }
 

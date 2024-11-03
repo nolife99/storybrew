@@ -115,38 +115,43 @@ public class EditorBeatmap(string path) : Beatmap
             {
                 switch (section)
                 {
-                    case "General": reader.ParseKeyValueSection((key, value) =>
+                    case "General":
+                        reader.ParseKeyValueSection((key, value) =>
                     {
                         switch (key)
                         {
                             case "AudioFilename": beatmap.audioFilename = value; break;
                             case "StackLeniency": beatmap.stackLeniency = double.Parse(value, CultureInfo.InvariantCulture); break;
                         }
-                    }); 
-                    break;
+                    });
+                        break;
 
-                    case "Editor": reader.ParseKeyValueSection((key, value) =>
+                    case "Editor":
+                        reader.ParseKeyValueSection((key, value) =>
                     {
                         switch (key)
                         {
-                            case "Bookmarks": foreach (var bookmark in value.Split(',')) if (value.Length > 0) 
-                                beatmap.bookmarks.Add(int.Parse(bookmark, CultureInfo.InvariantCulture));
+                            case "Bookmarks":
+                                foreach (var bookmark in value.Split(',')) if (value.Length > 0)
+                                        beatmap.bookmarks.Add(int.Parse(bookmark, CultureInfo.InvariantCulture));
                                 break;
                         }
-                    }); 
-                    break;
+                    });
+                        break;
 
-                    case "Metadata": reader.ParseKeyValueSection((key, value) =>
+                    case "Metadata":
+                        reader.ParseKeyValueSection((key, value) =>
                     {
                         switch (key)
                         {
                             case "Version": beatmap.name = value; break;
                             case "BeatmapID": beatmap.id = long.Parse(value, CultureInfo.InvariantCulture); break;
                         }
-                    }); 
-                    break;
+                    });
+                        break;
 
-                    case "Difficulty": reader.ParseKeyValueSection((key, value) =>
+                    case "Difficulty":
+                        reader.ParseKeyValueSection((key, value) =>
                     {
                         switch (key)
                         {
@@ -157,10 +162,11 @@ public class EditorBeatmap(string path) : Beatmap
                             case "SliderMultiplier": beatmap.sliderMultiplier = double.Parse(value, CultureInfo.InvariantCulture); break;
                             case "SliderTickRate": beatmap.sliderTickRate = double.Parse(value, CultureInfo.InvariantCulture); break;
                         }
-                    }); 
-                    break;
+                    });
+                        break;
 
-                    case "Events": reader.ParseSectionLines(line =>
+                    case "Events":
+                        reader.ParseSectionLines(line =>
                     {
                         if (line.StartsWith("//", StringComparison.Ordinal)) return;
                         if (line.StartsWith(' ')) return;
@@ -171,60 +177,60 @@ public class EditorBeatmap(string path) : Beatmap
                             case "0": beatmap.backgroundPath = removePathQuotes(values[2]); break;
                             case "2": beatmap.breaks.Add(OsuBreak.Parse(line)); break;
                         }
-                    }, false); 
-                    break;
-
-                    case "TimingPoints": 
-                    {
-                        reader.ParseSectionLines(line => beatmap.controlPoints.Add(ControlPoint.Parse(line)));
-                        beatmap.controlPoints.Sort();
+                    }, false);
                         break;
-                    }
+
+                    case "TimingPoints":
+                        {
+                            reader.ParseSectionLines(line => beatmap.controlPoints.Add(ControlPoint.Parse(line)));
+                            beatmap.controlPoints.Sort();
+                            break;
+                        }
                     case "Colours":
-                    {
-                        beatmap.comboColors.Clear();
-                        reader.ParseKeyValueSection((key, value) =>
                         {
-                            if (!key.StartsWith("Combo", StringComparison.Ordinal)) return;
-
-                            var rgb = value.Split(',');
-                            beatmap.comboColors.Add(Color.FromArgb(byte.Parse(rgb[0], CultureInfo.InvariantCulture), byte.Parse(rgb[1], CultureInfo.InvariantCulture), byte.Parse(rgb[2], CultureInfo.InvariantCulture)));
-                        });
-
-                        if (beatmap.comboColors.Count == 0) beatmap.comboColors.AddRange(defaultComboColors);
-                        break;
-                    }
-                    case "HitObjects":
-                    {
-                        OsuHitObject previousHitObject = null;
-                        var colorIndex = 0;
-                        var comboIndex = 0;
-
-                        reader.ParseSectionLines(line =>
-                        {
-                            var hitobject = OsuHitObject.Parse(beatmap, line);
-
-                            if (hitobject.NewCombo || previousHitObject is null || (previousHitObject.Flags & HitObjectFlag.Spinner) > 0)
+                            beatmap.comboColors.Clear();
+                            reader.ParseKeyValueSection((key, value) =>
                             {
-                                hitobject.Flags |= HitObjectFlag.NewCombo;
+                                if (!key.StartsWith("Combo", StringComparison.Ordinal)) return;
 
-                                var colorIncrement = hitobject.ComboOffset;
-                                if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) ++colorIncrement;
-                                colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
-                                comboIndex = 1;
-                            }
-                            else ++comboIndex;
+                                var rgb = value.Split(',');
+                                beatmap.comboColors.Add(Color.FromArgb(byte.Parse(rgb[0], CultureInfo.InvariantCulture), byte.Parse(rgb[1], CultureInfo.InvariantCulture), byte.Parse(rgb[2], CultureInfo.InvariantCulture)));
+                            });
 
-                            hitobject.ComboIndex = comboIndex;
-                            hitobject.ColorIndex = colorIndex;
-                            hitobject.Color = beatmap.comboColors[colorIndex];
+                            if (beatmap.comboColors.Count == 0) beatmap.comboColors.AddRange(defaultComboColors);
+                            break;
+                        }
+                    case "HitObjects":
+                        {
+                            OsuHitObject previousHitObject = null;
+                            var colorIndex = 0;
+                            var comboIndex = 0;
 
-                            beatmap.hitObjects.Add(hitobject);
-                            previousHitObject = hitobject;
-                        }, false);
+                            reader.ParseSectionLines(line =>
+                            {
+                                var hitobject = OsuHitObject.Parse(beatmap, line);
 
-                        break;
-                    }
+                                if (hitobject.NewCombo || previousHitObject is null || (previousHitObject.Flags & HitObjectFlag.Spinner) > 0)
+                                {
+                                    hitobject.Flags |= HitObjectFlag.NewCombo;
+
+                                    var colorIncrement = hitobject.ComboOffset;
+                                    if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) ++colorIncrement;
+                                    colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
+                                    comboIndex = 1;
+                                }
+                                else ++comboIndex;
+
+                                hitobject.ComboIndex = comboIndex;
+                                hitobject.ColorIndex = colorIndex;
+                                hitobject.Color = beatmap.comboColors[colorIndex];
+
+                                beatmap.hitObjects.Add(hitobject);
+                                previousHitObject = hitobject;
+                            }, false);
+
+                            break;
+                        }
                 }
             });
             return beatmap;
@@ -261,7 +267,7 @@ public class EditorBeatmap(string path) : Beatmap
                         var offset = objectI.StackIndex - objectN.StackIndex + 1;
                         for (var j = n + 1; j <= i; ++j)
                             if ((spanN.PlayfieldEndPosition - hitObjects[j].PlayfieldPosition).LengthSquared < stackLenienceSquared)
-                            hitObjects[j].StackIndex -= offset;
+                                hitObjects[j].StackIndex -= offset;
 
                         break;
                     }
@@ -274,18 +280,18 @@ public class EditorBeatmap(string path) : Beatmap
                 }
             }
             else if (objectI is OsuSlider) while (--n >= 0)
-            {
-                var objectN = hitObjects[n];
-                if (objectN is OsuSpinner) continue;
-
-                if (objectI.StartTime - preemtTime * StackLeniency > objectN.StartTime) break;
-
-                if ((((objectN as OsuSlider)?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
                 {
-                    objectN.StackIndex = objectI.StackIndex + 1;
-                    objectI = objectN;
+                    var objectN = hitObjects[n];
+                    if (objectN is OsuSpinner) continue;
+
+                    if (objectI.StartTime - preemtTime * StackLeniency > objectN.StartTime) break;
+
+                    if ((((objectN as OsuSlider)?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
+                    {
+                        objectN.StackIndex = objectI.StackIndex + 1;
+                        objectI = objectN;
+                    }
                 }
-            }
         }
 
         var hitobjectScale = (1 - .7 * (CircleSize - 5) / 5) / 2;

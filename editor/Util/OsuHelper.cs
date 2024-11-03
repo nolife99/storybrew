@@ -6,27 +6,37 @@ namespace StorybrewEditor.Util;
 
 public static class OsuHelper
 {
-    public static string GetOsuPath()
+    public static string GetOsuExePath()
     {
-        using var registryKey = Registry.ClassesRoot.OpenSubKey("osu\\DefaultIcon");
-        if (registryKey is null) return "";
+        try
+        {
+            using var registryKey = Registry.ClassesRoot.OpenSubKey("osu\\DefaultIcon");
+            if (registryKey is not null)
+            {
+                var value = registryKey.GetValue(null).ToString();
+                var startIndex = value.IndexOf('"');
+                var endIndex = value.LastIndexOf('"');
+                return value.Substring(startIndex + 1, endIndex - 1);
+            }
+        }
+        catch { }
 
-        var value = registryKey.GetValue(null).ToString();
-        var startIndex = value.IndexOf('"');
-        var endIndex = value.LastIndexOf('"');
-        return value.Substring(startIndex + 1, endIndex - 1);
+        var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "osu!", "osu!.exe");
+        if (File.Exists(defaultPath)) return defaultPath;
+        return "";
     }
+
     public static string GetOsuFolder()
     {
-        var osuPath = GetOsuPath();
-        if (osuPath.Length == 0) return Path.GetPathRoot(Environment.SystemDirectory);
-
+        var osuPath = GetOsuExePath();
+        if (string.IsNullOrEmpty(osuPath)) return Path.GetPathRoot(Environment.CurrentDirectory);
         return Path.GetDirectoryName(osuPath);
     }
+
     public static string GetOsuSongFolder()
     {
-        var osuPath = GetOsuPath();
-        if (osuPath.Length == 0) return Path.GetPathRoot(Environment.SystemDirectory);
+        var osuPath = GetOsuExePath();
+        if (string.IsNullOrEmpty(osuPath)) return Path.GetPathRoot(Environment.CurrentDirectory);
 
         var osuFolder = Path.GetDirectoryName(osuPath);
         var songsFolder = Path.Combine(osuFolder, "Songs");

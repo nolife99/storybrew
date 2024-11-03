@@ -14,6 +14,6 @@ public class CompositeCommand<TValue> : AnimatedValue<TValue>, ITypedCommand<TVa
     public int Cost => throw new InvalidOperationException();
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation) => throw new InvalidOperationException();
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation) => throw new InvalidOperationException();
     public override string ToString() => $"composite ({StartTime}s - {EndTime}s) : {StartValue} to {EndValue}";
 }

@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
@@ -11,7 +11,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers;
 
-public unsafe class QuadRendererBuffered : QuadRenderer
+public class QuadRendererBuffered : QuadRenderer
 {
     public const int VertexPerQuad = 4;
     public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
@@ -55,7 +55,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     readonly bool ownsShader;
 
     PrimitiveStreamer<QuadPrimitive> primitiveStreamer;
-    QuadPrimitive* primitives;
+    QuadPrimitive[] primitives;
 
     Camera camera;
     public Camera Camera
@@ -89,7 +89,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     BindableTexture currentTexture;
     int currentSamplerUnit, currentLargestBatch;
     bool rendering;
-    
+
     public int RenderedQuadCount { get; set; }
     public int FlushedBufferCount { get; set; }
     public int DiscardedBufferCount => primitiveStreamer.DiscardedBufferCount;
@@ -116,7 +116,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         var primitiveBatchSize = Math.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerQuad);
 
-        primitives = (QuadPrimitive*)NativeMemory.Alloc((nuint)maxQuadsPerBatch, (nuint)Marshal.SizeOf<QuadPrimitive>());
+        primitives = ArrayPool<QuadPrimitive>.Shared.Rent(maxQuadsPerBatch);
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
     }
     public void BeginRendering()
@@ -147,19 +147,19 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
         // When the previous flush was bufferable, draw state should stay the same.
         if (!lastFlushWasBuffered) unsafe
-        {
-            var combinedMatrix = transformMatrix * Camera.ProjectionView;
-            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-
-            var samplerUnit = CustomTextureBind is null ? DrawState.BindTexture(currentTexture) : CustomTextureBind(currentTexture);
-            if (currentSamplerUnit != samplerUnit)
             {
-                currentSamplerUnit = samplerUnit;
-                GL.Uniform1(textureUniformLocation, currentSamplerUnit);
-            }
+                var combinedMatrix = transformMatrix * Camera.ProjectionView;
+                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
 
-            FlushAction?.Invoke();
-        }
+                var samplerUnit = CustomTextureBind is null ? DrawState.BindTexture(currentTexture) : CustomTextureBind(currentTexture);
+                if (currentSamplerUnit != samplerUnit)
+                {
+                    currentSamplerUnit = samplerUnit;
+                    GL.Uniform1(textureUniformLocation, currentSamplerUnit);
+                }
+
+                FlushAction?.Invoke();
+            }
 
         primitiveStreamer.Render(PrimitiveType.Quads, primitives, quadsInBatch, quadsInBatch * VertexPerQuad, canBuffer);
 
@@ -187,7 +187,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        NativeMemory.Free(primitives);
+        ArrayPool<QuadPrimitive>.Shared.Return(primitives);
         if (disposing)
         {
             primitives = null;

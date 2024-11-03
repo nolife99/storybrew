@@ -20,7 +20,7 @@ public class TransformedCurve(Curve curve, CommandPosition offset, float scale, 
 
     ///<inheritdoc/>
     public CommandPosition PositionAtDistance(double distance) => curve.PositionAtDistance(reversed ? curve.Length - distance : distance) * scale + offset;
-    
+
     ///<inheritdoc/>
     public CommandPosition PositionAtDelta(double delta) => curve.PositionAtDelta(reversed ? 1.0 - delta : delta) * scale + offset;
 }

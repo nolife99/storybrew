@@ -1,8 +1,8 @@
 ﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
@@ -12,7 +12,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers;
 
-public unsafe class LineRendererBuffered : LineRenderer
+public class LineRendererBuffered : LineRenderer
 {
     public const int VertexPerLine = 2;
     public const string CombinedMatrixUniformName = "u_combinedMatrix";
@@ -48,7 +48,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     readonly bool ownsShader;
 
     PrimitiveStreamer<LinePrimitive> primitiveStreamer;
-    LinePrimitive* primitives;
+    LinePrimitive[] primitives;
 
     Camera camera;
     public Camera Camera
@@ -105,7 +105,7 @@ public unsafe class LineRendererBuffered : LineRenderer
         var primitiveBatchSize = Math.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerLine);
 
-        primitives = (LinePrimitive*)NativeMemory.Alloc((nuint)maxLinesPerBatch, (nuint)Marshal.SizeOf<LinePrimitive>());
+        primitives = ArrayPool<LinePrimitive>.Shared.Rent(maxLinesPerBatch);
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
     }
     public void BeginRendering()
@@ -132,13 +132,13 @@ public unsafe class LineRendererBuffered : LineRenderer
     {
         if (linesInBatch == 0) return;
 
-        if (!lastFlushWasBuffered)
-        {
-            var combinedMatrix = transformMatrix * Camera.ProjectionView;
-            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+        if (!lastFlushWasBuffered) unsafe
+            {
+                var combinedMatrix = transformMatrix * Camera.ProjectionView;
+                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
 
-            FlushAction?.Invoke();
-        }
+                FlushAction?.Invoke();
+            }
         primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine, canBuffer);
 
         currentLargestBatch += linesInBatch;
@@ -188,7 +188,7 @@ public unsafe class LineRendererBuffered : LineRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        NativeMemory.Free(primitives);
+        ArrayPool<LinePrimitive>.Shared.Return(primitives);
         if (disposing)
         {
             primitives = null;

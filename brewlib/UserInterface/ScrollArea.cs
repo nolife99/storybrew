@@ -50,10 +50,10 @@ public class ScrollArea : Widget
         Add(scrollContainer = new(manager)
         {
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 scrollable
-            }
+            ]
         });
         Add(scrollIndicatorTop = new(manager)
         {

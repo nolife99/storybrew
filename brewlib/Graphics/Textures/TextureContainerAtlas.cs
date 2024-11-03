@@ -11,6 +11,15 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
 
     public IEnumerable<string> ResourceNames => textures.Where(e => e.Value is not null).Select(e => e.Key);
+    public float UncompressedMemoryUseMb
+    {
+        get
+        {
+            var pixels = 0f;
+            foreach (var texture in textures.Values) pixels += texture.Size.X * texture.Size.Y;
+            return pixels / 1024 / 1024;
+        }
+    }
     public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
 
     public Texture2dRegion Get(string filename)

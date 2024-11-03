@@ -139,7 +139,8 @@ public class GamepadButtonEventArgs(GamepadManager manager, GamepadButton button
     public GamepadButton Button = button;
     public override string ToString() => Button.ToString();
 }
-[Flags] public enum GamepadButton
+[Flags]
+public enum GamepadButton
 {
     None = 0,
     DPadLeft = 1 << 0, DPadUp = 1 << 1, DPadRight = 1 << 2, DPadDown = 1 << 3,

@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Buffers;
 using System.Drawing;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
@@ -12,7 +12,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers;
 
-public unsafe class SpriteRendererBuffered : SpriteRenderer
+public class SpriteRendererBuffered : SpriteRenderer
 {
     public const int VertexPerSprite = 4;
     public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
@@ -59,7 +59,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
     }
 
     PrimitiveStreamer<SpritePrimitive> primitiveStreamer;
-    SpritePrimitive* primitives;
+    SpritePrimitive[] primitives;
 
     Camera camera;
     public Camera Camera
@@ -103,7 +103,8 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
     public int LargestBatch { get; private set; }
 
     public SpriteRendererBuffered(Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0) :
-        this(PrimitiveStreamerUtil<SpritePrimitive>.DefaultCreatePrimitiveStreamer, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize) {}
+        this(PrimitiveStreamerUtil<SpritePrimitive>.DefaultCreatePrimitiveStreamer, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize)
+    { }
 
     public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<SpritePrimitive>> createPrimitiveStreamer, Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0)
     {
@@ -120,7 +121,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
-        primitives = (SpritePrimitive*)NativeMemory.Alloc((nuint)maxSpritesPerBatch, (nuint)Marshal.SizeOf<SpritePrimitive>());
+        primitives = ArrayPool<SpritePrimitive>.Shared.Rent(maxSpritesPerBatch);
     }
     public void BeginRendering()
     {
@@ -149,19 +150,19 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
 
         // When the previous flush was bufferable, draw state should stay the same.
         if (!lastFlushWasBuffered) unsafe
-        {
-            var combinedMatrix = transformMatrix * Camera.ProjectionView;
-
-            var samplerUnit = CustomTextureBind is not null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
-            if (currentSamplerUnit != samplerUnit)
             {
-                currentSamplerUnit = samplerUnit;
-                GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
+                var combinedMatrix = transformMatrix * Camera.ProjectionView;
+
+                var samplerUnit = CustomTextureBind is not null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
+                if (currentSamplerUnit != samplerUnit)
+                {
+                    currentSamplerUnit = samplerUnit;
+                    GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
+                }
+
+                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+                flushAction?.Invoke();
             }
-            
-            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-            flushAction?.Invoke();
-        }
 
         primitiveStreamer.Render(PrimitiveType.Quads, primitives, spritesInBatch, spritesInBatch * VertexPerSprite, canBuffer);
 
@@ -189,7 +190,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        NativeMemory.Free(primitives);
+        ArrayPool<SpritePrimitive>.Shared.Return(primitives);
         if (disposing)
         {
             primitives = null;

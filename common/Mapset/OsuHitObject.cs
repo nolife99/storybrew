@@ -13,7 +13,7 @@ public class OsuHitObject
 
     ///<summary> Represents the offset between the playfield and the storyboard field in osu!. </summary>
     public static readonly CommandPosition PlayfieldToStoryboardOffset = new((StoryboardSize.Width - PlayfieldSize.Width) / 2, (StoryboardSize.Height - PlayfieldSize.Height) * .75 - 16);
-    
+
     ///<summary> Represents the widescreen storyboard size in osu!. </summary>
     public static readonly SizeF WidescreenStoryboardSize = new(StoryboardSize.Width * 4 / 3, StoryboardSize.Height);
 
@@ -123,7 +123,8 @@ public class OsuHitObject
 }
 
 ///<summary> Represents hit object flags. </summary>
-[Flags] public enum HitObjectFlag
+[Flags]
+public enum HitObjectFlag
 {
 #pragma warning disable CS1591
     Circle = 1, Slider = 2, NewCombo = 4, Spinner = 8,
@@ -133,7 +134,8 @@ public class OsuHitObject
 }
 
 ///<summary> Represents hit sound sample additions. </summary>
-[Flags] public enum HitSoundAddition
+[Flags]
+public enum HitSoundAddition
 {
     None = 0, Normal = 1, Whistle = 2, Finish = 4, Clap = 8
 }

@@ -85,6 +85,10 @@ public class OsbSprite : StoryboardObject
         colorTimeline.HasOverlap ||
         additiveTimeline.HasOverlap || flipHTimeline.HasOverlap || flipVTimeline.HasOverlap;
 
+    public bool HasRotateCommands => rotateTimeline.HasCommands;
+    public bool HasScalingCommands => scaleTimeline.HasCommands || scaleVecTimeline.HasCommands;
+    public bool HasMoveXYCommands => moveXTimeline.HasCommands || moveYTimeline.HasCommands;
+
     double commandsStartTime = double.MaxValue, commandsEndTime = double.MinValue;
 
     ///<summary> Gets the start time of the first command on this sprite. </summary>
@@ -111,10 +115,10 @@ public class OsbSprite : StoryboardObject
     {
         clearStartEndTimes();
         foreach (var command in commands) if (command.Active)
-        {
-            commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
-            commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
-        }
+            {
+                commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
+                commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
+            }
     }
     void clearStartEndTimes()
     {
@@ -696,10 +700,10 @@ public class OsbSprite : StoryboardObject
         displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal }, new AnimatedValueBuilder<CommandParameter>(flipHTimeline)));
         displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, new AnimatedValueBuilder<CommandParameter>(flipVTimeline)));
     }
-    void addDisplayCommand(ICommand command) => displayValueBuilders.ForEach(builders =>
+    void addDisplayCommand(ICommand command)
     {
-        if (builders.Key(command)) builders.Value.Add(command);
-    });
+        foreach (var builders in displayValueBuilders) if (builders.Key(command)) builders.Value.Add(command);
+    }
     void startDisplayLoop(LoopCommand loopCommand) => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayLoop(loopCommand));
     void startDisplayTrigger(TriggerCommand triggerCommand) => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayTrigger(triggerCommand));
     void endDisplayComposites() => displayValueBuilders.ForEach(builders => builders.Value.EndDisplayComposite());
@@ -710,7 +714,7 @@ public class OsbSprite : StoryboardObject
     public bool IsActive(double time) => StartTime <= time && time <= EndTime;
 
     ///<summary> Writes this sprite's data to a stream. </summary>
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
+    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
     {
         if (commands.Count != 0) OsbWriterFactory.CreateWriter(this,
             moveTimeline, moveXTimeline, moveYTimeline,
@@ -718,7 +722,7 @@ public class OsbSprite : StoryboardObject
             rotateTimeline,
             fadeTimeline,
             colorTimeline,
-            writer, exportSettings, layer).WriteOsb();
+            writer, exportSettings, layer).WriteOsb(transform);
     }
 
     ///<summary> Returns whether or not the sprite is within widescreen storyboard bounds. </summary>
@@ -816,8 +820,8 @@ public enum OsbLoopType
 public enum ParameterType
 {
     ///<exception cref="InvalidOperationException"> Do not pass this value to any parameter. </exception>
-    None, 
-    
+    None,
+
     ///<summary> Reflects the sprite across its center X-axis. </summary>
     FlipHorizontal,
 

@@ -7,7 +7,7 @@ namespace BrewLib.Graphics;
 
 public sealed class GpuCommandSync : IDisposable
 {
-    List<SyncRange> syncRanges = [];
+    readonly List<SyncRange> syncRanges = [];
 
     public bool WaitForAll()
     {
@@ -15,7 +15,7 @@ public sealed class GpuCommandSync : IDisposable
 
         var blocked = syncRanges[^1].Wait();
 
-        syncRanges.ForEach(range => range.Dispose());
+        foreach (var range in syncRanges) range.Dispose();
         syncRanges.Clear();
 
         return blocked;
@@ -71,7 +71,7 @@ public sealed class GpuCommandSync : IDisposable
     {
         if (!disposed)
         {
-            syncRanges.ForEach(sync => sync.Dispose());
+            foreach (var range in syncRanges) range.Dispose();
             syncRanges.Clear();
 
             disposed = true;
@@ -97,23 +97,23 @@ public sealed class GpuCommandSync : IDisposable
             var timeout = 0;
 
             while (true) switch (GL.ClientWaitSync(Fence, waitSyncFlags, timeout))
-            {
-                case WaitSyncStatus.AlreadySignaled:
-                    expired = true;
-                    return blocked;
+                {
+                    case WaitSyncStatus.AlreadySignaled:
+                        expired = true;
+                        return blocked;
 
-                case WaitSyncStatus.ConditionSatisfied:
-                    expired = true;
-                    return true;
+                    case WaitSyncStatus.ConditionSatisfied:
+                        expired = true;
+                        return true;
 
-                case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
-                case WaitSyncStatus.TimeoutExpired:
-                    if (!canBlock) return true;
-                    blocked = true;
-                    waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
-                    timeout = 1000000000;
-                    break;
-            }
+                    case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
+                    case WaitSyncStatus.TimeoutExpired:
+                        if (!canBlock) return true;
+                        blocked = true;
+                        waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
+                        timeout = 1000000000;
+                        break;
+                }
         }
 
         #region IDisposable Support

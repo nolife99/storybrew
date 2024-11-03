@@ -25,7 +25,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
         {
             if (sources.HasFlag(ResourceSource.Absolute))
             {
-                if (File.Exists(path)) return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                if (File.Exists(path)) return File.OpenRead(path);
             }
             else throw new InvalidOperationException($"Resource paths must be relative ({path})");
         }
@@ -34,7 +34,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
             if (sources.HasFlag(ResourceSource.Relative))
             {
                 var combinedPath = basePath is not null ? Path.Combine(basePath, path) : path;
-                if (File.Exists(combinedPath)) return new FileStream(combinedPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                if (File.Exists(combinedPath)) return File.OpenRead(combinedPath);
             }
             if (sources.HasFlag(ResourceSource.Embedded))
             {

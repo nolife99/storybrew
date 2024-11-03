@@ -12,5 +12,5 @@ public abstract class StoryboardObject
     public abstract double EndTime { get; }
 
 #pragma warning disable CS1591
-    public abstract void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer);
+    public abstract void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform);
 }

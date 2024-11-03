@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Numerics;
 using BrewLib.Util;
 
@@ -18,27 +17,34 @@ public class TextLayout
     Vector2 size;
     public Vector2 Size => size;
 
-    public IEnumerable<TextLayoutGlyph> Glyphs => lines.SelectMany(line => line.Glyphs);
+    public IEnumerable<TextLayoutGlyph> Glyphs
+    {
+        get
+        {
+            foreach (var line in lines) foreach (var glyph in line.Glyphs) yield return glyph;
+        }
+    }
+
     public IEnumerable<TextLayoutGlyph> VisibleGlyphs
     {
-        get 
+        get
         {
-            for (var i = 0; i < lines.Count; ++i) foreach (var glyph in lines[i].Glyphs) if (!glyph.Glyph.IsEmpty) yield return glyph; 
+            foreach (var line in lines) foreach (var glyph in line.Glyphs) if (!glyph.Glyph.IsEmpty) yield return glyph;
         }
     }
 
     public TextLayout(string text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
-        textLines = LineBreaker.Split(text, (int)Math.Ceiling(maxSize.X), c => font.GetGlyph(c).Width);
+        textLines = LineBreaker.Split(text, (int)MathF.Ceiling(maxSize.X), c => font.GetGlyph(c).Width);
 
         var glyphIndex = 0;
         var width = 0f;
         var height = 0f;
 
-        for (var i = 0; i < textLines.Count; ++i)
+        foreach (var textLine in textLines)
         {
             TextLayoutLine line = new(this, height, alignment, lines.Count == 0);
-            foreach (var c in textLines[i]) line.Add(font.GetGlyph(c), ++glyphIndex);
+            foreach (var c in textLine) line.Add(font.GetGlyph(c), glyphIndex++);
 
             lines.Add(line);
             width = Math.Max(width, line.Width);
@@ -52,6 +58,7 @@ public class TextLayout
 
         size = new(width, height);
     }
+
     public TextLayoutGlyph GetGlyph(int index)
     {
         foreach (var line in lines)
@@ -79,13 +86,13 @@ public class TextLayout
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var index = 0;
-        for (var i = 0; i < lines.Count; ++i)
+        foreach (var line in lines)
         {
             var topLeft = Vector2.Zero;
             var bottomRight = Vector2.Zero;
             var hasBounds = false;
 
-            foreach (var layoutGlyph in lines[i].Glyphs)
+            foreach (var layoutGlyph in line.Glyphs)
             {
                 if (!hasBounds && startIndex <= index)
                 {
@@ -133,7 +140,7 @@ public class TextLayout
                 return nextLine.GetGlyph(Math.Min(index, nextLine.GlyphCount - 1)).Index;
             }
             index -= line.GlyphCount;
-            lineIndex++;
+            ++lineIndex;
         }
         return getLastGlyph().Index;
     }
@@ -143,26 +150,26 @@ public class TextLayout
         return lastLine.GetGlyph(lastLine.GlyphCount - 1);
     }
 }
-public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advance)
+
+public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph)
 {
     readonly List<TextLayoutGlyph> glyphs = [];
     public IEnumerable<TextLayoutGlyph> Glyphs => glyphs;
+
     public int GlyphCount => glyphs.Count;
 
-    int width;
+    int width, height;
     public int Width => width;
-
-    int height;
     public int Height => height;
 
     public Vector2 Position => new((alignment & BoxAlignment.Left) > 0 ? 0 : (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - width : layout.Size.X * .5f - width * .5f, y);
 
     public void Add(FontGlyph glyph, int glyphIndex)
     {
-        if (!glyph.IsEmpty) advance = true;
+        if (!glyph.IsEmpty) advanceOnEmptyGlyph = true;
 
         glyphs.Add(new(this, glyph, glyphIndex, width));
-        if (advance) width += glyph.Width;
+        if (advanceOnEmptyGlyph) width += glyph.Width;
         height = Math.Max(height, glyph.Height);
     }
     public TextLayoutGlyph GetGlyph(int index) => glyphs[index];
@@ -172,5 +179,12 @@ public class TextLayoutGlyph(TextLayoutLine line, FontGlyph glyph, int index, fl
     public FontGlyph Glyph => glyph;
     public int Index => index;
 
-    public Vector2 Position => new(line.Position.X + x, line.Position.Y);
+    public Vector2 Position
+    {
+        get
+        {
+            var linePosition = line.Position;
+            return new(linePosition.X + x, linePosition.Y);
+        }
+    }
 }

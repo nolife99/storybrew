@@ -30,7 +30,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
     }
 
-    FileSystemWatcher scriptWatcher;
+    readonly FileSystemWatcher scriptWatcher;
     readonly FileSystemWatcher libraryWatcher;
     ThrottledActionScheduler scheduler = new();
     readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
@@ -193,11 +193,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     }
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
         if (!disposed)

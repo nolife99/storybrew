@@ -101,7 +101,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
         if (keyboardFocus == widget) keyboardFocus = null;
 
         DisableGamepadEvents(widget);
-        
+
         foreach (var key in clickTargets.Keys) if (clickTargets[key] == widget) clickTargets.Remove(key);
         foreach (var key in gamepadButtonTargets.Keys) if (gamepadButtonTargets[key] == widget) gamepadButtonTargets.Remove(key);
     }

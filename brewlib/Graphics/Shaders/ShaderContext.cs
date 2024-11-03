@@ -25,12 +25,12 @@ public class ShaderContext
         if (flowDependant) flowVariables.Add(referencedVariable);
 
         if (dependantVariables is not null) foreach (var dependentVariable in dependantVariables)
-        {
-            if (referencedVariable == dependentVariable) continue;
-            if (!dependencies.TryGetValue(dependentVariable, out var existingDependencies)) existingDependencies = dependencies[dependentVariable] = [];
+            {
+                if (referencedVariable == dependentVariable) continue;
+                if (!dependencies.TryGetValue(dependentVariable, out var existingDependencies)) existingDependencies = dependencies[dependentVariable] = [];
 
-            existingDependencies.Add(referencedVariable);
-        }
+                existingDependencies.Add(referencedVariable);
+            }
     }
     public void MarkUsedVariables(Action action, params ShaderVariable[] outputVariables)
     {

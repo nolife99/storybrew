@@ -28,7 +28,7 @@ public class Node3d : Object3d
     public readonly KeyframedValue<Quaternion> Rotation = new(InterpolatingFunctions.QuaternionSlerp, Quaternion.Identity);
 
     ///<inheritdoc/>
-    public override Matrix4x4 WorldTransformAt(double time) 
+    public override Matrix4x4 WorldTransformAt(double time)
         => Matrix4x4.CreateScale((float)ScaleX.ValueAt(time), (float)ScaleY.ValueAt(time), (float)ScaleZ.ValueAt(time)) *
         Matrix4x4.CreateFromQuaternion(Rotation.ValueAt(time)) *
         Matrix4x4.CreateTranslation((float)PositionX.ValueAt(time), (float)PositionY.ValueAt(time), (float)PositionZ.ValueAt(time));

@@ -7,7 +7,7 @@ namespace BrewLib.Graphics.Text;
 public class TextFontManager : IDisposable
 {
     Dictionary<string, TextFontAtlased> fonts = [];
-    Dictionary<string, int> references = [];
+    readonly Dictionary<string, int> references = [];
 
     public TextFont GetTextFont(string fontName, float fontSize, float scaling)
     {
@@ -38,19 +38,12 @@ public class TextFontManager : IDisposable
             fonts.Dispose();
             if (disposing)
             {
-                references.Clear();
-
                 fonts = null;
-                references = null;
                 disposed = true;
             }
         }
     }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
 
     #endregion
 }

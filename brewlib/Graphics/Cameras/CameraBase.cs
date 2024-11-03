@@ -9,53 +9,53 @@ public abstract class CameraBase : Camera
     public static readonly Vector3 DefaultForward = new(0, -1, 0), DefaultUp = new(0, 0, 1);
 
     Rectangle internalViewport, extendedViewport;
-    public Rectangle InternalViewport 
-    { 
-        get 
-        { 
-            Validate(); 
-            return internalViewport; 
-        } 
+    public Rectangle InternalViewport
+    {
+        get
+        {
+            Validate();
+            return internalViewport;
+        }
     }
-    public Rectangle ExtendedViewport 
-    { 
-        get 
-        { 
-            Validate(); 
-            return extendedViewport; 
-        } 
+    public Rectangle ExtendedViewport
+    {
+        get
+        {
+            Validate();
+            return extendedViewport;
+        }
     }
 
     Matrix4x4 projection, view, projectionView, invertedProjectionView;
     public Matrix4x4 Projection
-    { 
-        get 
-        { 
-            Validate(); 
-            return projection; 
-        } 
-    }
-    public Matrix4x4 View 
-    { 
-        get 
-        { 
-            Validate(); 
-            return view; 
-        } 
-    }
-    public Matrix4x4 ProjectionView 
-    { 
-        get 
-        { 
-            Validate(); 
-            return projectionView; 
-        } 
-    }
-    public Matrix4x4 InvertedProjectionView 
-    { 
-        get 
+    {
+        get
         {
-            Validate(); 
+            Validate();
+            return projection;
+        }
+    }
+    public Matrix4x4 View
+    {
+        get
+        {
+            Validate();
+            return view;
+        }
+    }
+    public Matrix4x4 ProjectionView
+    {
+        get
+        {
+            Validate();
+            return projectionView;
+        }
+    }
+    public Matrix4x4 InvertedProjectionView
+    {
+        get
+        {
+            Validate();
             return invertedProjectionView;
         }
     }

@@ -13,7 +13,7 @@ public class SbvParser : SubtitleParser
     ///<inheritdoc/>
     public SubtitleSet Parse(string path)
     {
-        using var stream = Misc.WithRetries(() => new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
+        using var stream = Misc.WithRetries(() => File.OpenRead(path));
         return Parse(stream);
     }
 

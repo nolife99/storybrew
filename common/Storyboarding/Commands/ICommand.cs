@@ -11,6 +11,6 @@ public interface ICommand : IComparable<ICommand>
     bool Active { get; }
     int Cost { get; }
 
-    void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation);
+    void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation);
     int GetHashCode();
 }

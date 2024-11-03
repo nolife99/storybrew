@@ -11,23 +11,24 @@ public static partial class Native
     #region Memory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(nint source, nint destination, int count) => CopyMemory(source.ToPointer(), destination.ToPointer(), count);
+    public static unsafe void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source.ToPointer(), (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe void CopyMemory(void* source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source, (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(nint source, void* destination, int count) => CopyMemory(source.ToPointer(), destination, count);
+    public static unsafe void CopyMemory(nint source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source.ToPointer(), (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(void* source, nint destination, int count) => CopyMemory(source, destination.ToPointer(), count);
+    public static unsafe void CopyMemory(void* source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source, (uint)count);
 
     #endregion
 
     #region Win32
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("user32")]
-    private static partial nint SendMessageA(nint hWnd, uint msg, nuint wParam, nint lParam);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DllImport("user32")]
+    static extern nint SendMessageA(nint hWnd, uint msg, nuint wParam, nint lParam);
 
     ///<summary> Sends the specified message to a window or windows. </summary>
     ///<remarks> Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage"/></remarks>
@@ -41,7 +42,7 @@ public static partial class Native
     ///<returns> The result from the call procedure. </returns>
     ///<exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint"/>. </exception>
     ///<exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
-    public static TResult SendMessage<TWide, TLong, TResult>(nint windowHandle, Message message, TWide wParam, TLong lParam) 
+    public static TResult SendMessage<TWide, TLong, TResult>(nint windowHandle, Message message, TWide wParam, TLong lParam)
         where TWide : INumberBase<TWide> where TLong : INumberBase<TLong> where TResult : INumberBase<TResult>
         => TResult.CreateChecked(SendMessageA(windowHandle, (uint)message, nuint.CreateChecked(wParam), nint.CreateChecked(lParam)));
 
@@ -67,8 +68,9 @@ public static partial class Native
 
     delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] [LibraryImport("user32")] [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [DllImport("user32")]
+    static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
@@ -87,7 +89,7 @@ public static partial class Native
                 cont = false;
             }
             return cont;
-        }, default);
+        }, 0);
     }
 
     #endregion

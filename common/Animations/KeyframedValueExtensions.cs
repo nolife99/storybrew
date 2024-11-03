@@ -19,19 +19,19 @@ public static class KeyframedValueExtensions
         var lastKeyframeTime = 0d;
 
         foreach (var keyframe in keyframes) if (keyframe.Value != active)
-        {
-            if (keyframe.Value)
             {
-                startTime = keyframe.Time;
-                active = true;
+                if (keyframe.Value)
+                {
+                    startTime = keyframe.Time;
+                    active = true;
+                }
+                else
+                {
+                    action(startTime, keyframe.Time);
+                    active = false;
+                }
             }
-            else
-            {
-                action(startTime, keyframe.Time);
-                active = false;
-            }
-        }
-        else lastKeyframeTime = keyframe.Time;
+            else lastKeyframeTime = keyframe.Time;
 
         if (active) action(startTime, lastKeyframeTime);
     }

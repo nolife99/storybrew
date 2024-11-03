@@ -9,21 +9,21 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
     Vector2 minSize, preferredSize;
     bool invalidSizes = true;
 
-    public override Vector2 MinSize 
-    { 
-        get 
-        { 
-            measureChildren(); 
-            return minSize; 
-        } 
+    public override Vector2 MinSize
+    {
+        get
+        {
+            measureChildren();
+            return minSize;
+        }
     }
-    public override Vector2 PreferredSize 
-    { 
-        get 
-        { 
-            measureChildren(); 
-            return preferredSize; 
-        } 
+    public override Vector2 PreferredSize
+    {
+        get
+        {
+            measureChildren();
+            return preferredSize;
+        }
     }
 
     bool fitChildren;

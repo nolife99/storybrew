@@ -72,7 +72,7 @@ public static class QuadRendererExtensions
             x4 = p4x;
             y4 = p4y;
         }
-        
+
         QuadPrimitive primitive = new()
         {
             x1 = x1 + x,

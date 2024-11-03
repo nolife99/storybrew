@@ -33,8 +33,8 @@ public class FontGradient(PointF offset = default, SizeF size = default, FontCol
     public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
         using LinearGradientBrush brush = new(new PointF(x + Offset.X, y + Offset.Y), new(x + Offset.X + Size.Width, y + Offset.Y + Size.Height), Color, System.Drawing.Color.FromArgb(0, Color.R, Color.G, Color.B))
-        { 
-            WrapMode = WrapMode 
+        {
+            WrapMode = WrapMode
         };
         textGraphics.FillPath(brush, path);
     }

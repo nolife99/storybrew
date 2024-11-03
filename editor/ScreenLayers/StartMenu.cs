@@ -28,8 +28,8 @@ public class StartMenu : UiScreenLayer
             AnchorTo = BoxAlignment.Centre,
             Padding = new(16),
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 newProjectButton = new(WidgetManager)
                 {
                     Text = "New project",
@@ -51,7 +51,7 @@ public class StartMenu : UiScreenLayer
                     Text = "Close",
                     AnchorFrom = BoxAlignment.Centre
                 }
-            }
+            ]
         });
         WidgetManager.Root.Add(bottomRightLayout = new(WidgetManager)
         {
@@ -61,8 +61,8 @@ public class StartMenu : UiScreenLayer
             Padding = new(16),
             Horizontal = true,
             Fill = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 discordButton = new(WidgetManager)
                 {
                     StyleName = "small",
@@ -75,7 +75,7 @@ public class StartMenu : UiScreenLayer
                     Text = "Wiki",
                     AnchorFrom = BoxAlignment.Centre
                 }
-            }
+            ]
         });
         WidgetManager.Root.Add(bottomLayout = new(WidgetManager)
         {
@@ -83,8 +83,8 @@ public class StartMenu : UiScreenLayer
             AnchorFrom = BoxAlignment.Bottom,
             AnchorTo = BoxAlignment.Bottom,
             Padding = new(16),
-            Children = new Widget[]
-            {
+            Children =
+            [
                 updateButton = new(WidgetManager)
                 {
                     Text = "Checking for updates",
@@ -98,7 +98,7 @@ public class StartMenu : UiScreenLayer
                     Text = Program.FullName,
                     AnchorFrom = BoxAlignment.Centre
                 }
-            }
+            ]
         });
 
         newProjectButton.OnClick += (sender, e) => Manager.Add(new NewProjectMenu());
@@ -120,7 +120,7 @@ public class StartMenu : UiScreenLayer
         if (IsDisposed) return;
         if (e is not null)
         {
-            handleLastestVersionException(e);
+            handleLatestVersionException(e);
             return;
         }
         try
@@ -128,7 +128,7 @@ public class StartMenu : UiScreenLayer
             var hasLatest = false;
             var latestVersion = Program.Version;
             var description = "";
-            var downloadUrl = (string)null;
+            string downloadUrl = null;
 
             var releases = TinyToken.ReadString<JsonFormat>(r);
             foreach (var release in releases.Values<TinyObject>())
@@ -176,35 +176,35 @@ public class StartMenu : UiScreenLayer
 
             if (Program.Version < latestVersion)
             {
-                updateButton.Text = $"Version {latestVersion} available!";
-                updateButton.Tooltip = $"What's new:\n\n{description.TrimEnd('\n')}";
+                updateButton.Text = "Version " + latestVersion + " available!";
+                updateButton.Tooltip = "What's new:\n\n" + description.TrimEnd('\n');
                 updateButton.OnClick += (sender, ex) =>
                 {
                     if (downloadUrl is not null && latestVersion >= new Version(1, 4)) Manager.Add(new UpdateMenu(downloadUrl));
-                    else Updater.OpenLastestReleasePage();
+                    else Updater.OpenLatestReleasePage();
                 };
                 updateButton.StyleName = "";
                 updateButton.Disabled = false;
             }
             else
             {
-                versionLabel.Tooltip = $"Recent changes:\n\n{description.TrimEnd('\n')}";
+                versionLabel.Tooltip = "Recent changes:\n\n" + description.TrimEnd('\n');
                 updateButton.Displayed = false;
             }
             bottomLayout.Pack(600);
         }
         catch (Exception ex)
         {
-            handleLastestVersionException(ex);
+            handleLatestVersionException(ex);
         }
     });
-    void handleLastestVersionException(Exception exception)
+    void handleLatestVersionException(Exception exception)
     {
         Trace.WriteLine($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message}\n\n{versionLabel.Text}";
 
         updateButton.Text = "See latest release";
-        updateButton.OnClick += (sender, e) => Updater.OpenLastestReleasePage();
+        updateButton.OnClick += (sender, e) => Updater.OpenLatestReleasePage();
         updateButton.Disabled = false;
         bottomLayout.Pack(600);
     }

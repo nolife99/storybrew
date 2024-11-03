@@ -142,7 +142,7 @@ public abstract class ObjectSerializer
     {
         var typeName = reader.ReadString();
         if (string.IsNullOrEmpty(typeName)) return null;
-        
+
         var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot read objects of type {typeName}");
         return serializer.ReadValue(reader);
     }

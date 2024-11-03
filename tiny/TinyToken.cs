@@ -67,33 +67,33 @@ public abstract class TinyToken
 
     public static TinyToken Read(Stream stream, Format format)
     {
-        using StreamReader reader = new(stream, Encoding.ASCII); 
+        using StreamReader reader = new(stream, Encoding.ASCII);
         return format.Read(reader);
     }
     public static TinyToken Read(string path)
     {
-        using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite); 
+        using var stream = File.OpenRead(path);
         return Read(stream, GetFormat(path));
     }
 
     public static TinyToken ReadString(string data, Format format)
     {
-        using StringReader reader = new(data); 
+        using StringReader reader = new(data);
         return format.Read(reader);
     }
     public static TinyToken ReadString<T>(string data) where T : Format, new() => ReadString(data, new T());
 
     public void Write(Stream stream, Format format)
     {
-        using StreamWriter writer = new(stream, Encoding.ASCII) 
-        { 
-            NewLine = "\n" 
-        }; 
+        using StreamWriter writer = new(stream, Encoding.ASCII)
+        {
+            NewLine = "\n"
+        };
         format.Write(writer, this);
     }
     public void Write(string path)
     {
-        using var stream = File.Create(path); 
+        using var stream = File.Create(path);
         Write(stream, GetFormat(path));
     }
 

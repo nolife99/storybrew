@@ -27,8 +27,8 @@ public class NewProjectMenu : UiScreenLayer
             AnchorTo = BoxAlignment.Centre,
             Padding = new(16),
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new Label(WidgetManager)
                 {
                     Text = "New Project",
@@ -51,8 +51,8 @@ public class NewProjectMenu : UiScreenLayer
                     Horizontal = true,
                     AnchorFrom = BoxAlignment.Centre,
                     Fill = true,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         startButton = new(WidgetManager)
                         {
                             Text = "Start",
@@ -63,9 +63,9 @@ public class NewProjectMenu : UiScreenLayer
                             Text = "Cancel",
                             AnchorFrom = BoxAlignment.Centre
                         }
-                    }
+                    ]
                 }
-            }
+            ]
         });
 
         projectNameTextbox.OnValueChanged += (sender, e) => updateButtonsState();

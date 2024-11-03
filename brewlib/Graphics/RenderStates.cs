@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using BrewLib.Util;
 using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
@@ -21,7 +20,7 @@ public class RenderStates
     public void Apply()
     {
         var flushed = false;
-        fields.ForEachUnsafe(field =>
+        foreach (var field in fields)
         {
             if (field.IsStatic) return;
 
@@ -36,7 +35,7 @@ public class RenderStates
 
             newState.Apply();
             currentStates[field.FieldType] = newState;
-        });
+        }
     }
 
     public override string ToString() => string.Join("\n", currentStates.Values);

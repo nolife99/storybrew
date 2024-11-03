@@ -11,5 +11,5 @@ public interface PrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : 
     void Bind(Shader shader);
     void Unbind();
 
-    unsafe void Render(PrimitiveType primitiveType, TPrimitive* primitives, int primitiveCount, int drawCount, bool canBuffer = false);
+    void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false);
 }

@@ -13,29 +13,29 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
     List<LayoutLine> lines;
     bool invalidSizes = true;
 
-    public override Vector2 MinSize 
-    { 
-        get 
-        { 
-            measureChildren(); 
-            return new Vector2(0, PreferredSize.Y); 
-        } 
+    public override Vector2 MinSize
+    {
+        get
+        {
+            measureChildren();
+            return new Vector2(0, PreferredSize.Y);
+        }
     }
-    public override Vector2 PreferredSize 
-    { 
-        get 
-        { 
-            measureChildren(); 
-            return preferredSize; 
-        } 
+    public override Vector2 PreferredSize
+    {
+        get
+        {
+            measureChildren();
+            return preferredSize;
+        }
     }
-    public override Vector2 MaxSize 
-    { 
-        get 
-        { 
-            measureChildren(); 
-            return preferredSize; 
-        } 
+    public override Vector2 MaxSize
+    {
+        get
+        {
+            measureChildren();
+            return preferredSize;
+        }
     }
 
     float spacing;
@@ -133,10 +133,10 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
         }
 
         var y = padding.Top;
-        lines.ForEach(line =>
+        foreach (var line in lines)
         {
             var x = padding.Left;
-            line.Items.ForEach(item =>
+            foreach (var item in line.Items)
             {
                 var child = item.Widget;
                 var minSize = item.MinSize;
@@ -155,9 +155,9 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
                 var anchor = verticalAlignment | BoxAlignment.Left;
                 PlaceChildren(child, new(x, y + verticalOffset), new(item.Width, childHeight), anchor);
                 x += item.Width + spacing;
-            });
+            }
             y += line.Height + lineSpacing;
-        });
+        }
     }
     protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
     {
@@ -203,7 +203,7 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
         }
 
         var firstLine = true;
-        lines.ForEach(line =>
+        foreach (var line in lines)
         {
             var scalableItems = line.Items.Count;
             while (scalableItems > 0 && Math.Abs(innerSizeWidth - line.Width) > .001f)
@@ -215,7 +215,7 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
                 line.Width = line.GetTotalSpacing(spacing);
                 scalableItems = 0;
 
-                line.Items.ForEach(item =>
+                foreach (var item in line.Items)
                 {
                     if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
 
@@ -235,13 +235,13 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
                         else ++scalableItems;
                     }
                     line.Width += item.Width;
-                });
+                }
             }
 
             width = Math.Max(width, line.Width);
             height += firstLine ? line.Height : line.Height + lineSpacing;
             firstLine = false;
-        });
+        }
 
         flowWidth = Math.Max(flowWidth, width + padding.Horizontal);
         preferredSize = new(flowWidth, height + padding.Vertical);
@@ -251,7 +251,7 @@ public class FlowLayout(WidgetManager manager) : Widget(manager)
     {
         if (disposing)
         {
-            lines.ForEach(line => line.Items.Clear());
+            foreach (var line in lines) line.Items.Clear();
             lines.Clear();
         }
         base.Dispose(disposing);

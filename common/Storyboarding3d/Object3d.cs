@@ -52,24 +52,24 @@ public class Object3d
         var layer = Segment ?? parentSegment;
         var childrenLayer = ChildrenInheritLayer ? layer : parentSegment;
 
-        if (children.Count != 0) children.ForEach(child => child.GenerateTreeSprite(childrenLayer), child => child.DrawBelowParent);
+        children.ForEach(child => child.GenerateTreeSprite(childrenLayer), child => child.DrawBelowParent);
         GenerateSprite(layer);
-        if (children.Count != 0) children.ForEach(child => child.GenerateTreeSprite(childrenLayer), child => !child.DrawBelowParent);
+        children.ForEach(child => child.GenerateTreeSprite(childrenLayer), child => !child.DrawBelowParent);
     }
 
     ///<summary> Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given <see cref="Camera"/>'s state. </summary>
     public void GenerateTreeStates(double time, Camera camera) => GenerateTreeStates(time, camera.StateAt(time), Object3dState.InitialState);
 
     ///<summary> Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given <see cref="CameraState"/> and <see cref="Object3dState"/>. </summary>
-    public void GenerateTreeStates(double time, CameraState cameraState, Object3dState parent3dState)
+    public void GenerateTreeStates(double time, CameraState camState, Object3dState parentState)
     {
-        Object3dState object3dState = new(
-            WorldTransformAt(time) * parent3dState.WorldTransform,
-            Coloring.ValueAt(time) * (InheritsColor ? parent3dState.Color : CommandColor.White),
-            Opacity.ValueAt(time) * (InheritsOpacity ? parent3dState.Opacity : 1));
+        Object3dState state = new(
+            WorldTransformAt(time) * parentState.WorldTransform,
+            Coloring.ValueAt(time) * (InheritsColor ? parentState.Color : CommandColor.White),
+            Opacity.ValueAt(time) * (InheritsOpacity ? parentState.Opacity : 1));
 
-        GenerateStates(time, cameraState, object3dState);
-        if (children.Count != 0) children.ForEach(child => child.GenerateTreeStates(time, cameraState, object3dState));
+        GenerateStates(time, camState, state);
+        if (children.Count != 0) foreach (var child in children) child.GenerateTreeStates(time, camState, state);
     }
 
     ///<summary> Generates commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
@@ -81,7 +81,7 @@ public class Object3d
     public void GenerateTreeCommands(Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
     {
         GenerateCommands(action, startTime, endTime, timeOffset, loopable);
-        if (children.Count != 0) children.ForEach(child => child?.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable));
+        if (children.Count != 0) foreach (var child in children) child.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
     }
 
     ///<summary> Generates loop commands on this instance's base sprites based on its <see cref="State"/>s. </summary>

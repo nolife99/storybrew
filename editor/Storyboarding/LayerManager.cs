@@ -182,9 +182,6 @@ public class LayerManager
     public void TriggerEvents(double startTime, double endTime)
         => layers.ForEach(layer => layer.TriggerEvents(startTime, endTime));
 
-    public int GetActiveSpriteCount(double time) => layers.Sum(l => l.GetActiveSpriteCount(time));
-    public int GetCommandCost(double time) => layers.Sum(l => l.GetCommandCost(time));
-
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
         => layers.ForEach(layer => layer.Draw(drawContext, camera, bounds, opacity, frameStats));
 

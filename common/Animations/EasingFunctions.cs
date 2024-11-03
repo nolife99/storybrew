@@ -84,8 +84,8 @@ public static class EasingFunctions
     public static readonly Func<double, double> BounceIn = x => Reverse(BounceOut, x);
     ///<summary> An easing function that represents a bouncing easing-out progression. </summary>
     public static readonly Func<double, double> BounceOut = x => x < 1 / 2.75 ?
-        7.5625 * x * x : x < 2 / 2.75 ? 
-        7.5625 * (x -= 1.5 / 2.75) * x + .75 : x < 2.5 / 2.75 ? 
+        7.5625 * x * x : x < 2 / 2.75 ?
+        7.5625 * (x -= 1.5 / 2.75) * x + .75 : x < 2.5 / 2.75 ?
         7.5625 * (x -= 2.25 / 2.75) * x + .9375 : 7.5625 * (x -= 2.625 / 2.75) * x + .984375;
     ///<summary> An easing function that represents a bouncing easing-in-out progression. </summary>
     public static readonly Func<double, double> BounceInOut = x => ToInOut(BounceIn, x);

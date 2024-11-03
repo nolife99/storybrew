@@ -47,6 +47,6 @@ public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCom
     }
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, int indentation) => throw new NotImplementedException();
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation) => throw new NotImplementedException();
     public override string ToString() => $"triggerable ({StartTime}s - {EndTime}s active:{Active})";
 }

@@ -65,23 +65,23 @@ public class Sprite3d : Node3d, HasOsbSprites
         switch (RotationMode)
         {
             case RotationMode.UnitX:
-            {
-                var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
-                angle += MathF.Atan2(delta.Y, delta.X);
-                break;
-            }
+                {
+                    var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
+                    angle += MathF.Atan2(delta.Y, delta.X);
+                    break;
+                }
             case RotationMode.UnitY:
-            {
-                var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
-                angle += MathF.Atan2(delta.Y, delta.X) - MathF.PI * .5f;
-                break;
-            }
+                {
+                    var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
+                    angle += MathF.Atan2(delta.Y, delta.X) - MathF.PI * .5f;
+                    break;
+                }
         }
 
         var scale = (Vector2)SpriteScale.ValueAt(time) * new Vector2(
             new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13).Length(),
             new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length()) *
-        (float)(cameraState.FocusDistance / screenPosition.W) * (float)cameraState.ResolutionScale;
+            (cameraState.FocusDistance / screenPosition.W) * cameraState.ResolutionScale;
 
         var opacity = screenPosition.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= cameraState.OpacityAt(screenPosition.W);

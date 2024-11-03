@@ -25,12 +25,11 @@ public static class DrawState
     public static void Initialize(ResourceContainer resourceContainer, int width, int height)
     {
         retrieveRendererInfo();
-        setupDebugOutput();
         SetCapability(EnableCap.Lighting, false);
 
         if (UseSrgb && HasCapabilities(3, 0, "GL_ARB_framebuffer_object"))
         {
-            GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer, FramebufferAttachment.BackLeft, FramebufferParameterName.FramebufferAttachmentColorEncoding, out int defaultFramebufferColorEncoding);
+            GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer, FramebufferAttachment.BackLeft, FramebufferParameterName.FramebufferAttachmentColorEncoding, out var defaultFramebufferColorEncoding);
             if (defaultFramebufferColorEncoding == 0x8C40)
             {
                 SetCapability(EnableCap.FramebufferSrgb, true);
@@ -60,7 +59,7 @@ public static class DrawState
         CheckError("initializing openGL context");
 
         whitePixel = Texture2d.Create(Color.White, "whitepixel");
-        normalPixel = Texture2d.Create(Color.FromArgb(127, 127, 255), "normalpixel", 1, 1, new() { Srgb = false });
+        normalPixel = Texture2d.Create(Color.FromArgb(127, 127, 255), "normalpixel", 1, 1, new() { Srgb = UseSrgb });
         textGenerator = new(resourceContainer);
         textFontManager = new();
 
@@ -160,8 +159,8 @@ public static class DrawState
         if (samplerIndex < maxFpTextureUnits)
         {
             ActiveTextureUnit = samplerIndex;
-            if (previousMode != TexturingModes.None) SetCapability((EnableCap)ToTextureTarget(previousMode), false);
-            if (mode != TexturingModes.None) SetCapability((EnableCap)ToTextureTarget(mode), true);
+            if (previousMode is not TexturingModes.None) SetCapability((EnableCap)ToTextureTarget(previousMode), false);
+            if (mode is not TexturingModes.None) SetCapability((EnableCap)ToTextureTarget(mode), true);
         }
 
         samplerTexturingModes[samplerIndex] = mode;
@@ -180,6 +179,7 @@ public static class DrawState
             GL.BindTexture(ToTextureTarget(mode), textureId);
             samplerTextureIds[samplerIndex] = textureId;
 
+            Trace.WriteLine("Bound texture " + textureId + " (" + mode + ") to unit " + samplerIndex);
             ++TextureBinds;
         }
     }
@@ -194,16 +194,16 @@ public static class DrawState
     public static void UnbindTexture(int textureId)
     {
         for (var samplerIndex = 0; samplerIndex < samplerTextureIds.Length; ++samplerIndex) if (samplerTextureIds[samplerIndex] == textureId)
-        {
-            ActiveTextureUnit = samplerIndex;
-            GL.BindTexture(ToTextureTarget(samplerTexturingModes[samplerIndex]), 0);
-            samplerTextureIds[samplerIndex] = 0;
-        }
+            {
+                ActiveTextureUnit = samplerIndex;
+                GL.BindTexture(ToTextureTarget(samplerTexturingModes[samplerIndex]), 0);
+                samplerTextureIds[samplerIndex] = 0;
+            }
     }
 
     public static int[] BindTextures(params BindableTexture[] textures)
     {
-        var samplerIndexes = GC.AllocateUninitializedArray<int>(textures.Length);
+        var samplerIndexes = new int[textures.Length];
         var samplerCount = samplerTextureIds.Length;
 
         for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)
@@ -212,10 +212,10 @@ public static class DrawState
 
             samplerIndexes[textureIndex] = -1;
             for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex) if (samplerTextureIds[samplerIndex] == textureId)
-            {
-                samplerIndexes[textureIndex] = samplerIndex;
-                break;
-            }
+                {
+                    samplerIndexes[textureIndex] = samplerIndex;
+                    break;
+                }
         }
         for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)
         {
@@ -233,10 +233,10 @@ public static class DrawState
 
                 bool isFreeSamplerUnit = true;
                 for (var i = 0; i < samplerIndexes.Length; ++i) if (samplerIndexes[i] == samplerIndex)
-                {
-                    isFreeSamplerUnit = false;
-                    break;
-                }
+                    {
+                        isFreeSamplerUnit = false;
+                        break;
+                    }
 
                 if (isFreeSamplerUnit)
                 {
@@ -376,31 +376,6 @@ public static class DrawState
         supportedExtensions = extensionsString.Split(' ');
         CheckError("retrieving extensions");
         // Trace.WriteLine($"extensions: {extensionsString}");
-    }
-    static void setupDebugOutput()
-    {
-#if !true // because vscode is stupid
-        if (!HasCapabilities(4, 3, "GL_KHR_debug"))
-        {
-            Trace.WriteLine("openGL debug output is unavailable");
-            return;
-        }
-
-        Trace.WriteLine("\nenabling openGL debug output");
-
-        SetCapability(EnableCap.DebugOutput, true);
-        SetCapability(EnableCap.DebugOutputSynchronous, true);
-        CheckError("enabling debug output");
-
-        openGLDebugDelegate = new DebugProc(openGLDebugCallback);
-
-        GL.DebugMessageCallback(openGLDebugDelegate, nint.Zero);
-        GL.DebugMessageControl(DebugSourceControl.DontCare, DebugTypeControl.DontCare, DebugSeverityControl.DontCare, 0, new int[0], true);
-        CheckError("setting up debug output");
-
-        GL.DebugMessageInsert(DebugSourceExternal.DebugSourceApplication, DebugType.DebugTypeMarker, 0, DebugSeverity.DebugSeverityNotification, -1, "Debug output enabled");
-        CheckError("testing debug output");
-#endif
     }
 
     public static bool HasCapabilities(int major, int minor, params string[] extensions) => openGlVersion >= new Version(major, minor) || HasExtensions(extensions);

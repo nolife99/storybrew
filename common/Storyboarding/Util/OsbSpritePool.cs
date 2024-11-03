@@ -87,8 +87,8 @@ public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin ori
         {
             result = sprite;
             return;
-        }, sprite => 
-            (MaxPoolDuration > 0 ? sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration : sprite.EndTime <= startTime) && 
+        }, sprite =>
+            (MaxPoolDuration > 0 ? sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration : sprite.EndTime <= startTime) &&
             (result is null || sprite.StartTime < result.StartTime));
 
         if (result is not null)
@@ -117,22 +117,18 @@ public class OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin ori
     bool disposed;
 
     ///<inheritdoc/>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
     internal virtual void Dispose(bool disposing)
     {
         if (!disposed)
         {
             if (attributes is not null && disposing)
             {
-                pooled.ForEach(pooledSprite =>
+                foreach (var pooledSprite in pooled)
                 {
                     var sprite = pooledSprite.Sprite;
                     attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
-                });
+                }
                 disposed = true;
             }
             pooled.Clear();
@@ -372,12 +368,7 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     bool disposed;
 
     ///<inheritdoc/>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
+    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
         if (!disposed)

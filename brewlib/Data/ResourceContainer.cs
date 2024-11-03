@@ -15,7 +15,8 @@ public interface ResourceContainer
 
     SafeWriteStream GetWriteStream(string path);
 }
-[Flags] public enum ResourceSource
+[Flags]
+public enum ResourceSource
 {
     Embedded = 1, Relative = 2, Absolute = 4,
 

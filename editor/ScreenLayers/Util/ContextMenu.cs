@@ -48,14 +48,14 @@ public class ContextMenu<T> : UiScreenLayer
             AnchorTo = BoxAlignment.Centre,
             Padding = new(16),
             FitChildren = true,
-            Children = new Widget[]
-            {
+            Children =
+            [
                 new LinearLayout(WidgetManager)
                 {
                     Horizontal = true,
                     Fill = true,
-                    Children = new Widget[]
-                    {
+                    Children =
+                    [
                         new Label(WidgetManager)
                         {
                             Text = title
@@ -72,13 +72,13 @@ public class ContextMenu<T> : UiScreenLayer
                             AnchorFrom = BoxAlignment.Centre,
                             CanGrow = false
                         }
-                    }
+                    ]
                 },
                 new ScrollArea(WidgetManager, optionsLayout = new(WidgetManager)
                 {
                     FitChildren = true
                 })
-            }
+            ]
         });
         cancelButton.OnClick += (sender, e) => Exit();
 

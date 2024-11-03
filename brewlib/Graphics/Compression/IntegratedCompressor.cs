@@ -93,7 +93,7 @@ public class IntegratedCompressor : ImageCompressor
         if (!disposed) await Task.WhenAll(tasks).ContinueWith(task =>
         {
             base.Dispose(disposing);
-            Parallel.ForEach(toCleanup, clean => PathHelper.SafeDelete(clean));
+            foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);
 
             if (disposing)
             {

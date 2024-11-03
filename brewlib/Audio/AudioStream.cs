@@ -15,16 +15,16 @@ public class AudioStream : AudioChannel
 
         decodeStream = Bass.CreateStream(path, 0, 0, flags);
         if (decodeStream == 0 && !Path.IsPathRooted(path)) unsafe
-        {
-            var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
-            if (resourceStream is not null) decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, new()
             {
-                Read = (buffer, _, _) => resourceStream.Read(new(buffer.ToPointer(), (int)resourceStream.Length)),
-                Length = _ => resourceStream.Length,
-                Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
-                Close = _ => resourceStream.Dispose()
-            });
-        }
+                var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
+                if (resourceStream is not null) decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, new()
+                {
+                    Read = (buffer, _, _) => resourceStream.Read(new(buffer.ToPointer(), (int)resourceStream.Length)),
+                    Length = _ => resourceStream.Length,
+                    Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
+                    Close = _ => resourceStream.Dispose()
+                });
+            }
         if (decodeStream == 0)
         {
             Trace.WriteLine($"Failed to load audio stream ({path}): {Bass.LastError}");

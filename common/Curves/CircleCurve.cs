@@ -38,9 +38,9 @@ public class CircleCurve(CommandPosition startPoint, CommandPosition midPoint, C
         if (midAngle > endAngle) endAngle -= Math.Tau;
 
         length = Math.Abs((endAngle - startAngle) * radius);
-        var precision = (int)(length / 8);
+        var precision = (int)(length / 4);
 
-        for (var i = 1; i < precision; i++)
+        for (var i = 1; i < length; i++)
         {
             var progress = (double)i / precision;
             var angle = endAngle * progress + startAngle * (1 - progress);

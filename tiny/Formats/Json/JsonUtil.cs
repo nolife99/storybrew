@@ -8,13 +8,13 @@ public class JsonUtil
     {
         StringBuilder sb = new((int)(value.Length * 1.3f));
         foreach (var c in value) switch (c)
-        {
-            case '\r': sb.Append("\\r"); break;
-            case '\n': sb.Append("\\n"); break;
-            case '"': sb.Append("\\\""); break;
-            case '\\': sb.Append("\\\\"); break;
-            default: sb.Append(c); break;
-        }
+            {
+                case '\r': sb.Append("\\r"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '"': sb.Append("\\\""); break;
+                case '\\': sb.Append("\\\\"); break;
+                default: sb.Append(c); break;
+            }
 
         return sb.ToString();
     }
@@ -25,17 +25,17 @@ public class JsonUtil
 
         StringBuilder sb = new(value.Length);
         foreach (var c in value) if (special)
-        {
-            switch (c)
             {
-                case 'r': sb.Append('\r'); break;
-                case 'n': sb.Append('\n'); break;
-                default: sb.Append(c); break;
+                switch (c)
+                {
+                    case 'r': sb.Append('\r'); break;
+                    case 'n': sb.Append('\n'); break;
+                    default: sb.Append(c); break;
+                }
+                special = false;
             }
-            special = false;
-        }
-        else if (c == '\\') special = true;
-        else sb.Append(c);
+            else if (c == '\\') special = true;
+            else sb.Append(c);
 
         return sb.ToString();
     }
