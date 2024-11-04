@@ -25,11 +25,11 @@ public class ScriptCompiler
 
     public static Assembly Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
     {
-        Dictionary<SyntaxTree, KeyValuePair<string, SourceText>> trees = [];
+        Dictionary<SyntaxTree, (string, SourceText)> trees = [];
         foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
         {
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-            trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = new(src, sourceText);
+            trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = (src, sourceText);
         }
         List<MetadataReference> references = [];
 
@@ -49,17 +49,17 @@ public class ScriptCompiler
                 }
                 else
                 {
-                    var isExist = false;
+                    var exists = false;
                     for (var i = 0; i < environmentDirectories.Length; ++i)
                     {
                         var actualAsmPath = Path.Combine(environmentDirectories[i], referencedAssembly);
                         if (!File.Exists(actualAsmPath)) continue;
-                        isExist = true;
+                        exists = true;
                         asmPath = actualAsmPath;
                         break;
                     }
 
-                    if (isExist) using (var stream = File.OpenRead(asmPath))
+                    if (exists) using (var stream = File.OpenRead(asmPath))
                     {
                         if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
                         stream.Position = 0;
@@ -78,7 +78,7 @@ public class ScriptCompiler
 
         using MemoryStream assemblyStream = new();
         var result = CSharpCompilation.Create(asmName, trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
-            .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Key, k.Value)), options: new(debugInformationFormat: DebugInformationFormat.Embedded));
+            .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Item1, k.Item2)), options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
         if (result.Success)
         {
@@ -89,17 +89,15 @@ public class ScriptCompiler
         var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
         {
             if (k.Location.SourceTree is null) return "";
-            if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Key;
+            if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Item1;
             return "";
         }).ToDictionary(k => k.Key, k => k);
 
         StringBuilder error = new("Compilation error\n\n");
         foreach (var kvp in failureGroup)
         {
-            var file = kvp.Key;
-            var diagnostics = kvp.Value;
-            error.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)}:");
-            foreach (var diagnostic in diagnostics) error.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
+            error.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(kvp.Key)}:");
+            foreach (var diagnostic in kvp.Value) error.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
         }
 
         throw new ScriptCompilationException(error.ToString());
