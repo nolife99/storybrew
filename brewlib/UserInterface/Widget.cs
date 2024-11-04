@@ -519,11 +519,8 @@ public class Widget(WidgetManager manager) : IDisposable
 
     #region Drag and Drop
 
-    public GetDragDataDelegate GetDragData;
-    public delegate object GetDragDataDelegate();
-
-    public HandleDropDelegate HandleDrop;
-    public delegate bool HandleDropDelegate(object data);
+    public Func<object> GetDragData;
+    public Func<object, bool> HandleDrop;
 
     #endregion
 

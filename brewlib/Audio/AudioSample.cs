@@ -11,10 +11,10 @@ public class AudioSample : IDisposable
     const int MaxSimultaneousPlayBacks = 8;
     int sample;
 
-    readonly AudioManager manager;
+    AudioManager manager;
     public string Path { get; }
 
-    internal unsafe AudioSample(AudioManager audioManager, string path, ResourceContainer resourceContainer)
+    internal AudioSample(AudioManager audioManager, string path, ResourceContainer resourceContainer)
     {
         manager = audioManager;
         Path = path;
@@ -61,7 +61,11 @@ public class AudioSample : IDisposable
                 Bass.SampleFree(sample);
                 if (disposing) sample = 0;
             }
-            if (disposing) disposed = true;
+            if (disposing) 
+            {
+                manager = null;
+                disposed = true;
+            }
         }
     }
 

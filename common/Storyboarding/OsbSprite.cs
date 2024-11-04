@@ -730,14 +730,14 @@ public class OsbSprite : StoryboardObject
     ///<param name="size"> The image dimensions of the sprite texture. </param>
     ///<param name="rotation"> The rotation, in radians, of the sprite. </param>
     ///<param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
-    public static bool InScreenBounds(CommandPosition position, CommandScale size, double rotation, OsbOrigin origin)
+    public static bool InScreenBounds(CommandPosition position, CommandScale size, CommandDecimal rotation, OsbOrigin origin)
         => new OrientedBoundingBox(position, GetOriginVector(origin, size.X, size.Y), size.X, size.Y, rotation).Intersects(OsuHitObject.WidescreenStoryboardBounds);
 
     ///<summary> Gets the <see cref="CommandPosition"/> origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
     ///<param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>
     ///<param name="width"> The width of the sprite. </param>
     ///<param name="height"> The height of the sprite. </param>
-    public static CommandPosition GetOriginVector(OsbOrigin origin, double width, double height) => origin switch
+    public static CommandPosition GetOriginVector(OsbOrigin origin, CommandDecimal width, CommandDecimal height) => origin switch
     {
         OsbOrigin.TopLeft => default,
         OsbOrigin.TopCentre => new(width * .5, 0),

@@ -20,9 +20,6 @@ public class SpriteRendererBuffered : SpriteRenderer
     public static readonly VertexDeclaration VertexDeclaration =
         new(VertexAttribute.CreatePosition2d(), VertexAttribute.CreateDiffuseCoord(0), VertexAttribute.CreateColor(true));
 
-    public delegate int CustomTextureBinder(BindableTexture texture);
-    public CustomTextureBinder CustomTextureBind;
-
     #region Default Shader
 
     public static Shader CreateDefaultShader()
@@ -58,8 +55,8 @@ public class SpriteRendererBuffered : SpriteRenderer
         set => flushAction = value;
     }
 
-    PrimitiveStreamer<SpritePrimitive> primitiveStreamer;
-    SpritePrimitive[] primitives;
+    PrimitiveStreamer<QuadPrimitive> primitiveStreamer;
+    QuadPrimitive[] primitives;
 
     Camera camera;
     public Camera Camera
@@ -103,10 +100,10 @@ public class SpriteRendererBuffered : SpriteRenderer
     public int LargestBatch { get; private set; }
 
     public SpriteRendererBuffered(Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0) :
-        this(PrimitiveStreamerUtil<SpritePrimitive>.DefaultCreatePrimitiveStreamer, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize)
+        this(PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize)
     { }
 
-    public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<SpritePrimitive>> createPrimitiveStreamer, Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0)
+    public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<QuadPrimitive>> createPrimitiveStreamer, Shader shader, Action flushAction, int maxSpritesPerBatch, int primitiveBufferSize)
     {
         if (shader is null)
         {
@@ -121,7 +118,7 @@ public class SpriteRendererBuffered : SpriteRenderer
         var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
-        primitives = ArrayPool<SpritePrimitive>.Shared.Rent(maxSpritesPerBatch);
+        primitives = ArrayPool<QuadPrimitive>.Shared.Rent(maxSpritesPerBatch);
     }
     public void BeginRendering()
     {
@@ -150,19 +147,19 @@ public class SpriteRendererBuffered : SpriteRenderer
 
         // When the previous flush was bufferable, draw state should stay the same.
         if (!lastFlushWasBuffered) unsafe
+        {
+            var combinedMatrix = transformMatrix * camera.ProjectionView;
+
+            var samplerUnit = DrawState.BindTexture(currentTexture);
+            if (currentSamplerUnit != samplerUnit)
             {
-                var combinedMatrix = transformMatrix * Camera.ProjectionView;
-
-                var samplerUnit = CustomTextureBind is not null ? CustomTextureBind(currentTexture) : DrawState.BindTexture(currentTexture);
-                if (currentSamplerUnit != samplerUnit)
-                {
-                    currentSamplerUnit = samplerUnit;
-                    GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
-                }
-
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-                flushAction?.Invoke();
+                currentSamplerUnit = samplerUnit;
+                GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
             }
+
+            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+            flushAction?.Invoke();
+        }
 
         primitiveStreamer.Render(PrimitiveType.Quads, primitives, spritesInBatch, spritesInBatch * VertexPerSprite, canBuffer);
 
@@ -190,10 +187,11 @@ public class SpriteRendererBuffered : SpriteRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        ArrayPool<SpritePrimitive>.Shared.Return(primitives);
+        ArrayPool<QuadPrimitive>.Shared.Return(primitives);
         if (disposing)
         {
             primitives = null;
+            camera = null;
 
             primitiveStreamer.Dispose();
             primitiveStreamer = null;
@@ -201,6 +199,7 @@ public class SpriteRendererBuffered : SpriteRenderer
             if (ownsShader) shader.Dispose();
             shader = null;
 
+            FlushAction = null;
             disposed = true;
         }
     }
@@ -259,7 +258,7 @@ public class SpriteRendererBuffered : SpriteRenderer
             y4 = p4y;
         }
 
-        SpritePrimitive spritePrimitive = new()
+        QuadPrimitive spritePrimitive = new()
         {
             x1 = x1 + x,
             y1 = y1 + y,

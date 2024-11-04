@@ -19,11 +19,6 @@ public class QuadRendererBuffered : QuadRenderer
     public static readonly VertexDeclaration VertexDeclaration =
         new(VertexAttribute.CreatePosition2d(), VertexAttribute.CreateDiffuseCoord(0), VertexAttribute.CreateColor(true));
 
-    public delegate int CustomTextureBinder(BindableTexture texture);
-    public CustomTextureBinder CustomTextureBind;
-
-    public Action FlushAction;
-
     #region Default Shader
 
     public static Shader CreateDefaultShader()
@@ -99,7 +94,7 @@ public class QuadRendererBuffered : QuadRenderer
     public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
         : this(PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, maxQuadsPerBatch, primitiveBufferSize) { }
 
-    public QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<QuadPrimitive>> createPrimitiveStreamer, Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
+    public QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<QuadPrimitive>> createPrimitiveStreamer, Shader shader, int maxQuadsPerBatch, int primitiveBufferSize)
     {
         if (shader is null)
         {
@@ -147,19 +142,17 @@ public class QuadRendererBuffered : QuadRenderer
 
         // When the previous flush was bufferable, draw state should stay the same.
         if (!lastFlushWasBuffered) unsafe
+        {
+            var combinedMatrix = transformMatrix * camera.ProjectionView;
+            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+
+            var samplerUnit = DrawState.BindTexture(currentTexture);
+            if (currentSamplerUnit != samplerUnit)
             {
-                var combinedMatrix = transformMatrix * Camera.ProjectionView;
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-
-                var samplerUnit = CustomTextureBind is null ? DrawState.BindTexture(currentTexture) : CustomTextureBind(currentTexture);
-                if (currentSamplerUnit != samplerUnit)
-                {
-                    currentSamplerUnit = samplerUnit;
-                    GL.Uniform1(textureUniformLocation, currentSamplerUnit);
-                }
-
-                FlushAction?.Invoke();
+                currentSamplerUnit = samplerUnit;
+                GL.Uniform1(textureUniformLocation, currentSamplerUnit);
             }
+        }
 
         primitiveStreamer.Render(PrimitiveType.Quads, primitives, quadsInBatch, quadsInBatch * VertexPerQuad, canBuffer);
 
@@ -191,13 +184,13 @@ public class QuadRendererBuffered : QuadRenderer
         if (disposing)
         {
             primitives = null;
+            camera = null;
 
             primitiveStreamer.Dispose();
             primitiveStreamer = null;
 
             if (ownsShader) shader.Dispose();
             shader = null;
-
             disposed = true;
         }
     }

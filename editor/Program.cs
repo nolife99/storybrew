@@ -11,7 +11,6 @@ using BrewLib.Audio;
 using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics;
-using StorybrewEditor.Processes;
 using StorybrewEditor.Util;
 
 namespace StorybrewEditor;
@@ -59,7 +58,6 @@ public static class Program
                 if (args.Length < 2) return false;
                 setupLogging(null, $"worker-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.log");
                 SchedulingEnabled = true;
-                ProcessWorker.Run(args[1]);
                 return true;
         }
         return false;

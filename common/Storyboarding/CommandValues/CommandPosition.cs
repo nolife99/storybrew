@@ -65,10 +65,10 @@ public readonly struct CommandPosition :
     public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
     public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
 
-    public static implicit operator osuTK.Vector2(CommandPosition position) => new(position.X, position.Y);
+    public static implicit operator osuTK.Vector2(CommandPosition position) => Unsafe.As<CommandPosition, osuTK.Vector2>(ref position);
     public static implicit operator osuTK.Vector2d(CommandPosition position) => new(position.X, position.Y);
     public static implicit operator PointF(CommandPosition position) => new(position.internalVec);
-    public static implicit operator CommandPosition(osuTK.Vector2 vector) => new(vector.X, vector.Y);
+    public static implicit operator CommandPosition(osuTK.Vector2 vector) => Unsafe.As<osuTK.Vector2, CommandPosition>(ref vector);
     public static implicit operator CommandPosition(osuTK.Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator CommandPosition(PointF vector) => vector.ToVector2();
 
@@ -76,5 +76,5 @@ public readonly struct CommandPosition :
     public static implicit operator Vector2(CommandPosition position) => position.internalVec;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandPosition(Vector2 vector) => new(vector);
+    public static implicit operator CommandPosition(Vector2 vector) => Unsafe.As<Vector2, CommandPosition>(ref vector);
 }

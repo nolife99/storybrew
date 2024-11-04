@@ -147,7 +147,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             {
                 tokenSrc?.Dispose();
                 tokenSrc = new();
-                tokenSrc.Token.Register(() => Trace.WriteLine($"Aborting thread {threadName}"));
+                tokenSrc.Token.Register(() => Trace.WriteLine($"Attempting to abort thread {threadName}"));
 
 #pragma warning disable SYSLIB0046
                 thread = Task.Run(() => ControlledExecution.Run(async () =>
@@ -168,7 +168,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             {
                                 if (thread is null)
                                 {
-                                    Trace.WriteLine($"Exiting thread {threadName}");
+                                    Trace.WriteLine($"Exiting thread gracefully {threadName}");
                                     return;
                                 }
                                 Monitor.Wait(context.Queue);
@@ -200,7 +200,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         }
                         catch (ThreadAbortException)
                         {
-                            Trace.WriteLine($"Aborted thread {threadName}");
+                            Trace.WriteLine($"Successfully aborted thread {threadName}");
                         }
                         catch (Exception e)
                         {

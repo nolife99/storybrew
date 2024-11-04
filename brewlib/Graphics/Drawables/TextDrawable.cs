@@ -185,16 +185,16 @@ public sealed class TextDrawable : Drawable
     void validate()
     {
         if (textLayout is not null) return;
-        if (font is null || font.Name != FontName || currentFontSize != FontSize || currentScaling != Scaling)
+        if (font is null || font.Name != fontName || currentFontSize != fontSize || currentScaling != scaling)
         {
             font?.Dispose();
-            font = DrawState.TextFontManager.GetTextFont(FontName, FontSize, Scaling);
+            font = DrawState.TextFontManager.GetTextFont(fontName, fontSize, scaling);
 
-            currentFontSize = FontSize;
-            currentScaling = Scaling;
+            currentFontSize = fontSize;
+            currentScaling = scaling;
         }
 
-        textLayout = new(text ?? "", font, alignment, MaxSize * scaling);
+        textLayout = new(text ?? "", font, alignment, maxSize * scaling);
     }
 
     public void Dispose()

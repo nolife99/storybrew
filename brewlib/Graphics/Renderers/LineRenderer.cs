@@ -19,9 +19,3 @@ public interface LineRenderer : Renderer, IDisposable
     void Draw(Vector3 start, Vector3 end, Color color);
     void Draw(Vector3 start, Vector3 end, Color startColor, Color endColor);
 }
-[StructLayout(LayoutKind.Sequential)]
-public struct LinePrimitive
-{
-    public float x1, y1, z1; public int color1;
-    public float x2, y2, z2; public int color2;
-}

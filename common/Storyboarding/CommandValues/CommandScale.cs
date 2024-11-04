@@ -59,18 +59,18 @@ public readonly struct CommandScale :
     public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
     public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
 
-    public static implicit operator CommandScale(osuTK.Vector2 vector) => new(vector.X, vector.Y);
+    public static implicit operator CommandScale(osuTK.Vector2 vector) => Unsafe.As<osuTK.Vector2, CommandScale>(ref vector);
     public static implicit operator CommandScale(osuTK.Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator CommandScale(SizeF vector) => vector.ToVector2();
-    public static implicit operator CommandScale(CommandPosition position) => new(position.X, position.Y);
-    public static implicit operator osuTK.Vector2(CommandScale obj) => new(obj.X, obj.Y);
+    public static implicit operator CommandScale(CommandPosition position) => Unsafe.As<CommandPosition, CommandScale>(ref position);
+    public static implicit operator osuTK.Vector2(CommandScale obj) => Unsafe.As<CommandScale, osuTK.Vector2>(ref obj);
     public static implicit operator osuTK.Vector2d(CommandScale obj) => new(obj.X, obj.Y);
     public static implicit operator SizeF(CommandScale vector) => new(vector.internalVec);
-    public static implicit operator CommandPosition(CommandScale position) => new(position.X, position.Y);
+    public static implicit operator CommandPosition(CommandScale position) => Unsafe.As<CommandScale, CommandPosition>(ref position);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector2(CommandScale obj) => obj.internalVec;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator CommandScale(Vector2 vector) => new(vector);
+    public static implicit operator CommandScale(Vector2 vector) => Unsafe.As<Vector2, CommandScale>(ref vector);
 }

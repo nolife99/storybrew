@@ -68,7 +68,6 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         var additive = sprite.AdditiveAt(time);
         var position = sprite.PositionAt(time);
         var rotation = sprite.RotationAt(time);
-        var finalColor = ((Color)sprite.ColorAt(time)).LerpColor(System.Drawing.Color.Black, project.DimFactor).WithOpacity(opacity * fade);
 
         var origin = GetOriginVector(sprite.Origin, texture.Width, texture.Height);
         if (transform is not null)
@@ -81,8 +80,8 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         if (frameStats is not null)
         {
             var size = texture.Size * scale;
-
             OrientedBoundingBox spriteBox = new(position, (Vector2)origin * scale, size.X, size.Y, rotation);
+
             if (spriteBox.Intersects(OsuHitObject.WidescreenStoryboardBounds))
             {
                 frameStats.EffectiveCommandCount += sprite.CommandCost;
@@ -108,8 +107,9 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         }
 
         var boundsScaling = bounds.Height / 480;
-        DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, sprite.AdditiveAt(time) ? AdditiveStates : AlphaBlendStates).Draw(
-            texture, bounds.Left + bounds.Width / 2 + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
-            origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation, finalColor);
+        DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates).Draw(
+            texture, bounds.Left + bounds.Width * .5f + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
+            origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation,
+            ((Color)sprite.ColorAt(time)).LerpColor(System.Drawing.Color.Black, project.DimFactor).WithOpacity(opacity * fade));
     }
 }

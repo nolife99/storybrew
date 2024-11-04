@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace BrewLib.Graphics;
 
@@ -8,9 +9,8 @@ public sealed class DrawContext : IDisposable
     Dictionary<Type, object> references = [];
     List<IDisposable> disposables = [];
 
-    public T Get<T>() => (T)references[typeof(T)];
-
-    public void Register<T>(T obj, bool dispose = false)
+    public T Get<T>() where T : class => Unsafe.As<T>(references[typeof(T)]);
+    public void Register<T>(T obj, bool dispose = false) where T : class
     {
         references.Add(typeof(T), obj);
         if (dispose && obj is IDisposable disposable) disposables.Add(disposable);

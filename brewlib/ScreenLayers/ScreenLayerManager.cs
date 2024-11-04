@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Input;
 using BrewLib.Time;
@@ -16,7 +17,7 @@ public sealed class ScreenLayerManager : IDisposable
     public FrameTimeSource TimeSource => timeSource;
 
     readonly object context;
-    public T GetContext<T>() => (T)context;
+    public T GetContext<T>() where T : class => Unsafe.As<T>(context);
 
     readonly List<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
     ScreenLayer focusedLayer;
@@ -43,10 +44,7 @@ public sealed class ScreenLayerManager : IDisposable
 
         LayerAdded?.Invoke(layer);
         layer.Load();
-
-        var width = Math.Max(1, window.Width);
-        var height = Math.Max(1, window.Height);
-        layer.Resize(width, height);
+        layer.Resize(Math.Max(1, window.Width), Math.Max(1, window.Height));
     }
     public void Set(ScreenLayer layer)
     {

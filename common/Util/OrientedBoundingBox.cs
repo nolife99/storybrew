@@ -9,11 +9,13 @@ namespace StorybrewCommon.Util;
 public class OrientedBoundingBox
 {
     readonly Vector2[] corners = new Vector2[4], axis = new Vector2[2];
-    readonly double[] origins = new double[2];
+    readonly float[] origins = new float[2];
 
-    public OrientedBoundingBox(CommandPosition position, CommandPosition origin, double width, double height, double angle)
+    public OrientedBoundingBox(Vector2 position, Vector2 origin, float width, float height, float angle)
     {
-        CommandPosition unitRight = new(Math.Cos(angle), Math.Sin(angle)), unitUp = new(-Math.Sin(angle), Math.Cos(angle));
+        var (sin, cos) = MathF.SinCos(angle);
+        Vector2 unitRight = new(cos, sin), unitUp = new(-sin, cos);
+
         var right = unitRight * (width - origin.X);
         var up = unitUp * (height - origin.Y);
         var left = unitRight * -origin.X;

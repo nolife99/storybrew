@@ -16,16 +16,12 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
     {
-        var size = bitmap.Size;
-        if (x < 0 || y < 0 || x + size.Width > Width || y + size.Height > Height)
-            throw new ArgumentException($"Invalid update bounds: {size} at {x},{y} overflows {Width}x{Height}");
-
         DrawState.BindPrimaryTexture(textureId, TexturingModes.Texturing2d);
 
         textureOptions ??= TextureOptions.Default;
         textureOptions.WithBitmap(bitmap, b =>
         {
-            var data = b.LockBits(new(default, size), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            var data = b.LockBits(new(default, b.Size), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
             GL.Finish();
@@ -73,7 +69,7 @@ public class Texture2d(int textureId, int width, int height, string description)
         using var bitmap = LoadBitmap(filename, resourceContainer);
         return bitmap is not null ? Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
     }
-    public static unsafe Texture2d Create(Color color, string description, int width = 1, int height = 1, TextureOptions textureOptions = null)
+    public static Texture2d Create(Color color, string description, int width = 1, int height = 1, TextureOptions textureOptions = null)
     {
         if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
 

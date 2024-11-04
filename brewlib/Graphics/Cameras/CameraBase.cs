@@ -140,12 +140,7 @@ public abstract class CameraBase : Camera
         DrawState.ViewportChanged += drawState_ViewportChanged;
         needsUpdate = true;
     }
-
-    public void Dispose()
-    {
-        DrawState.ViewportChanged -= drawState_ViewportChanged;
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => DrawState.ViewportChanged -= drawState_ViewportChanged;
 
     public Vector3 FromScreen(Vector2 screenCoords)
     {

@@ -26,7 +26,6 @@ public static partial class Native
 
     #region Win32
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [DllImport("user32")]
     static extern nint SendMessageA(nint hWnd, uint msg, nuint wParam, nint lParam);
 
@@ -52,30 +51,15 @@ public static partial class Native
         SendMessage<int, nint, int>(MainWindowHandle, Message.SetIcon, 1, iconHandle);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static string GetWindowText(nint hWnd)
-    {
-        var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
-        if (length == 0) return "";
-
-        unsafe
-        {
-            var buffer = stackalloc sbyte[length * 2 + 1];
-            SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buffer);
-            return new string(buffer);
-        }
-    }
-
     delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     [DllImport("user32")]
     static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static void InitializeHandle(string windowTitle, nint hWndFallback = 0)
+    public static unsafe void InitializeHandle(string windowTitle, nint hWndFallback = 0)
     {
         var cont = true;
         var threads = Process.GetCurrentProcess().Threads;
@@ -83,7 +67,16 @@ public static partial class Native
         handle = hWndFallback;
         for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, lParam) =>
         {
-            if (GetWindowText(hWnd) == windowTitle)
+            string text = null;
+            var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
+
+            if (length > 0)
+            {
+                var buffer = stackalloc sbyte[length * 2 + 1];
+                SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buffer);
+                text = new string(buffer);
+            }
+            if (text == windowTitle)
             {
                 handle = hWnd;
                 cont = false;

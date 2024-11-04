@@ -37,14 +37,12 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     readonly List<DisplayableObject> displayableObjects = [];
     readonly List<EventObject> eventObjects = [];
     readonly List<EditorStoryboardSegment> segments = [];
-    List<DisplayableObject>[] displayableBuckets;
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
     {
         EditorOsbSprite storyboardObject = new() { TexturePath = path, Origin = origin, InitialPosition = initialPosition };
         storyboardObjects.Add(storyboardObject);
         displayableObjects.Add(storyboardObject);
-        displayableBuckets = null;
 
         return storyboardObject;
     }
@@ -63,7 +61,6 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         };
         storyboardObjects.Add(storyboardObject);
         displayableObjects.Add(storyboardObject);
-        displayableBuckets = null;
 
         return storyboardObject;
     }
@@ -102,7 +99,6 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             segment = new(Effect, Layer, identifier);
             storyboardObjects.Add(segment);
             displayableObjects.Add(segment);
-            displayableBuckets = null;
 
             segments.Add(segment);
             if (identifier is not null) namedSegments.Add(identifier, segment);
@@ -113,16 +109,12 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override void Discard(StoryboardObject storyboardObject)
     {
         storyboardObjects.Remove(storyboardObject);
-        if (storyboardObject is DisplayableObject displayableObject)
-        {
-            displayableObjects.Remove(displayableObject);
-            displayableBuckets = null;
-        }
+        if (storyboardObject is DisplayableObject displayableObject) displayableObjects.Remove(displayableObject);
         if (storyboardObject is EventObject eventObject) eventObjects.Remove(eventObject);
         if (storyboardObject is EditorStoryboardSegment segment)
         {
             segments.Remove(segment);
-            if (segment.Name != null) namedSegments.Remove(segment.Name);
+            if (segment.Name is not null) namedSegments.Remove(segment.Name);
         }
     }
     public void TriggerEvents(double fromTime, double toTime)
@@ -134,38 +126,10 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     {
         var displayTime = project.DisplayTime * 1000;
         if (displayTime < StartTime || EndTime < displayTime) return;
-        if (Layer.Highlight || Effect.Highlight) opacity *= (MathF.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * 0.5f;
+        if (Layer.Highlight || Effect.Highlight) opacity *= (MathF.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
         StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale);
-        if (displayableObjects.Count < 1000)
-        {
-            foreach (var displayableObject in displayableObjects) displayableObject.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);
-        }
-        else
-        {
-            var bucketLength = 10000;
-            var segmentDuration = EndTime - StartTime;
-
-            var bucketCount = Math.Max(1, (int)Math.Ceiling(segmentDuration / bucketLength));
-            var currentBucketIndex = (int)((displayTime - StartTime) / bucketLength);
-
-            if (displayableBuckets is null) displayableBuckets = new List<DisplayableObject>[bucketCount];
-
-            var currentBucket = displayableBuckets[currentBucketIndex];
-            if (currentBucket == null)
-            {
-                var bucketStartTime = StartTime + currentBucketIndex * bucketLength;
-                var bucketEndTime = StartTime + (currentBucketIndex + 1) * bucketLength;
-                displayableBuckets[currentBucketIndex] = currentBucket = [];
-
-                displayableObjects.ForEach(displayableObject =>
-                {
-                    currentBucket.Add(displayableObject);
-                    displayableObject.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);
-                }, displayableObject => displayableObject.StartTime <= bucketEndTime && bucketStartTime <= displayableObject.EndTime);
-            }
-            else foreach (var displayableObject in currentBucket) displayableObject.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);
-        }
+        displayableObjects.ForEach(o => o.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats));
     }
     public void PostProcess()
     {
@@ -184,7 +148,6 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             startTime = Math.Min(startTime, sbo.StartTime);
             endTime = Math.Max(endTime, sbo.EndTime);
         }
-        displayableBuckets = null;
     }
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer, StoryboardTransform transform)
     {

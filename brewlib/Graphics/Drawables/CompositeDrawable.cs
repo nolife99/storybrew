@@ -8,7 +8,7 @@ namespace BrewLib.Graphics.Drawables;
 
 public class CompositeDrawable : Drawable
 {
-    public readonly List<Drawable> Drawables = [];
+    public List<Drawable> Drawables { get; private set; } = [];
 
     public Vector2 MinSize
     {
@@ -52,6 +52,7 @@ public class CompositeDrawable : Drawable
     public void Dispose()
     {
         Drawables.Clear();
+        Drawables = null;
         GC.SuppressFinalize(this);
     }
 

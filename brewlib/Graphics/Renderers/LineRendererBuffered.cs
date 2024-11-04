@@ -3,6 +3,8 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers.PrimitiveStreamers;
 using BrewLib.Graphics.Shaders;
@@ -18,8 +20,6 @@ public class LineRendererBuffered : LineRenderer
     public const string CombinedMatrixUniformName = "u_combinedMatrix";
 
     public static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
-
-    public Action FlushAction;
 
     #region Default Shader
 
@@ -47,8 +47,8 @@ public class LineRendererBuffered : LineRenderer
     public Shader Shader => ownsShader ? null : shader;
     readonly bool ownsShader;
 
-    PrimitiveStreamer<LinePrimitive> primitiveStreamer;
-    LinePrimitive[] primitives;
+    PrimitiveStreamer<Int128> primitiveStreamer;
+    Int128[] primitives;
 
     Camera camera;
     public Camera Camera
@@ -87,9 +87,9 @@ public class LineRendererBuffered : LineRenderer
     public int LargestBatch { get; set; }
 
     public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
-        : this(PrimitiveStreamerUtil<LinePrimitive>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
+        : this(PrimitiveStreamerUtil<Int128>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
-    public LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<LinePrimitive>> createPrimitiveStreamer, Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0)
+    public LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer<Int128>> createPrimitiveStreamer, Shader shader, int maxLinesPerBatch, int primitiveBufferSize)
     {
         if (shader is null)
         {
@@ -105,7 +105,7 @@ public class LineRendererBuffered : LineRenderer
         var primitiveBatchSize = Math.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerLine);
 
-        primitives = ArrayPool<LinePrimitive>.Shared.Rent(maxLinesPerBatch);
+        primitives = ArrayPool<Int128>.Shared.Rent(maxLinesPerBatch);
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
     }
     public void BeginRendering()
@@ -128,17 +128,15 @@ public class LineRendererBuffered : LineRenderer
     }
 
     bool lastFlushWasBuffered;
-    public void Flush(bool canBuffer = false)
+    public unsafe void Flush(bool canBuffer = false)
     {
         if (linesInBatch == 0) return;
 
-        if (!lastFlushWasBuffered) unsafe
-            {
-                var combinedMatrix = transformMatrix * Camera.ProjectionView;
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-
-                FlushAction?.Invoke();
-            }
+        if (!lastFlushWasBuffered)
+        {
+            var combinedMatrix = transformMatrix * camera.ProjectionView;
+            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+        }
         primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine, canBuffer);
 
         currentLargestBatch += linesInBatch;
@@ -155,23 +153,16 @@ public class LineRendererBuffered : LineRenderer
     }
 
     public void Draw(Vector3 start, Vector3 end, Color color) => Draw(start, end, color, color);
-    public void Draw(Vector3 start, Vector3 end, Color startColor, Color endColor)
+    public unsafe void Draw(Vector3 start, Vector3 end, Color startColor, Color endColor)
     {
         if (!rendering) throw new InvalidOperationException("Not rendering");
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-        primitives[linesInBatch] = new()
-        {
-            x1 = start.X,
-            y1 = start.Y,
-            z1 = start.Z,
-            color1 = startColor.ToRgba(),
-
-            x2 = end.X,
-            y2 = end.Y,
-            z2 = end.Z,
-            color2 = endColor.ToRgba()
-        };
+        ref byte ptr = ref Unsafe.As<Int128, byte>(ref primitives[linesInBatch]);
+        Unsafe.WriteUnaligned(ref ptr, start);
+        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref ptr, 12), startColor.ToRgba());
+        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref ptr, 16), end);
+        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref ptr, 28), endColor.ToRgba());
 
         ++RenderedLineCount;
         ++linesInBatch;
@@ -188,18 +179,17 @@ public class LineRendererBuffered : LineRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        ArrayPool<LinePrimitive>.Shared.Return(primitives);
+        ArrayPool<Int128>.Shared.Return(primitives);
         if (disposing)
         {
             primitives = null;
+            camera = null;
 
             primitiveStreamer.Dispose();
             primitiveStreamer = null;
 
             if (ownsShader) shader.Dispose();
             shader = null;
-
-            FlushAction = null;
             disposed = true;
         }
     }
