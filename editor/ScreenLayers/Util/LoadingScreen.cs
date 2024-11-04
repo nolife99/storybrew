@@ -29,7 +29,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
             {
                 if (exception is not null)
                 {
-                    Trace.WriteLine($"{title} failed ({action.Method.Name}): {exception}");
+                    Trace.TraceError($"{title} failed ({action.Method.Name}): {exception}");
 
                     var exceptionMessage = $"{exception.Message} ({exception.GetType().Name})";
                     var innerException = exception.InnerException;

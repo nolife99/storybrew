@@ -504,7 +504,7 @@ public class Widget(WidgetManager manager) : IDisposable
                 }
                 catch (Exception exception)
                 {
-                    Trace.WriteLine($"Event handler '{handler.Method}' for '{handler.Target}' raised an exception:\n{exception}");
+                    Trace.TraceError($"Event handler '{handler.Method}' for '{handler.Target}' raised an exception:\n{exception}");
                 }
             }
 

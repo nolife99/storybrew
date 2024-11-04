@@ -363,7 +363,7 @@ public sealed class Project : IDisposable
         assetWatcher.Created += assetWatcher_OnFileChanged;
         assetWatcher.Changed += assetWatcher_OnFileChanged;
         assetWatcher.Renamed += assetWatcher_OnFileChanged;
-        assetWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (assets): {e.GetException()}");
+        assetWatcher.Error += (sender, e) => Trace.TraceError($"Watcher error (assets): {e.GetException()}");
         assetWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
     }

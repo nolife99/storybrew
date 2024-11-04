@@ -32,7 +32,7 @@ public class AudioSample : IDisposable
             if (sample != 0) return;
         }
 
-        Trace.WriteLine($"Failed to load audio sample ({path}): {Bass.LastError}");
+        Trace.TraceError($"Failed to load audio sample ({path}): {Bass.LastError}");
     }
     public void Play(float volume = 1, float pitch = 1, float pan = 0)
     {

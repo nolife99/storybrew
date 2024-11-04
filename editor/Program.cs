@@ -111,7 +111,7 @@ public static class Program
         }
         catch (Exception e)
         {
-            Trace.WriteLine($"Failed to use the default display device: {e}");
+            Trace.TraceWarning($"Failed to use the default display device: {e}");
 
             var deviceIndex = 0;
             while (deviceIndex <= (int)DisplayIndex.Sixth) try
@@ -120,7 +120,7 @@ public static class Program
                 }
                 catch (Exception e2)
                 {
-                    Trace.WriteLine($"Failed to use display device #{deviceIndex}: {e2}");
+                    Trace.TraceError($"Failed to use display device #{deviceIndex}: {e2}");
                     ++deviceIndex;
                 }
         }
@@ -281,7 +281,7 @@ public static class Program
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Scheduled task {action.Method} failed:\n{e}");
+                Trace.TraceError($"Scheduled task {action.Method} failed:\n{e}");
             }
     }
 

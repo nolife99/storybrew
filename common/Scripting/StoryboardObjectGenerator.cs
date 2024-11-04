@@ -305,7 +305,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
+                Trace.TraceError($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
             }
         }
         remainingFieldNames.ForEach(config.RemoveField);
@@ -326,7 +326,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Failed to apply configuration for {field.Name}:\n{e}");
+                Trace.TraceError($"Failed to apply configuration for {field.Name}:\n{e}");
             }
         }
     }

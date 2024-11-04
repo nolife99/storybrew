@@ -200,7 +200,7 @@ public class StartMenu : UiScreenLayer
     }));
     void handleLatestVersionException(Exception exception)
     {
-        Trace.WriteLine($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
+        Trace.TraceError($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message}\n\n{versionLabel.Text}";
 
         updateButton.Text = "See latest release";

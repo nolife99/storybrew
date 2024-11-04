@@ -88,7 +88,7 @@ public class TextureOptions : IEquatable<TextureOptions>
                         var value = parser.Invoke(fieldData);
                         field.SetValue(obj, value);
                     }
-                    else Trace.WriteLine($"No parser for {fieldType}");
+                    else Trace.TraceWarning($"No parser for {fieldType}");
                 }
             }
             type = type.BaseType;

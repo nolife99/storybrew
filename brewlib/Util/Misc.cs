@@ -29,7 +29,7 @@ public static class Misc
                     if (canThrow) throw;
                     else
                     {
-                        Trace.Write($"Retryable action failed: {e}");
+                        Trace.TraceError($"Retryable action failed: {e}");
                         return default;
                     }
                 }

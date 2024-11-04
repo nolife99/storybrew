@@ -325,7 +325,7 @@ public class EffectList : Widget
                 paths.Add(Path.Combine(path, "code"));
                 paths.Add(Path.Combine(path, "code-insiders"));
             }
-            else Trace.WriteLine($"Invalid path in environment variables: {path}");
+            else Trace.TraceWarning($"Invalid path in environment variables: {path}");
 
         var arguments = $"\"{solutionFolder}\" \"{effect.Path}\" -r";
         if (Program.Settings.VerboseVsCode) arguments += " --verbose";
@@ -344,7 +344,7 @@ public class EffectList : Widget
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Could not open vscode:\n{e}");
+                Trace.TraceWarning($"Could not open vscode:\n{e}");
             }
         Manager.ScreenLayerManager.ShowMessage($"Visual Studio Code could not be found, do you want to install it?\n(You may have to restart after installing)",
             () => Process.Start("https://code.visualstudio.com/"), true);

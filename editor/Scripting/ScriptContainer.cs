@@ -13,8 +13,8 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
 
     public string CompiledScriptsPath { get; }
 
-    ScriptProvider<TScript> scriptProvider;
     AssemblyLoadContext appDomain;
+    Type scriptType;
 
     volatile int currentVersion, targetVersion = 1;
 
@@ -56,7 +56,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
     }
 
     ///<summary> Returns false when Script would return null. </summary>
-    public bool HasScript => scriptProvider is not null || currentVersion != targetVersion;
+    public bool HasScript => scriptType is not null || currentVersion != targetVersion;
     public event EventHandler OnScriptChanged;
 
     public ScriptContainer(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
@@ -74,9 +74,29 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
-            scriptProvider = LoadScript();
+            
+            ObjectDisposedException.ThrowIf(disposed, this);
+            try
+            {
+                AssemblyLoadContext scriptDomain = new($"{Name} {Id}", true);
+                scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies).GetType(ScriptTypeName, true);
+
+                appDomain?.Unload();
+                appDomain = scriptDomain;
+            }
+            catch (ScriptCompilationException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                throw CreateScriptLoadingException(e);
+            }
         }
-        return scriptProvider.CreateScript();
+
+        var script = (TScript)Activator.CreateInstance(scriptType, true);
+        script.Identifier = scriptType.AssemblyQualifiedName + Environment.CurrentManagedThreadId;
+        return script;
     }
     public void ReloadScript()
     {
@@ -91,38 +111,6 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         while (currentVersion != localCurrentVersion);
 
         if (targetVersion > initialTargetVersion) OnScriptChanged?.Invoke(this, EventArgs.Empty);
-    }
-    protected ScriptProvider<TScript> LoadScript()
-    {
-        ObjectDisposedException.ThrowIf(disposed, this);
-        try
-        {
-            AssemblyLoadContext scriptDomain = new($"{Name} {Id}", true);
-            ScriptProvider<TScript> scriptProvider = new();
-
-            try
-            {
-                scriptProvider.Initialize(ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies), ScriptTypeName);
-            }
-            catch
-            {
-                scriptDomain.Unload();
-                throw;
-            }
-
-            if (appDomain is not null) scriptDomain.Unload();
-            appDomain = scriptDomain;
-
-            return scriptProvider;
-        }
-        catch (ScriptCompilationException)
-        {
-            throw;
-        }
-        catch (Exception e)
-        {
-            throw CreateScriptLoadingException(e);
-        }
     }
     protected ScriptLoadingException CreateScriptLoadingException(Exception e)
     {
@@ -143,7 +131,6 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
                 appDomain.Unload();
                 appDomain = null;
             }
-            scriptProvider = null;
             disposed = true;
         }
     }

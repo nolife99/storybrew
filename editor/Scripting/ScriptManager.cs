@@ -60,7 +60,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         scriptWatcher.Changed += scriptWatcher_Changed;
         scriptWatcher.Renamed += scriptWatcher_Changed;
         scriptWatcher.Deleted += scriptWatcher_Changed;
-        scriptWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (script): {e.GetException()}");
+        scriptWatcher.Error += (sender, e) => Trace.TraceError($"Watcher error (script): {e.GetException()}");
         scriptWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (script): {scriptsSourcePath}");
 

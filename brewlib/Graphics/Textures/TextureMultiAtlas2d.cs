@@ -29,7 +29,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
     {
         if (bitmap.Width > width || bitmap.Height > height)
         {
-            Trace.WriteLine($"Bitmap \"{description}\" doesn't fit in this atlas");
+            Trace.TraceWarning($"Bitmap \"{description}\" doesn't fit in this atlas");
 
             var texture = Texture2d.Load(bitmap, description, textureOptions);
             (oversizeTextures ??= []).Add(texture);

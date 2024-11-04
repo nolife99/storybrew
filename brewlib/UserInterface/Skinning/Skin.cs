@@ -116,11 +116,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
             catch (TypeLoadException)
             {
-                Trace.WriteLine($"Skin - Drawable type for {name} doesn't exist");
+                Trace.TraceError($"Skin - Drawable type for {name} doesn't exist");
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Skin - Failed to load drawable {name}: {e}");
+                Trace.TraceError($"Skin - Failed to load drawable {name}: {e}");
             }
         }
     }
@@ -204,21 +204,21 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     }
                     catch (InvalidDataException e)
                     {
-                        Trace.WriteLine($"Skin - Invalid style {styleTypeName}.'{styleName}': {e.Message}");
+                        Trace.TraceError($"Skin - Invalid style {styleTypeName}.'{styleName}': {e.Message}");
                     }
                     catch (Exception e)
                     {
-                        Trace.WriteLine($"Skin - Failed to load style {styleTypeName}.'{styleName}': {e}");
+                        Trace.TraceError($"Skin - Failed to load style {styleTypeName}.'{styleName}': {e}");
                     }
                 }
             }
             catch (TypeLoadException)
             {
-                Trace.WriteLine($"Skin - Widget type {styleTypeName} doesn't exist or isn't skinnable");
+                Trace.TraceError($"Skin - Widget type {styleTypeName} doesn't exist or isn't skinnable");
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Skin - Failed to load {styleTypeName} styles: {e}");
+                Trace.TraceError($"Skin - Failed to load {styleTypeName} styles: {e}");
             }
         }
     }
@@ -240,7 +240,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         var value = parser.Invoke(fieldData, constants, this);
                         field.SetValue(skinnable, value);
                     }
-                    else Trace.WriteLine($"Skin - No parser for {fieldType}");
+                    else Trace.TraceError($"Skin - No parser for {fieldType}");
                 }
                 else if (parent is not null) field.SetValue(skinnable, field.GetValue(parent));
             }

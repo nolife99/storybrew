@@ -43,7 +43,7 @@ public sealed class MultiFileWatcher : IDisposable
                 watcher.Created += watcher_Changed;
                 watcher.Changed += watcher_Changed;
                 watcher.Renamed += watcher_Changed;
-                watcher.Error += (sender, e) => Trace.WriteLine($"Watcher error: {e.GetException()}");
+                watcher.Error += (sender, e) => Trace.TraceError($"Watcher error: {e.GetException()}");
                 watcher.EnableRaisingEvents = true;
 
                 Trace.WriteLine($"Watching folder: {directoryPath}");
@@ -74,13 +74,13 @@ public sealed class MultiFileWatcher : IDisposable
                     watcher.Created += watcher_Changed;
                     watcher.Changed += watcher_Changed;
                     watcher.Renamed += watcher_Changed;
-                    watcher.Error += (sender, e) => Trace.WriteLine($"Watcher error: {e.GetException()}");
+                    watcher.Error += (sender, e) => Trace.TraceError($"Watcher error: {e.GetException()}");
                     watcher.EnableRaisingEvents = true;
 
                     Trace.WriteLine($"Watching folder and subfolders: {parentDirectoryPath}");
                 }
             }
-            else Trace.WriteLine($"Cannot watch file: {filename}, directory does not exist");
+            else Trace.TraceError($"Cannot watch file: {filename}, directory does not exist");
         }
     }
     void watcher_Changed(object sender, FileSystemEventArgs e)

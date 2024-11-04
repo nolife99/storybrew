@@ -66,7 +66,7 @@ public sealed class Editor(GameWindow window) : IDisposable
         }
         catch (Exception e)
         {
-            Trace.WriteLine($"Failed to load skin: {e}");
+            Trace.TraceError($"Failed to load skin: {e}");
             Skin = new(drawContext.Get<TextureContainer>());
         }
 

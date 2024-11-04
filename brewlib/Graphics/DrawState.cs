@@ -35,7 +35,7 @@ public static class DrawState
                 SetCapability(EnableCap.FramebufferSrgb, true);
                 ColorCorrected = true;
             }
-            else Trace.WriteLine("Warning: The default framebuffer isn't sRgb");
+            else Trace.TraceWarning("Warning: The default framebuffer isn't sRgb");
         }
 
         // glActiveTexture requires opengl 1.3
@@ -178,8 +178,6 @@ public static class DrawState
         {
             GL.BindTexture(ToTextureTarget(mode), textureId);
             samplerTextureIds[samplerIndex] = textureId;
-
-            Trace.WriteLine("Bound texture " + textureId + " (" + mode + ") to unit " + samplerIndex);
             ++TextureBinds;
         }
     }

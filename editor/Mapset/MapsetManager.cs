@@ -41,7 +41,7 @@ public sealed class MapsetManager : IDisposable
             }
             catch (Exception e)
             {
-                if (logLoadingExceptions) Trace.WriteLine($"Failed to load beatmap: {e}");
+                if (logLoadingExceptions) Trace.TraceError($"Failed to load beatmap: {e}");
                 else throw;
             }
     }
@@ -69,7 +69,7 @@ public sealed class MapsetManager : IDisposable
         fileWatcher.Created += mapsetFileWatcher_Changed;
         fileWatcher.Changed += mapsetFileWatcher_Changed;
         fileWatcher.Renamed += mapsetFileWatcher_Changed;
-        fileWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (mapset): {e.GetException()}");
+        fileWatcher.Error += (sender, e) => Trace.TraceError($"Watcher error (mapset): {e.GetException()}");
         fileWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (mapset): {path}");
     }

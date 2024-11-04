@@ -454,7 +454,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 proj.ExportToOsb(first);
                 first = false;
             }
-        if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.RunMainThread(() => proj.MainBeatmap = mainBeatmap);
+        if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
     });
     public override void FixedUpdate()
     {

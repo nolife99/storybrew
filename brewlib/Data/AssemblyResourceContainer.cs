@@ -43,7 +43,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
             }
         }
 
-        Trace.WriteLine($"Not found: {path} ({sources})", "Resources");
+        Trace.TraceWarning($"Not found: {path} ({sources})", "Resources");
         return null;
     }
     public byte[] GetBytes(string path, ResourceSource sources = ResourceSource.Embedded)

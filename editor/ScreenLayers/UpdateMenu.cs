@@ -58,7 +58,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             if (IsDisposed) return;
             if (exception is not null)
             {
-                Trace.WriteLine($"Failed to download the new version.\n\n{exception}");
+                Trace.TraceError($"Failed to download the new version.\n\n{exception}");
                 Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}", () => Updater.OpenLatestReleasePage());
 
                 Exit();
@@ -111,7 +111,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             }
             catch (Exception e)
             {
-                Trace.WriteLine($"Failed to start the update process.\n\n{e}");
+                Trace.TraceError($"Failed to start the update process.\n\n{e}");
                 Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}", () => Updater.OpenLatestReleasePage());
                 Exit();
             }
