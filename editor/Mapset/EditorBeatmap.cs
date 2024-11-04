@@ -24,7 +24,7 @@ public class EditorBeatmap(string path) : Beatmap
     long id;
     public override long Id => id;
 
-    double stackLeniency = 0.7;
+    double stackLeniency = .7;
     public override double StackLeniency => stackLeniency;
 
     readonly HashSet<int> bookmarks = [];

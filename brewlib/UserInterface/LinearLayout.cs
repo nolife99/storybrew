@@ -134,7 +134,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
         usedSpace += totalSpacing;
 
         var scalableItems = items.Count;
-        while (scalableItems > 0 && Math.Abs(totalSpace - usedSpace) > 0.001f)
+        while (scalableItems > 0 && Math.Abs(totalSpace - usedSpace) > .001f)
         {
             var remainingSpace = totalSpace - usedSpace;
             if (!fill && remainingSpace > 0) break;

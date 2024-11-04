@@ -537,17 +537,18 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {sbLoad:f2}x Screen Fill");
 
         var frameGpuMemory = stats.GpuMemoryFrameMb;
-        if (proj.DisplayDebugWarning && frameGpuMemory < 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"{frameGpuMemory:0.0}MB Texture Memory (Frame)");
-        else if (frameGpuMemory >= 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {frameGpuMemory:0.0}MB Texture Mem. (Frame)");
+        if (proj.DisplayDebugWarning && frameGpuMemory < 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory");
+        else if (frameGpuMemory >= 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Mem");
 
         var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
-        if (proj.DisplayDebugWarning && totalGpuMemory < 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"{totalGpuMemory:0.0}MB Texture Memory (Total)");
-        else if (totalGpuMemory >= 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {totalGpuMemory:0.0}MB Texture Memory");
+        if (proj.DisplayDebugWarning && totalGpuMemory < 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory");
+        else if (totalGpuMemory >= 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {totalGpuMemory:0.0}MB Total Texture Memory");
 
         if (stats.OverlappedCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Overlapped Commands");
         if (stats.IncompatibleCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Incompatible Commands");
 
-        return warnings.ToString().TrimEnd();
+        --warnings.Length;
+        return warnings.ToString();
     }
     public override void Resize(int width, int height)
     {

@@ -76,28 +76,35 @@ public class ScriptCompiler
             }
         }
 
-        using MemoryStream assemblyStream = new();
-        var result = CSharpCompilation.Create(asmName, trees.Keys, references, new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
-            .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Item1, k.Item2)), options: new(debugInformationFormat: DebugInformationFormat.Embedded));
-
-        if (result.Success)
+        CSharpCompilation result;
+        using (MemoryStream assemblyStream = new())
         {
-            assemblyStream.Position = 0;
-            return context.LoadFromStream(assemblyStream);
+            result = CSharpCompilation.Create(asmName, trees.Keys, references, 
+                new(OutputKind.DynamicallyLinkedLibrary, 
+                    allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
+                .Emit(assemblyStream, 
+                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Item1, k.Item2)), 
+                    options: new(debugInformationFormat: DebugInformationFormat.Embedded));
+
+            if (result.Success)
+            {
+                assemblyStream.Position = 0;
+                return context.LoadFromStream(assemblyStream);
+            }
         }
 
-        var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
-        {
-            if (k.Location.SourceTree is null) return "";
-            if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Item1;
-            return "";
-        }).ToDictionary(k => k.Key, k => k);
-
         StringBuilder error = new("Compilation error\n\n");
-        foreach (var kvp in failureGroup)
+        foreach (var kvp in result.Diagnostics
+            .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
+            .Reverse().GroupBy(k =>
+            {
+                if (k.Location.SourceTree is null) return "";
+                if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Item1;
+                return "";
+            }).ToDictionary(k => k.Key, k => k))
         {
-            error.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(kvp.Key)}:");
-            foreach (var diagnostic in kvp.Value) error.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
+            error.AppendLine(CultureInfo.InvariantCulture, Path.GetFileName(kvp.Key) + ":");
+            foreach (var diagnostic in kvp.Value) error.AppendLine(CultureInfo.InvariantCulture, "--" + diagnostic);
         }
 
         throw new ScriptCompilationException(error.ToString());

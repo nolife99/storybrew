@@ -3,38 +3,36 @@ using System.Collections.Generic;
 
 namespace StorybrewCommon.Animations;
 
-/// <summary> Represents a basic keyframe with a time and value. </summary>
+/// <summary> Represents a keyframe with a time and value. </summary>
 /// <typeparam name="TValue"> A type that represents the value of this keyframe. </typeparam>
 public readonly struct Keyframe<TValue>(double time, TValue value, Func<double, double> easing, bool until) : IEquatable<Keyframe<TValue>>, IComparer<Keyframe<TValue>>
 {
     ///<summary> Time of this keyframe. </summary>
     public readonly double Time = time;
 
-    ///<summary> Type value of this keyframe. </summary>
+    ///<summary> Value of this keyframe. </summary>
     public readonly TValue Value = value;
 
-    ///<summary> <see cref="EasingFunctions"/> type of this keyframe. </summary>
+    ///<summary> <see cref="EasingFunctions"/> easing of this keyframe. </summary>
     public readonly Func<double, double> Ease = easing ?? EasingFunctions.Linear;
 
-    ///<summary> Reserved for <see cref="Storyboarding.Util.CommandGenerator"/>. Do not use. </summary>
+    ///<summary> Reserved for <see cref="Storyboarding.Util.CommandGenerator"/>. </summary>
     internal readonly bool Until = until;
 
-    ///<summary> Initializes a new keyframe with default type value. </summary>
+    ///<summary> Initializes a new keyframe with a default value. </summary>
     ///<param name="time"> Time of the keyframe. </param>
     public Keyframe(double time) : this(time, default) { }
 
     ///<summary> Initializes a new keyframe. </summary>
     ///<param name="time"> Time of the keyframe. </param>
-    ///<param name="value"> Any type value to be assigned to the keyframe. </param>
-    ///<param name="easing"> An <see cref="EasingFunctions"/> type to be assigned. </param>
+    ///<param name="value"> A value to be assigned to the keyframe. </param>
+    ///<param name="easing"> <see cref="EasingFunctions"/> easing to be assigned. </param>
     public Keyframe(double time, TValue value, Func<double, double> easing = null) : this(time, value, easing, false) { }
 
-    ///<summary> Overrides a keyframe with a new time. </summary>
-    ///<param name="time"> The time to be overriden with. </param>
+    ///<summary> Overrides a keyframe's time. </summary>
     public Keyframe<TValue> WithTime(double time) => new(time, Value, Ease);
 
-    ///<summary> Overrides a keyframe with a new type value. </summary>
-    ///<param name="value"> The type value to be overriden with. </param>
+    ///<summary> Overrides a keyframe's value. </summary>
     public Keyframe<TValue> WithValue(TValue value) => new(Time, value, Ease);
 
     ///<summary> Compares a keyframe to another keyframe of the same type for equality. </summary>
@@ -44,6 +42,6 @@ public readonly struct Keyframe<TValue>(double time, TValue value, Func<double, 
 
     int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Math.Sign(x.Time - y.Time);
 
-    ///<summary> Creates a formatted string containing this <see cref="Keyframe{TValue}"/>'s time and value. </summary>
+    ///<summary> Creates a formatted string with this <see cref="Keyframe{TValue}"/>'s time and value. </summary>
     public override string ToString() => $"{Time:0.000}s {typeof(TValue)}:{Value}";
 }

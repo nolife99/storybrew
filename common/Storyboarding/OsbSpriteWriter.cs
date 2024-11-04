@@ -9,7 +9,7 @@ using StorybrewCommon.Storyboarding.Display;
 
 namespace StorybrewCommon.Storyboarding;
 
-///<summary> A helper class for writing and exporting a storyboard. </summary>
+///<summary> Writes a sprite to text in .osb format. </summary>
 public class OsbSpriteWriter(OsbSprite sprite,
     AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX, AnimatedValue<CommandDecimal> moveY,
     AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
@@ -69,10 +69,10 @@ public class OsbSpriteWriter(OsbSprite sprite,
         var transformedInitialPosition = transform is null ?
             (Vector2)sprite.InitialPosition : sprite.HasMoveXYCommands ? transform.ApplyToPositionXY(sprite.InitialPosition) : transform.ApplyToPosition(sprite.InitialPosition);
 
-        if (!move.HasCommands && !moveX.HasCommands) TextWriter.Write($",{transformedInitialPosition.X.ToString(ExportSettings.NumberFormat)}");
-        else TextWriter.Write($",0");
-        if (!move.HasCommands && !moveY.HasCommands) TextWriter.Write($",{transformedInitialPosition.Y.ToString(ExportSettings.NumberFormat)}");
-        else TextWriter.Write($",0");
+        if (!move.HasCommands && !moveX.HasCommands) TextWriter.Write("," + transformedInitialPosition.X.ToString(ExportSettings.NumberFormat));
+        else TextWriter.Write(",0");
+        if (!move.HasCommands && !moveY.HasCommands) TextWriter.Write("," + transformedInitialPosition.Y.ToString(ExportSettings.NumberFormat));
+        else TextWriter.Write(",0");
     }
     protected virtual bool IsFragmentable()
     {

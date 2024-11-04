@@ -5,24 +5,24 @@ using System.Numerics;
 
 namespace StorybrewCommon.Animations;
 
-///<summary> Defines a set of keyframes which can be converted to commands. </summary>
-///<typeparam name="TValue"> The type of values of the keyframed value. </typeparam>
-///<param name="interpolate"> The <see cref="InterpolatingFunctions"/> to use to interpolate between values. Required to use <see cref="ValueAt(double)"/> </param>
-///<param name="defaultValue"> The default value of the type of this keyframed value. </param>
+///<summary> Defines a set of keyframes. </summary>
+///<typeparam name="TValue"> The type of values of the keyframes. </typeparam>
+///<param name="interpolate"> <see cref="InterpolatingFunctions"/> to use to interpolate between values. Required to use <see cref="ValueAt(double)"/> </param>
+///<param name="defaultValue"> The default value of this keyframed value. </param>
 public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpolate = null, TValue defaultValue = default) : IEnumerable<Keyframe<TValue>>
 {
     List<Keyframe<TValue>> keyframes = [];
 
-    ///<summary> Returns the start time of the first keyframe in the keyframed value. </summary>
+    ///<summary> Returns the start time of the first keyframe. </summary>
     public double StartTime => keyframes.Count == 0 ? int.MaxValue : keyframes[0].Time;
 
-    ///<summary> Returns the end time of the last keyframe in the keyframed value. </summary>
+    ///<summary> Returns the end time of the last keyframe. </summary>
     public double EndTime => keyframes.Count == 0 ? int.MinValue : keyframes[^1].Time;
 
-    ///<summary> Returns the start value of the first keyframe in the keyframed value. </summary>
+    ///<summary> Returns the start value of the first keyframe. </summary>
     public TValue StartValue => keyframes.Count == 0 ? defaultValue : keyframes[0].Value;
 
-    ///<summary> Returns the end value of the last keyframe in the keyframed value. </summary>
+    ///<summary> Returns the end value of the last keyframe. </summary>
     public TValue EndValue => keyframes.Count == 0 ? defaultValue : keyframes[^1].Value;
 
     ///<summary> Gets or sets the <see cref="Keyframe{TValue}"/> at the current index. </summary>
@@ -32,12 +32,11 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         set => keyframes[index] = value;
     }
 
-    ///<summary> Returns the amount of keyframes in the keyframed value. </summary>
+    ///<summary> The amount of keyframes in the keyframed value. </summary>
     public int Count => keyframes.Count;
 
-    ///<summary> Adds a <see cref="Keyframe{TValue}"/> to the <see cref="List{T}"/> of keyframed values. </summary>
-    ///<param name="keyframe"> The <see cref="Keyframe{TValue}"/> to be added. </param>
-    ///<param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, places new one before existing one. </param>
+    ///<summary> Adds a <see cref="Keyframe{TValue}"/> to the set. </summary>
+    ///<param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, inserted before existing one. </param>
     public KeyframedValue<TValue> Add(Keyframe<TValue> keyframe, bool before = false)
     {
         if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
@@ -45,46 +44,43 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         return this;
     }
 
-    ///<summary> Adds an array or arrays to the keyframed value. </summary>
-    ///<param name="values"> The array of keyframes. </param>
+    ///<summary> Adds keyframes to the set. </summary>
     public KeyframedValue<TValue> Add(params Keyframe<TValue>[] values) => AddRange(values);
 
-    ///<summary> Adds a manually constructed keyframe to the keyframed value. </summary>
+    ///<summary> Adds a keyframe to the set. </summary>
     ///<param name="time"> The time of the <see cref="Keyframe{TValue}"/>. </param>
-    ///<param name="value"> The type value of the <see cref="Keyframe{TValue}"/>. </param>
-    ///<param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, places new one before existing one. </param>
+    ///<param name="value"> The value of the <see cref="Keyframe{TValue}"/>. </param>
+    ///<param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, inserted before existing one. </param>
     public KeyframedValue<TValue> Add(double time, TValue value, bool before = false) => Add(new(time, value), before);
 
-    ///<summary> Adds a manually constructed keyframe to the keyframed value. </summary>
+    ///<summary> Adds a keyframe to the keyframed value. </summary>
     ///<param name="time"> The time of the <see cref="Keyframe{TValue}"/>. </param>
-    ///<param name="value"> The type value of the <see cref="Keyframe{TValue}"/>. </param>
+    ///<param name="value"> The value of the <see cref="Keyframe{TValue}"/>. </param>
     ///<param name="easing"> The <see cref="EasingFunctions"/> type of this <see cref="Keyframe{TValue}"/>. </param>
-    ///<param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, places new one before existing one. </param>
+    ///<param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, inserted before existing one. </param>
     public KeyframedValue<TValue> Add(double time, TValue value, Func<double, double> easing, bool before = false) => Add(new(time, value, easing), before);
 
-    ///<summary> Adds a collection of keyframes to the keyframed value. </summary>
+    ///<summary> Adds keyframes to the set. </summary>
     public KeyframedValue<TValue> AddRange(IEnumerable<Keyframe<TValue>> collection)
     {
         foreach (var keyframe in collection) Add(keyframe);
         return this;
     }
 
-    ///<summary> Adds a manually constructed keyframe to the keyframed value. Assumes the type value of this keyframe. </summary>
+    ///<summary> Adds a keyframe to the keyframed value. The value is determined through interpolation. </summary>
     ///<param name="time"> The time of the <see cref="Keyframe{TValue}"/>. </param>
     public KeyframedValue<TValue> Add(double time) => Add(time, ValueAt(time));
 
-    ///<summary> Creates a wait period starting at the end of the previous keyframe until the given time. </summary>
-    ///<param name="time"> The end time of the wait period. </param>
+    ///<summary> Waits from at the end of the previous keyframe until the given time. </summary>
     public KeyframedValue<TValue> Until(double time)
     {
         if (keyframes.Count == 0) return null;
         return Add(time, EndValue);
     }
-
     internal KeyframedValue<TValue> DebugUntil(double time) => Add(new Keyframe<TValue>(time, EndValue, null, true));
 
-    ///<summary> Transfers the keyframes in this instance to another keyframed value. </summary>
-    ///<param name="to"> The keyframed value to transfer to. </param>
+    ///<summary> Transfers the keyframes in this instance. </summary>
+    ///<param name="to"> The set to transfer to. </param>
     ///<param name="clear"> Whether to clear the keyframes in this instance. </param>
     public void TransferKeyframes(KeyframedValue<TValue> to, bool clear = true)
     {
@@ -93,7 +89,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         if (clear) Clear();
     }
 
-    ///<summary> Returns the value of the keyframed value at <paramref name="time"/>. </summary>
+    ///<summary> Returns the value at <paramref name="time"/> using interpolation. </summary>
     public TValue ValueAt(double time)
     {
         if (keyframes.Count == 0) return defaultValue;
@@ -114,11 +110,11 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     }
 
     ///<summary> Converts keyframes to commands. </summary>
-    ///<param name="pair"> A function to utilize the start and end keyframe of a pair. </param>
-    ///<param name="defaultValue"> Pairs with this default value are skipped. </param>
+    ///<param name="pair"> A function that takes the start and end keyframe of a pair. </param>
+    ///<param name="defaultValue"> Pairs with this value are skipped. </param>
     ///<param name="edit"> A function that edits each keyframe before being paired. </param>
-    ///<param name="explicitStartTime"> The explicit start time for the keyframe set to pair. </param>
-    ///<param name="explicitEndTime"> The explicit end time for the keyframed set to pair. </param>
+    ///<param name="explicitStartTime"> The explicit start time for first keyframe. </param>
+    ///<param name="explicitEndTime"> The explicit end time for last keyframe. </param>
     ///<param name="loopable"> Enable if <paramref name="pair"/> is encapsulated in or uses a trigger/loop group. </param>
     public void ForEachPair(Action<Keyframe<TValue>, Keyframe<TValue>> pair,
         TValue defaultValue = default, Func<TValue, TValue> edit = null,
@@ -204,11 +200,10 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             pair(loopable ? previousPairEnd.Value : endPair, endPair);
         }
     }
-
     static Keyframe<TValue> editKeyframe(Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit is not null ?
         new(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
 
-    ///<summary> Removes all keyframes in the keyframed value. </summary>
+    ///<summary> Removes all keyframes in the set. </summary>
     public void Clear(bool trim = false)
     {
         if (keyframes.Count == 0) return;
@@ -217,7 +212,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         if (trim) keyframes.Capacity = 0;
     }
 
-    ///<summary> Returns an enumerator that iterates through the keyframed value. </summary>
+    ///<summary> Returns an enumerator that iterates through the set. </summary>
     public IEnumerator<Keyframe<TValue>> GetEnumerator() => keyframes.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => keyframes.GetEnumerator();
 
@@ -277,40 +272,35 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
         return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd).LengthSquared();
     });
 
-    void SimplifyEqualKeyframes()
-    {
-        List<Keyframe<TValue>> simplifiedKeyframes = [];
-        for (int i = 0, count = keyframes.Count; i < count; i++)
-        {
-            var startKeyframe = keyframes[i];
-            simplifiedKeyframes.Add(startKeyframe);
-
-            for (var j = i + 1; j < count; j++)
-            {
-                var endKeyframe = keyframes[j];
-                if (!startKeyframe.Value.Equals(endKeyframe.Value))
-                {
-                    if (i < j - 1) simplifiedKeyframes.Add(keyframes[j - 1]);
-                    simplifiedKeyframes.Add(endKeyframe);
-                    i = j;
-                    break;
-                }
-                else if (j == count - 1) i = j;
-            }
-        }
-
-        Clear(true);
-        keyframes = simplifiedKeyframes;
-    }
-
-    ///<summary> Simplifies keyframes on commands. </summary>
-    ///<param name="tolerance"> Distance threshold (epsilon) from which keyframes can be removed. </param>
-    ///<param name="getDistanceSq"> A function that gets the distance, squared, between three specific keyframes. </param>
+    ///<summary> Smooths a list of keyframes. </summary>
+    ///<param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
+    ///<param name="getDistanceSq"> A function that gets the squared distance between three specific keyframes. </param>
     public void SimplifyKeyframes(double tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
     {
         if (tolerance <= .00001)
         {
-            SimplifyEqualKeyframes();
+            List<Keyframe<TValue>> simplifiedKeyframes = [];
+            for (int i = 0, count = keyframes.Count; i < count; i++)
+            {
+                var startKeyframe = keyframes[i];
+                simplifiedKeyframes.Add(startKeyframe);
+
+                for (var j = i + 1; j < count; j++)
+                {
+                    var endKeyframe = keyframes[j];
+                    if (!startKeyframe.Value.Equals(endKeyframe.Value))
+                    {
+                        if (i < j - 1) simplifiedKeyframes.Add(keyframes[j - 1]);
+                        simplifiedKeyframes.Add(endKeyframe);
+                        i = j;
+                        break;
+                    }
+                    else if (j == count - 1) i = j;
+                }
+            }
+
+            Clear(true);
+            keyframes = simplifiedKeyframes;
             return;
         }
         if (keyframes.Count < 3) return;

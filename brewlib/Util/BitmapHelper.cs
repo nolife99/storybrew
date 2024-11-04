@@ -147,6 +147,8 @@ public static class BitmapHelper
         return result;
     }
 
+    ///<summary> Creates a copy of the section of this <see cref="Bitmap"/>. </summary>
+    ///<param name="sect"> Defines the portion of this <see cref="Bitmap"/> to copy. </param>
     public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
         if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
@@ -173,6 +175,7 @@ public static class BitmapHelper
         return dest;
     }
 
+    ///<summary> Determines if the given <see cref="Image"/> is completely transparent. </summary>
     public static bool IsFullyTransparent(Image source)
     {
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
@@ -181,6 +184,8 @@ public static class BitmapHelper
         for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((src[y * src.Width + x] >> 24) & 0xFF) != 0) return false;
         return true;
     }
+
+    ///<summary> Determines the bounds of the opaque area of the given <see cref="Image"/>. </summary>
     public static Rectangle FindTransparencyBounds(Image source)
     {
         var size = source.Size;
@@ -202,7 +207,7 @@ public static class BitmapHelper
     }
 }
 
-///<summary> Encapsulates and pins bitmaps for high-performance image manipulation. </summary>
+///<summary> Represents a bitmap pinned in memory for high-performance image manipulation. </summary>
 public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 {
     int* scan0;
@@ -221,7 +226,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int Height { get; private set; }
 
     ///<summary> Gets or sets the pixel color at the given pixel index as a 32-bit ARGB channel (AARRGGBB). </summary>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
+    ///<exception cref="IndexOutOfRangeException"/>
     public int this[int pixelIndex]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -258,40 +263,40 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     ///<param name="x"> The X coordinate of the pixel. </param>
     ///<param name="y"> The Y coordinate of the pixel. </param>
     ///<param name="color"> The new color of the pixel. </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
+    ///<exception cref="IndexOutOfRangeException"/>
     public void SetPixel(int x, int y, Color color) => SetPixel(x, y, color.ToArgb());
 
     ///<summary> Sets the pixel color at the given coordinates. </summary>
     ///<param name="x"> The X coordinate of the pixel. </param>
     ///<param name="y"> The Y coordinate of the pixel. </param>
     ///<param name="color"> The new color of the pixel as a 32-bit ARGB channel (AARRGGBB). </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
+    ///<exception cref="IndexOutOfRangeException"/>
     public void SetPixel(int x, int y, int color) => SetPixel(y * Width + x, color);
 
     ///<summary> Sets the pixel color at the given index. </summary>
     ///<param name="index"> An index into the underlying bitmap. </param>
     ///<param name="color"> The new color of the pixel as a 32-bit ARGB channel (AARRGGBB). </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
+    ///<exception cref="IndexOutOfRangeException"/>
     public void SetPixel(int index, int color) => this[index] = color;
 
     ///<summary> Sets the pixel color at the given index. </summary>
     ///<param name="index"> An index into the underlying bitmap. </param>
     ///<param name="color"> The new color of the pixel. </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
+    ///<exception cref="IndexOutOfRangeException"/>
     public void SetPixel(int index, Color color) => this[index] = color.ToArgb();
 
     ///<summary> Gets the pixel color at the given coordinates. </summary>
     ///<param name="x"> The X coordinate of the pixel. </param>
     ///<param name="y"> The Y coordinate of the pixel. </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
+    ///<exception cref="IndexOutOfRangeException"/>
     public Color GetPixel(int x, int y) => Color.FromArgb(this[y * Width + x]);
 
     ///<summary> Gets the pixel color at the given index. </summary>
     ///<param name="index"> An index into the underlying bitmap. </param>
-    ///<exception cref="IndexOutOfRangeException"> The bitmap was disposed or the provided coordinates are out of bounds. </exception>
+    ///<exception cref="IndexOutOfRangeException"/>
     public Color GetPixel(int index) => Color.FromArgb(this[index]);
 
-    ///<summary> Gets a collection of 32-bit color channels that represent the underlying bitmap. </summary>
+    ///<summary> Converts the bitmap to an array of 32-bit color channels. </summary>
     public int[] ToArray()
     {
         var array = GC.AllocateUninitializedArray<int>(Count);
@@ -310,7 +315,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public ReadOnlySpan<int> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref *scan0, Count);
 
     ///<summary> Releases the underlying bitmap and frees the allocated memory. </summary>
-    ///<remarks> Disposing invalidates all data and leaves values in an unusable state. </remarks>
     public void Dispose()
     {
         Dispose(true);

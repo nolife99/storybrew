@@ -52,11 +52,11 @@ class Jigoku : StoryboardObjectGenerator
             var bg = bgLayer.CreateSprite("bg.jpg", OsbOrigin.Centre);
             bg.Scale(TimeSbStart, BgScaling);
             bg.Fade(TimePart1 - BeatDuration * 2, TimePart1, 0, 1);
-            bg.ColorHsb(TimeSbStart, 0, 0, 0.3);
-            bg.ColorHsb(TimePart2 - BeatDuration * 3 / 2, TimePart2 - BeatDuration / 2, 0, 0, 0.3, 0, 0, 0.6);
-            bg.ColorHsb(OsbEasing.In, TimePart6 - BeatDuration * 4, TimePart6, 0, 0, 0.3, 0, 0, 0.3);
+            bg.ColorHsb(TimeSbStart, 0, 0, .3);
+            bg.ColorHsb(TimePart2 - BeatDuration * 3 / 2, TimePart2 - BeatDuration / 2, 0, 0, .3, 0, 0, .6);
+            bg.ColorHsb(OsbEasing.In, TimePart6 - BeatDuration * 4, TimePart6, 0, 0, .3, 0, 0, .3);
             bg.Fade(OsbEasing.In, TimePart3 - BeatDuration * 4, TimePart3, 1, 0);
-            bg.ColorHsb(OsbEasing.In, TimePart4 - BeatDuration * 2, TimePart4, 0, 0, 0.6, 0, 0, 0.3);
+            bg.ColorHsb(OsbEasing.In, TimePart4 - BeatDuration * 2, TimePart4, 0, 0, .6, 0, 0, .3);
             bg.Fade(OsbEasing.Out, TimePart4 - BeatDuration * 2, TimePart4, 0, 1);
             bg.Fade(OsbEasing.In, TimePart5 - BeatDuration * 4, TimePart5, 1, 0);
             bg.Fade(OsbEasing.Out, TimePart6, TimePart7, 0, 1);
@@ -216,7 +216,7 @@ class Jigoku : StoryboardObjectGenerator
         for (var i = 0; i < 110; ++i)
         {
             var angle = Math.PI * i / 8;
-            MakeNote(21245 + Offset + BeatDuration * i / 32, x, y, angle, distance * (1.2 - i * 0.01), 200, 260);
+            MakeNote(21245 + Offset + BeatDuration * i / 32, x, y, angle, distance * (1.2 - i * .01), 200, 260);
         }
     }
     void Part2(int tStart, int tEnd)
@@ -230,14 +230,14 @@ class Jigoku : StoryboardObjectGenerator
             var t1 = t0 + BeatDuration * 3 / 2;
 
             var bg = mainLayer.CreateSprite("sb/jt" + i + ".png", OsbOrigin.Centre);
-            bg.Scale(OsbEasing.Out, t0, t1, (i & 1) == 0 ? 0.7 : 0.65, (i & 1) == 0 ? 0.65 : 0.7);
+            bg.Scale(OsbEasing.Out, t0, t1, (i & 1) == 0 ? .7 : .65, (i & 1) == 0 ? .65 : .7);
             bg.Fade(OsbEasing.In, t0, t1, 1, 0);
         }
     }
     void Part4(int tStart, int tEnd)
     {
         // Piano
-        var x = -0.0;
+        var x = -.0;
         var y = 80.0;
         var distance = 180;
         for (var i = 0; i < 3; ++i)
@@ -473,7 +473,7 @@ class Jigoku : StoryboardObjectGenerator
     }
     void Part8(int tStart, int tEnd)
     {
-        var x = 0.0;
+        var x = .0;
         var y = 80.0;
         var distance = 0;
 
@@ -516,12 +516,12 @@ class Jigoku : StoryboardObjectGenerator
         for (var i = 0; i < 64; ++i)
         {
             var angle = Math.PI * i / 8;
-            MakeNote(94657 + Offset + BeatDuration * i / 32, x, y, angle, distance * (1.2 - i * 0.01), 200, 260);
+            MakeNote(94657 + Offset + BeatDuration * i / 32, x, y, angle, distance * (1.2 - i * .01), 200, 260);
         }
         for (var i = 0; i < 64; ++i)
         {
             var angle = Math.PI * i / 8;
-            MakeNote(95362 + Offset + BeatDuration * i / 32, x, y, angle, distance * (1.2 + i * 0.01), 200, 260);
+            MakeNote(95362 + Offset + BeatDuration * i / 32, x, y, angle, distance * (1.2 + i * .01), 200, 260);
         }
     }
     void Part9(int tStart, int tEnd)
@@ -565,30 +565,30 @@ class Jigoku : StoryboardObjectGenerator
         note.Fade(OsbEasing.Out, t0, t2, 0, 1);
         note.Fade(OsbEasing.In, t2, t3, 1, 0);
         note.Rotate(t0, angle);
-        note.ScaleVec(OsbEasing.In, t0, t3, 0.8, 0.2, 1, 1);
-        note.ColorHsb(t0, outTime >= 260 ? hue1 : hue2, 0.5, 1);
+        note.ScaleVec(OsbEasing.In, t0, t3, .8, .2, 1, 1);
+        note.ColorHsb(t0, outTime >= 260 ? hue1 : hue2, .5, 1);
 
         var backNote = spritePools.Get(t1b, t4, "sb/pl.png", OsbOrigin.Centre, true);
         backNote.Move(OsbEasing.In, t1b, t2, lightX, lightY, x1, y1);
         backNote.Fade(OsbEasing.In, t1b, t2, 0, 1);
         backNote.Fade(OsbEasing.Out, t2, t4, 1, 0);
         backNote.Rotate(t1b, angle);
-        backNote.ScaleVec(OsbEasing.Out, t1b, t2, 0, 0, 0.4, 0.8);
-        backNote.ColorHsb(t1b, outTime >= 260 ? hue1 : hue2, 0.4, 1);
-        backNote.ColorHsb(t2, outTime >= 260 ? hue2 : hue1, 0.4, 1);
+        backNote.ScaleVec(OsbEasing.Out, t1b, t2, 0, 0, .4, .8);
+        backNote.ColorHsb(t1b, outTime >= 260 ? hue1 : hue2, .4, 1);
+        backNote.ColorHsb(t2, outTime >= 260 ? hue2 : hue1, .4, 1);
 
         var light = spritePools.Get(t2, t4, "sb/l.png", OsbOrigin.CentreLeft, true);
         light.Move(t2, lightX, lightY);
         light.Fade(OsbEasing.Out, t2, t4, 1, 0);
-        light.ScaleVec(OsbEasing.In, t2, t4, 1, 0.4, 1, 0.1);
+        light.ScaleVec(OsbEasing.In, t2, t4, 1, .4, 1, .1);
         light.Rotate(t2, angle);
-        light.ColorHsb(t2, outTime >= 260 ? hue1 : hue2, 0.4, 1);
+        light.ColorHsb(t2, outTime >= 260 ? hue1 : hue2, .4, 1);
 
         if (outTime >= 260) MakeNoteParticles(t2, x1, y1, angle, outTime / 1000.0);
     }
     void MakeNoteParticles(int t, double x, double y, double angle, double effectStrengh)
     {
-        int particleCount = 3 + (int)(Random(4, 12) * (effectStrengh * 0.8));
+        int particleCount = 3 + (int)(Random(4, 12) * (effectStrengh * .8));
         for (var i = 0; i < particleCount; ++i)
         {
             var pt0 = t;
@@ -596,7 +596,7 @@ class Jigoku : StoryboardObjectGenerator
             var pt2 = pt1 + BeatDuration / 6 + Random(BeatDuration / 3);
             var pt3 = pt2 + BeatDuration / 4 + Random(BeatDuration / 2);
 
-            var pscale = Random(0.2, 0.4);
+            var pscale = Random(.2, .4);
 
             var pStartAngle = angle + Math.PI / 2 + Math.PI / 8 - Random(Math.PI / 4);
             var pStartDistance = Random(-15.0, 15.0);
@@ -604,19 +604,19 @@ class Jigoku : StoryboardObjectGenerator
             var py0 = y + Math.Sin(pStartAngle) * pStartDistance;
 
             var pangle0 = angle - Math.PI / 16 + Random(Math.PI / 8);
-            var pdistance = (5 + Random(1.0) * Random(1.0) * Random(1.0) * 250) * (effectStrengh * 0.84);
+            var pdistance = (5 + Random(1.0) * Random(1.0) * Random(1.0) * 250) * (effectStrengh * .84);
 
             var px1 = px0 + Math.Cos(pangle0) * pdistance;
             var py1 = py0 + Math.Sin(pangle0) * pdistance;
 
             var pangle1 = pangle0 - Math.PI / 8 + Random(Math.PI / 4);
-            pdistance *= 0.8;
+            pdistance *= .8;
 
             var px2 = px1 + Math.Cos(pangle1) * pdistance;
             var py2 = py1 + Math.Sin(pangle1) * pdistance;
 
             var pangle2 = pangle1 - Math.PI / 8 + Random(Math.PI / 4);
-            pdistance *= 0.6;
+            pdistance *= .6;
 
             var px3 = px2 + Math.Cos(pangle2) * pdistance;
             var py3 = py2 + Math.Sin(pangle2) * pdistance;
@@ -635,7 +635,7 @@ class Jigoku : StoryboardObjectGenerator
             particle.Fade(pt0, 1);
             particle.Fade(pt3, 0);
             particle.ScaleVec(OsbEasing.In, pt0, pt3, pscale * squish, pscale / squish, 0, 0);
-            particle.ColorHsb(pt0, Random(240, 260), Random(0.4, 0.8), Random(0.8, 1));
+            particle.ColorHsb(pt0, Random(240, 260), Random(.4, .8), Random(.8, 1));
         }
     }
 
@@ -660,7 +660,7 @@ class Jigoku : StoryboardObjectGenerator
         c3.ColorHsb(OsbEasing.Out, t3, t4, 0, 1, 1, 0, 0, 1);
         if (interruptTime > 0)
         {
-            c3.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, 0.5);
+            c3.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5);
             c3.ColorHsb(interruptTime, 0, 0, 0);
         }
         else c3.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
@@ -671,7 +671,7 @@ class Jigoku : StoryboardObjectGenerator
         c2.ColorHsb(OsbEasing.Out, t2, t3, 0, 1, 1, 0, 0, 1);
         if (interruptTime > 0)
         {
-            c2.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, 0.5);
+            c2.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5);
             c2.ColorHsb(interruptTime, 0, 0, 0);
         }
         else c2.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
@@ -682,7 +682,7 @@ class Jigoku : StoryboardObjectGenerator
         c1.ColorHsb(OsbEasing.Out, t1, t2, 0, 1, 1, 0, 0, 1);
         if (interruptTime > 0)
         {
-            c1.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, 0.5);
+            c1.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5);
             c1.ColorHsb(interruptTime, 0, 0, 0);
         }
         else c1.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
@@ -693,7 +693,7 @@ class Jigoku : StoryboardObjectGenerator
         c0.ColorHsb(OsbEasing.Out, t0, t1, 0, 1, 1, 0, 0, 1);
         if (interruptTime > 0)
         {
-            c0.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, 0.5);
+            c0.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5);
             c0.ColorHsb(interruptTime, 0, 0, 0);
         }
         else c0.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);

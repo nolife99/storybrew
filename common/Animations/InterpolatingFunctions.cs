@@ -8,7 +8,7 @@ namespace StorybrewCommon.Animations;
 /// <summary> A static class providing interpolating functions. </summary>
 public static class InterpolatingFunctions
 {
-    ///<summary> Represents a function that interpolates between 2 <see cref="float"/>s. </summary>
+    ///<summary> Interpolates between 2 <see cref="float"/>s. </summary>
     public static readonly Func<float, float, double, float> Float = (from, to, progress) => (float)(from + (to - from) * progress);
 
     ///<summary> Represents a function that interpolates between 2 <see cref="float"/> angles. </summary>

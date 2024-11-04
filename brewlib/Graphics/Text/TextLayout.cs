@@ -76,7 +76,7 @@ public class TextLayout
             var lineMatches = position.Y < line.Position.Y + line.Height;
             foreach (var glyph in line.Glyphs)
             {
-                if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * 0.5f) return index;
+                if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * .5f) return index;
                 ++index;
             }
             if (lineMatches) return index - 1;

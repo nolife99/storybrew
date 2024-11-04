@@ -42,10 +42,10 @@ public class CircleCurve(CommandPosition startPoint, CommandPosition midPoint, C
 
         for (var i = 1; i < length; i++)
         {
-            var progress = (double)i / precision;
+            var progress = (float)i / precision;
             var angle = endAngle * progress + startAngle * (1 - progress);
 
-            distancePosition.Add(((float)(progress * length), new CommandPosition(Math.Cos(angle) * radius, Math.Sin(angle) * radius) + centre));
+            distancePosition.Add(((float)(progress * length), new CommandPosition(MathF.Cos(angle) * radius, MathF.Sin(angle) * radius) + centre));
         }
         distancePosition.Add(((float)length, endPoint));
     }

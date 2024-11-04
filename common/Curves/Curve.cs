@@ -14,7 +14,7 @@ public interface Curve
     ///<summary> The total length of the curve from the head to the tail. </summary>
     double Length { get; }
 
-    ///<summary> Returns the position of the curve at <paramref name="distance"/>. </summary>
+    ///<summary> Returns the position of the curve at <paramref name="distance"/> pixels. </summary>
     CommandPosition PositionAtDistance(double distance);
 
     ///<summary> Returns the position of the curve at <paramref name="delta"/>. </summary>
