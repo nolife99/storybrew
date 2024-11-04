@@ -301,7 +301,7 @@ public class EffectList : Widget
             if (solutionFolder == editorPath) break;
 
             var isSolution = false;
-            foreach (var file in Directory.GetFiles(solutionFolder, "*.sln"))
+            foreach (var file in Directory.EnumerateFiles(solutionFolder, "*.sln"))
             {
                 isSolution = true;
                 break;

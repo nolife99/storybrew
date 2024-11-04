@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace StorybrewEditor.Util;
 
@@ -16,18 +15,18 @@ public static class NetHelper
         UseShellExecute = true
     });
 
-    public static async void Request(string url, Action<string, Exception> action = null)
+    public static async void Request(string url, Action<string, Exception> action)
     {
         try
         {
             Trace.WriteLine($"Requesting {url}");
 
             var result = await Client.GetStringAsync(url).ConfigureAwait(false);
-            await Task.Run(() => action?.Invoke(result, null));
+            action.Invoke(result, null);
         }
         catch (Exception e)
         {
-            await Task.Run(() => action?.Invoke(null, e));
+            action.Invoke(null, e);
         }
     }
     public static async void Post(string url, Dictionary<string, string> data, Action<string, Exception> action = null)

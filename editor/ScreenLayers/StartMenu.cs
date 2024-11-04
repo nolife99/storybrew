@@ -115,7 +115,7 @@ public class StartMenu : UiScreenLayer
         bottomLayout.Pack(600);
         bottomRightLayout.Pack((1024 - bottomLayout.Width) / 2);
     }
-    void checkLatestVersion() => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", (r, e) =>
+    void checkLatestVersion() => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", (r, e) => Program.Schedule(() => 
     {
         if (IsDisposed) return;
         if (e is not null)
@@ -197,7 +197,7 @@ public class StartMenu : UiScreenLayer
         {
             handleLatestVersionException(ex);
         }
-    });
+    }));
     void handleLatestVersionException(Exception exception)
     {
         Trace.WriteLine($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");

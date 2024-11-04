@@ -5,7 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Runtime.Loader;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using BrewLib.Audio;
@@ -108,7 +108,6 @@ public sealed class Project : IDisposable
         else Directory.CreateDirectory(compiledScriptsPath);
 
         initializeAssetWatcher();
-
         scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, ScriptsLibraryPath, compiledScriptsPath, ReferencedAssemblies);
         effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
 
@@ -381,15 +380,15 @@ public sealed class Project : IDisposable
 
     #region Assemblies
 
-    public static ICollection<string> DefaultAssemblies
-    {
-        get
-        {
-            HashSet<string> distinct = [];
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies()) if (asm.ManifestModule.Name != "<Unknown>") distinct.Add(asm.ManifestModule.Name);
-            return distinct;
-        }
-    }
+    static readonly List<string> defaultAssemblies =
+    [
+        typeof(Bitmap).Assembly.Location,
+        typeof(osuTK.Toolkit).Assembly.Location,
+        typeof(Script).Assembly.Location,
+        typeof(Camera).Assembly.Location,
+        .. Directory.EnumerateFiles(Path.GetDirectoryName(typeof(object).Assembly.Location)),
+    ];
+    public static ICollection<string> DefaultAssemblies => defaultAssemblies;
 
     HashSet<string> importedAssemblies = [];
     public ICollection<string> ImportedAssemblies
