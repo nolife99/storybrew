@@ -6,21 +6,21 @@ using System.Runtime.InteropServices;
 
 namespace BrewLib.Util;
 
-public static partial class Native
+public static unsafe partial class Native
 {
     #region Memory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source.ToPointer(), (uint)count);
+    public static void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source.ToPointer(), (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(void* source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source, (uint)count);
+    public static void CopyMemory(void* source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source, (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(nint source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source.ToPointer(), (uint)count);
+    public static void CopyMemory(nint source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source.ToPointer(), (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe void CopyMemory(void* source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source, (uint)count);
+    public static void CopyMemory(void* source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source, (uint)count);
 
     #endregion
 
@@ -59,7 +59,7 @@ public static partial class Native
     static nint handle;
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static unsafe void InitializeHandle(string windowTitle, nint hWndFallback = 0)
+    public static void InitializeHandle(string windowTitle, nint hWndFallback = 0)
     {
         var cont = true;
         var threads = Process.GetCurrentProcess().Threads;

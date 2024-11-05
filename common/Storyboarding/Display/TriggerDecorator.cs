@@ -8,20 +8,20 @@ namespace StorybrewCommon.Storyboarding.Display;
 #pragma warning disable CS1591
 public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCommand<TValue> where TValue : CommandValue
 {
-    double triggerTime;
+    float triggerTime;
 
     public OsbEasing Easing => throw new NotImplementedException();
-    public double StartTime => triggerTime + command.StartTime;
-    public double EndTime => triggerTime + command.EndTime;
+    public float StartTime => triggerTime + command.StartTime;
+    public float EndTime => triggerTime + command.EndTime;
     public TValue StartValue => command.StartValue;
     public TValue EndValue => command.EndValue;
-    public double Duration => EndTime - StartTime;
+    public float Duration => EndTime - StartTime;
     public bool Active { get; set; }
     public int Cost => throw new NotImplementedException();
 
     public event EventHandler OnStateChanged;
 
-    public void Trigger(double time)
+    public void Trigger(float time)
     {
         if (Active) return;
 
@@ -36,7 +36,7 @@ public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCom
         Active = false;
         OnStateChanged?.Invoke(this, EventArgs.Empty);
     }
-    public TValue ValueAtTime(double time)
+    public TValue ValueAtTime(float time)
     {
         if (!Active) throw new InvalidOperationException("Not triggered");
 

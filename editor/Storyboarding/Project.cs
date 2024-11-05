@@ -69,7 +69,7 @@ public sealed class Project : IDisposable
             var osuFilename = Path.GetFileName(MainBeatmap.Path);
 
             Match match;
-            if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, $"{match.Groups[1].Value}.osb");
+            if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, match.Groups[1].Value + ".osb");
 
             foreach (var osbFilePath in Directory.EnumerateFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly)) return osbFilePath;
 
@@ -90,7 +90,7 @@ public sealed class Project : IDisposable
         ScriptsPath = Path.GetDirectoryName(projectPath);
         if (withCommonScripts)
         {
-            CommonScriptsPath = Path.GetFullPath($"../../../scripts");
+            CommonScriptsPath = Path.GetFullPath("../../../scripts");
             if (!Directory.Exists(CommonScriptsPath))
             {
                 CommonScriptsPath = Path.GetFullPath("scripts");
@@ -119,15 +119,13 @@ public sealed class Project : IDisposable
 
     public static readonly OsbLayer[] OsbLayers = [OsbLayer.Background, OsbLayer.Fail, OsbLayer.Pass, OsbLayer.Foreground, OsbLayer.Overlay];
 
-    public double DisplayTime;
-    public float DimFactor;
-
+    public float DisplayTime, DimFactor;
     public TextureContainer TextureContainer;
     public AudioSampleContainer AudioContainer;
 
     public FrameStats FrameStats = new();
 
-    public void TriggerEvents(double startTime, double endTime) => LayerManager.TriggerEvents(startTime, endTime);
+    public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, bool updateFrameStats)
     {
         effectUpdateQueue.Enabled = allowEffectUpdates && MapsetPathIsValid;
@@ -157,8 +155,8 @@ public sealed class Project : IDisposable
 
     public EffectStatus EffectsStatus = EffectStatus.Initializing;
 
-    public double StartTime => effects.Count > 0 ? effects.Min(e => e.StartTime) : 0;
-    public double EndTime => effects.Count > 0 ? effects.Max(e => e.EndTime) : 0;
+    public float StartTime => effects.Count > 0 ? effects.Min(e => e.StartTime) : 0;
+    public float EndTime => effects.Count > 0 ? effects.Max(e => e.EndTime) : 0;
 
     bool allowEffectUpdates = true;
 
@@ -628,7 +626,7 @@ public sealed class Project : IDisposable
                     { "DiffSpecific", layer.DiffSpecific },
                     { "Visible", layer.Visible }
                 };
-                    layersRoot.Add(StringHelper.GetMd5(layer.Name), layerRoot);
+                    layersRoot.Add(StringHelper.GetMd5(layer.Identifier), layerRoot);
                 }
 
             var effectPath = directoryWriter.GetPath("effect." + StringHelper.GetMd5(effect.Name) + ".yaml");
@@ -702,10 +700,10 @@ public sealed class Project : IDisposable
             foreach (var layerProperty in layersRoot)
             {
                 var layerEffect = effect;
-                var layerGuid = layerProperty.Key;
+                var layerHash = layerProperty.Key;
                 var layerRoot = layerProperty.Value;
 
-                layerInserters[layerGuid] = () => layerEffect.AddPlaceholder(new(layerRoot.Value<string>("Name"), layerEffect)
+                layerInserters[layerHash] = () => layerEffect.AddPlaceholder(new(layerRoot.Value<string>("Name"), layerEffect)
                 {
                     OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
                     DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),

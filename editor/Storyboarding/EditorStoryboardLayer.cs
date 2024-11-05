@@ -63,9 +63,9 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         }
     }
 
-    double startTime, endTime;
-    public override double StartTime => startTime;
-    public override double EndTime => endTime;
+    float startTime, endTime;
+    public override float StartTime => startTime;
+    public override float EndTime => endTime;
 
     public override Vector2 Origin
     {
@@ -110,13 +110,13 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition) => segment.CreateSprite(path, origin, initialPosition);
     public override OsbSprite CreateSprite(string path, OsbOrigin origin) => segment.CreateSprite(path, origin, new(320, 240));
 
-    public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition)
+    public override OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition)
         => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, initialPosition);
 
-    public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin = OsbOrigin.Centre)
+    public override OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin = OsbOrigin.Centre)
         => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin);
 
-    public override OsbSample CreateSample(string path, double time, double volume)
+    public override OsbSample CreateSample(string path, float time, float volume)
         => segment.CreateSample(path, time, volume);
 
     public override IEnumerable<StoryboardSegment> NamedSegments => segment.NamedSegments;
@@ -124,7 +124,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override StoryboardSegment GetSegment(string identifier) => segment.GetSegment(identifier);
     public override void Discard(StoryboardObject storyboardObject) => segment.Discard(storyboardObject);
 
-    public void TriggerEvents(double fromTime, double toTime)
+    public void TriggerEvents(float fromTime, float toTime)
     {
         if (Visible) segment.TriggerEvents(fromTime, toTime);
     }
@@ -137,10 +137,10 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         segment.PostProcess();
 
         startTime = segment.StartTime;
-        if (startTime == double.MaxValue) startTime = 0;
+        if (startTime == float.MaxValue) startTime = 0;
 
         endTime = segment.EndTime;
-        if (endTime == double.MinValue) endTime = 0;
+        if (endTime == float.MinValue) endTime = 0;
 
         EstimatedSize = segment.CalculateSize(osbLayer);
     }

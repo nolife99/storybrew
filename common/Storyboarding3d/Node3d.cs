@@ -7,29 +7,29 @@ namespace StorybrewCommon.Storyboarding3d;
 public class Node3d : Object3d
 {
     ///<summary> Represents the node's X-position in the 3D world. </summary>
-    public readonly KeyframedValue<double> PositionX = new(InterpolatingFunctions.Double);
+    public readonly KeyframedValue<float> PositionX = new(InterpolatingFunctions.Float);
 
     ///<summary> Represents the node's Y-position in the 3D world. </summary>
-    public readonly KeyframedValue<double> PositionY = new(InterpolatingFunctions.Double);
+    public readonly KeyframedValue<float> PositionY = new(InterpolatingFunctions.Float);
 
     ///<summary> Represents the node's Z-position in the 3D world. </summary>
-    public readonly KeyframedValue<double> PositionZ = new(InterpolatingFunctions.Double);
+    public readonly KeyframedValue<float> PositionZ = new(InterpolatingFunctions.Float);
 
     ///<summary> Represents the node's relative X-scale of children objects. </summary>
-    public readonly KeyframedValue<double> ScaleX = new(InterpolatingFunctions.Double, 1);
+    public readonly KeyframedValue<float> ScaleX = new(InterpolatingFunctions.Float, 1);
 
     ///<summary> Represents the node's relative Y-scale of children objects. </summary>
-    public readonly KeyframedValue<double> ScaleY = new(InterpolatingFunctions.Double, 1);
+    public readonly KeyframedValue<float> ScaleY = new(InterpolatingFunctions.Float, 1);
 
     ///<summary> Represents the node's relative Z-scale of children objects. </summary>
-    public readonly KeyframedValue<double> ScaleZ = new(InterpolatingFunctions.Double, 1);
+    public readonly KeyframedValue<float> ScaleZ = new(InterpolatingFunctions.Float, 1);
 
     ///<summary> Represents the node's quaternion rotation about the origin. </summary>
     public readonly KeyframedValue<Quaternion> Rotation = new(InterpolatingFunctions.QuaternionSlerp, Quaternion.Identity);
 
     ///<inheritdoc/>
-    public override Matrix4x4 WorldTransformAt(double time)
-        => Matrix4x4.CreateScale((float)ScaleX.ValueAt(time), (float)ScaleY.ValueAt(time), (float)ScaleZ.ValueAt(time)) *
+    public override Matrix4x4 WorldTransformAt(float time)
+        => Matrix4x4.CreateScale(ScaleX.ValueAt(time), ScaleY.ValueAt(time), ScaleZ.ValueAt(time)) *
         Matrix4x4.CreateFromQuaternion(Rotation.ValueAt(time)) *
-        Matrix4x4.CreateTranslation((float)PositionX.ValueAt(time), (float)PositionY.ValueAt(time), (float)PositionZ.ValueAt(time));
+        Matrix4x4.CreateTranslation(PositionX.ValueAt(time), PositionY.ValueAt(time), PositionZ.ValueAt(time));
 }

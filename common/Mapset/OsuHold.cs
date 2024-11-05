@@ -5,17 +5,17 @@ namespace StorybrewCommon.Mapset;
 #pragma warning disable CS1591
 public class OsuHold : OsuHitObject
 {
-    double endTime;
-    public override double EndTime => endTime;
+    int endTime;
+    public override float EndTime => endTime;
 
-    public static OsuHold Parse(string[] values, int x, int y, double startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
+    public static OsuHold Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
     {
         string samplePath = string.Empty;
 
         var special = values[5];
         var specialValues = special.Split(':');
 
-        var endTime = double.Parse(specialValues[0], CultureInfo.InvariantCulture);
+        var endTime = int.Parse(specialValues[0], CultureInfo.InvariantCulture);
         var objectSampleSet = (SampleSet)int.Parse(specialValues[1], CultureInfo.InvariantCulture);
         var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[2], CultureInfo.InvariantCulture);
         var objectCustomSampleSet = int.Parse(specialValues[3], CultureInfo.InvariantCulture);

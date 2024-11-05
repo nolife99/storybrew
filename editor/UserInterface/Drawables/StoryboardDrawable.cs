@@ -15,7 +15,7 @@ public sealed class StoryboardDrawable(Project project) : Drawable
 
     readonly RenderStates linesRenderStates = new();
 
-    public double Time;
+    public float Time;
     public bool Clip = true, UpdateFrameStats;
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity = 1)

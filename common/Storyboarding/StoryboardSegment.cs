@@ -45,7 +45,7 @@ public abstract class StoryboardSegment : StoryboardObject
     ///<param name="loopType"> <see cref="OsbLoopType"/> of this animation. </param>
     ///<param name="origin"> <see cref="OsbOrigin"/> of this animation. </param>
     ///<param name="initialPosition"> The initial <see cref="CommandPosition"/> value of this animation. </param>
-    public abstract OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition);
+    public abstract OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition);
 
     ///<summary> Creates an <see cref="OsbAnimation"/>. </summary>
     ///<param name="path"> Path to the image of this animation. </param>
@@ -53,13 +53,13 @@ public abstract class StoryboardSegment : StoryboardObject
     ///<param name="frameDelay"> Delay between frames in this animation. </param>
     ///<param name="loopType"> <see cref="OsbLoopType"/> of this animation. </param>
     ///<param name="origin"> <see cref="OsbOrigin"/> of this animation. </param>
-    public abstract OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin = OsbOrigin.Centre);
+    public abstract OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType = OsbLoopType.LoopForever, OsbOrigin origin = OsbOrigin.Centre);
 
     ///<summary> Creates an <see cref="OsbSample"/>. </summary>
     ///<param name="path"> Path to the audio file of this sample. </param>
     ///<param name="time"> Time for the audio to be played. </param>
     ///<param name="volume"> Volume of the audio sample. </param>
-    public abstract OsbSample CreateSample(string path, double time, double volume = 100);
+    public abstract OsbSample CreateSample(string path, float time, float volume = 100);
 
     ///<summary> Removes a storyboard object from the segment. </summary>
     ///<param name="storyboardObject"> The storyboard object to be discarded. </param>

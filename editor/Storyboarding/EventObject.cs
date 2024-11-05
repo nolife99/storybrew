@@ -2,6 +2,6 @@
 
 public interface EventObject
 {
-    double EventTime { get; }
-    void TriggerEvent(Project project, double currentTime);
+    float EventTime { get; }
+    void TriggerEvent(Project project, float currentTime);
 }

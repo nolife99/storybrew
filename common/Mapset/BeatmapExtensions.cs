@@ -7,7 +7,7 @@ namespace StorybrewCommon.Mapset;
 public static class BeatmapExtensions
 {
     ///<summary> Calls <paramref name="tickAction"/> for each beatmap tick divided by <paramref name="snapDivisor"/>. </summary>
-    public static void ForEachTick(this Beatmap beatmap, int startTime, int endTime, int snapDivisor, Action<ControlPoint, double, int, int> tickAction)
+    public static void ForEachTick(this Beatmap beatmap, float startTime, float endTime, int snapDivisor, Action<ControlPoint, float, int, int> tickAction)
     {
         var leftTimingPoint = beatmap.GetTimingPointAt(startTime);
         var timingPoints = beatmap.TimingPoints.GetEnumerator();

@@ -24,29 +24,29 @@ public class EditorBeatmap(string path) : Beatmap
     long id;
     public override long Id => id;
 
-    double stackLeniency = .7;
-    public override double StackLeniency => stackLeniency;
+    float stackLeniency = .7f;
+    public override float StackLeniency => stackLeniency;
 
     readonly HashSet<int> bookmarks = [];
     public override IEnumerable<int> Bookmarks => bookmarks;
 
-    double hpDrainRate = 5;
-    public override double HpDrainRate => hpDrainRate;
+    float hpDrainRate = 5;
+    public override float HpDrainRate => hpDrainRate;
 
-    double circleSize = 5;
-    public override double CircleSize => circleSize;
+    float circleSize = 5;
+    public override float CircleSize => circleSize;
 
-    double overallDifficulty = 5;
-    public override double OverallDifficulty => overallDifficulty;
+    float overallDifficulty = 5;
+    public override float OverallDifficulty => overallDifficulty;
 
-    double approachRate = 5;
-    public override double ApproachRate => approachRate;
+    float approachRate = 5;
+    public override float ApproachRate => approachRate;
 
-    double sliderMultiplier = 1.4;
-    public override double SliderMultiplier => sliderMultiplier;
+    float sliderMultiplier = 1.4f;
+    public override float SliderMultiplier => sliderMultiplier;
 
-    double sliderTickRate = 1;
-    public override double SliderTickRate => sliderTickRate;
+    float sliderTickRate = 1;
+    public override float SliderTickRate => sliderTickRate;
 
     bool hitObjectsPostProcessed;
     readonly List<OsuHitObject> hitObjects = [];
@@ -84,7 +84,7 @@ public class EditorBeatmap(string path) : Beatmap
     public override IEnumerable<ControlPoint> ControlPoints => controlPoints;
     public override IEnumerable<ControlPoint> TimingPoints => controlPoints.Where(c => !c.IsInherited);
 
-    public ControlPoint GetControlPointAt(int time, Func<ControlPoint, bool> predicate)
+    public ControlPoint GetControlPointAt(float time, Func<ControlPoint, bool> predicate)
     {
         if (controlPoints is null) return null;
 
@@ -98,8 +98,8 @@ public class EditorBeatmap(string path) : Beatmap
         return closestTimingPoint ?? ControlPoint.Default;
     }
 
-    public override ControlPoint GetControlPointAt(int time) => GetControlPointAt(time, null);
-    public override ControlPoint GetTimingPointAt(int time) => GetControlPointAt(time, cp => !cp.IsInherited);
+    public override ControlPoint GetControlPointAt(float time) => GetControlPointAt(time, null);
+    public override ControlPoint GetTimingPointAt(float time) => GetControlPointAt(time, cp => !cp.IsInherited);
 
     #endregion
 
@@ -121,7 +121,7 @@ public class EditorBeatmap(string path) : Beatmap
                         switch (key)
                         {
                             case "AudioFilename": beatmap.audioFilename = value; break;
-                            case "StackLeniency": beatmap.stackLeniency = double.Parse(value, CultureInfo.InvariantCulture); break;
+                            case "StackLeniency": beatmap.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture); break;
                         }
                     });
                         break;
@@ -155,12 +155,12 @@ public class EditorBeatmap(string path) : Beatmap
                     {
                         switch (key)
                         {
-                            case "HPDrainRate": beatmap.hpDrainRate = double.Parse(value, CultureInfo.InvariantCulture); break;
-                            case "CircleSize": beatmap.circleSize = double.Parse(value, CultureInfo.InvariantCulture); break;
-                            case "OverallDifficulty": beatmap.overallDifficulty = double.Parse(value, CultureInfo.InvariantCulture); break;
-                            case "ApproachRate": beatmap.approachRate = double.Parse(value, CultureInfo.InvariantCulture); break;
-                            case "SliderMultiplier": beatmap.sliderMultiplier = double.Parse(value, CultureInfo.InvariantCulture); break;
-                            case "SliderTickRate": beatmap.sliderTickRate = double.Parse(value, CultureInfo.InvariantCulture); break;
+                            case "HPDrainRate": beatmap.hpDrainRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+                            case "CircleSize": beatmap.circleSize = float.Parse(value, CultureInfo.InvariantCulture); break;
+                            case "OverallDifficulty": beatmap.overallDifficulty = float.Parse(value, CultureInfo.InvariantCulture); break;
+                            case "ApproachRate": beatmap.approachRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+                            case "SliderMultiplier": beatmap.sliderMultiplier = float.Parse(value, CultureInfo.InvariantCulture); break;
+                            case "SliderTickRate": beatmap.sliderTickRate = float.Parse(value, CultureInfo.InvariantCulture); break;
                         }
                     });
                         break;

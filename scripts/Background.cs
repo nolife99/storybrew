@@ -13,7 +13,7 @@ class Background : StoryboardObjectGenerator
     [Group("Sprite")]
     [Description("Leave empty to automatically use the map's background.")]
     [Configurable] public string SpritePath = "";
-    [Configurable] public double Opacity = .2;
+    [Configurable] public float Opacity = .2f;
 
     protected override void Generate()
     {

@@ -17,7 +17,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
         {
             var pixels = 0f;
             foreach (var texture in textures.Values) pixels += texture.Size.X * texture.Size.Y;
-            return pixels / 1024 / 1024;
+            return pixels / 1048576;
         }
     }
     public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;

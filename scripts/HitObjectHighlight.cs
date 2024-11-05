@@ -38,7 +38,7 @@ class HitObjectHighlight : StoryboardObjectGenerator
             if (hitobject is OsuSlider)
             {
                 KeyframedValue<Vector2> keyframe = [];
-                var timestep = Beatmap.GetTimingPointAt((int)hitobject.StartTime).BeatDuration / BeatDivisor;
+                var timestep = Beatmap.GetTimingPointAt(hitobject.StartTime).BeatDuration / BeatDivisor;
                 var startTime = hitobject.StartTime;
 
                 while (true)

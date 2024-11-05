@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Numerics;
+using System.Text.RegularExpressions;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
+using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 
@@ -17,9 +20,9 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public EditorStoryboardLayer Layer => layer;
     public override string Name => identifier;
 
-    double startTime, endTime;
-    public override double StartTime => startTime;
-    public override double EndTime => endTime;
+    float startTime, endTime;
+    public override float StartTime => startTime;
+    public override float EndTime => endTime;
 
     public bool Highlight;
 
@@ -31,7 +34,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 
     public event ChangedHandler OnChanged;
     protected void RaiseChanged(string propertyName)
-        => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new ChangedEventArgs(propertyName)));
+        => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new(propertyName)));
 
     readonly List<StoryboardObject> storyboardObjects = [];
     readonly List<DisplayableObject> displayableObjects = [];
@@ -48,8 +51,23 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     }
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin) => CreateSprite(path, origin, OsbSprite.DefaultPosition);
-    public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition)
+    public override OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin, CommandPosition initialPosition)
     {
+        if (frameCount < 1)
+        {
+            var relativePath = Path.GetFileName(path).AsSpan();
+            var dotIndex = relativePath.LastIndexOf('.');
+            var dirName = Path.GetDirectoryName(path);
+
+            Regex regex = new($@"{relativePath[..dotIndex]}^\d+\{relativePath[dotIndex..]}$");
+            bool matchRegex(string filename) => regex.IsMatch(Path.GetFileName(filename));
+
+            var mapsetPath = Path.Combine(StoryboardObjectGenerator.Current.MapsetPath, dirName);
+            if (Directory.Exists(mapsetPath)) frameCount = Directory.EnumerateFiles(mapsetPath, "*", SearchOption.TopDirectoryOnly).Count(matchRegex);
+
+            var assetPath = Path.Combine(StoryboardObjectGenerator.Current.AssetPath, dirName);
+            if (frameCount < 1 && Directory.Exists(assetPath)) frameCount = Directory.EnumerateFiles(assetPath, "*", SearchOption.TopDirectoryOnly).Count(matchRegex);
+        }
         EditorOsbAnimation storyboardObject = new()
         {
             TexturePath = path,
@@ -65,10 +83,10 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         return storyboardObject;
     }
 
-    public override OsbAnimation CreateAnimation(string path, int frameCount, double frameDelay, OsbLoopType loopType, OsbOrigin origin = OsbOrigin.Centre)
+    public override OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin = OsbOrigin.Centre)
         => CreateAnimation(path, frameCount, frameDelay, loopType, origin, OsbSprite.DefaultPosition);
 
-    public override OsbSample CreateSample(string path, double time, double volume)
+    public override OsbSample CreateSample(string path, float time, float volume)
     {
         EditorOsbSample storyboardObject = new() { AudioPath = path, Time = time, Volume = volume };
         storyboardObjects.Add(storyboardObject);
@@ -76,7 +94,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         return storyboardObject;
     }
 
-    private readonly Dictionary<string, EditorStoryboardSegment> namedSegments = [];
+    readonly Dictionary<string, EditorStoryboardSegment> namedSegments = [];
     public override IEnumerable<StoryboardSegment> NamedSegments => namedSegments.Values;
 
     public override StoryboardSegment CreateSegment(string identifier = null)
@@ -91,7 +109,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     }
     public override StoryboardSegment GetSegment(string identifier) => getSegment(identifier);
 
-    private StoryboardSegment getSegment(string identifier = null)
+    EditorStoryboardSegment getSegment(string identifier = null)
     {
         if (identifier is not null && Name is null) throw new InvalidOperationException($"Cannot add a named segment to a segment that isn't named ({identifier})");
         if (identifier is null || !namedSegments.TryGetValue(identifier, out var segment))
@@ -117,7 +135,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             if (segment.Name is not null) namedSegments.Remove(segment.Name);
         }
     }
-    public void TriggerEvents(double fromTime, double toTime)
+    public void TriggerEvents(float fromTime, float toTime)
     {
         eventObjects.ForEach(eventObject => eventObject.TriggerEvent(Effect.Project, toTime), eventObject => fromTime <= eventObject.EventTime && eventObject.EventTime < toTime);
         segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
@@ -140,8 +158,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         }
         foreach (var storyboardObject in storyboardObjects) (storyboardObject as HasPostProcess)?.PostProcess();
 
-        startTime = double.MaxValue;
-        endTime = double.MinValue;
+        startTime = float.MaxValue;
+        endTime = float.MinValue;
 
         foreach (var sbo in storyboardObjects)
         {

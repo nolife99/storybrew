@@ -5,7 +5,7 @@ namespace StorybrewCommon.Mapset;
 #pragma warning disable CS1591
 public class OsuCircle : OsuHitObject
 {
-    public static OsuCircle Parse(string[] values, int x, int y, double startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
+    public static OsuCircle Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
     {
         var samplePath = "";
         if (values.Length > 5)

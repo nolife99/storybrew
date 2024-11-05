@@ -19,13 +19,9 @@ public class OsbSpriteWriter(OsbSprite sprite,
     TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
 {
 #pragma warning disable CS1591
-    protected readonly TextWriter TextWriter = writer;
-    protected readonly ExportSettings ExportSettings = exportSettings;
-    protected readonly OsbLayer Layer = layer;
-
     public void WriteOsb(StoryboardTransform transform)
     {
-        if (ExportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 && sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
+        if (exportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 && sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
         {
             HashSet<IFragmentableCommand> commands = [];
             foreach (var cmd in sprite.Commands) commands.Add((IFragmentableCommand)cmd);
@@ -54,25 +50,25 @@ public class OsbSpriteWriter(OsbSprite sprite,
     void writeOsbSprite(OsbSprite sprite, StoryboardTransform transform)
     {
         WriteHeader(sprite, transform);
-        foreach (var command in sprite.Commands) command.WriteOsb(TextWriter, ExportSettings, transform, 1);
+        foreach (var command in sprite.Commands) command.WriteOsb(writer, exportSettings, transform, 1);
     }
     protected virtual void WriteHeader(OsbSprite sprite, StoryboardTransform transform)
     {
-        TextWriter.Write($"Sprite");
+        writer.Write($"Sprite");
         WriteHeaderCommon(sprite, transform);
-        TextWriter.WriteLine();
+        writer.WriteLine();
     }
     protected virtual void WriteHeaderCommon(OsbSprite sprite, StoryboardTransform transform)
     {
-        TextWriter.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
+        writer.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
 
         var transformedInitialPosition = transform is null ?
             (Vector2)sprite.InitialPosition : sprite.HasMoveXYCommands ? transform.ApplyToPositionXY(sprite.InitialPosition) : transform.ApplyToPosition(sprite.InitialPosition);
 
-        if (!move.HasCommands && !moveX.HasCommands) TextWriter.Write("," + transformedInitialPosition.X.ToString(ExportSettings.NumberFormat));
-        else TextWriter.Write(",0");
-        if (!move.HasCommands && !moveY.HasCommands) TextWriter.Write("," + transformedInitialPosition.Y.ToString(ExportSettings.NumberFormat));
-        else TextWriter.Write(",0");
+        if (!move.HasCommands && !moveX.HasCommands) writer.Write("," + transformedInitialPosition.X.ToString(exportSettings.NumberFormat));
+        else writer.Write(",0");
+        if (!move.HasCommands && !moveY.HasCommands) writer.Write("," + transformedInitialPosition.Y.ToString(exportSettings.NumberFormat));
+        else writer.Write(",0");
     }
     protected virtual bool IsFragmentable()
     {

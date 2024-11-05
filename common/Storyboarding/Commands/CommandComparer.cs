@@ -7,8 +7,8 @@ public static class CommandComparer
 {
     public static int CompareCommands(ICommand x, ICommand y)
     {
-        var result = ((int)Math.Round(x.StartTime)).CompareTo((int)Math.Round(y.StartTime));
+        var result = MathF.Round(x.StartTime).CompareTo(MathF.Round(y.StartTime));
         if (result != 0) return result;
-        return ((int)Math.Round(x.EndTime)).CompareTo((int)Math.Round(y.EndTime));
+        return MathF.Round(x.EndTime).CompareTo(MathF.Round(y.EndTime));
     }
 }

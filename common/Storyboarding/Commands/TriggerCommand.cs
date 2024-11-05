@@ -10,7 +10,7 @@ public class TriggerCommand : CommandGroup
     public int Group { get; set; }
     public override bool Active => false;
 
-    public TriggerCommand(string triggerName, double startTime, double endTime, int group = 0)
+    public TriggerCommand(string triggerName, float startTime, float endTime, int group = 0)
     {
         TriggerName = triggerName;
         StartTime = startTime;
@@ -23,7 +23,7 @@ public class TriggerCommand : CommandGroup
 
     public override int GetHashCode()
     {
-        var header = new HashCode();
+        HashCode header = new();
         header.Add('T'); header.Add(TriggerName); header.Add(StartTime); header.Add(EndTime); header.Add(Group);
         foreach (var command in commands) header.Add(command);
         return header.ToHashCode();

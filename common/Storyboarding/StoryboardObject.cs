@@ -6,10 +6,10 @@ namespace StorybrewCommon.Storyboarding;
 public abstract class StoryboardObject
 {
     ///<summary> Start time of this storyboard object. </summary>
-    public abstract double StartTime { get; }
+    public abstract float StartTime { get; }
 
     ///<summary> End time of this storyboard object. </summary>
-    public abstract double EndTime { get; }
+    public abstract float EndTime { get; }
 
 #pragma warning disable CS1591
     public abstract void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform);

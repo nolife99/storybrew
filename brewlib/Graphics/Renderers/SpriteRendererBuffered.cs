@@ -143,7 +143,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         if (spritesInBatch == 0) return;
 
         // When the previous flush was bufferable, draw state should stay the same.
-        if (!lastFlushWasBuffered) unsafe
+        if (!lastFlushWasBuffered)
             {
                 var combinedMatrix = transformMatrix * camera.ProjectionView;
 

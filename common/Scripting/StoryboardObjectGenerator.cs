@@ -177,17 +177,17 @@ public abstract class StoryboardObjectGenerator : Script
     #region Audio
 
     ///<summary> Gets the audio duration of the beatmap in milliseconds. </summary>
-    public double AudioDuration => context.AudioDuration;
+    public float AudioDuration => context.AudioDuration;
 
     ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with default magnitudes. </summary>
-    public float[] GetFft(double time, string path = null, bool splitChannels = false)
+    public float[] GetFft(float time, string path = null, bool splitChannels = false)
     {
         if (path is not null) AddDependency(path);
         return context.GetFft(time, path, splitChannels);
     }
 
     ///<summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
-    public float[] GetFft(double time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
+    public float[] GetFft(float time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None, float frequencyCutOff = 0)
     {
         var fft = GetFft(time, path);
         if (magnitudes == fft.Length && easing is OsbEasing.None) return fft;

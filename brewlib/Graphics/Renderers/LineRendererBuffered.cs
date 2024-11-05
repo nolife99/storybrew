@@ -123,7 +123,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     }
 
     bool lastFlushWasBuffered;
-    public unsafe void Flush(bool canBuffer = false)
+    public void Flush(bool canBuffer = false)
     {
         if (linesInBatch == 0) return;
 
@@ -148,7 +148,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     }
 
     public void Draw(Vector3 start, Vector3 end, Color color) => Draw(start, end, color, color);
-    public unsafe void Draw(Vector3 start, Vector3 end, Color startColor, Color endColor)
+    public void Draw(Vector3 start, Vector3 end, Color startColor, Color endColor)
     {
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 

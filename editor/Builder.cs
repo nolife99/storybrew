@@ -91,6 +91,6 @@ public class Builder
         if (ignoredPaths.Contains(entryName)) return;
         if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
 
-        archive.CreateEntryFromFile(path, entryName, CompressionLevel.Optimal);
+        archive.CreateEntryFromFile(path, entryName, CompressionLevel.SmallestSize);
     }
 }

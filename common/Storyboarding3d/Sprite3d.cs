@@ -39,7 +39,7 @@ public class Sprite3d : Node3d, HasOsbSprites
     public readonly KeyframedValue<CommandScale> SpriteScale = new(InterpolatingFunctions.Scale, Vector2.One);
 
     ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
-    public readonly KeyframedValue<double> SpriteRotation = new(InterpolatingFunctions.DoubleAngle, 0);
+    public readonly KeyframedValue<float> SpriteRotation = new(InterpolatingFunctions.FloatAngle, 0);
 
     readonly CommandGenerator gen = new();
 
@@ -56,7 +56,7 @@ public class Sprite3d : Node3d, HasOsbSprites
     public override void GenerateSprite(StoryboardSegment segment) => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
 
     ///<inheritdoc/>
-    public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
+    public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
         var screenPosition = CameraState.ToScreen(wvp, Vector3.Zero);
@@ -99,7 +99,7 @@ public class Sprite3d : Node3d, HasOsbSprites
     }
 
     ///<inheritdoc/>
-    public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
     {
         if (finalize is not null) action += (createCommands, sprite) =>
         {

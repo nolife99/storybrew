@@ -523,43 +523,39 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
-        if (proj.DisplayDebugWarning && activeSprites < 1500) warnings.AppendLine(CultureInfo.CurrentCulture, $"{activeSprites:n0} Sprites");
-        else if (activeSprites >= 1500) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {activeSprites:n0} Sprites");
+        if (proj.DisplayDebugWarning && activeSprites < 1500) warnings.AppendLine(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites");
+        else if (activeSprites >= 1500) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {activeSprites:n0} Sprites");
 
         var batches = proj.FrameStats.Batches;
-        if (proj.DisplayDebugWarning && batches < 500) warnings.AppendLine(CultureInfo.CurrentCulture, $"{batches:0} Batches");
-        else if (batches >= 500) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {batches:0} Batches");
+        if (proj.DisplayDebugWarning && batches < 500) warnings.AppendLine(CultureInfo.InvariantCulture, $"{batches:0} Batches");
+        else if (batches >= 500) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {batches:0} Batches");
 
         var commands = stats.CommandCount;
-        if (proj.DisplayDebugWarning && commands < 15000) warnings.AppendLine(CultureInfo.CurrentCulture, $"{commands:n0} Commands");
-        else if (commands >= 15000) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {commands:n0} Commands");
+        if (proj.DisplayDebugWarning && commands < 15000) warnings.AppendLine(CultureInfo.InvariantCulture, $"{commands:n0} Commands");
+        else if (commands >= 15000) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {commands:n0} Commands");
 
-        float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands, unusedRatio = unusedCommands / commands;
+        float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands, unusedRatio = unusedCommands / Math.Max(1, commands);
         if ((unusedCommands >= 5000 && unusedRatio > .5f) || (unusedCommands >= 10000 && unusedRatio > .2f) || unusedCommands >= 15000)
-            warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
+            warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
         else if (proj.DisplayDebugWarning)
-            warnings.AppendLine(CultureInfo.CurrentCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
+            warnings.AppendLine(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
 
         var sbLoad = (float)stats.ScreenFill;
-        if (sbLoad > 0 && sbLoad < 5 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.CurrentCulture, $"{sbLoad:f2}x Screen Fill");
-        else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {sbLoad:f2}x Screen Fill");
+        if (sbLoad > 0 && sbLoad < 5 && proj.DisplayDebugWarning) warnings.AppendLine(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill");
+        else if (sbLoad >= 5) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f2}x Screen Fill");
 
         var frameGpuMemory = stats.GpuMemoryFrameMb;
-        if (proj.DisplayDebugWarning && frameGpuMemory < 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory");
-        else if (frameGpuMemory >= 32) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Mem");
+        if (proj.DisplayDebugWarning && frameGpuMemory < 32) warnings.AppendLine(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory");
+        else if (frameGpuMemory >= 32) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Mem");
 
         var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
-        if (proj.DisplayDebugWarning && totalGpuMemory < 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory");
-        else if (totalGpuMemory >= 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {totalGpuMemory:0.0}MB Total Texture Memory");
+        if (proj.DisplayDebugWarning && totalGpuMemory < 256) warnings.AppendLine(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory");
+        else if (totalGpuMemory >= 256) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {totalGpuMemory:0.0}MB Total Texture Memory");
 
         if (stats.OverlappedCommands) warnings.AppendLine("⚠ Overlapped Commands");
         if (stats.IncompatibleCommands) warnings.AppendLine("⚠ Incompatible Commands");
 
-        var i = warnings.Length - 1;
-        for (; i >= 0; --i) if (!char.IsWhiteSpace(warnings[i])) break;
-
-        if (i < warnings.Length - 1) warnings.Length = i + 1;
-        return warnings.ToString();
+        return warnings.Trim().ToString();
     }
     public override void Resize(int width, int height)
     {

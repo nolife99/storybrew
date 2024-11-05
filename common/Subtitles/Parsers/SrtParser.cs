@@ -25,8 +25,8 @@ public class SrtParser : SubtitleParser
         {
             var blockLines = block.Split('\n');
             var timestamps = blockLines[1].Split("-->", StringSplitOptions.None);
-            var startTime = parseTimestamp(timestamps[0]);
-            var endTime = parseTimestamp(timestamps[1]);
+            var startTime = SubtitleParser.ParseTimestamp(timestamps[0].Replace(',', '.'));
+            var endTime = SubtitleParser.ParseTimestamp(timestamps[1].Replace(',', '.'));
             var text = string.Join("\n", blockLines, 2, blockLines.Length - 2);
             lines.Add(new(startTime, endTime, text));
         }
@@ -43,16 +43,14 @@ public class SrtParser : SubtitleParser
         {
             if (string.IsNullOrEmpty(line.Trim()))
             {
-                var block = sb.ToString().Trim();
-                if (block.Length > 0) yield return block;
+                var block = sb.Trim();
+                if (block.Length > 0) yield return block.ToString();
                 sb.Clear();
             }
             else sb.AppendLine(line);
         }
 
-        var endBlock = sb.ToString().Trim();
-        if (endBlock.Length > 0) yield return endBlock;
+        var endBlock = sb.Trim();
+        if (endBlock.Length > 0) yield return endBlock.ToString();
     }
-
-    static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp.Replace(',', '.'), CultureInfo.InvariantCulture).TotalMilliseconds;
 }

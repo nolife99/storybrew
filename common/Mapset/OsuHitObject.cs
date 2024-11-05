@@ -42,10 +42,10 @@ public class OsuHitObject
     public CommandPosition EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;
 
     ///<summary> Represents the start time of this hit object. </summary>
-    public double StartTime { get; internal set; }
+    public float StartTime { get; internal set; }
 
     ///<summary> Represents the end time of this hit object. </summary>
-    public virtual double EndTime => StartTime;
+    public virtual float EndTime => StartTime;
 
     ///<summary> Represents the information flags of this hit object. </summary>
     public HitObjectFlag Flags;
@@ -87,13 +87,13 @@ public class OsuHitObject
     public int ComboOffset => ((int)Flags >> 4) & 7;
 
     ///<returns> This hit object's position at <paramref name="time"/>. </returns>
-    public virtual CommandPosition PlayfieldPositionAtTime(double time) => PlayfieldPosition;
+    public virtual CommandPosition PlayfieldPositionAtTime(float time) => PlayfieldPosition;
 
     ///<returns> This hit object's storyboard position at <paramref name="time"/>. </returns>
-    public CommandPosition PositionAtTime(double time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
+    public CommandPosition PositionAtTime(float time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
 
     ///<inheritdoc/>
-    public override string ToString() => $"{(int)StartTime}, {Flags}";
+    public override string ToString() => $"{StartTime}, {Flags}";
 
     ///<summary> Parses a hit object from a given beatmap and line. </summary>
     public static OsuHitObject Parse(Beatmap beatmap, string line)
@@ -102,12 +102,12 @@ public class OsuHitObject
 
         var x = int.Parse(values[0], CultureInfo.InvariantCulture);
         var y = int.Parse(values[1], CultureInfo.InvariantCulture);
-        var startTime = double.Parse(values[2], CultureInfo.InvariantCulture);
+        var startTime = int.Parse(values[2], CultureInfo.InvariantCulture);
         var flags = (HitObjectFlag)int.Parse(values[3], CultureInfo.InvariantCulture);
         var additions = (HitSoundAddition)int.Parse(values[4], CultureInfo.InvariantCulture);
 
-        var timingPoint = beatmap.GetTimingPointAt((int)startTime);
-        var controlPoint = beatmap.GetControlPointAt((int)startTime);
+        var timingPoint = beatmap.GetTimingPointAt(startTime);
+        var controlPoint = beatmap.GetControlPointAt(startTime);
 
         var sampleSet = controlPoint.SampleSet;
         var additionsSampleSet = controlPoint.SampleSet;

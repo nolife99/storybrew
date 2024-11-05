@@ -48,9 +48,6 @@ public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
         this.b = b;
     }
 
-    ///<summary> Constructs a new <see cref="CommandColor"/> from a <see cref="Vector3"/> containing red, green, and blue values from 0.0 to 1.0. </summary>
-    public CommandColor(Vector3 vector) : this(vector.X, vector.Y, vector.Z) { }
-
     ///<summary> Returns whether or not this instance and <paramref name="other"/> are equal to each other. </summary>
     public bool Equals(CommandColor other) => r == other.r && g == other.g && b == other.b;
 

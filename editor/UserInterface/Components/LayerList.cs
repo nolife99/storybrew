@@ -221,5 +221,5 @@ public class LayerList : Widget
     }
 
     static string getLayerDetails(EditorStoryboardLayer layer, Effect effect) => layer.EstimatedSize > 30720 ?
-        $"using {effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})" : $"using {effect.BaseName}";
+        $"using {effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})" : "using " + effect.BaseName;
 }

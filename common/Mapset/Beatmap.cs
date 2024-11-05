@@ -22,25 +22,25 @@ public abstract class Beatmap
     public abstract string BackgroundPath { get; }
 
     ///<summary> The HP drain rate of this difficulty. </summary>
-    public abstract double HpDrainRate { get; }
+    public abstract float HpDrainRate { get; }
 
     ///<summary> The hit object size of this difficulty. </summary>
-    public abstract double CircleSize { get; }
+    public abstract float CircleSize { get; }
 
     ///<summary> The overall difficulty of this difficulty. </summary>
-    public abstract double OverallDifficulty { get; }
+    public abstract float OverallDifficulty { get; }
 
     ///<summary> The object approach rate of this difficulty. </summary>
-    public abstract double ApproachRate { get; }
+    public abstract float ApproachRate { get; }
 
     ///<summary> The slider velocity multiplier of this difficulty. </summary>
-    public abstract double SliderMultiplier { get; }
+    public abstract float SliderMultiplier { get; }
 
     ///<summary> The slider tick rate of this difficulty. </summary>
-    public abstract double SliderTickRate { get; }
+    public abstract float SliderTickRate { get; }
 
     ///<summary> The object stacking leniency of this difficulty. </summary>
-    public abstract double StackLeniency { get; }
+    public abstract float StackLeniency { get; }
 
     ///<summary> Hit objects of this difficulty. </summary>
     public abstract IEnumerable<OsuHitObject> HitObjects { get; }
@@ -61,13 +61,13 @@ public abstract class Beatmap
     public abstract IEnumerable<OsuBreak> Breaks { get; }
 
     ///<summary> Finds the control point (red or green line) active at a specific time. </summary>
-    public abstract ControlPoint GetControlPointAt(int time);
+    public abstract ControlPoint GetControlPointAt(float time);
 
     ///<summary> Finds the timing point (red line) active at a specific time. </summary>
-    public abstract ControlPoint GetTimingPointAt(int time);
+    public abstract ControlPoint GetTimingPointAt(float time);
 
     ///<summary/>
-    public static double GetDifficultyRange(double difficulty, double min, double mid, double max)
+    public static double GetDifficultyRange(float difficulty, float min, float mid, float max)
     {
         if (difficulty > 5) return mid + (max - mid) * (difficulty - 5) / 5;
         if (difficulty < 5) return mid - (mid - min) * (5 - difficulty) / 5;

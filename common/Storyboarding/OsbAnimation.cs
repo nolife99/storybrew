@@ -9,19 +9,19 @@ public class OsbAnimation : OsbSprite
     public int FrameCount;
 
     ///<summary> Delay between frames in the animation. </summary>
-    public double FrameDelay;
+    public float FrameDelay;
 
     ///<summary> The <see cref="OsbLoopType"/> of this animation. </summary>
     public OsbLoopType LoopType;
 
     ///<summary> How long the animation takes to loop through its frames once. </summary>
-    public double LoopDuration => FrameCount * FrameDelay;
+    public float LoopDuration => FrameCount * FrameDelay;
 
     ///<summary> The time of when the animation stops looping. </summary>
-    public double AnimationEndTime => (LoopType == OsbLoopType.LoopOnce) ? StartTime + LoopDuration : EndTime;
+    public float AnimationEndTime => LoopType is OsbLoopType.LoopOnce ? StartTime + LoopDuration : EndTime;
 
     ///<summary> Gets the path of the frame at <paramref name="time"/>. </summary>
-    public override string GetTexturePathAt(double time)
+    public override string GetTexturePathAt(float time)
     {
         var dotIndex = TexturePath.LastIndexOf('.');
         if (dotIndex < 0) return TexturePath + GetFrameAt(time);
@@ -30,7 +30,7 @@ public class OsbAnimation : OsbSprite
     }
 
     ///<summary> Gets the frame number at <paramref name="time"/>. </summary>
-    public int GetFrameAt(double time)
+    public int GetFrameAt(float time)
     {
         var frame = (time - StartTime) / FrameDelay;
         switch (LoopType)

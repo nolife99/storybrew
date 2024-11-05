@@ -10,7 +10,7 @@ public class ControlPoint : IComparable<ControlPoint>
     public static readonly ControlPoint Default = new();
 
     ///<summary> The offset, or time, of this control point. </summary>
-    public double Offset { get; init; }
+    public float Offset { get; init; }
 
     ///<summary> Beats per measure, or bar, of this control point. </summary>
     public int BeatPerMeasure { get; init; } = 4;
@@ -33,16 +33,16 @@ public class ControlPoint : IComparable<ControlPoint>
     ///<summary> Whether this control point has "Omit first bar line" enabled. </summary>
     public bool OmitFirstBarLine { get; init; }
 
-    double beatDurationSV = 500;
+    float beatDurationSV = 500;
 
     ///<returns> The duration of a beat based on the BPM measure of the control point. </returns>
-    public double BeatDuration => IsInherited ? throw new InvalidOperationException("Control points don't have a beat duration, use timing points") : beatDurationSV;
+    public float BeatDuration => IsInherited ? throw new InvalidOperationException("Control points don't have a beat duration, use timing points") : beatDurationSV;
 
     ///<summary> The beats per minute measure of this control point. </summary>
-    public double BPM => BeatDuration == 0 ? 0 : 60000 / BeatDuration;
+    public float BPM => BeatDuration == 0 ? 0 : 60000 / BeatDuration;
 
     ///<summary> The slider velocity multiplier of this control point. </summary>
-    public double SliderMultiplier => beatDurationSV > 0 ? 1 : -(beatDurationSV / 100);
+    public float SliderMultiplier => beatDurationSV > 0 ? 1 : -(beatDurationSV / 100);
 
     ///<summary> Compares this control point to <paramref name="other"/>. </summary>
     public int CompareTo(ControlPoint other)
@@ -65,8 +65,8 @@ public class ControlPoint : IComparable<ControlPoint>
 
         return new()
         {
-            Offset = double.Parse(values[0], CultureInfo.InvariantCulture),
-            beatDurationSV = double.Parse(values[1], CultureInfo.InvariantCulture),
+            Offset = float.Parse(values[0], CultureInfo.InvariantCulture),
+            beatDurationSV = float.Parse(values[1], CultureInfo.InvariantCulture),
             BeatPerMeasure = values.Length > 2 ? int.Parse(values[2], CultureInfo.InvariantCulture) : 4,
             SampleSet = values.Length > 3 ? (SampleSet)int.Parse(values[3], CultureInfo.InvariantCulture) : SampleSet.Normal,
             CustomSampleSet = values.Length > 4 ? int.Parse(values[4], CultureInfo.InvariantCulture) : 0,

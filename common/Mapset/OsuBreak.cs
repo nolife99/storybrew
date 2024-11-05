@@ -5,8 +5,8 @@ namespace StorybrewCommon.Mapset;
 #pragma warning disable CS1591
 public class OsuBreak
 {
-    public double StartTime { get; internal set; }
-    public double EndTime { get; internal set; }
+    public int StartTime { get; internal set; }
+    public int EndTime { get; internal set; }
 
     public override string ToString() => $"Break from {StartTime}ms to {EndTime}ms";
     public static OsuBreak Parse(string line)

@@ -7,8 +7,8 @@ namespace StorybrewEditor.Storyboarding;
 
 public interface DisplayableObject
 {
-    double StartTime { get; }
-    double EndTime { get; }
+    float StartTime { get; }
+    float EndTime { get; }
 
     void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, StoryboardTransform transform, Project project, FrameStats frameStats);
 }

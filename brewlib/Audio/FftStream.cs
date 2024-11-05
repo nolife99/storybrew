@@ -11,18 +11,18 @@ public class FftStream : IDisposable
     readonly float frequency;
     public float Frequency => frequency;
 
-    public double Duration { get; }
+    public float Duration { get; }
 
     public FftStream(string path)
     {
         stream = Bass.CreateStream(path, 0, 0, BassFlags.Decode | BassFlags.Prescan);
-        Duration = Bass.ChannelBytes2Seconds(stream, Bass.ChannelGetLength(stream));
+        Duration = (float)Bass.ChannelBytes2Seconds(stream, Bass.ChannelGetLength(stream));
         info = Bass.ChannelGetInfo(stream);
 
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out frequency);
     }
 
-    public float[] GetFft(double time, bool splitChannels = false)
+    public float[] GetFft(float time, bool splitChannels = false)
     {
         Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 

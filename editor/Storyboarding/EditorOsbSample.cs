@@ -6,9 +6,9 @@ namespace StorybrewEditor.Storyboarding;
 
 public class EditorOsbSample : OsbSample, EventObject
 {
-    public double EventTime => Time * .001;
+    public float EventTime => Time * .001f;
 
-    public void TriggerEvent(Project project, double currentTime)
+    public void TriggerEvent(Project project, float currentTime)
     {
         if (EventTime + 1 < currentTime) return;
 
@@ -29,6 +29,6 @@ public class EditorOsbSample : OsbSample, EventObject
             return;
         }
 
-        sample.Play((float)(Volume * .01));
+        sample.Play(Volume * .01f);
     }
 }

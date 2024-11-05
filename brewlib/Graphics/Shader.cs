@@ -13,7 +13,7 @@ public class Shader : IDisposable
     int vertexShaderId = -1, fragmentShaderId = -1, programId = -1;
 
     bool isInitialized, started;
-    string log = "";
+    StringBuilder log = new();
 
     Dictionary<string, Property<ActiveAttribType>> attributes;
     Dictionary<string, Property<ActiveUniformType>> uniforms;
@@ -22,14 +22,14 @@ public class Shader : IDisposable
     {
         get
         {
-            if (!isInitialized) return log;
-            if (string.IsNullOrEmpty(log)) log = GL.GetProgramInfoLog(programId);
-            return log;
+            if (!isInitialized) return "";
+            if (log.Length == 0) log.AppendLine(GL.GetProgramInfoLog(programId));
+            return log.ToString();
         }
     }
     public int SortId => programId;
 
-    public Shader(string vertexShaderCode, string fragmentShaderCode)
+    public Shader(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
         initialize(vertexShaderCode, fragmentShaderCode);
         if (!isInitialized)
@@ -78,15 +78,12 @@ public class Shader : IDisposable
     public static string GetUniformIdentifier(string name, int index, string field)
         => name + (index >= 0 ? "[" + index + "]" : string.Empty) + (field is not null ? "." + field : string.Empty);
 
-    void initialize(string vertexShaderCode, string fragmentShaderCode)
+    void initialize(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
-        if (string.IsNullOrEmpty(vertexShaderCode)) throw new ArgumentNullException(nameof(vertexShaderCode));
-        if (string.IsNullOrEmpty(fragmentShaderCode)) throw new ArgumentNullException(nameof(fragmentShaderCode));
-
         Dispose(true);
 
-        vertexShaderId = compileShader(ShaderType.VertexShader, vertexShaderCode);
-        fragmentShaderId = compileShader(ShaderType.FragmentShader, fragmentShaderCode);
+        vertexShaderId = compileShader(ShaderType.VertexShader, vertexShaderCode.ToString());
+        fragmentShaderId = compileShader(ShaderType.FragmentShader, fragmentShaderCode.ToString());
 
         if (vertexShaderId == -1 || fragmentShaderId == -1) return;
 
@@ -102,7 +99,7 @@ public class Shader : IDisposable
         GL.GetShader(id, ShaderParameter.CompileStatus, out var compileStatus);
         if (compileStatus == 0)
         {
-            log += $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}";
+            log.AppendLine(CultureInfo.InvariantCulture, $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
             return -1;
         }
 
@@ -118,7 +115,7 @@ public class Shader : IDisposable
         GL.GetProgram(id, GetProgramParameterName.LinkStatus, out var linkStatus);
         if (linkStatus == 0)
         {
-            log += GL.GetProgramInfoLog(id);
+            log.AppendLine(GL.GetProgramInfoLog(id));
             return -1;
         }
 

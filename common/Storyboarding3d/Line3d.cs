@@ -56,7 +56,7 @@ public class Line3d : Node3d, HasOsbSprites
     }
 
     ///<inheritdoc/>
-    public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
+    public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
         var startVector = CameraState.ToScreen(wvp, StartPosition.ValueAt(time));
@@ -84,7 +84,7 @@ public class Line3d : Node3d, HasOsbSprites
             Time = time,
             Position = position,
             Scale = new(delta.Length() / spriteBitmap.Width, Thickness.ValueAt(time)),
-            Rotation = InterpolatingFunctions.DoubleAngle(gen.EndState?.Rotation ?? 0, Math.Atan2(delta.Y, delta.X), 1),
+            Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, MathF.Atan2(delta.Y, delta.X), 1),
             Color = object3dState.Color,
             Opacity = opacity,
             Additive = Additive
@@ -95,7 +95,7 @@ public class Line3d : Node3d, HasOsbSprites
     public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
 
     ///<inheritdoc/>
-    public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
     {
         if (finalize is not null) action += (createCommands, sprite) =>
         {
@@ -167,7 +167,7 @@ public class Line3dEx : Node3d, HasOsbSprites
     }
 
     ///<inheritdoc/>
-    public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
+    public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
         var startVector = CameraState.ToScreen(wvp, StartPosition.ValueAt(time));
@@ -176,8 +176,8 @@ public class Line3dEx : Node3d, HasOsbSprites
         Vector2 delta = new(endVector.X - startVector.X, endVector.Y - startVector.Y);
         if (delta.LengthSquared() == 0) return;
 
-        var angle = Math.Atan2(delta.Y, delta.X);
-        var rotation = InterpolatingFunctions.DoubleAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
+        var angle = MathF.Atan2(delta.Y, delta.X);
+        var rotation = InterpolatingFunctions.FloatAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
 
         var thickness = Thickness.ValueAt(time);
         var matrix = object3dState.WorldTransform;
@@ -213,7 +213,7 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (SpritePathEdge is not null)
         {
             Vector2 edgeScale = new(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height),
-                edgeOffset = new Vector2((float)Math.Cos(angle - Math.PI / 2), (float)Math.Sin(angle - Math.PI / 2)) * (bodyHeight / 2 - EdgeOverlap);
+                edgeOffset = new Vector2(MathF.Cos(angle - MathF.PI / 2), MathF.Sin(angle - MathF.PI / 2)) * (bodyHeight / 2 - EdgeOverlap);
 
             var positionTop = positionBody + edgeOffset;
             var positionBottom = positionBody - edgeOffset;
@@ -249,7 +249,7 @@ public class Line3dEx : Node3d, HasOsbSprites
             Vector2 startCapScale = new(startScale / spriteBitmaps[2].Width, startScale / spriteBitmaps[2].Height),
                 endCapScale = new(endScale / spriteBitmaps[2].Width, endScale / spriteBitmaps[2].Height);
 
-            var capOffset = OrientedCaps ? new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * CapOverlap : Vector2.Zero;
+            var capOffset = OrientedCaps ? new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * CapOverlap : Vector2.Zero;
 
             if (OrientedCaps)
             {
@@ -262,7 +262,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 Time = time,
                 Position = new Vector2(startVector.X, startVector.Y) + capOffset,
                 Scale = startCapScale,
-                Rotation = OrientedCaps ? rotation + Math.PI : 0,
+                Rotation = OrientedCaps ? rotation + MathF.PI : 0,
                 Color = object3dState.Color,
                 Opacity = startScale > .5f ? opacity : 0,
                 Additive = Additive
@@ -272,7 +272,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 Time = time,
                 Position = new Vector2(endVector.X, endVector.Y) - capOffset,
                 Scale = endCapScale,
-                Rotation = OrientedCaps ? rotation + Math.PI : 0,
+                Rotation = OrientedCaps ? rotation + MathF.PI : 0,
                 Color = object3dState.Color,
                 Opacity = endScale > .5f ? opacity : 0,
                 Additive = Additive,
@@ -295,7 +295,7 @@ public class Line3dEx : Node3d, HasOsbSprites
     }
 
     ///<inheritdoc/>
-    public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
     {
         if (finalize is not null) action += (createCommands, sprite) =>
         {

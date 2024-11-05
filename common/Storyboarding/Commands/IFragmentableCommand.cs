@@ -6,6 +6,6 @@ namespace StorybrewCommon.Storyboarding.Commands;
 public interface IFragmentableCommand : ICommand
 {
     bool IsFragmentable { get; }
-    IFragmentableCommand GetFragment(double startTime, double endTime);
+    IFragmentableCommand GetFragment(float startTime, float endTime);
     IEnumerable<int> GetNonFragmentableTimes();
 }

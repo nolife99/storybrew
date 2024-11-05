@@ -14,9 +14,9 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     public bool HasCommands => commands.Count > 0;
     public bool HasOverlap { get; private set; }
 
-    public double StartTime => commands.Count > 0 ? commands[0].StartTime : 0;
-    public double EndTime => commands.Count > 0 ? commands[^1].EndTime : 0;
-    public double Duration => EndTime - StartTime;
+    public float StartTime => commands.Count > 0 ? commands[0].StartTime : 0;
+    public float EndTime => commands.Count > 0 ? commands[^1].EndTime : 0;
+    public float Duration => EndTime - StartTime;
     public TValue StartValue => commands.Count > 0 ? commands[0].StartValue : DefaultValue;
     public TValue EndValue => commands.Count > 0 ? commands[^1].EndValue : DefaultValue;
 
@@ -48,9 +48,9 @@ public class AnimatedValue<TValue> where TValue : CommandValue
         else triggerable.OnStateChanged -= triggerable_OnStateChanged;
     }
 
-    public bool IsActive(double time) => commands.Count > 0 && StartTime <= time && time <= EndTime;
+    public bool IsActive(float time) => commands.Count > 0 && StartTime <= time && time <= EndTime;
 
-    public TValue ValueAtTime(double time)
+    public TValue ValueAtTime(float time)
     {
         if (commands.Count == 0) return DefaultValue;
 
@@ -63,7 +63,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 
         return commands[index].ValueAtTime(time);
     }
-    bool findCommandIndex(double time, out int index)
+    bool findCommandIndex(float time, out int index)
     {
         var left = 0;
         var right = commands.Count - 1;

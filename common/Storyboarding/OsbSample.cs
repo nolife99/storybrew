@@ -19,16 +19,16 @@ public class OsbSample : StoryboardObject
     }
 
     ///<summary> The time of which this audio is played. </summary>
-    public double Time;
+    public float Time;
 
     ///<summary> The volume (out of 100) of this audio sample. </summary>
-    public double Volume = 100;
+    public float Volume = 100;
 
     ///<inheritdoc/>
-    public override double StartTime => Time;
+    public override float StartTime => Time;
 
     ///<inheritdoc/>
-    public override double EndTime => Time;
+    public override float EndTime => Time;
 
     ///<summary/>
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform) => writer.WriteLine(

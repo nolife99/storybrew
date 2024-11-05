@@ -57,7 +57,7 @@ class Particles : StoryboardObjectGenerator
         var bitmap = GetMapsetBitmap(Path);
 
         var duration = (float)(EndTime - StartTime);
-        var loopCount = Math.Max(1, (int)MathF.Floor(duration / Lifetime));
+        var loopCount = Math.Max(1, (int)(duration / Lifetime));
 
         for (var i = 0; i < ParticleCount; ++i)
         {
@@ -76,7 +76,7 @@ class Particles : StoryboardObjectGenerator
             var startTime = StartTime + i * loopDuration / ParticleCount;
             var endTime = startTime + loopDuration * loopCount;
 
-            if (!isVisible(bitmap, startPosition, endPosition, (float)spriteRotation, (float)loopDuration))
+            if (!isVisible(bitmap, startPosition, endPosition, spriteRotation, loopDuration))
                 continue;
 
             var color = Color;
@@ -90,7 +90,7 @@ class Particles : StoryboardObjectGenerator
                 var vMin = Math.Max(0, hsba.Z - ColorVariance * .5f);
                 var vMax = Math.Min(vMin + ColorVariance, 1);
 
-                color = CommandColor.FromHsb(hsba.X, (float)Random(sMin, sMax), (float)Random(vMin, vMax));
+                color = CommandColor.FromHsb(hsba.X, Random(sMin, sMax), Random(vMin, vMax));
             }
 
             var particle = GetLayer("").CreateSprite(Path, Origin);

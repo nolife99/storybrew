@@ -6,8 +6,8 @@ namespace StorybrewCommon.Storyboarding.Commands;
 #pragma warning disable CS1591
 public interface ICommand : IComparable<ICommand>
 {
-    double StartTime { get; }
-    double EndTime { get; }
+    float StartTime { get; }
+    float EndTime { get; }
     bool Active { get; }
     int Cost { get; }
 

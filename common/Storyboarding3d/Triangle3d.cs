@@ -56,7 +56,7 @@ public class Triangle3d : Node3d, HasOsbSprites
     }
 
     ///<inheritdoc/>
-    public override void GenerateStates(double time, CameraState cameraState, Object3dState object3dState)
+    public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
 
@@ -128,8 +128,8 @@ public class Triangle3d : Node3d, HasOsbSprites
             Vector2 scale0 = new((new Vector2(vector2.X, vector2.Y) - position).Length() / spriteBitmap.Width, (new Vector2(vector1.X, vector1.Y) - position).Length() / spriteBitmap.Height),
                 scale1 = new((new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.Width, scale0.Y);
 
-            var angle = Math.Atan2(delta.Y, delta.X);
-            var rotation = InterpolatingFunctions.DoubleAngle(gen0.EndState?.Rotation ?? 0, angle, 1);
+            var angle = MathF.Atan2(delta.Y, delta.X);
+            var rotation = InterpolatingFunctions.FloatAngle(gen0.EndState?.Rotation ?? 0, angle, 1);
 
             var opacity = vector0.W < 0 && vector1.W < 0 && vector2.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade) opacity *= (cameraState.OpacityAt(vector0.W) + cameraState.OpacityAt(vector1.W) + cameraState.OpacityAt(vector2.W)) / 3;
@@ -176,7 +176,7 @@ public class Triangle3d : Node3d, HasOsbSprites
     }
 
     ///<inheritdoc/>
-    public override void GenerateCommands(Action<Action, OsbSprite> action, double? startTime, double? endTime, double timeOffset, bool loopable)
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
     {
         if (finalize is not null) action += (createCommands, sprite) =>
         {

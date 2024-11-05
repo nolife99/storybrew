@@ -40,21 +40,21 @@ public class ShaderBuilder
         Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPointSize, GlFragColor, GlFragDepth);
 
         var commonCode = buildCommon();
-        var vertexShaderCode = buildVertexShader();
-        var fragmentShaderCode = buildFragmentShader();
+        var vertexShaderCode = buildVertexShader().Insert(0, commonCode);
+        var fragmentShaderCode = buildFragmentShader().Insert(0, commonCode);
 
         if (log)
         {
             Trace.WriteLine("--- VERTEX ---");
-            Trace.WriteLine(commonCode + vertexShaderCode);
+            Trace.WriteLine(vertexShaderCode);
 
             Trace.WriteLine("--- FRAGMENT ---");
-            Trace.WriteLine(commonCode + fragmentShaderCode);
+            Trace.WriteLine(fragmentShaderCode);
         }
 
-        return new(commonCode + vertexShaderCode, commonCode + fragmentShaderCode);
+        return new(vertexShaderCode, fragmentShaderCode);
     }
-    string buildCommon()
+    ReadOnlySpan<char> buildCommon()
     {
         StringBuilder code = new();
         code.AppendLine(CultureInfo.InvariantCulture, $"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
@@ -63,7 +63,7 @@ public class ShaderBuilder
         foreach (var extensionName in extensions) code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable");
 
         code.AppendLine("#ifdef GL_ES");
-        code.AppendLine("    precision mediump float;");
+        code.AppendLine("    precision lowp float;");
         code.AppendLine("#endif");
 
         ProgramScope.DeclareTypes(code);
@@ -72,7 +72,7 @@ public class ShaderBuilder
 
         return code.ToString();
     }
-    string buildVertexShader()
+    StringBuilder buildVertexShader()
     {
         StringBuilder code = new();
 
@@ -87,9 +87,9 @@ public class ShaderBuilder
         VertexShaderScope.DeclareVariables(code);
         Context.GenerateCode(code, () => VertexShader.Generate(Context));
         code.AppendLine("}");
-        return code.ToString();
+        return code;
     }
-    string buildFragmentShader()
+    StringBuilder buildFragmentShader()
     {
         StringBuilder code = new();
         FragmentShader.GenerateFunctions(code);
@@ -100,6 +100,6 @@ public class ShaderBuilder
         FragmentShaderScope.DeclareVariables(code);
         Context.GenerateCode(code, () => FragmentShader.Generate(Context));
         code.AppendLine("}");
-        return code.ToString();
+        return code;
     }
 }

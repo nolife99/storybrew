@@ -7,14 +7,14 @@ using StorybrewCommon.Storyboarding.CommandValues;
 namespace StorybrewCommon.Storyboarding.Commands;
 
 #pragma warning disable CS1591
-public abstract class Command<TValue>(string identifier, OsbEasing easing, double startTime, double endTime, TValue startValue, TValue endValue)
+public abstract class Command<TValue>(string identifier, OsbEasing easing, float startTime, float endTime, TValue startValue, TValue endValue)
     : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
 {
     public string Identifier { get; set; } = identifier;
     public OsbEasing Easing { get; set; } = easing;
-    public double StartTime { get; set; } = startTime;
-    public double EndTime { get; set; } = endTime;
-    public double Duration => EndTime - StartTime;
+    public float StartTime { get; set; } = startTime;
+    public float EndTime { get; set; } = endTime;
+    public float Duration => EndTime - StartTime;
     public TValue StartValue { get; set; } = startValue;
     public TValue EndValue { get; set; } = endValue;
     public virtual bool MaintainValue => true;
@@ -25,12 +25,12 @@ public abstract class Command<TValue>(string identifier, OsbEasing easing, doubl
     public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
     public virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
 
-    public void Offset(double offset)
+    public void Offset(float offset)
     {
         StartTime += offset;
         EndTime += offset;
     }
-    public TValue ValueAtTime(double time)
+    public TValue ValueAtTime(float time)
     {
         if (time < StartTime) return MaintainValue ? ValueAtProgress(0) : default;
         if (EndTime < time) return MaintainValue ? ValueAtProgress(1) : default;
@@ -40,11 +40,11 @@ public abstract class Command<TValue>(string identifier, OsbEasing easing, doubl
         return ValueAtProgress(progress);
     }
 
-    public abstract TValue ValueAtProgress(double progress);
-    public abstract TValue Midpoint(Command<TValue> endCommand, double progress);
+    public abstract TValue ValueAtProgress(float progress);
+    public abstract TValue Midpoint(Command<TValue> endCommand, float progress);
 
     public bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
-    public abstract IFragmentableCommand GetFragment(double startTime, double endTime);
+    public abstract IFragmentableCommand GetFragment(float startTime, float endTime);
     public IEnumerable<int> GetNonFragmentableTimes()
     {
         if (!IsFragmentable) for (var i = 0; i < EndTime - StartTime - 1; ++i) yield return (int)(StartTime + 1 + i);

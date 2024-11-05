@@ -29,7 +29,7 @@ class RadialSpectrum : StoryboardObjectGenerator
     [Configurable] public OsbEasing FftEasing = OsbEasing.InExpo;
 
     [Group("Optimization")]
-    [Configurable] public double Tolerance = 2;
+    [Configurable] public float Tolerance = 2;
     [Configurable] public int CommandDecimals = 0;
     [Configurable] public int FrequencyCutOff = 16000;
 
@@ -49,8 +49,8 @@ class RadialSpectrum : StoryboardObjectGenerator
         for (var i = 0; i < BarCount; ++i) positionKeyframes[i] = [];
 
         var timeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
-        var offset = timeStep * .2;
-        for (double time = StartTime; time < EndTime; time += timeStep)
+        var offset = timeStep * .2f;
+        for (float time = StartTime; time < EndTime; time += timeStep)
         {
             var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
             for (var i = 0; i < BarCount; ++i)

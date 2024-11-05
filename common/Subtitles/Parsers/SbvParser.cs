@@ -25,9 +25,9 @@ public class SbvParser : SubtitleParser
         {
             var blockLines = block.Split('\n');
             var timestamps = blockLines[0].Split(',');
-            var startTime = parseTimestamp(timestamps[0]);
-            var endTime = parseTimestamp(timestamps[1]);
-            var text = string.Join("\n", blockLines, 1, blockLines.Length - 1);
+            var startTime = SubtitleParser.ParseTimestamp(timestamps[0]);
+            var endTime = SubtitleParser.ParseTimestamp(timestamps[1]);
+            var text = string.Join('\n', blockLines, 1, blockLines.Length - 1);
             lines.Add(new(startTime, endTime, text));
         }
         return new(lines);
@@ -41,18 +41,16 @@ public class SbvParser : SubtitleParser
         string line;
         while ((line = reader.ReadLine()) is not null)
         {
-            if (string.IsNullOrEmpty(line.Trim()))
+            if (string.IsNullOrWhiteSpace(line.Trim()))
             {
-                var block = sb.ToString().Trim();
-                if (block.Length > 0) yield return block;
+                var block = sb.Trim();
+                if (block.Length > 0) yield return block.ToString();
                 sb.Clear();
             }
             else sb.AppendLine(line);
         }
 
-        var endBlock = sb.ToString().Trim();
-        if (endBlock.Length > 0) yield return endBlock;
+        var endBlock = sb.Trim();
+        if (endBlock.Length > 0) yield return endBlock.ToString();
     }
-
-    static double parseTimestamp(string timestamp) => TimeSpan.Parse(timestamp, CultureInfo.InvariantCulture).TotalMilliseconds;
 }

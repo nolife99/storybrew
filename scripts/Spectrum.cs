@@ -29,7 +29,7 @@ class Spectrum : StoryboardObjectGenerator
     [Configurable] public float MinimalHeight = .05f;
 
     [Group("Optimization")]
-    [Configurable] public double Tolerance = .2;
+    [Configurable] public float Tolerance = .2f;
     [Configurable] public int CommandDecimals = 1;
     [Configurable] public int FrequencyCutOff = 16000;
 
@@ -49,9 +49,9 @@ class Spectrum : StoryboardObjectGenerator
         for (var i = 0; i < BarCount; ++i) heightKeyframes[i] = [];
 
         var timeStep = Beatmap.GetTimingPointAt(StartTime).BeatDuration / BeatDivisor;
-        var offset = timeStep * .2;
+        var offset = timeStep * .2f;
 
-        for (double time = StartTime; time < EndTime; time += timeStep)
+        for (float time = StartTime; time < EndTime; time += timeStep)
         {
             var fft = GetFft(time + offset, BarCount, null, FftEasing, FrequencyCutOff);
             for (var i = 0; i < BarCount; ++i)

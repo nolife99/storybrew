@@ -16,8 +16,8 @@ public class CommandGenerator
     readonly KeyframedValue<CommandPosition> positions = new(InterpolatingFunctions.Position), finalPositions = new(InterpolatingFunctions.Position);
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale), finalScales = new(InterpolatingFunctions.Scale);
 
-    readonly KeyframedValue<double> rotations = new(InterpolatingFunctions.DoubleAngle), fades = new(InterpolatingFunctions.Double),
-        finalRotations = new(InterpolatingFunctions.DoubleAngle), finalfades = new(InterpolatingFunctions.Double);
+    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle), fades = new(InterpolatingFunctions.Float),
+        finalRotations = new(InterpolatingFunctions.FloatAngle), finalfades = new(InterpolatingFunctions.Float);
 
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor), finalColors = new(InterpolatingFunctions.CommandColor);
     readonly KeyframedValue<bool> flipH = new(InterpolatingFunctions.BoolFrom), flipV = new(InterpolatingFunctions.BoolFrom), additive = new(InterpolatingFunctions.BoolFrom);
@@ -31,19 +31,19 @@ public class CommandGenerator
     public State EndState => states.Count == 0 ? null : states[^1];
 
     ///<summary> The tolerance threshold for position keyframe simplification. </summary>
-    public double PositionTolerance = 1;
+    public float PositionTolerance = 1;
 
     ///<summary> The tolerance threshold for scaling keyframe simplification. </summary>
-    public double ScaleTolerance = 1;
+    public float ScaleTolerance = 1;
 
     ///<summary> The tolerance threshold for rotation keyframe simplification. </summary>
-    public double RotationTolerance = 1;
+    public float RotationTolerance = 1;
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
-    public double ColorTolerance = 1;
+    public float ColorTolerance = 1;
 
     ///<summary> The tolerance threshold for opacity keyframe simplification. </summary>
-    public double OpacityTolerance = 1;
+    public float OpacityTolerance = 1;
 
     ///<summary> The amount of decimal digits for position keyframes. </summary>
     public int PositionDecimals = 1;
@@ -82,7 +82,7 @@ public class CommandGenerator
     ///<param name="timeOffset"> The time offset of the command times. </param>
     ///<param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
     ///<returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
-    public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, double? startTime = null, double? endTime = null, double timeOffset = 0, bool loopable = false)
+    public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, float? startTime = null, float? endTime = null, float timeOffset = 0, bool loopable = false)
     {
         if (states.Count == 0) return false;
 
@@ -153,12 +153,12 @@ public class CommandGenerator
         finalColors.Until(colors.StartTime);
         colors.TransferKeyframes(finalColors);
     }
-    void convertToCommands(OsbSprite sprite, double? startTime, double? endTime, double timeOffset, SizeF imageSize, bool loopable)
+    void convertToCommands(OsbSprite sprite, float? startTime, float? endTime, float timeOffset, SizeF imageSize, bool loopable)
     {
         float checkPos(float value) => MathF.Round(value, PositionDecimals);
         float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
 
-        double? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
+        float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
         bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)),
@@ -186,7 +186,7 @@ public class CommandGenerator
             else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
         }, Vector2.One, s => new(MathF.Round(s.X, ScaleDecimals), MathF.Round(s.Y, ScaleDecimals)), startState, endState, loopable);
 
-        finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0, r => Math.Round(r, RotationDecimals), startState, endState, loopable);
+        finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0, r => MathF.Round(r, RotationDecimals), startState, endState, loopable);
         finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState, endState, loopable);
         finalfades.ForEachPair((s, e) =>
         {
@@ -194,14 +194,14 @@ public class CommandGenerator
             if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 ||
                 s.Time == sprite.EndTime || s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0))
                 sprite.Fade(s.Time, e.Time, s.Value, e.Value);
-        }, -1, o => Math.Round(o, OpacityDecimals), startState, endState, loopable);
+        }, -1, o => MathF.Round(o, OpacityDecimals), startState, endState, loopable);
 
         flipH.ForEachFlag(sprite.FlipH);
         flipV.ForEachFlag(sprite.FlipV);
         additive.ForEachFlag(sprite.Additive);
     }
 
-    void addKeyframes(State state, double time)
+    void addKeyframes(State state, float time)
     {
         positions.Add(time, state.Position);
         scales.Add(time, state.Scale);
@@ -240,13 +240,13 @@ public class CommandGenerator
 public class State : IComparer<State>
 {
     ///<summary> Represents the base time, in milliseconds, of this state. </summary>
-    public double Time;
+    public float Time;
 
     ///<summary> Represents the rotation, in radians, of this state. </summary>
-    public double Rotation;
+    public float Rotation;
 
     ///<summary> Represents the opacity, from 0 to 1, of this state. </summary>
-    public double Opacity;
+    public float Opacity;
 
     ///<summary> Represents the position, in osu!pixels, of this state. </summary>
     public CommandPosition Position = new(320, 240);

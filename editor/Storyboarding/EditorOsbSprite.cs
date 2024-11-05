@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
@@ -27,7 +28,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
     public static void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, StoryboardTransform transform, Project project, FrameStats frameStats, OsbSprite sprite)
     {
         var time = project.DisplayTime * 1000;
-        var texturePath = sprite is OsbAnimation ? sprite.GetTexturePathAt(time) : sprite.TexturePath;
+        var texturePath = sprite.GetTexturePathAt(time);
         if (texturePath is null || !sprite.IsActive(time)) return;
 
         if (frameStats is not null)

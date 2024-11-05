@@ -8,12 +8,12 @@ namespace StorybrewCommon.Storyboarding.Commands;
 public class LoopCommand : CommandGroup, IFragmentableCommand
 {
     public int LoopCount { get; set; }
-    public override double EndTime
+    public override float EndTime
     {
-        get => StartTime + (CommandsEndTime * LoopCount);
+        get => StartTime + CommandsEndTime * LoopCount;
         set => LoopCount = (int)((value - StartTime) / CommandsEndTime);
     }
-    public LoopCommand(double startTime, int loopCount)
+    public LoopCommand(float startTime, int loopCount)
     {
         StartTime = startTime;
         LoopCount = loopCount;
@@ -30,11 +30,11 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
         base.EndGroup();
     }
     protected override string GetCommandGroupHeader(ExportSettings exportSettings)
-        => $"L,{(exportSettings.UseFloatForTime ? (float)StartTime : (int)StartTime).ToString(exportSettings.NumberFormat)},{LoopCount.ToString(exportSettings.NumberFormat)}";
+        => $"L,{(exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat)},{LoopCount.ToString(exportSettings.NumberFormat)}";
 
     public override int GetHashCode()
     {
-        var header = new HashCode();
+        HashCode header = new();
         header.Add('L'); header.Add(StartTime); header.Add(LoopCount);
         foreach (var command in commands) header.Add(command);
         return header.ToHashCode();
@@ -46,11 +46,11 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
 
     public bool IsFragmentable => LoopCount > 1;
 
-    public IFragmentableCommand GetFragment(double startTime, double endTime)
+    public IFragmentableCommand GetFragment(float startTime, float endTime)
     {
         if (IsFragmentable && (endTime - startTime) % CommandsDuration == 0 && (startTime - StartTime) % CommandsDuration == 0)
         {
-            var loopCount = (int)Math.Round((endTime - startTime) / CommandsDuration);
+            var loopCount = (int)MathF.Round((endTime - startTime) / CommandsDuration);
             LoopCommand loopFragment = new(startTime, loopCount);
             foreach (var c in commands) loopFragment.Add(c);
             return loopFragment;

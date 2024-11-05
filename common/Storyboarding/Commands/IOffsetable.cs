@@ -2,5 +2,5 @@
 
 internal interface IOffsetable
 {
-    void Offset(double offset);
+    void Offset(float offset);
 }

@@ -15,7 +15,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     public IEnumerable<OsuSliderControlPoint> ControlPoints => controlPoints;
     public int ControlPointCount => controlPoints.Length;
 
-    public override double EndTime => StartTime + TravelCount * TravelDuration;
+    public override float EndTime => StartTime + TravelCount * TravelDuration;
 
     Curve curve;
     public Curve Curve
@@ -43,10 +43,10 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     public float Length;
 
     ///<summary> The time it takes for the slider ball to travels across the slider's body in beats. </summary>
-    public double TravelDurationBeats;
+    public float TravelDurationBeats;
 
     ///<summary> The time it takes for the slider ball to travels across the slider's body in milliseconds. </summary>
-    public double TravelDuration;
+    public float TravelDuration;
 
     /// <summary> How many times the slider ball travels across the slider's body. </summary>
     public int TravelCount => nodes.Length - 1;
@@ -56,7 +56,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
 
     public SliderCurveType CurveType;
 
-    public override CommandPosition PlayfieldPositionAtTime(double time)
+    public override CommandPosition PlayfieldPositionAtTime(float time)
     {
         if (time <= StartTime) return PlayfieldPosition;
         if (EndTime <= time) return TravelCount % 2 == 0 ? PlayfieldPosition : PlayfieldTipPosition;
@@ -76,7 +76,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         if (reversed) progress = 1 - progress;
 
         if (curve is null) generateCurve();
-        return curve.PositionAtDistance(Length * (float)progress);
+        return curve.PositionAtDistance(Length * progress);
     }
 
     public override string ToString() => $"{base.ToString()}, {CurveType}, {TravelCount}x";
@@ -154,7 +154,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         return new(curves);
     }
 
-    public static OsuSlider Parse(Beatmap beatmap, string[] values, int x, int y, double startTime, HitObjectFlag flags, HitSoundAddition additions, ControlPoint timingPoint, ControlPoint controlPoint, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
+    public static OsuSlider Parse(Beatmap beatmap, string[] values, int x, int y, int startTime, HitObjectFlag flags, HitSoundAddition additions, ControlPoint timingPoint, ControlPoint controlPoint, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
     {
         var slider = values[5];
         var sliderValues = slider.Split('|');
@@ -279,7 +279,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
 }
 public class OsuSliderNode
 {
-    public double Time;
+    public float Time;
     public HitSoundAddition Additions;
     public SampleSet SampleSet, AdditionsSampleSet;
     public int CustomSampleSet;

@@ -17,7 +17,7 @@ public static class StringHelper
             ++order;
             byteCount /= 1024;
         }
-        return string.Format(CultureInfo.CurrentCulture, format, byteCount, sizeOrders[order]);
+        return string.Format(CultureInfo.InvariantCulture, format, byteCount, sizeOrders[order]);
     }
 
     static readonly string utf8Bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
@@ -47,5 +47,14 @@ public static class StringHelper
     {
         using var stream = File.OpenRead(path);
         return MD5.HashData(stream);
+    }
+
+    public static StringBuilder Trim(this StringBuilder sb)
+    {
+        var i = sb.Length - 1;
+        for (; i >= 0; --i) if (!char.IsWhiteSpace(sb[i])) break;
+
+        if (i < sb.Length - 1) sb.Length = i + 1;
+        return sb;
     }
 }

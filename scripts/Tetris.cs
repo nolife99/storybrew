@@ -12,17 +12,17 @@ class Tetris : StoryboardObjectGenerator
     [Group("Timing")]
     [Configurable] public int StartTime = 0;
     [Configurable] public int EndTime = 0;
-    [Configurable] public double BeatDivisor = 1;
+    [Configurable] public float BeatDivisor = 1;
 
     [Group("Sprite")]
     [Configurable] public string SpritePath = "sb/sq.png";
-    [Configurable] public double SpriteScale = .625;
+    [Configurable] public float SpriteScale = .625f;
     [Configurable] public Color Color = Color.White;
 
     [Group("Grid")]
     [Configurable] public Vector2 Offset = new(320, 240);
     [Configurable] public Vector2 ShadowOffset = new(4);
-    [Configurable] public double Rotation = 0;
+    [Configurable] public float Rotation = 0;
     [Configurable] public int GridWidth = 10;
     [Configurable] public int GridHeight = 20;
     [Configurable] public float CellSize = 20;
@@ -49,7 +49,7 @@ class Tetris : StoryboardObjectGenerator
         cells = new Cell[GridWidth, GridHeight];
         for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) cells[x, y] = new Cell { X = x, Y = y };
 
-        for (var time = (double)StartTime; time < EndTime; time += timestep)
+        for (float time = StartTime; time < EndTime; time += timestep)
         {
             for (var i = 0; i < Blocks; ++i) addBlock(time - timestep, time);
             if (clearLines(time, time + timestep)) time += Wait ? timestep : 0;
@@ -58,7 +58,7 @@ class Tetris : StoryboardObjectGenerator
         for (var x = 0; x < GridWidth; ++x) for (var y = 0; y < GridHeight; ++y) if (cells[x, y].HasSprite)
                     killCell(EndTime, EndTime + timestep, x, y);
     }
-    void addBlock(double startTime, double endTime)
+    void addBlock(float startTime, float endTime)
     {
         var brightness = Random(.3f, 1);
         CommandColor color = new(Color.R * brightness, Color.G * brightness, Color.B * brightness);
@@ -110,7 +110,7 @@ class Tetris : StoryboardObjectGenerator
             }
         }
     }
-    bool clearLines(double startTime, double endTime)
+    bool clearLines(float startTime, float endTime)
     {
         var anyCombo = false;
         var dropHeight = 0;
@@ -137,7 +137,7 @@ class Tetris : StoryboardObjectGenerator
         }
         return anyCombo;
     }
-    void fillCell(double startTime, double endTime, int dropX, int dropY, Color color)
+    void fillCell(float startTime, float endTime, int dropX, int dropY, Color color)
     {
         var shadow = GetLayer("Shadows").CreateSprite(SpritePath, OsbOrigin.TopCentre);
         var sprite = GetLayer("Blocks").CreateSprite(SpritePath, OsbOrigin.TopCentre);
@@ -156,10 +156,10 @@ class Tetris : StoryboardObjectGenerator
         shadow.Rotate(startTime, osuTK.MathHelper.DegreesToRadians(Rotation));
         shadow.Scale(startTime, SpriteScale);
         shadow.Color(startTime, 0, 0, 0);
-        shadow.Fade(startTime, .5);
+        shadow.Fade(startTime, .5f);
         shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset, transform(targetPosition) + ShadowOffset);
     }
-    void killCell(double startTime, double endTime, int dropX, int dropY)
+    void killCell(float startTime, float endTime, int dropX, int dropY)
     {
         var sprite = cells[dropX, dropY].Sprite;
         var shadow = cells[dropX, dropY].Shadow;
@@ -171,7 +171,7 @@ class Tetris : StoryboardObjectGenerator
 
         shadow.Scale(startTime, endTime, SpriteScale, 0);
     }
-    void dropCell(double startTime, double endTime, int dropX, int dropY, int dropHeight)
+    void dropCell(float startTime, float endTime, int dropX, int dropY, int dropHeight)
     {
         var sprite = cells[dropX, dropY].Sprite;
         var shadow = cells[dropX, dropY].Shadow;

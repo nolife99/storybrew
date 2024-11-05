@@ -28,7 +28,6 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
     }
 
     public VertexAttribute GetAttribute(AttributeUsage usage) => vertexAttributes.FirstOrDefault(a => a.Usage == usage);
-    public IEnumerable<VertexAttribute> GetAttributes(AttributeUsage usage) => vertexAttributes.Where(a => a.Usage == usage);
     public void ActivateAttributes(Shader shader)
     {
         foreach (var attribute in vertexAttributes)

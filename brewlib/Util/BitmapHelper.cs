@@ -213,10 +213,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     public int this[int pixelIndex]
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => (uint)pixelIndex < (uint)Count ? scan0[pixelIndex] : throw new ArgumentOutOfRangeException(nameof(pixelIndex));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set
         {
             if ((uint)pixelIndex >= (uint)Count) throw new ArgumentOutOfRangeException(nameof(pixelIndex));

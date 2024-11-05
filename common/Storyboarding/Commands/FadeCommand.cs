@@ -3,12 +3,12 @@
 namespace StorybrewCommon.Storyboarding.Commands;
 
 #pragma warning disable CS1591
-public class FadeCommand(OsbEasing easing, double startTime, double endTime, CommandDecimal startValue, CommandDecimal endValue) : Command<CommandDecimal>("F", easing, startTime, endTime, startValue, endValue)
+public class FadeCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue) : Command<CommandDecimal>("F", easing, startTime, endTime, startValue, endValue)
 {
-    public override CommandDecimal ValueAtProgress(double progress) => StartValue + (EndValue - StartValue) * progress;
-    public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, double progress) => StartValue + (endCommand.EndValue - StartValue) * progress;
+    public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
+    public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, float progress) => StartValue + (endCommand.EndValue - StartValue) * progress;
 
-    public override IFragmentableCommand GetFragment(double startTime, double endTime)
+    public override IFragmentableCommand GetFragment(float startTime, float endTime)
     {
         if (IsFragmentable)
         {

@@ -137,7 +137,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         if (quadsInBatch == 0) return;
 
         // When the previous flush was bufferable, draw state should stay the same.
-        if (!lastFlushWasBuffered) unsafe
+        if (!lastFlushWasBuffered)
             {
                 var combinedMatrix = transformMatrix * camera.ProjectionView;
                 GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);

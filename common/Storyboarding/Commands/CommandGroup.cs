@@ -9,38 +9,38 @@ public abstract class CommandGroup : ICommand
 {
     bool ended;
 
-    public double StartTime { get; set; }
-    public virtual double EndTime { get; set; }
+    public float StartTime { get; set; }
+    public virtual float EndTime { get; set; }
     public virtual bool Active => true;
     public int Cost => commands.Count;
 
     protected readonly HashSet<ICommand> commands = [];
     public IEnumerable<ICommand> Commands => commands;
 
-    public double CommandsStartTime
+    public float CommandsStartTime
     {
         get
         {
-            var commandsStartTime = double.MaxValue;
+            var commandsStartTime = float.MaxValue;
             foreach (var command in commands) commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
             return commandsStartTime;
         }
     }
-    public double CommandsEndTime
+    public float CommandsEndTime
     {
         get
         {
-            var commandsEndTime = double.MinValue;
+            var commandsEndTime = float.MinValue;
             foreach (var command in commands) commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
             return commandsEndTime;
         }
     }
-    public double CommandsDuration
+    public float CommandsDuration
     {
         get
         {
-            var commandsStartTime = double.MaxValue;
-            var commandsEndTime = double.MinValue;
+            var commandsStartTime = float.MaxValue;
+            var commandsEndTime = float.MinValue;
 
             foreach (var command in commands)
             {

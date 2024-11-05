@@ -65,8 +65,8 @@ public sealed class EditorGeneratorContext(Effect effect, string projectPath, st
         return audioStream;
     }
 
-    public override double AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;
-    public override float[] GetFft(double time, string path = null, bool splitChannels = false) => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001, splitChannels);
+    public override float AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;
+    public override float[] GetFft(float time, string path = null, bool splitChannels = false) => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001, splitChannels);
     public override float GetFftFrequency(string path = null) => getFftStream(path ?? effect.Project.AudioPath).Frequency;
 
     #endregion

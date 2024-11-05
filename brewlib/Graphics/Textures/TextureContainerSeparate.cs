@@ -16,7 +16,7 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
         {
             var pixels = 0f;
             foreach (var texture in textures.Values) if (texture is not null) pixels += texture.Size.X * texture.Size.Y;
-            return pixels / 1024 / 1024 * 4;
+            return pixels / 262144;
         }
     }
     public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;

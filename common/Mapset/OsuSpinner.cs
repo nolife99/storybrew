@@ -5,12 +5,12 @@ namespace StorybrewCommon.Mapset;
 #pragma warning disable CS1591
 public class OsuSpinner : OsuHitObject
 {
-    public double endTime;
-    public override double EndTime => endTime;
+    int endTime;
+    public override float EndTime => endTime;
 
-    public static OsuSpinner Parse(string[] values, int x, int y, double startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
+    public static OsuSpinner Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
     {
-        var endTime = double.Parse(values[5], CultureInfo.InvariantCulture);
+        var endTime = int.Parse(values[5], CultureInfo.InvariantCulture);
 
         string samplePath = string.Empty;
         if (values.Length > 6)

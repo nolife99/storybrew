@@ -6,20 +6,20 @@ using StorybrewCommon.Storyboarding.CommandValues;
 namespace StorybrewCommon.Storyboarding.Display;
 
 #pragma warning disable CS1591
-public class LoopDecorator<TValue>(ITypedCommand<TValue> command, double startTime, double repeatDuration, int repeats) : ITypedCommand<TValue> where TValue : CommandValue
+public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTime, float repeatDuration, int repeats) : ITypedCommand<TValue> where TValue : CommandValue
 {
     public OsbEasing Easing => throw new InvalidOperationException();
-    public double StartTime => startTime;
-    public double EndTime => StartTime + RepeatDuration * repeats;
-    public double Duration => EndTime - StartTime;
+    public float StartTime => startTime;
+    public float EndTime => StartTime + RepeatDuration * repeats;
+    public float Duration => EndTime - StartTime;
     public TValue StartValue => command.StartValue;
     public TValue EndValue => command.EndValue;
     public bool Active => true;
     public int Cost => throw new InvalidOperationException();
 
-    public double RepeatDuration => repeatDuration < 0 ? command.EndTime : repeatDuration;
+    public float RepeatDuration => repeatDuration < 0 ? command.EndTime : repeatDuration;
 
-    public TValue ValueAtTime(double time)
+    public TValue ValueAtTime(float time)
     {
         if (time < StartTime) return command.ValueAtTime(command.StartTime);
         if (EndTime < time) return command.ValueAtTime(command.EndTime);

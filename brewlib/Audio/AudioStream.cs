@@ -9,12 +9,12 @@ namespace BrewLib.Audio;
 public class AudioStream : AudioChannel
 {
     int stream, decodeStream;
-    internal AudioStream(AudioManager manager, string path, ResourceContainer resourceContainer) : base(manager)
+    internal unsafe AudioStream(AudioManager manager, string path, ResourceContainer resourceContainer) : base(manager)
     {
         var flags = BassFlags.Decode | BassFlags.Prescan;
 
         decodeStream = Bass.CreateStream(path, 0, 0, flags);
-        if (decodeStream == 0 && !Path.IsPathRooted(path)) unsafe
+        if (decodeStream == 0 && !Path.IsPathRooted(path))
             {
                 var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
                 if (resourceStream is not null) decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, new()

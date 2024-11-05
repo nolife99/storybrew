@@ -56,7 +56,7 @@ public class Texture2d(int textureId, int width, int height, string description)
         {
             if (stream is not null) return new(stream);
 
-            Trace.TraceError($"Texture not found: {filename}");
+            Trace.TraceWarning($"Texture not found: {filename}");
             return null;
         }
     }

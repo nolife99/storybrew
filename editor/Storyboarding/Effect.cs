@@ -35,22 +35,22 @@ public abstract class Effect : IDisposable
     public virtual bool Multithreaded { get; }
     public virtual bool BeatmapDependant { get; }
 
-    public double StartTime
+    public float StartTime
     {
         get
         {
-            var min = double.MaxValue;
+            var min = float.MaxValue;
             layers.ForEach(l => min = Math.Min(l.StartTime, min));
-            return min == double.MaxValue ? 0 : min;
+            return min == float.MaxValue ? 0 : min;
         }
     }
-    public double EndTime
+    public float EndTime
     {
         get
         {
-            var max = double.MinValue;
+            var max = float.MinValue;
             layers.ForEach(l => max = Math.Max(l.EndTime, max));
-            return max == double.MinValue ? 0 : max;
+            return max == float.MinValue ? 0 : max;
         }
     }
 

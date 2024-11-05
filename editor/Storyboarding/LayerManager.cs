@@ -179,7 +179,7 @@ public class LayerManager
         }
         else throw new InvalidOperationException($"Cannot move layer '{layerToMove.Name}' to the position of '{layerToMove.Name}'");
     }
-    public void TriggerEvents(double startTime, double endTime)
+    public void TriggerEvents(float startTime, float endTime)
         => layers.ForEach(layer => layer.TriggerEvents(startTime, endTime));
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)

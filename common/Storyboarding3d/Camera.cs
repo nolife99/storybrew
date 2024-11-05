@@ -14,7 +14,7 @@ public abstract class Camera
     public static float AspectRatio = Resolution.Width / Resolution.Height;
     public float DistanceForHorizontalFov(float fov) => Resolution.Width / 2 / MathF.Tan(osuTK.MathHelper.DegreesToRadians(fov) / 2);
     public float DistanceForVerticalFov(float fov) => Resolution.Height / 2 / MathF.Tan(osuTK.MathHelper.DegreesToRadians(fov) / 2);
-    public abstract CameraState StateAt(double time);
+    public abstract CameraState StateAt(float time);
 }
 public class CameraState(Matrix4x4 viewProjection, float aspectRatio, float focusDistance, float resolutionScale, float nearClip, float nearFade, float farFade, float farClip)
 {
@@ -80,7 +80,7 @@ public class PerspectiveCamera : Camera
     public readonly KeyframedValue<float> VerticalFov = new(InterpolatingFunctions.Float);
 
     ///<summary> Returns the camera's state and information at <paramref name="time"/>. </summary>
-    public override CameraState StateAt(double time)
+    public override CameraState StateAt(float time)
     {
         var aspectRatio = AspectRatio;
         Vector3 cameraPosition = new(PositionX.ValueAt(time), PositionY.ValueAt(time), PositionZ.ValueAt(time));
