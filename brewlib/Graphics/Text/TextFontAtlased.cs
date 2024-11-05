@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
 using BrewLib.Graphics.Textures;
@@ -30,9 +31,9 @@ public class TextFontAtlased(string name, float size) : TextFont
         }
         else
         {
-            atlas ??= new(512, 512, $"FontAtlas {name} {size}x");
+            atlas ??= new(512, 512, $"Font Atlas {name}:{size:n1}");
             using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, SizeF.Empty, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
-            return new(atlas.AddRegion(bitmap, $"{c}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
+            return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
         }
     }
 

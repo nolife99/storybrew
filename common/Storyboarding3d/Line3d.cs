@@ -264,7 +264,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 Scale = startCapScale,
                 Rotation = OrientedCaps ? rotation + Math.PI : 0,
                 Color = object3dState.Color,
-                Opacity = startScale > .5 ? opacity : 0,
+                Opacity = startScale > .5f ? opacity : 0,
                 Additive = Additive
             });
             genEndCap.Add(new()
@@ -274,7 +274,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 Scale = endCapScale,
                 Rotation = OrientedCaps ? rotation + Math.PI : 0,
                 Color = object3dState.Color,
-                Opacity = endScale > .5 ? opacity : 0,
+                Opacity = endScale > .5f ? opacity : 0,
                 Additive = Additive,
                 FlipH = OrientedCaps
             });

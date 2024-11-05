@@ -24,7 +24,7 @@ public class IntegratedCompressor : ImageCompressor
         var path = GetUtility();
         ensureTool();
 
-        tasks.Add(Task.Run(() =>
+        tasks.Add(Task.Factory.StartNew(() =>
         {
             using var localProc = Process.Start(new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
             {
@@ -45,7 +45,7 @@ public class IntegratedCompressor : ImageCompressor
             {
                 localProc.WaitForExit();
             }
-        }));
+        }, TaskCreationOptions.LongRunning));
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {

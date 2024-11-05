@@ -12,8 +12,6 @@ public abstract class Effect : IDisposable
 
     public readonly Project Project;
 
-    public Guid Guid = Guid.NewGuid();
-
     string name = "Unnamed Effect";
     public string Name
     {

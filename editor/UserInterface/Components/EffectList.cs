@@ -164,7 +164,7 @@ public class EffectList : Widget
                 editButton = new(Manager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.EditNote,
+                    Icon = IconFont.Edit,
                     Tooltip = "Edit script",
                     AnchorFrom = BoxAlignment.Centre,
                     AnchorTo = BoxAlignment.Centre,

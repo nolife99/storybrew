@@ -5,7 +5,6 @@ using System.Drawing;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using BrewLib.Audio;
@@ -409,7 +408,7 @@ public sealed class Project : IDisposable
 
     #region Save / Load / Export
 
-    public const int Version = 7;
+    public const int Version = 8;
     public bool Changed;
 
     bool ownsOsb;
@@ -423,8 +422,6 @@ public sealed class Project : IDisposable
             Changed = true;
         }
     }
-
-    static readonly Regex effectGuidRegex = new("effect\\.([a-z0-9]{32})\\.yaml", RegexOptions.IgnoreCase);
 
     public void Save()
     {
@@ -444,7 +441,7 @@ public sealed class Project : IDisposable
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         using var file = File.Create(path);
-        using DeflateStream dfl = new(file, CompressionLevel.Optimal);
+        using DeflateStream dfl = new(file, CompressionLevel.SmallestSize);
         using BinaryWriter w = new(dfl, Encoding);
 
         w.Write(Version);
@@ -458,7 +455,6 @@ public sealed class Project : IDisposable
         w.Write(effects.Count);
         effects.ForEach(effect =>
         {
-            w.Write(effect.Guid.ToByteArray());
             w.Write(effect.BaseName);
             w.Write(effect.Multithreaded);
             w.Write(effect.Name);
@@ -482,7 +478,6 @@ public sealed class Project : IDisposable
         w.Write(LayerManager.LayersCount);
         foreach (var layer in LayerManager.Layers)
         {
-            w.Write(layer.Guid.ToByteArray());
             w.Write(layer.Name);
             w.Write(effects.IndexOf(layer.Effect));
             w.Write(layer.DiffSpecific);
@@ -505,64 +500,51 @@ public sealed class Project : IDisposable
         if (version > Version) throw new InvalidOperationException("This project was saved with a newer version; you need to update.");
 
         MapsetPath = r.ReadString();
-        if (version >= 1) SelectBeatmap(r.ReadInt64(), r.ReadString());
+        SelectBeatmap(r.ReadInt64(), r.ReadString());
 
-        OwnsOsb = version < 4 || r.ReadBoolean();
+        OwnsOsb = r.ReadBoolean();
 
         var effectCount = r.ReadInt32();
         for (var effectIndex = 0; effectIndex < effectCount; ++effectIndex)
         {
-            var guid = version > 5 ? new(r.ReadBytes(16)) : Guid.NewGuid();
+            if (version < 8) r.ReadBytes(16);
             var effect = AddScriptedEffect(r.ReadString(), r.ReadBoolean());
-            effect.Guid = guid;
             effect.Name = r.ReadString();
 
-            if (version > 0)
+            var fieldCount = r.ReadInt32();
+            for (var fieldIndex = 0; fieldIndex < fieldCount; ++fieldIndex)
             {
-                var fieldCount = r.ReadInt32();
-                for (var fieldIndex = 0; fieldIndex < fieldCount; ++fieldIndex)
+                var fieldName = r.ReadString();
+                var fieldDisplayName = r.ReadString();
+                var fieldValue = ObjectSerializer.Read(r);
+
+                var allowedValueCount = r.ReadInt32();
+                var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : null;
+                for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex) allowedValues[allowedValueIndex] = new()
                 {
-                    var fieldName = r.ReadString();
-                    var fieldDisplayName = r.ReadString();
-                    var fieldValue = ObjectSerializer.Read(r);
+                    Name = r.ReadString(),
+                    Value = ObjectSerializer.Read(r)
+                };
 
-                    var allowedValueCount = r.ReadInt32();
-                    var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : null;
-                    for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex) allowedValues[allowedValueIndex] = new()
-                    {
-                        Name = r.ReadString(),
-                        Value = ObjectSerializer.Read(r)
-                    };
-
-                    effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue, allowedValues, null);
-                }
+                effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue, allowedValues, null);
             }
         }
 
         var layerCount = r.ReadInt32();
         for (var layerIndex = 0; layerIndex < layerCount; ++layerIndex)
         {
-            var guid = version > 5 ? new(r.ReadBytes(16)) : Guid.NewGuid();
+            if (version < 8) r.ReadBytes(16);
             var name = r.ReadString();
 
             var effect = effects[r.ReadInt32()];
-            effect.AddPlaceholder(new(name, effect)
-            {
-                Guid = guid,
-                DiffSpecific = version >= 3 && r.ReadBoolean(),
-                OsbLayer = version >= 2 ? (OsbLayer)r.ReadInt32() : OsbLayer.Background,
-                Visible = r.ReadBoolean()
-            });
+            effect.AddPlaceholder(new(name, effect) { DiffSpecific = r.ReadBoolean(), OsbLayer = (OsbLayer)r.ReadInt32(), Visible = r.ReadBoolean() });
         }
 
-        if (version > 4)
-        {
-            var assemblyCount = r.ReadInt32();
-            var importedAssemblies = new string[assemblyCount];
-            for (var i = 0; i < assemblyCount; ++i) importedAssemblies[i] = r.ReadString();
+        var assemblyCount = r.ReadInt32();
+        var importedAssemblies = new string[assemblyCount];
+        for (var i = 0; i < assemblyCount; ++i) importedAssemblies[i] = r.ReadString();
 
-            ImportedAssemblies = importedAssemblies;
-        }
+        ImportedAssemblies = importedAssemblies;
     }
     void saveText(string path)
     {
@@ -583,7 +565,7 @@ public sealed class Project : IDisposable
             { "BeatmapId", MainBeatmap.Id },
             { "BeatmapName", MainBeatmap.Name },
             { "Assemblies", importedAssemblies },
-            { "Layers", LayerManager.Layers.Select(l => l.Guid.ToString("N")) }
+            { "Layers", LayerManager.Layers.Select(l => StringHelper.GetMd5(l.Identifier)) }
         };
 
         var indexPath = directoryWriter.GetPath("index.yaml");
@@ -646,10 +628,10 @@ public sealed class Project : IDisposable
                     { "DiffSpecific", layer.DiffSpecific },
                     { "Visible", layer.Visible }
                 };
-                    layersRoot.Add(layer.Guid.ToString("N"), layerRoot);
+                    layersRoot.Add(StringHelper.GetMd5(layer.Name), layerRoot);
                 }
 
-            var effectPath = directoryWriter.GetPath("effect." + effect.Guid.ToString("N") + ".yaml");
+            var effectPath = directoryWriter.GetPath("effect." + StringHelper.GetMd5(effect.Name) + ".yaml");
             effectRoot.Write(effectPath);
         });
 
@@ -690,16 +672,12 @@ public sealed class Project : IDisposable
         Dictionary<string, Action> layerInserters = [];
         foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
         {
-            var guidMatch = effectGuidRegex.Match(effectPath);
-            if (!guidMatch.Success || guidMatch.Groups.Count < 2) throw new InvalidDataException($"Could not parse effect Guid from '{effectPath}'");
-
             var effectRoot = TinyToken.Read(effectPath);
 
             var effectVersion = effectRoot.Value<int>("FormatVersion");
             if (effectVersion > Version) throw new InvalidOperationException("This project has an effect that was saved with a newer version; you need to update.");
 
             var effect = AddScriptedEffect(effectRoot.Value<string>("Script"), effectRoot.Value<bool>("Multithreaded"));
-            effect.Guid = Guid.Parse(guidMatch.Groups[1].Value);
             effect.Name = effectRoot.Value<string>("Name");
 
             var configRoot = effectRoot.Value<TinyObject>("Config");
@@ -708,17 +686,16 @@ public sealed class Project : IDisposable
             foreach (var fieldProperty in configRoot)
             {
                 var fieldRoot = fieldProperty.Value;
-
                 var fieldTypeName = fieldRoot.Value<string>("Type");
-                var fieldContent = fieldRoot.Value<string>("Value");
-                var beginsGroup = fieldRoot.Value<string>("BeginsGroup");
+                var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldRoot.Value<string>("Value"));
 
-                var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldContent);
-
-                var allowedValues = fieldRoot.Value<TinyObject>("AllowedValues")?
-                    .Select(p => new NamedValue { Name = p.Key, Value = ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()) }).ToArray();
-
-                effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++, fieldValue?.GetType(), fieldValue, allowedValues, beginsGroup);
+                effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++, fieldValue?.GetType(), fieldValue,
+                    fieldRoot.Value<TinyObject>("AllowedValues")?.Select(p => new NamedValue
+                    {
+                        Name = p.Key,
+                        Value = ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>())
+                    }).ToArray(),
+                    fieldRoot.Value<string>("BeginsGroup"));
             }
 
             var layersRoot = effectRoot.Value<TinyObject>("Layers");
@@ -727,9 +704,9 @@ public sealed class Project : IDisposable
                 var layerEffect = effect;
                 var layerGuid = layerProperty.Key;
                 var layerRoot = layerProperty.Value;
+
                 layerInserters[layerGuid] = () => layerEffect.AddPlaceholder(new(layerRoot.Value<string>("Name"), layerEffect)
                 {
-                    Guid = Guid.Parse(layerGuid),
                     OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
                     DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
                     Visible = layerRoot.Value<bool>("Visible")
@@ -742,12 +719,7 @@ public sealed class Project : IDisposable
         var layersOrder = indexRoot.Values<string>("Layers").Distinct();
         if (layersOrder is not null) foreach (var layerGuid in layersOrder) if (layerInserters.TryGetValue(layerGuid, out var insertLayer)) insertLayer();
 
-        // Insert all remaining layers
-        foreach (var key in layersOrder is null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder))
-        {
-            var insertLayer = layerInserters[key];
-            insertLayer();
-        }
+        foreach (var key in layersOrder is null ? layerInserters.Keys : layerInserters.Keys.Except(layersOrder)) layerInserters[key]();
     }
     public static Project Create(string projectFolderName, string mapsetPath, bool withCommonScripts, ResourceContainer resourceContainer)
     {
@@ -806,7 +778,7 @@ public sealed class Project : IDisposable
 
             while ((line = reader.ReadLine()) is not null)
             {
-                var trimmedLine = line.Trim();
+                var trimmedLine = line.AsSpan().Trim();
                 if (!inEvents && trimmedLine == "[Events]") inEvents = true;
                 else if (trimmedLine.Length == 0) inEvents = false;
 

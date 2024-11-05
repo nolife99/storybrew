@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using StorybrewCommon.Storyboarding.CommandValues;
+using System.Numerics;
 
 namespace StorybrewCommon.Curves;
 
@@ -14,13 +14,13 @@ public class CompositeCurve(IEnumerable<Curve> curves) : Curve
     public IReadOnlyList<Curve> Curves => curves;
 
     ///<inheritdoc/>
-    public CommandPosition StartPosition => curves[0].StartPosition;
+    public Vector2 StartPosition => curves[0].StartPosition;
 
     ///<inheritdoc/>
-    public CommandPosition EndPosition => curves[^1].EndPosition;
+    public Vector2 EndPosition => curves[^1].EndPosition;
 
     ///<inheritdoc/>
-    public double Length
+    public float Length
     {
         get
         {
@@ -31,7 +31,7 @@ public class CompositeCurve(IEnumerable<Curve> curves) : Curve
     }
 
     ///<inheritdoc/>
-    public CommandPosition PositionAtDistance(double distance)
+    public Vector2 PositionAtDistance(float distance)
     {
         for (var i = 0; i < curves.Length; ++i)
         {
@@ -43,7 +43,7 @@ public class CompositeCurve(IEnumerable<Curve> curves) : Curve
     }
 
     ///<inheritdoc/>
-    public CommandPosition PositionAtDelta(double delta)
+    public Vector2 PositionAtDelta(float delta)
     {
         var length = Length;
 

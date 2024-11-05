@@ -13,8 +13,6 @@ namespace StorybrewEditor.Storyboarding;
 
 public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboardLayer>
 {
-    public Guid Guid = Guid.NewGuid();
-
     string name = "";
     public string Identifier
     {
@@ -151,9 +149,8 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
         => segment.WriteOsb(writer, exportSettings, layer, transform);
 
-    public void CopySettings(EditorStoryboardLayer other, bool copyGuid = false)
+    public void CopySettings(EditorStoryboardLayer other)
     {
-        if (copyGuid) Guid = other.Guid;
         DiffSpecific = other.DiffSpecific;
         OsbLayer = other.OsbLayer;
         Visible = other.Visible;
@@ -164,6 +161,4 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         if (value == 0) value = (other.diffSpecific ? 1 : 0) - (diffSpecific ? 1 : 0);
         return value;
     }
-
-    public override string ToString() => $"name:{name}, id:{Name}, layer:{osbLayer}, diffSpec:{diffSpecific}";
 }

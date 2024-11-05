@@ -27,13 +27,13 @@ public class ScriptCompiler
     {
         Dictionary<SyntaxTree, (string, SourceText)> trees = [];
         foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
-        {
-            var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-            trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = (src, sourceText);
-        }
+            {
+                var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
+                trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = (src, sourceText);
+            }
         List<MetadataReference> references = [];
 
-        var loadedAsm = AppDomain.CurrentDomain.GetAssemblies().Select(d => d.Location);
+        var loadedAsm = AssemblyLoadContext.Default.Assemblies.Select(d => d.Location);
         context ??= AssemblyLoadContext.Default;
 
         foreach (var referencedAssembly in referencedAssemblies)
@@ -42,11 +42,11 @@ public class ScriptCompiler
             try
             {
                 if (Path.IsPathRooted(asmPath)) using (var stream = File.OpenRead(asmPath))
-                {
-                    if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
-                    stream.Position = 0;
-                    references.Add(MetadataReference.CreateFromStream(stream));
-                }
+                    {
+                        if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
+                        stream.Position = 0;
+                        references.Add(MetadataReference.CreateFromStream(stream));
+                    }
                 else
                 {
                     var exists = false;
@@ -60,11 +60,11 @@ public class ScriptCompiler
                     }
 
                     if (exists) using (var stream = File.OpenRead(asmPath))
-                    {
-                        if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
-                        stream.Position = 0;
-                        references.Add(MetadataReference.CreateFromStream(stream));
-                    }
+                        {
+                            if (!loadedAsm.Contains(asmPath)) context.LoadFromStream(stream);
+                            stream.Position = 0;
+                            references.Add(MetadataReference.CreateFromStream(stream));
+                        }
                     else throw new IOException($"Could not resolve dependency: \"{referencedAssembly}\". " +
                         $"Searched directories: {string.Join(";", environmentDirectories.Select(k => $"\"{k}\""))}");
                 }
@@ -76,14 +76,12 @@ public class ScriptCompiler
             }
         }
 
-        CSharpCompilation result;
+        EmitResult result;
         using (MemoryStream assemblyStream = new())
         {
-            result = CSharpCompilation.Create(asmName, trees.Keys, references, 
-                new(OutputKind.DynamicallyLinkedLibrary, 
-                    allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
-                .Emit(assemblyStream, 
-                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Item1, k.Item2)), 
+            result = CSharpCompilation.Create(asmName, trees.Keys, references,
+                new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
+                .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Item1, k.Item2)),
                     options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
             if (result.Success)
@@ -94,19 +92,18 @@ public class ScriptCompiler
         }
 
         StringBuilder error = new("Compilation error\n\n");
-        foreach (var kvp in result.Diagnostics
-            .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
-            .Reverse().GroupBy(k =>
-            {
-                if (k.Location.SourceTree is null) return "";
-                if (trees.TryGetValue(k.Location.SourceTree, out var path)) return path.Item1;
-                return "";
-            }).ToDictionary(k => k.Key, k => k))
-        {
-            error.AppendLine(CultureInfo.InvariantCulture, Path.GetFileName(kvp.Key) + ":");
-            foreach (var diagnostic in kvp.Value) error.AppendLine(CultureInfo.InvariantCulture, "--" + diagnostic);
-        }
+        string key = null;
 
+        foreach (var diagnostic in result.Diagnostics) if (diagnostic.Severity is DiagnosticSeverity.Error)
+            {
+                var nextKey = trees[diagnostic.Location.SourceTree].Item1;
+                if (key != nextKey)
+                {
+                    key = nextKey;
+                    error.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(key)}:");
+                }
+                error.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
+            }
         throw new ScriptCompilationException(error.ToString());
     }
 }

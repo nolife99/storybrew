@@ -1,4 +1,4 @@
-﻿using StorybrewCommon.Storyboarding.CommandValues;
+﻿using System.Numerics;
 
 namespace StorybrewCommon.Curves;
 
@@ -6,17 +6,17 @@ namespace StorybrewCommon.Curves;
 public interface Curve
 {
     ///<summary> The start position (the head) of the curve. </summary>
-    CommandPosition StartPosition { get; }
+    Vector2 StartPosition { get; }
 
     ///<summary> The end position (the tail) of the curve. </summary>
-    CommandPosition EndPosition { get; }
+    Vector2 EndPosition { get; }
 
     ///<summary> The total length of the curve from the head to the tail. </summary>
-    double Length { get; }
+    float Length { get; }
 
     ///<summary> Returns the position of the curve at <paramref name="distance"/> pixels. </summary>
-    CommandPosition PositionAtDistance(double distance);
+    Vector2 PositionAtDistance(float distance);
 
     ///<summary> Returns the position of the curve at <paramref name="delta"/>. </summary>
-    CommandPosition PositionAtDelta(double delta);
+    Vector2 PositionAtDelta(float delta);
 }

@@ -279,19 +279,19 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
     {
         if (tolerance <= .00001)
         {
-            List<Keyframe<TValue>> simplifiedKeyframes = [];
+            List<Keyframe<TValue>> unionKeyframes = [];
             for (int i = 0, count = keyframes.Count; i < count; i++)
             {
                 var startKeyframe = keyframes[i];
-                simplifiedKeyframes.Add(startKeyframe);
+                unionKeyframes.Add(startKeyframe);
 
                 for (var j = i + 1; j < count; j++)
                 {
                     var endKeyframe = keyframes[j];
                     if (!startKeyframe.Value.Equals(endKeyframe.Value))
                     {
-                        if (i < j - 1) simplifiedKeyframes.Add(keyframes[j - 1]);
-                        simplifiedKeyframes.Add(endKeyframe);
+                        if (i < j - 1) unionKeyframes.Add(keyframes[j - 1]);
+                        unionKeyframes.Add(endKeyframe);
                         i = j;
                         break;
                     }
@@ -300,7 +300,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, double, TValue> interpo
             }
 
             Clear(true);
-            keyframes = simplifiedKeyframes;
+            keyframes = unionKeyframes;
             return;
         }
         if (keyframes.Count < 3) return;

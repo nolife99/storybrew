@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using StorybrewCommon.Storyboarding.CommandValues;
+using System.Numerics;
 
 namespace StorybrewCommon.Curves;
 
@@ -7,17 +7,17 @@ namespace StorybrewCommon.Curves;
 public abstract class BaseCurve : Curve
 {
     ///<inheritdoc/>
-    public abstract CommandPosition EndPosition { get; }
+    public abstract Vector2 EndPosition { get; }
 
     ///<inheritdoc/>
-    public abstract CommandPosition StartPosition { get; }
+    public abstract Vector2 StartPosition { get; }
 
-    List<(float Distance, CommandPosition Position)> distancePosition;
+    List<(float Distance, Vector2 Position)> distancePosition;
 
-    double length;
+    float length;
 
     ///<inheritdoc/>
-    public double Length
+    public float Length
     {
         get
         {
@@ -33,10 +33,10 @@ public abstract class BaseCurve : Curve
     }
 
     ///<summary/>
-    protected abstract void Initialize(List<(float, CommandPosition)> distancePosition, out double length);
+    protected abstract void Initialize(List<(float, Vector2)> distancePosition, out float length);
 
     ///<inheritdoc/>
-    public CommandPosition PositionAtDistance(double distance)
+    public Vector2 PositionAtDistance(float distance)
     {
         if (distancePosition is null) initialize();
 
@@ -67,9 +67,9 @@ public abstract class BaseCurve : Curve
         var delta = (distance - previousDistance) / (nextDistance - previousDistance);
         var previousToNext = nextPosition - previousPosition;
 
-        return previousPosition + previousToNext * (float)delta;
+        return previousPosition + previousToNext * delta;
     }
 
     ///<inheritdoc/>
-    public CommandPosition PositionAtDelta(double delta) => PositionAtDistance(delta * Length);
+    public Vector2 PositionAtDelta(float delta) => PositionAtDistance(delta * Length);
 }

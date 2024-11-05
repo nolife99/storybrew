@@ -34,7 +34,7 @@ public class ShaderBuilder
         GlFragDepth = new(Context, "gl_FragDepth", "float");
     }
 
-    public Shader Build(bool log = true)
+    public Shader Build(bool log = false)
     {
         Context.VertexDeclaration = VertexDeclaration;
         Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPointSize, GlFragColor, GlFragDepth);

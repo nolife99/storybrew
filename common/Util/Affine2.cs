@@ -3,6 +3,7 @@ using System.Numerics;
 
 namespace StorybrewCommon.Util;
 
+#pragma warning disable CS1591
 public struct Affine2 : IEquatable<Affine2>
 {
     public static readonly Affine2 Identity = new(Vector3.UnitX, Vector3.UnitY);

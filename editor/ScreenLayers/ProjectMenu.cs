@@ -103,7 +103,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 mapB = new(WidgetManager)
                 {
                     StyleName = "icon",
-                    Icon = IconFont.ContentCopy,
+                    Icon = IconFont.LowPriority,
                     Tooltip = "Change beatmap",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
@@ -134,23 +134,31 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             AnchorTo = BoxAlignment.BottomRight,
             Padding = new(16, 16, 16, 8),
             Horizontal = true,
-            Fill = true,
             Children =
             [
                 effectB = new(WidgetManager)
                 {
-                    StyleName = "small",
-                    Text = "Effects"
+                    StyleName = "icon",
+                    Icon = IconFont.DynamicForm,
+                    Tooltip = "Effects",
+                    AnchorFrom = BoxAlignment.Centre,
+                    CanGrow = false
                 },
                 layerB = new(WidgetManager)
                 {
-                    StyleName = "small",
-                    Text = "Layers"
+                    StyleName = "icon",
+                    Icon = IconFont.Layers,
+                    Tooltip = "Layers",
+                    AnchorFrom = BoxAlignment.Centre,
+                    CanGrow = false
                 },
                 settingB = new(WidgetManager)
                 {
-                    StyleName = "small",
-                    Text = "Settings"
+                    StyleName = "icon",
+                    Icon = IconFont.Settings,
+                    Tooltip = "Settings",
+                    AnchorFrom = BoxAlignment.Centre,
+                    CanGrow = false
                 },
                 projFolderB = new(WidgetManager)
                 {
@@ -222,14 +230,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (layer is not null) timeline.Highlight(layer.StartTime, layer.EndTime);
             else timeline.ClearHighlight();
         };
-        layers.OnLayerSelected += layer => timeline.Value = (float)(layer.StartTime * .001f);
+        layers.OnLayerSelected += layer => timeline.Value = (float)layer.StartTime * .001f;
 
         WidgetManager.Root.Add(settings = new(WidgetManager, proj)
         {
             AnchorTarget = bottomRightLayout,
             AnchorFrom = BoxAlignment.BottomRight,
             AnchorTo = BoxAlignment.TopRight,
-            Offset = new(-16, 0)
+            Offset = new(-16, 0),
         });
         WidgetManager.Root.Add(statusLayout = new(WidgetManager)
         {
@@ -362,7 +370,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             case Key.Right:
                 if (e.Control)
                 {
-                    var nextBookmark = proj.MainBeatmap.Bookmarks.FirstOrDefault(bookmark => bookmark > Math.Round(timeline.Value * 1000) + 50);
+                    var nextBookmark = proj.MainBeatmap.Bookmarks.FirstOrDefault(bookmark => bookmark > MathF.Round(timeline.Value * 1000) + 50);
                     if (nextBookmark != 0) timeline.Value = nextBookmark * .001f;
                 }
                 else timeline.Scroll(e.Shift ? 4 : 1);
@@ -371,7 +379,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             case Key.Left:
                 if (e.Control)
                 {
-                    var prevBookmark = proj.MainBeatmap.Bookmarks.LastOrDefault(bookmark => bookmark < Math.Round(timeline.Value * 1000) - 500);
+                    var prevBookmark = proj.MainBeatmap.Bookmarks.LastOrDefault(bookmark => bookmark < MathF.Round(timeline.Value * 1000) - 500);
                     if (prevBookmark != 0) timeline.Value = prevBookmark * .001f;
                 }
                 else timeline.Scroll(e.Shift ? -4 : -1);
@@ -544,24 +552,28 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (proj.DisplayDebugWarning && totalGpuMemory < 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory");
         else if (totalGpuMemory >= 256) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ {totalGpuMemory:0.0}MB Total Texture Memory");
 
-        if (stats.OverlappedCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Overlapped Commands");
-        if (stats.IncompatibleCommands) warnings.AppendLine(CultureInfo.CurrentCulture, $"⚠ Incompatible Commands");
+        if (stats.OverlappedCommands) warnings.AppendLine("⚠ Overlapped Commands");
+        if (stats.IncompatibleCommands) warnings.AppendLine("⚠ Incompatible Commands");
 
-        --warnings.Length;
+        var i = warnings.Length - 1;
+        for (; i >= 0; --i) if (!char.IsWhiteSpace(warnings[i])) break;
+
+        if (i < warnings.Length - 1) warnings.Length = i + 1;
         return warnings.ToString();
     }
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
 
-        bottomRightLayout.Pack(374);
-        bottomLeftLayout.Pack(WidgetManager.Size.X - bottomRightLayout.Width);
+        var bottomRightWidth = 374;
+        bottomRightLayout.Pack(bottomRightWidth / 1.6f);
+        bottomLeftLayout.Pack(WidgetManager.Size.X - bottomRightWidth);
 
-        settings.Pack(bottomRightLayout.Width - 24, WidgetManager.Root.Height - bottomRightLayout.Height - 16);
-        effects.Pack(bottomRightLayout.Width - 24, WidgetManager.Root.Height - bottomRightLayout.Height - 16);
-        layers.Pack(bottomRightLayout.Width - 24, WidgetManager.Root.Height - bottomRightLayout.Height - 16);
+        settings.Pack(bottomRightWidth - 24, WidgetManager.Root.Height - bottomRightLayout.Height - 16);
+        effects.Pack(bottomRightWidth - 24, WidgetManager.Root.Height - bottomRightLayout.Height - 16);
+        layers.Pack(bottomRightWidth - 24, WidgetManager.Root.Height - bottomRightLayout.Height - 16);
 
-        effectUI.Pack(bottomRightLayout.Width, WidgetManager.Root.Height - bottomLeftLayout.Height - 16);
+        effectUI.Pack(bottomRightWidth, WidgetManager.Root.Height - bottomLeftLayout.Height - 16);
         resizeStoryboard();
     }
     void resizeStoryboard()
@@ -577,8 +589,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     }
     void resizeTimeline()
     {
-        timeline.MinValue = (float)Math.Min(0, proj.StartTime * .001);
-        timeline.MaxValue = (float)Math.Max(audio.Duration, proj.EndTime * .001);
+        timeline.MinValue = Math.Min(0, (float)proj.StartTime * .001f);
+        timeline.MaxValue = Math.Max(audio.Duration, (float)proj.EndTime * .001f);
     }
     public override void Close() => withSavePrompt(() =>
     {

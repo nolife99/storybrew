@@ -1,10 +1,10 @@
-﻿using StorybrewCommon.Scripting;
-using StorybrewEditor.Scripting;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System;
 using System.Linq;
 using System.Runtime.Loader;
+using StorybrewCommon.Scripting;
+using StorybrewEditor.Scripting;
 
 public class ScriptContainer<TScript> : IDisposable where TScript : Script
 {
@@ -74,12 +74,12 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
-            
+
             ObjectDisposedException.ThrowIf(disposed, this);
             try
             {
-                AssemblyLoadContext scriptDomain = new($"{Name} {Id}", true);
-                scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount64, ReferencedAssemblies).GetType(ScriptTypeName, true);
+                AssemblyLoadContext scriptDomain = new(Name + Id, true);
+                scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, ReferencedAssemblies).GetType(ScriptTypeName, true);
 
                 appDomain?.Unload();
                 appDomain = scriptDomain;

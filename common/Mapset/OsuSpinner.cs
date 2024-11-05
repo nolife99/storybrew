@@ -33,7 +33,7 @@ public class OsuSpinner : OsuHitObject
             }
             if (objectAdditionsSampleSet != 0) additionsSampleSet = objectAdditionsSampleSet;
             if (objectCustomSampleSet != 0) customSampleSet = objectCustomSampleSet;
-            if (objectVolume > .001) volume = objectVolume;
+            if (objectVolume > .001f) volume = objectVolume;
         }
         return new()
         {

@@ -30,7 +30,7 @@ public class LayerManager
         var index = layers.IndexOf(oldLayer);
         if (index != -1)
         {
-            newLayer.CopySettings(oldLayer, copyGuid: true);
+            newLayer.CopySettings(oldLayer);
             newLayer.OnChanged += layer_OnChanged;
             oldLayer.OnChanged -= layer_OnChanged;
             layers[index] = newLayer;
@@ -49,7 +49,7 @@ public class LayerManager
                 var index = layers.IndexOf(oldLayer);
                 if (index != -1)
                 {
-                    newLayer.CopySettings(layers[index], copyGuid: true);
+                    newLayer.CopySettings(layers[index]);
                     layers[index] = newLayer;
                 }
                 oldLayers.Remove(oldLayer);
@@ -71,7 +71,7 @@ public class LayerManager
         {
             newLayers.ForEach(newLayer =>
             {
-                newLayer.CopySettings(oldLayer, copyGuid: false);
+                newLayer.CopySettings(oldLayer);
                 newLayer.OnChanged += layer_OnChanged;
             });
             layers.InsertRange(index, newLayers);

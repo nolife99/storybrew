@@ -73,13 +73,13 @@ public sealed class FontGenerator : IDisposable
 {
     /// <summary> The directory to the font textures. </summary>
     public string Directory { get; }
-
-    internal Dictionary<string, FontTexture> cache = [];
     readonly string projectDirectory, assetDirectory;
 
-    readonly FontDescription description;
-    readonly FontEffect[] effects;
     readonly float emSize;
+
+    internal Dictionary<string, FontTexture> cache = [];
+    FontDescription description;
+    FontEffect[] effects;
 
     StringFormat format;
     Graphics metrics;
@@ -206,10 +206,10 @@ public sealed class FontGenerator : IDisposable
             filename = Path.GetFileName(texture.Path);
         }
 
-        filename ??= (description.TrimTransparency ? text.Trim() : text).Length == 1 ?
+        filename ??= (description.TrimTransparency ? text.AsSpan().Trim() : text).Length == 1 ?
             $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') :
                 (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' : char.ToString(text[0])))}.png" :
-            $"_{cache.Count(l => l.Key.Trim().Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
+            $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
         var path = Path.Combine(assetDirectory, Directory, filename);
         if (!trimExist)
@@ -217,11 +217,11 @@ public sealed class FontGenerator : IDisposable
             using (var stream = File.Create(path))
             {
                 if (validBounds) using (var trim = realText.FastCloneSection(bounds))
-                {
-                    realText.Dispose();
-                    realText = trim;
-                    Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
-                }
+                    {
+                        realText.Dispose();
+                        realText = trim;
+                        Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
+                    }
                 else Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
             }
 
@@ -236,23 +236,24 @@ public sealed class FontGenerator : IDisposable
 
     ///<summary> Deletes and frees all loaded fonts from memory. </summary>
     ///<remarks> Do not call from script code. This is automatically disposed at the end of script execution. </remarks>
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
+
+    ///<summary/>
+    ~FontGenerator() => Dispose(false);
     void Dispose(bool disposing)
     {
         if (!disposed)
         {
+            format.Dispose();
+            metrics.Dispose();
+            textBrush.Dispose();
+            font.Dispose();
+            collection?.Dispose();
+
             if (disposing)
             {
-                format.Dispose();
-                metrics.Dispose();
-                textBrush.Dispose();
-                font.Dispose();
-                collection?.Dispose();
-
+                description = null;
+                effects = null;
                 format = null;
                 metrics = null;
                 textBrush = null;

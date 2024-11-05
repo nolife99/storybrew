@@ -50,7 +50,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        foreach (var runner in actionRunners) runner.EnsureThreadAlive();
+        foreach (var runner in actionRunners) runner?.EnsureThreadAlive();
         lock (context.Queue)
         {
             if (!allowDuplicates && context.Queue.Exists(q => q.Target.Equals(target))) return;
@@ -66,11 +66,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (stopThreads)
         {
             var sw = Stopwatch.StartNew();
-            foreach (var runner in actionRunners)
-            {
-                runner.msTimeout = Math.Max(1000, 5000 - sw.Elapsed.Milliseconds);
-                runner.Dispose();
-            }
+            foreach (var runner in actionRunners) if (runner is not null)
+                {
+                    runner.msTimeout = Math.Max(1000, 5000 - sw.Elapsed.Milliseconds);
+                    runner.Dispose();
+                }
             sw.Stop();
         }
     }
@@ -150,7 +150,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 tokenSrc.Token.Register(() => Trace.WriteLine($"Attempting to abort thread {threadName}"));
 
 #pragma warning disable SYSLIB0046
-                thread = Task.Run(() => ControlledExecution.Run(async () =>
+                thread = Task.Factory.StartNew(() => ControlledExecution.Run(async () =>
                 {
                     var mustSleep = false;
                     while (!tokenSrc.IsCancellationRequested)
@@ -168,7 +168,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             {
                                 if (thread is null)
                                 {
-                                    Trace.WriteLine($"Exiting thread gracefully {threadName}");
+                                    Trace.WriteLine($"Exiting thread {threadName} gracefully");
                                     return;
                                 }
                                 Monitor.Wait(context.Queue);
@@ -214,7 +214,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             if (task.MustRunAlone) context.RunningLoneTask = false;
                         }
                     }
-                }, tokenSrc.Token), tokenSrc.Token);
+                }, tokenSrc.Token), TaskCreationOptions.LongRunning);
 #pragma warning restore SYSLIB0046
 
                 Trace.WriteLine($"Starting thread {threadName} ({thread.Id})");
@@ -232,7 +232,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             if (!localThread.Wait(msTimeout))
             {
                 tokenSrc.Cancel();
-                if (!localThread.IsCompleted) localThread.Dispose();
+                localThread.Dispose();
             }
             tokenSrc.Dispose();
         }

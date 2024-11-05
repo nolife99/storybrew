@@ -4,7 +4,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
-public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : unmanaged
+public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
 {
     readonly VertexDeclaration vertexDeclaration;
     readonly int primitiveSize;
@@ -66,9 +66,9 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer<TPrimitive> wh
         vertexDeclaration.DeactivateAttributes(currentShader);
         currentShader = null;
     }
-    public void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false)
+    public unsafe void Render(PrimitiveType primitiveType, void* primitives, int primitiveCount, int drawCount, bool canBuffer = false)
     {
-        GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * primitiveSize, primitives, BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * primitiveSize, (nint)primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;
 
         if (indexBufferId != -1) GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);

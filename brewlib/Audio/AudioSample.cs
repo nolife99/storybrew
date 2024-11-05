@@ -23,14 +23,14 @@ public class AudioSample : IDisposable
         if (sample != 0) return;
 
         using (var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded)) if (stream is not null)
-        {
-            var len = (int)stream.Length;
-            var bytes = ArrayPool<byte>.Shared.Rent(len);
+            {
+                var len = (int)stream.Length;
+                var bytes = ArrayPool<byte>.Shared.Rent(len);
 
-            stream.Read(bytes, 0, len);
-            sample = Bass.SampleLoad(bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
-            if (sample != 0) return;
-        }
+                stream.Read(bytes, 0, len);
+                sample = Bass.SampleLoad(bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
+                if (sample != 0) return;
+            }
 
         Trace.TraceError($"Failed to load audio sample ({path}): {Bass.LastError}");
     }
@@ -61,7 +61,7 @@ public class AudioSample : IDisposable
                 Bass.SampleFree(sample);
                 if (disposing) sample = 0;
             }
-            if (disposing) 
+            if (disposing)
             {
                 manager = null;
                 disposed = true;

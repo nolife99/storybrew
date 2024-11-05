@@ -1,23 +1,23 @@
 ﻿using System.Collections.Generic;
-using StorybrewCommon.Storyboarding.CommandValues;
+using System.Numerics;
 
 namespace StorybrewCommon.Curves;
 
 ///<summary> Represents a Catmull-Rom spline curve. </summary>
 ///<remarks> Constructs a Catmull-Rom curve from given control points <paramref name="points"/>. </remarks>
-public class CatmullCurve(CommandPosition[] points, int precision) : BaseCurve
+public class CatmullCurve(Vector2[] points, int precision) : BaseCurve
 {
     ///<inheritdoc/>
-    public override CommandPosition StartPosition => points[0];
+    public override Vector2 StartPosition => points[0];
 
     ///<inheritdoc/>
-    public override CommandPosition EndPosition => points[^1];
+    public override Vector2 EndPosition => points[^1];
 
     ///<summary> Whether the curve is straight (linear). </summary>
     public bool IsLinear => points.Length < 3;
 
     ///<summary/>
-    protected override void Initialize(List<(float, CommandPosition)> distancePosition, out double length)
+    protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
         var accuracy = points.Length > 2 ? precision : 0;
 
@@ -36,15 +36,15 @@ public class CatmullCurve(CommandPosition[] points, int precision) : BaseCurve
 
                 var nextPosition = positionAtDelta(p1, p2, p3, p4, delta);
 
-                distance += (nextPosition - previousPosition).Length;
+                distance += (nextPosition - previousPosition).Length();
                 distancePosition.Add((distance, nextPosition));
 
                 previousPosition = nextPosition;
             }
-        distance += (EndPosition - previousPosition).Length;
+        distance += (EndPosition - previousPosition).Length();
         length = distance;
     }
 
-    static CommandPosition positionAtDelta(CommandPosition p1, CommandPosition p2, CommandPosition p3, CommandPosition p4, float delta)
+    static Vector2 positionAtDelta(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float delta)
         => ((-p1 + 3 * p2 - 3 * p3 + p4) * delta * delta * delta + (2 * p1 - 5 * p2 + 4 * p3 - p4) * delta * delta + (-p1 + p3) * delta + 2 * p2) / 2;
 }

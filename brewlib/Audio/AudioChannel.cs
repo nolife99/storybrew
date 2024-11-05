@@ -22,7 +22,7 @@ public class AudioChannel : IDisposable
             if (channel == 0) return;
 
             Bass.ChannelGetAttribute(channel, ChannelAttribute.Frequency, out frequency);
-            Duration = Bass.ChannelBytes2Seconds(channel, Bass.ChannelGetLength(channel));
+            Duration = (float)Bass.ChannelBytes2Seconds(channel, Bass.ChannelGetLength(channel));
 
             UpdateVolume();
             updateTimeFactor();
@@ -37,7 +37,7 @@ public class AudioChannel : IDisposable
             Bass.ChannelSetPosition(channel, Bass.ChannelSeconds2Bytes(channel, value));
         }
     }
-    public double Duration { get; set; }
+    public float Duration { get; set; }
 
     bool played;
     public bool Playing
@@ -125,7 +125,7 @@ public class AudioChannel : IDisposable
         }
     }
 
-    public int AvailableData => channel == 0 ? 0 : Bass.ChannelGetData(channel, nint.Zero, (int)DataFlags.Available);
+    public int AvailableData => channel == 0 ? 0 : Bass.ChannelGetData(channel, 0, (int)DataFlags.Available);
     public bool Temporary { get; }
 
     internal AudioChannel(AudioManager audioManager, int channel = 0, bool temporary = false)

@@ -93,6 +93,7 @@ public class CommandGenerator
         foreach (var state in states)
         {
             var time = state.Time + timeOffset;
+            if (sprite is OsbAnimation) imageSize = BitmapDimensions(sprite.GetTexturePathAt(time));
             var isVisible = state.IsVisible(imageSize, sprite.Origin, this);
 
             if (isVisible && !everVisible) everVisible = true;

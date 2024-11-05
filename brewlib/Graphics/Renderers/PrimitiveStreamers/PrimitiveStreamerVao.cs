@@ -4,7 +4,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
-public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : unmanaged
+public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
 {
     protected VertexDeclaration VertexDeclaration;
     protected int VertexArrayId = -1, VertexBufferId = -1, IndexBufferId = -1, PrimitiveSize, MinRenderableVertexCount;
@@ -112,6 +112,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
         CurrentShader = shader;
     }
 
-    public abstract void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false);
+    public abstract unsafe void Render(PrimitiveType primitiveType, void* primitives, int primitiveCount, int drawCount, bool canBuffer = false);
     public static bool HasCapabilities() => DrawState.HasCapabilities(2, 0) && DrawState.HasCapabilities(3, 0, "GL_ARB_vertex_array_object");
 }

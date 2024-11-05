@@ -3,7 +3,7 @@ using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
-public interface PrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : unmanaged
+public interface PrimitiveStreamer : IDisposable
 {
     int DiscardedBufferCount { get; }
     int BufferWaitCount { get; }
@@ -11,5 +11,5 @@ public interface PrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : 
     void Bind(Shader shader);
     void Unbind();
 
-    void Render(PrimitiveType primitiveType, TPrimitive[] primitives, int primitiveCount, int drawCount, bool canBuffer = false);
+    unsafe void Render(PrimitiveType primitiveType, void* primitives, int primitiveCount, int drawCount, bool canBuffer = false);
 }

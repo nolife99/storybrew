@@ -113,7 +113,6 @@ public class ScriptedEffect : Effect
         }
 
         changeStatus(EffectStatus.Ready, null, context.Log);
-
         Program.Schedule(() =>
         {
             if (Disposed)

@@ -100,31 +100,31 @@ public abstract class StoryboardObjectGenerator : Script
     ///<param name="watch"> Watch the file as a dependency. </param>
     public Bitmap GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path), Path.Combine(context.ProjectAssetPath, path), watch);
 
-    Bitmap getBitmap(string path, string alternatePath, bool watch)
+    internal Bitmap getBitmap(string path, string alternatePath, bool watch)
     {
         path = Path.GetFullPath(path);
         if (!bitmaps.TryGetValue(path, out var bitmap)) using (var stream = File.OpenRead(path))
-        {
-            if (alternatePath is not null && !File.Exists(path))
             {
-                alternatePath = Path.GetFullPath(alternatePath);
-                if (watch) context.AddDependency(alternatePath);
-
-                try
+                if (alternatePath is not null && !File.Exists(path))
                 {
+                    alternatePath = Path.GetFullPath(alternatePath);
+                    if (watch) context.AddDependency(alternatePath);
+
+                    try
+                    {
+                        bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
+                    }
+                    catch (FileNotFoundException e)
+                    {
+                        throw new FileNotFoundException(path, e);
+                    }
+                }
+                else
+                {
+                    if (watch) context.AddDependency(path);
                     bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
                 }
-                catch (FileNotFoundException e)
-                {
-                    throw new FileNotFoundException(path, e);
-                }
             }
-            else
-            {
-                if (watch) context.AddDependency(path);
-                bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
-            }
-        }
         return bitmap;
     }
 

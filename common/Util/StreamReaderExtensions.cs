@@ -48,8 +48,8 @@ public static class StreamReaderExtensions
         if (separatorIndex == -1) throw new InvalidDataException($"{line} is not a key/value");
 
         var key = line[..separatorIndex].Trim();
-        var value = line.Substring(separatorIndex + 1, line.Length - 1 - separatorIndex).Trim();
+        var value = line.AsSpan().Slice(separatorIndex + 1, line.Length - 1 - separatorIndex).Trim();
 
-        action(key, value);
+        action(key, value.ToString());
     });
 }

@@ -99,24 +99,24 @@ public sealed class TextGenerator : IDisposable
         if (!fontFamilies.TryGetValue(name, out var fontFamily))
         {
             using (var stream = container.GetStream(name, ResourceSource.Embedded)) if (stream is not null)
-            {
-                if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
-
-                var len = (int)stream.Length;
-                var arr = ArrayPool<byte>.Shared.Rent(len);
-                stream.Read(arr, 0, len);
-
-                fontCollection.AddMemoryFont((nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr)), len);
-                ArrayPool<byte>.Shared.Return(arr);
-
-                var families = fontCollection.Families;
-                if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
-                else
                 {
-                    Trace.TraceError($"Failed to load font {name}: Expected one family, got {families?.Length}");
-                    if (families is not null) foreach (var family in families) family.Dispose();
+                    if (!fontCollections.TryGetValue(name, out var fontCollection)) fontCollections.Add(name, fontCollection = new());
+
+                    var len = (int)stream.Length;
+                    var arr = ArrayPool<byte>.Shared.Rent(len);
+                    stream.Read(arr, 0, len);
+
+                    fontCollection.AddMemoryFont((nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr)), len);
+                    ArrayPool<byte>.Shared.Return(arr);
+
+                    var families = fontCollection.Families;
+                    if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
+                    else
+                    {
+                        Trace.TraceError($"Failed to load font {name}: Expected one family, got {families?.Length}");
+                        if (families is not null) foreach (var family in families) family.Dispose();
+                    }
                 }
-            }
             fontFamilies.Add(name, fontFamily);
         }
 

@@ -76,7 +76,7 @@ public class LayerList : Widget
             {
                 if (data is EditorStoryboardLayer droppedLayer)
                 {
-                    var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Guid == droppedLayer.Guid);
+                    var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Identifier == droppedLayer.Identifier);
                     if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, ol);
                     return true;
                 }
@@ -169,9 +169,9 @@ public class LayerList : Widget
             {
                 if (data is EditorStoryboardLayer droppedLayer)
                 {
-                    if (droppedLayer.Guid != la.Guid)
+                    if (droppedLayer.Identifier != la.Identifier)
                     {
-                        var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Guid == droppedLayer.Guid);
+                        var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Identifier == droppedLayer.Identifier);
                         if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, la);
                     }
                     return true;

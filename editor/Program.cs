@@ -17,7 +17,7 @@ namespace StorybrewEditor;
 
 public static class Program
 {
-    public const string Name = "storybrew editor", Repository = "nolife99/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
+    public const string Name = "storybrew editor", Repository = "Damnae/storybrew", DiscordUrl = "https://discord.gg/0qfFOucX93QDNVN7";
     public readonly static Version Version = typeof(Editor).Assembly.GetName().Version;
     public readonly static string FullName = $"{Name} {Version} ({Repository})";
 
@@ -193,11 +193,10 @@ public static class Program
             if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate) editor.Update(cur * .001f, false);
 
             if (!window.Exists || window.IsExiting) return;
-            if (window.WindowState != WindowState.Minimized)
-            {
-                editor.Draw(Math.Min((cur - fixedRate) / fixedRateUpdate, 1));
-                window.SwapBuffers();
-            }
+
+            editor.Draw(Math.Min((cur - fixedRate) / fixedRateUpdate, 1));
+            window.SwapBuffers();
+
             if (!window.Visible) window.Visible = true;
 
             RunScheduledTasks();
@@ -273,8 +272,6 @@ public static class Program
     }
     public static void RunScheduledTasks()
     {
-        if (scheduledActions.IsEmpty || !IsMainThread) return;
-
         while (scheduledActions.TryDequeue(out var action)) try
             {
                 action?.Invoke();
