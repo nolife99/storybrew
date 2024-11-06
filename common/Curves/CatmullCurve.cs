@@ -25,9 +25,9 @@ public class CatmullCurve(Vector2[] points, int precision) : BaseCurve
         var linePrecision = accuracy / points.Length;
         var previousPosition = StartPosition;
 
-        for (var lineIndex = 0; lineIndex < points.Length - 1; ++lineIndex) for (var i = 1; i <= linePrecision; ++i)
+        for (var lineIndex = 0; lineIndex < points.Length - 1; ++lineIndex) for (var i = 1f; i <= linePrecision; ++i)
             {
-                var delta = (float)i / (linePrecision + 1);
+                var delta = i / (linePrecision + 1);
 
                 var p1 = lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex];
                 var p2 = points[lineIndex];

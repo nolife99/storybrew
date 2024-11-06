@@ -53,7 +53,7 @@ public class Selectbox : Widget, Field
     public Selectbox(WidgetManager manager) : base(manager)
     {
         Add(button = new(manager));
-        button.OnClick += (sender, e) =>
+        button.OnClick += (_, _) =>
         {
             if (options is null) return;
             else if (options.Length > 2) Manager.ScreenLayerManager.ShowContextMenu("Select a value", optionValue => Value = optionValue.Value, options);

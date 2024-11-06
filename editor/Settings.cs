@@ -91,41 +91,20 @@ public class Setting<T>(T defaultValue) : Setting
         this.value = value;
         OnValueChanged?.Invoke(this, EventArgs.Empty);
     }
-    public void Set(object value) => Set((T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture));
+    public void Set(object value) => Set((T)value);
 
     public void Bind(Field field, Action changedAction)
     {
-        field.OnValueChanged += (sender, e) => Set(field.FieldValue);
+        field.OnValueChanged += (_, _) => Set(field.FieldValue);
         EventHandler handler;
-        OnValueChanged += handler = (sender, e) =>
+        OnValueChanged += handler = (_, _) =>
         {
             field.FieldValue = value;
             changedAction?.Invoke();
         };
-        field.OnDisposed += (sender, e) => OnValueChanged -= handler;
+        field.OnDisposed += (_, _) => OnValueChanged -= handler;
         handler(this, EventArgs.Empty);
     }
 
     public static implicit operator T(Setting<T> setting) => setting.value;
-
-    public override string ToString()
-    {
-        if (typeof(T).GetInterface(nameof(IConvertible)) is not null) return Convert.ToString(value, CultureInfo.InvariantCulture);
-        return value.ToString();
-    }
-}
-public static class SettingsExtensions
-{
-    public static void BindToSetting<T>(this Button button, Setting<T> setting, Action changedAction)
-    {
-        button.OnValueChanged += (sender, e) => setting.Set(button.Checked);
-        EventHandler handler;
-        setting.OnValueChanged += handler = (sender, e) =>
-        {
-            button.Checked = (bool)Convert.ChangeType((T)setting, typeof(bool), CultureInfo.InvariantCulture);
-            changedAction?.Invoke();
-        };
-        button.OnDisposed += (sender, e) => setting.OnValueChanged -= handler;
-        handler(button, EventArgs.Empty);
-    }
 }

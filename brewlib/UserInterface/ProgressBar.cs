@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface.Skinning.Styles;
@@ -33,7 +34,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
     public object FieldValue
     {
         get => Value;
-        set => Value = (float)Convert.ChangeType(value, typeof(float), CultureInfo.InvariantCulture);
+        set => Value = Unsafe.Unbox<float>(value);
     }
 
     public void SetValueSilent(float value) => this.value = Math.Min(Math.Max(MinValue, value), MaxValue);

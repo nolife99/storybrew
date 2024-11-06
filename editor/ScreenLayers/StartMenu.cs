@@ -101,11 +101,11 @@ public class StartMenu : UiScreenLayer
             ]
         });
 
-        newProjectButton.OnClick += (sender, e) => Manager.Add(new NewProjectMenu());
-        openProjectButton.OnClick += (sender, e) => Manager.ShowOpenProject();
-        wikiButton.OnClick += (sender, e) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");
-        discordButton.OnClick += (sender, e) => NetHelper.OpenUrl(Program.DiscordUrl);
-        closeButton.OnClick += (sender, e) => Exit();
+        newProjectButton.OnClick += (_, _) => Manager.Add(new NewProjectMenu());
+        openProjectButton.OnClick += (_, _) => Manager.ShowOpenProject();
+        wikiButton.OnClick += (_, _) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");
+        discordButton.OnClick += (_, _) => NetHelper.OpenUrl(Program.DiscordUrl);
+        closeButton.OnClick += (_, _) => Exit();
         checkLatestVersion();
     }
     public override void Resize(int width, int height)
@@ -204,7 +204,7 @@ public class StartMenu : UiScreenLayer
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message}\n\n{versionLabel.Text}";
 
         updateButton.Text = "See latest release";
-        updateButton.OnClick += (sender, e) => Updater.OpenLatestReleasePage();
+        updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
         updateButton.Disabled = false;
         bottomLayout.Pack(600);
     }

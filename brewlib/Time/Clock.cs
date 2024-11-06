@@ -7,7 +7,7 @@ public class Clock : TimeSource
     readonly Stopwatch stopwatch = new();
     float timeOrigin;
 
-    public float Current => (float)(timeOrigin + stopwatch.Elapsed.TotalSeconds * timeFactor);
+    public float Current => timeOrigin + (float)stopwatch.Elapsed.TotalSeconds * timeFactor;
 
     float timeFactor = 1;
     public float TimeFactor
@@ -17,10 +17,9 @@ public class Clock : TimeSource
         {
             if (timeFactor == value) return;
 
-            var elapsed = stopwatch.Elapsed.TotalSeconds;
-            var previousTime = timeOrigin + elapsed * timeFactor;
+            var elapsed = (float)stopwatch.Elapsed.TotalSeconds;
             timeFactor = value;
-            timeOrigin = (float)(previousTime - elapsed * timeFactor);
+            timeOrigin = (timeOrigin + elapsed * timeFactor) - elapsed * timeFactor;
         }
     }
 
@@ -40,7 +39,7 @@ public class Clock : TimeSource
 
     public bool Seek(float time)
     {
-        timeOrigin = (float)(time - stopwatch.Elapsed.TotalSeconds * timeFactor);
+        timeOrigin = time - (float)stopwatch.Elapsed.TotalSeconds * timeFactor;
         return true;
     }
 }

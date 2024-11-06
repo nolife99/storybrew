@@ -200,7 +200,7 @@ public sealed class Project : IDisposable
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         effects.Remove(effect);
-        effect?.Dispose();
+        effect.Dispose();
         Changed = true;
 
         refreshEffectsStatus();

@@ -56,7 +56,7 @@ public class UiScreenLayer : ScreenLayer
             button.Checkable = true;
             widget.Displayed = button.Checked;
 
-            button.OnValueChanged += (sender, e) =>
+            button.OnValueChanged += (sender, _) =>
             {
                 if (widget.Displayed = button.Checked) foreach (var otherButton in buttons) if (sender != otherButton && otherButton.Checked) otherButton.Checked = false;
             };

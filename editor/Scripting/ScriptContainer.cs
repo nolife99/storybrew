@@ -70,22 +70,32 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
     }
     public TScript CreateScript()
     {
+        ObjectDisposedException.ThrowIf(disposed, this);
+
         var localTargetVersion = targetVersion;
+        var localCurrentVersion = currentVersion;
+
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
-
-            ObjectDisposedException.ThrowIf(disposed, this);
             try
             {
-                AssemblyLoadContext scriptDomain = new(Name + Id, true);
-                scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, ReferencedAssemblies).GetType(ScriptTypeName, true);
-
                 appDomain?.Unload();
-                appDomain = scriptDomain;
+                AssemblyLoadContext scriptDomain = new(Name + Id, true);
+                try
+                {
+                    scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, ReferencedAssemblies).GetType(ScriptTypeName, true);
+                    appDomain = scriptDomain;
+                }
+                catch
+                {
+                    scriptDomain.Unload();
+                    throw;
+                }
             }
             catch (ScriptCompilationException)
             {
+                currentVersion = localCurrentVersion;
                 throw;
             }
             catch (Exception e)
@@ -95,7 +105,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         }
 
         var script = (TScript)Activator.CreateInstance(scriptType, true);
-        script.Identifier = scriptType.AssemblyQualifiedName + Environment.CurrentManagedThreadId;
+        script.Identifier = scriptType.AssemblyQualifiedName + Environment.TickCount;
         return script;
     }
     public void ReloadScript()
@@ -131,6 +141,8 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
                 appDomain.Unload();
                 appDomain = null;
             }
+
+            scriptType = null;
             disposed = true;
         }
     }

@@ -216,7 +216,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (effect is not null) timeline.Highlight(effect.StartTime, effect.EndTime);
             else timeline.ClearHighlight();
         };
-        effects.OnEffectSelected += effect => timeline.Value = (float)(effect.StartTime * .001f);
+        effects.OnEffectSelected += effect => timeline.Value = effect.StartTime * .001f;
 
         WidgetManager.Root.Add(layers = new(WidgetManager, proj.LayerManager)
         {
@@ -230,7 +230,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (layer is not null) timeline.Highlight(layer.StartTime, layer.EndTime);
             else timeline.ClearHighlight();
         };
-        layers.OnLayerSelected += layer => timeline.Value = (float)layer.StartTime * .001f;
+        layers.OnLayerSelected += layer => timeline.Value = layer.StartTime * .001f;
 
         WidgetManager.Root.Add(settings = new(WidgetManager, proj)
         {
@@ -282,25 +282,25 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Displayed = false,
             Size = new(256, 144)
         });
-        timeB.OnClick += (sender, e) => Manager.ShowPrompt("Skip to...", value =>
+        timeB.OnClick += (_, _) => Manager.ShowPrompt("Skip to...", value =>
         {
             if (float.TryParse(value, out float time)) timeline.Value = time * .001f;
         });
 
         resizeTimeline();
-        timeline.OnValueChanged += (sender, e) => pendingSeek = timeline.Value;
-        timeline.OnValueCommited += (sender, e) => timeline.Snap();
-        timeline.OnHovered += (sender, e) => previewContainer.Displayed = e.Hovered;
+        timeline.OnValueChanged += (_, _) => pendingSeek = timeline.Value;
+        timeline.OnValueCommited += (_, _) => timeline.Snap();
+        timeline.OnHovered += (_, e) => previewContainer.Displayed = e.Hovered;
 
-        mapB.OnClick += (sender, e) =>
+        mapB.OnClick += (_, _) =>
         {
             if (proj.MapsetManager.BeatmapCount > 2) Manager.ShowContextMenu("Select a beatmap", map => proj.SelectBeatmap(map.Id, map.Name), proj.MapsetManager.Beatmaps);
             else proj.SwitchMainBeatmap();
         };
         Program.Settings.FitStoryboard.Bind(fitB, resizeStoryboard);
-        playB.OnClick += (sender, e) => timeSource.Playing = !timeSource.Playing;
+        playB.OnClick += (_, _) => timeSource.Playing = !timeSource.Playing;
 
-        divisorB.OnClick += (sender, e) =>
+        divisorB.OnClick += (_, _) =>
         {
             ++defaultDiv;
             if (defaultDiv == 5 || defaultDiv == 7) ++defaultDiv;
@@ -310,7 +310,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             timeline.SnapDivisor = defaultDiv;
             divisorB.Text = $"1/{defaultDiv}";
         };
-        audioTimeB.OnClick += (sender, e) =>
+        audioTimeB.OnClick += (_, e) =>
         {
             switch (e)
             {
@@ -339,21 +339,21 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         };
 
         MakeTabs([settingB, effectB, layerB], [settings, effects, layers]);
-        projFolderB.OnClick += (sender, e) =>
+        projFolderB.OnClick += (_, _) =>
         {
             var path = Path.GetFullPath(proj.ProjectFolderPath);
             if (Directory.Exists(path)) PathHelper.OpenExplorer(path);
         };
-        mapFolderB.OnClick += (sender, e) =>
+        mapFolderB.OnClick += (_, e) =>
         {
             var path = Path.GetFullPath(proj.MapsetPath);
-            if (e == MouseButton.Right || !Directory.Exists(path)) changeMapsetFolder();
+            if (e is MouseButton.Right || !Directory.Exists(path)) changeMapsetFolder();
             else PathHelper.OpenExplorer(path);
         };
-        saveB.OnClick += (sender, e) => saveProject();
-        exportB.OnClick += (sender, e) =>
+        saveB.OnClick += (_, _) => saveProject();
+        exportB.OnClick += (_, e) =>
         {
-            if (e == MouseButton.Right) exportProjectAll();
+            if (e is MouseButton.Right) exportProjectAll();
             else exportProject();
         };
 
@@ -478,7 +478,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         base.Update(isTop, isCovered);
 
         timeSource.Update();
-        var time = (float)(pendingSeek ?? timeSource.Current);
+        var time = pendingSeek ?? timeSource.Current;
 
         mapB.Disabled = proj.MapsetManager.BeatmapCount < 2;
         playB.Icon = timeSource.Playing ? IconFont.PauseCircle : IconFont.PlayCircle;
@@ -585,8 +585,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     }
     void resizeTimeline()
     {
-        timeline.MinValue = Math.Min(0, (float)proj.StartTime * .001f);
-        timeline.MaxValue = Math.Max(audio.Duration, (float)proj.EndTime * .001f);
+        timeline.MinValue = Math.Min(0, proj.StartTime * .001f);
+        timeline.MaxValue = Math.Max(audio.Duration, proj.EndTime * .001f);
     }
     public override void Close() => withSavePrompt(() =>
     {

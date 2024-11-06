@@ -80,9 +80,9 @@ public class ContextMenu<T> : UiScreenLayer
                 })
             ]
         });
-        cancelButton.OnClick += (sender, e) => Exit();
+        cancelButton.OnClick += (_, _) => Exit();
 
-        searchTextbox.OnValueChanged += (sender, e) => refreshOptions();
+        searchTextbox.OnValueChanged += (_, _) => refreshOptions();
         refreshOptions();
     }
     void refreshOptions()
@@ -101,7 +101,7 @@ public class ContextMenu<T> : UiScreenLayer
             });
 
             var result = option.Value;
-            button.OnClick += (sender, e) =>
+            button.OnClick += (_, _) =>
             {
                 callback.Invoke(result);
                 Exit();

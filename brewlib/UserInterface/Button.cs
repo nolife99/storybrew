@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
 using osuTK.Input;
@@ -65,7 +66,7 @@ public class Button : Widget, Field
     public object FieldValue
     {
         get => Checked;
-        set => Checked = (bool)Convert.ChangeType(value, typeof(bool), CultureInfo.InvariantCulture);
+        set => Checked = Unsafe.Unbox<bool>(value);
     }
 
     public bool Disabled
@@ -87,8 +88,8 @@ public class Button : Widget, Field
         });
 
         clickBehavior = new(this);
-        clickBehavior.OnStateChanged += (sender, e) => RefreshStyle();
-        clickBehavior.OnClick += (sender, e) => Click(e.Button);
+        clickBehavior.OnStateChanged += (_, _) => RefreshStyle();
+        clickBehavior.OnClick += (_, e) => Click(e.Button);
     }
 
     public void Click(MouseButton button = MouseButton.Left)

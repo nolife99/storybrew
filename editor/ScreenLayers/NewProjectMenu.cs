@@ -69,16 +69,16 @@ public class NewProjectMenu : UiScreenLayer
             ]
         });
 
-        projectNameTextbox.OnValueChanged += (sender, e) => updateButtonsState();
-        projectNameTextbox.OnValueCommited += (sender, e) =>
+        projectNameTextbox.OnValueChanged += (_, _) => updateButtonsState();
+        projectNameTextbox.OnValueCommited += (_, _) =>
         {
             var name = projectNameTextbox.Value;
             foreach (var character in Path.GetInvalidFileNameChars()) name = name.Replace(character, '_');
             projectNameTextbox.Value = name;
         };
 
-        mapsetPathSelector.OnValueChanged += (sender, e) => updateButtonsState();
-        mapsetPathSelector.OnValueCommited += (sender, e) =>
+        mapsetPathSelector.OnValueChanged += (_, _) => updateButtonsState();
+        mapsetPathSelector.OnValueCommited += (_, _) =>
         {
             if (!Directory.Exists(mapsetPathSelector.Value) && File.Exists(mapsetPathSelector.Value))
             {
@@ -89,8 +89,8 @@ public class NewProjectMenu : UiScreenLayer
         };
         updateButtonsState();
 
-        startButton.OnClick += (sender, e) => createProject();
-        cancelButton.OnClick += (sender, e) => Exit();
+        startButton.OnClick += (_, _) => createProject();
+        cancelButton.OnClick += (_, _) => Exit();
     }
     public override void Resize(int width, int height)
     {

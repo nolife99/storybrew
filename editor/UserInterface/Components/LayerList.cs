@@ -163,7 +163,6 @@ public class LayerList : Widget
             });
 
             var la = layer;
-
             layerRoot.GetDragData = () => la;
             layerRoot.HandleDrop = data =>
             {
@@ -182,7 +181,7 @@ public class LayerList : Widget
             ChangedHandler changedHandler;
             EventHandler effectChangedHandler;
 
-            layer.OnChanged += changedHandler = (sender, e) =>
+            layer.OnChanged += changedHandler = (_, _) =>
             {
                 nameLabel.Text = la.Identifier;
                 diffSpecificButton.Icon = la.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy;
@@ -190,32 +189,32 @@ public class LayerList : Widget
                 showHideButton.Icon = la.Visible ? IconFont.Visibility : IconFont.VisibilityOff;
                 showHideButton.Checked = la.Visible;
             };
-            effect.OnChanged += effectChangedHandler = (sender, e) => detailsLabel.Text = getLayerDetails(la, effect);
-            layerRoot.OnHovered += (evt, e) =>
+            effect.OnChanged += effectChangedHandler = (_, _) => detailsLabel.Text = getLayerDetails(la, effect);
+            layerRoot.OnHovered += (_, e) =>
             {
                 la.Highlight = e.Hovered;
                 OnLayerPreselect?.Invoke(e.Hovered ? la : null);
             };
             var handledClick = false;
-            layerRoot.OnClickDown += (evt, e) =>
+            layerRoot.OnClickDown += (_, _) =>
             {
                 handledClick = true;
                 return true;
             };
-            layerRoot.OnClickUp += (evt, e) =>
+            layerRoot.OnClickUp += (evt, _) =>
             {
                 if (handledClick && (evt.RelatedTarget == layerRoot || evt.RelatedTarget.HasAncestor(layerRoot))) OnLayerSelected?.Invoke(la);
                 handledClick = false;
             };
-            layerRoot.OnDisposed += (sender, e) =>
+            layerRoot.OnDisposed += (_, _) =>
             {
                 la.Highlight = false;
                 la.OnChanged -= changedHandler;
                 effect.OnChanged -= effectChangedHandler;
             };
 
-            diffSpecificButton.OnClick += (sender, e) => la.DiffSpecific = !la.DiffSpecific;
-            showHideButton.OnValueChanged += (sender, e) => la.Visible = showHideButton.Checked;
+            diffSpecificButton.OnClick += (_, _) => la.DiffSpecific = !la.DiffSpecific;
+            showHideButton.OnValueChanged += (_, _) => la.Visible = showHideButton.Checked;
             ++index;
         }
     }

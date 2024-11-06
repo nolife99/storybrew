@@ -61,12 +61,12 @@ public class PromptBox(string title, string description, string initialText, Act
 
         if (string.IsNullOrWhiteSpace(description)) descriptionLabel.Dispose();
 
-        okButton.OnClick += (sender, e) =>
+        okButton.OnClick += (_, _) =>
         {
             Exit();
             action?.Invoke(textbox.Value);
         };
-        cancelButton.OnClick += (sender, e) => Exit();
+        cancelButton.OnClick += (_, _) => Exit();
     }
     public override void OnTransitionIn()
     {

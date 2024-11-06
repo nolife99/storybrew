@@ -46,7 +46,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             Text = noAction is not null ? "Yes" : "Ok",
             AnchorFrom = BoxAlignment.Centre
         };
-        yesButton.OnClick += (sender, e) =>
+        yesButton.OnClick += (_, _) =>
         {
             Exit();
             yesAction?.Invoke();
@@ -60,7 +60,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
                 Text = "No",
                 AnchorFrom = BoxAlignment.Centre
             };
-            noButton.OnClick += (sender, e) =>
+            noButton.OnClick += (_, _) =>
             {
                 Exit();
                 noAction.Invoke();
@@ -74,7 +74,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
                 Text = "Cancel",
                 AnchorFrom = BoxAlignment.Centre
             };
-            cancelButton.OnClick += (sender, e) => Exit();
+            cancelButton.OnClick += (_, _) => Exit();
             buttonsLayout.Add(cancelButton);
         }
     }

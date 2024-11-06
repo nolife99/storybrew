@@ -132,7 +132,7 @@ public class CommandGenerator
     }
     void commitKeyframes(SizeF imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => (float)Math.Clamp(f * 100, 0, 100));
+        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f * 100, 0, 100));
         if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
         if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalfades);
@@ -145,7 +145,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)(180 / Math.PI * r));
+        rotations.Simplify1dKeyframes(RotationTolerance, r => 180 / MathF.PI * r);
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 

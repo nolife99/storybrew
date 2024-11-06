@@ -164,7 +164,7 @@ public static class Program
         {
             Volume = Settings.Volume
         };
-        Settings.Volume.OnValueChanged += (sender, e) => audioManager.Volume = Settings.Volume;
+        Settings.Volume.OnValueChanged += (_, _) => audioManager.Volume = Settings.Volume;
 
         return audioManager;
     }

@@ -53,26 +53,26 @@ public class PathSelector : Widget
             ]
         });
 
-        textbox.OnValueChanged += (sender, e) => OnValueChanged?.Invoke(this, EventArgs.Empty);
-        textbox.OnValueCommited += (sender, e) => OnValueCommited?.Invoke(this, EventArgs.Empty);
-        button.OnClick += (sender, e) =>
+        textbox.OnValueChanged += (_, _) => OnValueChanged?.Invoke(this, EventArgs.Empty);
+        textbox.OnValueCommited += (_, _) => OnValueCommited?.Invoke(this, EventArgs.Empty);
+        button.OnClick += (_, _) =>
         {
             switch (mode)
             {
                 case PathSelectorMode.Folder:
-                    Manager.ScreenLayerManager.OpenFolderPicker(LabelText, textbox.Value, (path) => textbox.Value = path);
+                    Manager.ScreenLayerManager.OpenFolderPicker(LabelText, textbox.Value, path => textbox.Value = path);
                     break;
 
                 case PathSelectorMode.OpenFile:
-                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, textbox.Value, null, Filter, (path) => textbox.Value = path);
+                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, textbox.Value, null, Filter, path => textbox.Value = path);
                     break;
 
                 case PathSelectorMode.OpenDirectory:
-                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, "", textbox.Value, Filter, (path) => textbox.Value = path);
+                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, "", textbox.Value, Filter, path => textbox.Value = path);
                     break;
 
                 case PathSelectorMode.SaveFile:
-                    Manager.ScreenLayerManager.OpenSaveLocationPicker(LabelText, textbox.Value, SaveExtension, Filter, (path) => textbox.Value = path);
+                    Manager.ScreenLayerManager.OpenSaveLocationPicker(LabelText, textbox.Value, SaveExtension, Filter, path => textbox.Value = path);
                     break;
             }
         };

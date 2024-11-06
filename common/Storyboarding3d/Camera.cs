@@ -33,11 +33,10 @@ public class CameraState(Matrix4x4 viewProjection, float aspectRatio, float focu
 
         return new(screenPosition.X - offset, screenPosition.Y, depth, transformedPoint.W);
     }
-    public double LinearizeZ(double z) => 2 * NearClip / (FarClip + NearClip - z * (FarClip - NearClip));
     public float OpacityAt(float distance)
     {
-        if (distance < NearFade) return (float)Math.Max(0, Math.Min((distance - NearClip) / (NearFade - NearClip), 1));
-        else if (distance > FarFade) return (float)Math.Max(0, Math.Min((FarClip - distance) / (FarClip - FarFade), 1));
+        if (distance < NearFade) return Math.Max(0, Math.Min((distance - NearClip) / (NearFade - NearClip), 1));
+        else if (distance > FarFade) return Math.Max(0, Math.Min((FarClip - distance) / (FarClip - FarFade), 1));
         return 1;
     }
 }
