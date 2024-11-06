@@ -56,7 +56,9 @@ public sealed class AudioManager : IDisposable
     #region IDisposable Support
 
     bool disposed;
-    void dispose()
+    
+    ~AudioManager() => Dispose();
+    public void Dispose()
     {
         if (!disposed)
         {
@@ -64,9 +66,6 @@ public sealed class AudioManager : IDisposable
             disposed = true;
         }
     }
-
-    ~AudioManager() => dispose();
-    public void Dispose() => dispose();
 
     #endregion
 }

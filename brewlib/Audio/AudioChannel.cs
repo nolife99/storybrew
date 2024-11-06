@@ -161,11 +161,11 @@ public class AudioChannel : IDisposable
     bool disposed;
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed)
+        if (!disposed && disposing)
         {
             channel = 0;
             disposed = true;
-            if (disposing) Manager.UnregisterChannel(this);
+            Manager.UnregisterChannel(this);
         }
     }
 

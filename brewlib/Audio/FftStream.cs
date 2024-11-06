@@ -43,13 +43,6 @@ public class FftStream : IDisposable
     #region IDisposable Support
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    ~FftStream() => Dispose(false);
     void Dispose(bool disposing)
     {
         if (!disposed)
@@ -61,6 +54,13 @@ public class FftStream : IDisposable
                 disposed = true;
             }
         }
+    }
+
+    ~FftStream() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     #endregion

@@ -90,8 +90,9 @@ public class IntegratedCompressor : ImageCompressor
 
     protected override async void Dispose(bool disposing)
     {
-        if (!disposed) await Task.WhenAll(tasks).ContinueWith(task =>
+        if (!disposed) 
         {
+            await Task.WhenAll(tasks).ConfigureAwait(false);
             base.Dispose(disposing);
             foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);
 
@@ -99,7 +100,10 @@ public class IntegratedCompressor : ImageCompressor
             {
                 tasks.Clear();
                 toCleanup.Clear();
+
+                tasks = null;
+                toCleanup = null;
             }
-        }).ConfigureAwait(false);
+        }
     }
 }

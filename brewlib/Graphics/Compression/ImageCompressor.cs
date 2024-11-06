@@ -42,13 +42,19 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
     {
         if (!disposed)
         {
-            if (disposing) ensureStop();
-            container = null;
-            disposed = true;
+            ensureStop();
+            if (disposing)
+            {
+                container = null;
+                disposed = true;
+            }
         }
     }
-
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     protected readonly struct Argument
     {

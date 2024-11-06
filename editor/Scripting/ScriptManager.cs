@@ -166,25 +166,20 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
             document.DocumentElement.AppendChild(referencedAssembliesGroup);
 
-            referencedAssemblies.ForEach(path =>
+            foreach (var path in referencedAssemblies)
             {
                 if (!Project.DefaultAssemblies.Contains(path))
                 {
-                    var isSystem = path.StartsWith("System.", StringComparison.Ordinal);
-                    var relativePath = isSystem ? path : PathHelper.GetRelativePath(ScriptsPath, path);
-
                     var compileNode = document.CreateElement("Reference", xmlns);
-                    compileNode.SetAttribute("Include", isSystem ? path : AssemblyName.GetAssemblyName(path).Name);
-                    if (!isSystem)
-                    {
-                        var hintPath = document.CreateElement("HintPath", xmlns);
-                        hintPath.AppendChild(document.CreateTextNode(relativePath));
-                        compileNode.AppendChild(hintPath);
-                    }
+                    compileNode.SetAttribute("Include", AssemblyName.GetAssemblyName(path).Name);
+                    
+                    var hintPath = document.CreateElement("HintPath", xmlns);
+                    hintPath.AppendChild(document.CreateTextNode(PathHelper.GetRelativePath(ScriptsPath, path)));
+                    compileNode.AppendChild(hintPath);
                     referencedAssembliesGroup.AppendChild(compileNode);
                 }
                 document.Save(csProjPath);
-            });
+            }
         }
         catch (Exception e)
         {

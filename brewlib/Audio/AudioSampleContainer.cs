@@ -32,6 +32,8 @@ public sealed class AudioSampleContainer(AudioManager audioManager, ResourceCont
             samples.Dispose();
             samples = null;
             disposed = true;
+
+            GC.SuppressFinalize(this);
         }
     }
 

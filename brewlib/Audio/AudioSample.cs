@@ -56,13 +56,10 @@ public class AudioSample : IDisposable
     {
         if (!disposed)
         {
-            if (sample != 0)
-            {
-                Bass.SampleFree(sample);
-                if (disposing) sample = 0;
-            }
+            if (sample != 0) Bass.SampleFree(sample);
             if (disposing)
             {
+                sample = 0;
                 manager = null;
                 disposed = true;
             }

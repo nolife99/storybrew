@@ -136,17 +136,20 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
     {
         if (!disposed)
         {
-            if (appDomain is not null)
+            appDomain?.Unload();
+            if (disposing) 
             {
-                appDomain.Unload();
                 appDomain = null;
+                scriptType = null;
             }
-
-            scriptType = null;
             disposed = true;
         }
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }
