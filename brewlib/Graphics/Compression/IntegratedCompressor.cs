@@ -85,14 +85,15 @@ public class IntegratedCompressor : ImageCompressor
         toCleanup.Add(utility);
     }
 
-    readonly HashSet<string> toCleanup = [];
-    readonly List<Task> tasks = [];
+    HashSet<string> toCleanup = [];
+    List<Task> tasks = [];
 
     protected override async void Dispose(bool disposing)
     {
         if (!disposed) 
         {
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            await Task.WhenAll(tasks);
+
             base.Dispose(disposing);
             foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);
 

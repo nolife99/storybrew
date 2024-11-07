@@ -12,7 +12,7 @@ public class OsuSpinner : OsuHitObject
     {
         var endTime = int.Parse(values[5], CultureInfo.InvariantCulture);
 
-        string samplePath = string.Empty;
+        string samplePath = "";
         if (values.Length > 6)
         {
             var special = values[6];

@@ -12,7 +12,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
 
     readonly int width, height, padding;
     readonly string description;
-    readonly TextureOptions textureOptions;
+    TextureOptions textureOptions;
 
     public TextureMultiAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0)
     {
@@ -64,6 +64,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
         {
             foreach (var atlas in atlases) atlas.Dispose();
             atlases.Clear();
+            atlases = null;
 
             if (oversizeTextures is not null)
             {
@@ -72,7 +73,9 @@ public sealed class TextureMultiAtlas2d : IDisposable
                 oversizeTextures = null;
             }
 
-            atlases = null;
+            textureOptions = null;
+
+            GC.SuppressFinalize(this);
             disposed = true;
         }
     }

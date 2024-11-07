@@ -74,6 +74,7 @@ public class GamepadManager(int gamepadIndex)
             if (IsDown(GamepadButton.ThumbRight)) thumb.X += 1;
             if (IsDown(GamepadButton.ThumbDown)) thumb.Y -= 1;
             if (IsDown(GamepadButton.ThumbUp)) thumb.Y += 1;
+
             var thumbLeftLength = thumb.Length;
             if (thumbLeftLength > 0) thumb /= thumbLeftLength;
 
@@ -81,6 +82,7 @@ public class GamepadManager(int gamepadIndex)
             if (IsDown(GamepadButton.ThumbAltRight)) thumbAlt.X += 1;
             if (IsDown(GamepadButton.ThumbAltDown)) thumbAlt.Y -= 1;
             if (IsDown(GamepadButton.ThumbAltUp)) thumbAlt.Y += 1;
+
             var thumbRightLength = thumbAlt.Length;
             if (thumbRightLength > 0) thumbAlt /= thumbRightLength;
 
@@ -101,7 +103,7 @@ public class GamepadManager(int gamepadIndex)
     }
     void updateButton(ButtonState state, GamepadButton button, Key key)
     {
-        if (state == ButtonState.Pressed || isKeyDown(key)) pressedButtons |= button;
+        if (state is ButtonState.Pressed || isKeyDown(key)) pressedButtons |= button;
     }
     void updateTrigger(float state, GamepadButton button, Key key)
     {
@@ -115,16 +117,16 @@ public class GamepadManager(int gamepadIndex)
     float applyTriggerFilters(float value)
     {
         if (value < TriggerInnerDeadzone) return 0;
-        var range = 1f - TriggerOuterDeadzone - TriggerInnerDeadzone;
-        var normalizedValue = Math.Min(1f, (value - TriggerInnerDeadzone) / range);
+        var range = 1 - TriggerOuterDeadzone - TriggerInnerDeadzone;
+        var normalizedValue = Math.Min(1, (value - TriggerInnerDeadzone) / range);
         return normalizedValue / value;
     }
     Vector2 applyAxisFilters(Vector2 value)
     {
         var length = value.Length;
         if (length < AxisInnerDeadzone) return Vector2.Zero;
-        var range = 1f - AxisOuterDeadzone - AxisInnerDeadzone;
-        var normalizedLength = Math.Min(1f, (length - AxisInnerDeadzone) / range);
+        var range = 1 - AxisOuterDeadzone - AxisInnerDeadzone;
+        var normalizedLength = Math.Min(1, (length - AxisInnerDeadzone) / range);
         var scale = normalizedLength / length;
         return value * scale;
     }

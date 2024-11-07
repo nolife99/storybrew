@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BrewLib.Data;
 using BrewLib.Util;
@@ -9,7 +10,6 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
 {
     Dictionary<string, Texture2d> textures = [];
 
-    public IEnumerable<string> ResourceNames => textures.Where(e => e.Value is not null).Select(e => e.Key);
     public float UncompressedMemoryUseMb
     {
         get
@@ -40,8 +40,9 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
         if (!disposed)
         {
             textures.Dispose();
-
             textures = null;
+
+            GC.SuppressFinalize(this);
             disposed = true;
         }
     }

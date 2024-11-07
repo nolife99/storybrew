@@ -14,10 +14,6 @@ public sealed class InputManager : IDisposable
     public bool HasMouseFocus => window.Focused && hasMouseHover;
     public bool HasWindowFocus => window.Focused;
 
-    readonly Dictionary<int, GamepadManager> gamepadManagers = [];
-    public IEnumerable<GamepadManager> GamepadManagers => gamepadManagers.Values;
-    public GamepadManager GetGamepadManager(int gamepadIndex = 0) => gamepadManagers[gamepadIndex];
-
     public System.Numerics.Vector2 MousePosition { get; private set; }
 
     public bool Control { get; private set; }
@@ -51,9 +47,6 @@ public sealed class InputManager : IDisposable
     }
     public void Dispose()
     {
-        foreach (var gamepadIndex in gamepadManagers.Keys) DisableGamepadEvents(gamepadIndex);
-        gamepadManagers.Clear();
-
         window.FocusedChanged -= window_FocusedChanged;
         window.MouseEnter -= window_MouseEnter;
         window.MouseLeave -= window_MouseLeave;
@@ -65,26 +58,6 @@ public sealed class InputManager : IDisposable
         window.KeyDown -= window_KeyDown;
         window.KeyUp -= window_KeyUp;
         window.KeyPress -= window_KeyPress;
-    }
-    public void EnableGamepadEvents(int gamepadIndex = 0)
-    {
-        var manager = new GamepadManager(gamepadIndex);
-        manager.OnConnected += gamepadManager_OnConnected;
-        manager.OnButtonDown += gamepadManager_OnButtonDown;
-        manager.OnButtonUp += gamepadManager_OnButtonUp;
-        gamepadManagers.Add(gamepadIndex, manager);
-    }
-    public void DisableGamepadEvents(int gamepadIndex = 0)
-    {
-        var manager = gamepadManagers[gamepadIndex];
-        manager.OnConnected -= gamepadManager_OnConnected;
-        manager.OnButtonDown -= gamepadManager_OnButtonDown;
-        manager.OnButtonUp -= gamepadManager_OnButtonUp;
-        gamepadManagers.Remove(gamepadIndex);
-    }
-    public void Update()
-    {
-        foreach (var gamepadManager in gamepadManagers.Values) gamepadManager.Update();
     }
     void updateMouseFocus()
     {
@@ -131,6 +104,5 @@ public sealed class InputManager : IDisposable
 }
 public class FocusChangedEventArgs(bool hasFocus) : EventArgs
 {
-    readonly bool hasFocus = hasFocus;
     public bool HasFocus => hasFocus;
 }

@@ -37,6 +37,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
 
+    ~PrimitiveStreamerVao() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);

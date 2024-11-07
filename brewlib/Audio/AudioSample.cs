@@ -26,9 +26,11 @@ public class AudioSample : IDisposable
             {
                 var len = (int)stream.Length;
                 var bytes = ArrayPool<byte>.Shared.Rent(len);
-
                 stream.Read(bytes, 0, len);
+
                 sample = Bass.SampleLoad(bytes, 0, len, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
+                ArrayPool<byte>.Shared.Return(bytes);
+
                 if (sample != 0) return;
             }
 

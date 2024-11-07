@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BrewLib.Data;
 using BrewLib.Util;
@@ -10,7 +11,6 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     Dictionary<string, Texture2dRegion> textures = [];
     Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
 
-    public IEnumerable<string> ResourceNames => textures.Where(e => e.Value is not null).Select(e => e.Key);
     public float UncompressedMemoryUseMb
     {
         get
@@ -49,6 +49,8 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
 
             atlases = null;
             textures = null;
+
+            GC.SuppressFinalize(this);
             disposed = true;
         }
     }

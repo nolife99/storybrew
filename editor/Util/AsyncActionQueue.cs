@@ -147,17 +147,16 @@ public sealed class AsyncActionQueue<T> : IDisposable
             {
                 tokenSrc?.Dispose();
                 tokenSrc = new();
-                tokenSrc.Token.Register(() => Trace.WriteLine($"Attempting to abort thread {threadName}"));
 
 #pragma warning disable SYSLIB0046
-                thread = Task.Factory.StartNew(() => ControlledExecution.Run(async () =>
+                thread = Task.Factory.StartNew(() => ControlledExecution.Run(() =>
                 {
                     var mustSleep = false;
                     while (!tokenSrc.IsCancellationRequested)
                     {
                         if (mustSleep)
                         {
-                            await Task.Delay(200, tokenSrc.Token).ConfigureAwait(false);
+                            Thread.Sleep(200);
                             mustSleep = false;
                         }
 
@@ -200,7 +199,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         }
                         catch (ThreadAbortException)
                         {
-                            Trace.WriteLine($"Successfully aborted thread {threadName}");
+                            Trace.WriteLine($"Aborted thread {threadName}");
                         }
                         catch (Exception e)
                         {

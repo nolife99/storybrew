@@ -9,7 +9,6 @@ namespace BrewLib.Audio;
 public sealed class AudioSampleContainer(AudioManager audioManager, ResourceContainer resourceContainer = null) : IDisposable
 {
     Dictionary<string, AudioSample> samples = [];
-    public IEnumerable<string> ResourceNames => samples.Where(e => e.Value is not null).Select(e => e.Key);
 
     public AudioSample Get(string filename)
     {

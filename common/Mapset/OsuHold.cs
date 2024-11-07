@@ -10,7 +10,7 @@ public class OsuHold : OsuHitObject
 
     public static OsuHold Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
     {
-        string samplePath = string.Empty;
+        string samplePath = "";
 
         var special = values[5];
         var specialValues = special.Split(':');

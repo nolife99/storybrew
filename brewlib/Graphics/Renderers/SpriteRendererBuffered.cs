@@ -174,11 +174,6 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
     }
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     public void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -199,6 +194,13 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
             FlushAction = null;
             disposed = true;
         }
+    }
+
+    ~SpriteRendererBuffered() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color color)

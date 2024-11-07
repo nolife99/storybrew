@@ -21,7 +21,7 @@ public class ScriptedEffect : Effect
     EffectStatus status = EffectStatus.Initializing;
     public override EffectStatus Status => status;
 
-    string statusMessage = string.Empty;
+    string statusMessage = "";
     public override string StatusMessage => statusMessage;
 
     bool multithreaded;
@@ -40,7 +40,6 @@ public class ScriptedEffect : Effect
         this.multithreaded = multithreaded;
     }
 
-    ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate"/>. Doesn't run on the main thread. </summary>
     public override void Update()
     {
         if (!scriptContainer.HasScript) return;
@@ -138,10 +137,7 @@ public class ScriptedEffect : Effect
         var duration = statusStopwatch.ElapsedMilliseconds;
         if (duration > 0) switch (this.status)
             {
-                case EffectStatus.Ready:
-                case EffectStatus.CompilationFailed:
-                case EffectStatus.LoadingFailed:
-                case EffectStatus.ExecutionFailed: break;
+                case EffectStatus.Ready: case EffectStatus.CompilationFailed: case EffectStatus.LoadingFailed: case EffectStatus.ExecutionFailed: break;
                 default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
             }
 

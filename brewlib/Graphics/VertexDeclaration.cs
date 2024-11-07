@@ -48,17 +48,6 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
             if (attributeLocation >= 0) GL.DisableVertexAttribArray(attributeLocation);
         }
     }
-    public override bool Equals(object obj)
-    {
-        if (obj == this) return true;
-
-        if (obj is not VertexDeclaration otherDeclaration) return false;
-        if (AttributeCount != otherDeclaration.AttributeCount) return false;
-        for (var i = 0; i < AttributeCount; i++) if (!this[i].Equals(otherDeclaration[i])) return false;
-
-        return true;
-    }
-    public override int GetHashCode() => base.GetHashCode();
 
     #region Enumerable
 

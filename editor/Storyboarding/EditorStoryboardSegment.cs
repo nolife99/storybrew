@@ -32,9 +32,9 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override float Scale { get; set; } = 1;
     public override bool ReverseDepth { get; set; }
 
-    public event ChangedHandler OnChanged;
+    public event Action<object, ChangedEventArgs> OnChanged;
     protected void RaiseChanged(string propertyName)
-        => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new(propertyName)));
+        => EventHelper.InvokeStrict(() => OnChanged, d => ((Action<object, ChangedEventArgs>)d)(this, new(propertyName)));
 
     readonly List<StoryboardObject> storyboardObjects = [];
     readonly List<DisplayableObject> displayableObjects = [];

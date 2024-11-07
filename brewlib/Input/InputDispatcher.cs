@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using osuTK;
 using osuTK.Input;
 
@@ -14,46 +15,14 @@ public class InputDispatcher : InputHandler
     public void Clear() => handlers.Clear();
 
     public void OnFocusChanged(FocusChangedEventArgs e) => handlers.ForEach(handler => handler.OnFocusChanged(e));
-    public bool OnClickDown(MouseButtonEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnClickDown(e)) return true;
-        return false;
-    }
-    public bool OnClickUp(MouseButtonEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnClickUp(e)) return true;
-        return false;
-    }
-    public bool OnMouseWheel(MouseWheelEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnMouseWheel(e)) return true;
-        return false;
-    }
+    public bool OnClickDown(MouseButtonEventArgs e) => handlers.Any(h => h.OnClickDown(e));
+    public bool OnClickUp(MouseButtonEventArgs e) => handlers.Any(h => h.OnClickUp(e));
+    public bool OnMouseWheel(MouseWheelEventArgs e) => handlers.Any(h => h.OnMouseWheel(e));
     public void OnMouseMove(MouseMoveEventArgs e) => handlers.ForEach(handler => handler.OnMouseMove(e));
-    public bool OnKeyDown(KeyboardKeyEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnKeyDown(e)) return true;
-        return false;
-    }
-    public bool OnKeyUp(KeyboardKeyEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnKeyUp(e)) return true;
-        return false;
-    }
-    public bool OnKeyPress(KeyPressEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnKeyPress(e)) return true;
-        return false;
-    }
+    public bool OnKeyDown(KeyboardKeyEventArgs e) => handlers.Any(h => h.OnKeyDown(e));
+    public bool OnKeyUp(KeyboardKeyEventArgs e) => handlers.Any(h => h.OnKeyUp(e));
+    public bool OnKeyPress(KeyPressEventArgs e) => handlers.Any(h => h.OnKeyPress(e));
     public virtual void OnGamepadConnected(GamepadEventArgs e) => handlers.ForEach(handler => handler.OnGamepadConnected(e));
-    public virtual bool OnGamepadButtonDown(GamepadButtonEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnGamepadButtonDown(e)) return true;
-        return false;
-    }
-    public virtual bool OnGamepadButtonUp(GamepadButtonEventArgs e)
-    {
-        for (var i = 0; i < handlers.Count; ++i) if (handlers[i].OnGamepadButtonUp(e)) return true;
-        return false;
-    }
+    public virtual bool OnGamepadButtonDown(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonDown(e));
+    public virtual bool OnGamepadButtonUp(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonUp(e));
 }

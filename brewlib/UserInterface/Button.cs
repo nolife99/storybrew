@@ -94,7 +94,7 @@ public class Button : Widget, Field
 
     public void Click(MouseButton button = MouseButton.Left)
     {
-        if (isCheckable && button == MouseButton.Left) Checked = !Checked;
+        if (isCheckable && button is MouseButton.Left) Checked = !Checked;
         OnClick?.Invoke(this, button);
     }
 

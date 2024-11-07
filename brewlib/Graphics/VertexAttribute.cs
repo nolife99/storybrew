@@ -1,4 +1,5 @@
-﻿using osuTK.Graphics.OpenGL;
+﻿using System;
+using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
 
@@ -32,8 +33,7 @@ public class VertexAttribute
 
         return true;
     }
-    public override int GetHashCode() => base.GetHashCode();
-    public override string ToString() => $"{Name} {ComponentCount}x {Type} (used as {Usage})";
+    public override int GetHashCode() => HashCode.Combine(Name, Type, ComponentSize, ComponentCount, Offset, Normalized, Usage);
 
     public static VertexAttribute CreatePosition2d() => new()
     {
@@ -67,8 +67,7 @@ public class VertexAttribute
         Type = VertexAttribPointerType.UnsignedByte,
         Normalized = true,
         Usage = AttributeUsage.Color
-    } :
-    new()
+    } : new()
     {
         Name = ColorAttributeName,
         ComponentCount = 4,

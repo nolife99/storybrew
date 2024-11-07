@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using osuTK.Graphics;
 using StorybrewCommon.Storyboarding.CommandValues;
 
@@ -20,14 +21,14 @@ public abstract class ObjectSerializer
 
     static readonly HashSet<ObjectSerializer> serializers =
     [
-        new SimpleObjectSerializer<int>(r => r.ReadInt32(), (w, v) => w.Write((int)v), v => int.Parse(v, CultureInfo.InvariantCulture), v => ((int)v).ToString(CultureInfo.InvariantCulture)),
-        new SimpleObjectSerializer<float>(r => r.ReadSingle(), (w, v) => w.Write((float)v), v => float.Parse(v, CultureInfo.InvariantCulture), v => ((float)v).ToString(CultureInfo.InvariantCulture)),
-        new SimpleObjectSerializer<double>(r => r.ReadDouble(), (w, v) => w.Write((double)v), v => double.Parse(v, CultureInfo.InvariantCulture), v => ((double)v).ToString(CultureInfo.InvariantCulture)),
-        new SimpleObjectSerializer<string>(r => r.ReadString(), (w, v) => w.Write((string)v)),
-        new SimpleObjectSerializer<bool>(r => r.ReadBoolean(), (w, v) => w.Write((bool)v), v => bool.Parse(v), v => v.ToString()),
+        new SimpleObjectSerializer<int>(r => r.ReadInt32(), (w, v) => w.Write(Unsafe.Unbox<int>(v)), v => int.Parse(v, CultureInfo.InvariantCulture), v => Unsafe.Unbox<int>(v).ToString(CultureInfo.InvariantCulture)),
+        new SimpleObjectSerializer<float>(r => r.ReadSingle(), (w, v) => w.Write(Unsafe.Unbox<float>(v)), v => float.Parse(v, CultureInfo.InvariantCulture), v => Unsafe.Unbox<float>(v).ToString(CultureInfo.InvariantCulture)),
+        new SimpleObjectSerializer<double>(r => r.ReadDouble(), (w, v) => w.Write(Unsafe.Unbox<double>(v)), v => double.Parse(v, CultureInfo.InvariantCulture), v => Unsafe.Unbox<double>(v).ToString(CultureInfo.InvariantCulture)),
+        new SimpleObjectSerializer<string>(r => r.ReadString(), (w, v) => w.Write(Unsafe.As<string>(v))),
+        new SimpleObjectSerializer<bool>(r => r.ReadBoolean(), (w, v) => w.Write(Unsafe.Unbox<bool>(v)), v => bool.Parse(v), v => Unsafe.Unbox<bool>(v).ToString()),
         new SimpleObjectSerializer<CommandScale>(r => new CommandScale(r.ReadSingle(), r.ReadSingle()), (w, v) =>
         {
-            var vector = (CommandScale)v;
+            var vector = Unsafe.Unbox<CommandScale>(v);
             w.Write(vector.X);
             w.Write(vector.Y);
         }, v =>
@@ -36,12 +37,12 @@ public abstract class ObjectSerializer
             return new CommandScale(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var vector = (CommandScale)v;
+            var vector = Unsafe.Unbox<CommandScale>(v);
             return vector.X.ToString() + "," + vector.Y.ToString();
         }),
         new SimpleObjectSerializer<CommandPosition>(r => new CommandPosition(r.ReadSingle(), r.ReadSingle()), (w, v) =>
         {
-            var vector = (CommandPosition)v;
+            var vector = Unsafe.Unbox<CommandPosition>(v);
             w.Write(vector.X);
             w.Write(vector.Y);
         }, v =>
@@ -50,12 +51,12 @@ public abstract class ObjectSerializer
             return new CommandPosition(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var vector = (CommandPosition)v;
+            var vector = Unsafe.Unbox<CommandPosition>(v);
             return vector.X.ToString() + "," + vector.Y.ToString();
         }),
         new SimpleObjectSerializer<Vector2>(r => new Vector2(r.ReadSingle(), r.ReadSingle()), (w, v) =>
         {
-            var vector = (Vector2)v;
+            var vector = Unsafe.Unbox<Vector2>(v);
             w.Write(vector.X);
             w.Write(vector.Y);
         }, v =>
@@ -64,12 +65,12 @@ public abstract class ObjectSerializer
             return new Vector2(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var vector = (Vector2)v;
+            var vector = Unsafe.Unbox<Vector2>(v);
             return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture);
         }),
         new SimpleObjectSerializer<Vector3>(r => new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle()), (w, v) =>
         {
-            var vector = (Vector3)v;
+            var vector = Unsafe.Unbox<Vector3>(v);
             w.Write(vector.X);
             w.Write(vector.Y);
             w.Write(vector.Z);
@@ -79,12 +80,12 @@ public abstract class ObjectSerializer
             return new Vector3(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var vector = (Vector3)v;
+            var vector = Unsafe.Unbox<Vector3>(v);
             return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture) + "," + vector.Z.ToString(CultureInfo.InvariantCulture);
         }),
         new SimpleObjectSerializer<osuTK.Vector2>(r => new osuTK.Vector2(r.ReadSingle(), r.ReadSingle()), (w, v) =>
         {
-            var vector = (osuTK.Vector2)v;
+            var vector = Unsafe.Unbox<osuTK.Vector2>(v);
             w.Write(vector.X);
             w.Write(vector.Y);
         }, v =>
@@ -93,12 +94,12 @@ public abstract class ObjectSerializer
             return new osuTK.Vector2(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var vector = (osuTK.Vector2)v;
+            var vector = Unsafe.Unbox<osuTK.Vector2>(v);
             return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture);
         }),
         new SimpleObjectSerializer<osuTK.Vector3>(r => new osuTK.Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle()), (w, v) =>
         {
-            var vector = (osuTK.Vector3)v;
+            var vector = Unsafe.Unbox<osuTK.Vector3>(v);
             w.Write(vector.X);
             w.Write(vector.Y);
             w.Write(vector.Z);
@@ -108,12 +109,12 @@ public abstract class ObjectSerializer
             return new osuTK.Vector3(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var vector = (osuTK.Vector3)v;
+            var vector = Unsafe.Unbox<osuTK.Vector3>(v);
             return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture) + "," + vector.Z.ToString(CultureInfo.InvariantCulture);
         }),
         new SimpleObjectSerializer<Color4>(r => new Color4(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle()), (w, v) =>
         {
-            var color = (Color4)v;
+            var color = Unsafe.Unbox<Color4>(v);
             w.Write(color.R);
             w.Write(color.G);
             w.Write(color.B);
@@ -124,7 +125,7 @@ public abstract class ObjectSerializer
             return new Color4(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture), float.Parse(split[3], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var color = (Color4)v;
+            var color = Unsafe.Unbox<Color4>(v);
             return color.R.ToString(CultureInfo.InvariantCulture) + "," + color.G.ToString(CultureInfo.InvariantCulture) + "," + color.B.ToString(CultureInfo.InvariantCulture) + "," + color.A.ToString(CultureInfo.InvariantCulture);
         }),
         new SimpleObjectSerializer<Color>(r => Color.FromArgb(r.ReadInt32()), (w, v) => w.Write(((Color)v).ToArgb()), v =>
@@ -133,7 +134,7 @@ public abstract class ObjectSerializer
             return new Color4(float.Parse(split[0], CultureInfo.InvariantCulture), float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture), float.Parse(split[3], CultureInfo.InvariantCulture));
         }, v =>
         {
-            var color = (Color4)v;
+            var color = Unsafe.Unbox<Color4>(v);
             return color.R.ToString(CultureInfo.InvariantCulture) + "," + color.G.ToString(CultureInfo.InvariantCulture) + "," + color.B.ToString(CultureInfo.InvariantCulture) + "," + color.A.ToString(CultureInfo.InvariantCulture);
         })
     ];
@@ -150,7 +151,7 @@ public abstract class ObjectSerializer
     {
         if (value is null)
         {
-            writer.Write(string.Empty);
+            writer.Write("");
             return;
         }
 
@@ -162,14 +163,14 @@ public abstract class ObjectSerializer
     }
     public static object FromString(string typeName, string value)
     {
-        if (typeName == string.Empty) return null;
+        if (typeName == "") return null;
 
         var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot read objects of type {typeName}");
         return serializer.FromString(value);
     }
     public static string ToString(Type type, object value)
     {
-        if (value is null) return string.Empty;
+        if (value is null) return "";
 
         var typeName = type.FullName;
 
@@ -185,16 +186,11 @@ public abstract class ObjectSerializer
 }
 public class SimpleObjectSerializer<T>(Func<BinaryReader, object> read, Action<BinaryWriter, object> write, Func<string, object> fromString = null, Func<object, string> toString = null) : ObjectSerializer
 {
-    readonly Func<BinaryReader, object> read = read;
-    readonly Action<BinaryWriter, object> write = write;
-    readonly Func<string, object> fromString = fromString;
-    readonly Func<object, string> toString = toString;
-
     public override bool CanSerialize(string typeName) => typeName == typeof(T).FullName;
 
     public override object ReadValue(BinaryReader reader) => read(reader);
     public override void WriteValue(BinaryWriter writer, object value) => write(writer, value);
 
     public override object FromString(string value) => fromString?.Invoke(value) ?? value;
-    public override string ToString(object value) => toString?.Invoke(value) ?? (string)value;
+    public override string ToString(object value) => toString?.Invoke(value) ?? Unsafe.As<string>(value);
 }

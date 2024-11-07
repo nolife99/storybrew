@@ -110,9 +110,8 @@ public sealed class Project : IDisposable
         scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, ScriptsLibraryPath, compiledScriptsPath, ReferencedAssemblies);
         effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
 
-        LayerManager.OnLayersChanged += (sender, e) => Changed = true;
-
-        OnMainBeatmapChanged += (sender, e) => effects.ForEach(effect => QueueEffectUpdate(effect), effect => effect.BeatmapDependant);
+        LayerManager.OnLayersChanged += (_, _) => Changed = true;
+        OnMainBeatmapChanged += (_, _) => effects.ForEach(effect => QueueEffectUpdate(effect), effect => effect.BeatmapDependant);
     }
 
     #region Audio and Display
@@ -130,7 +129,7 @@ public sealed class Project : IDisposable
     {
         effectUpdateQueue.Enabled = allowEffectUpdates && MapsetPathIsValid;
 
-        var newFrameStats = updateFrameStats ? new FrameStats() : null;
+        FrameStats newFrameStats = updateFrameStats ? new() : null;
         LayerManager.Draw(drawContext, camera, bounds, opacity, newFrameStats);
         FrameStats = newFrameStats ?? FrameStats;
     }

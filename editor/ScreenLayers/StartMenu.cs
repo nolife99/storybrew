@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using osuTK.Input;
 using StorybrewEditor.Util;
 using Tiny;
 using Tiny.Formats.Json;
@@ -106,6 +107,10 @@ public class StartMenu : UiScreenLayer
         wikiButton.OnClick += (_, _) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");
         discordButton.OnClick += (_, _) => NetHelper.OpenUrl(Program.DiscordUrl);
         closeButton.OnClick += (_, _) => Exit();
+        versionLabel.OnClickUp += (_, e) =>
+        {
+            if (e.Button is MouseButton.Left) NetHelper.OpenUrl($"https://github.com/{Program.Repository}");
+        };
         checkLatestVersion();
     }
     public override void Resize(int width, int height)
@@ -115,7 +120,7 @@ public class StartMenu : UiScreenLayer
         bottomLayout.Pack(600);
         bottomRightLayout.Pack((1024 - bottomLayout.Width) / 2);
     }
-    void checkLatestVersion() => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", (r, e) => Program.Schedule(() =>
+    void checkLatestVersion() => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", (r, e) =>
     {
         if (IsDisposed) return;
         if (e is not null)
@@ -177,8 +182,8 @@ public class StartMenu : UiScreenLayer
             if (Program.Version < latestVersion)
             {
                 updateButton.Text = "Version " + latestVersion + " available!";
-                updateButton.Tooltip = "What's new:\n\n" + description.TrimEnd('\n');
-                updateButton.OnClick += (sender, ex) =>
+                updateButton.Tooltip = $"What's new:\n\n{description.AsSpan().TrimEnd('\n')}";
+                updateButton.OnClick += (_, _) =>
                 {
                     if (downloadUrl is not null && latestVersion >= new Version(1, 4)) Manager.Add(new UpdateMenu(downloadUrl));
                     else Updater.OpenLatestReleasePage();
@@ -188,7 +193,7 @@ public class StartMenu : UiScreenLayer
             }
             else
             {
-                versionLabel.Tooltip = "Recent changes:\n\n" + description.TrimEnd('\n');
+                versionLabel.Tooltip = $"Recent changes:\n\n{description.AsSpan().TrimEnd('\n')}";
                 updateButton.Displayed = false;
             }
             bottomLayout.Pack(600);
@@ -197,7 +202,7 @@ public class StartMenu : UiScreenLayer
         {
             handleLatestVersionException(ex);
         }
-    }));
+    });
     void handleLatestVersionException(Exception exception)
     {
         Trace.TraceError($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");

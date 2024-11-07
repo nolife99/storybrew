@@ -26,6 +26,8 @@ public sealed class DrawContext : IDisposable
             foreach (var disposable in disposables) disposable.Dispose();
             references = null;
             disposables = null;
+
+            GC.SuppressFinalize(this);
             disposed = true;
         }
     }

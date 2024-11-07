@@ -178,7 +178,7 @@ public class LayerList : Widget
                 return false;
             };
 
-            ChangedHandler changedHandler;
+            Action<object, ChangedEventArgs> changedHandler;
             EventHandler effectChangedHandler;
 
             layer.OnChanged += changedHandler = (_, _) =>

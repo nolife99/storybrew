@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
@@ -188,7 +189,7 @@ public class LayerManager
     void layer_OnChanged(object sender, ChangedEventArgs e)
     {
         if (e.PropertyName is null || e.PropertyName == nameof(EditorStoryboardLayer.OsbLayer) || e.PropertyName == nameof(EditorStoryboardLayer.DiffSpecific))
-            sortLayer((EditorStoryboardLayer)sender);
+            sortLayer(Unsafe.As<EditorStoryboardLayer>(sender));
     }
     void sortLayer(EditorStoryboardLayer layer)
     {

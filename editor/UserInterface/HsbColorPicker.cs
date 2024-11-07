@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
@@ -38,7 +39,7 @@ public class HsbColorPicker : Widget, Field
     public object FieldValue
     {
         get => Value;
-        set => Value = (FontColor)value;
+        set => Value = Unsafe.Unbox<FontColor>(value);
     }
 
     float previewHeight = 24;

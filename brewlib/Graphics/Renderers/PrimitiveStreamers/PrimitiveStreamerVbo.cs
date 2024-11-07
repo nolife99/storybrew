@@ -76,11 +76,6 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
     }
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     protected virtual void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -103,6 +98,13 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
             indexBufferId = -1;
             disposed = true;
         }
+    }
+
+    ~PrimitiveStreamerVbo() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     public static bool HasCapabilities() => DrawState.HasCapabilities(2, 0);

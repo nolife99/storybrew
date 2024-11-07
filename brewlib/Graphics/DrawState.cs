@@ -35,7 +35,7 @@ public static class DrawState
                 SetCapability(EnableCap.FramebufferSrgb, true);
                 ColorCorrected = true;
             }
-            else Trace.TraceWarning("Warning: The default framebuffer isn't sRgb");
+            else Trace.TraceWarning("The default framebuffer isn't sRgb");
         }
 
         // glActiveTexture requires opengl 1.3
@@ -238,7 +238,7 @@ public static class DrawState
 
                 if (isFreeSamplerUnit)
                 {
-                    BindTexture(textureId, samplerIndex, texture.TexturingMode);
+                    BindTexture(textureId, samplerIndex, TexturingModes.Texturing2d);
                     samplerIndexes[textureIndex] = samplerIndex;
                     lastRecycledTextureUnit = samplerIndex;
                     break;
@@ -265,8 +265,7 @@ public static class DrawState
             ViewportChanged?.Invoke();
         }
     }
-    public delegate void ViewportChangedEvent();
-    public static event ViewportChangedEvent ViewportChanged;
+    public static event Action ViewportChanged;
 
     static Rectangle? clipRegion;
     public static Rectangle? ClipRegion
@@ -395,7 +394,7 @@ public static class DrawState
         var error = GL.GetError();
         if (alwaysThrow || error != ErrorCode.NoError) throw new GraphicsErrorException(
             (context is not null ? "openGL error while " + context : "openGL error") +
-            (error != ErrorCode.NoError ? ": " + error.ToString() : string.Empty));
+            (error != ErrorCode.NoError ? ": " + error.ToString() : ""));
     }
 
     #endregion

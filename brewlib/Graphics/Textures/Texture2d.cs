@@ -11,8 +11,7 @@ namespace BrewLib.Graphics.Textures;
 
 public class Texture2d(int textureId, int width, int height, string description) : Texture2dRegion(null, new(0, 0, width, height), description), BindableTexture
 {
-    public int TextureId => disposed ? throw new ObjectDisposedException(GetType().FullName) : textureId;
-    public TexturingModes TexturingMode => TexturingModes.Texturing2d;
+    public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
     public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
     {
@@ -30,8 +29,6 @@ public class Texture2d(int textureId, int width, int height, string description)
 
         DrawState.CheckError("updating texture");
     }
-
-    public override string ToString() => $"Texture2d#{textureId} {Description} ({Width}x{Height})";
 
     #region IDisposable Support
 

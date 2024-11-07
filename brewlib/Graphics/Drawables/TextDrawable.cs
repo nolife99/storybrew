@@ -137,14 +137,11 @@ public sealed class TextDrawable : Drawable
             var position = layoutGlyph.Position;
 
             var y = bounds.Top + position.Y * inverseScaling;
-            var height = glyph.Height * inverseScaling;
 
             if (y > clipRegion.Bottom) break;
-            if (y + height < clipRegion.Top) continue;
+            if (y + glyph.Height * inverseScaling < clipRegion.Top) continue;
 
-            var x = bounds.Left + position.X * inverseScaling;
-
-            renderer.Draw(glyph.Texture, x, y, 0, 0, inverseScaling, inverseScaling, 0, color);
+            renderer.Draw(glyph.Texture, bounds.Left + position.X * inverseScaling, y, 0, 0, inverseScaling, inverseScaling, 0, color);
         }
     }
     public RectangleF GetCharacterBounds(int index)
@@ -199,17 +196,11 @@ public sealed class TextDrawable : Drawable
 
     public void Dispose()
     {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    void Dispose(bool disposing)
-    {
         font?.Dispose();
-        if (disposing)
-        {
-            font = null;
-            textLayout = null;
-            RenderStates = null;
-        }
+        font = null;
+        textLayout = null;
+        RenderStates = null;
+
+        GC.SuppressFinalize(this);
     }
 }

@@ -26,13 +26,13 @@ public class TextFontAtlased(string name, float size) : TextFont
         Vector2 measuredSize;
         if (char.IsWhiteSpace(c))
         {
-            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, SizeF.Empty, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, true);
+            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, default, BoxAlignment.Centre, StringTrimming.None, out measuredSize, true);
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }
         else
         {
             atlas ??= new(512, 512, $"Font Atlas {name}:{size:n1}");
-            using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, SizeF.Empty, Vector2.Zero, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
+            using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, default, BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
             return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
         }
     }
@@ -44,17 +44,22 @@ public class TextFontAtlased(string name, float size) : TextFont
     {
         if (!disposed)
         {
+            foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
+            atlas?.Dispose();
+
             if (disposing)
             {
-                foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
-                atlas?.Dispose();
+                glyphs = null;
+                atlas = null;
+                disposed = true;
             }
-            glyphs = null;
-            atlas = null;
-            disposed = true;
         }
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

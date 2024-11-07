@@ -26,8 +26,8 @@ public static unsafe partial class Native
 
     #region Win32
 
-    [DllImport("user32")]
-    static extern nint SendMessageA(nint hWnd, uint msg, nuint wParam, nint lParam);
+    [LibraryImport("user32")]
+    private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
 
     ///<summary> Sends the specified message to a window or windows. </summary>
     ///<remarks> Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage"/></remarks>
@@ -43,7 +43,7 @@ public static unsafe partial class Native
     ///<exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
     public static TResult SendMessage<TWide, TLong, TResult>(nint windowHandle, Message message, TWide wParam, TLong lParam)
         where TWide : INumberBase<TWide> where TLong : INumberBase<TLong> where TResult : INumberBase<TResult>
-        => TResult.CreateChecked(SendMessageA(windowHandle, (uint)message, nuint.CreateChecked(wParam), nint.CreateChecked(lParam)));
+        => TResult.CreateChecked(SendMessageW(windowHandle, (uint)message, nuint.CreateChecked(wParam), nint.CreateChecked(lParam)));
 
     public static void SetWindowIcon(nint iconHandle)
     {
@@ -51,35 +51,35 @@ public static unsafe partial class Native
         SendMessage<int, nint, int>(MainWindowHandle, Message.SetIcon, 1, iconHandle);
     }
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
-    [DllImport("user32")]
-    static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
+    [LibraryImport("user32")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static void InitializeHandle(string windowTitle, nint hWndFallback = 0)
+    public static void InitializeHandle(string windowTitle, nint hWndFallback)
     {
         var cont = true;
         var threads = Process.GetCurrentProcess().Threads;
 
         handle = hWndFallback;
-        for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, lParam) =>
+        for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, _) =>
         {
-            string text = null;
             var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
-
             if (length > 0)
             {
-                var buffer = stackalloc sbyte[length * 2 + 1];
-                SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buffer);
-                text = new string(buffer);
-            }
-            if (text == windowTitle)
-            {
-                handle = hWnd;
-                cont = false;
+                var buf = stackalloc sbyte[length * 2 + 1];
+                SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buf);
+
+                if (new ReadOnlySpan<char>(buf, length).Equals(windowTitle, StringComparison.Ordinal))
+                {
+                    handle = hWnd;
+                    cont = false;
+                }
             }
             return cont;
         }, 0);
@@ -245,44 +245,6 @@ public static unsafe partial class Native
         /// </list> 
         ///</remarks>
         ///<returns> 1 if the text is set. </returns>
-        SetText = 0x000C,
-
-        /* Notifications
-        ActivateApp = 0x001C,
-        CancelMode = 0x001F,
-        ChildActivate = 0x0022,
-        Close = 0x0010,
-        Compacting = 0x0041,
-        Create = 0x0001,
-        Destroy = 0x0002,
-        Enable = 0x000A,
-        EnterSizeMove = 0x0231,
-        ExitSizeMove = 0x0232,
-        GetIcon = 0x007F,
-        GetMinMaxInfo = 0x0024,
-        InputLangChange = 0x0051,
-        InputLangChangeRequest = 0x0050,
-        Move = 0x0003,
-        Moving = 0x0216,
-        NCActivate = 0x0086,
-        NCCalcSize = 0x0083,
-        NCCreate = 0x0081,
-        NCDestroy = 0x0082,
-        Null = 0x0000,
-        QueryDragIcon = 0x0037,
-        QueryOpen = 0x0013,
-        Quit = 0x0012,
-        ShowWindow = 0x0018,
-        Size = 0x0005,
-        Sizing = 0x0214,
-        StyleChanged = 0x007D,
-        StyleChanging = 0x007C,
-        ThemeChanged = 0x031A,
-
-        [Obsolete("This message is not supported as of Windows Vista.")]
-        UserChanged = 0x0054,
-
-        WindowPosChanged = 0x0047,
-        WindowPosChanging = 0x0046 */
+        SetText = 0x000C
     }
 }

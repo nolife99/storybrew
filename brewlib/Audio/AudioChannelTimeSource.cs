@@ -4,8 +4,6 @@ namespace BrewLib.Audio;
 
 public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
 {
-    readonly AudioChannel channel = channel;
-
     public float Current => channel.Time;
     public bool Playing
     {

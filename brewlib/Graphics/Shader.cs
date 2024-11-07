@@ -76,7 +76,7 @@ public class Shader : IDisposable
         => uniforms.ContainsKey(GetUniformIdentifier(name, index, field));
 
     public static string GetUniformIdentifier(string name, int index, string field)
-        => name + (index >= 0 ? "[" + index + "]" : string.Empty) + (field is not null ? "." + field : string.Empty);
+        => name + (index >= 0 ? "[" + index + "]" : "") + (field is not null ? "." + field : "");
 
     void initialize(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
@@ -141,11 +141,11 @@ public class Shader : IDisposable
         for (var i = 0; i < uniformCount; ++i)
         {
             var name = GL.GetActiveUniform(programId, i, out var size, out var type);
-            var location = GL.GetUniformLocation(programId, name);
-            uniforms[name] = new(name, size, type, location);
+            uniforms[name] = new(name, size, type, GL.GetUniformLocation(programId, name));
         }
     }
 
+    ~Shader() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);
@@ -213,6 +213,6 @@ public class Shader : IDisposable
         public int Size = size, Location = location;
         public TType Type = type;
 
-        public override readonly string ToString() => $"{Size}@{Location} {Type}x{Size}";
+        public override readonly string ToString() => $"{size}@{location} {type}x{size}";
     }
 }

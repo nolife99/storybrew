@@ -25,7 +25,7 @@ public class ScriptCompiler
 
     public static Assembly Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string asmName, IEnumerable<string> referencedAssemblies)
     {
-        Dictionary<SyntaxTree, (string, SourceText)> trees = [];
+        Dictionary<SyntaxTree, (string SourcePath, SourceText SourceText)> trees = [];
         foreach (var src in sourcePaths) using (var sourceStream = File.OpenRead(src))
             {
                 var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
@@ -66,7 +66,7 @@ public class ScriptCompiler
                             references.Add(MetadataReference.CreateFromStream(stream));
                         }
                     else throw new IOException($"Could not resolve dependency: \"{referencedAssembly}\". " +
-                        $"Searched directories: {string.Join(";", environmentDirectories.Select(k => $"\"{k}\""))}");
+                        $"Searched directories: {string.Join(';', environmentDirectories.Select(k => $"\"{k}\""))}");
                 }
             }
             catch (Exception e)
@@ -81,7 +81,7 @@ public class ScriptCompiler
         {
             result = CSharpCompilation.Create(asmName, trees.Keys, references,
                 new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
-                .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.Item1, k.Item2)),
+                .Emit(assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
                     options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
             if (result.Success)
@@ -96,7 +96,7 @@ public class ScriptCompiler
 
         foreach (var diagnostic in result.Diagnostics) if (diagnostic.Severity is DiagnosticSeverity.Error)
             {
-                var nextKey = trees[diagnostic.Location.SourceTree].Item1;
+                var nextKey = trees[diagnostic.Location.SourceTree].SourcePath;
                 if (key != nextKey)
                 {
                     key = nextKey;

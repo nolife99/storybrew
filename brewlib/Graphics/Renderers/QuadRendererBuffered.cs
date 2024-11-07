@@ -166,11 +166,6 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     }
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -189,6 +184,13 @@ public unsafe class QuadRendererBuffered : QuadRenderer
             shader = null;
             disposed = true;
         }
+    }
+
+    ~QuadRendererBuffered() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     public void Draw(ref QuadPrimitive quad, Texture2dRegion texture)

@@ -96,8 +96,8 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public bool Highlight;
     public int EstimatedSize;
 
-    public event ChangedHandler OnChanged;
-    protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged, d => ((ChangedHandler)d)(this, new(propertyName)));
+    public event Action<object, ChangedEventArgs> OnChanged;
+    protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged, d => ((Action<object, ChangedEventArgs>)d)(this, new(propertyName)));
 
     readonly EditorStoryboardSegment segment;
 

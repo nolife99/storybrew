@@ -199,14 +199,19 @@ public sealed class FontGenerator : IDisposable
 
         string filename = null;
         var trimExist = false;
+        var trimmedText = description.TrimTransparency ? text.Trim() : null;
 
-        if (description.TrimTransparency && cache.TryGetValue(text.Trim(), out var texture))
+        if (description.TrimTransparency)
         {
-            trimExist = true;
-            filename = Path.GetFileName(texture.Path);
+            var foundTrim = cache.Keys.FirstOrDefault(x => x.AsSpan().Trim().Equals(trimmedText, StringComparison.Ordinal));
+            if (foundTrim is not null) 
+            {
+                trimExist = true;
+                filename = Path.GetFileName(cache[foundTrim].Path);
+            }
         }
 
-        filename ??= (description.TrimTransparency ? text.AsSpan().Trim() : text).Length == 1 ?
+        filename ??= (description.TrimTransparency ? trimmedText : text).Length == 1 ?
             $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ? ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') :
                 (char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' : char.ToString(text[0])))}.png" :
             $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1).ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
@@ -216,11 +221,11 @@ public sealed class FontGenerator : IDisposable
         {
             using (var stream = File.Create(path))
             {
-                if (validBounds) using (var trim = realText.FastCloneSection(bounds))
+                if (validBounds) using (var cropped = realText.FastCloneSection(bounds))
                     {
                         realText.Dispose();
-                        realText = trim;
-                        Misc.WithRetries(() => trim.Save(stream, ImageFormat.Png));
+                        realText = cropped;
+                        Misc.WithRetries(() => cropped.Save(stream, ImageFormat.Png));
                     }
                 else Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
             }

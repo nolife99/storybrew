@@ -91,28 +91,28 @@ public class ScrollArea : Widget
             Hoverable = false,
             Opacity = .6f
         });
-        OnHovered += (sender, e) =>
+        OnHovered += (_, e) =>
         {
             hovered = e.Hovered;
             updateScrollIndicators();
         };
-        OnClickDown += (sender, e) =>
+        OnClickDown += (_, e) =>
         {
             if (e.Button != MouseButton.Left) return false;
             dragged = true;
             return true;
         };
-        OnClickUp += (sender, e) =>
+        OnClickUp += (_, e) =>
         {
             if (e.Button != MouseButton.Left) return;
             dragged = false;
         };
-        OnClickMove += (sender, e) =>
+        OnClickMove += (_, e) =>
         {
             if (!dragged) return;
             scroll(e.XDelta, e.YDelta);
         };
-        OnMouseWheel += (sender, e) =>
+        OnMouseWheel += (_, e) =>
         {
             if (scrollsVertically) scroll(0, e.DeltaPrecise * 64);
             else if (scrollsHorizontally) scroll(e.DeltaPrecise * 64, 0);

@@ -18,7 +18,7 @@ public class EditorBeatmap(string path) : Beatmap
     public override string AudioFilename => audioFilename;
     string audioFilename = "audio.mp3";
 
-    string name = string.Empty;
+    string name = "";
     public override string Name => name;
 
     long id;

@@ -85,7 +85,12 @@ public static class BitmapHelper
         var halfHeight = kernelHeight >> 1;
 
         PinnedBitmap result = new(width, height);
-        using (PinnedBitmap src = new(source)) for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
+        using (PinnedBitmap src = new(source))
+        {
+            var srcData = src.AsReadOnlySpan();
+            var resultData = result.AsSpan();
+
+            for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
                     float a = 0, r = 0, g = 0, b = 0;
                     for (var kernelX = -halfWidth; kernelX <= halfWidth; ++kernelX)
@@ -93,7 +98,7 @@ public static class BitmapHelper
                         var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
                         for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                         {
-                            var color = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                            var color = srcData[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
                             var k = kernel[kernelY + halfWidth, kernelX + halfHeight];
 
                             a += ((color >> 24) & 0xFF) * k;
@@ -103,11 +108,10 @@ public static class BitmapHelper
                         }
                     }
 
-                    var alpha = (byte)a;
-                    if (alpha == 1) alpha = 0;
-
-                    result[index++] = (alpha << 24) | ((byte)r << 16) | ((byte)g << 8) | (byte)b;
+                    if (a == 1) a = 0;
+                    resultData[index++] = ((byte)a << 24) | ((byte)r << 16) | ((byte)g << 8) | (byte)b;
                 }
+        }
 
         return result;
     }
@@ -129,6 +133,9 @@ public static class BitmapHelper
         PinnedBitmap result = new(width, height);
         using (PinnedBitmap src = new(source))
         {
+            var srcData = src.AsReadOnlySpan();
+            var resultData = result.AsSpan();
+
             for (int y = 0, index = 0; y < height; ++y) for (var x = 0; x < width; ++x)
                 {
                     var a = 0f;
@@ -137,37 +144,40 @@ public static class BitmapHelper
                         var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
                         for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                         {
-                            var col = src[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                            var col = srcData[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
                             a += ((col >> 24) & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
                         }
                     }
-                    result[index++] = ((byte)a << 24) | rgb;
+                    resultData[index++] = ((byte)a << 24) | rgb;
                 }
         }
         return result;
     }
     public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
-        if (sect.Left < 0 || sect.Top < 0 || sect.Right > src.Width || sect.Bottom > src.Height || sect.Width <= 0 || sect.Height <= 0)
+        var srcSize = src.Size;
+        if (sect.Left < 0 || sect.Top < 0 || sect.Right > srcSize.Width || sect.Bottom > srcSize.Height || sect.Width <= 0 || sect.Height <= 0)
             throw new ArgumentOutOfRangeException(nameof(sect), "Invalid dimensions");
 
         var srcDat = src.LockBits(new(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
-        Bitmap dest = new((int)sect.Width, (int)sect.Height, src.PixelFormat);
-        var destDat = dest.LockBits(new(default, dest.Size), ImageLockMode.WriteOnly, src.PixelFormat);
+        Rectangle destRect = new(0, 0, (int)sect.Width, (int)sect.Height);
+        Bitmap dest = new(destRect.Width, destRect.Height, src.PixelFormat);
+        var destDat = dest.LockBits(destRect, ImageLockMode.WriteOnly, src.PixelFormat);
 
-        var pixBit = Image.GetPixelFormatSize(src.PixelFormat) * .125f;
-        var len = (int)(destDat.Width * pixBit);
+        var pixBit = Image.GetPixelFormatSize(src.PixelFormat) / 8;
+        var len = destRect.Width * pixBit;
 
-        try
-        {
-            for (var y = 0; y < destDat.Height; ++y) Native.CopyMemory(
-                srcDat.Scan0 + (int)(sect.Y + y) * srcDat.Stride + (int)(sect.X * pixBit), destDat.Scan0 + y * destDat.Stride, len);
-        }
-        finally
-        {
-            src.UnlockBits(srcDat);
-            dest.UnlockBits(destDat);
-        }
+        var left = (int)sect.X * pixBit;
+        var top = (int)sect.Y;
+        var srcStride = srcDat.Stride;
+        var destStride = destDat.Stride;
+        var srcPtr = srcDat.Scan0;
+        var destPtr = destDat.Scan0;
+
+        for (var y = 0; y < sect.Height; ++y) Native.CopyMemory(srcPtr + (top + y) * srcStride + left, destPtr + y * destStride, len);
+        
+        src.UnlockBits(srcDat);
+        dest.UnlockBits(destDat);
 
         return dest;
     }
@@ -176,7 +186,12 @@ public static class BitmapHelper
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return false;
 
         using PinnedBitmap src = new(source);
-        for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((src[y * src.Width + x] >> 24) & 0xFF) != 0) return false;
+        var srcData = src.AsReadOnlySpan();
+
+        var width = src.Width;
+        var height = src.Height;
+
+        for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x) if (((srcData[y * width + x] >> 24) & 0xFF) != 0) return false;
         return true;
     }
     public static Rectangle FindTransparencyBounds(Image source)
@@ -184,16 +199,17 @@ public static class BitmapHelper
         var size = source.Size;
         if (!Image.IsAlphaPixelFormat(source.PixelFormat)) return new(default, size);
 
-        int xMin = size.Width, yMin = size.Height, xMax = -1, yMax = -1;
+        int xMin = size.Width, yMin = size.Height, xMax = -1, yMax = -1, width = size.Width, height = size.Height;
         using (PinnedBitmap src = new(source))
         {
-            for (var y = 0; y < src.Height; ++y) for (var x = 0; x < src.Width; ++x) if (((src[y * src.Width + x] >> 24) & 0xFF) != 0)
-                    {
-                        if (x < xMin) xMin = x;
-                        if (x > xMax) xMax = x;
-                        if (y < yMin) yMin = y;
-                        if (y > yMax) yMax = y;
-                    }
+            var srcData = src.AsReadOnlySpan();
+            for (var y = 0; y < height; ++y) for (var x = 0; x < width; ++x) if (((srcData[y * width + x] >> 24) & 0xFF) != 0)
+                {
+                    if (x < xMin) xMin = x;
+                    if (x > xMax) xMax = x;
+                    if (y < yMin) yMin = y;
+                    if (y > yMax) yMax = y;
+                }
         }
 
         return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;

@@ -69,7 +69,7 @@ public abstract class Effect : IDisposable
     {
         Project = project;
 
-        layers = [(placeHolderLayer = new(string.Empty, this))];
+        layers = [(placeHolderLayer = new("", this))];
         refreshLayerNames();
         Project.LayerManager.Add(placeHolderLayer);
     }
@@ -104,16 +104,14 @@ public abstract class Effect : IDisposable
         RaiseChanged();
     }
 
-    ///<summary> Queues an update call. </summary>
     public void Refresh()
     {
         if (Project.Disposed) return;
         Project.QueueEffectUpdate(this);
     }
-
-    ///<summary> Should only be called by <see cref="Project.QueueEffectUpdate(Effect)"/>. Doesn't run on the main thread. </summary>
     public abstract void Update();
-    void refreshLayerNames() => layers.ForEach(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? $"{name}" : $"{name} ({layer.Name})");
+
+    void refreshLayerNames() => layers.ForEach(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})");
 
     #region IDisposable Support
 

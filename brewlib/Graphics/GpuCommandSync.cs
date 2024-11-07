@@ -118,8 +118,6 @@ public sealed class GpuCommandSync : IDisposable
 
         #region IDisposable Support
 
-        ~SyncRange() => Dispose(false);
-
         bool disposed;
         void Dispose(bool disposing)
         {
@@ -133,6 +131,8 @@ public sealed class GpuCommandSync : IDisposable
                 }
             }
         }
+
+        ~SyncRange() => Dispose(false);
         public void Dispose()
         {
             Dispose(true);

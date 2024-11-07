@@ -24,20 +24,13 @@ public static class StreamReaderExtensions
     ///<summary> Calls <paramref name="action"/> with the content of a line, until it finds a blank line or reaches the end of the file. </summary>
     public static void ParseSectionLines(this StreamReader reader, Action<string> action, bool trimLines = true)
     {
-        var line = string.Empty;
-        try
+        string line;
+        while ((line = reader.ReadLine()) is not null)
         {
-            while ((line = reader.ReadLine()) is not null)
-            {
-                if (trimLines) line = line.Trim();
-                if (line.Length == 0) return;
+            if (trimLines) line = line.Trim();
+            if (line.Length == 0) return;
 
-                action(line);
-            }
-        }
-        catch (Exception e)
-        {
-            throw new InvalidDataException($"Failed to parse line \"{line}\".", e);
+            action(line);
         }
     }
 

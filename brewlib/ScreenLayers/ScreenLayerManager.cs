@@ -156,11 +156,7 @@ public sealed class ScreenLayerManager : IDisposable
     #region IDisposable Support
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
         if (!disposed)

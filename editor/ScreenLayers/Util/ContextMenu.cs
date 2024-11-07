@@ -90,7 +90,7 @@ public class ContextMenu<T> : UiScreenLayer
         optionsLayout.ClearWidgets();
         foreach (var option in options)
         {
-            if (!string.IsNullOrEmpty(searchTextbox.Value) && !option.Name.Contains(searchTextbox.Value, StringComparison.InvariantCultureIgnoreCase)) continue;
+            if (!string.IsNullOrEmpty(searchTextbox.Value) && !option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal)) continue;
 
             Button button;
             optionsLayout.Add(button = new(WidgetManager)

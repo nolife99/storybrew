@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows.Forms;
 using osuTK.Input;
 
 namespace BrewLib.UserInterface;
@@ -44,7 +45,7 @@ public sealed class ClickBehavior : IDisposable
         if (hovered == e.Hovered) return;
 
         hovered = e.Hovered;
-        if (!disabled) OnStateChanged?.Invoke(this, EventArgs.Empty);
+        if (!disabled) OnStateChanged?.Invoke(this, e);
     }
     bool widget_OnClickDown(WidgetEvent evt, MouseButtonEventArgs e)
     {
@@ -52,7 +53,7 @@ public sealed class ClickBehavior : IDisposable
 
         pressed = true;
         pressedButton = e.Button;
-        OnStateChanged?.Invoke(this, EventArgs.Empty);
+        OnStateChanged?.Invoke(this, e);
         return true;
     }
     void widget_OnClickUp(WidgetEvent evt, MouseButtonEventArgs e)
@@ -62,7 +63,7 @@ public sealed class ClickBehavior : IDisposable
 
         pressed = false;
         if (hovered) OnClick?.Invoke(this, e);
-        OnStateChanged?.Invoke(this, EventArgs.Empty);
+        OnStateChanged?.Invoke(this, e);
     }
 
     #region IDisposable Support

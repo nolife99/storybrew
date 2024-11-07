@@ -163,11 +163,6 @@ public unsafe class LineRendererBuffered : LineRenderer
     }
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -186,5 +181,12 @@ public unsafe class LineRendererBuffered : LineRenderer
             shader = null;
             disposed = true;
         }
+    }
+
+    ~LineRendererBuffered() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }

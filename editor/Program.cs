@@ -31,7 +31,7 @@ public static class Program
         if (!IsMainThread) throw new InvalidOperationException($"{callerPath}:L{callerLine} {callerName} called from the thread '{Thread.CurrentThread.Name}', must be called from the main thread");
     }
 
-    static void Main(string[] args)
+    [STAThread] static void Main(string[] args)
     {
         if (args.Length != 0 && handleArguments(args)) return;
         mainThreadId = Environment.CurrentManagedThreadId;
@@ -173,7 +173,6 @@ public static class Program
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
         var watch = Stopwatch.StartNew();
 
-        using ManualResetEventSlim wait = new();
         while (window.Exists && !window.IsExiting)
         {
             var cur = watch.ElapsedMilliseconds;
@@ -203,10 +202,10 @@ public static class Program
             window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
 
             var active = watch.ElapsedMilliseconds - cur;
-            if (window.VSync is VSyncMode.Off && window.WindowState != WindowState.Minimized)
+            if (window.VSync is VSyncMode.Off && window.WindowState is not WindowState.Minimized)
             {
                 var sleepTime = (int)((focused ? targetFrame : fixedRateUpdate) - active);
-                if (sleepTime > 0) wait.Wait(sleepTime);
+                if (sleepTime > 0) Thread.Sleep(sleepTime);
             }
 
             var frameTime = cur - prev;
@@ -238,9 +237,9 @@ public static class Program
         if (SchedulingEnabled) scheduledActions.Enqueue(action);
         else throw new InvalidOperationException("Scheduling isn't enabled!");
     }
-    public static void Schedule(Action action, int delay) => Task.Run(async () =>
+    public static void Schedule(Action action, int delay) => Task.Run(() =>
     {
-        await Task.Delay(delay).ConfigureAwait(false);
+        Thread.Sleep(delay);
         Schedule(action);
     });
     public static void RunMainThread(Action action)
@@ -291,7 +290,7 @@ public static class Program
     static readonly object errorHandlerLock = new();
     static volatile bool insideErrorHandler;
 
-    static void setupLogging(string logsPath = null, string commonLogFilename = null)
+    static async void setupLogging(string logsPath = null, string commonLogFilename = null)
     {
         logsPath ??= DefaultLogPath;
         var tracePath = Path.Combine(logsPath, commonLogFilename ?? "trace.log");
@@ -311,11 +310,8 @@ public static class Program
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
 
-        Task.Run(async () =>
-        {
-            using PeriodicTimer timer = new(TimeSpan.FromSeconds(10));
-            while (await timer.WaitForNextTickAsync()) Trace.Flush();
-        });
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(10));
+        while (await timer.WaitForNextTickAsync().ConfigureAwait(false)) Trace.Flush();
     }
     static void logError(Exception e, string filename, string reportType, bool show)
     {

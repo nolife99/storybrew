@@ -7,7 +7,6 @@ public delegate void ResourceLoadedDelegate<T>(string filename, T resource);
 
 public interface TextureContainer : IDisposable
 {
-    IEnumerable<string> ResourceNames { get; }
     float UncompressedMemoryUseMb { get; }
     event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
 

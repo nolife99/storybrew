@@ -11,6 +11,7 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using StorybrewEditor.ScreenLayers;
 using StorybrewEditor.Storyboarding;
+using StorybrewEditor.Util;
 
 namespace StorybrewEditor.UserInterface.Components;
 
@@ -76,7 +77,7 @@ public class EffectList : Widget
             ]
         });
 
-        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect", effectName => project.AddScriptedEffect(effectName), project.GetEffectNames());
+        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect", name => project.AddScriptedEffect(name), project.GetEffectNames());
         newScriptButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name));
 
         project.OnEffectsChanged += project_OnEffectsChanged;
@@ -243,9 +244,7 @@ public class EffectList : Widget
 
         switch (effect.Status)
         {
-            case EffectStatus.Loading:
-            case EffectStatus.Configuring:
-            case EffectStatus.Updating:
+            case EffectStatus.Loading: case EffectStatus.Configuring: case EffectStatus.Updating:
                 button.Icon = IconFont.Sync;
                 button.Disabled = true;
                 break;
@@ -255,9 +254,7 @@ public class EffectList : Widget
                 button.Disabled = true;
                 break;
 
-            case EffectStatus.CompilationFailed:
-            case EffectStatus.LoadingFailed:
-            case EffectStatus.ExecutionFailed:
+            case EffectStatus.CompilationFailed: case EffectStatus.LoadingFailed: case EffectStatus.ExecutionFailed:
                 button.Icon = IconFont.BugReport;
                 break;
 
@@ -347,9 +344,9 @@ public class EffectList : Widget
                 Trace.TraceWarning($"Could not open vscode:\n{e}");
             }
         Manager.ScreenLayerManager.ShowMessage($"Visual Studio Code could not be found, do you want to install it?\n(You may have to restart after installing)",
-            () => Process.Start("https://code.visualstudio.com/"), true);
+            () => NetHelper.OpenUrl("https://code.visualstudio.com/"), true);
     }
 
-    static string getEffectDetails(Effect effect) => effect.EstimatedSize > 40 * 1024 ?
+    static string getEffectDetails(Effect effect) => effect.EstimatedSize > 40960 ?
         $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})" : $"using {effect.BaseName}";
 }

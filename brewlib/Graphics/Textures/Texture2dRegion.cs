@@ -44,19 +44,19 @@ public class Texture2dRegion : Texture
         texture.Update(bitmap, (int)updateX, (int)updateY, textureOptions);
     }
 
-    public override string ToString() => $"Texture2dRegion#{texture.TextureId} {Description} ({Width}x{Height})";
-
     #region IDisposable Support
 
     bool disposed;
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed)
+        if (!disposed && disposing)
         {
             texture = null;
             disposed = true;
         }
     }
+
+    ~Texture2dRegion() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);

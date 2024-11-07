@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using osuTK.Graphics.OpenGL;
 
 namespace BrewLib.Graphics;
@@ -24,8 +25,8 @@ public class RenderStates
         {
             if (field.IsStatic) return;
 
-            var newState = (RenderState)field.GetValue(this);
-            if (currentStates.TryGetValue(field.FieldType, out RenderState currentState) && currentState.Equals(newState)) return;
+            var newState = Unsafe.As<RenderState>(field.GetValue(this));
+            if (currentStates.TryGetValue(field.FieldType, out var currentState) && currentState.Equals(newState)) return;
 
             if (!flushed)
             {
@@ -38,16 +39,14 @@ public class RenderStates
         }
     }
 
-    public override string ToString() => string.Join("\n", currentStates.Values);
+    public override string ToString() => string.Join('\n', currentStates.Values);
     public static void ClearStateCache() => currentStates.Clear();
 }
 public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
 {
     readonly bool enabled = true;
-    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha;
-    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha;
-    readonly BlendingFactorSrc alphaSrc = BlendingFactorSrc.SrcAlpha;
-    readonly BlendingFactorDest alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, alphaSrc = BlendingFactorSrc.SrcAlpha;
+    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha, alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
 
     public readonly static BlendingFactorState Default = new();
 
@@ -84,24 +83,11 @@ public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
                 alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
                 break;
 
-            case BlendingMode.BlendAdd:
-            case BlendingMode.Premultiplied:
+            case BlendingMode.BlendAdd: case BlendingMode.Premultiplied:
                 src = alphaSrc = BlendingFactorSrc.One;
                 dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
                 break;
         }
-    }
-    public BlendingFactorState(BlendingFactorSrc src, BlendingFactorDest dest)
-    {
-        this.src = alphaSrc = src;
-        this.dest = alphaDest = dest;
-    }
-    public BlendingFactorState(BlendingFactorSrc src, BlendingFactorDest dest, BlendingFactorSrc alphaSrc, BlendingFactorDest alphaDest)
-    {
-        this.src = src;
-        this.dest = dest;
-        this.alphaSrc = alphaSrc;
-        this.alphaDest = alphaDest;
     }
 
     public void Apply()
@@ -116,7 +102,5 @@ public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
         if (!enabled && !other.enabled) return true;
         return enabled == other.enabled && src == other.src && dest == other.dest && alphaSrc == other.alphaSrc && alphaDest == other.alphaDest;
     }
-
-    public override string ToString() => $"BlendingFactor src:{src}, dest:{dest}, alphaSrc:{alphaSrc}, alphaDest:{alphaDest}";
     public override int GetHashCode() => HashCode.Combine(src, dest, alphaSrc, alphaDest, enabled);
 }

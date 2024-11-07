@@ -67,7 +67,6 @@ public static class Updater
     static void updateData(string destinationFolder, Version fromVersion)
     {
         Settings settings = new(Path.Combine(destinationFolder, Settings.DefaultPath));
-        if (fromVersion < new Version(1, 53)) settings.UseRoslyn.Set(true);
         if (fromVersion < new Version(1, 70)) settings.Volume.Set(Math.Pow(settings.Volume, .25));
         settings.Save();
 

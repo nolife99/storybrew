@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.UserInterface;
 
 namespace StorybrewEditor.UserInterface;
@@ -30,7 +31,7 @@ public class Vector3Picker : Widget, Field
     public object FieldValue
     {
         get => Value;
-        set => Value = (float[])value;
+        set => Value = Unsafe.As<float[]>(value);
     }
 
     public event EventHandler OnValueChanged, OnValueCommited;

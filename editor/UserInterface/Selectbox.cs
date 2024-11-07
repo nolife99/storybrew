@@ -91,8 +91,8 @@ public class Selectbox : Widget, Field
     }
     string findValueName(object value)
     {
-        if (options is null) return string.Empty;
+        if (options is null) return "";
         foreach (var option in options) if (option.Value.Equals(value)) return option.Name;
-        return string.Empty;
+        return "";
     }
 }

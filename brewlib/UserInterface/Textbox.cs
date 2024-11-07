@@ -77,7 +77,7 @@ public class Textbox : Widget, Field
 
     public void SetValueSilent(string value)
     {
-        content.Text = value ?? string.Empty;
+        content.Text = value ?? "";
         if (selectionStart > content.Text.Length) selectionStart = content.Text.Length;
         if (cursorPosition > content.Text.Length) cursorPosition = content.Text.Length;
     }
