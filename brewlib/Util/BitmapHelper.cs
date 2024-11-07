@@ -250,7 +250,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height)
     {
-        fixed (void* pinned = &MemoryMarshal.GetReference(data)) Native.CopyMemory(pinned, scan0, Count * sizeof(int));
+        fixed (void* pinned = data) Native.CopyMemory(pinned, scan0, Count * sizeof(int));
     }
 
     public void SetPixel(int x, int y, Color color) => SetPixel(x, y, color.ToArgb());
@@ -263,7 +263,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int[] ToArray()
     {
         var array = GC.AllocateUninitializedArray<int>(Count);
-        fixed (void* arrAddr = &array[0]) Native.CopyMemory(scan0, arrAddr, Count * sizeof(int));
+        fixed (void* arrAddr = array) Native.CopyMemory(scan0, arrAddr, Count * sizeof(int));
         return array;
     }
 

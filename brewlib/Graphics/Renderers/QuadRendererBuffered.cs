@@ -202,7 +202,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         }
         else if (quadsInBatch == maxQuadsPerBatch) DrawState.FlushRenderer(true);
 
-        Unsafe.WriteUnaligned(Unsafe.Add<QuadPrimitive>(primitives, quadsInBatch), quad);
+        Unsafe.Write(Unsafe.Add<QuadPrimitive>(primitives, quadsInBatch), quad);
 
         ++RenderedQuadCount;
         ++quadsInBatch;

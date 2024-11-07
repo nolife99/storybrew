@@ -153,10 +153,10 @@ public unsafe class LineRendererBuffered : LineRenderer
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
         ref byte ptr = ref Unsafe.AsRef<byte>(Unsafe.Add<Int128>(primitives, linesInBatch));
-        Unsafe.WriteUnaligned(ref ptr, start);
-        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref ptr, 12), startColor.ToRgba());
-        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref ptr, 16), end);
-        Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref ptr, 28), endColor.ToRgba());
+        Unsafe.Write(ref ptr, start);
+        Unsafe.Write(ref Unsafe.AddByteOffset(ref ptr, 12), startColor.ToRgba());
+        Unsafe.Write(ref Unsafe.AddByteOffset(ref ptr, 16), end);
+        Unsafe.Write(ref Unsafe.AddByteOffset(ref ptr, 28), endColor.ToRgba());
 
         ++RenderedLineCount;
         ++linesInBatch;

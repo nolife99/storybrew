@@ -306,7 +306,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         spritePrimitive.v4 = v0;
         spritePrimitive.color1 = spritePrimitive.color2 = spritePrimitive.color3 = spritePrimitive.color4 = color.ToRgba();
 
-        Unsafe.WriteUnaligned(Unsafe.Add<QuadPrimitive>(primitives, spritesInBatch), spritePrimitive);
+        Unsafe.Write(Unsafe.Add<QuadPrimitive>(primitives, spritesInBatch), spritePrimitive);
 
         ++RenderedSpriteCount;
         ++spritesInBatch;

@@ -106,7 +106,7 @@ public sealed class TextGenerator : IDisposable
                     var arr = ArrayPool<byte>.Shared.Rent(len);
                     stream.Read(arr, 0, len);
 
-                    fontCollection.AddMemoryFont((nint)Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr)), len);
+                    fixed (void* pinned = arr) fontCollection.AddMemoryFont((nint)pinned, len);
                     ArrayPool<byte>.Shared.Return(arr);
 
                     var families = fontCollection.Families;

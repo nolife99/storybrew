@@ -15,7 +15,7 @@ public static class LineRendererExtensions
     public static void DrawCircle(this LineRenderer line, Vector3 center, float radius, Color color, float precision = 1)
     {
         var circumference = Tau * radius;
-        var lineCount = Max(16, (int)Round(circumference * precision));
+        var lineCount = Max(16, Round(circumference * precision));
 
         var angleStep = Tau / lineCount;
         Vector3 previousPosition = new(center.X + radius, center.Y, center.Z);
@@ -61,10 +61,10 @@ public static class LineRendererExtensions
         line.Draw(center + new Vector3(Cos(toAngle) * innerRadius, Sin(toAngle) * innerRadius, 0),
             center + new Vector3(Cos(toAngle) * radius, Sin(toAngle) * radius, 0), color);
 
-        var minLineCount = Max((int)Round(16 * (arc / Tau)), 2);
+        var minLineCount = Max(Round(16 * (arc / Tau)), 2);
 
         var outerCircumference = arc * radius;
-        var outerLineCount = Max(minLineCount, (int)Round(outerCircumference * precision));
+        var outerLineCount = Max(minLineCount, Round(outerCircumference * precision));
 
         var angleStep = arc / outerLineCount;
         var previousPosition = center + new Vector3(Cos(fromAngle) * radius, Sin(fromAngle) * radius, 0);
@@ -80,7 +80,7 @@ public static class LineRendererExtensions
         if (innerRadius > 0)
         {
             var innerCircumference = arc * innerRadius;
-            var innerLineCount = Max(minLineCount, (int)Round(innerCircumference * precision));
+            var innerLineCount = Max(minLineCount, Round(innerCircumference * precision));
 
             angleStep = arc / innerLineCount;
             previousPosition = new(center.X + Cos(fromAngle) * innerRadius, center.Y + Sin(fromAngle) * innerRadius, center.Z);

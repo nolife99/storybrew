@@ -11,16 +11,16 @@ public static unsafe partial class Native
     #region Memory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source.ToPointer(), (uint)count);
+    public static void CopyMemory(nint source, nint destination, int count) => Unsafe.CopyBlock(destination.ToPointer(), source.ToPointer(), (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(void* source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source, (uint)count);
+    public static void CopyMemory(void* source, void* destination, int count) => Unsafe.CopyBlock(destination, source, (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(nint source, void* destination, int count) => Unsafe.CopyBlockUnaligned(destination, source.ToPointer(), (uint)count);
+    public static void CopyMemory(nint source, void* destination, int count) => Unsafe.CopyBlock(destination, source.ToPointer(), (uint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(void* source, nint destination, int count) => Unsafe.CopyBlockUnaligned(destination.ToPointer(), source, (uint)count);
+    public static void CopyMemory(void* source, nint destination, int count) => Unsafe.CopyBlock(destination.ToPointer(), source, (uint)count);
 
     #endregion
 
@@ -54,8 +54,7 @@ public static unsafe partial class Native
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
-    [LibraryImport("user32")]
-    [return: MarshalAs(UnmanagedType.Bool)]
+    [LibraryImport("user32")] [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
@@ -63,10 +62,11 @@ public static unsafe partial class Native
 
     public static void InitializeHandle(string windowTitle, nint hWndFallback)
     {
-        var cont = true;
+        handle = hWndFallback;
+
+        /* var cont = true;
         var threads = Process.GetCurrentProcess().Threads;
 
-        handle = hWndFallback;
         for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, _) =>
         {
             var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
@@ -82,7 +82,7 @@ public static unsafe partial class Native
                 }
             }
             return cont;
-        }, 0);
+        }, 0); */
     }
 
     #endregion
