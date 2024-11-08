@@ -9,18 +9,11 @@ using System.Reflection;
 using System.Text;
 using Util;
 
-public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null)
-    : ResourceContainer
+public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null) : ResourceContainer
 {
     readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
-
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
-
-    public IEnumerable<string> ResourceNames
-        => assembly.GetManifestResourceNames()
-            .Where(name => name.StartsWith($"{baseNamespace}.", StringComparison.Ordinal))
-            .Select(name => name[(baseNamespace.Length + 1)..]);
 
     public Stream GetStream(string path, ResourceSource sources)
     {
@@ -32,8 +25,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
             {
                 if (File.Exists(path)) return File.OpenRead(path);
             }
-            else
-                throw new InvalidOperationException($"Resource paths must be relative ({path})");
+            else throw new InvalidOperationException($"Resource paths must be relative ({path})");
         }
         else
         {
@@ -42,11 +34,9 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
                 var combinedPath = basePath is not null ? Path.Combine(basePath, path) : path;
                 if (File.Exists(combinedPath)) return File.OpenRead(combinedPath);
             }
-
             if (sources.HasFlag(ResourceSource.Embedded))
             {
-                var stream =
-                    assembly.GetManifestResourceStream($"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
+                var stream = assembly.GetManifestResourceStream($"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
                 if (stream is not null) return stream;
             }
         }

@@ -19,8 +19,7 @@ public class TriggerCommand : CommandGroup
     public override bool Active => false;
 
     protected override string GetCommandGroupHeader(ExportSettings exportSettings)
-        => $"T,{TriggerName},{((int)StartTime).ToString(exportSettings.NumberFormat)},{
-            ((int)EndTime).ToString(exportSettings.NumberFormat)},{Group.ToString(exportSettings.NumberFormat)}";
+        => $"T,{TriggerName},{((int)StartTime).ToString(exportSettings.NumberFormat)},{((int)EndTime).ToString(exportSettings.NumberFormat)},{Group.ToString(exportSettings.NumberFormat)}";
 
     public override int GetHashCode()
     {

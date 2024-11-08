@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Util;
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -8,7 +9,6 @@ using System.IO;
 public static class PathHelper
 {
     const char StandardDirectorySeparator = '/';
-
     static readonly HashSet<char> invalidChars =
     [
         '"', '<', '>', '|', '\0', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005', '\u0006', '\a', '\b', '\t',
@@ -31,7 +31,6 @@ public static class PathHelper
             return false;
         }
     }
-
     public static string WithStandardSeparators(string path)
     {
         if (Path.DirectorySeparatorChar != StandardDirectorySeparator)
@@ -40,7 +39,6 @@ public static class PathHelper
         path = path.Replace('\\', StandardDirectorySeparator);
         return path;
     }
-
     public static bool FolderContainsPath(string folder, string path)
     {
         folder = WithStandardSeparators(Path.GetFullPath(folder)).TrimEnd('/');
@@ -49,17 +47,9 @@ public static class PathHelper
         return path.Length >= folder.Length + 1 && path[folder.Length] == '/' &&
             path.StartsWith(folder, StringComparison.Ordinal);
     }
-
     public static string GetRelativePath(string folder, string path) => Path.GetRelativePath(folder, path);
 
-    public static bool IsValidPath(string path)
-    {
-        foreach (var character in path)
-            if (invalidChars.Contains(character))
-                return false;
-        return true;
-    }
-
+    public static bool IsValidPath(string path) => path.All(c => !invalidChars.Contains(c));
     public static bool IsValidFilename(string filename)
     {
         foreach (var character in filename)

@@ -11,23 +11,16 @@ using Util;
 public sealed class TextDrawable : Drawable
 {
     BoxAlignment alignment = BoxAlignment.TopLeft;
+    StringTrimming trimming = StringTrimming.None;
     public Color Color = Color.White;
-    float currentFontSize, currentScaling = 1;
+    float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
 
     TextFont font;
-
-    string fontName = "Tahoma";
-
-    float fontSize = 12;
-
-    Vector2 maxSize;
-
-    float scaling = 1;
-
-    string text = "";
     TextLayout textLayout;
 
-    StringTrimming trimming = StringTrimming.None;
+    string fontName = "Tahoma", text = "";
+
+    Vector2 maxSize;
 
     public Vector2 Size
     {
@@ -37,46 +30,6 @@ public sealed class TextDrawable : Drawable
             return text?.Length > 0 ? textLayout.Size / scaling : font.GetGlyph(' ').Size / scaling;
         }
     }
-
-    public string Text
-    {
-        get => text;
-        set
-        {
-            if (text == value) return;
-            text = value;
-            invalidate();
-        }
-    }
-
-    public IconFont Icon
-    {
-        get => text.Length == 0 ? 0 : (IconFont)text[0];
-        set => text = char.ToString((char)value);
-    }
-
-    public string FontName
-    {
-        get => fontName;
-        set
-        {
-            if (fontName == value) return;
-            fontName = value;
-            invalidate();
-        }
-    }
-
-    public float FontSize
-    {
-        get => fontSize;
-        set
-        {
-            if (fontSize == value) return;
-            fontSize = value;
-            invalidate();
-        }
-    }
-
     public Vector2 MaxSize
     {
         get => maxSize;
@@ -87,7 +40,41 @@ public sealed class TextDrawable : Drawable
             invalidate();
         }
     }
-
+    public IconFont Icon
+    {
+        get => text.Length == 0 ? 0 : (IconFont)text[0];
+        set => text = char.ToString((char)value);
+    }
+    public string Text
+    {
+        get => text;
+        set
+        {
+            if (text == value) return;
+            text = value;
+            invalidate();
+        }
+    }
+    public string FontName
+    {
+        get => fontName;
+        set
+        {
+            if (fontName == value) return;
+            fontName = value;
+            invalidate();
+        }
+    }
+    public float FontSize
+    {
+        get => fontSize;
+        set
+        {
+            if (fontSize == value) return;
+            fontSize = value;
+            invalidate();
+        }
+    }
     public float Scaling
     {
         get => scaling;
@@ -98,7 +85,6 @@ public sealed class TextDrawable : Drawable
             invalidate();
         }
     }
-
     public BoxAlignment Alignment
     {
         get => alignment;
@@ -109,7 +95,6 @@ public sealed class TextDrawable : Drawable
             invalidate();
         }
     }
-
     public StringTrimming Trimming
     {
         get => trimming;
@@ -145,7 +130,6 @@ public sealed class TextDrawable : Drawable
             var position = layoutGlyph.Position;
 
             var y = bounds.Top + position.Y * inverseScaling;
-
             if (y > clipRegion.Bottom) break;
             if (y + glyph.Height * inverseScaling < clipRegion.Top) continue;
 
@@ -153,17 +137,6 @@ public sealed class TextDrawable : Drawable
                 inverseScaling, 0, color);
         }
     }
-
-    public void Dispose()
-    {
-        font?.Dispose();
-        font = null;
-        textLayout = null;
-        RenderStates = null;
-
-        GC.SuppressFinalize(this);
-    }
-
     public RectangleF GetCharacterBounds(int index)
     {
         validate();
@@ -175,13 +148,6 @@ public sealed class TextDrawable : Drawable
 
         return new(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
     }
-
-    public int GetCharacterIndexAt(Vector2 position)
-    {
-        validate();
-        return textLayout.GetCharacterIndexAt(position * scaling);
-    }
-
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         validate();
@@ -190,13 +156,16 @@ public sealed class TextDrawable : Drawable
             bounds => action(RectangleF.FromLTRB(bounds.Left * inverseScaling, bounds.Top * inverseScaling,
                 bounds.Right * inverseScaling, bounds.Bottom * inverseScaling)));
     }
-
+    public int GetCharacterIndexAt(Vector2 position)
+    {
+        validate();
+        return textLayout.GetCharacterIndexAt(position * scaling);
+    }
     public int GetCharacterIndexAbove(int index)
     {
         validate();
         return textLayout.GetCharacterIndexAbove(index);
     }
-
     public int GetCharacterIndexBelow(int index)
     {
         validate();
@@ -204,7 +173,6 @@ public sealed class TextDrawable : Drawable
     }
 
     void invalidate() => textLayout = null;
-
     void validate()
     {
         if (textLayout is not null) return;
@@ -218,5 +186,15 @@ public sealed class TextDrawable : Drawable
         }
 
         textLayout = new(text ?? "", font, alignment, maxSize * scaling);
+    }
+
+    public void Dispose()
+    {
+        font?.Dispose();
+        font = null;
+        textLayout = null;
+        RenderStates = null;
+
+        GC.SuppressFinalize(this);
     }
 }

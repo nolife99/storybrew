@@ -30,7 +30,6 @@ public class ShaderVariable
     }
 
     public void Assign(ShaderVariable value, string components = null) => Context.Assign(this, value, components);
-
     public void Assign(Func<string> expression, string components = null)
         => Context.Assign(this, expression, components);
 
@@ -44,8 +43,6 @@ public class ShaderVariable
 
     public class Reference(ShaderVariable variable)
     {
-        readonly ShaderVariable variable = variable;
-
         public virtual string this[string index] => $"{variable.Name}[{index}]";
         public override string ToString() => variable.Name;
     }

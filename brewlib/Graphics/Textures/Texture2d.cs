@@ -17,48 +17,38 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
     {
-        DrawState.BindPrimaryTexture(textureId);
+        DrawState.BindTexture(textureId);
 
-        textureOptions ??= TextureOptions.Default;
-        textureOptions.WithBitmap(bitmap, b =>
-        {
-            var data = b.LockBits(new(default, b.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height,
-                osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+        var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height,
+            osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
-            GL.Finish();
-            b.UnlockBits(data);
-        });
+        GL.Finish();
+        bitmap.UnlockBits(data);
 
         DrawState.CheckError("updating texture");
     }
-
     public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
         if (File.Exists(filename))
-            using (var stream = File.OpenRead(filename))
-                return new(stream);
-        using (var stream = resourceContainer?.GetStream(filename, ResourceSource.Embedded))
         {
-            if (stream is not null) return new(stream);
-
-            Trace.TraceWarning($"Texture not found: {filename}");
-            return null;
+            using var stream = File.OpenRead(filename);
+            return new(stream);
         }
-    }
+        using var stream = resourceContainer?.GetStream(filename, ResourceSource.Embedded);
+        if (stream is not null) return new(stream);
 
-    public static TextureOptions LoadTextureOptions(string forBitmapFilename,
-        ResourceContainer resourceContainer = null)
+        Trace.TraceWarning($"Texture not found: {filename}");
+        return null;
+    }
+    public static TextureOptions LoadTextureOptions(string forBitmapFilename, ResourceContainer resourceContainer = null)
         => TextureOptions.Load(TextureOptions.GetOptionsFilename(forBitmapFilename), resourceContainer);
 
-    public static Texture2d Load(string filename, ResourceContainer resourceContainer = null,
-        TextureOptions textureOptions = null)
+    public static Texture2d Load(string filename, ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
     {
         using var bitmap = LoadBitmap(filename, resourceContainer);
-        return bitmap is not null ? Load(bitmap, $"file:{filename}",
-            textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
+        return bitmap is not null ? Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
     }
-
     public static Texture2d Create(Color color, string description, int width = 1, int height = 1,
         TextureOptions textureOptions = null)
     {
@@ -102,7 +92,6 @@ public class Texture2d(int textureId, int width, int height, string description)
 
         return new(textureId, width, height, description);
     }
-
     public static Texture2d Load(Bitmap bitmap, string description, TextureOptions textureOptions = null)
     {
         var width = Math.Min(DrawState.MaxTextureSize, bitmap.Width);
@@ -116,17 +105,14 @@ public class Texture2d(int textureId, int width, int height, string description)
 
         try
         {
-            textureOptions.WithBitmap(bitmap, b =>
-            {
-                var data = b.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-                GL.TexImage2D(TextureTarget.Texture2D, 0,
-                    sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width, data.Height, 0,
-                    osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+            var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            GL.TexImage2D(TextureTarget.Texture2D, 0,
+                sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width, data.Height, 0,
+                osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
-                GL.Finish();
-                b.UnlockBits(data);
-            });
+            GL.Finish();
+            bitmap.UnlockBits(data);
 
             DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
@@ -137,14 +123,12 @@ public class Texture2d(int textureId, int width, int height, string description)
             DrawState.UnbindTexture(textureId);
             throw;
         }
-
         return new(textureId, width, height, description);
     }
 
 #region IDisposable Support
 
     bool disposed;
-
     protected override void Dispose(bool disposing)
     {
         if (!disposed)
@@ -153,7 +137,6 @@ public class Texture2d(int textureId, int width, int height, string description)
             GL.DeleteTexture(textureId);
             disposed = true;
         }
-
         base.Dispose(disposing);
     }
 

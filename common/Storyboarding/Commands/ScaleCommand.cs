@@ -14,7 +14,6 @@ public class ScaleCommand(
     public override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToScale(EndValue);
 
-    // Scale commands can't return a negative size
     public override CommandDecimal ValueAtProgress(float progress)
         => Math.Max(0, StartValue + (EndValue - StartValue) * progress);
 
@@ -22,12 +21,8 @@ public class ScaleCommand(
         => StartValue + (endCommand.EndValue - StartValue) * progress;
 
     public override IFragmentableCommand GetFragment(float startTime, float endTime)
-    {
-        if (!IsFragmentable || !(StartValue >= 0) || !(EndValue >= 0)) return this;
-        var startValue = ValueAtTime(startTime);
-        var endValue = ValueAtTime(endTime);
-        return new ScaleCommand(Easing, startTime, endTime, startValue, endValue);
-    }
+        => IsFragmentable && StartValue >= 0 && EndValue >= 0 ?
+        new ScaleCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) : this
 }
 
 public class VScaleCommand(
@@ -41,16 +36,10 @@ public class VScaleCommand(
         => transform.ApplyToScale(EndValue);
 
     public override CommandScale ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
     public override CommandScale Midpoint(Command<CommandScale> endCommand, float progress)
         => new(StartValue.X + (endCommand.EndValue.X - StartValue.X) * progress,
             StartValue.Y + (endCommand.EndValue.Y - StartValue.Y) * progress);
 
-    public override IFragmentableCommand GetFragment(float startTime, float endTime)
-    {
-        if (!IsFragmentable) return this;
-        var startValue = ValueAtTime(startTime);
-        var endValue = ValueAtTime(endTime);
-        return new VScaleCommand(Easing, startTime, endTime, startValue, endValue);
-    }
+    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
+        new VScaleCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) : this;
 }

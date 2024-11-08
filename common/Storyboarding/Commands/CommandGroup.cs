@@ -20,7 +20,6 @@ public abstract class CommandGroup : ICommand
             return commandsStartTime;
         }
     }
-
     public float CommandsEndTime
     {
         get
@@ -30,7 +29,6 @@ public abstract class CommandGroup : ICommand
             return commandsEndTime;
         }
     }
-
     public float CommandsDuration
     {
         get
@@ -43,7 +41,6 @@ public abstract class CommandGroup : ICommand
                 commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
                 commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
             }
-
             return commandsEndTime - commandsStartTime;
         }
     }
@@ -64,10 +61,7 @@ public abstract class CommandGroup : ICommand
     }
 
     public bool Contains(ICommand command) => commands.Contains(command);
-
-    public bool Add(ICommand command)
-        => ended ? throw new InvalidOperationException("Cannot add commands to a group after it ended")
-            : commands.Add(command);
+    public bool Add(ICommand command) => commands.Add(command);
 
     public virtual void EndGroup() => ended = true;
     protected abstract string GetCommandGroupHeader(ExportSettings exportSettings);

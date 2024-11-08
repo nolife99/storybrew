@@ -22,8 +22,7 @@ public class OsbSpriteWriter(
         if (exportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 &&
             sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
         {
-            HashSet<IFragmentableCommand> commands = [];
-            foreach (var cmd in sprite.Commands) commands.Add((IFragmentableCommand)cmd);
+            HashSet<IFragmentableCommand> commands = new(sprite.Commands.Select(c => (IFragmentableCommand)c));
             var fragmentationTimes = GetFragmentationTimes(commands);
 
             while (commands.Count > 0)
@@ -32,10 +31,8 @@ public class OsbSpriteWriter(
                 writeOsbSprite(CreateSprite(segment), transform);
             }
         }
-        else
-            writeOsbSprite(sprite, transform);
+        else writeOsbSprite(sprite, transform);
     }
-
     protected virtual OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
     {
         OsbSprite spr = new()
@@ -45,20 +42,17 @@ public class OsbSpriteWriter(
         foreach (var command in segment) spr.AddCommand(command);
         return spr;
     }
-
     void writeOsbSprite(OsbSprite sprite, StoryboardTransform transform)
     {
         WriteHeader(sprite, transform);
         foreach (var command in sprite.Commands) command.WriteOsb(writer, exportSettings, transform, 1);
     }
-
     protected virtual void WriteHeader(OsbSprite sprite, StoryboardTransform transform)
     {
         writer.Write("Sprite");
         WriteHeaderCommon(sprite, transform);
         writer.WriteLine();
     }
-
     protected virtual void WriteHeaderCommon(OsbSprite sprite, StoryboardTransform transform)
     {
         writer.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
@@ -76,28 +70,21 @@ public class OsbSpriteWriter(
         else
             writer.Write(",0");
     }
-
     protected virtual bool IsFragmentable()
     {
         // if there are commands with nondeterministic results (aka triggercommands) the sprite can't reliably be split
         if (sprite.Commands.Any(c => c is not IFragmentableCommand)) return false;
 
-        return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap || rotate.HasOverlap || scale.HasOverlap ||
-            scaleVec.HasOverlap || fade.HasOverlap || color.HasOverlap);
+        return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap || 
+            rotate.HasOverlap || scale.HasOverlap || scaleVec.HasOverlap || fade.HasOverlap || color.HasOverlap);
     }
-
     protected virtual HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
     {
-        HashSet<int> fragTimes =
-        [
-            ..Enumerable.Range((int)sprite.StartTime, (int)(sprite.EndTime - sprite.StartTime) + 1)
-        ];
+        HashSet<int> fragTimes = new(Enumerable.Range((int)sprite.StartTime, (int)(sprite.EndTime - sprite.StartTime) + 1));
         foreach (var command in fragCommands) fragTimes.ExceptWith(command.GetNonFragmentableTimes());
         return fragTimes;
     }
-
-    HashSet<IFragmentableCommand> getNextSegment(HashSet<int> fragmentationTimes,
-        HashSet<IFragmentableCommand> commands)
+    HashSet<IFragmentableCommand> getNextSegment(HashSet<int> fragmentationTimes, HashSet<IFragmentableCommand> commands)
     {
         HashSet<IFragmentableCommand> segment = [];
 
@@ -143,14 +130,12 @@ public class OsbSpriteWriter(
                     endTime = fragmentationTimes.Where(t => t < (int)lastCommand.StartTime).Max();
                     if (endTime == startTime) endTime = fragmentationTimes.First(t => t > startTime);
                 }
-                else
-                    endTime = fragmentationTimes.First(t => t > startTime);
+                else endTime = fragmentationTimes.First(t => t > startTime);
             }
         }
 
         return endTime;
     }
-
     void addStaticCommands(ICollection<IFragmentableCommand> segment, int startTime)
     {
         if (move.HasCommands && !segment.Any(c => c is MoveCommand && c.StartTime == startTime))
@@ -158,37 +143,31 @@ public class OsbSpriteWriter(
             var value = move.ValueAtTime(startTime);
             segment.Add(new MoveCommand(OsbEasing.None, startTime, startTime, value, value));
         }
-
         if (moveX.HasCommands && !segment.Any(c => c is MoveXCommand && c.StartTime == startTime))
         {
             var value = moveX.ValueAtTime(startTime);
             segment.Add(new MoveXCommand(OsbEasing.None, startTime, startTime, value, value));
         }
-
         if (moveY.HasCommands && !segment.Any(c => c is MoveYCommand && c.StartTime == startTime))
         {
             var value = moveY.ValueAtTime(startTime);
             segment.Add(new MoveYCommand(OsbEasing.None, startTime, startTime, value, value));
         }
-
         if (rotate.HasCommands && !segment.Any(c => c is RotateCommand && c.StartTime == startTime))
         {
             var value = rotate.ValueAtTime(startTime);
             segment.Add(new RotateCommand(OsbEasing.None, startTime, startTime, value, value));
         }
-
         if (scale.HasCommands && !segment.Any(c => c is ScaleCommand && c.StartTime == startTime))
         {
             var value = scale.ValueAtTime(startTime);
             segment.Add(new ScaleCommand(OsbEasing.None, startTime, startTime, value, value));
         }
-
         if (scaleVec.HasCommands && !segment.Any(c => c is VScaleCommand && c.StartTime == startTime))
         {
             var value = scaleVec.ValueAtTime(startTime);
             segment.Add(new VScaleCommand(OsbEasing.None, startTime, startTime, value, value));
         }
-
         if (color.HasCommands && !segment.Any(c => c is ColorCommand && c.StartTime == startTime))
         {
             var value = color.ValueAtTime(startTime);

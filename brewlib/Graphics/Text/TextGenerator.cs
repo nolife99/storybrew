@@ -142,7 +142,6 @@ public sealed class TextGenerator : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     void Dispose(bool disposing)
     {
         if (!disposed)
@@ -164,13 +163,11 @@ public sealed class TextGenerator : IDisposable
                 fontCollections = null;
                 fontFamilies = null;
             }
-
             disposed = true;
         }
     }
 
     ~TextGenerator() => Dispose(false);
-
     public void Dispose()
     {
         Dispose(true);

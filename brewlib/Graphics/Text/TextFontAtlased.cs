@@ -35,14 +35,12 @@ public class TextFontAtlased(string name, float size) : TextFont
         atlas ??= new(512, 512, $"Font Atlas {name}:{size:n1}");
         using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, default,
             BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
-        return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X,
-            (int)measuredSize.Y);
+        return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
     }
 
 #region IDisposable Support
 
     bool disposed;
-
     protected virtual void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -54,7 +52,6 @@ public class TextFontAtlased(string name, float size) : TextFont
         atlas = null;
         disposed = true;
     }
-
     public void Dispose()
     {
         Dispose(true);

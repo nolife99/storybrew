@@ -46,10 +46,8 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
         for (var i = 1f; i < length; ++i)
         {
             var progress = i / precision;
-            var angle = endAngle * progress + startAngle * (1 - progress);
-
-            distancePosition.Add((progress * length,
-                new Vector2(MathF.Cos(angle) * radius, MathF.Sin(angle) * radius) + centre));
+            var (sin, cos) = MathF.SinCos(endAngle * progress + startAngle * (1 - progress));
+            distancePosition.Add((progress * length, new Vector2(cos * radius, sin * radius) + centre));
         }
 
         distancePosition.Add((length, endPoint));

@@ -7,12 +7,9 @@ public class Clock : TimeSource
     readonly Stopwatch stopwatch = new();
 
     bool playing;
-
-    float timeFactor = 1;
-    float timeOrigin;
+    float timeFactor = 1, timeOrigin;
 
     public float Current => timeOrigin + (float)stopwatch.Elapsed.TotalSeconds * timeFactor;
-
     public float TimeFactor
     {
         get => timeFactor;
@@ -25,7 +22,6 @@ public class Clock : TimeSource
             timeOrigin = timeOrigin + elapsed * timeFactor - elapsed * timeFactor;
         }
     }
-
     public bool Playing
     {
         get => playing;
@@ -34,10 +30,8 @@ public class Clock : TimeSource
             if (playing == value) return;
             playing = value;
 
-            if (playing)
-                stopwatch.Start();
-            else
-                stopwatch.Stop();
+            if (playing) stopwatch.Start();
+            else stopwatch.Stop();
         }
     }
 

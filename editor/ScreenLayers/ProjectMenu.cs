@@ -292,8 +292,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         mapB.OnClick += (_, _) =>
         {
             if (proj.MapsetManager.BeatmapCount > 2)
-                Manager.ShowContextMenu("Select a beatmap", map => proj.SelectBeatmap(map.Id, map.Name),
-                    proj.MapsetManager.Beatmaps);
+                Manager.ShowContextMenu("Select a beatmap", map => proj.SelectBeatmap(map.Id, map.Name), proj.MapsetManager.Beatmaps);
             else
                 proj.SwitchMainBeatmap();
         };
@@ -462,21 +461,16 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var initialDirectory = Path.GetFullPath(proj.MapsetPath);
         if (!Directory.Exists(initialDirectory)) initialDirectory = OsuHelper.GetOsuSongFolder();
 
-        Manager.OpenFilePicker("Pick a new mapset location", "", initialDirectory, ".osu files (*.osu)|*.osu", newPath
-            =>
+        Manager.OpenFilePicker("Pick a new mapset location", "", initialDirectory, ".osu files (*.osu)|*.osu", newPath =>
         {
-            if (!Directory.Exists(newPath) && File.Exists(newPath))
-                proj.MapsetPath = Path.GetDirectoryName(newPath);
-            else
-                Manager.ShowMessage("Invalid mapset path.");
+            if (!Directory.Exists(newPath) && File.Exists(newPath)) proj.MapsetPath = Path.GetDirectoryName(newPath);
+            else Manager.ShowMessage("Invalid mapset path.");
         });
     }
 
     void saveProject() => Manager.AsyncLoading("Saving", () => Program.RunMainThread(() => proj.Save()));
     void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
-
-    void exportProjectAll()
-        => Manager.AsyncLoading("Exporting", () =>
+    void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
         {
             var first = true;
             var mainBeatmap = proj.MainBeatmap;
@@ -735,7 +729,6 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 #region IDisposable Support
 
     bool disposed;
-
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);

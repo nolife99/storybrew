@@ -13,13 +13,11 @@ using Util;
 public class Textbox : Widget, Field
 {
     readonly Label label, content;
-
-    bool acceptMultiline;
     Sprite cursorLine;
 
     int cursorPosition, selectionStart;
     public bool EnterCommits = true;
-    bool hasFocus, hovered, hasCommitPending;
+    bool acceptMultiline, hasFocus, hovered, hasCommitPending;
 
     public Textbox(WidgetManager manager) : base(manager)
     {
@@ -187,25 +185,19 @@ public class Textbox : Widget, Field
         get => Math.Min(selectionStart, cursorPosition);
         set
         {
-            if (selectionStart < cursorPosition)
-                selectionStart = value;
-            else
-                cursorPosition = value;
+            if (selectionStart < cursorPosition) selectionStart = value;
+            else cursorPosition = value;
         }
     }
-
     public int SelectionRight
     {
         get => Math.Max(selectionStart, cursorPosition);
         set
         {
-            if (selectionStart > cursorPosition)
-                selectionStart = value;
-            else
-                cursorPosition = value;
+            if (selectionStart > cursorPosition) selectionStart = value;
+            else cursorPosition = value;
         }
     }
-
     public int SelectionLength => Math.Abs(cursorPosition - selectionStart);
 
     public override Vector2 MinSize => PreferredSize with { X = 0 };
@@ -223,13 +215,11 @@ public class Textbox : Widget, Field
             return new(Math.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);
         }
     }
-
     public string LabelText
     {
         get => label.Text;
         set => label.Text = value;
     }
-
     public string Value
     {
         get => content.Text;
@@ -243,7 +233,6 @@ public class Textbox : Widget, Field
             if (!hasFocus) OnValueCommited?.Invoke(this, EventArgs.Empty);
         }
     }
-
     public bool AcceptMultiline
     {
         get => acceptMultiline;
@@ -255,7 +244,6 @@ public class Textbox : Widget, Field
             if (!acceptMultiline) Value = Value.Replace("\n", "");
         }
     }
-
     protected override WidgetStyle Style
         => Manager.Skin.GetStyle<TextboxStyle>(BuildStyleName(hovered ? "hover" : null, hasFocus ? "focus" : null));
 
@@ -264,8 +252,7 @@ public class Textbox : Widget, Field
         get => Value;
         set => Value = (string)value;
     }
-
-    public event EventHandler OnValueChanged;
+    public event EventHandler OnValueChanged, OnValueCommited;
 
     public void SetValueSilent(string value)
     {
@@ -273,9 +260,6 @@ public class Textbox : Widget, Field
         if (selectionStart > content.Text.Length) selectionStart = content.Text.Length;
         if (cursorPosition > content.Text.Length) cursorPosition = content.Text.Length;
     }
-
-    public event EventHandler OnValueCommited;
-
     protected override void ApplyStyle(WidgetStyle style)
     {
         base.ApplyStyle(style);
@@ -284,7 +268,6 @@ public class Textbox : Widget, Field
         label.StyleName = textboxStyle.LabelStyle;
         content.StyleName = textboxStyle.ContentStyle;
     }
-
     protected override void DrawForeground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawForeground(drawContext, actualOpacity);
@@ -299,28 +282,17 @@ public class Textbox : Widget, Field
             scale = new(Manager.PixelSize, bounds.Height * .6f);
         cursorLine.Draw(drawContext, Manager.Camera, new(position.X, position.Y, scale.X, scale.Y), actualOpacity);
     }
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing) cursorLine.Dispose();
-        cursorLine = null;
-
-        base.Dispose(disposing);
-    }
-
     protected override void Layout()
     {
         base.Layout();
         content.Size = new(Size.X, content.PreferredSize.Y);
         label.Size = new(Size.X, label.PreferredSize.Y);
     }
-
     public void SelectAll()
     {
         selectionStart = 0;
         cursorPosition = Value.Length;
     }
-
     public void ReplaceSelection(string text)
     {
         var left = SelectionLeft;
@@ -332,5 +304,12 @@ public class Textbox : Widget, Field
 
         Value = newValue;
         cursorPosition = selectionStart = SelectionLeft + text.Length;
+    }
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) cursorLine.Dispose();
+        cursorLine = null;
+
+        base.Dispose(disposing);
     }
 }

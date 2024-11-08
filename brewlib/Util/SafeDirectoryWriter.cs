@@ -37,14 +37,12 @@ public class SafeDirectoryWriter : IDisposable
         }
         else if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
     }
-
     public string GetPath(string path)
     {
         var fullpath = Path.Combine(tempDirectory, path);
         paths.Add(fullpath);
         return fullpath;
     }
-
     public void Commit(bool checkPaths = true)
     {
         if (checkPaths)
@@ -58,7 +56,6 @@ public class SafeDirectoryWriter : IDisposable
                 if (file.Length == 0) throw new InvalidOperationException($"File path requested but is empty: {path}");
             }
         }
-
         committed = true;
     }
 }

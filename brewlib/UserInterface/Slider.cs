@@ -7,9 +7,8 @@ using Skinning.Styles;
 
 public class Slider : ProgressBar
 {
-    bool disabled;
     MouseButton dragButton;
-    bool hovered, dragged;
+    bool disabled, hovered, dragged;
 
     public float Step;
 
@@ -57,19 +56,15 @@ public class Slider : ProgressBar
             RefreshStyle();
         }
     }
-
     protected override WidgetStyle Style
-        => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" :
-            dragged || hovered ? "hover" : null));
+        => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" : dragged || hovered ? "hover" : null));
 
     public event EventHandler OnValueCommited;
 
     public float GetValueForPosition(Vector2 position)
     {
         var bounds = Bounds;
-        var mouseX = Manager.Camera.FromScreen(position).X;
-
-        var value = MinValue + (MaxValue - MinValue) * (mouseX - bounds.Left) / bounds.Width;
+        var value = MinValue + (MaxValue - MinValue) * (Manager.Camera.FromScreen(position).X - bounds.Left) / bounds.Width;
         if (Step != 0) value = Math.Min((int)(value / Step) * Step, MaxValue);
         return value;
     }

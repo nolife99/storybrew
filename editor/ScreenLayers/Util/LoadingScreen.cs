@@ -40,10 +40,8 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
                         innerException = innerException.InnerException;
                     }
 
-                    Manager.ShowMessage($"{title} failed:\n\n{exceptionMessage}\n\nDetails:\n{
-                        exception.GetBaseException()}");
+                    Manager.ShowMessage($"{title} failed:\n\n{exceptionMessage}\n\nDetails:\n{exception.GetBaseException()}");
                 }
-
                 Exit();
             });
         });
@@ -61,12 +59,10 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
             Children = [new Label(WidgetManager) { Text = $"{title}..." ?? "Loading..." }]
         });
     }
-
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
         mainLayout.Pack(1024);
     }
-
     public override void Close() { }
 }

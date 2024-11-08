@@ -9,6 +9,7 @@ public class ShaderContext
 {
     readonly Dictionary<ShaderVariable, HashSet<ShaderVariable>> dependencies = [];
     readonly HashSet<ShaderVariable> usedVariables = [], flowVariables = [];
+
     StringBuilder code;
     ShaderVariable[] dependantVariables;
 
@@ -34,7 +35,6 @@ public class ShaderContext
             existingDependencies.Add(referencedVariable);
         }
     }
-
     public void MarkUsedVariables(Action action, params ShaderVariable[] outputVariables)
     {
         if (canReceiveCommands)
@@ -48,7 +48,6 @@ public class ShaderContext
         foreach (var flowVariable in flowVariables) markUsed(flowVariable);
         foreach (var t in outputVariables) markUsed(t);
     }
-
     public void GenerateCode(StringBuilder code, Action action)
     {
         if (canReceiveCommands)
@@ -61,7 +60,6 @@ public class ShaderContext
         this.code = null;
         canReceiveCommands = false;
     }
-
     public bool Uses(ShaderVariable variable) => usedVariables.Contains(variable);
 
     public ShaderVariable Declare(string shaderTypeName, Func<string> expression = null)
@@ -72,7 +70,6 @@ public class ShaderContext
         assign(variable, expression, true);
         return variable;
     }
-
     public void Assign(ShaderVariable result, Func<string> expression, string components = null)
         => assign(result, expression, false, components);
 
@@ -86,21 +83,17 @@ public class ShaderContext
         var previousDependentVariables = this.dependantVariables;
         this.dependantVariables = dependantVariables;
 
-        if (code is not null)
-            code.AppendLine(CultureInfo.InvariantCulture, $"{expression()};");
-        else
-            expression();
+        if (code is not null) code.AppendLine(CultureInfo.InvariantCulture, $"{expression()};");
+        else expression();
 
         this.dependantVariables = previousDependentVariables;
     }
-
     public void Comment(string line)
     {
         checkCanReceiveCommands();
         line = string.Join("\n// ", line.Split('\n'));
         code?.AppendLine(CultureInfo.InvariantCulture, $"\n// {line}\n");
     }
-
     void assign(ShaderVariable result, Func<string> expression, bool declare, string components = null)
     {
         checkCanReceiveCommands();
@@ -118,18 +111,15 @@ public class ShaderContext
         else
             throw new ArgumentNullException(nameof(expression));
     }
-
     void markUsed(ShaderVariable var)
     {
         if (!usedVariables.Add(var)) return;
         if (!dependencies.TryGetValue(var, out var variableDependencies)) return;
         foreach (var dependency in variableDependencies) markUsed(dependency);
     }
-
     void checkCanReceiveCommands()
     {
         if (!canReceiveCommands)
-            throw new InvalidOperationException($"Cannot receive commands outside of {nameof(MarkUsedVariables)} or {
-                nameof(GenerateCode)}");
+            throw new InvalidOperationException($"Cannot receive commands outside of {nameof(MarkUsedVariables)} or {nameof(GenerateCode)}");
     }
 }

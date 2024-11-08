@@ -12,6 +12,5 @@ public class ExportSettings
     /// <summary> Enables optimisation for sprites that have <see cref="OsbSprite.CommandSplitThreshold" /> > 0. </summary>
     public bool OptimiseSprites = true;
 
-    public bool UseFloatForMove = true;
-    public bool UseFloatForTime;
+    public bool UseFloatForMove = true, UseFloatForTime;
 }

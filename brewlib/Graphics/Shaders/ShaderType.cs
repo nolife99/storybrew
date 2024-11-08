@@ -16,7 +16,6 @@ public class ShaderType(string name)
         fields.Add(field);
         return field;
     }
-
     public ShaderVariable FieldAsVariable(ShaderVariable variable, Field field)
     {
         if (variable is null) return null;

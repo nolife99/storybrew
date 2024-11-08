@@ -38,7 +38,6 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
                 VertexSize, attribute.Offset);
         }
     }
-
     public void DeactivateAttributes(Shader shader)
     {
         foreach (var attribute in vertexAttributes)

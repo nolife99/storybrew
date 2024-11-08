@@ -9,14 +9,15 @@ using CommandValues;
 public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTime, float repeatDuration, int repeats)
     : ITypedCommand<TValue> where TValue : CommandValue
 {
-    public OsbEasing Easing => throw new InvalidOperationException();
     public float Duration => EndTime - StartTime;
-
     public float RepeatDuration => repeatDuration < 0 ? command.EndTime : repeatDuration;
     public float StartTime => startTime;
     public float EndTime => StartTime + RepeatDuration * repeats;
+
+    public OsbEasing Easing => throw new InvalidOperationException();
     public TValue StartValue => command.StartValue;
     public TValue EndValue => command.EndValue;
+    
     public bool Active => true;
     public int Cost => throw new InvalidOperationException();
 

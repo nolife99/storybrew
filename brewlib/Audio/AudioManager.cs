@@ -8,7 +8,6 @@ using ManagedBass;
 public sealed class AudioManager : IDisposable
 {
     readonly List<AudioChannel> audioChannels = [];
-
     float volume = 1;
 
     public AudioManager(nint handle)

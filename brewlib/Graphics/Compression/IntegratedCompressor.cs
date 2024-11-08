@@ -13,11 +13,10 @@ using Util;
 public class IntegratedCompressor : ImageCompressor
 {
     List<Task> tasks = [];
-
     HashSet<string> toCleanup = [];
 
     public IntegratedCompressor(string utilityPath = null) : base(utilityPath)
-        => container = new AssemblyResourceContainer(typeof(IntegratedCompressor).Assembly, "BrewLib");
+        => container = new AssemblyResourceContainer(typeof(Argument).Assembly, "BrewLib");
 
     protected override void compress(Argument arg, bool useLossy)
     {
@@ -53,7 +52,6 @@ public class IntegratedCompressor : ImageCompressor
             }
         }, TaskCreationOptions.LongRunning));
     }
-
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy,
         LosslessInputSettings lossless)
     {
@@ -82,7 +80,6 @@ public class IntegratedCompressor : ImageCompressor
 
         return str.ToString();
     }
-
     protected override void ensureTool()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
@@ -93,7 +90,6 @@ public class IntegratedCompressor : ImageCompressor
                 container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
         toCleanup.Add(utility);
     }
-
     protected override async void Dispose(bool disposing)
     {
         if (disposed) return;

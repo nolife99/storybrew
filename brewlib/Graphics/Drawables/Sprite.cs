@@ -50,7 +50,6 @@ public class Sprite : Drawable
                     textureX0 = (Texture.Width - bounds.Width / scale) * .5f;
                     textureX1 = Texture.Width - textureX0;
                 }
-
                 break;
 
             case ScaleMode.Fit:
@@ -88,7 +87,6 @@ public class Sprite : Drawable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-
     protected virtual void Dispose(bool disposing)
     {
         if (disposing)

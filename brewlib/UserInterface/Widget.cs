@@ -19,22 +19,11 @@ public class Widget(WidgetManager manager) : IDisposable
     static int nextId;
     public readonly int Id = nextId++;
 
-    Drawable background = NullDrawable.Instance;
-
-    bool clipChildren;
-
-    bool displayed = true;
-
-    Drawable foreground = NullDrawable.Instance;
-
-    bool hoverable = true;
+    string styleName, tooltip;
+    Drawable background = NullDrawable.Instance, foreground = NullDrawable.Instance;
+    bool clipChildren, displayed = true, hoverable = true;
 
     public float Opacity = 1;
-
-    string styleName;
-
-    string tooltip;
-
     public WidgetManager Manager => manager;
 
     public bool Displayed
@@ -48,7 +37,6 @@ public class Widget(WidgetManager manager) : IDisposable
             if (hoverable) manager.RefreshHover();
         }
     }
-
     public bool Visible => displayed && (Parent is null || Parent.Visible);
 
     public bool Hoverable
@@ -61,7 +49,6 @@ public class Widget(WidgetManager manager) : IDisposable
             if (Visible) manager.RefreshHover();
         }
     }
-
     public bool ClipChildren
     {
         get => clipChildren;
@@ -72,7 +59,6 @@ public class Widget(WidgetManager manager) : IDisposable
             if (Visible && hoverable) manager.RefreshHover();
         }
     }
-
     public string StyleName
     {
         get => styleName;
@@ -83,7 +69,6 @@ public class Widget(WidgetManager manager) : IDisposable
             RefreshStyle();
         }
     }
-
     public Drawable Background
     {
         get => background;
@@ -94,7 +79,6 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateLayout();
         }
     }
-
     public Drawable Foreground
     {
         get => foreground;
@@ -105,7 +89,6 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateLayout();
         }
     }
-
     public string Tooltip
     {
         get => tooltip;
@@ -119,11 +102,9 @@ public class Widget(WidgetManager manager) : IDisposable
                 Manager.UnregisterTooltip(this);
                 tooltip = null;
             }
-            else
-                Manager.RegisterTooltip(this, tooltip);
+            else Manager.RegisterTooltip(this, tooltip);
         }
     }
-
     public event EventHandler OnDisplayedChanged;
 
     public Widget GetWidgetAt(float x, float y)
@@ -137,14 +118,11 @@ public class Widget(WidgetManager manager) : IDisposable
 
         for (var i = children.Count - 1; i >= 0; i--)
         {
-            var child = children[i];
-            var result = child.GetWidgetAt(x, y);
+            var result = children[i].GetWidgetAt(x, y);
             if (result is not null) return result;
         }
-
         return overThis ? this : null;
     }
-
     public void Draw(DrawContext drawContext, float parentOpacity)
     {
         var actualOpacity = Opacity * parentOpacity;
@@ -152,7 +130,6 @@ public class Widget(WidgetManager manager) : IDisposable
         DrawChildren(drawContext, actualOpacity);
         DrawForeground(drawContext, actualOpacity);
     }
-
     protected virtual void DrawBackground(DrawContext drawContext, float actualOpacity)
         => background?.Draw(drawContext, manager.Camera, Bounds, actualOpacity);
 
@@ -162,7 +139,6 @@ public class Widget(WidgetManager manager) : IDisposable
         using (ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : null)
             children.ForEach(child => child.Draw(drawContext, actualOpacity), child => child.displayed);
     }
-
     protected virtual void DrawForeground(DrawContext drawContext, float actualOpacity)
         => foreground?.Draw(drawContext, manager.Camera, Bounds, actualOpacity);
 
@@ -179,7 +155,6 @@ public class Widget(WidgetManager manager) : IDisposable
         var style = Style;
         if (style is not null) ApplyStyle(style);
     }
-
     protected virtual void ApplyStyle(WidgetStyle style)
     {
         Background = style.Background;
@@ -187,7 +162,6 @@ public class Widget(WidgetManager manager) : IDisposable
     }
 
     public string BuildStyleName(params string[] modifiers) => buildStyleName(StyleName, modifiers);
-
     static string buildStyleName(string baseName, params string[] modifiers)
     {
         if (modifiers.Length == 0) return baseName;
@@ -202,7 +176,6 @@ public class Widget(WidgetManager manager) : IDisposable
             sb.Append(" #");
             sb.Append(modifier);
         }
-
         return sb.ToString();
     }
 
@@ -213,7 +186,6 @@ public class Widget(WidgetManager manager) : IDisposable
     public Widget Parent { get; private set; }
 
     readonly List<Widget> children = [];
-
     public IEnumerable<Widget> Children
     {
         get => children;
@@ -240,7 +212,6 @@ public class Widget(WidgetManager manager) : IDisposable
 
         InvalidateAncestorLayout();
     }
-
     public void Remove(Widget widget)
     {
         if (!children.Contains(widget)) return;
@@ -250,32 +221,28 @@ public class Widget(WidgetManager manager) : IDisposable
 
         InvalidateAncestorLayout();
     }
-
     public void ClearWidgets()
     {
         foreach (var child in children.ToArray()) child.Dispose();
     }
-
     public bool HasAncestor(Widget widget)
     {
         if (Parent is null) return false;
         return Parent == widget || Parent.HasAncestor(widget);
     }
-
     public bool HasDescendant(Widget widget) => children.Find(c => c == widget || c.HasDescendant(widget)) is not null;
 
     public IEnumerable<Widget> GetAncestors()
     {
-        List<Widget> ancestors = [];
-        for (var ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent) ancestors.Add(ancestor);
-        return ancestors;
+        for (var ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent) yield return ancestor;
     }
 
 #endregion
 
 #region Placement
 
-    Vector2 offset;
+    Vector2 offset, size, absolutePosition;
+    BoxAlignment anchorFrom = BoxAlignment.TopLeft, anchorTo = BoxAlignment.TopLeft;
 
     public Vector2 Offset
     {
@@ -287,9 +254,6 @@ public class Widget(WidgetManager manager) : IDisposable
             manager.InvalidateAnchors();
         }
     }
-
-    Vector2 size;
-
     public Vector2 Size
     {
         get => size;
@@ -300,21 +264,16 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateLayout();
         }
     }
-
     public float Width
     {
         get => Size.X;
         set => Size = Size with { X = value };
     }
-
     public float Height
     {
         get => Size.Y;
         set => Size = Size with { Y = value };
     }
-
-    Vector2 absolutePosition;
-
     public Vector2 AbsolutePosition
     {
         get
@@ -323,11 +282,9 @@ public class Widget(WidgetManager manager) : IDisposable
             return absolutePosition;
         }
     }
-
     public RectangleF Bounds => new(AbsolutePosition.X, AbsolutePosition.Y, Size.X, Size.Y);
 
     Widget anchorTarget;
-
     public Widget AnchorTarget
     {
         get => anchorTarget;
@@ -338,9 +295,6 @@ public class Widget(WidgetManager manager) : IDisposable
             manager.InvalidateAnchors();
         }
     }
-
-    BoxAlignment anchorFrom = BoxAlignment.TopLeft;
-
     public BoxAlignment AnchorFrom
     {
         get => anchorFrom;
@@ -351,9 +305,6 @@ public class Widget(WidgetManager manager) : IDisposable
             manager.InvalidateAnchors();
         }
     }
-
-    BoxAlignment anchorTo = BoxAlignment.TopLeft;
-
     public BoxAlignment AnchorTo
     {
         get => anchorTo;
@@ -366,47 +317,38 @@ public class Widget(WidgetManager manager) : IDisposable
     }
 
     int anchoringIteration;
-
     public void UpdateAnchoring(int iteration, bool includeChildren = true)
     {
         ValidateLayout();
         if (anchoringIteration < iteration)
         {
             anchoringIteration = iteration;
-
             var actualAnchorTarget =
                 anchorTarget is not null && (anchorTarget.Parent is not null || anchorTarget == manager.Root)
                     ? anchorTarget : Parent;
+
             if (actualAnchorTarget is not null)
             {
                 actualAnchorTarget.UpdateAnchoring(iteration, false);
                 absolutePosition = actualAnchorTarget.absolutePosition + offset;
 
-                if ((anchorFrom & BoxAlignment.Right) > 0)
-                    absolutePosition.X -= size.X;
+                if ((anchorFrom & BoxAlignment.Right) > 0) absolutePosition.X -= size.X;
                 else if ((anchorFrom & BoxAlignment.Left) == 0) absolutePosition.X -= size.X * .5f;
 
-                if ((anchorFrom & BoxAlignment.Bottom) > 0)
-                    absolutePosition.Y -= size.Y;
+                if ((anchorFrom & BoxAlignment.Bottom) > 0) absolutePosition.Y -= size.Y;
                 else if ((anchorFrom & BoxAlignment.Top) == 0) absolutePosition.Y -= size.Y * .5f;
 
-                if ((anchorTo & BoxAlignment.Right) > 0)
-                    absolutePosition.X += actualAnchorTarget.Size.X;
+                if ((anchorTo & BoxAlignment.Right) > 0) absolutePosition.X += actualAnchorTarget.Size.X;
                 else if ((anchorTo & BoxAlignment.Left) == 0) absolutePosition.X += actualAnchorTarget.Size.X * .5f;
 
-                if ((anchorTo & BoxAlignment.Bottom) > 0)
-                    absolutePosition.Y += actualAnchorTarget.Size.Y;
+                if ((anchorTo & BoxAlignment.Bottom) > 0) absolutePosition.Y += actualAnchorTarget.Size.Y;
                 else if ((anchorTo & BoxAlignment.Top) == 0) absolutePosition.Y += actualAnchorTarget.Size.Y * .5f;
             }
-            else
-                absolutePosition = offset;
+            else absolutePosition = offset;
 
             absolutePosition = manager.SnapToPixel(absolutePosition);
         }
-
-        if (!includeChildren) return;
-
-        foreach (var child in children) child.UpdateAnchoring(iteration);
+        if (includeChildren) foreach (var child in children) child.UpdateAnchoring(iteration);
     }
 
 #endregion
@@ -420,7 +362,6 @@ public class Widget(WidgetManager manager) : IDisposable
     public Vector2 DefaultSize = Vector2.Zero;
 
     bool canGrow = true;
-
     public bool CanGrow
     {
         get => canGrow;
@@ -431,7 +372,6 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateAncestorLayout();
         }
     }
-
     public bool NeedsLayout { get; private set; } = true;
 
     public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
@@ -453,30 +393,25 @@ public class Widget(WidgetManager manager) : IDisposable
             break;
         }
     }
-
     public void InvalidateAncestorLayout()
     {
         InvalidateLayout();
         Parent?.InvalidateAncestorLayout();
     }
-
     public virtual void InvalidateLayout()
     {
         NeedsLayout = true;
         manager.InvalidateAnchors();
     }
-
     public void ValidateLayout()
     {
         if (!NeedsLayout) return;
         Layout();
     }
-
     public virtual void PreLayout()
     {
         foreach (var child in children) child.PreLayout();
     }
-
     protected virtual void Layout() => NeedsLayout = false;
 
 #endregion
@@ -484,14 +419,12 @@ public class Widget(WidgetManager manager) : IDisposable
 #region Events
 
     public delegate void WidgetEventHandler<TEventArgs>(WidgetEvent evt, TEventArgs e);
-
     public delegate bool HandleableWidgetEventHandler<TEventArgs>(WidgetEvent evt, TEventArgs e);
 
     public event HandleableWidgetEventHandler<MouseButtonEventArgs> OnClickDown;
     public bool NotifyClickDown(WidgetEvent evt, MouseButtonEventArgs e) => Raise(OnClickDown, evt, e);
 
     public event WidgetEventHandler<MouseButtonEventArgs> OnClickUp;
-
     public bool NotifyClickUp(WidgetEvent evt, MouseButtonEventArgs e)
     {
         Raise(OnClickUp, evt, e);
@@ -499,7 +432,6 @@ public class Widget(WidgetManager manager) : IDisposable
     }
 
     public event WidgetEventHandler<MouseMoveEventArgs> OnClickMove;
-
     public bool NotifyClickMove(WidgetEvent evt, MouseMoveEventArgs e)
     {
         Raise(OnClickMove, evt, e);
@@ -519,7 +451,6 @@ public class Widget(WidgetManager manager) : IDisposable
     public bool NotifyKeyPress(WidgetEvent evt, KeyPressEventArgs e) => Raise(OnKeyPress, evt, e);
 
     public event WidgetEventHandler<WidgetHoveredEventArgs> OnHovered, OnHoveredWidgetChange;
-
     public bool NotifyHoveredWidgetChange(WidgetEvent evt, WidgetHoveredEventArgs e)
     {
         var related = evt.RelatedTarget;
@@ -532,7 +463,6 @@ public class Widget(WidgetManager manager) : IDisposable
     }
 
     public event WidgetEventHandler<WidgetFocusEventArgs> OnFocusChange;
-
     public bool NotifyFocusChange(WidgetEvent evt, WidgetFocusEventArgs e)
     {
         Raise(OnFocusChange, evt, e);
@@ -540,12 +470,10 @@ public class Widget(WidgetManager manager) : IDisposable
     }
 
     public event HandleableWidgetEventHandler<GamepadButtonEventArgs> OnGamepadButtonDown;
-
     public bool NotifyGamepadButtonDown(WidgetEvent evt, GamepadButtonEventArgs e)
         => Raise(OnGamepadButtonDown, evt, e);
 
     public event WidgetEventHandler<GamepadButtonEventArgs> OnGamepadButtonUp;
-
     public bool NotifyGamepadButtonUp(WidgetEvent evt, GamepadButtonEventArgs e)
     {
         Raise(OnGamepadButtonUp, evt, e);

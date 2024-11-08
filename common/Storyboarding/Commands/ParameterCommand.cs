@@ -13,8 +13,5 @@ public class ParameterCommand(float startTime, float endTime, CommandParameter v
     public override CommandParameter Midpoint(Command<CommandParameter> endCommand, float progress) => StartValue;
 
     public override IFragmentableCommand GetFragment(float startTime, float endTime)
-    {
-        var value = ValueAtTime(startTime);
-        return new ParameterCommand(startTime, endTime, value);
-    }
+        => new ParameterCommand(startTime, endTime, ValueAtTime(startTime));
 }

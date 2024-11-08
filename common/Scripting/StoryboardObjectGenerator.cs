@@ -265,9 +265,7 @@ public abstract class StoryboardObjectGenerator : Script
 #region Subtitles
 
     static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
-
     internal readonly Dictionary<string, FontGenerator> fonts = [];
-    string fontCacheDirectory => Path.Combine(context.ProjectPath, ".cache");
 
     ///<summary> Loads subtitles from a given subtitle file. </summary>
     public SubtitleSet LoadSubtitles(string path)

@@ -59,7 +59,6 @@ public class PromptBox(string title, string description, string initialText, Act
         };
         cancelButton.OnClick += (_, _) => Exit();
     }
-
     public override void OnTransitionIn()
     {
         base.OnTransitionIn();
@@ -67,7 +66,6 @@ public class PromptBox(string title, string description, string initialText, Act
         WidgetManager.KeyboardFocus = textbox;
         textbox.SelectAll();
     }
-
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);

@@ -28,14 +28,11 @@ public class CatmullCurve(Vector2[] points, int precision) : BaseCurve
         for (var lineIndex = 0; lineIndex < points.Length - 1; ++lineIndex)
         for (var i = 1f; i <= linePrecision; ++i)
         {
-            var delta = i / (linePrecision + 1);
-
-            var p1 = lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex];
-            var p2 = points[lineIndex];
-            var p3 = points[lineIndex + 1];
-            var p4 = lineIndex < points.Length - 2 ? points[lineIndex + 2] : points[lineIndex + 1];
-
-            var nextPosition = positionAtDelta(p1, p2, p3, p4, delta);
+            var nextPosition = positionAtDelta(
+                lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex], 
+                points[lineIndex], points[lineIndex + 1], 
+                lineIndex < points.Length - 2 ? points[lineIndex + 2] : points[lineIndex + 1], 
+                i / (linePrecision + 1));
 
             distance += (nextPosition - previousPosition).Length();
             distancePosition.Add((distance, nextPosition));

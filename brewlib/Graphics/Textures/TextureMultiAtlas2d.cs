@@ -8,8 +8,8 @@ using System.Drawing;
 public sealed class TextureMultiAtlas2d : IDisposable
 {
     readonly string description;
-
     readonly int width, height, padding;
+
     List<TextureAtlas2d> atlases = [];
     List<Texture2d> oversizeTextures;
     TextureOptions textureOptions;
@@ -60,27 +60,25 @@ public sealed class TextureMultiAtlas2d : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
-        if (!disposed)
+        if (disposed) return;
+
+        foreach (var atlas in atlases) atlas.Dispose();
+        atlases.Clear();
+        atlases = null;
+
+        if (oversizeTextures is not null)
         {
-            foreach (var atlas in atlases) atlas.Dispose();
-            atlases.Clear();
-            atlases = null;
-
-            if (oversizeTextures is not null)
-            {
-                foreach (var texture in oversizeTextures) texture.Dispose();
-                oversizeTextures.Clear();
-                oversizeTextures = null;
-            }
-
-            textureOptions = null;
-
-            GC.SuppressFinalize(this);
-            disposed = true;
+            foreach (var texture in oversizeTextures) texture.Dispose();
+            oversizeTextures.Clear();
+            oversizeTextures = null;
         }
+
+        textureOptions = null;
+
+        GC.SuppressFinalize(this);
+        disposed = true;
     }
 
 #endregion

@@ -25,23 +25,14 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
     readonly bool ownsShader;
 
     Camera camera;
-
-    int currentLargestBatch;
-    int currentSamplerUnit;
+    int currentLargestBatch, currentSamplerUnit, spritesInBatch;
 
     BindableTexture currentTexture;
+    bool disposed, lastFlushWasBuffered, rendering;
 
-    bool disposed;
-
-    bool lastFlushWasBuffered;
     void* primitives;
-
     PrimitiveStreamer primitiveStreamer;
-    bool rendering;
-
     Shader shader;
-
-    int spritesInBatch;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
@@ -62,8 +53,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         FlushAction = flushAction;
         this.shader = shader;
 
-        var primitiveBatchSize = Math.Max(maxSpritesPerBatch,
-            (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
+        var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
 
         primitives = NativeMemory.Alloc((nuint)(maxSpritesPerBatch * Marshal.SizeOf<QuadPrimitive>()));
@@ -109,7 +99,6 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
 
         rendering = true;
     }
-
     public void EndRendering()
     {
         primitiveStreamer.Unbind();
@@ -139,8 +128,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
             FlushAction?.Invoke();
         }
 
-        primitiveStreamer.Render(PrimitiveType.Quads, primitives, spritesInBatch, spritesInBatch * VertexPerSprite,
-            canBuffer);
+        primitiveStreamer.Render(PrimitiveType.Quads, primitives, spritesInBatch, spritesInBatch * VertexPerSprite, canBuffer);
 
         currentLargestBatch += spritesInBatch;
         if (!canBuffer)
@@ -151,14 +139,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
 
         spritesInBatch = 0;
         ++FlushedBufferCount;
-
         lastFlushWasBuffered = canBuffer;
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX,
@@ -175,8 +156,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         }
         else if (spritesInBatch == maxSpritesPerBatch) DrawState.FlushRenderer(true);
 
-        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY,
-            fx2 = width - originX, fy2 = height - originY;
+        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY, fx2 = width - originX, fy2 = height - originY;
         bool flipX = false, flipY = false;
 
         if (scaleX != 1 || scaleY != 1)
@@ -191,8 +171,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
             fy2 *= absScaleY;
         }
 
-        float p1x = fx, p1y = fy, p2x = fx, p2y = fy2, p3x = fx2, p3y = fy2, p4x = fx2, p4y = fy, x1, y1, x2, y2, x3,
-            y3, x4, y4;
+        float p1x = fx, p1y = fy, p2x = fx, p2y = fy2, p3x = fx2, p3y = fy2, p4x = fx2, p4y = fy, x1, y1, x2, y2, x3, y3, x4, y4;
         if (rotation != 0)
         {
             var (sin, cos) = MathF.SinCos(rotation);
@@ -268,8 +247,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         spritePrimitive.v3 = v1;
         spritePrimitive.u4 = u1;
         spritePrimitive.v4 = v0;
-        spritePrimitive.color1 =
-            spritePrimitive.color2 = spritePrimitive.color3 = spritePrimitive.color4 = color.ToRgba();
+        spritePrimitive.color1 = spritePrimitive.color2 = spritePrimitive.color3 = spritePrimitive.color4 = color.ToRgba();
 
         Unsafe.Write(Unsafe.Add<QuadPrimitive>(primitives, spritesInBatch), spritePrimitive);
 
@@ -302,6 +280,12 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
 
 #endregion
 
+    ~SpriteRendererBuffered() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
     public void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -322,6 +306,4 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         FlushAction = null;
         disposed = true;
     }
-
-    ~SpriteRendererBuffered() => Dispose(false);
 }

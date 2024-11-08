@@ -32,6 +32,5 @@ public class DrawableContainer(WidgetManager manager) : Widget(manager)
         base.DrawBackground(drawContext, actualOpacity);
         drawable?.Draw(drawContext, Manager.Camera, Bounds, actualOpacity);
     }
-
     public void SetFromSkin(string name) => Drawable = Manager.Skin.GetDrawable(name);
 }

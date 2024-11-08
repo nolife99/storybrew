@@ -236,7 +236,6 @@ public static unsafe partial class Native
     private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
-
     public static nint MainWindowHandle
         => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 

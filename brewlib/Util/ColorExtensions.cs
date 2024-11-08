@@ -12,7 +12,6 @@ public static class ColorExtensions
         return Color.FromArgb(color.A, (int)(color.R * invBlend + otherColor.R * blend),
             (int)(color.G * invBlend + otherColor.G * blend), (int)(color.B * invBlend + otherColor.B * blend));
     }
-
     public static Color WithOpacity(this Color color, float opacity)
         => Color.FromArgb((int)(color.A * opacity), color.R, color.G, color.B);
 }

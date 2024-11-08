@@ -7,8 +7,6 @@ using Util;
 
 public interface ResourceContainer
 {
-    IEnumerable<string> ResourceNames { get; }
-
     Stream GetStream(string path, ResourceSource sources);
     byte[] GetBytes(string path, ResourceSource sources);
     string GetString(string path, ResourceSource sources);

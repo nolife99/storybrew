@@ -53,8 +53,7 @@ public abstract class Command<TValue>(
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
     public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
 
-    public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform,
-        int indentation)
+    public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
         => writer.WriteLine(new string(' ', indentation) + ToOsbString(exportSettings, transform));
 
     public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
@@ -64,7 +63,6 @@ public abstract class Command<TValue>(
     public abstract TValue Midpoint(Command<TValue> endCommand, float progress);
 
     public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
-
     public bool Equals(Command<TValue> obj)
         => Identifier == obj.Identifier && Easing == obj.Easing && StartTime == obj.StartTime &&
             EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) && EndValue.Equals(obj.EndValue);
@@ -82,16 +80,10 @@ public abstract class Command<TValue>(
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
         if (startTimeString == endTimeString) endTimeString = "";
-        string[] parameters =
-        [
-            Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString, endTimeString,
-            startValueString
-        ];
-
-        var result = string.Join(",", parameters);
+        var result = string.Join(",", Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), 
+            startTimeString, endTimeString, startValueString);
         if (startValueString != endValueString) result += "," + endValueString;
         return result;
     }
-
     public override string ToString() => ToOsbString(ExportSettings.Default, null);
 }

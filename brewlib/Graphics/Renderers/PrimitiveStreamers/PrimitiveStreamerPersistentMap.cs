@@ -12,16 +12,15 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
     nint bufferPointer;
     GpuCommandSync commandSync = new();
 
-    public override unsafe void Render(PrimitiveType primitiveType, void* primitives, int primitiveCount, int drawCount,
+    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount,
         bool canBuffer = false)
     {
-        var vertexDataSize = primitiveCount * PrimitiveSize;
+        var vertexDataSize = count * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize)
         {
             bufferOffset = 0;
             drawOffset = 0;
         }
-
         if (commandSync.WaitForRange(bufferOffset, vertexDataSize))
         {
             ++BufferWaitCount;
@@ -30,17 +29,14 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
 
         Native.CopyMemory(primitives, bufferPointer + bufferOffset, vertexDataSize);
 
-        if (IndexBufferId != -1)
-            GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, drawOffset * 2);
-        else
-            GL.DrawArrays(primitiveType, drawOffset, drawCount);
+        if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * 2);
+        else GL.DrawArrays(type, drawOffset, drawCount);
 
         commandSync.LockRange(bufferOffset, vertexDataSize);
 
         bufferOffset += vertexDataSize;
         drawOffset += drawCount;
     }
-
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
@@ -48,15 +44,13 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
 
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
 
-        var flags = (int)(BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit |
-            BufferAccessMask.MapCoherentBit);
+        var flags = (int)(BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
         GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, (BufferStorageFlags)flags);
         bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, (BufferAccessMask)flags);
 
         DrawState.CheckError("mapping vertex buffer", bufferPointer == 0);
         GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
     }
-
     protected override void Dispose(bool disposing)
     {
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
@@ -67,10 +61,8 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
             commandSync.Dispose();
             commandSync = null;
         }
-
         base.Dispose(disposing);
     }
-
     void expandVertexBuffer()
     {
         // Prevent the vertex buffer from becoming too large (maxes at 8mb * grow factor)

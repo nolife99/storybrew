@@ -34,7 +34,6 @@ public sealed class TextureAtlas2d(
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
         if (!disposed)

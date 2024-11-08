@@ -42,7 +42,6 @@ public class AnimatedValue<TValue> where TValue : CommandValue
         else
             triggerable.OnStateChanged += triggerable_OnStateChanged;
     }
-
     public TValue ValueAtTime(float time)
     {
         if (commands.Count == 0) return DefaultValue;
@@ -59,7 +58,6 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 
         return commands[index].ValueAtTime(time);
     }
-
     bool findCommandIndex(float time, out int index)
     {
         var left = 0;
@@ -75,12 +73,10 @@ public class AnimatedValue<TValue> where TValue : CommandValue
             else
                 right = index - 1;
         }
-
         index = left;
 
         return false;
     }
-
     void triggerable_OnStateChanged(object sender, EventArgs e)
     {
         var command = (ITypedCommand<TValue>)sender;

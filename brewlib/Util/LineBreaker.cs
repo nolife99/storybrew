@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class LineBreaker
+public static class LineBreaker
 {
     // A lazy implementation of http://unicode.org/reports/tr14/
     //
@@ -191,7 +191,6 @@ public class LineBreaker
     public static List<string> Split(string text, float maxWidth, Func<char, int> measure)
     {
         List<string> lines = [];
-
         int startIndex = 0, endIndex = 0, lineWidth = 0;
 
         for (; endIndex < text.Length; ++endIndex)
@@ -204,48 +203,39 @@ public class LineBreaker
                 endIndex = findBreakIndex(text, startIndex, endIndex);
                 completeLine();
             }
-
             lineWidth += characterWidth;
 
             if (!mustBreakAfter(text, endIndex)) continue;
             completeLine();
             --endIndex;
         }
-
         if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add("");
 
         return lines;
 
         void completeLine()
         {
-            var length = endIndex - startIndex + 1;
-            lines.Add(text.Substring(startIndex, length));
-
+            lines.Add(text.Substring(startIndex, endIndex - startIndex + 1));
             startIndex = endIndex + 1;
             endIndex = startIndex;
             lineWidth = 0;
         }
     }
-
     static int findBreakIndex(string text, int startIndex, int endIndex)
     {
         var firstAllowed = -1;
         for (var index = endIndex; index > startIndex; index--)
-        {
-            var breakability = getBreakability(text, index);
-            switch (breakability)
+            switch (getBreakability(text, index))
             {
                 case Breakability.Opportunity: return index - 1;
                 case Breakability.Allowed when firstAllowed == -1:
                     firstAllowed = index - 1;
                     break;
             }
-        }
 
         if (firstAllowed != -1) return firstAllowed;
         return endIndex - 1;
     }
-
     static Breakability getBreakability(string text, int index)
     {
         if (index == 0) return Breakability.Prohibited;
@@ -258,7 +248,6 @@ public class LineBreaker
 
         return Breakability.Allowed;
     }
-
     static Breakability getBreakabilityAfter(char c)
     {
         if (breakOpportunityAfter.Contains(c)) return Breakability.Opportunity;
@@ -268,7 +257,6 @@ public class LineBreaker
 
         return Breakability.Allowed;
     }
-
     static Breakability getBreakabilityBefore(char c)
     {
         if (breakOpportunityBefore.Contains(c)) return Breakability.Opportunity;
@@ -277,13 +265,11 @@ public class LineBreaker
 
         return Breakability.Allowed;
     }
-
     static bool mustBreakAfter(string text, int index, bool ignoreLastCharacter = false)
     {
         if (!ignoreLastCharacter && index == text.Length - 1) return true;
 
         var c = text[index];
-
         if (causesBreakAfter.Contains(c)) return true;
         return c == 0x000D && (index == text.Length - 1 || text[index + 1] != 0x000A);
     }

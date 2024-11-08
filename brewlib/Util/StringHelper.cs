@@ -9,7 +9,6 @@ using System.Text;
 public static class StringHelper
 {
     static readonly string[] sizeOrders = ["b", "kb", "mb", "gb", "tb"];
-
     static readonly string utf8Bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
 
     public static string ToByteSize(float byteCount, string format = "{0:0.##} {1}")
@@ -23,12 +22,10 @@ public static class StringHelper
 
         return string.Format(CultureInfo.InvariantCulture, format, byteCount, sizeOrders[order]);
     }
-
     public static string StripUtf8Bom(this string s)
         => s.StartsWith(utf8Bom, StringComparison.Ordinal) ? s.Remove(0, utf8Bom.Length) : s;
 
     public static string GetMd5(string value) => GetMd5(Encoding.ASCII.GetBytes(value));
-
     public static string GetMd5(byte[] data)
     {
         data = MD5.HashData(data);
@@ -38,7 +35,6 @@ public static class StringHelper
 
         return chars.ToString();
     }
-
     public static string GetFileMd5(string path)
     {
         var data = GetFileMd5Bytes(path);
@@ -48,7 +44,6 @@ public static class StringHelper
 
         return chars.ToString();
     }
-
     public static byte[] GetFileMd5Bytes(string path)
     {
         using var stream = File.OpenRead(path);
@@ -58,9 +53,7 @@ public static class StringHelper
     public static StringBuilder Trim(this StringBuilder sb)
     {
         var i = sb.Length - 1;
-        for (; i >= 0; --i)
-            if (!char.IsWhiteSpace(sb[i]))
-                break;
+        for (; i >= 0; --i) if (!char.IsWhiteSpace(sb[i])) break;
 
         if (i < sb.Length - 1) sb.Length = i + 1;
         return sb;

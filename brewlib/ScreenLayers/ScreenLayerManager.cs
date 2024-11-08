@@ -43,13 +43,11 @@ public sealed class ScreenLayerManager : IDisposable
         layer.Load();
         layer.Resize(Math.Max(1, window.Width), Math.Max(1, window.Height));
     }
-
     public void Set(ScreenLayer layer)
     {
         for (var i = layers.Count - 1; i >= 0; --i) layers[i].Exit();
         Add(layer);
     }
-
     public void Remove(ScreenLayer layer)
     {
         if (focusedLayer == layer) changeFocus(null);
@@ -58,7 +56,6 @@ public sealed class ScreenLayerManager : IDisposable
         removedLayers.Add(layer);
         updateQueue.Remove(layer);
     }
-
     public bool Close()
     {
         for (var i = layers.Count - 1; i >= 0; --i)
@@ -72,14 +69,10 @@ public sealed class ScreenLayerManager : IDisposable
 
         return false;
     }
-
     public void Exit()
-        => Array.ForEach(layers.ToArray(), layer =>
-        {
-            if (layer.IsExiting) return;
-            layer.Exit();
-        });
-
+    {
+        foreach (var layer in layers.ToArray()) if (!layer.IsExiting) layer.Exit();
+    }
     public void Update(bool isFixedRateUpdate)
     {
         var active = window.Focused;
@@ -113,7 +106,6 @@ public sealed class ScreenLayerManager : IDisposable
                 layer.FixedUpdate();
                 layer.MinTween = 0;
             }
-
             layer.Update(top, covered);
 
             if (!layer.IsPopup) covered = true;
@@ -125,7 +117,6 @@ public sealed class ScreenLayerManager : IDisposable
             foreach (var layer in removedLayers) layer.Dispose();
             removedLayers.Clear();
         }
-
         if (layers.Count == 0) window.Exit();
     }
 
@@ -146,7 +137,6 @@ public sealed class ScreenLayerManager : IDisposable
             focusedLayer.LoseFocus();
             focusedLayer = null;
         }
-
         if (layer is null) return;
 
         inputDispatcher.Add(layer.InputHandler);

@@ -60,8 +60,7 @@ public class OsbAnimationWriter(
             var frameDelay = animation.FrameDelay;
             writer.Write("Animation");
             WriteHeaderCommon(sprite, transform);
-            writer.WriteLine($",{animation.FrameCount},{frameDelay.ToString(exportSettings.NumberFormat)},{
-                animation.LoopType}");
+            writer.WriteLine($",{animation.FrameCount},{frameDelay.ToString(exportSettings.NumberFormat)},{animation.LoopType}");
         }
         else
             base.WriteHeader(sprite, transform);

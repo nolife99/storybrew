@@ -7,15 +7,10 @@ using System.Numerics;
 public class CameraOrtho : CameraBase
 {
     readonly bool yDown;
-
-    int virtualHeight;
-
-    int virtualWidth;
-
+    int virtualHeight, virtualWidth;
     float zoom = 1;
 
     public CameraOrtho(bool yDown = true) : this(0, 0, yDown) { }
-
     public CameraOrtho(int virtualWidth, int virtualHeight, bool yDown = true)
     {
         this.virtualWidth = virtualWidth;
@@ -39,7 +34,6 @@ public class CameraOrtho : CameraBase
             Invalidate();
         }
     }
-
     public int VirtualHeight
     {
         get => virtualHeight;
@@ -50,7 +44,6 @@ public class CameraOrtho : CameraBase
             Invalidate();
         }
     }
-
     public float Zoom
     {
         get => zoom;
@@ -61,7 +54,6 @@ public class CameraOrtho : CameraBase
             Invalidate();
         }
     }
-
     public float HeightScaling => VirtualHeight != 0 ? (float)Viewport.Height / VirtualHeight : 1;
 
     protected override void Recalculate(out Matrix4x4 view, out Matrix4x4 projection, out Rectangle internalViewport,
@@ -79,8 +71,7 @@ public class CameraOrtho : CameraBase
 
             internalViewport = new(0, 0, virtualWidth > 0 ? virtualWidth : orthoViewport.Width, virtualHeight);
         }
-        else
-            internalViewport = screenViewport;
+        else internalViewport = screenViewport;
 
         extendedViewport = orthoViewport;
 

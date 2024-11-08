@@ -31,6 +31,7 @@ public static class BeatmapExtensions
             var step = Math.Max(1, timingPoint.BeatDuration / snapDivisor);
             var sectionStartTime = timingPoint.Offset;
             var sectionEndTime = Math.Min(nextTimingPoint?.Offset ?? endTime, endTime);
+            
             if (timingPoint == leftTimingPoint)
                 while (startTime < sectionStartTime)
                 {

@@ -5,37 +5,31 @@ using System.Collections.Generic;
 using Data;
 using Util;
 
-public sealed class AudioSampleContainer(AudioManager audioManager, ResourceContainer resourceContainer = null)
-    : IDisposable
+public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer container = null) : IDisposable
 {
     Dictionary<string, AudioSample> samples = [];
 
     public AudioSample Get(string filename)
     {
         filename = PathHelper.WithStandardSeparators(filename);
-        if (!samples.TryGetValue(filename, out var sample))
-        {
-            sample = audioManager.LoadSample(filename, resourceContainer);
-            samples.Add(filename, sample);
-        }
-
+        if (samples.TryGetValue(filename, out var sample))
+            samples.Add(filename, sample = manager.LoadSample(filename, container));
+            
         return sample;
     }
 
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
-        if (!disposed)
-        {
-            samples.Dispose();
-            samples = null;
-            disposed = true;
+        if (disposed) return;
 
-            GC.SuppressFinalize(this);
-        }
+        samples.Dispose();
+        samples = null;
+        disposed = true;
+
+        GC.SuppressFinalize(this);
     }
 
 #endregion

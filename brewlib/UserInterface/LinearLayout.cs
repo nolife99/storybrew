@@ -8,16 +8,10 @@ using Util;
 
 public class LinearLayout(WidgetManager manager) : Widget(manager)
 {
-    bool fill;
-
-    bool fitChildren;
-
-    bool horizontal;
-    bool invalidSizes = true;
+    bool fill, fitChildren, horizontal, invalidSizes = true;
     Vector2 minSize, preferredSize;
 
     FourSide padding;
-
     float spacing;
 
     public override Vector2 MinSize
@@ -28,7 +22,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             return minSize;
         }
     }
-
     public override Vector2 PreferredSize
     {
         get
@@ -37,7 +30,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             return preferredSize;
         }
     }
-
     public bool Horizontal
     {
         get => horizontal;
@@ -48,7 +40,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
-
     public float Spacing
     {
         get => spacing;
@@ -59,7 +50,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
-
     public FourSide Padding
     {
         get => padding;
@@ -70,7 +60,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
-
     public bool FitChildren
     {
         get => fitChildren;
@@ -81,7 +70,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateLayout();
         }
     }
-
     public bool Fill
     {
         get => fill;
@@ -92,7 +80,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateLayout();
         }
     }
-
     protected override WidgetStyle Style => Manager.Skin.GetStyle<LinearLayoutStyle>(StyleName);
 
     protected override void ApplyStyle(WidgetStyle style)
@@ -102,13 +89,11 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
 
         Spacing = layoutStyle.Spacing;
     }
-
     public override void InvalidateLayout()
     {
         base.InvalidateLayout();
         invalidSizes = true;
     }
-
     protected override void Layout()
     {
         base.Layout();
@@ -123,16 +108,14 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             if (child.AnchorTarget is not null) continue;
 
             var preferredSize = child.PreferredSize;
-            var minSize = child.MinSize;
-            var maxSize = child.MaxSize;
             var length = horizontal ? preferredSize.X : preferredSize.Y;
 
             items.Add(new()
             {
                 Widget = child,
                 PreferredSize = preferredSize,
-                MinSize = minSize,
-                MaxSize = maxSize,
+                MinSize = child.MinSize,
+                MaxSize = child.MaxSize,
                 Length = length,
                 Scalable = true
             });
@@ -155,7 +138,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             foreach (var item in items)
             {
                 if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
-
                 if (item.Scalable)
                 {
                     item.Length += adjustment;
@@ -171,8 +153,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                             item.Length = item.MaxSize.X;
                             item.Scalable = false;
                         }
-                        else
-                            ++scalableItems;
+                        else ++scalableItems;
                     }
                     else
                     {
@@ -186,11 +167,9 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                             item.Length = item.MaxSize.Y;
                             item.Scalable = false;
                         }
-                        else
-                            ++scalableItems;
+                        else ++scalableItems;
                     }
                 }
-
                 usedSpace += item.Length;
             }
         }
@@ -226,7 +205,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             distance += item.Length + spacing;
         }
     }
-
     protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
     {
         widget.Offset = offset;
@@ -234,14 +212,12 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
         widget.AnchorFrom = anchor;
         widget.AnchorTo = anchor;
     }
-
     void measureChildren()
     {
         if (!invalidSizes) return;
         invalidSizes = false;
 
-        float width = 0, height = 0;
-        float minWidth = 0, minHeight = 0;
+        float width = 0, height = 0, minWidth = 0, minHeight = 0;
 
         var firstChild = true;
         foreach (var child in Children)
@@ -250,6 +226,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
 
             var childMinSize = child.MinSize;
             var childSize = child.PreferredSize;
+
             if (horizontal)
             {
                 height = Math.Max(height, childSize.Y);
@@ -278,7 +255,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                     minHeight += spacing;
                 }
             }
-
             firstChild = false;
         }
 

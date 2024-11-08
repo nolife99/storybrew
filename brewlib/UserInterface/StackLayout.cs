@@ -6,8 +6,7 @@ using Skinning.Styles;
 
 public class StackLayout(WidgetManager manager) : Widget(manager)
 {
-    bool fitChildren;
-    bool invalidSizes = true;
+    bool fitChildren, invalidSizes = true;
     Vector2 minSize, preferredSize;
 
     public override Vector2 MinSize
@@ -18,7 +17,6 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             return minSize;
         }
     }
-
     public override Vector2 PreferredSize
     {
         get
@@ -27,7 +25,6 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             return preferredSize;
         }
     }
-
     public bool FitChildren
     {
         get => fitChildren;
@@ -38,7 +35,6 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             InvalidateLayout();
         }
     }
-
     protected override WidgetStyle Style => Manager.Skin.GetStyle<StackLayoutStyle>(StyleName);
 
     public override void InvalidateLayout()
@@ -46,11 +42,9 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
         base.InvalidateLayout();
         invalidSizes = true;
     }
-
     protected override void Layout()
     {
         base.Layout();
-
         foreach (var child in Children)
         {
             if (child.AnchorTarget is not null) continue;
@@ -71,7 +65,6 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             PlaceChildren(child, Vector2.Zero, new(childWidth, childHeight));
         }
     }
-
     protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size) => widget.Size = size;
 
     void measureChildren()

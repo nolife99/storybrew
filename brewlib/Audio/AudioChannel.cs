@@ -6,20 +6,8 @@ using ManagedBass;
 public class AudioChannel : IDisposable
 {
     int channel;
-
-    float frequency;
-
-    bool loop;
-
-    float pan;
-
-    float pitch = 1;
-
-    bool played;
-
-    float timeFactor = 1;
-
-    float volume = 1;
+    float frequency, pan, pitch = 1, timeFactor = 1, volume = 1
+    bool loop, played;
 
     internal AudioChannel(AudioManager audioManager, int channel = 0, bool temporary = false)
     {
@@ -28,7 +16,7 @@ public class AudioChannel : IDisposable
         Temporary = temporary;
     }
 
-    public AudioManager Manager { get; }
+    public AudioManager Manager { get; private set; }
     public float Frequency => frequency;
 
     protected int Channel
@@ -58,7 +46,6 @@ public class AudioChannel : IDisposable
             Bass.ChannelSetPosition(channel, Bass.ChannelSeconds2Bytes(channel, value));
         }
     }
-
     public float Duration { get; set; }
 
     public bool Playing
@@ -81,7 +68,6 @@ public class AudioChannel : IDisposable
                 Bass.ChannelPause(channel);
         }
     }
-
     public bool Loop
     {
         get => loop;
@@ -93,7 +79,6 @@ public class AudioChannel : IDisposable
             Bass.ChannelFlags(channel, loop ? BassFlags.Loop : 0, BassFlags.Loop);
         }
     }
-
     public bool Completed => played && Bass.ChannelIsActive(channel) == PlaybackState.Stopped;
 
     public float Volume
@@ -106,7 +91,6 @@ public class AudioChannel : IDisposable
             UpdateVolume();
         }
     }
-
     public float TimeFactor
     {
         get => timeFactor;
@@ -117,7 +101,6 @@ public class AudioChannel : IDisposable
             updateTimeFactor();
         }
     }
-
     public float Pitch
     {
         get => pitch;
@@ -128,7 +111,6 @@ public class AudioChannel : IDisposable
             updatePitch();
         }
     }
-
     public float Pan
     {
         get => pan;
@@ -150,19 +132,16 @@ public class AudioChannel : IDisposable
         if (channel == 0) return;
         Bass.ChannelSetAttribute(channel, ChannelAttribute.Volume, SoundUtil.FromLinearVolume(volume * Manager.Volume));
     }
-
     void updateTimeFactor()
     {
         if (channel == 0) return;
         Bass.ChannelSetAttribute(channel, ChannelAttribute.Tempo, (timeFactor - 1) * 100);
     }
-
     void updatePitch()
     {
         if (channel == 0 || frequency <= 0) return;
         Bass.ChannelSetAttribute(channel, ChannelAttribute.Frequency, Math.Clamp(frequency * pitch, 100, 100000));
     }
-
     void updatePan()
     {
         if (channel == 0) return;
@@ -172,17 +151,21 @@ public class AudioChannel : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     protected virtual void Dispose(bool disposing)
     {
         if (disposed || !disposing) return;
         channel = 0;
         disposed = true;
         Manager.UnregisterChannel(this);
+        Manager = null;
     }
 
     ~AudioChannel() => Dispose(false);
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
 #endregion
 }

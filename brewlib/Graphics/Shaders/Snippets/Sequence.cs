@@ -13,7 +13,6 @@ public class Sequence(params ShaderSnippet[] snippets) : ShaderSnippet
     {
         foreach (var t in snippets) t.GenerateFunctions(code);
     }
-
     public override void Generate(ShaderContext context)
     {
         foreach (var t in snippets) t.Generate(context);

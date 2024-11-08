@@ -7,25 +7,20 @@ public class PrimitiveStreamerBufferData<TPrimitive>(
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes)
     where TPrimitive : unmanaged
 {
-    public override unsafe void Render(PrimitiveType primitiveType, void* primitives, int primitiveCount, int drawCount,
+    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount,
         bool canBuffer = false)
     {
-        GL.BufferData(BufferTarget.ArrayBuffer, primitiveCount * PrimitiveSize, (nint)primitives,
-            BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ArrayBuffer, count * PrimitiveSize, (nint)primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;
 
-        if (IndexBufferId != -1)
-            GL.DrawElements(primitiveType, drawCount, DrawElementsType.UnsignedShort, 0);
-        else
-            GL.DrawArrays(primitiveType, 0, drawCount);
+        if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, 0);
+        else GL.DrawArrays(type, 0, drawCount);
     }
-
     protected override void internalBind(Shader shader)
     {
         base.internalBind(shader);
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
     }
-
     public new static bool HasCapabilities()
         => DrawState.HasCapabilities(1, 5) && PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
 }

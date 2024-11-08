@@ -40,18 +40,15 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
         => compress(new Argument(path, null, settings), true);
 
     protected abstract void compress(Argument arg, bool useLossy);
-
     protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy,
         LosslessInputSettings lossless);
 
     protected abstract void ensureTool();
-
     protected void ensureStop()
     {
         process?.Dispose();
         process = null;
     }
-
     protected virtual string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
 
     protected virtual void Dispose(bool disposing)

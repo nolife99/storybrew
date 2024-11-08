@@ -20,7 +20,6 @@ public sealed class GpuCommandSync : IDisposable
 
         return blocked;
     }
-
     public bool WaitForRange(int index, int length)
     {
         trimExpiredRanges();
@@ -32,10 +31,8 @@ public sealed class GpuCommandSync : IDisposable
             clearToIndex(i);
             return blocked;
         }
-
         return false;
     }
-
     public void LockRange(int index, int length) => syncRanges.Add(new(index, length));
 
     void trimExpiredRanges()
@@ -47,9 +44,7 @@ public sealed class GpuCommandSync : IDisposable
         while (left <= right)
         {
             var index = (left + right) / 2;
-            var wouldBlock = syncRanges[index].Wait(false);
-            if (wouldBlock)
-                right = index - 1;
+            if (syncRanges[index].Wait(false)) right = index - 1;
             else
             {
                 left = index + 1;
@@ -106,19 +101,15 @@ public sealed class GpuCommandSync : IDisposable
 #region IDisposable Support
 
         bool disposed;
-
         void Dispose(bool disposing)
         {
             if (disposed) return;
             GL.DeleteSync(Fence);
 
-            if (!disposing) return;
-            Fence = 0;
-            disposed = true;
+            if (disposing) disposed = true;
         }
 
         ~SyncRange() => Dispose(false);
-
         public void Dispose()
         {
             Dispose(true);
@@ -131,7 +122,6 @@ public sealed class GpuCommandSync : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
         if (disposed) return;

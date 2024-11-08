@@ -5,11 +5,7 @@ using osuTK.Input;
 
 public sealed class ClickBehavior : IDisposable
 {
-    bool disabled;
-
-    bool hovered;
-
-    bool pressed;
+    bool disabled, hovered, pressed;
 
     MouseButton pressedButton;
     Widget widget;
@@ -48,7 +44,6 @@ public sealed class ClickBehavior : IDisposable
         hovered = e.Hovered;
         if (!disabled) OnStateChanged?.Invoke(this, e);
     }
-
     bool widget_OnClickDown(WidgetEvent evt, MouseButtonEventArgs e)
     {
         if (pressed || disabled) return false;
@@ -58,7 +53,6 @@ public sealed class ClickBehavior : IDisposable
         OnStateChanged?.Invoke(this, e);
         return true;
     }
-
     void widget_OnClickUp(WidgetEvent evt, MouseButtonEventArgs e)
     {
         if (!pressed || disabled) return;
@@ -72,21 +66,19 @@ public sealed class ClickBehavior : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
-        if (!disposed)
-        {
-            widget.OnHovered -= widget_OnHovered;
-            widget.OnClickDown -= widget_OnClickDown;
-            widget.OnClickUp -= widget_OnClickUp;
+        if (disposed) return;
 
-            widget = null;
-            OnStateChanged = null;
-            OnClick = null;
+        widget.OnHovered -= widget_OnHovered;
+        widget.OnClickDown -= widget_OnClickDown;
+        widget.OnClickUp -= widget_OnClickUp;
 
-            disposed = true;
-        }
+        widget = null;
+        OnStateChanged = null;
+        OnClick = null;
+
+        disposed = true;
     }
 
 #endregion

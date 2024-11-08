@@ -20,25 +20,17 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     public static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
         VertexAttribute.CreateDiffuseCoord(), VertexAttribute.CreateColor(true));
 
-    readonly int maxQuadsPerBatch;
+    readonly int maxQuadsPerBatch, textureUniformLocation;
     readonly bool ownsShader;
-    readonly int textureUniformLocation;
 
     Camera camera;
-    int currentSamplerUnit, currentLargestBatch;
-
+    int currentSamplerUnit, currentLargestBatch, quadsInBatch;
     BindableTexture currentTexture;
 
-    bool disposed;
+    bool disposed, lastFlushWasBuffered, rendering;
 
-    bool lastFlushWasBuffered;
     void* primitives;
-
     PrimitiveStreamer primitiveStreamer;
-
-    int quadsInBatch;
-    bool rendering;
-
     Shader shader;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
@@ -70,7 +62,6 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     }
 
     public Shader Shader => ownsShader ? null : shader;
-
     public Camera Camera
     {
         get => camera;
@@ -108,7 +99,6 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
         rendering = true;
     }
-
     public void EndRendering()
     {
         primitiveStreamer.Unbind();
@@ -136,8 +126,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
             }
         }
 
-        primitiveStreamer.Render(PrimitiveType.Quads, primitives, quadsInBatch, quadsInBatch * VertexPerQuad,
-            canBuffer);
+        primitiveStreamer.Render(PrimitiveType.Quads, primitives, quadsInBatch, quadsInBatch * VertexPerQuad, canBuffer);
 
         currentLargestBatch += quadsInBatch;
         if (!canBuffer)
@@ -148,16 +137,8 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
         quadsInBatch = 0;
         ++FlushedBufferCount;
-
         lastFlushWasBuffered = canBuffer;
     }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
     public void Draw(ref QuadPrimitive quad, Texture2dRegion texture)
     {
         if (currentTexture != texture.BindableTexture)
@@ -198,6 +179,12 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
 #endregion
 
+    ~QuadRendererBuffered() => Dispose(false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
     void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -216,6 +203,4 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         shader = null;
         disposed = true;
     }
-
-    ~QuadRendererBuffered() => Dispose(false);
 }

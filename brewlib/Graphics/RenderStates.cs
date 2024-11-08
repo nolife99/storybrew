@@ -53,10 +53,10 @@ public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
         alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
 
     readonly bool enabled = true;
-    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, alphaSrc = BlendingFactorSrc.SrcAlpha;
+    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, 
+        alphaSrc = BlendingFactorSrc.SrcAlpha;
 
     public BlendingFactorState() { }
-
     public BlendingFactorState(BlendingMode mode)
     {
         switch (mode)

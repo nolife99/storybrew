@@ -50,17 +50,7 @@ public class TextureOptions : IEquatable<TextureOptions>
         DrawState.CheckError("applying texture parameters");
     }
 
-    public void WithBitmap(Bitmap bitmap, Action<Bitmap> action)
-    {
-        if (PreMultiply)
-            using (var pinned = BitmapHelper.Premultiply(bitmap))
-                action(pinned.Bitmap);
-        else
-            action(bitmap);
-    }
-
     public override bool Equals(object obj) => Equals(obj as TextureOptions);
-
     public override int GetHashCode()
         => HashCode.Combine(TextureLodBias, TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
 
@@ -71,8 +61,7 @@ public class TextureOptions : IEquatable<TextureOptions>
     public static TextureOptions Load(string filename, ResourceContainer resourceContainer = null)
     {
         TinyToken token = null;
-        if (File.Exists(filename))
-            token = TinyToken.Read(filename);
+        if (File.Exists(filename)) token = TinyToken.Read(filename);
         else
         {
             var data = resourceContainer?.GetString(filename, ResourceSource.Embedded);
@@ -81,7 +70,6 @@ public class TextureOptions : IEquatable<TextureOptions>
 
         return token is not null ? load(token) : null;
     }
-
     static TextureOptions load(TinyToken data)
     {
         var options = new TextureOptions();
@@ -107,25 +95,20 @@ public class TextureOptions : IEquatable<TextureOptions>
                         var value = parser.Invoke(fieldData);
                         field.SetValue(obj, value);
                     }
-                    else
-                        Trace.TraceWarning($"No parser for {fieldType}");
+                    else Trace.TraceWarning($"No parser for {fieldType}");
                 }
             }
-
             type = type.BaseType;
         }
     }
-
     static Func<TinyToken, object> getFieldParser(Type fieldType)
     {
         if (fieldType.IsEnum) return data => Enum.Parse(fieldType, data.Value<string>());
-
         while (fieldType != typeof(object))
         {
             if (fieldParsers.TryGetValue(fieldType, out var parser)) return parser;
             fieldType = fieldType.BaseType;
         }
-
         return null;
     }
 }

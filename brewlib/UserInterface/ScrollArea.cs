@@ -10,12 +10,7 @@ public class ScrollArea : Widget
 {
     readonly StackLayout scrollContainer;
     readonly Label scrollIndicatorTop, scrollIndicatorBottom, scrollIndicatorLeft, scrollIndicatorRight;
-    bool dragged;
-    bool hovered;
-
-    bool scrollsHorizontally;
-
-    bool scrollsVertically = true;
+    bool dragged, hovered, scrollsHorizontally, scrollsVertically = true;
 
     public ScrollArea(WidgetManager manager, Widget scrollable) : base(manager)
     {
@@ -80,8 +75,7 @@ public class ScrollArea : Widget
         };
         OnMouseWheel += (_, e) =>
         {
-            if (scrollsVertically)
-                scroll(0, e.DeltaPrecise * 64);
+            if (scrollsVertically) scroll(0, e.DeltaPrecise * 64);
             else if (scrollsHorizontally) scroll(e.DeltaPrecise * 64, 0);
             return true;
         };
@@ -106,7 +100,6 @@ public class ScrollArea : Widget
             updateScrollIndicators();
         }
     }
-
     public bool ScrollsHorizontally
     {
         get => scrollsHorizontally;
@@ -126,7 +119,6 @@ public class ScrollArea : Widget
         scroll(0, 0);
         base.DrawChildren(drawContext, actualOpacity);
     }
-
     protected override void Layout()
     {
         base.Layout();
@@ -134,7 +126,6 @@ public class ScrollArea : Widget
         var height = scrollsVertically ? Math.Max(Size.Y, scrollContainer.PreferredSize.Y) : Size.Y;
         scrollContainer.Size = new(width, height);
     }
-
     void scroll(float x, float y)
     {
         if (!scrollsHorizontally) x = 0;
@@ -144,7 +135,6 @@ public class ScrollArea : Widget
             Math.Max(-ScrollableY, Math.Min(scrollContainer.Offset.Y + y, 0)));
         updateScrollIndicators();
     }
-
     void updateScrollIndicators()
     {
         scrollIndicatorTop.Displayed = hovered && scrollsVertically && scrollContainer.Offset.Y < 0;

@@ -12,10 +12,7 @@ public class Button : Widget, Field
     readonly ClickBehavior clickBehavior;
     readonly Label label;
 
-    bool isCheckable;
-
-    bool isChecked;
-
+    bool isCheckable, isChecked;
     FourSide padding;
 
     public Button(WidgetManager manager) : base(manager)
@@ -31,7 +28,6 @@ public class Button : Widget, Field
     }
 
     public override Vector2 MinSize => new(label.MinSize.X + padding.Horizontal, label.MinSize.Y + padding.Vertical);
-
     public override Vector2 PreferredSize
         => new(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
 
@@ -40,7 +36,6 @@ public class Button : Widget, Field
         get => label.Text;
         set => label.Text = value;
     }
-
     public IconFont Icon
     {
         get => label.Icon;
@@ -68,7 +63,6 @@ public class Button : Widget, Field
             if (!isCheckable) Checked = false;
         }
     }
-
     public bool Checked
     {
         get => isChecked;
@@ -80,7 +74,6 @@ public class Button : Widget, Field
             OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
     }
-
     public bool Disabled
     {
         get => clickBehavior.Disabled;
@@ -98,7 +91,6 @@ public class Button : Widget, Field
     }
 
     public event EventHandler OnValueChanged;
-
     public event EventHandler<MouseButton> OnClick;
 
     public void Click(MouseButton button = MouseButton.Left)
@@ -122,7 +114,6 @@ public class Button : Widget, Field
         label.StyleName = buttonStyle.LabelStyle;
         label.Offset = buttonStyle.LabelOffset;
     }
-
     protected override void Layout()
     {
         base.Layout();

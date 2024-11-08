@@ -32,8 +32,7 @@ public static class KeyframedValueExtensions
                     active = false;
                 }
             }
-            else
-                lastKeyframeTime = keyframe.Time;
+            else lastKeyframeTime = keyframe.Time;
 
         if (active) action(startTime, lastKeyframeTime);
     }

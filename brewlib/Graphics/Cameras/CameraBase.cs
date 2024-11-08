@@ -8,23 +8,12 @@ public abstract class CameraBase : Camera
 {
     static readonly Vector3 DefaultForward = new(0, -1, 0), DefaultUp = new(0, 0, 1);
 
-    float farPlane;
-
-    Vector3 forward = DefaultForward;
-
-    Rectangle internalViewport, extendedViewport;
-
-    float nearPlane;
-
+    float farPlane, nearPlane;
     bool needsUpdate;
 
-    Vector3 position = Vector3.Zero;
-
+    Vector3 forward = DefaultForward, up = DefaultUp, position = Vector3.Zero;
+    Rectangle internalViewport, extendedViewport, viewport;
     Matrix4x4 projection, view, projectionView, invertedProjectionView;
-
-    Vector3 up = DefaultUp;
-
-    Rectangle viewport;
 
     public CameraBase()
     {

@@ -42,7 +42,6 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     protected void AddInputHandler(InputHandler handler) => innerInputDispatcher.Add(handler);
 
     public virtual void Resize(int width, int height) { }
-
     public virtual void Update(bool isTopFocus, bool isCovered)
     {
         if (!hasStarted && !IsExiting && !isCovered)
@@ -50,7 +49,6 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
             OnStart();
             hasStarted = true;
         }
-
         if (IsExiting)
         {
             if (CurrentState is not State.FadingOut) OnTransitionOut();
@@ -108,7 +106,6 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     }
 
     public void Exit() => Exit(false);
-
     public void Exit(bool skipTransition)
     {
         if (IsExiting) return;
@@ -139,14 +136,12 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 #region IDisposable Support
 
     public bool IsDisposed { get; private set; }
-
     protected virtual void Dispose(bool disposing)
     {
         if (IsDisposed) return;
         if (disposing && HasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
         IsDisposed = true;
     }
-
     public void Dispose() => Dispose(true);
 
 #endregion

@@ -13,7 +13,6 @@ public class WidgetHoveredEventArgs(bool hovered) : EventArgs
 {
     public bool Hovered => hovered;
 }
-
 public class WidgetFocusEventArgs(bool hasFocus) : EventArgs
 {
     public bool HasFocus => hasFocus;

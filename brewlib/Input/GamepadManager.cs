@@ -16,8 +16,8 @@ public class GamepadManager(int gamepadIndex)
 
     public int PlayerIndex => gamepadIndex;
     public bool Connected => state.IsConnected;
-    public float TriggerLeft { get; private set; }
 
+    public float TriggerLeft { get; private set; }
     public float TriggerRight { get; private set; }
 
     public Vector2 Thumb => thumb;
@@ -113,12 +113,10 @@ public class GamepadManager(int gamepadIndex)
     {
         if (state is ButtonState.Pressed || isKeyDown(key)) pressedButtons |= button;
     }
-
     void updateTrigger(float state, GamepadButton button, Key key)
     {
         if (state > .5f || isKeyDown(key)) pressedButtons |= button;
     }
-
     void updateAxis(float state, GamepadButton negativeButton, GamepadButton positiveButton, Key negativeKey,
         Key positiveKey)
     {
@@ -129,19 +127,14 @@ public class GamepadManager(int gamepadIndex)
     float applyTriggerFilters(float value)
     {
         if (value < TriggerInnerDeadzone) return 0;
-        var range = 1 - TriggerOuterDeadzone - TriggerInnerDeadzone;
-        var normalizedValue = Math.Min(1, (value - TriggerInnerDeadzone) / range);
-        return normalizedValue / value;
+        return Math.Min(1, (value - TriggerInnerDeadzone) / (1 - TriggerOuterDeadzone - TriggerInnerDeadzone)) / value;
     }
-
     Vector2 applyAxisFilters(Vector2 value)
     {
         var length = value.Length;
-        if (length < AxisInnerDeadzone) return Vector2.Zero;
-        var range = 1 - AxisOuterDeadzone - AxisInnerDeadzone;
-        var normalizedLength = Math.Min(1, (length - AxisInnerDeadzone) / range);
-        var scale = normalizedLength / length;
-        return value * scale;
+        return length < AxisInnerDeadzone ? 
+            Vector2.Zero : 
+            value * Math.Min(1, (length - AxisInnerDeadzone) / (1 - AxisOuterDeadzone - AxisInnerDeadzone)) / length;
     }
 
     bool isKeyDown(Key key) => keyboardState?.IsKeyDown(key) ?? false;
@@ -151,7 +144,6 @@ public class GamepadEventArgs(GamepadManager manager) : EventArgs
 {
     public GamepadManager Manager = manager;
 }
-
 public class GamepadButtonEventArgs(GamepadManager manager, GamepadButton button) : GamepadEventArgs(manager)
 {
     public GamepadButton Button = button;

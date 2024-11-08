@@ -58,7 +58,6 @@ public class EffectConfig
     }
 
     public void RemoveField(string name) => fields.Remove(name);
-
     public bool SetValue(string name, object value)
     {
         var field = fields[name];
@@ -67,7 +66,6 @@ public class EffectConfig
         fields[name] = field with { Value = value };
         return true;
     }
-
     public object GetValue(string name) => fields[name].Value;
 
     static object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)

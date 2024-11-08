@@ -30,7 +30,6 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     }
 
     public T GetStyle<T>(string name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
-
     public WidgetStyle GetStyle(Type type, string name)
     {
         while (true)
@@ -55,7 +54,6 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
         if (disposed) return;
@@ -80,12 +78,10 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         loadDrawables(data.Value<TinyObject>("drawables"), constants);
         loadStyles(data.Value<TinyObject>("styles"), constants);
     }
-
     TinyObject loadJson(string filename, ResourceContainer resourceContainer)
     {
         TinyToken token = null;
-        if (File.Exists(filename))
-            token = TinyToken.Read(filename);
+        if (File.Exists(filename)) token = TinyToken.Read(filename);
         else
         {
             var data = resourceContainer?.GetString(filename, ResourceSource.Embedded);
@@ -99,7 +95,6 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             _ => throw new InvalidDataException($"{filename} does not contain an object")
         };
     }
-
     TinyObject resolveIncludes(TinyObject data, ResourceContainer resourceContainer)
     {
         var includes = data.Value<TinyArray>("include");
@@ -110,7 +105,6 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
         return data;
     }
-
     void loadDrawables(TinyObject data, TinyObject constants)
     {
         if (data is null) return;
@@ -128,7 +122,6 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 Trace.TraceError($"Skin - Failed to load drawable {name}: {e}");
             }
     }
-
     Drawable loadDrawable(TinyToken data, TinyObject constants)
     {
         switch (data.Type)
@@ -162,11 +155,9 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         parseFields(drawableB, data.Value<TinyObject>(), null, constants);
         return drawableB;
     }
-
     void loadStyles(TinyObject data, TinyObject constants)
     {
         if (data is null) return;
-
         foreach (var (styleTypeName, value) in data)
         {
             var styleTypeObject = value.Value<TinyObject>();
@@ -189,26 +180,21 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         {
                             if (!styles.TryGetValue(implicitParentStyleName, out parentStyle) &&
                                 styleTypeObject.Value<TinyToken>(implicitParentStyleName) is not null)
-                                throw new InvalidDataException($"Implicit parent style '{implicitParentStyleName
-                                }' style must be defined before '{styleName}'");
+                                throw new InvalidDataException($"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
 
                             parentStyle = GetStyle(styleType, implicitParentStyleName);
                         }
 
                         var parentName = styleObject.Value<string>("_parent");
                         if (parentName is not null && !styles.TryGetValue(parentName, out parentStyle))
-                            throw new InvalidDataException($"Parent style '{parentName}' style must be defined before '{
-                                styleName}'");
+                            throw new InvalidDataException($"Parent style '{parentName}' style must be defined before '{styleName}'");
 
                         parseFields(style, styleObject, parentStyle, constants);
 
                         if (defaultStyle is null)
                         {
-                            if (styleName == "default")
-                                defaultStyle = style;
-                            else
-                                throw new InvalidDataException($"The default {styleTypeName
-                                } style must be defined first");
+                            if (styleName == "default") defaultStyle = style;
+                            else throw new InvalidDataException($"The default {styleTypeName} style must be defined first");
                         }
 
                         styles.Add(styleName, style);
@@ -233,7 +219,6 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
         }
     }
-
     void parseFields(object skinnable, TinyObject data, object parent, TinyObject constants)
     {
         var type = skinnable.GetType();
@@ -252,16 +237,13 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         var value = parser.Invoke(fieldData, constants, this);
                         field.SetValue(skinnable, value);
                     }
-                    else
-                        Trace.TraceError($"Skin - No parser for {fieldType}");
+                    else Trace.TraceError($"Skin - No parser for {fieldType}");
                 }
                 else if (parent is not null) field.SetValue(skinnable, field.GetValue(parent));
             }
-
             type = type.BaseType;
         }
     }
-
     static TinyToken resolveConstants(TinyToken fieldData, TinyObject constants)
     {
         while (fieldData?.Type is TinyTokenType.String)
@@ -272,13 +254,10 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 fieldData = constants?[fieldString[1..]];
                 if (fieldData is null) throw new InvalidDataException($"Missing skin constant: {fieldString}");
             }
-            else
-                break;
+            else break;
         }
-
         return fieldData;
     }
-
     static T resolve<T>(TinyToken data, TinyObject constants) => resolveConstants(data, constants).Value<T>();
 
     static string getBaseStyleName(string styleName)
@@ -286,32 +265,27 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         var index = styleName.IndexOf(' ');
         return index == -1 ? styleName : styleName[..index];
     }
-
     static string getStyleFlags(string styleName)
     {
         var index = styleName.LastIndexOf(' ');
         return index == -1 ? null : styleName.Substring(index + 1, styleName.Length - index - 1);
     }
-
     static string getImplicitParentStyleName(string styleName)
     {
         var index = styleName.LastIndexOf(' ');
         return index == -1 ? null : styleName[..index];
     }
-
     static Func<TinyToken, TinyObject, Skin, object> getFieldParser(Type fieldType)
     {
         if (fieldType.IsEnum) return (data, _, _) => Enum.Parse(fieldType, data.Value<string>());
-
         while (fieldType != typeof(object))
         {
             if (fieldParsers.TryGetValue(fieldType, out var parser)) return parser;
             fieldType = fieldType.BaseType;
         }
-
         return null;
     }
-
+    
     static readonly Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new()
     {
         [typeof(string)] = (data, _, _) => data.Value<string>(),

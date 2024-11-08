@@ -81,13 +81,11 @@ public class NewProjectMenu : UiScreenLayer
         startButton.OnClick += (_, _) => createProject();
         cancelButton.OnClick += (_, _) => Exit();
     }
-
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
         mainLayout.Pack(300);
     }
-
     void createProject()
         => Manager.AsyncLoading("Creating project", () =>
         {
@@ -97,7 +95,6 @@ public class NewProjectMenu : UiScreenLayer
         });
 
     void updateButtonsState() => startButton.Disabled = !updateFieldsValid();
-
     bool updateFieldsValid()
     {
         var projectFolderName = projectNameTextbox.Value;

@@ -14,18 +14,12 @@ public class MoveCommand(
         => transform.ApplyToPosition(EndValue);
 
     public override CommandPosition ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
     public override CommandPosition Midpoint(Command<CommandPosition> endCommand, float progress)
         => new(StartValue.X + (endCommand.EndValue.X - StartValue.X) * progress,
             StartValue.Y + (endCommand.EndValue.Y - StartValue.Y) * progress);
 
-    public override IFragmentableCommand GetFragment(float startTime, float endTime)
-    {
-        if (!IsFragmentable) return this;
-        var startValue = ValueAtTime(startTime);
-        var endValue = ValueAtTime(endTime);
-        return new MoveCommand(Easing, startTime, endTime, startValue, endValue);
-    }
+    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
+        new MoveCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) : this;
 }
 
 public class MoveXCommand(
@@ -39,21 +33,11 @@ public class MoveXCommand(
         => transform.ApplyToPositionX(EndValue);
 
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
     public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, float progress)
         => StartValue + (endCommand.EndValue - StartValue) * progress;
 
-    public override IFragmentableCommand GetFragment(float startTime, float endTime)
-    {
-        if (IsFragmentable)
-        {
-            var startValue = ValueAtTime(startTime);
-            var endValue = ValueAtTime(endTime);
-            return new MoveXCommand(Easing, startTime, endTime, startValue, endValue);
-        }
-
-        return this;
-    }
+    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
+        new MoveXCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) : this;
 }
 
 public class MoveYCommand(
@@ -67,15 +51,9 @@ public class MoveYCommand(
         => transform.ApplyToPositionY(EndValue);
 
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
     public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, float progress)
         => StartValue + (endCommand.EndValue - StartValue) * progress;
 
-    public override IFragmentableCommand GetFragment(float startTime, float endTime)
-    {
-        if (!IsFragmentable) return this;
-        var startValue = ValueAtTime(startTime);
-        var endValue = ValueAtTime(endTime);
-        return new MoveYCommand(Easing, startTime, endTime, startValue, endValue);
-    }
+    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
+        new MoveYCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) : this;
 }

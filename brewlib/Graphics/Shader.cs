@@ -33,12 +33,6 @@ public class Shader : IDisposable
 
     public int SortId { get; private set; } = -1;
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
     public void Begin()
     {
         if (started) throw new InvalidOperationException("Already started");
@@ -46,7 +40,6 @@ public class Shader : IDisposable
         DrawState.ProgramId = SortId;
         started = true;
     }
-
     public void End()
     {
         if (!started) throw new InvalidOperationException("Not started");
@@ -58,13 +51,11 @@ public class Shader : IDisposable
         if (attributes.TryGetValue(name, out var property)) return property.Location;
         return -1;
     }
-
     public int TryGetUniformLocation(string name, int index = -1, string field = null)
     {
         if (uniforms.TryGetValue(GetUniformIdentifier(name, index, field), out var property)) return property.Location;
         return -1;
     }
-
     public int GetUniformLocation(string name, int index = -1, string field = null)
     {
         var location = TryGetUniformLocation(name, index, field);
@@ -72,7 +63,6 @@ public class Shader : IDisposable
         if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier");
         return location;
     }
-
     public static string GetUniformIdentifier(string name, int index, string field)
         => name + (index >= 0 ? "[" + index + "]" : "") + (field is not null ? "." + field : "");
 
@@ -88,7 +78,6 @@ public class Shader : IDisposable
         SortId = linkProgram();
         isInitialized = SortId != -1;
     }
-
     int compileShader(ShaderType type, string code)
     {
         var id = GL.CreateShader(type);
@@ -101,7 +90,6 @@ public class Shader : IDisposable
             $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
         return -1;
     }
-
     int linkProgram()
     {
         var id = GL.CreateProgram();
@@ -114,7 +102,6 @@ public class Shader : IDisposable
         log.AppendLine(GL.GetProgramInfoLog(id));
         return -1;
     }
-
     void retrieveAttributes()
     {
         GL.GetProgram(SortId, GetProgramParameterName.ActiveAttributes, out var attributeCount);
@@ -127,7 +114,6 @@ public class Shader : IDisposable
             attributes[name] = new(name, size, type, location);
         }
     }
-
     void retrieveUniforms()
     {
         GL.GetProgram(SortId, GetProgramParameterName.ActiveUniforms, out var uniformCount);
@@ -141,13 +127,15 @@ public class Shader : IDisposable
     }
 
     ~Shader() => Dispose(false);
-
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
     protected virtual void Dispose(bool disposing)
     {
-        if (isInitialized)
-            isInitialized = false;
-        else
-            return;
+        if (isInitialized) isInitialized = false;
+        else return;
 
         if (started) End();
 

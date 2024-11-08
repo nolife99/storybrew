@@ -98,8 +98,7 @@ public sealed class FontGenerator : IDisposable
         format = new(StringFormat.GenericTypographic)
         {
             Alignment = StringAlignment.Center,
-            FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces |
-                StringFormatFlags.NoClip
+            FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
         textBrush = new(description.Color);
 
@@ -232,8 +231,7 @@ public sealed class FontGenerator : IDisposable
             }
         }
 
-        filename ??= (description.TrimTransparency ? trimmedText : text).Length == 1 ? $"{
-            (!PathHelper.IsValidFilename(char.ToString(text[0])) ?
+        filename ??= (description.TrimTransparency ? trimmedText : text).Length == 1 ? $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ?
                 ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') :
                 char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' :
                     char.ToString(text[0]))}.png" : $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1)

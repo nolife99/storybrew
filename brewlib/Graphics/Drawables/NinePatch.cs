@@ -16,11 +16,10 @@ public class NinePatch : Drawable
     public Texture2dRegion Texture;
     public RenderStates RenderStates { get; private set; } = new();
 
+    public Vector2 PreferredSize => MinSize;
     public Vector2 MinSize
         => Texture is not null ? new Vector2(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
             Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) : Vector2.Zero;
-
-    public Vector2 PreferredSize => MinSize;
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
     {
@@ -52,7 +51,6 @@ public class NinePatch : Drawable
             renderer.Draw(Texture, x2, y1, 0, 0, 1, verticalScale, 0, color, Borders.Right, Borders.Top, Texture.Width,
                 Borders.Bottom);
         }
-
         if (horizontalScale > 0)
         {
             renderer.Draw(Texture, x1, y0, 0, 0, horizontalScale, 1, 0, color, Borders.Left, 0, Borders.Right,
@@ -65,8 +63,7 @@ public class NinePatch : Drawable
         renderer.Draw(Texture, x0, y0, 0, 0, 1, 1, 0, color, 0, 0, Borders.Left, Borders.Top);
         renderer.Draw(Texture, x2, y0, 0, 0, 1, 1, 0, color, Borders.Right, 0, Texture.Width, Borders.Top);
         renderer.Draw(Texture, x0, y2, 0, 0, 1, 1, 0, color, 0, Borders.Bottom, Borders.Left, Texture.Height);
-        renderer.Draw(Texture, x2, y2, 0, 0, 1, 1, 0, color, Borders.Right, Borders.Bottom, Texture.Width,
-            Texture.Height);
+        renderer.Draw(Texture, x2, y2, 0, 0, 1, 1, 0, color, Borders.Right, Borders.Bottom, Texture.Width, Texture.Height);
     }
 
 #region IDisposable Support
@@ -76,7 +73,6 @@ public class NinePatch : Drawable
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-
     protected virtual void Dispose(bool disposing)
     {
         Texture = null;

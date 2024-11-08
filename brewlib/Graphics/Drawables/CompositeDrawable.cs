@@ -27,7 +27,6 @@ public class CompositeDrawable : Drawable
             return new(minWidth, minHeight);
         }
     }
-
     public Vector2 PreferredSize
     {
         get

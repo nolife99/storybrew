@@ -14,7 +14,6 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
     }
 
     public int LoopCount { get; set; }
-
     public bool IsFragmentable => LoopCount > 1;
 
     public override float EndTime
@@ -67,8 +66,7 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
     }
 
     protected override string GetCommandGroupHeader(ExportSettings exportSettings)
-        => $"L,{(exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat)},{
-            LoopCount.ToString(exportSettings.NumberFormat)}";
+        => $"L,{(exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat)},{LoopCount.ToString(exportSettings.NumberFormat)}";
 
     public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);
 

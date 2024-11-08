@@ -32,14 +32,12 @@ public sealed class TextureContainerSeparate(
             textures.Add(filename, texture = Texture2d.Load(filename, resourceContainer, textureOptions));
             ResourceLoaded?.Invoke(filename, texture);
         }
-
         return texture;
     }
 
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
         if (!disposed)

@@ -20,14 +20,16 @@ public sealed class DrawContext : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
         if (disposed) return;
-        foreach (var disposable in disposables) disposable.Dispose();
 
-        references = null;
+        foreach (var disposable in disposables) disposable.Dispose();
+        disposables.Clear();
         disposables = null;
+
+        references.Clear();
+        references = null;
 
         GC.SuppressFinalize(this);
         disposed = true;

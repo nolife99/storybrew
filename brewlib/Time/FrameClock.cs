@@ -16,8 +16,8 @@ public class FrameClock : FrameTimeSource
     public float Previous { get; private set; }
 
     public float Elapsed => Current - Previous;
-
     public float TimeFactor => 1;
+
     public bool Playing => true;
 
     public event EventHandler Changed;
@@ -29,7 +29,6 @@ public class FrameClock : FrameTimeSource
 
         if (Previous != Current) Changed?.Invoke(this, EventArgs.Empty);
     }
-
     public void AdvanceFrameTo(float time)
     {
         Previous = Current;

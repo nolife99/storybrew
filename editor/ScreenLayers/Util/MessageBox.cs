@@ -11,12 +11,12 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
 
     public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
     public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
+    
     public override bool IsPopup => true;
 
     public override void Load()
     {
         base.Load();
-
         WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
         {
             StyleName = "panel",
@@ -63,14 +63,12 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             buttonsLayout.Add(cancelButton);
         }
     }
-
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
     {
         if (e.IsRepeat || e.Key is not Key.C || !e.Control) return base.OnKeyDown(e);
         ClipboardHelper.SetText(message);
         return true;
     }
-
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);

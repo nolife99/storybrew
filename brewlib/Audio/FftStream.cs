@@ -5,7 +5,7 @@ using ManagedBass;
 
 public class FftStream : IDisposable
 {
-    readonly float frequency;
+    public readonly float Duration, Frequency;
     ChannelInfo info;
     int stream;
 
@@ -15,12 +15,8 @@ public class FftStream : IDisposable
         Duration = (float)Bass.ChannelBytes2Seconds(stream, Bass.ChannelGetLength(stream));
         info = Bass.ChannelGetInfo(stream);
 
-        Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out frequency);
+        Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out Frequency);
     }
-
-    public float Frequency => frequency;
-
-    public float Duration { get; }
 
     public float[] GetFft(float time, bool splitChannels = false)
     {
@@ -43,7 +39,6 @@ public class FftStream : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -55,7 +50,6 @@ public class FftStream : IDisposable
     }
 
     ~FftStream() => Dispose(false);
-
     public void Dispose()
     {
         Dispose(true);

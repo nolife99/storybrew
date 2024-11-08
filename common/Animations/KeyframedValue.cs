@@ -149,8 +149,7 @@ public class KeyframedValue<TValue>(
                 var isFlat = startKeyframe.Value.Equals(endKeyframe.Value);
                 var isStep = !isFlat && startKeyframe.Time == endKeyframe.Time;
 
-                if (isStep)
-                    stepStart ??= startKeyframe;
+                if (isStep) stepStart ??= startKeyframe;
                 else if (stepStart.HasValue)
                 {
                     if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time &&

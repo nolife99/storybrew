@@ -263,7 +263,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
         graphics.DrawImage(image, 0, 0, Width, Height);
     }
-
     public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height)
     {
         fixed (void* pinned = data) Native.CopyMemory(pinned, scan0, Count * sizeof(int));
@@ -273,13 +272,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     public int Width { get; private set; }
     public int Height { get; private set; }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
     public int Count { get; private set; }
 
     public int this[int pixelIndex]
@@ -318,7 +310,11 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public ReadOnlySpan<int> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref *scan0, Count);
 
     ~PinnedBitmap() => Dispose(false);
-
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
     void Dispose(bool disposing)
     {
         if (disposed) return;

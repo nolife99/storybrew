@@ -16,7 +16,6 @@ public class ShaderPartScope(string variablePrefix)
         variables.Add(variable);
         return variable;
     }
-
     public void DeclareVariables(StringBuilder code)
         => variables.ForEach(variable =>
         {

@@ -28,8 +28,7 @@ public class AudioSample : IDisposable
                 var bytes = ArrayPool<byte>.Shared.Rent(len);
                 var read = stream.Read(bytes, 0, len);
 
-                sample = Bass.SampleLoad(bytes, 0, read, MaxSimultaneousPlayBacks,
-                    BassFlags.SampleOverrideLongestPlaying);
+                sample = Bass.SampleLoad(bytes, 0, read, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
                 ArrayPool<byte>.Shared.Return(bytes);
 
                 if (sample != 0) return;
@@ -56,23 +55,18 @@ public class AudioSample : IDisposable
 #region IDisposable Support
 
     bool disposed;
-
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            if (sample != 0) Bass.SampleFree(sample);
-            if (disposing)
-            {
-                sample = 0;
-                manager = null;
-                disposed = true;
-            }
-        }
+        if (disposed) return;
+        if (sample != 0) Bass.SampleFree(sample);
+        if (!disposing) return;
+        
+        sample = 0;
+        manager = null;
+        disposed = true;
     }
 
     ~AudioSample() => Dispose(false);
-
     public void Dispose()
     {
         Dispose(true);

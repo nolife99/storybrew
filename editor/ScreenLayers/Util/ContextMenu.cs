@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.ScreenLayers.Util;
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -21,19 +22,17 @@ public class ContextMenu<T> : UiScreenLayer
         this.callback = callback;
         this.options.AddRange(options);
     }
-
     public ContextMenu(string title, Action<T> callback, params T[] options)
     {
         this.title = title;
         this.callback = callback;
-        foreach (var option in options) this.options.Add(new(option.ToString(), option));
+        this.options.AddRange(options.Select(option => new(option.ToString(), option)));
     }
-
     public ContextMenu(string title, Action<T> callback, IEnumerable<T> options)
     {
         this.title = title;
         this.callback = callback;
-        foreach (var option in options) this.options.Add(new(option.ToString(), option));
+        this.options.AddRange(options.Select(option => new(option.ToString(), option)));
     }
 
     public override bool IsPopup => true;
@@ -80,7 +79,6 @@ public class ContextMenu<T> : UiScreenLayer
         searchTextbox.OnValueChanged += (_, _) => refreshOptions();
         refreshOptions();
     }
-
     void refreshOptions()
     {
         optionsLayout.ClearWidgets();
@@ -104,13 +102,11 @@ public class ContextMenu<T> : UiScreenLayer
             };
         }
     }
-
     public override void OnTransitionIn()
     {
         base.OnTransitionIn();
         WidgetManager.KeyboardFocus = searchTextbox;
     }
-
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
@@ -119,7 +115,7 @@ public class ContextMenu<T> : UiScreenLayer
 
     public sealed class Option(string name, T value)
     {
-        public readonly string Name = name;
-        public readonly T Value = value;
+        public string Name => name;
+        public T Value => value;
     }
 }

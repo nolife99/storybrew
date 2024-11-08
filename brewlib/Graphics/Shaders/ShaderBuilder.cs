@@ -80,7 +80,6 @@ public class ShaderBuilder
 
         return code.ToString();
     }
-
     StringBuilder buildVertexShader()
     {
         StringBuilder code = new();
@@ -99,7 +98,6 @@ public class ShaderBuilder
         code.AppendLine("}");
         return code;
     }
-
     StringBuilder buildFragmentShader()
     {
         StringBuilder code = new();

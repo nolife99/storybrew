@@ -12,8 +12,7 @@ public static class EventHelper
         var first = true;
         foreach (var t in invocationList)
         {
-            if (first)
-                first = false;
+            if (first) first = false;
             else
             {
                 var currentList = getEventDelegate()?.GetInvocationList();
@@ -21,7 +20,6 @@ public static class EventHelper
 
                 if (!Array.Exists(currentList, h => h == t)) continue;
             }
-
             raise(t);
         }
     }

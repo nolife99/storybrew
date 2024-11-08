@@ -62,13 +62,11 @@ public sealed class InputManager : IDisposable
     }
 
     void updateMouseFocus() => handler.OnFocusChanged(new FocusChangedEventArgs(HasMouseFocus));
-
     void window_MouseEnter(object sender, EventArgs e)
     {
         hasMouseHover = true;
         updateMouseFocus();
     }
-
     void window_MouseLeave(object sender, EventArgs e)
     {
         // https://github.com/osuTK/osuTK/issues/301
@@ -76,12 +74,10 @@ public sealed class InputManager : IDisposable
         // hasMouseHover = false;
         // updateMouseFocus();
     }
-
     void window_FocusedChanged(object sender, EventArgs e) => updateMouseFocus();
 
     void window_MouseDown(object sender, MouseButtonEventArgs e) => handler.OnClickDown(e);
     void window_MouseUp(object sender, MouseButtonEventArgs e) => handler.OnClickUp(e);
-
     void window_MouseMove(object sender, MouseMoveEventArgs e)
     {
         MousePosition = new Vector2(e.X, e.Y);
@@ -100,13 +96,11 @@ public sealed class InputManager : IDisposable
         updateModifierState(e);
         handler.OnKeyDown(e);
     }
-
     void window_KeyUp(object sender, KeyboardKeyEventArgs e)
     {
         updateModifierState(e);
         handler.OnKeyUp(e);
     }
-
     void window_KeyPress(object sender, KeyPressEventArgs e) => handler.OnKeyPress(e);
     void window_MouseWheel(object sender, MouseWheelEventArgs e) => handler.OnMouseWheel(e);
 }

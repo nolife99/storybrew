@@ -2,7 +2,7 @@
 
 using System;
 
-public sealed class TextFontProxy(TextFont textFont, Action disposed) : TextFont
+public sealed class TextFontProxy(TextFont textFont, Action dispose) : TextFont
 {
     public string Name => textFont.Name;
     public float Size => textFont.Size;
@@ -13,14 +13,16 @@ public sealed class TextFontProxy(TextFont textFont, Action disposed) : TextFont
 #region IDisposable Support
 
     bool disposed;
-
     public void Dispose()
     {
         if (disposed) return;
-        disposed();
+        dispose();
 
         textFont = null;
+        dispose = null;
         disposed = true;
+
+        GC.SuppressFinalize(this);
     }
 
 #endregion

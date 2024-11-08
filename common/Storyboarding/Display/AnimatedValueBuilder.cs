@@ -21,8 +21,7 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value)
         decorate = command =>
         {
             if (loop.CommandsStartTime != 0)
-                throw new InvalidOperationException($"Commands in a loop must start at 0ms, but start at {
-                    loop.CommandsStartTime}ms");
+                throw new InvalidOperationException($"Commands in a loop must start at 0ms, but start at {loop.CommandsStartTime}ms");
             return new LoopDecorator<TValue>(command, loop.StartTime, loop.CommandsDuration, loop.LoopCount);
         };
         composite = new();

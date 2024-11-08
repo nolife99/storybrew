@@ -72,23 +72,20 @@ public class Line3d : Node3d, HasOsbSprites
         if (UseDistanceFade)
             opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
-        var position = sprite.Origin switch
-        {
-            OsbOrigin.TopCentre => new(startVector.X + delta.X / 2, startVector.Y),
-            OsbOrigin.Centre => new Vector2(startVector.X, startVector.Y) + delta / 2,
-            OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
-            OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
-            OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
-            OsbOrigin.BottomRight => new(endVector.X, endVector.Y), _ => new(startVector.X, startVector.Y)
-        };
-
         gen.Add(new()
         {
             Time = time,
-            Position = position,
+            Position = sprite.Origin switch
+            {
+                OsbOrigin.TopCentre => new(startVector.X + delta.X / 2, startVector.Y),
+                OsbOrigin.Centre => new Vector2(startVector.X, startVector.Y) + delta / 2,
+                OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
+                OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
+                OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
+                OsbOrigin.BottomRight => new(endVector.X, endVector.Y), _ => new(startVector.X, startVector.Y)
+            },
             Scale = new(delta.Length() / spriteBitmap.Width, Thickness.ValueAt(time)),
-            Rotation =
-                InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, MathF.Atan2(delta.Y, delta.X), 1),
+            Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, MathF.Atan2(delta.Y, delta.X), 1),
             Color = object3dState.Color,
             Opacity = opacity,
             Additive = Additive
@@ -96,8 +93,7 @@ public class Line3d : Node3d, HasOsbSprites
     }
 
     /// <inheritdoc />
-    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime,
-        float timeOffset, bool loopable)
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
     {
         if (finalize is not null)
             action += (createCommands, sprite) =>
@@ -112,8 +108,7 @@ public class Line3d : Node3d, HasOsbSprites
 #pragma warning disable CS1591
 public class Line3dEx : Node3d, HasOsbSprites
 {
-    readonly CommandGenerator genBody = new(), genTopEdge = new(), genBottomEdge = new(), genStartCap = new(),
-        genEndCap = new();
+    readonly CommandGenerator genBody = new(), genTopEdge = new(), genBottomEdge = new(), genStartCap = new(), genEndCap = new();
 
     readonly SizeF[] spriteBitmaps = new SizeF[3];
 
@@ -124,8 +119,8 @@ public class Line3dEx : Node3d, HasOsbSprites
         StartThickness = new(InterpolatingFunctions.Float, 1), EndThickness = new(InterpolatingFunctions.Float, 1);
 
     public bool Additive, UseDistanceFade = true, EnableStartCap = true, EnableEndCap = true, OrientedCaps;
-
     public float EdgeOverlap = .5f, CapOverlap = .2f;
+
     Action<OsbSprite> finalize;
     OsbSprite spriteBody, spriteTopEdge, spriteBottomEdge, spriteStartCap, spriteEndCap;
 
@@ -142,7 +137,6 @@ public class Line3dEx : Node3d, HasOsbSprites
                 yield return spriteTopEdge;
                 yield return spriteBottomEdge;
             }
-
             if (SpritePathCap is not null)
             {
                 yield return spriteStartCap;
@@ -311,8 +305,7 @@ public class Line3dEx : Node3d, HasOsbSprites
     }
 
     /// <inheritdoc />
-    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime,
-        float timeOffset, bool loopable)
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
     {
         if (finalize is not null)
             action += (createCommands, sprite) =>

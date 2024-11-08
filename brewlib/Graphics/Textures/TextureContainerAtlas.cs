@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Data;
 using Util;
@@ -13,14 +14,7 @@ public sealed class TextureContainerAtlas(
     Dictionary<string, Texture2dRegion> textures = [];
 
     public float UncompressedMemoryUseMb
-    {
-        get
-        {
-            var pixels = 0f;
-            foreach (var texture in textures.Values) pixels += texture.Size.X * texture.Size.Y;
-            return pixels / 1048576;
-        }
-    }
+        => textures.Values.Sum(texture => texture.Size.X * texture.Size.Y) / 1048576;
 
     public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
 

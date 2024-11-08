@@ -16,7 +16,6 @@ public static class Misc
     public static T WithRetries<T>(Func<T> action, int timeout = 1500, bool canThrow = true)
     {
         var sleepTime = 0;
-
         while (true)
             try
             {

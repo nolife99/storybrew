@@ -26,7 +26,6 @@ public class Label(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
-
     public IconFont Icon
     {
         get => textDrawable.Icon;
@@ -37,7 +36,6 @@ public class Label(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
-
     public RectangleF TextBounds
     {
         get
@@ -58,7 +56,6 @@ public class Label(WidgetManager manager) : Widget(manager)
             return new(position.X, position.Y, textSize.X, textSize.Y);
         }
     }
-
     protected override WidgetStyle Style => Manager.Skin.GetStyle<LabelStyle>(StyleName);
 
     protected override void Dispose(bool disposing)
@@ -80,7 +77,6 @@ public class Label(WidgetManager manager) : Widget(manager)
         textDrawable.Trimming = labelStyle.Trimming;
         textDrawable.Color = labelStyle.Color;
     }
-
     public override void PreLayout()
     {
         base.PreLayout();
@@ -99,7 +95,6 @@ public class Label(WidgetManager manager) : Widget(manager)
         textDrawable.MaxSize = Vector2.Zero;
         InvalidateAncestorLayout();
     }
-
     protected override void Layout()
     {
         base.Layout();
@@ -108,13 +103,11 @@ public class Label(WidgetManager manager) : Widget(manager)
         textDrawable.MaxSize = Size;
         InvalidateAncestorLayout();
     }
-
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
         if (!string.IsNullOrWhiteSpace(Text)) textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
     }
-
     public RectangleF GetCharacterBounds(int index)
     {
         var position = AbsolutePosition;
@@ -122,7 +115,6 @@ public class Label(WidgetManager manager) : Widget(manager)
         return RectangleF.FromLTRB(position.X + bounds.Left, position.Y + bounds.Top, position.X + bounds.Right,
             position.Y + bounds.Bottom);
     }
-
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var position = AbsolutePosition;
