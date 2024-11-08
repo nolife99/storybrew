@@ -1,63 +1,11 @@
-﻿using System;
+﻿namespace BrewLib.Util;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BrewLib.Util;
-
 public class LineBreaker
 {
-    public static List<string> Split(string text, float maxWidth, Func<char, int> measure)
-    {
-        List<string> lines = [];
-
-        int startIndex = 0, endIndex = 0, lineWidth = 0;
-        void completeLine()
-        {
-            var length = endIndex - startIndex + 1;
-            lines.Add(text.Substring(startIndex, length));
-
-            startIndex = endIndex + 1;
-            endIndex = startIndex;
-            lineWidth = 0;
-        }
-
-        for (; endIndex < text.Length; ++endIndex)
-        {
-            var character = text[endIndex];
-            var characterWidth = measure(character);
-
-            if (maxWidth > 0 && endIndex > startIndex && (lineWidth + characterWidth) > maxWidth)
-            {
-                endIndex = findBreakIndex(text, startIndex, endIndex);
-                completeLine();
-            }
-            lineWidth += characterWidth;
-
-            if (mustBreakAfter(text, endIndex))
-            {
-                completeLine();
-                --endIndex;
-            }
-        }
-        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add("");
-
-        return lines;
-    }
-    static int findBreakIndex(string text, int startIndex, int endIndex)
-    {
-        var firstAllowed = -1;
-        for (var index = endIndex; index > startIndex; index--)
-        {
-            var breakability = getBreakability(text, index);
-            if (breakability == Breakability.Opportunity) return index - 1;
-            if (breakability == Breakability.Allowed && firstAllowed == -1) firstAllowed = index - 1;
-        }
-
-        if (firstAllowed != -1) return firstAllowed;
-
-        return endIndex - 1;
-    }
-
     // A lazy implementation of http://unicode.org/reports/tr14/
     //
     // Classes not implemented: 
@@ -172,6 +120,7 @@ public class LineBreaker
         0x10A54, // KHAROSHTHI PUNCTUATION MANGALAM
         0x10A55 // KHAROSHTHI PUNCTUATION LOTUS
     ];
+
     static readonly int[] breakOpportunityBefore =
     [
         0x200B, // ZERO WIDTH SPACE
@@ -198,6 +147,7 @@ public class LineBreaker
         0xA875, // PHAGS-PA DOUBLE HEAD MARK
         0x1806 // MONGOLIAN TODO SOFT HYPHEN
     ];
+
     static readonly int[] breakProhibitedAfter =
     [
         0x2060, // WORD JOINER
@@ -212,6 +162,7 @@ public class LineBreaker
         0x0F0C, // TIBETAN MARK DELIMITER TSHEG BSTAR
         0x0F12 // TIBETAN MARK RGYA GRAM SHAD
     ];
+
     static readonly int[] breakProhibitedBefore =
     [
         0x2060, // WORD JOINER
@@ -226,6 +177,7 @@ public class LineBreaker
         0x0F0C, // TIBETAN MARK DELIMITER TSHEG BSTAR
         0x0F12 // TIBETAN MARK RGYA GRAM SHAD
     ];
+
     static readonly int[] causesBreakAfter =
     [
         0x000C, // FORM FEED
@@ -235,6 +187,65 @@ public class LineBreaker
         0x000A, // LINE FEED
         0x0085 // NEXT LINE
     ];
+
+    public static List<string> Split(string text, float maxWidth, Func<char, int> measure)
+    {
+        List<string> lines = [];
+
+        int startIndex = 0, endIndex = 0, lineWidth = 0;
+
+        for (; endIndex < text.Length; ++endIndex)
+        {
+            var character = text[endIndex];
+            var characterWidth = measure(character);
+
+            if (maxWidth > 0 && endIndex > startIndex && lineWidth + characterWidth > maxWidth)
+            {
+                endIndex = findBreakIndex(text, startIndex, endIndex);
+                completeLine();
+            }
+
+            lineWidth += characterWidth;
+
+            if (!mustBreakAfter(text, endIndex)) continue;
+            completeLine();
+            --endIndex;
+        }
+
+        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add("");
+
+        return lines;
+
+        void completeLine()
+        {
+            var length = endIndex - startIndex + 1;
+            lines.Add(text.Substring(startIndex, length));
+
+            startIndex = endIndex + 1;
+            endIndex = startIndex;
+            lineWidth = 0;
+        }
+    }
+
+    static int findBreakIndex(string text, int startIndex, int endIndex)
+    {
+        var firstAllowed = -1;
+        for (var index = endIndex; index > startIndex; index--)
+        {
+            var breakability = getBreakability(text, index);
+            switch (breakability)
+            {
+                case Breakability.Opportunity: return index - 1;
+                case Breakability.Allowed when firstAllowed == -1:
+                    firstAllowed = index - 1;
+                    break;
+            }
+        }
+
+        if (firstAllowed != -1) return firstAllowed;
+        return endIndex - 1;
+    }
+
     static Breakability getBreakability(string text, int index)
     {
         if (index == 0) return Breakability.Prohibited;
@@ -247,6 +258,7 @@ public class LineBreaker
 
         return Breakability.Allowed;
     }
+
     static Breakability getBreakabilityAfter(char c)
     {
         if (breakOpportunityAfter.Contains(c)) return Breakability.Opportunity;
@@ -256,6 +268,7 @@ public class LineBreaker
 
         return Breakability.Allowed;
     }
+
     static Breakability getBreakabilityBefore(char c)
     {
         if (breakOpportunityBefore.Contains(c)) return Breakability.Opportunity;
@@ -264,6 +277,7 @@ public class LineBreaker
 
         return Breakability.Allowed;
     }
+
     static bool mustBreakAfter(string text, int index, bool ignoreLastCharacter = false)
     {
         if (!ignoreLastCharacter && index == text.Length - 1) return true;
@@ -271,11 +285,10 @@ public class LineBreaker
         var c = text[index];
 
         if (causesBreakAfter.Contains(c)) return true;
-        if (c == 0x000D && (index == text.Length - 1 || text[index + 1] != 0x000A)) return true;
-
-        return false;
+        return c == 0x000D && (index == text.Length - 1 || text[index + 1] != 0x000A);
     }
-    public enum Breakability
+
+    enum Breakability
     {
         Opportunity, Allowed, Prohibited
     }

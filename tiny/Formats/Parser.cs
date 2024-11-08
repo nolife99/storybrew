@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace Tiny.Formats;
 
-namespace Tiny.Formats;
+using System;
 
 public abstract class Parser<TokenType>(Action<TinyToken> callback, int virtualIndent)
 {

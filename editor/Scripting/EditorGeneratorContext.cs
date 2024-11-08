@@ -1,23 +1,31 @@
-﻿using System;
+﻿namespace StorybrewEditor.Scripting;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using BrewLib.Audio;
 using BrewLib.Util;
+using Mapset;
+using Storyboarding;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using StorybrewEditor.Mapset;
-using StorybrewEditor.Storyboarding;
-using StorybrewEditor.Util;
+using Util;
 
-namespace StorybrewEditor.Scripting;
-
-public sealed class EditorGeneratorContext(Effect effect, string projectPath, string projectAssetPath, string mapsetPath, EditorBeatmap beatmap, IEnumerable<EditorBeatmap> beatmaps, MultiFileWatcher watcher) : GeneratorContext, IDisposable
+public sealed class EditorGeneratorContext(
+    Effect effect, string projectPath, string projectAssetPath, string mapsetPath, EditorBeatmap beatmap,
+    IEnumerable<EditorBeatmap> beatmaps, MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {
+    public readonly List<EditorStoryboardLayer> EditorLayers = [];
+
+    readonly StringBuilder log = new();
     public override string ProjectPath => projectPath;
     public override string ProjectAssetPath => projectAssetPath;
-    public override string MapsetPath => Directory.Exists(mapsetPath) ? mapsetPath : throw new InvalidOperationException($"No existing folder at '{mapsetPath}'");
+
+    public override string MapsetPath
+        => Directory.Exists(mapsetPath) ? mapsetPath
+            : throw new InvalidOperationException($"No existing folder at '{mapsetPath}'");
 
     public override Beatmap Beatmap
     {
@@ -27,6 +35,7 @@ public sealed class EditorGeneratorContext(Effect effect, string projectPath, st
             return beatmap;
         }
     }
+
     public override IEnumerable<Beatmap> Beatmaps
     {
         get
@@ -38,11 +47,9 @@ public sealed class EditorGeneratorContext(Effect effect, string projectPath, st
 
     public bool BeatmapDependent { get; set; }
     public override bool Multithreaded { get; set; }
-
-    readonly StringBuilder log = new();
     public string Log => log.ToString();
 
-    public List<EditorStoryboardLayer> EditorLayers = [];
+    public void Dispose() => fftAudioStreams.Dispose();
 
     public override StoryboardLayer GetLayer(string name)
     {
@@ -54,9 +61,10 @@ public sealed class EditorGeneratorContext(Effect effect, string projectPath, st
     public override void AddDependency(string path) => watcher.Watch(path);
     public override void AppendLog(string message) => log.AppendLine(message);
 
-    #region Audio data
+#region Audio data
 
     readonly Dictionary<string, FftStream> fftAudioStreams = [];
+
     FftStream getFftStream(string path)
     {
         path = Path.GetFullPath(path);
@@ -66,10 +74,12 @@ public sealed class EditorGeneratorContext(Effect effect, string projectPath, st
     }
 
     public override float AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;
-    public override float[] GetFft(float time, string path = null, bool splitChannels = false) => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001f, splitChannels);
-    public override float GetFftFrequency(string path = null) => getFftStream(path ?? effect.Project.AudioPath).Frequency;
 
-    #endregion
+    public override float[] GetFft(float time, string path = null, bool splitChannels = false)
+        => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001f, splitChannels);
 
-    public void Dispose() => fftAudioStreams.Dispose();
+    public override float GetFftFrequency(string path = null)
+        => getFftStream(path ?? effect.Project.AudioPath).Frequency;
+
+#endregion
 }

@@ -1,15 +1,18 @@
-﻿using System.Diagnostics;
+﻿namespace BrewLib.Time;
 
-namespace BrewLib.Time;
+using System.Diagnostics;
 
 public class Clock : TimeSource
 {
     readonly Stopwatch stopwatch = new();
+
+    bool playing;
+
+    float timeFactor = 1;
     float timeOrigin;
 
     public float Current => timeOrigin + (float)stopwatch.Elapsed.TotalSeconds * timeFactor;
 
-    float timeFactor = 1;
     public float TimeFactor
     {
         get => timeFactor;
@@ -19,11 +22,10 @@ public class Clock : TimeSource
 
             var elapsed = (float)stopwatch.Elapsed.TotalSeconds;
             timeFactor = value;
-            timeOrigin = (timeOrigin + elapsed * timeFactor) - elapsed * timeFactor;
+            timeOrigin = timeOrigin + elapsed * timeFactor - elapsed * timeFactor;
         }
     }
 
-    bool playing;
     public bool Playing
     {
         get => playing;
@@ -32,8 +34,10 @@ public class Clock : TimeSource
             if (playing == value) return;
             playing = value;
 
-            if (playing) stopwatch.Start();
-            else stopwatch.Stop();
+            if (playing)
+                stopwatch.Start();
+            else
+                stopwatch.Stop();
         }
     }
 

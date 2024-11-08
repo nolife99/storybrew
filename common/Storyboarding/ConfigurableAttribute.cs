@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace StorybrewCommon.Storyboarding;
 
-namespace StorybrewCommon.Storyboarding;
+using System;
 
 ///<summary> Configurable attribute for variables. </summary>
 [AttributeUsage(AttributeTargets.Field)]

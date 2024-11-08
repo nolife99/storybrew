@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Util;
 
-namespace BrewLib.Util;
+using System;
 
 public static class EventHelper
 {
@@ -10,17 +10,19 @@ public static class EventHelper
         if (invocationList is null) return;
 
         var first = true;
-        for (var i = 0; i < invocationList.Length; i++)
+        foreach (var t in invocationList)
         {
-            if (first) first = false;
+            if (first)
+                first = false;
             else
             {
                 var currentList = getEventDelegate()?.GetInvocationList();
                 if (currentList is null) return;
 
-                if (!Array.Exists(currentList, h => h == invocationList[i])) continue;
+                if (!Array.Exists(currentList, h => h == t)) continue;
             }
-            raise(invocationList[i]);
+
+            raise(t);
         }
     }
 }

@@ -1,41 +1,18 @@
-﻿using System;
+﻿namespace StorybrewEditor.UserInterface;
+
+using System;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using BrewLib.UserInterface;
 using StorybrewCommon.Storyboarding.CommandValues;
 
-namespace StorybrewEditor.UserInterface;
-
 public class Vector2Picker : Widget, Field
 {
     readonly LinearLayout layout;
     readonly Textbox xTextbox, yTextbox;
 
-    public override Vector2 MinSize => layout.MinSize;
-    public override Vector2 MaxSize => Vector2.Zero;
-    public override Vector2 PreferredSize => layout.PreferredSize;
-
     CommandPosition value;
-    public CommandPosition Value
-    {
-        get => value;
-        set
-        {
-            if (this.value == value) return;
-            this.value = value;
-
-            updateWidgets();
-            OnValueChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = Unsafe.Unbox<CommandPosition>(value);
-    }
-
-    public event EventHandler OnValueChanged, OnValueCommited;
 
     public Vector2Picker(WidgetManager manager) : base(manager)
     {
@@ -51,16 +28,8 @@ public class Vector2Picker : Widget, Field
                     Fill = true,
                     Children =
                     [
-                        new Label(Manager)
-                        {
-                            StyleName = "small",
-                            Text = "X",
-                            CanGrow = false
-                        },
-                        xTextbox = new(manager)
-                        {
-                            EnterCommits = true
-                        }
+                        new Label(Manager) { StyleName = "small", Text = "X", CanGrow = false },
+                        xTextbox = new(manager) { EnterCommits = true }
                     ]
                 },
                 new LinearLayout(manager)
@@ -70,16 +39,8 @@ public class Vector2Picker : Widget, Field
                     Fill = true,
                     Children =
                     [
-                        new Label(Manager)
-                        {
-                            StyleName = "small",
-                            Text = "Y",
-                            CanGrow = false
-                        },
-                        yTextbox = new(manager)
-                        {
-                            EnterCommits = true
-                        }
+                        new Label(Manager) { StyleName = "small", Text = "Y", CanGrow = false },
+                        yTextbox = new(manager) { EnterCommits = true }
                     ]
                 }
             ]
@@ -89,6 +50,32 @@ public class Vector2Picker : Widget, Field
         xTextbox.OnValueCommited += xTextbox_OnValueCommited;
         yTextbox.OnValueCommited += yTextbox_OnValueCommited;
     }
+
+    public override Vector2 MinSize => layout.MinSize;
+    public override Vector2 MaxSize => Vector2.Zero;
+    public override Vector2 PreferredSize => layout.PreferredSize;
+
+    public CommandPosition Value
+    {
+        get => value;
+        set
+        {
+            if (this.value == value) return;
+            this.value = value;
+
+            updateWidgets();
+            OnValueChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public object FieldValue
+    {
+        get => Value;
+        set => Value = Unsafe.Unbox<CommandPosition>(value);
+    }
+
+    public event EventHandler OnValueChanged, OnValueCommited;
+
     void xTextbox_OnValueCommited(object sender, EventArgs e)
     {
         var xCommit = xTextbox.Value;
@@ -103,9 +90,11 @@ public class Vector2Picker : Widget, Field
             updateWidgets();
             return;
         }
+
         value = new(x, value.Y);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
+
     void yTextbox_OnValueCommited(object sender, EventArgs e)
     {
         var yCommit = yTextbox.Value;
@@ -120,14 +109,17 @@ public class Vector2Picker : Widget, Field
             updateWidgets();
             return;
         }
+
         value = new(value.X, y);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
+
     void updateWidgets()
     {
         xTextbox.SetValueSilent(value.X.ToString());
         yTextbox.SetValueSilent(value.Y.ToString());
     }
+
     protected override void Layout()
     {
         base.Layout();

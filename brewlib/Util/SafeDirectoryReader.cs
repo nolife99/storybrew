@@ -1,6 +1,6 @@
-﻿using System.IO;
+﻿namespace BrewLib.Util;
 
-namespace BrewLib.Util;
+using System.IO;
 
 public class SafeDirectoryReader
 {
@@ -9,7 +9,8 @@ public class SafeDirectoryReader
     public SafeDirectoryReader(string targetDirectory)
     {
         var backupDirectory = targetDirectory + ".bak";
-        Path = Directory.Exists(targetDirectory) || !Directory.Exists(backupDirectory) ? targetDirectory : backupDirectory;
+        Path = Directory.Exists(targetDirectory) || !Directory.Exists(backupDirectory) ? targetDirectory
+            : backupDirectory;
     }
 
     public string GetPath(string path) => System.IO.Path.Combine(Path, path);

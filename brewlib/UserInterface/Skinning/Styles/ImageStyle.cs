@@ -1,7 +1,7 @@
-﻿using System.Drawing;
-using BrewLib.Util;
+﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
-namespace BrewLib.UserInterface.Skinning.Styles;
+using System.Drawing;
+using Util;
 
 public class ImageStyle : WidgetStyle
 {

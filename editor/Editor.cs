@@ -1,6 +1,9 @@
-﻿using System;
+﻿namespace StorybrewEditor;
+
+using System;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Windows.Forms;
 using BrewLib.Data;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
@@ -15,34 +18,47 @@ using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
 using osuTK;
 using osuTK.Graphics.OpenGL;
-using StorybrewEditor.ScreenLayers;
-
-namespace StorybrewEditor;
+using ScreenLayers;
+using Label = BrewLib.UserInterface.Label;
 
 public sealed class Editor(GameWindow window) : IDisposable
 {
-    public GameWindow Window => window;
-    public readonly System.Windows.Forms.IWin32Window FormsWindow = new DialogParent();
-
     readonly FrameClock clock = new();
-    public FrameTimeSource TimeSource => clock;
-
-    public bool IsFixedRateUpdate;
+    public readonly IWin32Window FormsWindow = new DialogParent();
 
     DrawContext drawContext;
-    public ResourceContainer ResourceContainer;
-    public Skin Skin;
-    public ScreenLayerManager ScreenLayerManager;
     public InputManager InputManager;
+
+    public bool IsFixedRateUpdate;
+    public ResourceContainer ResourceContainer;
+    ScreenLayerManager screenLayerManager;
+    public Skin Skin;
+    public FrameTimeSource TimeSource => clock;
+
+    public void Dispose()
+    {
+        window.Resize -= window_Resize;
+        window.Closing -= window_Closing;
+
+        screenLayerManager.Dispose();
+        overlay.Dispose();
+        overlayCamera.Dispose();
+        InputManager.Dispose();
+        drawContext.Dispose();
+        Skin.Dispose();
+        DrawState.Cleanup();
+    }
 
     public void Initialize(ScreenLayer initialLayer = null)
     {
-        ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
-        DrawState.Initialize(ResourceContainer, Window.Width, Window.Height);
+        ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly,
+            $"{nameof(StorybrewEditor)}.Resources", "resources");
+        DrawState.Initialize(ResourceContainer, window.Width, window.Height);
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, width: 1024, height: 1024), true);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, width: 1024, height: 1024),
+            true);
         drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
 
@@ -51,16 +67,24 @@ public sealed class Editor(GameWindow window) : IDisposable
             var brewLibAssembly = typeof(Drawable).Assembly;
             Skin = new(drawContext.Get<TextureContainer>())
             {
-                ResolveDrawableType = drawableTypeName => brewLibAssembly.GetType(
-                    $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}", true, true),
-
-                ResolveWidgetType = widgetTypeName => Type.GetType(
-                    $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
-                    brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true, true),
-
-                ResolveStyleType = styleTypeName => Type.GetType(
-                    $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ??
-                    brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true),
+                ResolveDrawableType =
+                    drawableTypeName
+                        => brewLibAssembly.GetType(
+                            $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{
+                                drawableTypeName}", true, true),
+                ResolveWidgetType =
+                    widgetTypeName
+                        => Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}",
+                            false, true) ??
+                        brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true,
+                            true),
+                ResolveStyleType = styleTypeName
+                    => Type.GetType(
+                        $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{
+                            nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ??
+                    brewLibAssembly.GetType(
+                        $"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{
+                            nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true)
             };
             Skin.Load("skin.json", ResourceContainer);
         }
@@ -71,27 +95,69 @@ public sealed class Editor(GameWindow window) : IDisposable
         }
 
         InputDispatcher inputDispatcher = new();
-        InputManager = new(Window, inputDispatcher);
+        InputManager = new(window, inputDispatcher);
 
-        ScreenLayerManager = new(Window, clock, this);
-        inputDispatcher.Add(createOverlay(ScreenLayerManager));
-        inputDispatcher.Add(ScreenLayerManager.InputHandler);
+        screenLayerManager = new(window, clock, this);
+        inputDispatcher.Add(createOverlay(screenLayerManager));
+        inputDispatcher.Add(screenLayerManager.InputHandler);
 
         Restart(initialLayer);
 
-        Window.Resize += window_Resize;
-        Window.Closing += window_Closing;
+        window.Resize += window_Resize;
+        window.Closing += window_Closing;
 
         resizeToWindow();
     }
+
     public void Restart(ScreenLayer initialLayer = null, string message = null)
     {
         initializeOverlay();
-        ScreenLayerManager.Set(initialLayer ?? new StartMenu());
-        if (message is not null) ScreenLayerManager.ShowMessage(message);
+        screenLayerManager.Set(initialLayer ?? new StartMenu());
+        if (message is not null) screenLayerManager.ShowMessage(message);
     }
 
-    #region Overlay
+    public void Update(float time, bool isFixedRateUpdate = true)
+    {
+        IsFixedRateUpdate = isFixedRateUpdate;
+        clock.AdvanceFrameTo(time);
+
+        updateOverlay();
+        screenLayerManager.Update(IsFixedRateUpdate);
+    }
+
+    public void Draw(float tween)
+    {
+        GL.Clear(ClearBufferMask.ColorBufferBit);
+
+        screenLayerManager.Draw(drawContext, tween);
+        overlay.Draw(drawContext);
+        DrawState.CompleteFrame();
+    }
+
+    void window_Resize(object sender, EventArgs e) => resizeToWindow();
+    void window_Closing(object sender, CancelEventArgs e) => e.Cancel = screenLayerManager.Close();
+
+    void resizeToWindow()
+    {
+        var width = window.Width;
+        var height = window.Height;
+
+        DrawState.Viewport = new(0, 0, width, height);
+
+        var virtualHeight = height * Math.Max(1024f / width, 768f / height);
+        overlayCamera.VirtualHeight = (int)virtualHeight;
+
+        var virtualWidth = width * virtualHeight / height;
+        overlayCamera.VirtualWidth = (int)virtualWidth;
+        overlay.Size = new(virtualWidth, virtualHeight);
+    }
+
+    class DialogParent : IWin32Window
+    {
+        public nint Handle => Native.MainWindowHandle;
+    }
+
+#region Overlay
 
     WidgetManager overlay;
     CameraOrtho overlayCamera;
@@ -99,10 +165,8 @@ public sealed class Editor(GameWindow window) : IDisposable
     Slider volumeSlider;
     Label statsLabel;
 
-    WidgetManager createOverlay(ScreenLayerManager screenLayerManager) => overlay = new(screenLayerManager, InputManager, Skin)
-    {
-        Camera = overlayCamera = new()
-    };
+    WidgetManager createOverlay(ScreenLayerManager screenLayerManager)
+        => overlay = new(screenLayerManager, InputManager, Skin) { Camera = overlayCamera = new() };
 
     void initializeOverlay()
     {
@@ -138,21 +202,14 @@ public sealed class Editor(GameWindow window) : IDisposable
             Displayed = false,
             Children =
             [
-                new Label(overlay)
-                {
-                    StyleName = "icon",
-                    Icon = IconFont.VolumeUp
-                },
-                volumeSlider = new(overlay)
-                {
-                    Step = .01f
-                }
+                new Label(overlay) { StyleName = "icon", Icon = IconFont.VolumeUp },
+                volumeSlider = new(overlay) { Step = .01f }
             ]
         });
         altOverlayTop.Pack(0, 0, 1024);
 
         Program.Settings.Volume.Bind(volumeSlider, () => volumeSlider.Tooltip = $"Volume: {volumeSlider.Value:P0}");
-        overlay.Root.OnMouseWheel += (sender, e) =>
+        overlay.Root.OnMouseWheel += (_, e) =>
         {
             if (!InputManager.AltOnly) return false;
 
@@ -160,80 +217,30 @@ public sealed class Editor(GameWindow window) : IDisposable
             return true;
         };
     }
+
     void updateOverlay()
     {
-        if (IsFixedRateUpdate)
-        {
-            var mousePosition = overlay.MousePosition;
-            var bounds = altOverlayTop.Bounds;
+        if (!IsFixedRateUpdate) return;
 
-            var showAltOverlayTop = InputManager.AltOnly || (altOverlayTop.Displayed && bounds.Top < mousePosition.Y && mousePosition.Y < bounds.Bottom);
+        var mousePosition = overlay.MousePosition;
+        var bounds = altOverlayTop.Bounds;
 
-            var altOpacity = altOverlayTop.Opacity;
-            var targetOpacity = showAltOverlayTop ? 1f : 0;
-            if (Math.Abs(altOpacity - targetOpacity) <= .07f) altOpacity = targetOpacity;
-            else altOpacity = Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
+        var showAltOverlayTop = InputManager.AltOnly ||
+            altOverlayTop.Displayed && bounds.Top < mousePosition.Y && mousePosition.Y < bounds.Bottom;
 
-            overlayTop.Opacity = 1 - altOpacity;
-            overlayTop.Displayed = altOpacity < 1;
+        var altOpacity = altOverlayTop.Opacity;
+        var targetOpacity = showAltOverlayTop ? 1f : 0;
+        altOpacity = Math.Abs(altOpacity - targetOpacity) <= .07f ? targetOpacity
+            : Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
 
-            altOverlayTop.Opacity = altOpacity;
-            altOverlayTop.Displayed = altOpacity > 0;
+        overlayTop.Opacity = 1 - altOpacity;
+        overlayTop.Displayed = altOpacity < 1;
 
-            if (statsLabel.Visible) statsLabel.Text = Program.Stats;
-        }
+        altOverlayTop.Opacity = altOpacity;
+        altOverlayTop.Displayed = altOpacity > 0;
+
+        if (statsLabel.Visible) statsLabel.Text = Program.Stats;
     }
 
-    #endregion
-
-    public void Dispose()
-    {
-        Window.Resize -= window_Resize;
-        Window.Closing -= window_Closing;
-
-        ScreenLayerManager.Dispose();
-        overlay.Dispose();
-        overlayCamera.Dispose();
-        InputManager.Dispose();
-        drawContext.Dispose();
-        Skin.Dispose();
-        DrawState.Cleanup();
-    }
-    public void Update(float time, bool isFixedRateUpdate = true)
-    {
-        IsFixedRateUpdate = isFixedRateUpdate;
-        clock.AdvanceFrameTo(time);
-
-        updateOverlay();
-        ScreenLayerManager.Update(IsFixedRateUpdate);
-    }
-    public void Draw(float tween)
-    {
-        GL.Clear(ClearBufferMask.ColorBufferBit);
-
-        ScreenLayerManager.Draw(drawContext, tween);
-        overlay.Draw(drawContext);
-        DrawState.CompleteFrame();
-    }
-
-    void window_Resize(object sender, EventArgs e) => resizeToWindow();
-    void window_Closing(object sender, CancelEventArgs e) => e.Cancel = ScreenLayerManager.Close();
-    void resizeToWindow()
-    {
-        var width = Window.Width;
-        var height = Window.Height;
-
-        DrawState.Viewport = new(0, 0, width, height);
-
-        var virtualHeight = height * Math.Max(1024f / width, 768f / height);
-        overlayCamera.VirtualHeight = (int)virtualHeight;
-
-        var virtualWidth = width * virtualHeight / height;
-        overlayCamera.VirtualWidth = (int)virtualWidth;
-        overlay.Size = new(virtualWidth, virtualHeight);
-    }
-    class DialogParent : System.Windows.Forms.IWin32Window
-    {
-        public nint Handle => Native.MainWindowHandle;
-    }
+#endregion
 }

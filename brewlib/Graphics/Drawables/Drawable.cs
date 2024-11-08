@@ -1,9 +1,9 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Drawables;
+
+using System;
 using System.Drawing;
 using System.Numerics;
-using BrewLib.Graphics.Cameras;
-
-namespace BrewLib.Graphics.Drawables;
+using Cameras;
 
 public interface Drawable : IDisposable
 {

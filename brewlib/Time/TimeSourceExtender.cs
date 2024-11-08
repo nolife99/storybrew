@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Time;
 
-namespace BrewLib.Time;
+using System;
 
 public class TimeSourceExtender(TimeSource timeSource) : TimeSource
 {
@@ -18,6 +18,7 @@ public class TimeSourceExtender(TimeSource timeSource) : TimeSource
             clock.Playing = value;
         }
     }
+
     public float TimeFactor
     {
         get => clock.TimeFactor;
@@ -33,6 +34,7 @@ public class TimeSourceExtender(TimeSource timeSource) : TimeSource
         if (!timeSource.Seek(time)) timeSource.Playing = false;
         return clock.Seek(time);
     }
+
     public void Update()
     {
         timeSource.Playing = clock.Playing && (timeSource.Playing || timeSource.Seek(clock.Current));

@@ -1,9 +1,10 @@
-﻿using StorybrewCommon.Storyboarding.CommandValues;
+﻿namespace StorybrewCommon.Storyboarding.Commands;
 
-namespace StorybrewCommon.Storyboarding.Commands;
+using CommandValues;
 
 #pragma warning disable CS1591
-public class ParameterCommand(float startTime, float endTime, CommandParameter value) : Command<CommandParameter>("P", 0, startTime, endTime, value, value)
+public class ParameterCommand(float startTime, float endTime, CommandParameter value)
+    : Command<CommandParameter>("P", 0, startTime, endTime, value, value)
 {
     public override bool MaintainValue => StartTime == EndTime;
     public override bool ExportEndValue => false;

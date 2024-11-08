@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace StorybrewEditor.Scripting;
 
-namespace StorybrewEditor.Scripting;
+using System;
 
 public class ScriptLoadingException : Exception
 {

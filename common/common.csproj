@@ -1,39 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <RootNamespace>StorybrewCommon</RootNamespace>
-    <AssemblyName>StorybrewCommon</AssemblyName>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Company>storybrew</Company>
-    <Copyright>Copyright © Damnae 2016</Copyright>
-    <Version>1.1</Version>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <EnableNETAnalyzers>True</EnableNETAnalyzers>
-    <AnalysisLevel>latest-recommended</AnalysisLevel>
-    <UseWindowsForms>True</UseWindowsForms>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <RootNamespace>StorybrewCommon</RootNamespace>
+        <AssemblyName>StorybrewCommon</AssemblyName>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <Company>storybrew</Company>
+        <Copyright>Copyright © Damnae 2016</Copyright>
+        <Version>1.1</Version>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <GenerateDocumentationFile>True</GenerateDocumentationFile>
+        <EnableNETAnalyzers>True</EnableNETAnalyzers>
+        <AnalysisLevel>latest-recommended</AnalysisLevel>
+        <UseWindowsForms>True</UseWindowsForms>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugType>embedded</DebugType>
-    <Optimize>true</Optimize>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <DebugType>embedded</DebugType>
+        <Optimize>true</Optimize>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />
-    <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211"/>
+        <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\brewlib\brewlib.csproj" />
-    <ProjectReference Include="..\tiny\tiny.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\brewlib\brewlib.csproj"/>
+        <ProjectReference Include="..\tiny\tiny.csproj"/>
+    </ItemGroup>
 
 </Project>

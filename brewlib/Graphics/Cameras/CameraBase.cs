@@ -1,14 +1,38 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Cameras;
+
+using System;
 using System.Drawing;
 using System.Numerics;
 
-namespace BrewLib.Graphics.Cameras;
-
 public abstract class CameraBase : Camera
 {
-    public static readonly Vector3 DefaultForward = new(0, -1, 0), DefaultUp = new(0, 0, 1);
+    static readonly Vector3 DefaultForward = new(0, -1, 0), DefaultUp = new(0, 0, 1);
+
+    float farPlane;
+
+    Vector3 forward = DefaultForward;
 
     Rectangle internalViewport, extendedViewport;
+
+    float nearPlane;
+
+    bool needsUpdate;
+
+    Vector3 position = Vector3.Zero;
+
+    Matrix4x4 projection, view, projectionView, invertedProjectionView;
+
+    Vector3 up = DefaultUp;
+
+    Rectangle viewport;
+
+    public CameraBase()
+    {
+        viewport = DrawState.Viewport;
+        DrawState.ViewportChanged += drawState_ViewportChanged;
+        needsUpdate = true;
+    }
+
     public Rectangle InternalViewport
     {
         get
@@ -17,6 +41,7 @@ public abstract class CameraBase : Camera
             return internalViewport;
         }
     }
+
     public Rectangle ExtendedViewport
     {
         get
@@ -26,7 +51,6 @@ public abstract class CameraBase : Camera
         }
     }
 
-    Matrix4x4 projection, view, projectionView, invertedProjectionView;
     public Matrix4x4 Projection
     {
         get
@@ -35,6 +59,7 @@ public abstract class CameraBase : Camera
             return projection;
         }
     }
+
     public Matrix4x4 View
     {
         get
@@ -43,6 +68,7 @@ public abstract class CameraBase : Camera
             return view;
         }
     }
+
     public Matrix4x4 ProjectionView
     {
         get
@@ -51,6 +77,7 @@ public abstract class CameraBase : Camera
             return projectionView;
         }
     }
+
     public Matrix4x4 InvertedProjectionView
     {
         get
@@ -62,7 +89,6 @@ public abstract class CameraBase : Camera
 
     public event EventHandler Changed;
 
-    float nearPlane;
     public float NearPlane
     {
         get => nearPlane;
@@ -74,7 +100,6 @@ public abstract class CameraBase : Camera
         }
     }
 
-    float farPlane;
     public float FarPlane
     {
         get => farPlane;
@@ -86,7 +111,6 @@ public abstract class CameraBase : Camera
         }
     }
 
-    Rectangle viewport;
     public Rectangle Viewport
     {
         get => viewport;
@@ -98,7 +122,6 @@ public abstract class CameraBase : Camera
         }
     }
 
-    Vector3 position = Vector3.Zero;
     public Vector3 Position
     {
         get => position;
@@ -110,7 +133,6 @@ public abstract class CameraBase : Camera
         }
     }
 
-    Vector3 forward = DefaultForward;
     public Vector3 Forward
     {
         get => forward;
@@ -122,7 +144,6 @@ public abstract class CameraBase : Camera
         }
     }
 
-    Vector3 up = DefaultUp;
     public Vector3 Up
     {
         get => up;
@@ -134,12 +155,6 @@ public abstract class CameraBase : Camera
         }
     }
 
-    public CameraBase()
-    {
-        viewport = DrawState.Viewport;
-        DrawState.ViewportChanged += drawState_ViewportChanged;
-        needsUpdate = true;
-    }
     public void Dispose() => DrawState.ViewportChanged -= drawState_ViewportChanged;
 
     public Vector3 FromScreen(Vector2 screenCoords)
@@ -160,6 +175,7 @@ public abstract class CameraBase : Camera
         if (direction.Z == 0) return Vector3.Zero;
         return near - direction * (near.Z / direction.Z);
     }
+
     public RectangleF FromScreen(RectangleF screenBox2)
     {
         var topLeft = FromScreen(new Vector2(screenBox2.Left, screenBox2.Top));
@@ -173,12 +189,15 @@ public abstract class CameraBase : Camera
         // TODO Vector3.Project() ?
 
         var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
-        var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) / Math.Abs(transformedPosition.W);
+        var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) /
+            Math.Abs(transformedPosition.W);
 
-        return new Vector3((devicePosition.X + 1) * .5f * viewport.Width, (-devicePosition.Y + 1) * .5f * viewport.Height, devicePosition.Z);
+        return new Vector3((devicePosition.X + 1) * .5f * viewport.Width,
+            (-devicePosition.Y + 1) * .5f * viewport.Height, devicePosition.Z);
     }
 
     public Vector3 ToScreen(Vector2 worldCoords) => ToScreen(new Vector3(worldCoords.X, worldCoords.Y, 0));
+
     public RectangleF ToScreen(RectangleF worldBox2)
     {
         var topLeft = ToScreen(new Vector2(worldBox2.Left, worldBox2.Top));
@@ -186,31 +205,7 @@ public abstract class CameraBase : Camera
         return RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
     }
 
-    public void LookAt(Vector3 target)
-    {
-        var newForward = Vector3.Normalize(target - position);
-        if (newForward != Vector3.Zero)
-        {
-            var dot = Vector3.Dot(newForward, up);
-            if (Math.Abs(dot - 1) < .000000001) up = forward * -1;
-            else if (Math.Abs(dot + 1) < .000000001) up = forward;
-
-            forward = newForward;
-            up = Vector3.Normalize(Vector3.Cross(Vector3.Normalize(Vector3.Cross(forward, up)), forward));
-
-            Invalidate();
-        }
-    }
-    public void Rotate(Vector3 axis, float angle)
-    {
-        var rotation = Quaternion.CreateFromAxisAngle(axis, angle);
-        up = Vector3.Transform(up, rotation);
-        forward = Vector3.Transform(forward, rotation);
-        Invalidate();
-    }
-
-    bool needsUpdate;
-    protected void Validate()
+    void Validate()
     {
         if (!needsUpdate) return;
 
@@ -220,12 +215,15 @@ public abstract class CameraBase : Camera
         projectionView = view * projection;
         Matrix4x4.Invert(projectionView, out invertedProjectionView);
     }
+
     protected void Invalidate()
     {
         needsUpdate = true;
         Changed?.Invoke(this, EventArgs.Empty);
     }
+
     void drawState_ViewportChanged() => Viewport = DrawState.Viewport;
 
-    protected abstract void Recalculate(out Matrix4x4 view, out Matrix4x4 projection, out Rectangle internalViewport, out Rectangle extendedViewport);
+    protected abstract void Recalculate(out Matrix4x4 view, out Matrix4x4 projection, out Rectangle internalViewport,
+        out Rectangle extendedViewport);
 }

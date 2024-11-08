@@ -1,20 +1,31 @@
-﻿using System;
-using System.Windows.Forms;
-using osuTK.Input;
+﻿namespace BrewLib.UserInterface;
 
-namespace BrewLib.UserInterface;
+using System;
+using osuTK.Input;
 
 public sealed class ClickBehavior : IDisposable
 {
-    Widget widget;
+    bool disabled;
 
     bool hovered;
-    public bool Hovered => !disabled && hovered;
 
     bool pressed;
+
+    MouseButton pressedButton;
+    Widget widget;
+
+    public ClickBehavior(Widget widget)
+    {
+        this.widget = widget;
+
+        widget.OnHovered += widget_OnHovered;
+        widget.OnClickDown += widget_OnClickDown;
+        widget.OnClickUp += widget_OnClickUp;
+    }
+
+    public bool Hovered => !disabled && hovered;
     public bool Pressed => !disabled && pressed;
 
-    bool disabled;
     public bool Disabled
     {
         get => disabled;
@@ -27,18 +38,8 @@ public sealed class ClickBehavior : IDisposable
         }
     }
 
-    MouseButton pressedButton;
     public event EventHandler OnStateChanged;
     public event EventHandler<MouseButtonEventArgs> OnClick;
-
-    public ClickBehavior(Widget widget)
-    {
-        this.widget = widget;
-
-        widget.OnHovered += widget_OnHovered;
-        widget.OnClickDown += widget_OnClickDown;
-        widget.OnClickUp += widget_OnClickUp;
-    }
 
     void widget_OnHovered(WidgetEvent evt, WidgetHoveredEventArgs e)
     {
@@ -47,6 +48,7 @@ public sealed class ClickBehavior : IDisposable
         hovered = e.Hovered;
         if (!disabled) OnStateChanged?.Invoke(this, e);
     }
+
     bool widget_OnClickDown(WidgetEvent evt, MouseButtonEventArgs e)
     {
         if (pressed || disabled) return false;
@@ -56,6 +58,7 @@ public sealed class ClickBehavior : IDisposable
         OnStateChanged?.Invoke(this, e);
         return true;
     }
+
     void widget_OnClickUp(WidgetEvent evt, MouseButtonEventArgs e)
     {
         if (!pressed || disabled) return;
@@ -66,9 +69,10 @@ public sealed class ClickBehavior : IDisposable
         OnStateChanged?.Invoke(this, e);
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (!disposed)
@@ -85,5 +89,5 @@ public sealed class ClickBehavior : IDisposable
         }
     }
 
-    #endregion
+#endregion
 }

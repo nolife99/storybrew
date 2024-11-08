@@ -1,14 +1,15 @@
-﻿using System;
+﻿namespace StorybrewCommon.Curves;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
-namespace StorybrewCommon.Curves;
-
 #pragma warning disable CS1591
-///<summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
+/// <summary> Constructs a bézier curve from a list of points <paramref name="points" />. </summary>
 public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
 {
+    [ThreadStatic] static Vector2[] intermediatePoints;
     readonly Vector2[] points = points as Vector2[] ?? points.ToArray();
 
     ///<summary> The start position (the head) of the bézier curve. </summary>
@@ -37,11 +38,11 @@ public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
 
             previousPosition = nextPosition;
         }
+
         distance += (EndPosition - previousPosition).Length();
         length = distance;
     }
 
-    [ThreadStatic] static Vector2[] intermediatePoints;
     Vector2 positionAtDelta(float delta)
     {
         var count = points.Length;
@@ -49,7 +50,9 @@ public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
         if (intermediatePoints is null || intermediatePoints.Length < count) intermediatePoints = new Vector2[count];
 
         for (var i = 0; i < count; ++i) intermediatePoints[i] = points[i];
-        for (var i = 1; i < count; ++i) for (var j = 0; j < count - i; ++j) intermediatePoints[j] = intermediatePoints[j] * (1 - delta) + intermediatePoints[j + 1] * delta;
+        for (var i = 1; i < count; ++i)
+        for (var j = 0; j < count - i; ++j)
+            intermediatePoints[j] = intermediatePoints[j] * (1 - delta) + intermediatePoints[j + 1] * delta;
 
         return intermediatePoints[0];
     }

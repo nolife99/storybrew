@@ -1,61 +1,64 @@
+namespace StorybrewCommon.Storyboarding3d;
+
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.Util;
-
-namespace StorybrewCommon.Storyboarding3d;
+using Animations;
+using Storyboarding;
+using Storyboarding.Util;
 
 ///<summary> Represents a line segment, containing start and end nodes, with 3D functionality. </summary>
 public class Line3d : Node3d, HasOsbSprites
 {
-    Action<OsbSprite> finalize;
-    OsbSprite sprite;
-
-    ///<inheritdoc/>
-    public IEnumerable<OsbSprite> Sprites => [sprite];
-
-    ///<summary> The path to the image of this <see cref="Line3d"/>. </summary>
-    public string SpritePath;
-
-    ///<summary> The <see cref="OsbOrigin"/> of this <see cref="Line3d"/>. </summary>
-    public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
-
-    ///<summary> Toggles additive blending on this <see cref="Sprite3d"/>. </summary>
-    public bool Additive;
-
-    ///<summary> Whether to fade sprites based on distance from the <see cref="Camera"/>. </summary>
-    public bool UseDistanceFade = true;
-
-    ///<summary> The segment start position of this <see cref="Line3d"/>. </summary>
-    public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3);
-
-    ///<summary> The segment end position of this <see cref="Line3d"/>. </summary>
+    /// <summary> The segment end position of this <see cref="Line3d" />. </summary>
     public readonly KeyframedValue<Vector3> EndPosition = new(InterpolatingFunctions.Vector3);
-
-    ///<summary> The thickness of this <see cref="Line3d"/>, in absolute osu!pixels. </summary>
-    public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1);
-
-    SizeF spriteBitmap;
 
     readonly CommandGenerator gen = new();
 
-    ///<inheritdoc/>
+    /// <summary> The segment start position of this <see cref="Line3d" />. </summary>
+    public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3);
+
+    /// <summary> The thickness of this <see cref="Line3d" />, in absolute osu!pixels. </summary>
+    public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1);
+
+    /// <summary> Toggles additive blending on this <see cref="Sprite3d" />. </summary>
+    public bool Additive;
+
+    Action<OsbSprite> finalize;
+    OsbSprite sprite;
+
+    SizeF spriteBitmap;
+
+    /// <summary> The <see cref="OsbOrigin" /> of this <see cref="Line3d" />. </summary>
+    public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
+
+    /// <summary> The path to the image of this <see cref="Line3d" />. </summary>
+    public string SpritePath;
+
+    /// <summary> Whether to fade sprites based on distance from the <see cref="Camera" />. </summary>
+    public bool UseDistanceFade = true;
+
+    /// <inheritdoc />
+    public IEnumerable<OsbSprite> Sprites => [sprite];
+
+    /// <inheritdoc />
     public IEnumerable<CommandGenerator> CommandGenerators => [gen];
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public void ConfigureGenerators(Action<CommandGenerator> action) => action(gen);
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
+    public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
+
+    /// <inheritdoc />
     public override void GenerateSprite(StoryboardSegment segment)
     {
         sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
         spriteBitmap = CommandGenerator.BitmapDimensions(SpritePath);
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
@@ -66,7 +69,8 @@ public class Line3d : Node3d, HasOsbSprites
         if (delta.LengthSquared() == 0) return;
 
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
-        if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
+        if (UseDistanceFade)
+            opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
         var position = sprite.Origin switch
         {
@@ -75,8 +79,7 @@ public class Line3d : Node3d, HasOsbSprites
             OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
             OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
             OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
-            OsbOrigin.BottomRight => new(endVector.X, endVector.Y),
-            _ => new(startVector.X, startVector.Y),
+            OsbOrigin.BottomRight => new(endVector.X, endVector.Y), _ => new(startVector.X, startVector.Y)
         };
 
         gen.Add(new()
@@ -84,24 +87,24 @@ public class Line3d : Node3d, HasOsbSprites
             Time = time,
             Position = position,
             Scale = new(delta.Length() / spriteBitmap.Width, Thickness.ValueAt(time)),
-            Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, MathF.Atan2(delta.Y, delta.X), 1),
+            Rotation =
+                InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, MathF.Atan2(delta.Y, delta.X), 1),
             Color = object3dState.Color,
             Opacity = opacity,
             Additive = Additive
         });
     }
 
-    ///<inheritdoc/>
-    public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
-
-    ///<inheritdoc/>
-    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
+    /// <inheritdoc />
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime,
+        float timeOffset, bool loopable)
     {
-        if (finalize is not null) action += (createCommands, sprite) =>
-        {
-            createCommands();
-            finalize(sprite);
-        };
+        if (finalize is not null)
+            action += (createCommands, sprite) =>
+            {
+                createCommands();
+                finalize(sprite);
+            };
         gen.GenerateCommands(sprite, action, startTime, endTime, timeOffset, loopable);
     }
 }
@@ -109,10 +112,26 @@ public class Line3d : Node3d, HasOsbSprites
 #pragma warning disable CS1591
 public class Line3dEx : Node3d, HasOsbSprites
 {
+    readonly CommandGenerator genBody = new(), genTopEdge = new(), genBottomEdge = new(), genStartCap = new(),
+        genEndCap = new();
+
+    readonly SizeF[] spriteBitmaps = new SizeF[3];
+
+    public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3),
+        EndPosition = new(InterpolatingFunctions.Vector3);
+
+    public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1),
+        StartThickness = new(InterpolatingFunctions.Float, 1), EndThickness = new(InterpolatingFunctions.Float, 1);
+
+    public bool Additive, UseDistanceFade = true, EnableStartCap = true, EnableEndCap = true, OrientedCaps;
+
+    public float EdgeOverlap = .5f, CapOverlap = .2f;
     Action<OsbSprite> finalize;
     OsbSprite spriteBody, spriteTopEdge, spriteBottomEdge, spriteStartCap, spriteEndCap;
 
-    ///<inheritdoc/>
+    public string SpritePathBody, SpritePathEdge, SpritePathCap;
+
+    /// <inheritdoc />
     public IEnumerable<OsbSprite> Sprites
     {
         get
@@ -123,6 +142,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 yield return spriteTopEdge;
                 yield return spriteBottomEdge;
             }
+
             if (SpritePathCap is not null)
             {
                 yield return spriteStartCap;
@@ -131,25 +151,27 @@ public class Line3dEx : Node3d, HasOsbSprites
         }
     }
 
-    public string SpritePathBody, SpritePathEdge, SpritePathCap;
-    public bool Additive, UseDistanceFade = true, EnableStartCap = true, EnableEndCap = true, OrientedCaps;
+    /// <inheritdoc />
+    public IEnumerable<CommandGenerator> CommandGenerators
+        => [genBody, genTopEdge, genBottomEdge, genStartCap, genEndCap];
 
-    public float EdgeOverlap = .5f, CapOverlap = .2f;
+    /// <inheritdoc />
+    public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
 
-    public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3), EndPosition = new(InterpolatingFunctions.Vector3);
-    public readonly KeyframedValue<float> Thickness = new(InterpolatingFunctions.Float, 1), StartThickness = new(InterpolatingFunctions.Float, 1), EndThickness = new(InterpolatingFunctions.Float, 1);
+    /// <inheritdoc />
+    public void ConfigureGenerators(Action<CommandGenerator> action)
+    {
+        action(genBody);
+        action(genBottomEdge);
+        action(genEndCap);
+        action(genStartCap);
+        action(genTopEdge);
+    }
 
-    readonly CommandGenerator genBody = new(), genTopEdge = new(), genBottomEdge = new(), genStartCap = new(), genEndCap = new();
-
-    ///<inheritdoc/>
-    public IEnumerable<CommandGenerator> CommandGenerators => [genBody, genTopEdge, genBottomEdge, genStartCap, genEndCap];
-
-    readonly SizeF[] spriteBitmaps = new SizeF[3];
-
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override void GenerateSprite(StoryboardSegment segment)
     {
-        spriteBody ??= segment.CreateSprite(SpritePathBody, OsbOrigin.Centre);
+        spriteBody ??= segment.CreateSprite(SpritePathBody);
         spriteBitmaps[0] = CommandGenerator.BitmapDimensions(SpritePathBody);
 
         if (SpritePathEdge is not null)
@@ -158,15 +180,18 @@ public class Line3dEx : Node3d, HasOsbSprites
             spriteBottomEdge ??= segment.CreateSprite(SpritePathEdge, OsbOrigin.TopCentre);
             spriteBitmaps[1] = CommandGenerator.BitmapDimensions(SpritePathEdge);
         }
+
         if (SpritePathCap is not null)
         {
-            spriteStartCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
-            spriteEndCap ??= segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
+            spriteStartCap ??=
+                segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreLeft : OsbOrigin.Centre);
+            spriteEndCap ??=
+                segment.CreateSprite(SpritePathCap, OrientedCaps ? OsbOrigin.CentreRight : OsbOrigin.Centre);
             spriteBitmaps[2] = CommandGenerator.BitmapDimensions(SpritePathCap);
         }
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
@@ -182,8 +207,9 @@ public class Line3dEx : Node3d, HasOsbSprites
         var thickness = Thickness.ValueAt(time);
         var matrix = object3dState.WorldTransform;
         var scaleFactor = new Vector3(matrix.M21, matrix.M22, matrix.M23).Length() * cameraState.ResolutionScale;
-        var startScale = scaleFactor * (float)(cameraState.FocusDistance / startVector.W) * thickness * StartThickness.ValueAt(time);
-        var endScale = scaleFactor * (float)(cameraState.FocusDistance / endVector.W) * thickness * EndThickness.ValueAt(time);
+        var startScale = scaleFactor * (cameraState.FocusDistance / startVector.W) * thickness *
+            StartThickness.ValueAt(time);
+        var endScale = scaleFactor * (cameraState.FocusDistance / endVector.W) * thickness * EndThickness.ValueAt(time);
 
         var totalHeight = Math.Max(startScale, endScale);
         var bodyHeight = Math.Min(startScale, endScale);
@@ -194,7 +220,8 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (ignoreEdges) bodyHeight += edgeHeight * 2;
 
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
-        if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
+        if (UseDistanceFade)
+            opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
         var length = delta.Length();
 
@@ -213,7 +240,8 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (SpritePathEdge is not null)
         {
             Vector2 edgeScale = new(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height),
-                edgeOffset = new Vector2(MathF.Cos(angle - MathF.PI / 2), MathF.Sin(angle - MathF.PI / 2)) * (bodyHeight / 2 - EdgeOverlap);
+                edgeOffset = new Vector2(MathF.Cos(angle - MathF.PI / 2), MathF.Sin(angle - MathF.PI / 2)) *
+                    (bodyHeight / 2 - EdgeOverlap);
 
             var positionTop = positionBody + edgeOffset;
             var positionBottom = positionBody - edgeOffset;
@@ -244,6 +272,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 FlipV = true
             });
         }
+
         if (SpritePathCap is not null)
         {
             Vector2 startCapScale = new(startScale / spriteBitmaps[2].Width, startScale / spriteBitmaps[2].Height),
@@ -281,27 +310,16 @@ public class Line3dEx : Node3d, HasOsbSprites
         }
     }
 
-    ///<inheritdoc/>
-    public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
-
-    ///<inheritdoc/>
-    public void ConfigureGenerators(Action<CommandGenerator> action)
+    /// <inheritdoc />
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime,
+        float timeOffset, bool loopable)
     {
-        action(genBody);
-        action(genBottomEdge);
-        action(genEndCap);
-        action(genStartCap);
-        action(genTopEdge);
-    }
-
-    ///<inheritdoc/>
-    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
-    {
-        if (finalize is not null) action += (createCommands, sprite) =>
-        {
-            createCommands();
-            finalize(sprite);
-        };
+        if (finalize is not null)
+            action += (createCommands, sprite) =>
+            {
+                createCommands();
+                finalize(sprite);
+            };
 
         genBody.GenerateCommands(spriteBody, action, startTime, endTime, timeOffset, loopable);
         if (SpritePathEdge is not null)
@@ -309,10 +327,13 @@ public class Line3dEx : Node3d, HasOsbSprites
             genTopEdge.GenerateCommands(spriteTopEdge, action, startTime, endTime, timeOffset, loopable);
             genBottomEdge.GenerateCommands(spriteBottomEdge, action, startTime, endTime, timeOffset, loopable);
         }
+
         if (SpritePathCap is not null)
         {
-            if (EnableStartCap) genStartCap.GenerateCommands(spriteStartCap, action, startTime, endTime, timeOffset, loopable);
-            if (EnableEndCap) genEndCap.GenerateCommands(spriteEndCap, action, startTime, endTime, timeOffset, loopable);
+            if (EnableStartCap)
+                genStartCap.GenerateCommands(spriteStartCap, action, startTime, endTime, timeOffset, loopable);
+            if (EnableEndCap)
+                genEndCap.GenerateCommands(spriteEndCap, action, startTime, endTime, timeOffset, loopable);
         }
     }
 }

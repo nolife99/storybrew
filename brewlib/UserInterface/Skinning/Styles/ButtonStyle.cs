@@ -1,11 +1,11 @@
-﻿using System.Numerics;
-using BrewLib.Util;
+﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
-namespace BrewLib.UserInterface.Skinning.Styles;
+using System.Numerics;
+using Util;
 
 public class ButtonStyle : WidgetStyle
 {
-    public FourSide Padding;
-    public string LabelStyle;
     public Vector2 LabelOffset;
+    public string LabelStyle;
+    public FourSide Padding;
 }

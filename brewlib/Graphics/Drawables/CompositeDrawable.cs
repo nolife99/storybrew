@@ -1,10 +1,10 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Drawables;
+
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Numerics;
-using BrewLib.Graphics.Cameras;
-
-namespace BrewLib.Graphics.Drawables;
+using Cameras;
 
 public class CompositeDrawable : Drawable
 {
@@ -23,9 +23,11 @@ public class CompositeDrawable : Drawable
                 minWidth = Math.Min(minWidth, minSize.X);
                 minHeight = Math.Min(minWidth, minSize.Y);
             }
+
             return new(minWidth, minHeight);
         }
     }
+
     public Vector2 PreferredSize
     {
         get
@@ -39,15 +41,17 @@ public class CompositeDrawable : Drawable
                 maxWidth = Math.Min(maxWidth, preferredSize.X);
                 maxHeight = Math.Min(maxHeight, preferredSize.Y);
             }
+
             return new(maxWidth, maxHeight);
         }
     }
+
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
     {
         foreach (var drawable in Drawables) drawable.Draw(drawContext, camera, bounds, opacity);
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     public void Dispose()
     {
@@ -56,5 +60,5 @@ public class CompositeDrawable : Drawable
         GC.SuppressFinalize(this);
     }
 
-    #endregion
+#endregion
 }

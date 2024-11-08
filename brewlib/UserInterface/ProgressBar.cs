@@ -1,24 +1,26 @@
-﻿using System;
-using System.Globalization;
+﻿namespace BrewLib.UserInterface;
+
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using BrewLib.Graphics;
-using BrewLib.Graphics.Drawables;
-using BrewLib.UserInterface.Skinning.Styles;
-
-namespace BrewLib.UserInterface;
+using Graphics;
+using Graphics.Drawables;
+using Skinning.Styles;
 
 public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 {
     Drawable bar = NullDrawable.Instance;
-    int preferredHeight = 32;
-
-    public override Vector2 MinSize => bar.MinSize;
-    public override Vector2 PreferredSize => new(Math.Max(200, bar.PreferredSize.X), Math.Max(preferredHeight, bar.PreferredSize.Y));
 
     public float MinValue, MaxValue = 1;
+    int preferredHeight = 32;
 
     float value = .5f;
+
+    public override Vector2 MinSize => bar.MinSize;
+
+    public override Vector2 PreferredSize
+        => new(Math.Max(200, bar.PreferredSize.X), Math.Max(preferredHeight, bar.PreferredSize.Y));
+
     public float Value
     {
         get => value;
@@ -31,14 +33,18 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
             OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(StyleName);
+
     public object FieldValue
     {
         get => Value;
         set => Value = Unsafe.Unbox<float>(value);
     }
 
-    public void SetValueSilent(float value) => this.value = Math.Min(Math.Max(MinValue, value), MaxValue);
     public event EventHandler OnValueChanged;
+
+    public void SetValueSilent(float value) => this.value = Math.Min(Math.Max(MinValue, value), MaxValue);
 
     protected override void Dispose(bool disposing)
     {
@@ -46,7 +52,6 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         base.Dispose(disposing);
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(StyleName);
     protected override void ApplyStyle(WidgetStyle style)
     {
         base.ApplyStyle(style);
@@ -55,6 +60,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         bar = progressBarStyle.Bar;
         preferredHeight = progressBarStyle.Height;
     }
+
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
@@ -62,6 +68,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         var progress = (value - MinValue) / (MaxValue - MinValue);
         var minWidth = bar.MinSize.X;
 
-        bar.Draw(drawContext, Manager.Camera, new(Bounds.X, Bounds.Y, minWidth + (Bounds.Width - minWidth) * progress, Bounds.Height), actualOpacity);
+        bar.Draw(drawContext, Manager.Camera,
+            new(Bounds.X, Bounds.Y, minWidth + (Bounds.Width - minWidth) * progress, Bounds.Height), actualOpacity);
     }
 }

@@ -1,36 +1,30 @@
-﻿using System;
+﻿namespace StorybrewEditor.Storyboarding;
+
+using System;
 using System.Diagnostics;
 using System.IO;
+using Scripting;
 using StorybrewCommon.Scripting;
-using StorybrewEditor.Scripting;
-using StorybrewEditor.Util;
-
-namespace StorybrewEditor.Storyboarding;
+using Util;
 
 public class ScriptedEffect : Effect
 {
     readonly ScriptContainer<StoryboardObjectGenerator> scriptContainer;
 
     readonly Stopwatch statusStopwatch = new();
+
+    bool beatmapDependant = true;
     string configScriptIdentifier;
     MultiFileWatcher dependencyWatcher;
 
-    public override string BaseName => scriptContainer?.Name;
-    public override string Path => scriptContainer?.MainSourcePath;
+    bool multithreaded;
 
     EffectStatus status = EffectStatus.Initializing;
-    public override EffectStatus Status => status;
 
     string statusMessage = "";
-    public override string StatusMessage => statusMessage;
 
-    bool multithreaded;
-    public override bool Multithreaded => multithreaded;
-
-    bool beatmapDependant = true;
-    public override bool BeatmapDependant => beatmapDependant;
-
-    public ScriptedEffect(Project project, ScriptContainer<StoryboardObjectGenerator> scriptContainer, bool multithreaded = false) : base(project)
+    public ScriptedEffect(Project project, ScriptContainer<StoryboardObjectGenerator> scriptContainer,
+        bool multithreaded = false) : base(project)
     {
         statusStopwatch.Start();
 
@@ -40,18 +34,26 @@ public class ScriptedEffect : Effect
         this.multithreaded = multithreaded;
     }
 
+    public override string BaseName => scriptContainer?.Name;
+    public override string Path => scriptContainer?.MainSourcePath;
+    public override EffectStatus Status => status;
+    public override string StatusMessage => statusMessage;
+    public override bool Multithreaded => multithreaded;
+    public override bool BeatmapDependant => beatmapDependant;
+
     public override void Update()
     {
         if (!scriptContainer.HasScript) return;
 
         MultiFileWatcher newDependencyWatcher = new();
-        newDependencyWatcher.OnFileChanged += (sender, e) =>
+        newDependencyWatcher.OnFileChanged += (_, _) =>
         {
             if (Disposed) return;
             Refresh();
         };
 
-        EditorGeneratorContext context = new(this, Project.ProjectFolderPath, Project.ProjectAssetFolderPath, Project.MapsetPath, Project.MainBeatmap, Project.MapsetManager.Beatmaps, newDependencyWatcher);
+        EditorGeneratorContext context = new(this, Project.ProjectFolderPath, Project.ProjectAssetFolderPath,
+            Project.MapsetPath, Project.MainBeatmap, Project.MapsetManager.Beatmaps, newDependencyWatcher);
         var success = false;
         try
         {
@@ -69,7 +71,8 @@ public class ScriptedEffect : Effect
 
                     RaiseConfigFieldsChanged();
                 }
-                else script.ApplyConfiguration(Config);
+                else
+                    script.ApplyConfiguration(Config);
             });
 
             changeStatus(EffectStatus.Updating);
@@ -88,7 +91,8 @@ public class ScriptedEffect : Effect
         catch (ScriptLoadingException e)
         {
             Trace.TraceWarning($"Script load failed for {BaseName}\n{e}");
-            changeStatus(EffectStatus.LoadingFailed, e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message, context.Log);
+            changeStatus(EffectStatus.LoadingFailed,
+                e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message, context.Log);
             return;
         }
         catch (Exception e)
@@ -106,8 +110,10 @@ public class ScriptedEffect : Effect
                     newDependencyWatcher.Dispose();
                     newDependencyWatcher = null;
                 }
-                else dependencyWatcher = newDependencyWatcher;
+                else
+                    dependencyWatcher = newDependencyWatcher;
             }
+
             context.Dispose();
         }
 
@@ -132,34 +138,48 @@ public class ScriptedEffect : Effect
     }
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
-    void changeStatus(EffectStatus status, string message = null, string log = null) => Program.Schedule(() =>
-    {
-        var duration = statusStopwatch.ElapsedMilliseconds;
-        if (duration > 0) switch (this.status)
+
+    void changeStatus(EffectStatus status, string message = null, string log = null)
+        => Program.Schedule(() =>
+        {
+            var duration = statusStopwatch.ElapsedMilliseconds;
+            if (duration > 0)
+                switch (this.status)
+                {
+                    case EffectStatus.Ready:
+                    case EffectStatus.CompilationFailed:
+                    case EffectStatus.LoadingFailed:
+                    case EffectStatus.ExecutionFailed:
+                        break;
+                    default:
+                        Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms");
+                        break;
+                }
+
+            this.status = status;
+            statusMessage = message ?? "";
+
+            if (!string.IsNullOrWhiteSpace(log))
             {
-                case EffectStatus.Ready: case EffectStatus.CompilationFailed: case EffectStatus.LoadingFailed: case EffectStatus.ExecutionFailed: break;
-                default: Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms"); break;
+                if (!string.IsNullOrWhiteSpace(statusMessage)) statusMessage += "\n\n";
+                statusMessage += $"Log:\n\n{log}";
             }
 
-        this.status = status;
-        statusMessage = message ?? "";
+            RaiseChanged();
 
-        if (!string.IsNullOrWhiteSpace(log))
-        {
-            if (!string.IsNullOrWhiteSpace(statusMessage)) statusMessage += "\n\n";
-            statusMessage += $"Log:\n\n{log}";
-        }
-        RaiseChanged();
+            statusStopwatch.Restart();
+        });
 
-        statusStopwatch.Restart();
-    });
-    string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?
-        $"File not found while {status.ToString().ToLowerInvariant()}. Make sure this path is correct:\n{exception.FileName}\n\nDetails:\n{e}" :
-        $"Unexpected error during {status.ToString().ToLowerInvariant()}:\n{e}";
+    string getExecutionFailedMessage(Exception e)
+        => e is FileNotFoundException exception
+            ? $"File not found while {status.ToString().ToLowerInvariant()}. Make sure this path is correct:\n{
+                exception.FileName}\n\nDetails:\n{e}"
+            : $"Unexpected error during {status.ToString().ToLowerInvariant()}:\n{e}";
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     protected override void Dispose(bool disposing)
     {
         if (!disposed)
@@ -169,6 +189,7 @@ public class ScriptedEffect : Effect
                 dependencyWatcher?.Dispose();
                 scriptContainer.OnScriptChanged -= scriptContainer_OnScriptChanged;
             }
+
             dependencyWatcher = null;
             disposed = true;
         }
@@ -176,5 +197,5 @@ public class ScriptedEffect : Effect
         base.Dispose(disposing);
     }
 
-    #endregion
+#endregion
 }

@@ -1,33 +1,52 @@
-﻿using System;
-using System.Globalization;
+﻿namespace BrewLib.UserInterface;
+
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
 using osuTK.Input;
-
-namespace BrewLib.UserInterface;
+using Skinning.Styles;
+using Util;
 
 public class Button : Widget, Field
 {
-    readonly Label label;
     readonly ClickBehavior clickBehavior;
+    readonly Label label;
+
+    bool isCheckable;
+
+    bool isChecked;
+
+    FourSide padding;
+
+    public Button(WidgetManager manager) : base(manager)
+    {
+        Add(label = new(manager)
+        {
+            AnchorFrom = BoxAlignment.Centre, AnchorTo = BoxAlignment.Centre, Hoverable = false
+        });
+
+        clickBehavior = new(this);
+        clickBehavior.OnStateChanged += (_, _) => RefreshStyle();
+        clickBehavior.OnClick += (_, e) => Click(e.Button);
+    }
 
     public override Vector2 MinSize => new(label.MinSize.X + padding.Horizontal, label.MinSize.Y + padding.Vertical);
-    public override Vector2 PreferredSize => new(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
+
+    public override Vector2 PreferredSize
+        => new(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
 
     public string Text
     {
         get => label.Text;
         set => label.Text = value;
     }
+
     public IconFont Icon
     {
         get => label.Icon;
         set => label.Icon = value;
     }
 
-    FourSide padding;
     public FourSide Padding
     {
         get => padding;
@@ -39,7 +58,6 @@ public class Button : Widget, Field
         }
     }
 
-    bool isCheckable;
     public bool Checkable
     {
         get => isCheckable;
@@ -51,7 +69,6 @@ public class Button : Widget, Field
         }
     }
 
-    bool isChecked;
     public bool Checked
     {
         get => isChecked;
@@ -63,11 +80,6 @@ public class Button : Widget, Field
             OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
     }
-    public object FieldValue
-    {
-        get => Checked;
-        set => Checked = Unsafe.Unbox<bool>(value);
-    }
 
     public bool Disabled
     {
@@ -75,22 +87,19 @@ public class Button : Widget, Field
         set => clickBehavior.Disabled = value;
     }
 
-    public event EventHandler<MouseButton> OnClick;
+    protected override WidgetStyle Style
+        => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(clickBehavior.Disabled ? "disabled" : null,
+            clickBehavior.Hovered ? "hover" : null, clickBehavior.Pressed || isChecked ? "pressed" : null));
+
+    public object FieldValue
+    {
+        get => Checked;
+        set => Checked = Unsafe.Unbox<bool>(value);
+    }
+
     public event EventHandler OnValueChanged;
 
-    public Button(WidgetManager manager) : base(manager)
-    {
-        Add(label = new(manager)
-        {
-            AnchorFrom = BoxAlignment.Centre,
-            AnchorTo = BoxAlignment.Centre,
-            Hoverable = false,
-        });
-
-        clickBehavior = new(this);
-        clickBehavior.OnStateChanged += (_, _) => RefreshStyle();
-        clickBehavior.OnClick += (_, e) => Click(e.Button);
-    }
+    public event EventHandler<MouseButton> OnClick;
 
     public void Click(MouseButton button = MouseButton.Left)
     {
@@ -104,7 +113,6 @@ public class Button : Widget, Field
         base.Dispose(disposing);
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(clickBehavior.Disabled ? "disabled" : null, clickBehavior.Hovered ? "hover" : null, clickBehavior.Pressed || isChecked ? "pressed" : null));
     protected override void ApplyStyle(WidgetStyle style)
     {
         base.ApplyStyle(style);

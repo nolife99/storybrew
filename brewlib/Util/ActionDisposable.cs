@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Util;
 
-namespace BrewLib.Util;
+using System;
 
 public sealed class ActionDisposable(Action action) : IDisposable
 {

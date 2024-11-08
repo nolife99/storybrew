@@ -1,12 +1,12 @@
-﻿using System;
+﻿namespace BrewLib.Audio;
+
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using BrewLib.Data;
-using BrewLib.Util;
+using Data;
+using Util;
 
-namespace BrewLib.Audio;
-
-public sealed class AudioSampleContainer(AudioManager audioManager, ResourceContainer resourceContainer = null) : IDisposable
+public sealed class AudioSampleContainer(AudioManager audioManager, ResourceContainer resourceContainer = null)
+    : IDisposable
 {
     Dictionary<string, AudioSample> samples = [];
 
@@ -18,12 +18,14 @@ public sealed class AudioSampleContainer(AudioManager audioManager, ResourceCont
             sample = audioManager.LoadSample(filename, resourceContainer);
             samples.Add(filename, sample);
         }
+
         return sample;
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (!disposed)
@@ -36,5 +38,5 @@ public sealed class AudioSampleContainer(AudioManager audioManager, ResourceCont
         }
     }
 
-    #endregion
+#endregion
 }

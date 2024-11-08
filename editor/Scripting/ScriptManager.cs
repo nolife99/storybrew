@@ -1,4 +1,6 @@
-﻿using System;
+﻿namespace StorybrewEditor.Scripting;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,37 +9,27 @@ using System.Reflection;
 using System.Xml;
 using BrewLib.Data;
 using BrewLib.Util;
+using Storyboarding;
 using StorybrewCommon.Scripting;
-using StorybrewEditor.Storyboarding;
-using StorybrewEditor.Util;
-
-namespace StorybrewEditor.Scripting;
+using Util;
 
 public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 {
+    readonly FileSystemWatcher libraryWatcher;
     readonly ResourceContainer resourceContainer;
+    readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
     readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
 
-    List<string> referencedAssemblies = [];
-    public IEnumerable<string> ReferencedAssemblies
-    {
-        get => referencedAssemblies;
-        set
-        {
-            referencedAssemblies = (value as List<string>) ?? value.ToList();
-            foreach (var scriptContainer in scriptContainers) scriptContainer.Value.ReferencedAssemblies = referencedAssemblies;
-            updateSolutionFiles();
-        }
-    }
-
     readonly FileSystemWatcher scriptWatcher;
-    readonly FileSystemWatcher libraryWatcher;
+
+    bool disposed;
+
+    List<string> referencedAssemblies = [];
     ThrottledActionScheduler scheduler = new();
-    readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
 
-    public string ScriptsPath { get; }
-
-    public ScriptManager(ResourceContainer resourceContainer, string scriptsNamespace, string scriptsSourcePath, string commonScriptsPath, string scriptsLibraryPath, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
+    public ScriptManager(ResourceContainer resourceContainer, string scriptsNamespace, string scriptsSourcePath,
+        string commonScriptsPath, string scriptsLibraryPath, string compiledScriptsPath,
+        IEnumerable<string> referencedAssemblies)
     {
         this.resourceContainer = resourceContainer;
         this.scriptsNamespace = scriptsNamespace;
@@ -60,7 +52,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         scriptWatcher.Changed += scriptWatcher_Changed;
         scriptWatcher.Renamed += scriptWatcher_Changed;
         scriptWatcher.Deleted += scriptWatcher_Changed;
-        scriptWatcher.Error += (sender, e) => Trace.TraceError($"Watcher error (script): {e.GetException()}");
+        scriptWatcher.Error += (_, e) => Trace.TraceError($"Watcher error (script): {e.GetException()}");
         scriptWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (script): {scriptsSourcePath}");
 
@@ -76,10 +68,25 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         libraryWatcher.Changed += libraryWatcher_Changed;
         libraryWatcher.Renamed += libraryWatcher_Changed;
         libraryWatcher.Deleted += libraryWatcher_Changed;
-        libraryWatcher.Error += (sender, e) => Trace.WriteLine($"Watcher error (library): {e.GetException()}");
+        libraryWatcher.Error += (_, e) => Trace.WriteLine($"Watcher error (library): {e.GetException()}");
         libraryWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (library): {scriptsLibraryPath}");
     }
+
+    public IEnumerable<string> ReferencedAssemblies
+    {
+        get => referencedAssemblies;
+        set
+        {
+            referencedAssemblies = value as List<string> ?? value.ToList();
+            foreach (var scriptContainer in scriptContainers)
+                scriptContainer.Value.ReferencedAssemblies = referencedAssemblies;
+            updateSolutionFiles();
+        }
+    }
+
+    public string ScriptsPath { get; }
+    public void Dispose() => Dispose(true);
 
     public ScriptContainer<TScript> Get(string scriptName)
     {
@@ -99,9 +106,11 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             }
         }
 
-        scriptContainers[scriptName] = scriptContainer = new ScriptContainer<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
+        scriptContainers[scriptName] = scriptContainer = new ScriptContainer<TScript>(scriptTypeName, sourcePath,
+            scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
         return scriptContainer;
     }
+
     public IEnumerable<string> GetScriptNames()
     {
         HashSet<string> projectScriptNames = [];
@@ -111,56 +120,67 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             projectScriptNames.Add(name);
             yield return name;
         }
+
         foreach (var scriptPath in Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
         {
             var name = Path.GetFileNameWithoutExtension(scriptPath);
             if (!projectScriptNames.Contains(name)) yield return name;
         }
     }
+
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {
         var change = e.ChangeType.ToString().ToLowerInvariant();
         Trace.WriteLine($"Watched script file {change}: {e.FullPath}");
 
         if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
-        if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, _ =>
-        {
-            if (disposed) return;
-            var scriptName = Path.GetFileNameWithoutExtension(e.Name);
+        if (e.ChangeType != WatcherChangeTypes.Deleted)
+            scheduler?.Schedule(e.FullPath, _ =>
+            {
+                if (disposed) return;
+                var scriptName = Path.GetFileNameWithoutExtension(e.Name);
 
-            if (scriptContainers.TryGetValue(scriptName, out var container)) container.ReloadScript();
-        });
+                if (scriptContainers.TryGetValue(scriptName, out var container)) container.ReloadScript();
+            });
     }
+
     void libraryWatcher_Changed(object sender, FileSystemEventArgs e)
     {
         var change = e.ChangeType.ToString().ToLowerInvariant();
         Trace.WriteLine($"Watched library file {change}: {e.FullPath}");
 
         if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
-        if (e.ChangeType != WatcherChangeTypes.Deleted) scheduler?.Schedule(e.FullPath, key =>
+        if (e.ChangeType != WatcherChangeTypes.Deleted)
+            scheduler?.Schedule(e.FullPath, _ =>
+            {
+                if (disposed) return;
+                foreach (var container in scriptContainers.Values) container.ReloadScript();
+            });
+    }
+
+    void scheduleSolutionUpdate()
+        => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}", _ =>
         {
             if (disposed) return;
-            foreach (var container in scriptContainers.Values) container.ReloadScript();
+            updateSolutionFiles();
         });
-    }
-    void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}", key =>
-    {
-        if (disposed) return;
-        updateSolutionFiles();
-    });
+
     void updateSolutionFiles()
     {
-        Trace.WriteLine($"Updating solution files");
+        Trace.WriteLine("Updating solution files");
 
         var slnPath = Path.Combine(ScriptsPath, "storyboard.sln");
-        Misc.WithRetries(() => File.WriteAllBytes(slnPath, resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative)));
+        Misc.WithRetries(() => File.WriteAllBytes(slnPath,
+            resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative)));
 
         var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
         XmlDocument document = new() { PreserveWhitespace = false };
         try
         {
-            using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
-            using (XmlTextReader sr = new(stream) { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null }) document.Load(sr);
+            using (var stream = resourceContainer.GetStream("project/scripts.csproj",
+                ResourceSource.Embedded | ResourceSource.Relative))
+            using (XmlTextReader sr = new(stream) { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null })
+                document.Load(sr);
             var xmlns = document.DocumentElement.GetAttribute("xmlns");
 
             var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);
@@ -172,12 +192,13 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
                 {
                     var compileNode = document.CreateElement("Reference", xmlns);
                     compileNode.SetAttribute("Include", AssemblyName.GetAssemblyName(path).Name);
-                    
+
                     var hintPath = document.CreateElement("HintPath", xmlns);
                     hintPath.AppendChild(document.CreateTextNode(PathHelper.GetRelativePath(ScriptsPath, path)));
                     compileNode.AppendChild(hintPath);
                     referencedAssembliesGroup.AppendChild(compileNode);
                 }
+
                 document.Save(csProjPath);
             }
         }
@@ -187,22 +208,16 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
     }
 
-    bool disposed;
-    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            scriptWatcher.Dispose();
-            libraryWatcher.Dispose();
+        if (disposed) return;
+        scriptWatcher.Dispose();
+        libraryWatcher.Dispose();
 
-            if (disposing)
-            {
-                scriptContainers.Dispose();
+        if (!disposing) return;
+        scriptContainers.Dispose();
 
-                scheduler = null;
-                disposed = true;
-            }
-        }
+        scheduler = null;
+        disposed = true;
     }
 }

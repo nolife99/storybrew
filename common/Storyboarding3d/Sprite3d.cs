@@ -1,61 +1,66 @@
-﻿using System;
+﻿namespace StorybrewCommon.Storyboarding3d;
+
+using System;
 using System.Collections.Generic;
 using System.Numerics;
-using StorybrewCommon.Animations;
-using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Storyboarding.Util;
+using Animations;
+using Storyboarding;
+using Storyboarding.CommandValues;
+using Storyboarding.Util;
 
-namespace StorybrewCommon.Storyboarding3d;
-
-///<summary> Represents a basic <see cref="OsbSprite"/> with 3D functionality. </summary>
+/// <summary> Represents a basic <see cref="OsbSprite" /> with 3D functionality. </summary>
 public class Sprite3d : Node3d, HasOsbSprites
 {
-    OsbSprite sprite;
-    Action<OsbSprite> finalize;
+    readonly CommandGenerator gen = new();
 
-    ///<inheritdoc/>
-    public IEnumerable<OsbSprite> Sprites => [sprite];
-
-    ///<summary> The path to the image of this <see cref="Sprite3d"/>. </summary>
-    public string SpritePath;
-
-    ///<summary> The <see cref="OsbOrigin"/> of this <see cref="Sprite3d"/>. </summary>
-    public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
-
-    ///<summary> Toggles additive blending on this <see cref="Sprite3d"/>. </summary>
-    public bool Additive;
-
-    ///<summary> Represents method of sprite rotation on this <see cref="Sprite3d"/>. </summary>
-    public RotationMode RotationMode = RotationMode.UnitY;
-
-    ///<summary> Whether to fade sprites based on distance from the <see cref="Camera"/>. </summary>
-    public bool UseDistanceFade = true;
-
-    ///<summary> If this value is not <see langword="null"/>, scales sprites based on this vector instead of distance from the <see cref="Camera"/>. </summary>
-    public CommandScale? UseDefaultScale;
+    ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
+    public readonly KeyframedValue<float> SpriteRotation = new(InterpolatingFunctions.FloatAngle);
 
     ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
     public readonly KeyframedValue<CommandScale> SpriteScale = new(InterpolatingFunctions.Scale, Vector2.One);
 
-    ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
-    public readonly KeyframedValue<float> SpriteRotation = new(InterpolatingFunctions.FloatAngle, 0);
+    /// <summary> Toggles additive blending on this <see cref="Sprite3d" />. </summary>
+    public bool Additive;
 
-    readonly CommandGenerator gen = new();
+    Action<OsbSprite> finalize;
 
-    ///<inheritdoc/>
+    /// <summary> Represents method of sprite rotation on this <see cref="Sprite3d" />. </summary>
+    public RotationMode RotationMode = RotationMode.UnitY;
+
+    OsbSprite sprite;
+
+    /// <summary> The <see cref="OsbOrigin" /> of this <see cref="Sprite3d" />. </summary>
+    public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
+
+    /// <summary> The path to the image of this <see cref="Sprite3d" />. </summary>
+    public string SpritePath;
+
+    /// <summary>
+    ///     If this value is not <see langword="null" />, scales sprites based on this vector instead of distance from
+    ///     the <see cref="Camera" />.
+    /// </summary>
+    public CommandScale? UseDefaultScale;
+
+    /// <summary> Whether to fade sprites based on distance from the <see cref="Camera" />. </summary>
+    public bool UseDistanceFade = true;
+
+    /// <inheritdoc />
+    public IEnumerable<OsbSprite> Sprites => [sprite];
+
+    /// <inheritdoc />
     public IEnumerable<CommandGenerator> CommandGenerators => [gen];
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public void ConfigureGenerators(Action<CommandGenerator> action) => action(gen);
 
-    ///<inheritdoc/>
-    public override void GenerateSprite(StoryboardSegment segment) => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
+    /// <inheritdoc />
+    public override void GenerateSprite(StoryboardSegment segment)
+        => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
@@ -65,23 +70,25 @@ public class Sprite3d : Node3d, HasOsbSprites
         switch (RotationMode)
         {
             case RotationMode.UnitX:
-                {
-                    var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
-                    angle += MathF.Atan2(delta.Y, delta.X);
-                    break;
-                }
+            {
+                var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
+                angle += MathF.Atan2(delta.Y, delta.X);
+                break;
+            }
             case RotationMode.UnitY:
-                {
-                    var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
-                    angle += MathF.Atan2(delta.Y, delta.X) - MathF.PI * .5f;
-                    break;
-                }
+            {
+                var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
+                angle += MathF.Atan2(delta.Y, delta.X) - MathF.PI * .5f;
+                break;
+            }
         }
 
         var scale = (Vector2)SpriteScale.ValueAt(time) * new Vector2(
-            new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13).Length(),
-            new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23).Length()) *
-            (cameraState.FocusDistance / screenPosition.W) * cameraState.ResolutionScale;
+                new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12,
+                    object3dState.WorldTransform.M13).Length(),
+                new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22,
+                    object3dState.WorldTransform.M23).Length()) * (cameraState.FocusDistance / screenPosition.W) *
+            cameraState.ResolutionScale;
 
         var opacity = screenPosition.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= cameraState.OpacityAt(screenPosition.W);
@@ -98,14 +105,16 @@ public class Sprite3d : Node3d, HasOsbSprites
         });
     }
 
-    ///<inheritdoc/>
-    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime, float timeOffset, bool loopable)
+    /// <inheritdoc />
+    public override void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime,
+        float timeOffset, bool loopable)
     {
-        if (finalize is not null) action += (createCommands, sprite) =>
-        {
-            createCommands();
-            finalize(sprite);
-        };
+        if (finalize is not null)
+            action += (createCommands, sprite) =>
+            {
+                createCommands();
+                finalize(sprite);
+            };
         gen.GenerateCommands(sprite, action, startTime, endTime, timeOffset, loopable);
     }
 }

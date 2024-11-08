@@ -1,23 +1,17 @@
-﻿using System;
+﻿namespace StorybrewEditor.UserInterface.Components;
+
+using System;
 using System.Linq;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using Storyboarding;
 using StorybrewCommon.Storyboarding;
-using StorybrewEditor.Storyboarding;
-
-namespace StorybrewEditor.UserInterface.Components;
 
 public class LayerList : Widget
 {
     readonly LinearLayout layout, layersLayout;
     LayerManager layerManager;
-
-    public override Vector2 MinSize => layout.MinSize;
-    public override Vector2 MaxSize => layout.MaxSize;
-    public override Vector2 PreferredSize => layout.PreferredSize;
-
-    public event Action<EditorStoryboardLayer> OnLayerPreselect, OnLayerSelected;
 
     public LayerList(WidgetManager manager, LayerManager layerManager) : base(manager)
     {
@@ -31,27 +25,28 @@ public class LayerList : Widget
             Fill = true,
             Children =
             [
-                new Label(manager)
-                {
-                    Text = "Layers",
-                    CanGrow = false
-                },
-                new ScrollArea(manager, layersLayout = new(manager)
-                {
-                    FitChildren = true
-                })
+                new Label(manager) { Text = "Layers", CanGrow = false },
+                new ScrollArea(manager, layersLayout = new(manager) { FitChildren = true })
             ]
         });
 
         layerManager.OnLayersChanged += layerManager_OnLayersChanged;
         refreshLayers();
     }
+
+    public override Vector2 MinSize => layout.MinSize;
+    public override Vector2 MaxSize => layout.MaxSize;
+    public override Vector2 PreferredSize => layout.PreferredSize;
+
+    public event Action<EditorStoryboardLayer> OnLayerPreselect, OnLayerSelected;
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) layerManager.OnLayersChanged -= layerManager_OnLayersChanged;
         layerManager = null;
         base.Dispose(disposing);
     }
+
     protected override void Layout()
     {
         base.Layout();
@@ -59,17 +54,14 @@ public class LayerList : Widget
     }
 
     void layerManager_OnLayersChanged(object sender, EventArgs e) => refreshLayers();
+
     void refreshLayers()
     {
         layersLayout.ClearWidgets();
         foreach (var osbLayer in Project.OsbLayers)
         {
             Label osbLayerLabel;
-            layersLayout.Add(osbLayerLabel = new(Manager)
-            {
-                StyleName = "listHeader",
-                Text = osbLayer.ToString()
-            });
+            layersLayout.Add(osbLayerLabel = new(Manager) { StyleName = "listHeader", Text = osbLayer.ToString() });
 
             var ol = osbLayer;
             osbLayerLabel.HandleDrop = data =>
@@ -80,6 +72,7 @@ public class LayerList : Widget
                     if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, ol);
                     return true;
                 }
+
                 return false;
             };
 
@@ -87,6 +80,7 @@ public class LayerList : Widget
             buildLayers(osbLayer, false);
         }
     }
+
     void buildLayers(OsbLayer osbLayer, bool diffSpecific)
     {
         var layers = layerManager.FindLayers(l => l.OsbLayer == osbLayer && l.DiffSpecific == diffSpecific);
@@ -143,7 +137,9 @@ public class LayerList : Widget
                     {
                         StyleName = "icon",
                         Icon = layer.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy,
-                        Tooltip = layer.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)",
+                        Tooltip =
+                            layer.DiffSpecific ? "Difficulty specific\n(exports to .osu)"
+                                : "Entire mapset\n(exports to .osb)",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,
                         CanGrow = false
@@ -173,8 +169,10 @@ public class LayerList : Widget
                         var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Identifier == droppedLayer.Identifier);
                         if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, la);
                     }
+
                     return true;
                 }
+
                 return false;
             };
 
@@ -185,7 +183,8 @@ public class LayerList : Widget
             {
                 nameLabel.Text = la.Identifier;
                 diffSpecificButton.Icon = la.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy;
-                diffSpecificButton.Tooltip = la.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)";
+                diffSpecificButton.Tooltip = la.DiffSpecific ? "Difficulty specific\n(exports to .osu)"
+                    : "Entire mapset\n(exports to .osb)";
                 showHideButton.Icon = la.Visible ? IconFont.Visibility : IconFont.VisibilityOff;
                 showHideButton.Checked = la.Visible;
             };
@@ -203,7 +202,8 @@ public class LayerList : Widget
             };
             layerRoot.OnClickUp += (evt, _) =>
             {
-                if (handledClick && (evt.RelatedTarget == layerRoot || evt.RelatedTarget.HasAncestor(layerRoot))) OnLayerSelected?.Invoke(la);
+                if (handledClick && (evt.RelatedTarget == layerRoot || evt.RelatedTarget.HasAncestor(layerRoot)))
+                    OnLayerSelected?.Invoke(la);
                 handledClick = false;
             };
             layerRoot.OnDisposed += (_, _) =>
@@ -219,6 +219,7 @@ public class LayerList : Widget
         }
     }
 
-    static string getLayerDetails(EditorStoryboardLayer layer, Effect effect) => layer.EstimatedSize > 30720 ?
-        $"using {effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})" : "using " + effect.BaseName;
+    static string getLayerDetails(EditorStoryboardLayer layer, Effect effect)
+        => layer.EstimatedSize > 30720 ? $"using {effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})"
+            : "using " + effect.BaseName;
 }

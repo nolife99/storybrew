@@ -1,8 +1,7 @@
 ﻿{
-	include:
-	[
-		"skin_constants.json",
-		"skin_drawables.json",
-		"skin_styles.json",
-	],
+  include: [
+    "skin_constants.json",
+    "skin_drawables.json",
+    "skin_styles.json"
+  ]
 }

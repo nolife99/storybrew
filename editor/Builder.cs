@@ -1,4 +1,6 @@
-﻿using System;
+﻿namespace StorybrewEditor;
+
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -7,16 +9,15 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using BrewLib.Util;
 
-namespace StorybrewEditor;
-
-public class Builder
+public static class Builder
 {
     static readonly string mainExecutablePath = "StorybrewEditor.exe";
     static readonly string[] ignoredPaths = [];
 
     public static void Build()
     {
-        var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{RuntimeInformation.RuntimeIdentifier}.zip";
+        var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{
+            RuntimeInformation.RuntimeIdentifier}.zip";
         var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
 
         try
@@ -32,6 +33,7 @@ public class Builder
         Trace.WriteLine($"\nOpening {appDirectory}");
         PathHelper.OpenExplorer(appDirectory);
     }
+
     static void buildReleaseZip(string archiveName, string appDirectory)
     {
         Trace.WriteLine($"\n\nBuilding {archiveName}\n");
@@ -43,10 +45,14 @@ public class Builder
         addFile(archive, mainExecutablePath, appDirectory);
         addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
 
-        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
-        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly)) addFile(archive, path, appDirectory);
-        foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly)) addFile(archive, path, scriptsDirectory, "scripts");
+        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
+            addFile(archive, path, appDirectory);
+        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly))
+            addFile(archive, path, appDirectory);
+        foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
+            addFile(archive, path, scriptsDirectory, "scripts");
     }
+
     /* static void testUpdate(string archiveName)
     {
         var previousVersion = $"{Program.Version.Major}.{Program.Version.Minor - 1}";
@@ -88,6 +94,7 @@ public class Builder
             if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
             entryName = Path.Combine(targetPath, entryName);
         }
+
         if (ignoredPaths.Contains(entryName)) return;
         if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
 

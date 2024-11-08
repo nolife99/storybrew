@@ -1,18 +1,21 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Renderers;
+
+using System;
 using System.Drawing;
 using System.Numerics;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
-
-namespace BrewLib.Graphics.Renderers;
+using Textures;
+using Util;
 
 public static class QuadRendererExtensions
 {
-    public static void Draw(this QuadRenderer renderer, Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color color)
-        => renderer.Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width, texture.Height);
+    public static void Draw(this QuadRenderer renderer, Texture2dRegion texture, float x, float y, float originX,
+        float originY, float scaleX, float scaleY, float rotation, Color color)
+        => renderer.Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width,
+            texture.Height);
 
-    public static void Draw(this QuadRenderer renderer, Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color color,
-        float textureX0, float textureY0, float textureX1, float textureY1)
+    public static void Draw(this QuadRenderer renderer, Texture2dRegion texture, float x, float y, float originX,
+        float originY, float scaleX, float scaleY, float rotation, Color color, float textureX0, float textureY0,
+        float textureX1, float textureY1)
     {
         var width = textureX1 - textureX0;
         var height = textureY1 - textureY0;
@@ -104,6 +107,7 @@ public static class QuadRendererExtensions
             u0 = textureU0;
             u1 = textureU1;
         }
+
         if (flipY)
         {
             v0 = textureV1;
@@ -128,10 +132,14 @@ public static class QuadRendererExtensions
         renderer.Draw(ref primitive, texture);
     }
 
-    public static void DrawArc(this QuadRenderer renderer, Vector2 center, float innerRadius, float outerRadius, float startAngle, float angleLength, Texture2dRegion texture, Color color, float precision = 1)
-        => DrawArc(renderer, center, innerRadius, outerRadius, startAngle, angleLength, texture, color, color, precision);
+    public static void DrawArc(this QuadRenderer renderer, Vector2 center, float innerRadius, float outerRadius,
+        float startAngle, float angleLength, Texture2dRegion texture, Color color, float precision = 1)
+        => DrawArc(renderer, center, innerRadius, outerRadius, startAngle, angleLength, texture, color, color,
+            precision);
 
-    public static void DrawArc(this QuadRenderer renderer, Vector2 center, float innerRadius, float outerRadius, float startAngle, float angleLength, Texture2dRegion texture, Color innerColor, Color outerColor, float precision = 1)
+    public static void DrawArc(this QuadRenderer renderer, Vector2 center, float innerRadius, float outerRadius,
+        float startAngle, float angleLength, Texture2dRegion texture, Color innerColor, Color outerColor,
+        float precision = 1)
     {
         texture ??= DrawState.WhitePixel;
         var uMin = texture.UvBounds.Left;
@@ -141,7 +149,8 @@ public static class QuadRendererExtensions
 
         var absAngleLength = Math.Abs(angleLength);
         var circumference = absAngleLength * outerRadius;
-        var lineCount = Math.Max(2, Math.Max(absAngleLength / MathF.PI * 16, (int)MathF.Round(circumference * precision)));
+        var lineCount = Math.Max(2,
+            Math.Max(absAngleLength / MathF.PI * 16, (int)MathF.Round(circumference * precision)));
 
         var u = (uMax - uMin) / lineCount;
         var angleStep = angleLength / lineCount;
@@ -155,14 +164,12 @@ public static class QuadRendererExtensions
             y1 = center.Y + cos * outerRadius,
             x4 = center.X + sin * innerRadius,
             y4 = center.Y + cos * innerRadius,
-
             u1 = uMin,
             u4 = uMin,
             v1 = vMin,
             v2 = vMin,
             v3 = vMax,
             v4 = vMax,
-
             color1 = outerColorRgba,
             color2 = outerColorRgba,
             color3 = innerColorRgba,

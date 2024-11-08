@@ -1,21 +1,21 @@
-﻿using System;
+﻿namespace StorybrewEditor.ScreenLayers;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using StorybrewEditor.Storyboarding;
-
-namespace StorybrewEditor.ScreenLayers;
+using Storyboarding;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
+    readonly HashSet<string> selectedAssemblies = [..project.ImportedAssemblies];
     LinearLayout layout, assembliesLayout;
     Button okButton, cancelButton;
 
     public override bool IsPopup => true;
-    readonly HashSet<string> selectedAssemblies = new(project.ImportedAssemblies);
 
     public override void Load()
     {
@@ -33,15 +33,8 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             Fill = true,
             Children =
             [
-                new Label(WidgetManager)
-                {
-                    Text = "Imported Referenced Assemblies",
-                    CanGrow = false
-                },
-                new ScrollArea(WidgetManager, assembliesLayout = new(WidgetManager)
-                {
-                    FitChildren = true
-                }),
+                new Label(WidgetManager) { Text = "Imported Referenced Assemblies", CanGrow = false },
+                new ScrollArea(WidgetManager, assembliesLayout = new(WidgetManager) { FitChildren = true }),
                 addAssemblyButton = new(WidgetManager)
                 {
                     Text = "Add assembly file",
@@ -57,30 +50,30 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                     CanGrow = false,
                     Children =
                     [
-                        okButton = new(WidgetManager)
-                        {
-                            Text = "Ok",
-                            AnchorFrom = BoxAlignment.Centre
-                        },
+                        okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
                         cancelButton = new(WidgetManager)
                         {
-                            Text = "Cancel",
-                            AnchorFrom = BoxAlignment.Centre
+                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
                         }
                     ]
                 }
             ]
         });
 
-        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "", project.ProjectFolderPath, ".NET Assemblies (*.dll)|*.dll", path =>
-        {
-            if (!isValidAssembly(path))
+        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "",
+            project.ProjectFolderPath, ".NET Assemblies (*.dll)|*.dll", path =>
             {
-                WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is made for .NET?");
-                return;
-            }
-            if (validateAssembly(path)) addReferencedAssembly(PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path));
-        });
+                if (!isValidAssembly(path))
+                {
+                    WidgetManager.ScreenLayerManager.ShowMessage(
+                        "Invalid assembly file. Are you sure that the file is made for .NET?");
+                    return;
+                }
+
+                if (validateAssembly(path))
+                    addReferencedAssembly(PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path
+                        : copyReferencedAssembly(path));
+            });
         okButton.OnClick += (_, _) =>
         {
             project.ImportedAssemblies = selectedAssemblies;
@@ -90,21 +83,20 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 
         refreshAssemblies();
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
         layout.Pack(Math.Min(400, width), Math.Min(600, height));
     }
+
     void refreshAssemblies()
     {
         assembliesLayout.ClearWidgets();
         foreach (var assembly in selectedAssemblies.OrderBy(getAssemblyName))
         {
-            LinearLayout assemblyRoot;
-            Label nameLabel;
-            Button statusButton, editButton, removeButton;
-
-            assembliesLayout.Add(assemblyRoot = new(WidgetManager)
+            Button editButton, removeButton;
+            assembliesLayout.Add(new LinearLayout(WidgetManager)
             {
                 AnchorFrom = BoxAlignment.Centre,
                 AnchorTo = BoxAlignment.Centre,
@@ -118,7 +110,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                         StyleName = "condensed",
                         Children =
                         [
-                            nameLabel = new(WidgetManager)
+                            new Label(WidgetManager)
                             {
                                 StyleName = "listItem",
                                 Text = getAssemblyName(assembly),
@@ -127,7 +119,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                             }
                         ]
                     },
-                    statusButton = new(WidgetManager)
+                    new Button(WidgetManager)
                     {
                         StyleName = "icon",
                         AnchorFrom = BoxAlignment.Centre,
@@ -159,7 +151,9 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             var ass = assembly;
 
             editButton.OnClick += (_, _) => changeReferencedAssembly(ass);
-            removeButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.ShowMessage($"Remove {getAssemblyName(ass)}?", () => removeReferencedAssembly(ass), true);
+            removeButton.OnClick += (_, _)
+                => WidgetManager.ScreenLayerManager.ShowMessage($"Remove {getAssemblyName(ass)}?",
+                    () => removeReferencedAssembly(ass), true);
         }
     }
 
@@ -174,7 +168,10 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             return Path.GetFileNameWithoutExtension(assemblyPath);
         }
     }
-    string getRelativePath(string assembly) => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ? assembly : Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
+
+    string getRelativePath(string assembly)
+        => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ? assembly
+            : Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
 
     static bool isValidAssembly(string assembly)
     {
@@ -186,12 +183,19 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         {
             return false;
         }
+
         return true;
     }
 
-    static bool assemblyImported(string assembly, IEnumerable<string> assemblies) => assemblies.Select(getAssemblyName).Contains(getAssemblyName(assembly));
-    static bool isDefaultAssembly(string assembly) => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
-    static bool validateAssembly(string assembly, IEnumerable<string> assemblies) => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));
+    static bool assemblyImported(string assembly, IEnumerable<string> assemblies)
+        => assemblies.Select(getAssemblyName).Contains(getAssemblyName(assembly));
+
+    static bool isDefaultAssembly(string assembly)
+        => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
+
+    static bool validateAssembly(string assembly, IEnumerable<string> assemblies)
+        => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));
+
     bool validateAssembly(string assembly) => validateAssembly(assembly, selectedAssemblies);
 
     string copyReferencedAssembly(string assembly)
@@ -200,33 +204,38 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         File.Copy(assembly, newPath, true);
         return newPath;
     }
+
     void addReferencedAssembly(string assembly)
     {
         selectedAssemblies.Add(assembly);
         refreshAssemblies();
     }
+
     void removeReferencedAssembly(string assembly)
     {
         selectedAssemblies.Remove(assembly);
         refreshAssemblies();
     }
-    void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "", Path.GetDirectoryName(assembly), ".NET Assemblies (*.dll)|*.dll", path =>
-    {
-        if (!isValidAssembly(path))
-        {
-            WidgetManager.ScreenLayerManager.ShowMessage("Invalid assembly file. Are you sure that the file is intended for .NET?");
-            return;
-        }
 
-        var assemblies = selectedAssemblies.Where(ass => ass != assembly);
-        if (validateAssembly(path, assemblies))
-        {
-            var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
-            if (path == assembly) return;
+    void changeReferencedAssembly(string assembly)
+        => WidgetManager.ScreenLayerManager.OpenFilePicker("", "", Path.GetDirectoryName(assembly),
+            ".NET Assemblies (*.dll)|*.dll", path =>
+            {
+                if (!isValidAssembly(path))
+                {
+                    WidgetManager.ScreenLayerManager.ShowMessage(
+                        "Invalid assembly file. Are you sure that the file is intended for .NET?");
+                    return;
+                }
 
-            selectedAssemblies.Remove(assembly);
-            selectedAssemblies.Add(newPath);
-            refreshAssemblies();
-        }
-    });
+                if (!validateAssembly(path, selectedAssemblies.Where(ass => ass != assembly))) return;
+
+                var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path
+                    : copyReferencedAssembly(path);
+                if (path == assembly) return;
+
+                selectedAssemblies.Remove(assembly);
+                selectedAssemblies.Add(newPath);
+                refreshAssemblies();
+            });
 }

@@ -1,8 +1,8 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Cameras;
+
+using System;
 using System.Drawing;
 using System.Numerics;
-
-namespace BrewLib.Graphics.Cameras;
 
 public interface Camera : IDisposable
 {

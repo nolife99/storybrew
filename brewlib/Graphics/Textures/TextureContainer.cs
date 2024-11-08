@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace BrewLib.Graphics.Textures;
 
-namespace BrewLib.Graphics.Textures;
+using System;
 
 public delegate void ResourceLoadedDelegate<T>(string filename, T resource);
 

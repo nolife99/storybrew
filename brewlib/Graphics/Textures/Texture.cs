@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Textures;
 
-namespace BrewLib.Graphics.Textures;
+using System;
 
 public interface Texture : IDisposable
 {

@@ -1,20 +1,21 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Textures;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 
-namespace BrewLib.Graphics.Textures;
-
 public sealed class TextureMultiAtlas2d : IDisposable
 {
-    List<TextureAtlas2d> atlases = [];
-    List<Texture2d> oversizeTextures;
+    readonly string description;
 
     readonly int width, height, padding;
-    readonly string description;
+    List<TextureAtlas2d> atlases = [];
+    List<Texture2d> oversizeTextures;
     TextureOptions textureOptions;
 
-    public TextureMultiAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0)
+    public TextureMultiAtlas2d(int width, int height, string description, TextureOptions textureOptions = null,
+        int padding = 0)
     {
         this.width = width;
         this.height = height;
@@ -45,6 +46,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
             atlas = pushAtlas();
             region = atlas.AddRegion(bitmap, description);
         }
+
         return region;
     }
 
@@ -55,9 +57,10 @@ public sealed class TextureMultiAtlas2d : IDisposable
         return atlas;
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (!disposed)
@@ -80,5 +83,5 @@ public sealed class TextureMultiAtlas2d : IDisposable
         }
     }
 
-    #endregion
+#endregion
 }

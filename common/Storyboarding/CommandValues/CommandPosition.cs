@@ -1,13 +1,14 @@
+namespace StorybrewCommon.Storyboarding.CommandValues;
+
 using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-
-namespace StorybrewCommon.Storyboarding.CommandValues;
+using osuTK;
+using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for movement commands.</summary>
-public readonly struct CommandPosition :
-    CommandValue, IEquatable<CommandPosition>,
+public readonly struct CommandPosition : CommandValue, IEquatable<CommandPosition>,
     IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
     ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,
     IMultiplyOperators<CommandPosition, CommandPosition, CommandPosition>,
@@ -17,59 +18,81 @@ public readonly struct CommandPosition :
     readonly Vector2 internalVec;
 
     ///<summary> Gets the X value of this instance. </summary>
-    public readonly CommandDecimal X => internalVec.X;
+    public CommandDecimal X => internalVec.X;
 
     ///<summary> Gets the Y value of this instance. </summary>
-    public readonly CommandDecimal Y => internalVec.Y;
+    public CommandDecimal Y => internalVec.Y;
 
     ///<summary> Gets the square of the vector length (magnitude). </summary>
-    public readonly float LengthSquared => internalVec.LengthSquared();
+    public float LengthSquared => internalVec.LengthSquared();
 
     ///<summary> Gets the vector length (magnitude). </summary>
-    public readonly float Length => internalVec.Length();
+    public float Length => internalVec.Length();
 
-    ///<summary> Constructs a <see cref="CommandPosition"/> from an X and Y value. </summary>
+    /// <summary> Constructs a <see cref="CommandPosition" /> from an X and Y value. </summary>
     public CommandPosition(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
 
-    ///<summary> Constructs a <see cref="CommandPosition"/> from a value. </summary>
+    /// <summary> Constructs a <see cref="CommandPosition" /> from a value. </summary>
     public CommandPosition(CommandDecimal value) : this(value, value) { }
 
-    ///<summary> Constructs a <see cref="CommandPosition"/> from a <see cref="Vector2"/>. </summary>
+    /// <summary> Constructs a <see cref="CommandPosition" /> from a <see cref="Vector2" />. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition(Vector2 vector) => internalVec = vector;
 
-    ///<inheritdoc/>
-    public readonly bool Equals(CommandPosition other) => internalVec == other.internalVec;
+    /// <inheritdoc />
+    public bool Equals(CommandPosition other) => internalVec == other.internalVec;
 
-    ///<inheritdoc/>
-    public override readonly bool Equals(object obj) => obj is CommandPosition position && Equals(position);
+    /// <inheritdoc />
+    public override bool Equals(object obj) => obj is CommandPosition position && Equals(position);
 
-    ///<inheritdoc/>
-    public override readonly int GetHashCode() => internalVec.GetHashCode();
+    /// <inheritdoc />
+    public override int GetHashCode() => internalVec.GetHashCode();
 
     ///<summary> Converts this instance to a .osb string. </summary>
-    public readonly string ToOsbString(ExportSettings exportSettings) => exportSettings.UseFloatForMove ? $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}" : $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
+    public string ToOsbString(ExportSettings exportSettings)
+        => exportSettings.UseFloatForMove ? $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}"
+            : $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
 
     ///<summary> Converts this instance to a string. </summary>
-    public override readonly string ToString() => internalVec.ToString();
+    public override string ToString() => internalVec.ToString();
 
 #pragma warning disable CS1591
-    public static CommandPosition operator +(CommandPosition left, CommandPosition right) => left.internalVec + right.internalVec;
-    public static CommandPosition operator -(CommandPosition left, CommandPosition right) => left.internalVec - right.internalVec;
+    public static CommandPosition operator +(CommandPosition left, CommandPosition right)
+        => left.internalVec + right.internalVec;
+
+    public static CommandPosition operator -(CommandPosition left, CommandPosition right)
+        => left.internalVec - right.internalVec;
+
     public static CommandPosition operator -(CommandPosition pos) => -pos.internalVec;
-    public static CommandPosition operator *(CommandPosition left, CommandPosition right) => left.internalVec * right.internalVec;
-    public static CommandPosition operator *(CommandPosition left, CommandDecimal right) => new(left.internalVec.X * right, left.internalVec.Y * right);
-    public static CommandPosition operator *(CommandDecimal left, CommandPosition right) => new(right.internalVec.X * left, right.internalVec.Y * left);
-    public static CommandPosition operator /(CommandPosition left, CommandPosition right) => left.internalVec / right.internalVec;
-    public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => new(left.internalVec.X / right, left.internalVec.Y / right);
+
+    public static CommandPosition operator *(CommandPosition left, CommandPosition right)
+        => left.internalVec * right.internalVec;
+
+    public static CommandPosition operator *(CommandPosition left, CommandDecimal right)
+        => new(left.internalVec.X * right, left.internalVec.Y * right);
+
+    public static CommandPosition operator *(CommandDecimal left, CommandPosition right)
+        => new(right.internalVec.X * left, right.internalVec.Y * left);
+
+    public static CommandPosition operator /(CommandPosition left, CommandPosition right)
+        => left.internalVec / right.internalVec;
+
+    public static CommandPosition operator /(CommandPosition left, CommandDecimal right)
+        => new(left.internalVec.X / right, left.internalVec.Y / right);
+
     public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
     public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
 
-    public static implicit operator osuTK.Vector2(CommandPosition position) => Unsafe.As<CommandPosition, osuTK.Vector2>(ref position);
-    public static implicit operator osuTK.Vector2d(CommandPosition position) => new(position.X, position.Y);
+    public static implicit operator osuTK.Vector2(CommandPosition position)
+        => Unsafe.As<CommandPosition, osuTK.Vector2>(ref position);
+
+    public static implicit operator Vector2d(CommandPosition position) => new(position.X, position.Y);
     public static implicit operator PointF(CommandPosition position) => new(position.internalVec);
-    public static implicit operator CommandPosition(osuTK.Vector2 vector) => Unsafe.As<osuTK.Vector2, CommandPosition>(ref vector);
-    public static implicit operator CommandPosition(osuTK.Vector2d vector) => new(vector.X, vector.Y);
+
+    public static implicit operator CommandPosition(osuTK.Vector2 vector)
+        => Unsafe.As<osuTK.Vector2, CommandPosition>(ref vector);
+
+    public static implicit operator CommandPosition(Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator CommandPosition(PointF vector) => vector.ToVector2();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1,9 +1,9 @@
-﻿using System;
+﻿namespace BrewLib.Graphics;
+
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using osuTK.Graphics.OpenGL;
-
-namespace BrewLib.Graphics;
 
 public sealed class GpuCommandSync : IDisposable
 {
@@ -20,21 +20,22 @@ public sealed class GpuCommandSync : IDisposable
 
         return blocked;
     }
+
     public bool WaitForRange(int index, int length)
     {
         trimExpiredRanges();
         for (var i = syncRanges.Count - 1; i >= 0; --i)
         {
             var syncRange = syncRanges[i];
-            if (index < syncRange.Index + syncRange.Length && syncRange.Index < index + length)
-            {
-                var blocked = syncRange.Wait();
-                clearToIndex(i);
-                return blocked;
-            }
+            if (index >= syncRange.Index + syncRange.Length || syncRange.Index >= index + length) continue;
+            var blocked = syncRange.Wait();
+            clearToIndex(i);
+            return blocked;
         }
+
         return false;
     }
+
     public void LockRange(int index, int length) => syncRanges.Add(new(index, length));
 
     void trimExpiredRanges()
@@ -47,7 +48,8 @@ public sealed class GpuCommandSync : IDisposable
         {
             var index = (left + right) / 2;
             var wouldBlock = syncRanges[index].Wait(false);
-            if (wouldBlock) right = index - 1;
+            if (wouldBlock)
+                right = index - 1;
             else
             {
                 left = index + 1;
@@ -64,29 +66,13 @@ public sealed class GpuCommandSync : IDisposable
         syncRanges.RemoveRange(0, index + 1);
     }
 
-    #region IDisposable Support
-
-    bool disposed;
-    public void Dispose()
-    {
-        if (!disposed)
-        {
-            foreach (var range in syncRanges) range.Dispose();
-            syncRanges.Clear();
-
-            disposed = true;
-        }
-    }
-
-    #endregion
-
     public static bool HasCapabilities() => DrawState.HasCapabilities(3, 2, "GL_ARB_sync");
 
     sealed class SyncRange(int index, int length) : IDisposable
     {
-        public int Index = index, Length = length;
-        public nint Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+        public readonly int Index = index, Length = length;
         bool expired;
+        nint Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
 
         public bool Wait(bool canBlock = true)
         {
@@ -96,7 +82,8 @@ public sealed class GpuCommandSync : IDisposable
             var waitSyncFlags = ClientWaitSyncFlags.None;
             var timeout = 0;
 
-            while (true) switch (GL.ClientWaitSync(Fence, waitSyncFlags, timeout))
+            while (true)
+                switch (GL.ClientWaitSync(Fence, waitSyncFlags, timeout))
                 {
                     case WaitSyncStatus.AlreadySignaled:
                         expired = true;
@@ -116,29 +103,43 @@ public sealed class GpuCommandSync : IDisposable
                 }
         }
 
-        #region IDisposable Support
+#region IDisposable Support
 
         bool disposed;
+
         void Dispose(bool disposing)
         {
-            if (!disposed)
-            {
-                GL.DeleteSync(Fence);
-                if (disposing)
-                {
-                    Fence = 0;
-                    disposed = true;
-                }
-            }
+            if (disposed) return;
+            GL.DeleteSync(Fence);
+
+            if (!disposing) return;
+            Fence = 0;
+            disposed = true;
         }
 
         ~SyncRange() => Dispose(false);
+
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        #endregion
+#endregion
     }
+
+#region IDisposable Support
+
+    bool disposed;
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        foreach (var range in syncRanges) range.Dispose();
+        syncRanges.Clear();
+
+        disposed = true;
+    }
+
+#endregion
 }

@@ -1,19 +1,17 @@
-﻿using System;
+﻿namespace StorybrewEditor.Util;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 
-namespace StorybrewEditor.Util;
-
 public static class NetHelper
 {
     internal static HttpClient Client;
 
-    public static void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url.Replace("&", "^&"))
-    {
-        UseShellExecute = true
-    });
+    public static void OpenUrl(string url)
+        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true });
 
     public static async void Request(string url, Action<string, Exception> action)
     {
@@ -29,6 +27,7 @@ public static class NetHelper
             action.Invoke(null, e);
         }
     }
+
     public static async void Post(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
     {
         try
@@ -47,7 +46,9 @@ public static class NetHelper
             action?.Invoke(null, e);
         }
     }
-    public static void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
+
+    public static void BlockingPost(string url, Dictionary<string, string> data,
+        Action<string, Exception> action = null)
     {
         try
         {
@@ -65,14 +66,17 @@ public static class NetHelper
             action?.Invoke(null, e);
         }
     }
-    public static async void Download(string url, string filename, Func<float, bool> progressFunc, Action<Exception> completedAction = null)
+
+    public static async void Download(string url, string filename, Func<float, bool> progressFunc,
+        Action<Exception> completedAction = null)
     {
         try
         {
             var fullPath = Path.GetFullPath(filename);
             var folder = Path.GetDirectoryName(fullPath);
 
-            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
             else if (File.Exists(filename)) File.Delete(filename);
 
             Trace.WriteLine($"Downloading {url}");
@@ -81,7 +85,8 @@ public static class NetHelper
             {
                 response.EnsureSuccessStatusCode();
 
-                using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+                using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192,
+                    true);
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                 var bytesRead = 0L;
                 var isMoreToRead = true;
@@ -103,10 +108,10 @@ public static class NetHelper
                             completedAction(new HttpRequestException("Download cancelled"));
                         }
                     }
-
                 }
                 while (isMoreToRead);
             }
+
             completedAction?.Invoke(null);
         }
         catch (Exception e)

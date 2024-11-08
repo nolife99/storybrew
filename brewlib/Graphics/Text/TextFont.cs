@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Text;
 
-namespace BrewLib.Graphics.Text;
+using System;
 
 public interface TextFont : IDisposable
 {

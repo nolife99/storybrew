@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Text;
 
-namespace BrewLib.Graphics.Text;
+using System;
 
 public sealed class TextFontProxy(TextFont textFont, Action disposed) : TextFont
 {
@@ -10,18 +10,18 @@ public sealed class TextFontProxy(TextFont textFont, Action disposed) : TextFont
 
     public FontGlyph GetGlyph(char c) => textFont.GetGlyph(c);
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
-        if (!disposed)
-        {
-            disposed();
-            textFont = null;
-            disposed = true;
-        }
+        if (disposed) return;
+        disposed();
+
+        textFont = null;
+        disposed = true;
     }
 
-    #endregion
+#endregion
 }

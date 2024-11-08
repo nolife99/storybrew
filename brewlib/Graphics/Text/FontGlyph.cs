@@ -1,7 +1,7 @@
-﻿using System.Numerics;
-using BrewLib.Graphics.Textures;
+﻿namespace BrewLib.Graphics.Text;
 
-namespace BrewLib.Graphics.Text;
+using System.Numerics;
+using Textures;
 
 public class FontGlyph(Texture2dRegion texture, int width, int height)
 {

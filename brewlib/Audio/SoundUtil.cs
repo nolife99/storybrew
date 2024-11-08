@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Audio;
 
-namespace BrewLib.Audio;
+using System;
 
 public static class SoundUtil
 {
@@ -14,6 +14,7 @@ public static class SoundUtil
 
     public static float FromLinearVolume(float volume) => MathF.Pow(volume, 4);
     public static float GetNoteFrequency(float note, float a = 440) => MathF.Pow(2, (note - 49) / 12) * a;
+
     public static float GetNoteRailsback(float note, float factor = .4f)
     {
         var p = (note - 44) / 44;
@@ -21,7 +22,7 @@ public static class SoundUtil
     }
 
     public static float SquareWave(float t, float period = .5f) => t % 2 < period ? 1 : -1;
-    public static float SawWave(float t) => (t % 2) - 1;
+    public static float SawWave(float t) => t % 2 - 1;
     public static float SineWave(float t) => MathF.Sin(t * MathF.Tau);
-    public static float TriangleWave(float t) => Math.Abs(((t * 4 - 1) % 4) - 2) - 1;
+    public static float TriangleWave(float t) => Math.Abs((t * 4 - 1) % 4 - 2) - 1;
 }

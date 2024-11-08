@@ -1,41 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Runtime.CompilerServices;
-using BrewLib.Graphics;
-using BrewLib.Input;
-using BrewLib.Time;
-using BrewLib.Util;
-using osuTK;
+﻿namespace BrewLib.ScreenLayers;
 
-namespace BrewLib.ScreenLayers;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Graphics;
+using Input;
+using osuTK;
+using Time;
+using Util;
 
 public sealed class ScreenLayerManager : IDisposable
 {
-    readonly GameWindow window;
-    readonly FrameTimeSource timeSource;
-    public FrameTimeSource TimeSource => timeSource;
-
     readonly object context;
-    public T GetContext<T>() where T : class => Unsafe.As<T>(context);
-
-    readonly List<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
-    ScreenLayer focusedLayer;
 
     readonly InputDispatcher inputDispatcher = new();
-    public InputHandler InputHandler => inputDispatcher;
 
-    public static readonly Color BackgroundColor = Color.Black;
-    public event Action<ScreenLayer> LayerAdded;
+    readonly List<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
+    readonly GameWindow window;
+    ScreenLayer focusedLayer;
 
     public ScreenLayerManager(GameWindow window, FrameTimeSource timeSource, object context)
     {
         this.window = window;
-        this.timeSource = timeSource;
+        TimeSource = timeSource;
         this.context = context;
 
         window.Resize += window_Resize;
     }
+
+    public FrameTimeSource TimeSource { get; }
+    public InputHandler InputHandler => inputDispatcher;
+    public T GetContext<T>() where T : class => Unsafe.As<T>(context);
+
+    public event Action<ScreenLayer> LayerAdded;
 
     public void Add(ScreenLayer layer)
     {
@@ -46,11 +43,13 @@ public sealed class ScreenLayerManager : IDisposable
         layer.Load();
         layer.Resize(Math.Max(1, window.Width), Math.Max(1, window.Height));
     }
+
     public void Set(ScreenLayer layer)
     {
         for (var i = layers.Count - 1; i >= 0; --i) layers[i].Exit();
         Add(layer);
     }
+
     public void Remove(ScreenLayer layer)
     {
         if (focusedLayer == layer) changeFocus(null);
@@ -59,6 +58,7 @@ public sealed class ScreenLayerManager : IDisposable
         removedLayers.Add(layer);
         updateQueue.Remove(layer);
     }
+
     public bool Close()
     {
         for (var i = layers.Count - 1; i >= 0; --i)
@@ -69,13 +69,17 @@ public sealed class ScreenLayerManager : IDisposable
             layer.Close();
             return true;
         }
+
         return false;
     }
-    public void Exit() => Array.ForEach(layers.ToArray(), layer =>
-    {
-        if (layer.IsExiting) return;
-        layer.Exit();
-    });
+
+    public void Exit()
+        => Array.ForEach(layers.ToArray(), layer =>
+        {
+            if (layer.IsExiting) return;
+            layer.Exit();
+        });
+
     public void Update(bool isFixedRateUpdate)
     {
         var active = window.Focused;
@@ -103,11 +107,13 @@ public sealed class ScreenLayerManager : IDisposable
                     hasFocus = false;
                 }
             }
+
             if (isFixedRateUpdate)
             {
                 layer.FixedUpdate();
                 layer.MinTween = 0;
             }
+
             layer.Update(top, covered);
 
             if (!layer.IsPopup) covered = true;
@@ -122,13 +128,16 @@ public sealed class ScreenLayerManager : IDisposable
 
         if (layers.Count == 0) window.Exit();
     }
-    public void Draw(DrawContext drawContext, float tween) => layers.ForEach(layer =>
-    {
-        var layerTween = Math.Max(layer.MinTween, tween);
-        layer.MinTween = layerTween;
 
-        layer.Draw(drawContext, layerTween);
-    }, layer => layer.CurrentState != ScreenLayer.State.Hidden);
+    public void Draw(DrawContext drawContext, float tween)
+        => layers.ForEach(layer =>
+        {
+            var layerTween = Math.Max(layer.MinTween, tween);
+            layer.MinTween = layerTween;
+
+            layer.Draw(drawContext, layerTween);
+        }, layer => layer.CurrentState != ScreenLayer.State.Hidden);
+
     void changeFocus(ScreenLayer layer)
     {
         if (focusedLayer is not null)
@@ -137,13 +146,14 @@ public sealed class ScreenLayerManager : IDisposable
             focusedLayer.LoseFocus();
             focusedLayer = null;
         }
-        if (layer is not null)
-        {
-            inputDispatcher.Add(layer.InputHandler);
-            layer.GainFocus();
-            focusedLayer = layer;
-        }
+
+        if (layer is null) return;
+
+        inputDispatcher.Add(layer.InputHandler);
+        layer.GainFocus();
+        focusedLayer = layer;
     }
+
     void window_Resize(object sender, EventArgs e)
     {
         var width = window.Width;
@@ -153,29 +163,27 @@ public sealed class ScreenLayerManager : IDisposable
         foreach (var layer in layers) layer.Resize(width, height);
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
     public void Dispose() => Dispose(true);
+
     void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            changeFocus(null);
-            if (disposing)
-            {
-                foreach (var layer in layers) layer.Dispose();
-                foreach (var layer in removedLayers) layer.Dispose();
+        if (disposed) return;
+        changeFocus(null);
+        if (!disposing) return;
 
-                layers.Clear();
-                removedLayers.Clear();
+        foreach (var layer in layers) layer.Dispose();
+        foreach (var layer in removedLayers) layer.Dispose();
 
-                window.Resize -= window_Resize;
+        layers.Clear();
+        removedLayers.Clear();
 
-                disposed = true;
-            }
-        }
+        window.Resize -= window_Resize;
+
+        disposed = true;
     }
 
-    #endregion
+#endregion
 }

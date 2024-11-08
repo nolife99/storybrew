@@ -1,4 +1,6 @@
-﻿using System;
+﻿namespace StorybrewEditor.ScreenLayers;
+
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -6,14 +8,10 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using StorybrewEditor.Util;
 
-namespace StorybrewEditor.ScreenLayers;
-
 public class UpdateMenu(string downloadUrl) : UiScreenLayer
 {
-    readonly string downloadUrl = downloadUrl;
-
+    Label actionLabel;
     LinearLayout mainLayout;
-    Label actionLabel, statusLabel;
     ProgressBar progressBar;
 
     public override void Load()
@@ -30,22 +28,12 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             FitChildren = true,
             Children =
             [
-                actionLabel = new(WidgetManager)
+                actionLabel = new(WidgetManager) { Text = "Updating", AnchorFrom = BoxAlignment.Centre },
+                new Label(WidgetManager)
                 {
-                    Text = "Updating",
-                    AnchorFrom = BoxAlignment.Centre
+                    StyleName = "small", Text = downloadUrl, AnchorFrom = BoxAlignment.Centre
                 },
-                statusLabel = new(WidgetManager)
-                {
-                    StyleName = "small",
-                    Text = downloadUrl,
-                    AnchorFrom = BoxAlignment.Centre
-                },
-                progressBar = new(WidgetManager)
-                {
-                    Value = 0,
-                    AnchorFrom = BoxAlignment.Centre
-                }
+                progressBar = new(WidgetManager) { Value = 0, AnchorFrom = BoxAlignment.Centre }
             ]
         });
         NetHelper.Download(downloadUrl, Updater.UpdateArchivePath, progress =>
@@ -59,11 +47,13 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             if (exception is not null)
             {
                 Trace.TraceError($"Failed to download the new version.\n\n{exception}");
-                Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}", () => Updater.OpenLatestReleasePage());
+                Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}",
+                    Updater.OpenLatestReleasePage);
 
                 Exit();
                 return;
             }
+
             try
             {
                 string executablePath = null;
@@ -98,28 +88,31 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 {
                     StartInfo = new(executablePath, $"update \"{localPath}\" {Program.Version}")
                     {
-                        UseShellExecute = true,
-                        WorkingDirectory = Updater.UpdateFolderPath
+                        UseShellExecute = true, WorkingDirectory = Updater.UpdateFolderPath
                     }
                 };
-                if (process.Start()) Manager.Exit();
+                if (process.Start())
+                    Manager.Exit();
                 else
                 {
-                    Manager.ShowMessage("Failed to start the update process, please update manually.", () => Updater.OpenLatestReleasePage());
+                    Manager.ShowMessage("Failed to start the update process, please update manually.",
+                        Updater.OpenLatestReleasePage);
                     Exit();
                 }
             }
             catch (Exception e)
             {
                 Trace.TraceError($"Failed to start the update process.\n\n{e}");
-                Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}", () => Updater.OpenLatestReleasePage());
+                Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}",
+                    Updater.OpenLatestReleasePage);
                 Exit();
             }
         });
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
-        mainLayout.Pack(300, 0);
+        mainLayout.Pack(300);
     }
 }

@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace StorybrewCommon.Storyboarding.Commands;
 
-namespace StorybrewCommon.Storyboarding.Commands;
+using System;
 
 #pragma warning disable CS1591
 public static class CommandComparer

@@ -1,6 +1,6 @@
-﻿using System.IO;
+﻿namespace BrewLib.Util;
 
-namespace BrewLib.Util;
+using System.IO;
 
 public class SafeWriteStream : FileStream
 {
@@ -14,6 +14,7 @@ public class SafeWriteStream : FileStream
     }
 
     public void Commit() => commited = true;
+
     protected override void Dispose(bool disposing)
     {
         if (disposed) return;
@@ -21,12 +22,13 @@ public class SafeWriteStream : FileStream
 
         base.Dispose(disposing);
 
-        if (disposing && commited)
-        {
-            if (File.Exists(path)) File.Replace(temporaryPath, path, null);
-            else File.Move(temporaryPath, path);
-        }
+        if (!disposing || !commited) return;
+        if (File.Exists(path))
+            File.Replace(temporaryPath, path, null);
+        else
+            File.Move(temporaryPath, path);
     }
+
     static string prepare(string path)
     {
         var folder = Path.GetDirectoryName(path);

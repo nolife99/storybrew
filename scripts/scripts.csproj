@@ -1,20 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <RootNamespace>scripts</RootNamespace>
-    <AssemblyName>StorybrewScripts</AssemblyName>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Company>storybrew</Company>
-    <Product>storybrew scripts</Product>
-    <Copyright>Copyright © Damnae 2016</Copyright>
-    <EnableNETAnalyzers>True</EnableNETAnalyzers>
-    <AnalysisLevel>latest-recommended</AnalysisLevel>
-    <Platforms>AnyCPU</Platforms>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>Library</OutputType>
+        <RootNamespace>scripts</RootNamespace>
+        <AssemblyName>StorybrewScripts</AssemblyName>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <Company>storybrew</Company>
+        <Product>storybrew scripts</Product>
+        <Copyright>Copyright © Damnae 2016</Copyright>
+        <EnableNETAnalyzers>True</EnableNETAnalyzers>
+        <AnalysisLevel>latest-recommended</AnalysisLevel>
+        <Platforms>AnyCPU</Platforms>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\common\common.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\common\common.csproj"/>
+    </ItemGroup>
 
 </Project>

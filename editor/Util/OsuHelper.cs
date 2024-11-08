@@ -1,8 +1,8 @@
-﻿using System;
+﻿namespace StorybrewEditor.Util;
+
+using System;
 using System.IO;
 using Microsoft.Win32;
-
-namespace StorybrewEditor.Util;
 
 public static class OsuHelper
 {
@@ -21,7 +21,8 @@ public static class OsuHelper
         }
         catch { }
 
-        var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "osu!", "osu!.exe");
+        var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "osu!", "osu!.exe");
         if (File.Exists(defaultPath)) return defaultPath;
         return "";
     }

@@ -1,15 +1,17 @@
-﻿using BrewLib.Time;
+﻿namespace BrewLib.Audio;
 
-namespace BrewLib.Audio;
+using Time;
 
 public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
 {
     public float Current => channel.Time;
+
     public bool Playing
     {
         get => channel.Playing;
         set => channel.Playing = value;
     }
+
     public float TimeFactor
     {
         get => channel.TimeFactor;
@@ -18,11 +20,8 @@ public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
 
     public bool Seek(float time)
     {
-        if (time >= 0 && time < channel.Duration)
-        {
-            channel.Time = time;
-            return true;
-        }
-        return false;
+        if (time < 0 || time >= channel.Duration) return false;
+        channel.Time = time;
+        return true;
     }
 }

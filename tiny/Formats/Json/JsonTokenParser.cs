@@ -1,11 +1,11 @@
-﻿using System;
+﻿namespace Tiny.Formats.Json;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace Tiny.Formats.Json;
-
-public partial class JsonTokenParser : TokenParser<JsonTokenType>
+public class JsonTokenParser : TokenParser<JsonTokenType>
 {
     public TinyToken Parse(IEnumerable<Token<JsonTokenType>> tokens)
     {
@@ -32,16 +32,26 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
                 case JsonTokenType.Property:
                 case JsonTokenType.PropertyQuoted:
 
-                    if (expectingSeparator) throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
+                    if (expectingSeparator)
+                        throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
+                            context.CurrentToken);
 
                     var key = context.CurrentToken.Value;
                     if (context.CurrentToken.Type == JsonTokenType.PropertyQuoted) key = JsonUtil.UnescapeString(key);
 
                     switch (context.LookaheadToken.Type)
                     {
-                        case JsonTokenType.ObjectStart: case JsonTokenType.ArrayStart: context.PushParser(new AnyParser(r => result.Add(key, r))); break;
-                        case JsonTokenType.Word: case JsonTokenType.WordQuoted: context.PushParser(new ValueParser(r => result.Add(key, r))); break;
-                        default: throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
+                        case JsonTokenType.ObjectStart:
+                        case JsonTokenType.ArrayStart:
+                            context.PushParser(new AnyParser(r => result.Add(key, r)));
+                            break;
+                        case JsonTokenType.Word:
+                        case JsonTokenType.WordQuoted:
+                            context.PushParser(new ValueParser(r => result.Add(key, r)));
+                            break;
+                        default:
+                            throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
+                                context.CurrentToken);
                     }
 
                     expectingSeparator = true;
@@ -58,6 +68,7 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
                     context.PopParser();
                     return;
             }
+
             throw new InvalidDataException("Unexpected token: " + context.CurrentToken);
         }
 
@@ -103,7 +114,8 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
 
     class ValueParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
     {
-        static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        static readonly Regex floatRegex =
+                new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             boolRegex = new($"^{bool.TrueString}|{bool.FalseString}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -112,25 +124,29 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
             switch (context.CurrentToken.Type)
             {
                 case JsonTokenType.Word:
-                    {
-                        var value = context.CurrentToken.Value;
-                        Match match;
-                        if ((match = floatRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Float));
-                        else if ((match = integerRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
-                        else if ((match = boolRegex.Match(value)).Success) Callback(new TinyValue(value.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)));
-                        else Callback(new TinyValue(value));
-                        context.ConsumeToken();
-                        context.PopParser();
-                    }
+                {
+                    var value = context.CurrentToken.Value;
+                    Match match;
+                    if ((match = floatRegex.Match(value)).Success)
+                        Callback(new TinyValue(value, TinyTokenType.Float));
+                    else if ((match = integerRegex.Match(value)).Success)
+                        Callback(new TinyValue(value, TinyTokenType.Integer));
+                    else if ((match = boolRegex.Match(value)).Success)
+                        Callback(new TinyValue(value.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)));
+                    else
+                        Callback(new TinyValue(value));
+                    context.ConsumeToken();
+                    context.PopParser();
+                }
                     return;
 
                 case JsonTokenType.WordQuoted:
-                    {
-                        var value = JsonUtil.UnescapeString(context.CurrentToken.Value);
-                        Callback(new TinyValue(value));
-                        context.ConsumeToken();
-                        context.PopParser();
-                    }
+                {
+                    var value = JsonUtil.UnescapeString(context.CurrentToken.Value);
+                    Callback(new TinyValue(value));
+                    context.ConsumeToken();
+                    context.PopParser();
+                }
                     return;
             }
 
@@ -161,6 +177,7 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
                     context.ReplaceParser(new ValueParser(Callback));
                     return;
             }
+
             throw new InvalidDataException("Unexpected token: " + context.CurrentToken);
         }
 

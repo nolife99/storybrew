@@ -1,20 +1,25 @@
-﻿using System;
+﻿namespace StorybrewEditor;
+
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
 using BrewLib.Util;
-using StorybrewEditor.Util;
-
-namespace StorybrewEditor;
+using Util;
 
 public static class Updater
 {
-    static readonly string[] ignoredPaths = [".vscode/", "cache/", "logs/", "settings.cfg"], readOnlyPaths = ["scripts/"];
-    public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update", FirstRunPath = "firstrun";
+    public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update",
+        FirstRunPath = "firstrun";
+
+    static readonly string[] ignoredPaths = [".vscode/", "cache/", "logs/", "settings.cfg"],
+        readOnlyPaths = ["scripts/"];
 
     static readonly Version readOnlyVersion = new(1, 8);
 
-    public static void OpenLatestReleasePage() => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/releases/latest");
+    public static void OpenLatestReleasePage()
+        => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/releases/latest");
+
     public static void Update(string destinationFolder, Version fromVersion)
     {
         Trace.WriteLine($"Updating from version {fromVersion} to {Program.Version}");
@@ -32,6 +37,7 @@ public static class Updater
             Program.Report("updatefail", e);
             return;
         }
+
         try
         {
             updateData(destinationFolder, fromVersion);
@@ -47,12 +53,10 @@ public static class Updater
         var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
         Trace.WriteLine($"\nUpdate complete, starting {processPath}");
-        Process.Start(new ProcessStartInfo(processPath)
-        {
-            UseShellExecute = true,
-            WorkingDirectory = destinationFolder
-        });
+        Process.Start(
+            new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder });
     }
+
     public static void NotifyEditorRun()
     {
         if (File.Exists(FirstRunPath))
@@ -62,8 +66,10 @@ public static class Updater
         }
 
         if (File.Exists(UpdateArchivePath)) Misc.WithRetries(() => File.Delete(UpdateArchivePath), canThrow: false);
-        if (Directory.Exists(UpdateFolderPath)) Misc.WithRetries(() => Directory.Delete(UpdateFolderPath, true), canThrow: false);
+        if (Directory.Exists(UpdateFolderPath))
+            Misc.WithRetries(() => Directory.Delete(UpdateFolderPath, true), canThrow: false);
     }
+
     static void updateData(string destinationFolder, Version fromVersion)
     {
         Settings settings = new(Path.Combine(destinationFolder, Settings.DefaultPath));
@@ -79,16 +85,16 @@ public static class Updater
                 Misc.WithRetries(() => File.Delete(dllPath), canThrow: false);
             }
         }
-        if (fromVersion < new Version(1, 65))
-        {
-            var oldRoslynFolder = Path.Combine(destinationFolder, "bin");
-            if (Directory.Exists(oldRoslynFolder))
-            {
-                Trace.WriteLine($"Removing {oldRoslynFolder}");
-                Misc.WithRetries(() => Directory.Delete(oldRoslynFolder, true), canThrow: false);
-            }
-        }
+
+        if (fromVersion >= new Version(1, 65)) return;
+
+        var oldRoslynFolder = Path.Combine(destinationFolder, "bin");
+        if (!Directory.Exists(oldRoslynFolder)) return;
+
+        Trace.WriteLine($"Removing {oldRoslynFolder}");
+        Misc.WithRetries(() => Directory.Delete(oldRoslynFolder, true), canThrow: false);
     }
+
     static void firstRun()
     {
         Trace.WriteLine("First run\n");
@@ -100,9 +106,11 @@ public static class Updater
             Trace.WriteLine($"Renaming {exeFilename} to {newFilename}");
             Misc.WithRetries(() => File.Move(exeFilename, newFilename), canThrow: false);
         }
+
         foreach (var scriptFilename in Directory.EnumerateFiles("scripts", "*.cs", SearchOption.TopDirectoryOnly))
             File.SetAttributes(scriptFilename, FileAttributes.ReadOnly);
     }
+
     static void replaceFiles(string sourceFolder, string destinationFolder, Version fromVersion)
     {
         Trace.WriteLine($"\nCopying files from {sourceFolder} to {destinationFolder}");
@@ -115,15 +123,18 @@ public static class Updater
                 Trace.WriteLine($"  Ignoring {relativeFilename}");
                 continue;
             }
+
             var readOnly = matchFilter(relativeFilename, readOnlyPaths);
 
             var destinationFilename = Path.Combine(destinationFolder, relativeFilename);
-            if (Path.GetExtension(destinationFilename) == ".exe_") destinationFilename = Path.ChangeExtension(destinationFilename, ".exe");
+            if (Path.GetExtension(destinationFilename) == ".exe_")
+                destinationFilename = Path.ChangeExtension(destinationFilename, ".exe");
 
             Trace.WriteLine($"  Copying {relativeFilename} to {destinationFilename}");
             replaceFile(sourceFilename, destinationFilename, readOnly, fromVersion);
         }
     }
+
     static void replaceFile(string sourceFilename, string destinationFilename, bool readOnly, Version fromVersion)
     {
         var destinationFolder = Path.GetDirectoryName(destinationFilename);
@@ -141,15 +152,19 @@ public static class Updater
                 var backupFilename = destinationFilename + $".{DateTimeOffset.UtcNow.Ticks}.bak";
                 File.Move(destinationFilename, backupFilename);
             }
-            else File.SetAttributes(destinationFilename, attributes & ~FileAttributes.ReadOnly);
+            else
+                File.SetAttributes(destinationFilename, attributes & ~FileAttributes.ReadOnly);
         }
 
         Misc.WithRetries(() => File.Copy(sourceFilename, destinationFilename, true), 5000);
         if (readOnly) File.SetAttributes(destinationFilename, FileAttributes.ReadOnly);
     }
+
     static bool matchFilter(string filename, string[] filters)
     {
-        foreach (var filter in filters) if (filename.StartsWith(filter, StringComparison.Ordinal)) return true;
+        foreach (var filter in filters)
+            if (filename.StartsWith(filter, StringComparison.Ordinal))
+                return true;
         return false;
     }
 }

@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.UserInterface;
 
-namespace BrewLib.UserInterface;
+using System;
 
 public interface Field
 {

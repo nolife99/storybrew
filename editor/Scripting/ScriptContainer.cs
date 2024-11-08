@@ -1,22 +1,36 @@
-﻿using System;
+﻿namespace StorybrewEditor.Scripting;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.Loader;
 using StorybrewCommon.Scripting;
-using StorybrewEditor.Scripting;
 
 public class ScriptContainer<TScript> : IDisposable where TScript : Script
 {
     static int nextId;
     public readonly int Id = nextId++;
 
-    public string CompiledScriptsPath { get; }
-
     AssemblyLoadContext appDomain;
-    Type scriptType;
 
     volatile int currentVersion, targetVersion = 1;
+
+    List<string> referencedAssemblies = [];
+    Type scriptType;
+
+    public ScriptContainer(string scriptTypeName, string mainSourcePath, string libraryFolder,
+        string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
+    {
+        ScriptTypeName = scriptTypeName;
+        MainSourcePath = mainSourcePath;
+        LibraryFolder = libraryFolder;
+        CompiledScriptsPath = compiledScriptsPath;
+
+        ReferencedAssemblies = referencedAssemblies;
+    }
+
+    public string CompiledScriptsPath { get; }
 
     public string Name
     {
@@ -41,14 +55,15 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         }
     }
 
-    List<string> referencedAssemblies = [];
     public IEnumerable<string> ReferencedAssemblies
     {
         get => referencedAssemblies;
         set
         {
-            List<string> newReferencedAssemblies = value as List<string> ?? value.ToList();
-            if (newReferencedAssemblies.Count == referencedAssemblies.Count && newReferencedAssemblies.All(referencedAssemblies.Contains)) return;
+            var newReferencedAssemblies = value as List<string> ?? value.ToList();
+            if (newReferencedAssemblies.Count == referencedAssemblies.Count &&
+                newReferencedAssemblies.All(referencedAssemblies.Contains))
+                return;
 
             referencedAssemblies = newReferencedAssemblies;
             ReloadScript();
@@ -57,17 +72,9 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
 
     ///<summary> Returns false when Script would return null. </summary>
     public bool HasScript => scriptType is not null || currentVersion != targetVersion;
+
     public event EventHandler OnScriptChanged;
 
-    public ScriptContainer(string scriptTypeName, string mainSourcePath, string libraryFolder, string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
-    {
-        ScriptTypeName = scriptTypeName;
-        MainSourcePath = mainSourcePath;
-        LibraryFolder = libraryFolder;
-        CompiledScriptsPath = compiledScriptsPath;
-
-        ReferencedAssemblies = referencedAssemblies;
-    }
     public TScript CreateScript()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
@@ -84,7 +91,9 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
                 AssemblyLoadContext scriptDomain = new(Name + Id, true);
                 try
                 {
-                    scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, ReferencedAssemblies).GetType(ScriptTypeName, true);
+                    scriptType = ScriptCompiler
+                        .Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, referencedAssemblies)
+                        .GetType(ScriptTypeName, true);
                     appDomain = scriptDomain;
                 }
                 catch
@@ -108,6 +117,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         script.Identifier = scriptType.AssemblyQualifiedName + Environment.TickCount;
         return script;
     }
+
     public void ReloadScript()
     {
         var initialTargetVersion = targetVersion;
@@ -122,6 +132,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
 
         if (targetVersion > initialTargetVersion) OnScriptChanged?.Invoke(this, EventArgs.Empty);
     }
+
     protected ScriptLoadingException CreateScriptLoadingException(Exception e)
     {
         var details = "";
@@ -129,27 +140,30 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         return new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     protected virtual void Dispose(bool disposing)
     {
         if (!disposed)
         {
             appDomain?.Unload();
-            if (disposing) 
+            if (disposing)
             {
                 appDomain = null;
                 scriptType = null;
             }
+
             disposed = true;
         }
     }
+
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
-    #endregion
+#endregion
 }

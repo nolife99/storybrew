@@ -1,18 +1,33 @@
-﻿using System;
+﻿namespace StorybrewEditor.Storyboarding;
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using StorybrewCommon.Storyboarding;
 
-namespace StorybrewEditor.Storyboarding;
-
 public abstract class Effect : IDisposable
 {
-    List<EditorStoryboardLayer> layers;
-    EditorStoryboardLayer placeHolderLayer;
-
     public readonly Project Project;
 
+    public EffectConfig Config = new();
+
+    public long EstimatedSize;
+
+    public bool Highlight;
+    List<EditorStoryboardLayer> layers;
+
     string name = "Unnamed Effect";
+    EditorStoryboardLayer placeHolderLayer;
+
+    public Effect(Project project)
+    {
+        Project = project;
+
+        layers = [placeHolderLayer = new("", this)];
+        refreshLayerNames();
+        Project.LayerManager.Add(placeHolderLayer);
+    }
+
     public string Name
     {
         get => name;
@@ -44,6 +59,7 @@ public abstract class Effect : IDisposable
             return min == float.MaxValue ? 0 : min;
         }
     }
+
     public float EndTime
     {
         get
@@ -54,25 +70,10 @@ public abstract class Effect : IDisposable
         }
     }
 
-    public bool Highlight;
-
-    public long EstimatedSize;
-
     public event EventHandler OnChanged;
     protected void RaiseChanged() => OnChanged?.Invoke(this, EventArgs.Empty);
-
-    public EffectConfig Config = new();
     public event EventHandler OnConfigFieldsChanged;
     protected void RaiseConfigFieldsChanged() => OnConfigFieldsChanged?.Invoke(this, EventArgs.Empty);
-
-    public Effect(Project project)
-    {
-        Project = project;
-
-        layers = [(placeHolderLayer = new("", this))];
-        refreshLayerNames();
-        Project.LayerManager.Add(placeHolderLayer);
-    }
 
     ///<summary> Used at load time to let the effect know about placeholder layers it should use. </summary>
     public void AddPlaceholder(EditorStoryboardLayer layer)
@@ -83,11 +84,13 @@ public abstract class Effect : IDisposable
             Project.LayerManager.Remove(placeHolderLayer);
             placeHolderLayer = null;
         }
+
         layers.Add(layer);
         refreshLayerNames();
 
         Project.LayerManager.Add(layer);
     }
+
     protected void UpdateLayers(List<EditorStoryboardLayer> newLayers)
     {
         if (placeHolderLayer is not null)
@@ -95,7 +98,8 @@ public abstract class Effect : IDisposable
             Project.LayerManager.Replace(placeHolderLayer, newLayers);
             placeHolderLayer = null;
         }
-        else Project.LayerManager.Replace(layers, newLayers);
+        else
+            Project.LayerManager.Replace(layers, newLayers);
 
         layers = newLayers;
         refreshLayerNames();
@@ -109,31 +113,36 @@ public abstract class Effect : IDisposable
         if (Project.Disposed) return;
         Project.QueueEffectUpdate(this);
     }
+
     public abstract void Update();
 
-    void refreshLayerNames() => layers.ForEach(layer => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})");
+    void refreshLayerNames()
+        => layers.ForEach(layer
+            => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})");
 
-    #region IDisposable Support
+#region IDisposable Support
 
     public bool Disposed;
+
     protected virtual void Dispose(bool disposing)
     {
-        if (!Disposed)
-        {
-            if (disposing) layers.ForEach(Project.LayerManager.Remove);
-            layers.Clear();
+        if (Disposed) return;
+        if (disposing) layers.ForEach(Project.LayerManager.Remove);
+        layers.Clear();
 
-            layers = null;
-            OnChanged = null;
-            Disposed = true;
-        }
+        layers = null;
+        OnChanged = null;
+        Disposed = true;
     }
+
     public void Dispose() => Dispose(true);
 
-    #endregion
+#endregion
 }
+
 public enum EffectStatus
 {
-    Initializing, Loading, Configuring, Updating, ReloadPending, Ready,
+    Initializing, Loading, Configuring,
+    Updating, ReloadPending, Ready,
     CompilationFailed, LoadingFailed, ExecutionFailed
 }

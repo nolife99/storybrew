@@ -2,6 +2,6 @@
 
 public class TextboxStyle : WidgetStyle
 {
-    public string LabelStyle;
     public string ContentStyle;
+    public string LabelStyle;
 }

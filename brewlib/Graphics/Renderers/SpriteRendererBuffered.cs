@@ -1,65 +1,77 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Renderers;
+
+using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Renderers.PrimitiveStreamers;
-using BrewLib.Graphics.Shaders;
-using BrewLib.Graphics.Shaders.Snippets;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
+using Cameras;
 using osuTK.Graphics.OpenGL;
-
-namespace BrewLib.Graphics.Renderers;
+using PrimitiveStreamers;
+using Shaders;
+using Shaders.Snippets;
+using Textures;
+using Util;
 
 public unsafe class SpriteRendererBuffered : SpriteRenderer
 {
     public const int VertexPerSprite = 4;
     public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
-    public static readonly VertexDeclaration VertexDeclaration =
-        new(VertexAttribute.CreatePosition2d(), VertexAttribute.CreateDiffuseCoord(0), VertexAttribute.CreateColor(true));
+    public static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
+        VertexAttribute.CreateDiffuseCoord(), VertexAttribute.CreateColor(true));
 
-    #region Default Shader
-
-    public static Shader CreateDefaultShader()
-    {
-        ShaderBuilder sb = new(VertexDeclaration);
-
-        var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
-        var texture = sb.AddUniform(TextureUniformName, "sampler2D");
-
-        var color = sb.AddVarying("vec4");
-        var textureCoord = sb.AddVarying("vec2");
-
-        sb.VertexShader = new Sequence(
-            new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
-            new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
-            new Assign(sb.GlPosition, () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name}, 0, 1)")
-        );
-        sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
-
-        return sb.Build();
-    }
-
-    #endregion
-
-    Shader shader;
+    readonly int maxSpritesPerBatch;
     readonly bool ownsShader;
-    public Shader Shader => ownsShader ? null : shader;
-
-    Action flushAction;
-    public Action FlushAction
-    {
-        get => flushAction;
-        set => flushAction = value;
-    }
-
-    PrimitiveStreamer primitiveStreamer;
-    void* primitives;
 
     Camera camera;
+
+    int currentLargestBatch;
+    int currentSamplerUnit;
+
+    BindableTexture currentTexture;
+
+    bool disposed;
+
+    bool lastFlushWasBuffered;
+    void* primitives;
+
+    PrimitiveStreamer primitiveStreamer;
+    bool rendering;
+
+    Shader shader;
+
+    int spritesInBatch;
+
+    Matrix4x4 transformMatrix = Matrix4x4.Identity;
+
+    public SpriteRendererBuffered(Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096,
+        int primitiveBufferSize = 0) : this(PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader,
+        flushAction, maxSpritesPerBatch, primitiveBufferSize) { }
+
+    public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
+        Shader shader, Action flushAction, int maxSpritesPerBatch, int primitiveBufferSize)
+    {
+        if (shader is null)
+        {
+            shader = CreateDefaultShader();
+            ownsShader = true;
+        }
+
+        this.maxSpritesPerBatch = maxSpritesPerBatch;
+        FlushAction = flushAction;
+        this.shader = shader;
+
+        var primitiveBatchSize = Math.Max(maxSpritesPerBatch,
+            (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
+        primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
+
+        primitives = NativeMemory.Alloc((nuint)(maxSpritesPerBatch * Marshal.SizeOf<QuadPrimitive>()));
+    }
+
+    public Action FlushAction { get; set; }
+    public Shader Shader => ownsShader ? null : shader;
+
     public Camera Camera
     {
         get => camera;
@@ -72,7 +84,6 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         }
     }
 
-    Matrix4x4 transformMatrix = Matrix4x4.Identity;
     public Matrix4x4 TransformMatrix
     {
         get => transformMatrix;
@@ -85,42 +96,12 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         }
     }
 
-    int spritesInBatch;
-    readonly int maxSpritesPerBatch;
-
-    BindableTexture currentTexture;
-    int currentSamplerUnit;
-    bool rendering;
-
-    int currentLargestBatch;
-
     public int RenderedSpriteCount { get; private set; }
     public int FlushedBufferCount { get; private set; }
     public int DiscardedBufferCount => primitiveStreamer.DiscardedBufferCount;
     public int BufferWaitCount => primitiveStreamer.BufferWaitCount;
     public int LargestBatch { get; private set; }
 
-    public SpriteRendererBuffered(Shader shader = null, Action flushAction = null, int maxSpritesPerBatch = 4096, int primitiveBufferSize = 0) :
-        this(PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, flushAction, maxSpritesPerBatch, primitiveBufferSize)
-    { }
-
-    public SpriteRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer, Shader shader, Action flushAction, int maxSpritesPerBatch, int primitiveBufferSize)
-    {
-        if (shader is null)
-        {
-            shader = CreateDefaultShader();
-            ownsShader = true;
-        }
-
-        this.maxSpritesPerBatch = maxSpritesPerBatch;
-        this.flushAction = flushAction;
-        this.shader = shader;
-
-        var primitiveBatchSize = Math.Max(maxSpritesPerBatch, (int)((float)primitiveBufferSize / (VertexPerSprite * VertexDeclaration.VertexSize)));
-        primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerSprite);
-
-        primitives = NativeMemory.Alloc((nuint)(maxSpritesPerBatch * Marshal.SizeOf<QuadPrimitive>()));
-    }
     public void BeginRendering()
     {
         shader.Begin();
@@ -128,6 +109,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
 
         rendering = true;
     }
+
     public void EndRendering()
     {
         primitiveStreamer.Unbind();
@@ -137,28 +119,28 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         rendering = false;
     }
 
-    bool lastFlushWasBuffered;
     public void Flush(bool canBuffer = false)
     {
         if (spritesInBatch == 0) return;
 
         // When the previous flush was bufferable, draw state should stay the same.
         if (!lastFlushWasBuffered)
+        {
+            var combinedMatrix = transformMatrix * camera.ProjectionView;
+
+            var samplerUnit = DrawState.BindTexture(currentTexture);
+            if (currentSamplerUnit != samplerUnit)
             {
-                var combinedMatrix = transformMatrix * camera.ProjectionView;
-
-                var samplerUnit = DrawState.BindTexture(currentTexture);
-                if (currentSamplerUnit != samplerUnit)
-                {
-                    currentSamplerUnit = samplerUnit;
-                    GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
-                }
-
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
-                flushAction?.Invoke();
+                currentSamplerUnit = samplerUnit;
+                GL.Uniform1(shader.GetUniformLocation(TextureUniformName), currentSamplerUnit);
             }
 
-        primitiveStreamer.Render(PrimitiveType.Quads, primitives, spritesInBatch, spritesInBatch * VertexPerSprite, canBuffer);
+            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
+            FlushAction?.Invoke();
+        }
+
+        primitiveStreamer.Render(PrimitiveType.Quads, primitives, spritesInBatch, spritesInBatch * VertexPerSprite,
+            canBuffer);
 
         currentLargestBatch += spritesInBatch;
         if (!canBuffer)
@@ -173,40 +155,18 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         lastFlushWasBuffered = canBuffer;
     }
 
-    bool disposed;
-    public void Dispose(bool disposing)
-    {
-        if (disposed) return;
-        if (rendering) EndRendering();
-
-        NativeMemory.Free(primitives);
-        if (disposing)
-        {
-            primitives = null;
-            camera = null;
-
-            primitiveStreamer.Dispose();
-            primitiveStreamer = null;
-
-            if (ownsShader) shader.Dispose();
-            shader = null;
-
-            FlushAction = null;
-            disposed = true;
-        }
-    }
-
-    ~SpriteRendererBuffered() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
-    public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color color)
+    public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX,
+        float scaleY, float rotation, Color color)
         => Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width, texture.Height);
 
-    public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY, float rotation, Color color, float textureX0, float textureY0, float textureX1, float textureY1)
+    public void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX,
+        float scaleY, float rotation, Color color, float textureX0, float textureY0, float textureX1, float textureY1)
     {
         if (currentTexture != texture.BindableTexture)
         {
@@ -215,7 +175,8 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         }
         else if (spritesInBatch == maxSpritesPerBatch) DrawState.FlushRenderer(true);
 
-        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY, fx2 = width - originX, fy2 = height - originY;
+        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY,
+            fx2 = width - originX, fy2 = height - originY;
         bool flipX = false, flipY = false;
 
         if (scaleX != 1 || scaleY != 1)
@@ -230,7 +191,8 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
             fy2 *= absScaleY;
         }
 
-        float p1x = fx, p1y = fy, p2x = fx, p2y = fy2, p3x = fx2, p3y = fy2, p4x = fx2, p4y = fy, x1, y1, x2, y2, x3, y3, x4, y4;
+        float p1x = fx, p1y = fy, p2x = fx, p2y = fy2, p3x = fx2, p3y = fy2, p4x = fx2, p4y = fy, x1, y1, x2, y2, x3,
+            y3, x4, y4;
         if (rotation != 0)
         {
             var (sin, cos) = MathF.SinCos(rotation);
@@ -271,9 +233,10 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         var textureUvBounds = texture.UvBounds;
         var textureUvRatio = texture.UvRatio;
 
-        float textureU0 = textureUvBounds.X + textureX0 * textureUvRatio.X, textureV0 = textureUvBounds.Y + textureY0 * textureUvRatio.Y,
-            textureU1 = textureUvBounds.X + textureX1 * textureUvRatio.X, textureV1 = textureUvBounds.Y + textureY1 * textureUvRatio.Y,
-            u0, v0, u1, v1;
+        float textureU0 = textureUvBounds.X + textureX0 * textureUvRatio.X,
+            textureV0 = textureUvBounds.Y + textureY0 * textureUvRatio.Y,
+            textureU1 = textureUvBounds.X + textureX1 * textureUvRatio.X,
+            textureV1 = textureUvBounds.Y + textureY1 * textureUvRatio.Y, u0, v0, u1, v1;
 
         if (flipX)
         {
@@ -285,6 +248,7 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
             u0 = textureU0;
             u1 = textureU1;
         }
+
         if (flipY)
         {
             v0 = textureV1;
@@ -304,11 +268,60 @@ public unsafe class SpriteRendererBuffered : SpriteRenderer
         spritePrimitive.v3 = v1;
         spritePrimitive.u4 = u1;
         spritePrimitive.v4 = v0;
-        spritePrimitive.color1 = spritePrimitive.color2 = spritePrimitive.color3 = spritePrimitive.color4 = color.ToRgba();
+        spritePrimitive.color1 =
+            spritePrimitive.color2 = spritePrimitive.color3 = spritePrimitive.color4 = color.ToRgba();
 
         Unsafe.Write(Unsafe.Add<QuadPrimitive>(primitives, spritesInBatch), spritePrimitive);
 
         ++RenderedSpriteCount;
         ++spritesInBatch;
     }
+
+#region Default Shader
+
+    public static Shader CreateDefaultShader()
+    {
+        ShaderBuilder sb = new(VertexDeclaration);
+
+        var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
+        var texture = sb.AddUniform(TextureUniformName, "sampler2D");
+
+        var color = sb.AddVarying("vec4");
+        var textureCoord = sb.AddVarying("vec2");
+
+        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
+            new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
+            new Assign(sb.GlPosition,
+                () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
+                }, 0, 1)"));
+        sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor,
+            () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
+
+        return sb.Build();
+    }
+
+#endregion
+
+    public void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        if (rendering) EndRendering();
+
+        NativeMemory.Free(primitives);
+        if (!disposing) return;
+
+        primitives = null;
+        camera = null;
+
+        primitiveStreamer.Dispose();
+        primitiveStreamer = null;
+
+        if (ownsShader) shader.Dispose();
+        shader = null;
+
+        FlushAction = null;
+        disposed = true;
+    }
+
+    ~SpriteRendererBuffered() => Dispose(false);
 }

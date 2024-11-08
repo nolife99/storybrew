@@ -1,15 +1,15 @@
-﻿using System.IO;
+﻿namespace BrewLib.Util;
 
-namespace BrewLib.Util;
+using System.IO;
 
 public class ByteCounterStream : Stream
 {
+    long length;
     public override bool CanRead => false;
     public override bool CanSeek => false;
     public override bool CanWrite => true;
-
-    long length;
     public override long Length => length;
+
     public override long Position
     {
         get => length;

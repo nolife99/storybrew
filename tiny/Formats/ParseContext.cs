@@ -1,18 +1,13 @@
-﻿using System.Collections.Generic;
+﻿namespace Tiny.Formats;
 
-namespace Tiny.Formats;
+using System.Collections.Generic;
 
 public class ParseContext<TokenType>
 {
+    readonly Stack<Parser<TokenType>> parserStack = new();
     readonly IEnumerator<Token<TokenType>> tokenEnumerator;
 
     public Token<TokenType> CurrentToken, LookaheadToken;
-
-    readonly Stack<Parser<TokenType>> parserStack = new();
-    public Parser<TokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
-    public int ParserCount => parserStack.Count;
-
-    public int IndentLevel { get; private set; }
 
     public ParseContext(IEnumerable<Token<TokenType>> tokens, Parser<TokenType> initialParser)
     {
@@ -21,6 +16,11 @@ public class ParseContext<TokenType>
 
         parserStack.Push(initialParser);
     }
+
+    public Parser<TokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
+    public int ParserCount => parserStack.Count;
+
+    public int IndentLevel { get; private set; }
 
     public void PopParser() => parserStack.Pop();
     public void PushParser(Parser<TokenType> parser) => parserStack.Push(parser);

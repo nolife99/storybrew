@@ -1,7 +1,7 @@
-﻿using osuTK;
-using osuTK.Input;
+﻿namespace BrewLib.Input;
 
-namespace BrewLib.Input;
+using osuTK;
+using osuTK.Input;
 
 public abstract class InputAdapter : InputHandler
 {

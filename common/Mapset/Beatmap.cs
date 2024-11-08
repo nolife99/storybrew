@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Drawing;
+﻿namespace StorybrewCommon.Mapset;
 
-namespace StorybrewCommon.Mapset;
+using System.Collections.Generic;
+using System.Drawing;
 
 ///<summary> Represents an osu! beatmap difficulty. </summary>
 public abstract class Beatmap
@@ -66,8 +66,8 @@ public abstract class Beatmap
     ///<summary> Finds the timing point (red line) active at a specific time. </summary>
     public abstract ControlPoint GetTimingPointAt(float time);
 
-    ///<summary/>
-    public static double GetDifficultyRange(float difficulty, float min, float mid, float max)
+    /// <summary />
+    protected static double GetDifficultyRange(float difficulty, float min, float mid, float max)
     {
         if (difficulty > 5) return mid + (max - mid) * (difficulty - 5) / 5;
         if (difficulty < 5) return mid - (mid - min) * (5 - difficulty) / 5;

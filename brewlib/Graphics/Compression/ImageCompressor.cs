@@ -1,32 +1,49 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Compression;
+
+using System;
 using System.Diagnostics;
 using System.IO;
-using BrewLib.Data;
-using BrewLib.Util;
-
-namespace BrewLib.Graphics.Compression;
+using Data;
+using Util;
 
 public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 {
-    protected Process process;
     protected ResourceContainer container;
 
-    public string UtilityPath { get; protected set; } = utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
+    protected bool disposed;
+    protected Process process;
 
     protected string utilName;
+
+    public string UtilityPath { get; protected set; } = utilityPath ??
+        Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
+
     public virtual string UtilityName
     {
         get => StringHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
         protected set => utilName = value;
     }
 
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     public void LosslessCompress(string path) => compress(new Argument(path), false);
     public void Compress(string path) => compress(new Argument(path), true);
-    public void LosslessCompress(string path, LosslessInputSettings settings) => compress(new Argument(path, settings), false);
-    public void Compress(string path, LossyInputSettings settings) => compress(new Argument(path, null, settings), true);
+
+    public void LosslessCompress(string path, LosslessInputSettings settings)
+        => compress(new Argument(path, settings), false);
+
+    public void Compress(string path, LossyInputSettings settings)
+        => compress(new Argument(path, null, settings), true);
 
     protected abstract void compress(Argument arg, bool useLossy);
-    protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
+
+    protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy,
+        LosslessInputSettings lossless);
+
     protected abstract void ensureTool();
 
     protected void ensureStop()
@@ -37,7 +54,6 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 
     protected virtual string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
 
-    protected bool disposed;
     protected virtual void Dispose(bool disposing)
     {
         if (!disposed)
@@ -49,11 +65,6 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
                 disposed = true;
             }
         }
-    }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     protected readonly struct Argument

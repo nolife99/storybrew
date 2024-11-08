@@ -1,15 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using BrewLib.Data;
-using ManagedBass;
+﻿namespace BrewLib.Audio;
 
-namespace BrewLib.Audio;
+using System;
+using System.Collections.Generic;
+using Data;
+using ManagedBass;
 
 public sealed class AudioManager : IDisposable
 {
     readonly List<AudioChannel> audioChannels = [];
 
     float volume = 1;
+
+    public AudioManager(nint handle)
+    {
+        Bass.Init(Win: handle);
+        Bass.PlaybackBufferLength = 100;
+        Bass.NetBufferLength = 500;
+        Bass.UpdatePeriod = 10;
+    }
+
     public float Volume
     {
         get => volume;
@@ -21,24 +30,15 @@ public sealed class AudioManager : IDisposable
             foreach (var channel in audioChannels) channel.UpdateVolume();
         }
     }
-    public AudioManager(nint handle)
-    {
-        Bass.Init(Win: handle);
-        Bass.PlaybackBufferLength = 100;
-        Bass.NetBufferLength = 500;
-        Bass.UpdatePeriod = 10;
-    }
 
     public void Update()
     {
         for (var i = 0; i < audioChannels.Count; ++i)
         {
             var channel = audioChannels[i];
-            if (channel is not null && channel.Temporary && channel.Completed)
-            {
-                channel.Dispose();
-                --i;
-            }
+            if (channel is null || !channel.Temporary || !channel.Completed) continue;
+            channel.Dispose();
+            --i;
         }
     }
 
@@ -48,16 +48,19 @@ public sealed class AudioManager : IDisposable
         RegisterChannel(audio);
         return audio;
     }
-    public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null) => new(this, path, resourceContainer);
+
+    public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null)
+        => new(this, path, resourceContainer);
 
     internal void RegisterChannel(AudioChannel channel) => audioChannels.Add(channel);
     internal void UnregisterChannel(AudioChannel channel) => audioChannels.Remove(channel);
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
-    
+
     ~AudioManager() => Dispose();
+
     public void Dispose()
     {
         if (!disposed)
@@ -67,5 +70,5 @@ public sealed class AudioManager : IDisposable
         }
     }
 
-    #endregion
+#endregion
 }

@@ -1,9 +1,9 @@
-﻿using System;
+﻿namespace BrewLib.Data;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
-using BrewLib.Util;
-
-namespace BrewLib.Data;
+using Util;
 
 public interface ResourceContainer
 {
@@ -15,12 +15,9 @@ public interface ResourceContainer
 
     SafeWriteStream GetWriteStream(string path);
 }
-[Flags]
-public enum ResourceSource
+
+[Flags] public enum ResourceSource
 {
     Embedded = 1, Relative = 2, Absolute = 4,
-
-    None = 0,
-    Local = Embedded | Relative,
-    Any = Embedded | Relative | Absolute
+    None = 0, Local = Embedded | Relative, Any = Embedded | Relative | Absolute
 }

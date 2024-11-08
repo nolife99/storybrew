@@ -1,4 +1,6 @@
-﻿using System;
+﻿namespace StorybrewEditor.UserInterface.Components;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -9,23 +11,15 @@ using System.Text.RegularExpressions;
 using BrewLib.Data;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using StorybrewEditor.ScreenLayers;
-using StorybrewEditor.Storyboarding;
-using StorybrewEditor.Util;
-
-namespace StorybrewEditor.UserInterface.Components;
+using ScreenLayers;
+using Storyboarding;
+using Util;
 
 public class EffectList : Widget
 {
+    readonly EffectConfigUi effectConfigUi;
     readonly LinearLayout layout, effectsLayout;
     Project project;
-    readonly EffectConfigUi effectConfigUi;
-
-    public override Vector2 MinSize => layout.MinSize;
-    public override Vector2 MaxSize => layout.MaxSize;
-    public override Vector2 PreferredSize => layout.PreferredSize;
-
-    public event Action<Effect> OnEffectPreselect, OnEffectSelected;
 
     public EffectList(WidgetManager manager, Project project, EffectConfigUi effectConfigUi) : base(manager)
     {
@@ -41,15 +35,8 @@ public class EffectList : Widget
             Fill = true,
             Children =
             [
-                new Label(manager)
-                {
-                    Text = "Effects",
-                    CanGrow = false
-                },
-                new ScrollArea(manager, effectsLayout = new(manager)
-                {
-                    FitChildren = true
-                }),
+                new Label(manager) { Text = "Effects", CanGrow = false },
+                new ScrollArea(manager, effectsLayout = new(manager) { FitChildren = true }),
                 new LinearLayout(manager)
                 {
                     Fill = true,
@@ -77,24 +64,36 @@ public class EffectList : Widget
             ]
         });
 
-        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect", name => project.AddScriptedEffect(name), project.GetEffectNames());
-        newScriptButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name));
+        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect",
+            name => project.AddScriptedEffect(name), project.GetEffectNames());
+        newScriptButton.OnClick += (_, _)
+            => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name));
 
         project.OnEffectsChanged += project_OnEffectsChanged;
         refreshEffects();
     }
+
+    public override Vector2 MinSize => layout.MinSize;
+    public override Vector2 MaxSize => layout.MaxSize;
+    public override Vector2 PreferredSize => layout.PreferredSize;
+
+    public event Action<Effect> OnEffectPreselect, OnEffectSelected;
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) project.OnEffectsChanged -= project_OnEffectsChanged;
         project = null;
         base.Dispose(disposing);
     }
+
     protected override void Layout()
     {
         base.Layout();
         layout.Size = Size;
     }
+
     void project_OnEffectsChanged(object sender, EventArgs e) => refreshEffects();
+
     void refreshEffects()
     {
         effectsLayout.ClearWidgets();
@@ -207,7 +206,8 @@ public class EffectList : Widget
         };
         effectWidget.OnClickUp += (evt, _) =>
         {
-            if (handledClick && (evt.RelatedTarget == effectWidget || evt.RelatedTarget.HasAncestor(effectWidget))) OnEffectSelected?.Invoke(ef);
+            if (handledClick && (evt.RelatedTarget == effectWidget || evt.RelatedTarget.HasAncestor(effectWidget)))
+                OnEffectSelected?.Invoke(ef);
             handledClick = false;
         };
         effectWidget.OnDisposed += (_, _) =>
@@ -216,12 +216,14 @@ public class EffectList : Widget
             ef.OnChanged -= changedHandler;
         };
 
-        statusButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowMessage($"Status: {ef.Status}\n\n{ef.StatusMessage}");
-        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name", $"Pick a new name for {ef.Name}", ef.Name, (newName) =>
-        {
-            ef.Name = newName;
-            refreshEffects();
-        });
+        statusButton.OnClick += (_, _)
+            => Manager.ScreenLayerManager.ShowMessage($"Status: {ef.Status}\n\n{ef.StatusMessage}");
+        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name",
+            $"Pick a new name for {ef.Name}", ef.Name, newName =>
+            {
+                ef.Name = newName;
+                refreshEffects();
+            });
         editButton.OnClick += (_, _) => openEffectEditor(ef);
         configButton.OnClick += (_, _) =>
         {
@@ -230,12 +232,15 @@ public class EffectList : Widget
                 effectConfigUi.Effect = ef;
                 effectConfigUi.Displayed = true;
             }
-            else effectConfigUi.Displayed = false;
+            else
+                effectConfigUi.Displayed = false;
         };
-        removeButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowMessage($"Remove {ef.Name}?", () => project.Remove(ef), true);
+        removeButton.OnClick += (_, _)
+            => Manager.ScreenLayerManager.ShowMessage($"Remove {ef.Name}?", () => project.Remove(ef), true);
 
         return effectWidget;
     }
+
     static void updateStatusButton(Button button, Effect effect)
     {
         button.Disabled = string.IsNullOrWhiteSpace(effect.StatusMessage);
@@ -244,7 +249,9 @@ public class EffectList : Widget
 
         switch (effect.Status)
         {
-            case EffectStatus.Loading: case EffectStatus.Configuring: case EffectStatus.Updating:
+            case EffectStatus.Loading:
+            case EffectStatus.Configuring:
+            case EffectStatus.Updating:
                 button.Icon = IconFont.Sync;
                 button.Disabled = true;
                 break;
@@ -254,7 +261,9 @@ public class EffectList : Widget
                 button.Disabled = true;
                 break;
 
-            case EffectStatus.CompilationFailed: case EffectStatus.LoadingFailed: case EffectStatus.ExecutionFailed:
+            case EffectStatus.CompilationFailed:
+            case EffectStatus.LoadingFailed:
+            case EffectStatus.ExecutionFailed:
                 button.Icon = IconFont.BugReport;
                 break;
 
@@ -264,6 +273,7 @@ public class EffectList : Widget
                 break;
         }
     }
+
     void createScript(string name)
     {
         var resourceContainer = Manager.ScreenLayerManager.GetContext<Editor>().ResourceContainer;
@@ -275,7 +285,8 @@ public class EffectList : Widget
         if (name.Length == 0) name = "EffectScript";
 
         var path = Path.Combine(project.ScriptsPath, $"{name}.cs");
-        var script = resourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded | ResourceSource.Relative);
+        var script =
+            resourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded | ResourceSource.Relative);
         script = script.Replace("%CLASSNAME%", name);
 
         if (File.Exists(path))
@@ -287,6 +298,7 @@ public class EffectList : Widget
         File.WriteAllText(path, script);
         openEffectEditor(project.AddScriptedEffect(name));
     }
+
     void openEffectEditor(Effect effect)
     {
         var editorPath = Path.GetDirectoryName(Path.GetFullPath("."));
@@ -303,6 +315,7 @@ public class EffectList : Widget
                 isSolution = true;
                 break;
             }
+
             if (isSolution) break;
 
             solutionFolder = Directory.GetParent(solutionFolder).FullName;
@@ -312,22 +325,29 @@ public class EffectList : Widget
 
         List<string> paths =
         [
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code", "bin", "code"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code", "bin", "code"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code Insiders", "bin", "code-insiders"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code Insiders", "bin", "code-insiders")
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code",
+                "bin", "code"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code",
+                "bin", "code"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "Microsoft VS Code Insiders", "bin", "code-insiders"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                "Microsoft VS Code Insiders", "bin", "code-insiders")
         ];
-        foreach (var path in Environment.GetEnvironmentVariable("path").Split(';')) if (PathHelper.IsValidPath(path))
+        foreach (var path in Environment.GetEnvironmentVariable("path").Split(';'))
+            if (PathHelper.IsValidPath(path))
             {
                 paths.Add(Path.Combine(path, "code"));
                 paths.Add(Path.Combine(path, "code-insiders"));
             }
-            else Trace.TraceWarning($"Invalid path in environment variables: {path}");
+            else
+                Trace.TraceWarning($"Invalid path in environment variables: {path}");
 
         var arguments = $"\"{solutionFolder}\" \"{effect.Path}\" -r";
         if (Program.Settings.VerboseVsCode) arguments += " --verbose";
 
-        foreach (var path in paths) try
+        foreach (var path in paths)
+            try
             {
                 if (!File.Exists(path)) continue;
 
@@ -335,7 +355,8 @@ public class EffectList : Widget
                 var process = Process.Start(new ProcessStartInfo(path, arguments)
                 {
                     UseShellExecute = true,
-                    WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
+                    WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal
+                        : ProcessWindowStyle.Hidden
                 });
                 return;
             }
@@ -343,10 +364,13 @@ public class EffectList : Widget
             {
                 Trace.TraceWarning($"Could not open vscode:\n{e}");
             }
-        Manager.ScreenLayerManager.ShowMessage($"Visual Studio Code could not be found, do you want to install it?\n(You may have to restart after installing)",
+
+        Manager.ScreenLayerManager.ShowMessage(
+            "Visual Studio Code could not be found, do you want to install it?\n(You may have to restart after installing)",
             () => NetHelper.OpenUrl("https://code.visualstudio.com/"), true);
     }
 
-    static string getEffectDetails(Effect effect) => effect.EstimatedSize > 40960 ?
-        $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})" : $"using {effect.BaseName}";
+    static string getEffectDetails(Effect effect)
+        => effect.EstimatedSize > 40960 ? $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})"
+            : $"using {effect.BaseName}";
 }

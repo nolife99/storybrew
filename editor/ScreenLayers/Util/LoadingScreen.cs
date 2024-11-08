@@ -1,10 +1,10 @@
-﻿using System;
+﻿namespace StorybrewEditor.ScreenLayers.Util;
+
+using System;
 using System.Diagnostics;
-using System.Threading;
+using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-
-namespace StorybrewEditor.ScreenLayers.Util;
 
 public class LoadingScreen(string title, Action action) : UiScreenLayer
 {
@@ -14,7 +14,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
 
     public override void Load()
     {
-        Thread thread = new(() =>
+        Task.Run(() =>
         {
             Exception exception = null;
             try
@@ -25,6 +25,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
             {
                 exception = e;
             }
+
             Program.Schedule(() =>
             {
                 if (exception is not null)
@@ -38,17 +39,14 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
                         exceptionMessage += $"\nCaused by: {innerException.Message} ({innerException.GetType().Name})";
                         innerException = innerException.InnerException;
                     }
-                    Manager.ShowMessage($"{title} failed:\n\n{exceptionMessage}\n\nDetails:\n{exception.GetBaseException()}");
+
+                    Manager.ShowMessage($"{title} failed:\n\n{exceptionMessage}\n\nDetails:\n{
+                        exception.GetBaseException()}");
                 }
+
                 Exit();
             });
-        })
-        {
-            Name = $"Loading ({title}, {action.Method.Name})",
-            IsBackground = true
-        };
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
+        });
 
         base.Load();
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)
@@ -60,19 +58,15 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
             Padding = new(16),
             FitChildren = true,
             Horizontal = true,
-            Children =
-            [
-                new Label(WidgetManager)
-                {
-                    Text = $"{title}..." ?? "Loading..."
-                }
-            ]
+            Children = [new Label(WidgetManager) { Text = $"{title}..." ?? "Loading..." }]
         });
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
         mainLayout.Pack(1024);
     }
+
     public override void Close() { }
 }

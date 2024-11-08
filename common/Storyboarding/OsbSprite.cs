@@ -1,16 +1,16 @@
-﻿using System;
+﻿namespace StorybrewCommon.Storyboarding;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using BrewLib.Util;
-using StorybrewCommon.Mapset;
-using StorybrewCommon.Storyboarding.Commands;
-using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Storyboarding.Display;
+using Commands;
+using CommandValues;
+using Display;
+using Mapset;
 using StorybrewCommon.Util;
-
-namespace StorybrewCommon.Storyboarding;
 
 ///<summary> Base sprite in storyboards. </summary>
 public class OsbSprite : StoryboardObject
@@ -19,36 +19,39 @@ public class OsbSprite : StoryboardObject
     public static readonly CommandPosition DefaultPosition = new(320, 240);
 
     readonly HashSet<ICommand> commands = [];
-    CommandGroup currentCommandGroup;
 
-    ///<returns> True if the sprite is in a command group, else returns false. </returns>
-    public bool InGroup => currentCommandGroup is not null;
-
-    ///<summary> If the sprite has more commands than this amount, they will be split between multiple sprites. </summary>
-    ///<remarks> Does not apply when the sprite has triggers. </remarks>
+    /// <summary> If the sprite has more commands than this amount, they will be split between multiple sprites. </summary>
+    /// <remarks> Does not apply when the sprite has triggers. </remarks>
     public int CommandSplitThreshold;
 
-    string texturePath = "";
-    ///<returns> The path to the image of the <see cref="OsbSprite"/>. </returns>
-    public string TexturePath
-    {
-        get => texturePath;
-        set
-        {
-            var path = PathHelper.WithStandardSeparators(value);
-            if (texturePath != path) texturePath = path;
-        }
-    }
+    float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue;
+    CommandGroup currentCommandGroup;
 
-    ///<returns> Image of the sprite at <paramref name="time"/>. </returns>
-    public virtual string GetTexturePathAt(float time) => texturePath;
+    CommandPosition initialPosition;
 
     ///<summary> Origin of this sprite. </summary>
     public OsbOrigin Origin = OsbOrigin.Centre;
 
-    CommandPosition initialPosition;
+    string texturePath = "";
 
-    ///<returns> The initial position of the <see cref="OsbSprite"/>. </returns>
+    ///<summary> Constructs a new abstract sprite. </summary>
+    public OsbSprite()
+    {
+        initializeDisplayValueBuilders();
+        InitialPosition = DefaultPosition;
+    }
+
+    ///<returns> True if the sprite is in a command group, else returns false. </returns>
+    public bool InGroup => currentCommandGroup is not null;
+
+    /// <returns> The path to the image of the <see cref="OsbSprite" />. </returns>
+    public string TexturePath
+    {
+        get => texturePath;
+        set => texturePath = PathHelper.WithStandardSeparators(value);
+    }
+
+    /// <returns> The initial position of the <see cref="OsbSprite" />. </returns>
     public CommandPosition InitialPosition
     {
         get => initialPosition;
@@ -65,31 +68,27 @@ public class OsbSprite : StoryboardObject
     ///<summary> Gets a list of commands on this sprite. </summary>
     public IEnumerable<ICommand> Commands => commands;
 
-    ///<returns> The total amount of commands being run on this instance of the <see cref="OsbSprite"/>. </returns>
+    /// <returns> The total amount of commands being run on this instance of the <see cref="OsbSprite" />. </returns>
     public int CommandCount => commands.Count;
 
-    ///<returns> The total amount of commands, including loops, being run on this instance of the <see cref="OsbSprite"/>. </returns>
+    /// <returns> The total amount of commands, including loops, being run on this instance of the <see cref="OsbSprite" />. </returns>
     public int CommandCost => commands.Sum(c => c.Cost);
 
-    ///<returns> True if the <see cref="OsbSprite"/> has incompatible commands, else returns false. </returns>
-    public bool HasIncompatibleCommands =>
-        (moveTimeline.HasCommands && (moveXTimeline.HasCommands || moveYTimeline.HasCommands)) ||
-        (scaleTimeline.HasCommands && scaleVecTimeline.HasCommands);
+    /// <returns> True if the <see cref="OsbSprite" /> has incompatible commands, else returns false. </returns>
+    public bool HasIncompatibleCommands
+        => moveTimeline.HasCommands && (moveXTimeline.HasCommands || moveYTimeline.HasCommands) ||
+            scaleTimeline.HasCommands && scaleVecTimeline.HasCommands;
 
-    ///<returns> True if the <see cref="OsbSprite"/> has overlapping commands, else returns false. </returns>
-    public bool HasOverlappedCommands =>
-        moveTimeline.HasOverlap || moveXTimeline.HasOverlap || moveYTimeline.HasOverlap ||
-        scaleTimeline.HasOverlap || scaleVecTimeline.HasOverlap ||
-        rotateTimeline.HasOverlap ||
-        fadeTimeline.HasOverlap ||
-        colorTimeline.HasOverlap ||
-        additiveTimeline.HasOverlap || flipHTimeline.HasOverlap || flipVTimeline.HasOverlap;
+    /// <returns> True if the <see cref="OsbSprite" /> has overlapping commands, else returns false. </returns>
+    public bool HasOverlappedCommands
+        => moveTimeline.HasOverlap || moveXTimeline.HasOverlap || moveYTimeline.HasOverlap ||
+            scaleTimeline.HasOverlap || scaleVecTimeline.HasOverlap || rotateTimeline.HasOverlap ||
+            fadeTimeline.HasOverlap || colorTimeline.HasOverlap || additiveTimeline.HasOverlap ||
+            flipHTimeline.HasOverlap || flipVTimeline.HasOverlap;
 
     public bool HasRotateCommands => rotateTimeline.HasCommands;
     public bool HasScalingCommands => scaleTimeline.HasCommands || scaleVecTimeline.HasCommands;
     public bool HasMoveXYCommands => moveXTimeline.HasCommands || moveYTimeline.HasCommands;
-
-    float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue;
 
     ///<summary> Gets the start time of the first command on this sprite. </summary>
     public override float StartTime
@@ -111,470 +110,543 @@ public class OsbSprite : StoryboardObject
         }
     }
 
+    /// <returns> Image of the sprite at <paramref name="time" />. </returns>
+    public virtual string GetTexturePathAt(float time) => texturePath;
+
     void refreshStartEndTimes()
     {
         clearStartEndTimes();
-        foreach (var command in commands) if (command.Active)
+        foreach (var command in commands)
+            if (command.Active)
             {
                 commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
                 commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
             }
     }
+
     void clearStartEndTimes()
     {
         commandsStartTime = float.MaxValue;
         commandsEndTime = float.MinValue;
     }
 
-    ///<summary> Constructs a new abstract sprite. </summary>
-    public OsbSprite()
-    {
-        initializeDisplayValueBuilders();
-        InitialPosition = DefaultPosition;
-    }
-
     //==========M==========//
-    ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
-    ///<param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, CommandPosition startPosition, CommandPosition endPosition) => addCommand(new MoveCommand(easing, startTime, endTime, startPosition, endPosition));
+    /// <summary>
+    ///     Change the position of an <see cref="OsbSprite" /> over time. Commands similar to MoveX are available for
+    ///     MoveY.
+    /// </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startPosition"> Start <see cref="CommandPosition" /> value of the command. </param>
+    /// <param name="endPosition"> End <see cref="CommandPosition" /> value of the command. </param>
+    public void Move(OsbEasing easing, float startTime, float endTime, CommandPosition startPosition,
+        CommandPosition endPosition)
+        => addCommand(new MoveCommand(easing, startTime, endTime, startPosition, endPosition));
 
-    ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
-    ///<param name="endX"> End-X value of the command. </param>
-    ///<param name="endY"> End-Y value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, CommandPosition startPosition, float endX, float endY) => Move(easing, startTime, endTime, startPosition, new Vector2(endX, endY));
+    /// <summary>
+    ///     Change the position of an <see cref="OsbSprite" /> over time. Commands similar to MoveX are available for
+    ///     MoveY.
+    /// </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startPosition"> Start <see cref="CommandPosition" /> value of the command. </param>
+    /// <param name="endX"> End-X value of the command. </param>
+    /// <param name="endY"> End-Y value of the command. </param>
+    public void Move(OsbEasing easing, float startTime, float endTime, CommandPosition startPosition, float endX,
+        float endY)
+        => Move(easing, startTime, endTime, startPosition, new Vector2(endX, endY));
 
-    ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startX"> Start-X value of the command. </param>
-    ///<param name="startY"> Start-Y value of the command. </param>
-    ///<param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, float startX, float startY, CommandPosition endPosition) => Move(easing, startTime, endTime, new Vector2(startX, startY), endPosition);
+    /// <summary>
+    ///     Change the position of an <see cref="OsbSprite" /> over time. Commands similar to MoveX are available for
+    ///     MoveY.
+    /// </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startX"> Start-X value of the command. </param>
+    /// <param name="startY"> Start-Y value of the command. </param>
+    /// <param name="endPosition"> End <see cref="CommandPosition" /> value of the command. </param>
+    public void Move(OsbEasing easing, float startTime, float endTime, float startX, float startY,
+        CommandPosition endPosition)
+        => Move(easing, startTime, endTime, new Vector2(startX, startY), endPosition);
 
-    ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startX"> Start-X value of the command. </param>
-    ///<param name="startY"> Start-Y value of the command. </param>
-    ///<param name="endX"> End-X value of the command. </param>
-    ///<param name="endY"> End-Y value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, float startX, float startY, float endX, float endY) => Move(easing, startTime, endTime, new Vector2(startX, startY), new Vector2(endX, endY));
+    /// <summary>
+    ///     Change the position of an <see cref="OsbSprite" /> over time. Commands similar to MoveX are available for
+    ///     MoveY.
+    /// </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startX"> Start-X value of the command. </param>
+    /// <param name="startY"> Start-Y value of the command. </param>
+    /// <param name="endX"> End-X value of the command. </param>
+    /// <param name="endY"> End-Y value of the command. </param>
+    public void Move(OsbEasing easing, float startTime, float endTime, float startX, float startY, float endX,
+        float endY)
+        => Move(easing, startTime, endTime, new Vector2(startX, startY), new Vector2(endX, endY));
 
-    ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
-    ///<param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
-    public void Move(float startTime, float endTime, CommandPosition startPosition, CommandPosition endPosition) => Move(default, startTime, endTime, startPosition, endPosition);
+    /// <summary>
+    ///     Change the position of an <see cref="OsbSprite" /> over time. Commands similar to MoveX are available for
+    ///     MoveY.
+    /// </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startPosition"> Start <see cref="CommandPosition" /> value of the command. </param>
+    /// <param name="endPosition"> End <see cref="CommandPosition" /> value of the command. </param>
+    public void Move(float startTime, float endTime, CommandPosition startPosition, CommandPosition endPosition)
+        => Move(default, startTime, endTime, startPosition, endPosition);
 
-    ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
-    ///<param name="endX"> End-X value of the command. </param>
-    ///<param name="endY"> End-Y value of the command. </param>
-    public void Move(float startTime, float endTime, CommandPosition startPosition, float endX, float endY) => Move(default, startTime, endTime, startPosition, endX, endY);
+    /// <summary>
+    ///     Change the position of an <see cref="OsbSprite" /> over time. Commands similar to MoveX are available for
+    ///     MoveY.
+    /// </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startPosition"> Start <see cref="CommandPosition" /> value of the command. </param>
+    /// <param name="endX"> End-X value of the command. </param>
+    /// <param name="endY"> End-Y value of the command. </param>
+    public void Move(float startTime, float endTime, CommandPosition startPosition, float endX, float endY)
+        => Move(default, startTime, endTime, startPosition, endX, endY);
 
-    ///<summary> Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startX"> Start-X value of the command. </param>
-    ///<param name="startY"> Start-Y value of the command. </param>
-    ///<param name="endX"> End-X value of the command. </param>
-    ///<param name="endY"> End-Y value of the command. </param>
-    public void Move(float startTime, float endTime, float startX, float startY, float endX, float endY) => Move(default, startTime, endTime, startX, startY, endX, endY);
+    /// <summary>
+    ///     Change the position of an <see cref="OsbSprite" /> over time. Commands similar to MoveX are available for
+    ///     MoveY.
+    /// </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startX"> Start-X value of the command. </param>
+    /// <param name="startY"> Start-Y value of the command. </param>
+    /// <param name="endX"> End-X value of the command. </param>
+    /// <param name="endY"> End-Y value of the command. </param>
+    public void Move(float startTime, float endTime, float startX, float startY, float endX, float endY)
+        => Move(default, startTime, endTime, startX, startY, endX, endY);
 
-    ///<summary> Sets the position of an <see cref="OsbSprite"/>. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="position"> <see cref="CommandPosition"/> value of the command. </param>
+    /// <summary> Sets the position of an <see cref="OsbSprite" />. Commands similar to MoveX are available for MoveY. </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="position"> <see cref="CommandPosition" /> value of the command. </param>
     public void Move(float time, CommandPosition position) => Move(default, time, time, position, position);
 
-    ///<summary> Sets the position of an <see cref="OsbSprite"/>. Commands similar to MoveX are available for MoveY. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="x"> X value of the command. </param>
-    ///<param name="y"> Y value of the command. </param>
+    /// <summary> Sets the position of an <see cref="OsbSprite" />. Commands similar to MoveX are available for MoveY. </summary>
+    /// <remarks> Cannot be used with <see cref="MoveXCommand" /> or <see cref="MoveYCommand" />. </remarks>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="x"> X value of the command. </param>
+    /// <param name="y"> Y value of the command. </param>
     public void Move(float time, float x, float y) => Move(default, time, time, x, y, x, y);
 
     //==========MX==========//
-    ///<summary> Change the x-position of a <see cref="OsbSprite"/> over time. Commands are also available for MoveY.</summary>
-    ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startX"> Start-X value of the command. </param>
-    ///<param name="endX"> End-X value of the command. </param>
-    public void MoveX(OsbEasing easing, float startTime, float endTime, float startX, float endX) => addCommand(new MoveXCommand(easing, startTime, endTime, startX, endX));
+    /// <summary> Change the x-position of a <see cref="OsbSprite" /> over time. Commands are also available for MoveY.</summary>
+    /// <remarks> Cannot be used with <see cref="MoveCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startX"> Start-X value of the command. </param>
+    /// <param name="endX"> End-X value of the command. </param>
+    public void MoveX(OsbEasing easing, float startTime, float endTime, float startX, float endX)
+        => addCommand(new MoveXCommand(easing, startTime, endTime, startX, endX));
 
-    ///<summary> Change the x-position of a <see cref="OsbSprite"/> over time. Commands are also available for MoveY.</summary>
-    ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startX"> Start-X value of the command. </param>
-    ///<param name="endX"> End-X value of the command. </param>
-    public void MoveX(float startTime, float endTime, float startX, float endX) => MoveX(default, startTime, endTime, startX, endX);
+    /// <summary> Change the x-position of a <see cref="OsbSprite" /> over time. Commands are also available for MoveY.</summary>
+    /// <remarks> Cannot be used with <see cref="MoveCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startX"> Start-X value of the command. </param>
+    /// <param name="endX"> End-X value of the command. </param>
+    public void MoveX(float startTime, float endTime, float startX, float endX)
+        => MoveX(default, startTime, endTime, startX, endX);
 
-    ///<summary> Sets the X-Position of an <see cref="OsbSprite"/>. Commands are also available for MoveY.</summary>
-    ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="x"> X value of the command. </param>
+    /// <summary> Sets the X-Position of an <see cref="OsbSprite" />. Commands are also available for MoveY.</summary>
+    /// <remarks> Cannot be used with <see cref="MoveCommand" />. </remarks>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="x"> X value of the command. </param>
     public void MoveX(float time, float x) => MoveX(default, time, time, x, x);
 
     //==========MY==========//
-    ///<summary> Change the Y-Position of an <see cref="OsbSprite"/> over time. Commands are also available for MoveX. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startY"> Start-Y value of the command. </param>
-    ///<param name="endY"> End-Y value of the command. </param>
-    public void MoveY(OsbEasing easing, float startTime, float endTime, float startY, float endY) => addCommand(new MoveYCommand(easing, startTime, endTime, startY, endY));
+    /// <summary> Change the Y-Position of an <see cref="OsbSprite" /> over time. Commands are also available for MoveX. </summary>
+    /// <remarks> Cannot be used with <see cref="MoveCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startY"> Start-Y value of the command. </param>
+    /// <param name="endY"> End-Y value of the command. </param>
+    public void MoveY(OsbEasing easing, float startTime, float endTime, float startY, float endY)
+        => addCommand(new MoveYCommand(easing, startTime, endTime, startY, endY));
 
-    ///<summary> Change the Y-Position of an <see cref="OsbSprite"/> over time. Commands are also available for MoveX. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startY"> Start-Y value of the command. </param>
-    ///<param name="endY"> End-Y value of the command. </param>
-    public void MoveY(float startTime, float endTime, float startY, float endY) => MoveY(default, startTime, endTime, startY, endY);
+    /// <summary> Change the Y-Position of an <see cref="OsbSprite" /> over time. Commands are also available for MoveX. </summary>
+    /// <remarks> Cannot be used with <see cref="MoveCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startY"> Start-Y value of the command. </param>
+    /// <param name="endY"> End-Y value of the command. </param>
+    public void MoveY(float startTime, float endTime, float startY, float endY)
+        => MoveY(default, startTime, endTime, startY, endY);
 
-    ///<summary> Sets the Y-Position of an <see cref="OsbSprite"/>. Commands are also available for MoveX. </summary>
-    ///<remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="y"> Y value of the command. </param>
+    /// <summary> Sets the Y-Position of an <see cref="OsbSprite" />. Commands are also available for MoveX. </summary>
+    /// <remarks> Cannot be used with <see cref="MoveCommand" />. </remarks>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="y"> Y value of the command. </param>
     public void MoveY(float time, float y) => MoveY(default, time, time, y, y);
 
     //==========S==========//
-    ///<summary> Change the size of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="VScaleCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startScale"> Start scale of the command. </param>
-    ///<param name="endScale"> End scale of the command. </param>
-    public void Scale(OsbEasing easing, float startTime, float endTime, float startScale, float endScale) => addCommand(new ScaleCommand(easing, startTime, endTime, startScale, endScale));
+    /// <summary> Change the size of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="VScaleCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startScale"> Start scale of the command. </param>
+    /// <param name="endScale"> End scale of the command. </param>
+    public void Scale(OsbEasing easing, float startTime, float endTime, float startScale, float endScale)
+        => addCommand(new ScaleCommand(easing, startTime, endTime, startScale, endScale));
 
-    ///<summary> Change the size of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="VScaleCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startScale"> Start scale of the command. </param>
-    ///<param name="endScale"> End scale of the command. </param>
-    public void Scale(float startTime, float endTime, float startScale, float endScale) => Scale(default, startTime, endTime, startScale, endScale);
+    /// <summary> Change the size of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="VScaleCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startScale"> Start scale of the command. </param>
+    /// <param name="endScale"> End scale of the command. </param>
+    public void Scale(float startTime, float endTime, float startScale, float endScale)
+        => Scale(default, startTime, endTime, startScale, endScale);
 
-    ///<summary> Sets the size of a sprite. </summary>
-    ///<remarks> Cannot be used with <see cref="VScaleCommand"/>. </remarks>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="scale"> Scale of the command. </param>
+    /// <summary> Sets the size of a sprite. </summary>
+    /// <remarks> Cannot be used with <see cref="VScaleCommand" />. </remarks>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="scale"> Scale of the command. </param>
     public void Scale(float time, float scale) => Scale(default, time, time, scale, scale);
 
     //==========V==========//
-    ///<summary> Change the vector scale of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
-    ///<param name="endScale"> End <see cref="CommandScale"/> value of the command. </param>
-    public void ScaleVec(OsbEasing easing, float startTime, float endTime, CommandScale startScale, CommandScale endScale) => addCommand(new VScaleCommand(easing, startTime, endTime, startScale, endScale));
+    /// <summary> Change the vector scale of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startScale"> Start <see cref="CommandScale" /> value of the command. </param>
+    /// <param name="endScale"> End <see cref="CommandScale" /> value of the command. </param>
+    public void ScaleVec(OsbEasing easing, float startTime, float endTime, CommandScale startScale,
+        CommandScale endScale)
+        => addCommand(new VScaleCommand(easing, startTime, endTime, startScale, endScale));
 
-    ///<summary> Change the vector scale of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
-    ///<param name="endX"> End X-Scale value of the command. </param>
-    ///<param name="endY"> End Y-Scale value of the command. </param>
-    public void ScaleVec(OsbEasing easing, float startTime, float endTime, CommandScale startScale, float endX, float endY) => ScaleVec(easing, startTime, endTime, startScale, new Vector2(endX, endY));
+    /// <summary> Change the vector scale of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startScale"> Start <see cref="CommandScale" /> value of the command. </param>
+    /// <param name="endX"> End X-Scale value of the command. </param>
+    /// <param name="endY"> End Y-Scale value of the command. </param>
+    public void ScaleVec(OsbEasing easing, float startTime, float endTime, CommandScale startScale, float endX,
+        float endY)
+        => ScaleVec(easing, startTime, endTime, startScale, new Vector2(endX, endY));
 
-    ///<summary> Change the vector scale of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startX"> Start X-Scale value of the command. </param>
-    ///<param name="startY"> Start Y-Scale value of the command. </param>
-    ///<param name="endX"> End X-Scale value of the command. </param>
-    ///<param name="endY"> End Y-Scale value of the command. </param>
-    public void ScaleVec(OsbEasing easing, float startTime, float endTime, float startX, float startY, float endX, float endY) => ScaleVec(easing, startTime, endTime, new Vector2(startX, startY), new Vector2(endX, endY));
+    /// <summary> Change the vector scale of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startX"> Start X-Scale value of the command. </param>
+    /// <param name="startY"> Start Y-Scale value of the command. </param>
+    /// <param name="endX"> End X-Scale value of the command. </param>
+    /// <param name="endY"> End Y-Scale value of the command. </param>
+    public void ScaleVec(OsbEasing easing, float startTime, float endTime, float startX, float startY, float endX,
+        float endY)
+        => ScaleVec(easing, startTime, endTime, new Vector2(startX, startY), new Vector2(endX, endY));
 
-    ///<summary> Change the vector scale of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
-    ///<param name="endScale"> End <see cref="CommandScale"/> value of the command. </param>
-    public void ScaleVec(float startTime, float endTime, CommandScale startScale, CommandScale endScale) => ScaleVec(default, startTime, endTime, startScale, endScale);
+    /// <summary> Change the vector scale of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startScale"> Start <see cref="CommandScale" /> value of the command. </param>
+    /// <param name="endScale"> End <see cref="CommandScale" /> value of the command. </param>
+    public void ScaleVec(float startTime, float endTime, CommandScale startScale, CommandScale endScale)
+        => ScaleVec(default, startTime, endTime, startScale, endScale);
 
-    ///<summary> Change the vector scale of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
-    ///<param name="endX"> End X-Scale value of the command. </param>
-    ///<param name="endY"> End Y-Scale value of the command. </param>
-    public void ScaleVec(float startTime, float endTime, CommandScale startScale, float endX, float endY) => ScaleVec(default, startTime, endTime, startScale, endX, endY);
+    /// <summary> Change the vector scale of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startScale"> Start <see cref="CommandScale" /> value of the command. </param>
+    /// <param name="endX"> End X-Scale value of the command. </param>
+    /// <param name="endY"> End Y-Scale value of the command. </param>
+    public void ScaleVec(float startTime, float endTime, CommandScale startScale, float endX, float endY)
+        => ScaleVec(default, startTime, endTime, startScale, endX, endY);
 
-    ///<summary> Change the vector scale of a sprite over time. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startX"> Start X-Scale value of the command. </param>
-    ///<param name="startY"> Start Y-Scale value of the command. </param>
-    ///<param name="endX"> End X-Scale value of the command. </param>
-    ///<param name="endY"> End Y-Scale value of the command. </param>
-    public void ScaleVec(float startTime, float endTime, float startX, float startY, float endX, float endY) => ScaleVec(default, startTime, endTime, startX, startY, endX, endY);
+    /// <summary> Change the vector scale of a sprite over time. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startX"> Start X-Scale value of the command. </param>
+    /// <param name="startY"> Start Y-Scale value of the command. </param>
+    /// <param name="endX"> End X-Scale value of the command. </param>
+    /// <param name="endY"> End Y-Scale value of the command. </param>
+    public void ScaleVec(float startTime, float endTime, float startX, float startY, float endX, float endY)
+        => ScaleVec(default, startTime, endTime, startX, startY, endX, endY);
 
-    ///<summary> Sets the vector scale of a sprite. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="scale"> <see cref="CommandScale"/> value of the command. </param>
+    /// <summary> Sets the vector scale of a sprite. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="scale"> <see cref="CommandScale" /> value of the command. </param>
     public void ScaleVec(float time, CommandScale scale) => ScaleVec(default, time, time, scale, scale);
 
-    ///<summary> Sets the vector scale of a sprite. </summary>
-    ///<remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="x"> Scale-X value of the command. </param>
-    ///<param name="y"> Scale-Y value of the command. </param>
+    /// <summary> Sets the vector scale of a sprite. </summary>
+    /// <remarks> Cannot be used with <see cref="ScaleCommand" />. </remarks>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="x"> Scale-X value of the command. </param>
+    /// <param name="y"> Scale-Y value of the command. </param>
     public void ScaleVec(float time, float x, float y) => ScaleVec(default, time, time, x, y, x, y);
 
     //==========R==========//
-    ///<summary> Change the rotation of an <see cref="OsbSprite"/> over time. Angles are in radians. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startRotation"> Start radians of the command. </param>
-    ///<param name="endRotation"> End radians of the command. </param>
-    public void Rotate(OsbEasing easing, float startTime, float endTime, float startRotation, float endRotation) => addCommand(new RotateCommand(easing, startTime, endTime, startRotation, endRotation));
+    /// <summary> Change the rotation of an <see cref="OsbSprite" /> over time. Angles are in radians. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startRotation"> Start radians of the command. </param>
+    /// <param name="endRotation"> End radians of the command. </param>
+    public void Rotate(OsbEasing easing, float startTime, float endTime, float startRotation, float endRotation)
+        => addCommand(new RotateCommand(easing, startTime, endTime, startRotation, endRotation));
 
-    ///<summary> Change the rotation of an <see cref="OsbSprite"/> over time. Angles are in radians. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startRotation"> Start radians of the command. </param>
-    ///<param name="endRotation"> End radians of the command. </param>
-    public void Rotate(float startTime, float endTime, float startRotation, float endRotation) => Rotate(default, startTime, endTime, startRotation, endRotation);
+    /// <summary> Change the rotation of an <see cref="OsbSprite" /> over time. Angles are in radians. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startRotation"> Start radians of the command. </param>
+    /// <param name="endRotation"> End radians of the command. </param>
+    public void Rotate(float startTime, float endTime, float startRotation, float endRotation)
+        => Rotate(default, startTime, endTime, startRotation, endRotation);
 
-    ///<summary> Sets the rotation of an <see cref="OsbSprite"/>. Angles are in radians. </summary>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="rotation"> Radians of the command. </param>
+    /// <summary> Sets the rotation of an <see cref="OsbSprite" />. Angles are in radians. </summary>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="rotation"> Radians of the command. </param>
     public void Rotate(float time, float rotation) => Rotate(default, time, time, rotation, rotation);
 
     //==========F==========//
-    ///<summary> Change the opacity of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startFade"> Start fade value of the command. </param>
-    ///<param name="endFade"> End fade value of the command. </param>
-    public void Fade(OsbEasing easing, float startTime, float endTime, float startFade, float endFade) => addCommand(new FadeCommand(easing, startTime, endTime, startFade, endFade));
+    /// <summary> Change the opacity of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startFade"> Start fade value of the command. </param>
+    /// <param name="endFade"> End fade value of the command. </param>
+    public void Fade(OsbEasing easing, float startTime, float endTime, float startFade, float endFade)
+        => addCommand(new FadeCommand(easing, startTime, endTime, startFade, endFade));
 
-    ///<summary> Change the opacity of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startFade"> Start fade value of the command. </param>
-    ///<param name="endFade"> End fade value of the command. </param>
-    public void Fade(float startTime, float endTime, float startFade, float endFade) => Fade(default, startTime, endTime, startFade, endFade);
+    /// <summary> Change the opacity of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startFade"> Start fade value of the command. </param>
+    /// <param name="endFade"> End fade value of the command. </param>
+    public void Fade(float startTime, float endTime, float startFade, float endFade)
+        => Fade(default, startTime, endTime, startFade, endFade);
 
-    ///<summary> Sets the opacity of an <see cref="OsbSprite"/>. </summary>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="fade"> Fade value of the command. </param>
+    /// <summary> Sets the opacity of an <see cref="OsbSprite" />. </summary>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="fade"> Fade value of the command. </param>
     public void Fade(float time, float fade) => Fade(default, time, time, fade, fade);
 
     //==========C==========//
-    ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
-    ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
-    public void Color(OsbEasing easing, float startTime, float endTime, CommandColor startColor, CommandColor endColor) => addCommand(new ColorCommand(easing, startTime, endTime, startColor, endColor));
+    /// <summary> Change the RGB color of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startColor"> Start <see cref="CommandColor" /> value of the command. </param>
+    /// <param name="endColor"> End <see cref="CommandColor" /> value of the command. </param>
+    public void Color(OsbEasing easing, float startTime, float endTime, CommandColor startColor, CommandColor endColor)
+        => addCommand(new ColorCommand(easing, startTime, endTime, startColor, endColor));
 
-    ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
-    ///<param name="endR"> End red value of the command. </param>
-    ///<param name="endG"> End green value of the command. </param>
-    ///<param name="endB"> End blue value of the command. </param>
-    public void Color(OsbEasing easing, float startTime, float endTime, CommandColor startColor, float endR, float endG, float endB) => Color(easing, startTime, endTime, startColor, new CommandColor(endR, endG, endB));
+    /// <summary> Change the RGB color of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startColor"> Start <see cref="CommandColor" /> value of the command. </param>
+    /// <param name="endR"> End red value of the command. </param>
+    /// <param name="endG"> End green value of the command. </param>
+    /// <param name="endB"> End blue value of the command. </param>
+    public void Color(OsbEasing easing, float startTime, float endTime, CommandColor startColor, float endR, float endG,
+        float endB)
+        => Color(easing, startTime, endTime, startColor, new CommandColor(endR, endG, endB));
 
-    ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startR"> Start red value of the command. </param>
-    ///<param name="startG"> Start green value of the command. </param>
-    ///<param name="startB"> Start blue value of the command. </param>
-    ///<param name="endR"> End red value of the command. </param>
-    ///<param name="endG"> End green value of the command. </param>
-    ///<param name="endB"> End blue value of the command. </param>
-    public void Color(OsbEasing easing, float startTime, float endTime, float startR, float startG, float startB, float endR, float endG, float endB) => Color(easing, startTime, endTime, new CommandColor(startR, startG, startB), new CommandColor(endR, endG, endB));
+    /// <summary> Change the RGB color of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startR"> Start red value of the command. </param>
+    /// <param name="startG"> Start green value of the command. </param>
+    /// <param name="startB"> Start blue value of the command. </param>
+    /// <param name="endR"> End red value of the command. </param>
+    /// <param name="endG"> End green value of the command. </param>
+    /// <param name="endB"> End blue value of the command. </param>
+    public void Color(OsbEasing easing, float startTime, float endTime, float startR, float startG, float startB,
+        float endR, float endG, float endB)
+        => Color(easing, startTime, endTime, new CommandColor(startR, startG, startB),
+            new CommandColor(endR, endG, endB));
 
-    ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
-    ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
-    public void Color(float startTime, float endTime, CommandColor startColor, CommandColor endColor) => Color(default, startTime, endTime, startColor, endColor);
+    /// <summary> Change the RGB color of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startColor"> Start <see cref="CommandColor" /> value of the command. </param>
+    /// <param name="endColor"> End <see cref="CommandColor" /> value of the command. </param>
+    public void Color(float startTime, float endTime, CommandColor startColor, CommandColor endColor)
+        => Color(default, startTime, endTime, startColor, endColor);
 
-    ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
-    ///<param name="endR"> End red value of the command. </param>
-    ///<param name="endG"> End green value of the command. </param>
-    ///<param name="endB"> End blue value of the command. </param>
-    public void Color(float startTime, float endTime, CommandColor startColor, float endR, float endG, float endB) => Color(default, startTime, endTime, startColor, endR, endG, endB);
+    /// <summary> Change the RGB color of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startColor"> Start <see cref="CommandColor" /> value of the command. </param>
+    /// <param name="endR"> End red value of the command. </param>
+    /// <param name="endG"> End green value of the command. </param>
+    /// <param name="endB"> End blue value of the command. </param>
+    public void Color(float startTime, float endTime, CommandColor startColor, float endR, float endG, float endB)
+        => Color(default, startTime, endTime, startColor, endR, endG, endB);
 
-    ///<summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startR"> Start red value of the command. </param>
-    ///<param name="startG"> Start green value of the command. </param>
-    ///<param name="startB"> Start blue value of the command. </param>
-    ///<param name="endR"> End red value of the command. </param>
-    ///<param name="endG"> End green value of the command. </param>
-    ///<param name="endB"> End blue value of the command. </param>
-    public void Color(float startTime, float endTime, float startR, float startG, float startB, float endR, float endG, float endB) => Color(default, startTime, endTime, startR, startG, startB, endR, endG, endB);
+    /// <summary> Change the RGB color of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startR"> Start red value of the command. </param>
+    /// <param name="startG"> Start green value of the command. </param>
+    /// <param name="startB"> Start blue value of the command. </param>
+    /// <param name="endR"> End red value of the command. </param>
+    /// <param name="endG"> End green value of the command. </param>
+    /// <param name="endB"> End blue value of the command. </param>
+    public void Color(float startTime, float endTime, float startR, float startG, float startB, float endR, float endG,
+        float endB)
+        => Color(default, startTime, endTime, startR, startG, startB, endR, endG, endB);
 
-    ///<summary> Sets the RGB color of an <see cref="OsbSprite"/>. </summary>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="color"> The <see cref="CommandColor"/> value of the command. </param>
+    /// <summary> Sets the RGB color of an <see cref="OsbSprite" />. </summary>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="color"> The <see cref="CommandColor" /> value of the command. </param>
     public void Color(float time, CommandColor color) => Color(default, time, time, color, color);
 
-    ///<summary> Sets the RGB color of an <see cref="OsbSprite"/>. </summary>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="r"> Red value of the command. </param>
-    ///<param name="g"> Green value of the command. </param>
-    ///<param name="b"> Blue value of the command. </param>
+    /// <summary> Sets the RGB color of an <see cref="OsbSprite" />. </summary>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="r"> Red value of the command. </param>
+    /// <param name="g"> Green value of the command. </param>
+    /// <param name="b"> Blue value of the command. </param>
     public void Color(float time, float r, float g, float b) => Color(default, time, time, r, g, b, r, g, b);
 
-    ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
-    ///<param name="endH"> End hue value (in degrees) of the command. </param>
-    ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
-    ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
-    public void ColorHsb(OsbEasing easing, float startTime, float endTime, CommandColor startColor, float endH, float endS, float endB) => Color(easing, startTime, endTime, startColor, CommandColor.FromHsb(endH, endS, endB));
+    /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startColor"> Start <see cref="CommandColor" /> value of the command. </param>
+    /// <param name="endH"> End hue value (in degrees) of the command. </param>
+    /// <param name="endS"> End saturation value (from 0 to 1) of the command. </param>
+    /// <param name="endB"> End brightness level (from 0 to 1) of the command. </param>
+    public void ColorHsb(OsbEasing easing, float startTime, float endTime, CommandColor startColor, float endH,
+        float endS, float endB)
+        => Color(easing, startTime, endTime, startColor, CommandColor.FromHsb(endH, endS, endB));
 
-    ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startH"> Start hue value (in degrees) of the command. </param>
-    ///<param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
-    ///<param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
-    ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
-    public void ColorHsb(OsbEasing easing, float startTime, float endTime, float startH, float startS, float startB, CommandColor endColor) => Color(easing, startTime, endTime, CommandColor.FromHsb(startH, startS, startB), endColor);
+    /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startH"> Start hue value (in degrees) of the command. </param>
+    /// <param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
+    /// <param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
+    /// <param name="endColor"> End <see cref="CommandColor" /> value of the command. </param>
+    public void ColorHsb(OsbEasing easing, float startTime, float endTime, float startH, float startS, float startB,
+        CommandColor endColor)
+        => Color(easing, startTime, endTime, CommandColor.FromHsb(startH, startS, startB), endColor);
 
-    ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startH"> Start hue value (in degrees) of the command. </param>
-    ///<param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
-    ///<param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
-    ///<param name="endH"> End hue value (in degrees) of the command. </param>
-    ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
-    ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
-    public void ColorHsb(OsbEasing easing, float startTime, float endTime, float startH, float startS, float startB, float endH, float endS, float endB) => Color(easing, startTime, endTime, CommandColor.FromHsb(startH, startS, startB), CommandColor.FromHsb(endH, endS, endB));
+    /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="easing"> <see cref="OsbEasing" /> to be applied to the command. </param>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startH"> Start hue value (in degrees) of the command. </param>
+    /// <param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
+    /// <param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
+    /// <param name="endH"> End hue value (in degrees) of the command. </param>
+    /// <param name="endS"> End saturation value (from 0 to 1) of the command. </param>
+    /// <param name="endB"> End brightness level (from 0 to 1) of the command. </param>
+    public void ColorHsb(OsbEasing easing, float startTime, float endTime, float startH, float startS, float startB,
+        float endH, float endS, float endB)
+        => Color(easing, startTime, endTime, CommandColor.FromHsb(startH, startS, startB),
+            CommandColor.FromHsb(endH, endS, endB));
 
-    ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startH"> Start hue value (in degrees) of the command. </param>
-    ///<param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
-    ///<param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
-    ///<param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
-    public void ColorHsb(float startTime, float endTime, float startH, float startS, float startB, CommandColor endColor) => ColorHsb(default, startTime, endTime, startH, startS, startB, endColor);
+    /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startH"> Start hue value (in degrees) of the command. </param>
+    /// <param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
+    /// <param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
+    /// <param name="endColor"> End <see cref="CommandColor" /> value of the command. </param>
+    public void ColorHsb(float startTime, float endTime, float startH, float startS, float startB,
+        CommandColor endColor)
+        => ColorHsb(default, startTime, endTime, startH, startS, startB, endColor);
 
-    ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
-    ///<param name="endH"> End hue value (in degrees) of the command. </param>
-    ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
-    ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
-    public void ColorHsb(float startTime, float endTime, CommandColor startColor, float endH, float endS, float endB) => ColorHsb(default, startTime, endTime, startColor, endH, endS, endB);
+    /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startColor"> Start <see cref="CommandColor" /> value of the command. </param>
+    /// <param name="endH"> End hue value (in degrees) of the command. </param>
+    /// <param name="endS"> End saturation value (from 0 to 1) of the command. </param>
+    /// <param name="endB"> End brightness level (from 0 to 1) of the command. </param>
+    public void ColorHsb(float startTime, float endTime, CommandColor startColor, float endH, float endS, float endB)
+        => ColorHsb(default, startTime, endTime, startColor, endH, endS, endB);
 
-    ///<summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="startH"> Start hue value (in degrees) of the command. </param>
-    ///<param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
-    ///<param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
-    ///<param name="endH"> End hue value (in degrees) of the command. </param>
-    ///<param name="endS"> End saturation value (from 0 to 1) of the command. </param>
-    ///<param name="endB"> End brightness level (from 0 to 1) of the command. </param>
-    public void ColorHsb(float startTime, float endTime, float startH, float startS, float startB, float endH, float endS, float endB) => ColorHsb(default, startTime, endTime, startH, startS, startB, endH, endS, endB);
+    /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite" /> over time. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="startH"> Start hue value (in degrees) of the command. </param>
+    /// <param name="startS"> Start saturation value (from 0 to 1) of the command. </param>
+    /// <param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
+    /// <param name="endH"> End hue value (in degrees) of the command. </param>
+    /// <param name="endS"> End saturation value (from 0 to 1) of the command. </param>
+    /// <param name="endB"> End brightness level (from 0 to 1) of the command. </param>
+    public void ColorHsb(float startTime, float endTime, float startH, float startS, float startB, float endH,
+        float endS, float endB)
+        => ColorHsb(default, startTime, endTime, startH, startS, startB, endH, endS, endB);
 
-    ///<summary> Sets the hue, saturation, and brightness of an <see cref="OsbSprite"/>. </summary>
-    ///<param name="time"> Time of the command. </param>
-    ///<param name="h"> Hue value (in degrees) of the command. </param>
-    ///<param name="s"> Saturation value (from 0 to 1) of the command. </param>
-    ///<param name="b"> Brightness level (from 0 to 1) of the command. </param>
+    /// <summary> Sets the hue, saturation, and brightness of an <see cref="OsbSprite" />. </summary>
+    /// <param name="time"> Time of the command. </param>
+    /// <param name="h"> Hue value (in degrees) of the command. </param>
+    /// <param name="s"> Saturation value (from 0 to 1) of the command. </param>
+    /// <param name="b"> Brightness level (from 0 to 1) of the command. </param>
     public void ColorHsb(float time, float h, float s, float b) => ColorHsb(default, time, time, h, s, b, h, s, b);
 
     //==========P==========//
-    ///<summary> Apply a parameter to an <see cref="OsbSprite"/> for a given duration. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    ///<param name="param"> The <see cref="CommandParameter"/> type to be applied. </param>
-    public void Parameter(float startTime, float endTime, CommandParameter param) => addCommand(new ParameterCommand(startTime, endTime, param));
+    /// <summary> Apply a parameter to an <see cref="OsbSprite" /> for a given duration. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    /// <param name="param"> The <see cref="CommandParameter" /> type to be applied. </param>
+    public void Parameter(float startTime, float endTime, CommandParameter param)
+        => addCommand(new ParameterCommand(startTime, endTime, param));
 
-    ///<summary> Flip an <see cref="OsbSprite"/> horizontally for a given duration. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
+    /// <summary> Flip an <see cref="OsbSprite" /> horizontally for a given duration. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
     public void FlipH(float startTime, float endTime) => Parameter(startTime, endTime, CommandParameter.FlipHorizontal);
 
-    ///<summary> Flips an <see cref="OsbSprite"/> horizontally. </summary>
-    ///<param name="time"> Time of the command. </param>
+    /// <summary> Flips an <see cref="OsbSprite" /> horizontally. </summary>
+    /// <param name="time"> Time of the command. </param>
     public void FlipH(float time) => FlipH(time, time);
 
-    ///<summary> Flip an <see cref="OsbSprite"/> vertically for a given duration. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
+    /// <summary> Flip an <see cref="OsbSprite" /> vertically for a given duration. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
     public void FlipV(float startTime, float endTime) => Parameter(startTime, endTime, CommandParameter.FlipVertical);
 
-    ///<summary> Flips an <see cref="OsbSprite"/> horizontally. </summary>
-    ///<param name="time"> Time of the command. </param>
+    /// <summary> Flips an <see cref="OsbSprite" /> horizontally. </summary>
+    /// <param name="time"> Time of the command. </param>
     public void FlipV(float time) => FlipV(time, time);
 
-    ///<summary> Apply additive blending to an <see cref="OsbSprite"/> for a given duration. </summary>
-    ///<param name="startTime"> Start time of the command. </param>
-    ///<param name="endTime"> End time of the command. </param>
-    public void Additive(float startTime, float endTime) => Parameter(startTime, endTime, CommandParameter.AdditiveBlending);
+    /// <summary> Apply additive blending to an <see cref="OsbSprite" /> for a given duration. </summary>
+    /// <param name="startTime"> Start time of the command. </param>
+    /// <param name="endTime"> End time of the command. </param>
+    public void Additive(float startTime, float endTime)
+        => Parameter(startTime, endTime, CommandParameter.AdditiveBlending);
 
-    ///<summary> Applies additive blending to an <see cref="OsbSprite"/>. </summary>
-    ///<param name="time"> Time of the command. </param>
+    /// <summary> Applies additive blending to an <see cref="OsbSprite" />. </summary>
+    /// <param name="time"> Time of the command. </param>
     public void Additive(float time) => Additive(time, time);
 
-    ///<summary> Repeat commands <paramref name="loopCount"/> times until <see cref="EndGroup"/> is called. </summary>
-    ///<remarks> Command times inside the loop are relative to the <paramref name="startTime"/> of the loop. </remarks>
-    ///<param name="startTime"> Start time of the loop. </param>
-    ///<param name="loopCount"> How many times the loop should repeat. </param>
+    /// <summary> Repeat commands <paramref name="loopCount" /> times until <see cref="EndGroup" /> is called. </summary>
+    /// <remarks> Command times inside the loop are relative to the <paramref name="startTime" /> of the loop. </remarks>
+    /// <param name="startTime"> Start time of the loop. </param>
+    /// <param name="loopCount"> How many times the loop should repeat. </param>
     public LoopCommand StartLoopGroup(float startTime, int loopCount)
     {
         LoopCommand loopCommand = new(startTime, loopCount);
@@ -583,12 +655,15 @@ public class OsbSprite : StoryboardObject
         return loopCommand;
     }
 
-    ///<summary> Commands on the <see cref="OsbSprite"/> until <see cref="EndGroup"/> is called will be active when the <paramref name="triggerName"/> event happens until <paramref name="endTime"/>. </summary>
-    ///<remarks> Command times inside the loop are relative to the <paramref name="startTime"/> of the trigger loop. </remarks>
-    ///<param name="triggerName"> Trigger type of the loop </param>
-    ///<param name="startTime"> Start time of the loop. </param>
-    ///<param name="endTime"> End time of the loop. </param>
-    ///<param name="group"> Group number of the loop. </param>
+    /// <summary>
+    ///     Commands on the <see cref="OsbSprite" /> until <see cref="EndGroup" /> is called will be active when the
+    ///     <paramref name="triggerName" /> event happens until <paramref name="endTime" />.
+    /// </summary>
+    /// <remarks> Command times inside the loop are relative to the <paramref name="startTime" /> of the trigger loop. </remarks>
+    /// <param name="triggerName"> Trigger type of the loop </param>
+    /// <param name="startTime"> Start time of the loop. </param>
+    /// <param name="endTime"> End time of the loop. </param>
+    /// <param name="group"> Group number of the loop. </param>
     public TriggerCommand StartTriggerGroup(string triggerName, float startTime, float endTime, int group = 0)
     {
         TriggerCommand triggerCommand = new(triggerName, startTime, endTime, group);
@@ -613,23 +688,33 @@ public class OsbSprite : StoryboardObject
             currentCommandGroup = commandGroup;
             commands.Add(commandGroup);
         }
-        else if (currentCommandGroup is not null ? currentCommandGroup.Add(command) : commands.Add(command)) addDisplayCommand(command);
+        else if (currentCommandGroup?.Add(command) ?? commands.Add(command)) addDisplayCommand(command);
+
         clearStartEndTimes();
     }
 
-    ///<summary> Adds a command to be run on the sprite. </summary>
-    ///<param name="command"> The command type to be run. </param>
+    /// <summary> Adds a command to be run on the sprite. </summary>
+    /// <param name="command"> The command type to be run. </param>
     public void AddCommand(ICommand command)
     {
-        if (command is ColorCommand color) Color(color.Easing, color.StartTime, color.EndTime, color.StartValue, color.EndValue);
-        else if (command is FadeCommand fade) Fade(fade.Easing, fade.StartTime, fade.EndTime, fade.StartValue, fade.EndValue);
-        else if (command is ScaleCommand scale) Scale(scale.Easing, scale.StartTime, scale.EndTime, scale.StartValue, scale.EndValue);
-        else if (command is VScaleCommand vScale) ScaleVec(vScale.Easing, vScale.StartTime, vScale.EndTime, vScale.StartValue, vScale.EndValue);
-        else if (command is ParameterCommand param) Parameter(param.StartTime, param.EndTime, param.StartValue);
-        else if (command is MoveCommand move) Move(move.Easing, move.StartTime, move.EndTime, move.StartValue, move.EndValue);
-        else if (command is MoveXCommand moveX) MoveX(moveX.Easing, moveX.StartTime, moveX.EndTime, moveX.StartValue, moveX.EndValue);
-        else if (command is MoveYCommand moveY) MoveY(moveY.Easing, moveY.StartTime, moveY.EndTime, moveY.StartValue, moveY.EndValue);
-        else if (command is RotateCommand rotate) Rotate(rotate.Easing, rotate.StartTime, rotate.EndTime, rotate.StartValue, rotate.EndValue);
+        if (command is ColorCommand color)
+            Color(color.Easing, color.StartTime, color.EndTime, color.StartValue, color.EndValue);
+        else if (command is FadeCommand fade)
+            Fade(fade.Easing, fade.StartTime, fade.EndTime, fade.StartValue, fade.EndValue);
+        else if (command is ScaleCommand scale)
+            Scale(scale.Easing, scale.StartTime, scale.EndTime, scale.StartValue, scale.EndValue);
+        else if (command is VScaleCommand vScale)
+            ScaleVec(vScale.Easing, vScale.StartTime, vScale.EndTime, vScale.StartValue, vScale.EndValue);
+        else if (command is ParameterCommand param)
+            Parameter(param.StartTime, param.EndTime, param.StartValue);
+        else if (command is MoveCommand move)
+            Move(move.Easing, move.StartTime, move.EndTime, move.StartValue, move.EndValue);
+        else if (command is MoveXCommand moveX)
+            MoveX(moveX.Easing, moveX.StartTime, moveX.EndTime, moveX.StartValue, moveX.EndValue);
+        else if (command is MoveYCommand moveY)
+            MoveY(moveY.Easing, moveY.StartTime, moveY.EndTime, moveY.StartValue, moveY.EndValue);
+        else if (command is RotateCommand rotate)
+            Rotate(rotate.Easing, rotate.StartTime, rotate.EndTime, rotate.StartValue, rotate.EndValue);
         else if (command is LoopCommand loop)
         {
             StartLoopGroup(loop.StartTime, loop.LoopCount);
@@ -642,48 +727,95 @@ public class OsbSprite : StoryboardObject
             foreach (var cmd in trigger.Commands) AddCommand(cmd);
             EndGroup();
         }
-        else throw new NotSupportedException($"Failed to add command: No support for adding command of type {command.GetType().FullName}");
+        else
+            throw new NotSupportedException($"Failed to add command: No support for adding command of type {
+                command.GetType().FullName}");
     }
 
-    #region Display 
+    /// <returns> True if the sprite is active at <paramref name="time" />, else returns false. </returns>
+    public bool IsActive(float time) => StartTime <= time && time <= EndTime;
+
+    ///<summary> Writes this sprite's data to a stream. </summary>
+    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer,
+        StoryboardTransform transform)
+    {
+        if (commands.Count != 0)
+            OsbWriterFactory.CreateWriter(this, moveTimeline, moveXTimeline, moveYTimeline, scaleTimeline,
+                    scaleVecTimeline, rotateTimeline, fadeTimeline, colorTimeline, writer, exportSettings, layer)
+                .WriteOsb(transform);
+    }
+
+    /// <summary> Returns whether the sprite is within widescreen storyboard bounds. </summary>
+    /// <param name="position"> The storyboard position, in osu!pixels, of the sprite. </param>
+    /// <param name="size"> The image dimensions of the sprite texture. </param>
+    /// <param name="rotation"> The rotation, in radians, of the sprite. </param>
+    /// <param name="origin"> The <see cref="OsbOrigin" /> of the sprite. </param>
+    public static bool
+        InScreenBounds(CommandPosition position, CommandScale size, CommandDecimal rotation, OsbOrigin origin)
+        => new OrientedBoundingBox(position, GetOriginVector(origin, size.X, size.Y), size.X, size.Y, rotation)
+            .Intersects(OsuHitObject.WidescreenStoryboardBounds);
+
+    /// <summary> Gets the <see cref="CommandPosition" /> origin of a sprite based on its <see cref="OsbOrigin" /> </summary>
+    /// <param name="origin"> The <see cref="OsbOrigin" /> to be taken into account. </param>
+    /// <param name="width"> The width of the sprite. </param>
+    /// <param name="height"> The height of the sprite. </param>
+    public static CommandPosition GetOriginVector(OsbOrigin origin, CommandDecimal width, CommandDecimal height)
+        => origin switch
+        {
+            OsbOrigin.TopLeft => default, OsbOrigin.TopCentre => new(width * .5, 0),
+            OsbOrigin.TopRight => new(width, 0), OsbOrigin.CentreLeft => new(0, height * .5),
+            OsbOrigin.Centre => new(width * .5, height * .5), OsbOrigin.CentreRight => new(width, height * .5),
+            OsbOrigin.BottomLeft => new(0, height), OsbOrigin.BottomCentre => new(width * .5, height),
+            OsbOrigin.BottomRight => new(width, height), _ => throw new NotSupportedException(origin.ToString())
+        };
+
+#region Display
 
     readonly List<KeyValuePair<Func<ICommand, bool>, IAnimatedValueBuilder>> displayValueBuilders = [];
     readonly AnimatedValue<CommandPosition> moveTimeline = new();
-    readonly AnimatedValue<CommandDecimal> moveXTimeline = new(), moveYTimeline = new(), scaleTimeline = new(1), rotateTimeline = new(), fadeTimeline = new(1);
+
+    readonly AnimatedValue<CommandDecimal> moveXTimeline = new(), moveYTimeline = new(), scaleTimeline = new(1),
+        rotateTimeline = new(), fadeTimeline = new(1);
+
     readonly AnimatedValue<CommandScale> scaleVecTimeline = new(Vector2.One);
     readonly AnimatedValue<CommandColor> colorTimeline = new(CommandColor.White);
-    readonly AnimatedValue<CommandParameter> additiveTimeline = new(CommandParameter.None), flipHTimeline = new(CommandParameter.None), flipVTimeline = new(CommandParameter.None);
 
-    ///<summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
-    public CommandPosition PositionAt(float time) => moveTimeline.HasCommands ? moveTimeline.ValueAtTime(time) : new(moveXTimeline.ValueAtTime(time), moveYTimeline.ValueAtTime(time));
+    readonly AnimatedValue<CommandParameter> additiveTimeline = new(CommandParameter.None),
+        flipHTimeline = new(CommandParameter.None), flipVTimeline = new(CommandParameter.None);
 
-    ///<summary> Retrieves the <see cref="CommandScale"/> of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
-    public CommandScale ScaleAt(float time) => scaleVecTimeline.HasCommands ? scaleVecTimeline.ValueAtTime(time) : new(scaleTimeline.ValueAtTime(time));
+    /// <summary> Retrieves the <see cref="CommandPosition" /> of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
+    public CommandPosition PositionAt(float time)
+        => moveTimeline.HasCommands ? moveTimeline.ValueAtTime(time)
+            : new(moveXTimeline.ValueAtTime(time), moveYTimeline.ValueAtTime(time));
 
-    ///<summary> Retrieves the rotation, in radians, of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
+    /// <summary> Retrieves the <see cref="CommandScale" /> of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
+    public CommandScale ScaleAt(float time)
+        => scaleVecTimeline.HasCommands ? scaleVecTimeline.ValueAtTime(time) : new(scaleTimeline.ValueAtTime(time));
+
+    /// <summary> Retrieves the rotation, in radians, of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
     public CommandDecimal RotationAt(float time) => rotateTimeline.ValueAtTime(time);
 
-    ///<summary> Retrieves the opacity level of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
+    /// <summary> Retrieves the opacity level of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
     public CommandDecimal OpacityAt(float time) => fadeTimeline.ValueAtTime(time);
 
-    ///<summary> Retrieves the <see cref="CommandColor"/> of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
+    /// <summary> Retrieves the <see cref="CommandColor" /> of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
     public CommandColor ColorAt(float time) => colorTimeline.ValueAtTime(time);
 
-    ///<summary> Retrieves the additive value of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
+    /// <summary> Retrieves the additive value of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
     public CommandParameter AdditiveAt(float time) => additiveTimeline.ValueAtTime(time);
 
-    ///<summary> Retrieves the horizontal flip of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
+    /// <summary> Retrieves the horizontal flip of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
     public CommandParameter FlipHAt(float time) => flipHTimeline.ValueAtTime(time);
 
-    ///<summary> Retrieves the vertical flip of a sprite at a given time. </summary>
-    ///<param name="time"> Time to retrieve the information at. </param>
+    /// <summary> Retrieves the vertical flip of a sprite at a given time. </summary>
+    /// <param name="time"> Time to retrieve the information at. </param>
     public CommandParameter FlipVAt(float time) => flipVTimeline.ValueAtTime(time);
 
     void initializeDisplayValueBuilders()
@@ -692,70 +824,43 @@ public class OsbSprite : StoryboardObject
         displayValueBuilders.Add(new(c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(moveXTimeline)));
         displayValueBuilders.Add(new(c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(moveYTimeline)));
         displayValueBuilders.Add(new(c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(scaleTimeline)));
-        displayValueBuilders.Add(new(c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(scaleVecTimeline)));
-        displayValueBuilders.Add(new(c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(rotateTimeline)));
+        displayValueBuilders.Add(new(c => c is VScaleCommand,
+            new AnimatedValueBuilder<CommandScale>(scaleVecTimeline)));
+        displayValueBuilders.Add(new(c => c is RotateCommand,
+            new AnimatedValueBuilder<CommandDecimal>(rotateTimeline)));
         displayValueBuilders.Add(new(c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(fadeTimeline)));
         displayValueBuilders.Add(new(c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(colorTimeline)));
-        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending }, new AnimatedValueBuilder<CommandParameter>(additiveTimeline)));
-        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal }, new AnimatedValueBuilder<CommandParameter>(flipHTimeline)));
-        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, new AnimatedValueBuilder<CommandParameter>(flipVTimeline)));
+        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending },
+            new AnimatedValueBuilder<CommandParameter>(additiveTimeline)));
+        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal },
+            new AnimatedValueBuilder<CommandParameter>(flipHTimeline)));
+        displayValueBuilders.Add(new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical },
+            new AnimatedValueBuilder<CommandParameter>(flipVTimeline)));
     }
+
     void addDisplayCommand(ICommand command)
     {
-        foreach (var builders in displayValueBuilders) if (builders.Key(command)) builders.Value.Add(command);
+        foreach (var builders in displayValueBuilders)
+            if (builders.Key(command))
+                builders.Value.Add(command);
     }
-    void startDisplayLoop(LoopCommand loopCommand) => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayLoop(loopCommand));
-    void startDisplayTrigger(TriggerCommand triggerCommand) => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayTrigger(triggerCommand));
+
+    void startDisplayLoop(LoopCommand loopCommand)
+        => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayLoop(loopCommand));
+
+    void startDisplayTrigger(TriggerCommand triggerCommand)
+        => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayTrigger(triggerCommand));
+
     void endDisplayComposites() => displayValueBuilders.ForEach(builders => builders.Value.EndDisplayComposite());
 
-    #endregion
-
-    ///<returns> True if the sprite is active at <paramref name="time"/>, else returns false. </returns>
-    public bool IsActive(float time) => StartTime <= time && time <= EndTime;
-
-    ///<summary> Writes this sprite's data to a stream. </summary>
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
-    {
-        if (commands.Count != 0) OsbWriterFactory.CreateWriter(this,
-            moveTimeline, moveXTimeline, moveYTimeline,
-            scaleTimeline, scaleVecTimeline,
-            rotateTimeline,
-            fadeTimeline,
-            colorTimeline,
-            writer, exportSettings, layer).WriteOsb(transform);
-    }
-
-    ///<summary> Returns whether or not the sprite is within widescreen storyboard bounds. </summary>
-    ///<param name="position"> The storyboard position, in osu!pixels, of the sprite. </param>
-    ///<param name="size"> The image dimensions of the sprite texture. </param>
-    ///<param name="rotation"> The rotation, in radians, of the sprite. </param>
-    ///<param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
-    public static bool InScreenBounds(CommandPosition position, CommandScale size, CommandDecimal rotation, OsbOrigin origin)
-        => new OrientedBoundingBox(position, GetOriginVector(origin, size.X, size.Y), size.X, size.Y, rotation).Intersects(OsuHitObject.WidescreenStoryboardBounds);
-
-    ///<summary> Gets the <see cref="CommandPosition"/> origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
-    ///<param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>
-    ///<param name="width"> The width of the sprite. </param>
-    ///<param name="height"> The height of the sprite. </param>
-    public static CommandPosition GetOriginVector(OsbOrigin origin, CommandDecimal width, CommandDecimal height) => origin switch
-    {
-        OsbOrigin.TopLeft => default,
-        OsbOrigin.TopCentre => new(width * .5, 0),
-        OsbOrigin.TopRight => new(width, 0),
-        OsbOrigin.CentreLeft => new(0, height * .5),
-        OsbOrigin.Centre => new(width * .5, height * .5),
-        OsbOrigin.CentreRight => new(width, height * .5),
-        OsbOrigin.BottomLeft => new(0, height),
-        OsbOrigin.BottomCentre => new(width * .5, height),
-        OsbOrigin.BottomRight => new(width, height),
-        _ => throw new NotSupportedException(origin.ToString()),
-    };
+#endregion
 }
 
 #pragma warning disable CS1591
 public enum OsbLayer
 {
-    Background, Fail, Pass, Foreground, Overlay
+    Background, Fail, Pass,
+    Foreground, Overlay
 }
 
 ///<summary> Enumeration values determining the origin of a sprite/image. </summary>
@@ -789,8 +894,8 @@ public enum OsbOrigin
     BottomRight
 }
 
-///<summary> Apply an easing to a command. Contains enumeration values unlike .osb syntax. </summary>
-///<remarks> Visit <see href="http://easings.net/"/> for more information. </remarks>
+/// <summary> Apply an easing to a command. Contains enumeration values unlike .osb syntax. </summary>
+/// <remarks> Visit <see href="http://easings.net/" /> for more information. </remarks>
 public enum OsbEasing
 {
     None, Out, In,
@@ -801,9 +906,10 @@ public enum OsbEasing
     InSine, OutSine, InOutSine,
     InExpo, OutExpo, InOutExpo,
     InCirc, OutCirc, InOutCirc,
-    InElastic, OutElastic, OutElasticHalf, OutElasticQuarter, InOutElastic,
-    InBack, OutBack, InOutBack,
-    InBounce, OutBounce, InOutBounce
+    InElastic, OutElastic, OutElasticHalf,
+    OutElasticQuarter, InOutElastic, InBack,
+    OutBack, InOutBack, InBounce,
+    OutBounce, InOutBounce
 }
 
 ///<summary> Define the loop type for an animation. </summary>

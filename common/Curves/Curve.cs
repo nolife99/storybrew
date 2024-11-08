@@ -1,6 +1,6 @@
-﻿using System.Numerics;
+﻿namespace StorybrewCommon.Curves;
 
-namespace StorybrewCommon.Curves;
+using System.Numerics;
 
 ///<summary> Represents types of curves. </summary>
 public interface Curve
@@ -14,9 +14,9 @@ public interface Curve
     ///<summary> The total length of the curve from the head to the tail. </summary>
     float Length { get; }
 
-    ///<summary> Returns the position of the curve at <paramref name="distance"/> pixels. </summary>
+    /// <summary> Returns the position of the curve at <paramref name="distance" /> pixels. </summary>
     Vector2 PositionAtDistance(float distance);
 
-    ///<summary> Returns the position of the curve at <paramref name="delta"/>. </summary>
+    /// <summary> Returns the position of the curve at <paramref name="delta" />. </summary>
     Vector2 PositionAtDelta(float delta);
 }

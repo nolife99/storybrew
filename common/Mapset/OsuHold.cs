@@ -1,6 +1,6 @@
-﻿using System.Globalization;
+﻿namespace StorybrewCommon.Mapset;
 
-namespace StorybrewCommon.Mapset;
+using System.Globalization;
 
 #pragma warning disable CS1591
 public class OsuHold : OsuHitObject
@@ -8,9 +8,11 @@ public class OsuHold : OsuHitObject
     int endTime;
     public override float EndTime => endTime;
 
-    public static OsuHold Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags, HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet, float volume)
+    public static OsuHold Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags,
+        HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet,
+        float volume)
     {
-        string samplePath = "";
+        var samplePath = "";
 
         var special = values[5];
         var specialValues = special.Split(':');
@@ -28,6 +30,7 @@ public class OsuHold : OsuHitObject
             sampleSet = objectSampleSet;
             additionsSampleSet = objectSampleSet;
         }
+
         if (objectAdditionsSampleSet != 0) additionsSampleSet = objectAdditionsSampleSet;
         if (objectCustomSampleSet != 0) customSampleSet = objectCustomSampleSet;
         if (objectVolume > .001f) volume = objectVolume;

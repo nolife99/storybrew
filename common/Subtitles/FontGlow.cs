@@ -1,15 +1,15 @@
-﻿using System;
+﻿namespace StorybrewCommon.Subtitles;
+
+using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using BrewLib.Util;
 
-namespace StorybrewCommon.Subtitles;
-
-///<summary> A font glow effect. </summary>
-///<remarks> Creates a new <see cref="FontGlow"/> descriptor with information about a Gaussian blur effect. </remarks>
-///<param name="radius"> The radius of the glow. </param>
-///<param name="power"> The intensity of the glow. </param>
-///<param name="color"> The coloring tint of the glow. </param>
+/// <summary> A font glow effect. </summary>
+/// <remarks> Creates a new <see cref="FontGlow" /> descriptor with information about a Gaussian blur effect. </remarks>
+/// <param name="radius"> The radius of the glow. </param>
+/// <param name="power"> The intensity of the glow. </param>
+/// <param name="color"> The coloring tint of the glow. </param>
 public class FontGlow(int radius = 6, float power = 0, FontColor color = default) : FontEffect
 {
     ///<summary> The radius of the glow. </summary>
@@ -21,13 +21,13 @@ public class FontGlow(int radius = 6, float power = 0, FontColor color = default
     ///<summary> The coloring tint of the glow. </summary>
     public FontColor Color => color;
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public bool Overlay => false;
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public SizeF Measure => new(Radius * 2, Radius * 2);
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
         if (Radius < 1) return;

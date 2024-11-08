@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿namespace BrewLib.Graphics.Shaders;
 
-namespace BrewLib.Graphics.Shaders;
+using System;
+using System.Collections.Generic;
 
 public class ShaderType(string name)
 {
@@ -16,6 +16,7 @@ public class ShaderType(string name)
         fields.Add(field);
         return field;
     }
+
     public ShaderVariable FieldAsVariable(ShaderVariable variable, Field field)
     {
         if (variable is null) return null;
@@ -25,6 +26,7 @@ public class ShaderType(string name)
 
         return new ShaderFieldVariable(variable.Context, variable, field);
     }
+
     public class Field(string name, string shaderTypeName)
     {
         public readonly string Name = name;

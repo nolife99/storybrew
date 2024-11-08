@@ -1,8 +1,8 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Renderers;
+
+using System;
 using System.Drawing;
 using System.Numerics;
-
-namespace BrewLib.Graphics.Renderers;
 
 public interface LineRenderer : Renderer, IDisposable
 {

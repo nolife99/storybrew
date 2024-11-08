@@ -1,4 +1,6 @@
-﻿using System;
+﻿namespace StorybrewEditor.UserInterface;
+
+using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -7,119 +9,40 @@ using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
+using Skinning.Styles;
 using StorybrewCommon.Subtitles;
-using StorybrewEditor.UserInterface.Skinning.Styles;
-
-namespace StorybrewEditor.UserInterface;
 
 public class HsbColorPicker : Widget, Field
 {
-    Sprite previewSprite;
-    readonly LinearLayout layout;
-    readonly Slider hueSlider, saturationSlider, brightnessSlider, alphaSlider;
+    const float previewHeight = 24;
     readonly Textbox htmlTextbox;
-
-    public override Vector2 MinSize => new(layout.MinSize.X, layout.MinSize.Y + previewHeight);
-    public override Vector2 MaxSize => Vector2.Zero;
-    public override Vector2 PreferredSize => new(layout.PreferredSize.X, layout.PreferredSize.Y + previewHeight);
+    readonly Slider hueSlider, saturationSlider, brightnessSlider, alphaSlider;
+    readonly LinearLayout layout;
+    Sprite previewSprite;
 
     FontColor value;
-    public FontColor Value
-    {
-        get => value;
-        set
-        {
-            if (this.value == value) return;
-            this.value = value;
-
-            updateWidgets();
-            OnValueChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = Unsafe.Unbox<FontColor>(value);
-    }
-
-    float previewHeight = 24;
-    public float PreviewHeight
-    {
-        get => previewHeight;
-        set
-        {
-            previewHeight = value;
-            InvalidateAncestorLayout();
-        }
-    }
-
-    public event EventHandler OnValueChanged, OnValueCommited;
 
     public HsbColorPicker(WidgetManager manager) : base(manager)
     {
-        previewSprite = new()
-        {
-            Texture = DrawState.WhitePixel,
-            ScaleMode = ScaleMode.Fill
-        };
+        previewSprite = new() { Texture = DrawState.WhitePixel, ScaleMode = ScaleMode.Fill };
         Add(layout = new(manager)
         {
             StyleName = "condensed",
             FitChildren = true,
             Children =
             [
-                new Label(manager)
-                {
-                    StyleName = "small",
-                    Text = "Hue"
-                },
-                hueSlider = new(manager)
-                {
-                    StyleName = "small",
-                    MinValue = 0,
-                    MaxValue = 1,
-                    Value = 0
-                },
-                new Label(manager)
-                {
-                    StyleName = "small",
-                    Text = "Saturation"
-                },
+                new Label(manager) { StyleName = "small", Text = "Hue" },
+                hueSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 0 },
+                new Label(manager) { StyleName = "small", Text = "Saturation" },
                 saturationSlider = new(manager)
                 {
-                    StyleName = "small",
-                    MinValue = 0,
-                    MaxValue = 1,
-                    Value = .7f
+                    StyleName = "small", MinValue = 0, MaxValue = 1, Value = .7f
                 },
-                new Label(manager)
-                {
-                    StyleName = "small",
-                    Text = "Brightness"
-                },
-                brightnessSlider = new(manager)
-                {
-                    StyleName = "small",
-                    MinValue = 0,
-                    MaxValue = 1,
-                    Value = 1
-                },
-                new Label(manager)
-                {
-                    StyleName = "small",
-                    Text = "Alpha"
-                },
-                alphaSlider = new(manager)
-                {
-                    StyleName = "small",
-                    MinValue = 0,
-                    MaxValue = 1,
-                    Value = 1
-                },
-                htmlTextbox = new(manager)
-                {
-                    EnterCommits = true
-                }
+                new Label(manager) { StyleName = "small", Text = "Brightness" },
+                brightnessSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 1 },
+                new Label(manager) { StyleName = "small", Text = "Alpha" },
+                alphaSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 1 },
+                htmlTextbox = new(manager) { EnterCommits = true }
             ]
         });
 
@@ -137,7 +60,37 @@ public class HsbColorPicker : Widget, Field
         updateWidgets();
     }
 
-    void slider_OnValueChanged(object sender, EventArgs e) => Value = FontColor.FromHsb(new(hueSlider.Value % 1, saturationSlider.Value, brightnessSlider.Value, alphaSlider.Value));
+    public override Vector2 MinSize => layout.MinSize with { Y = layout.MinSize.Y + previewHeight };
+    public override Vector2 MaxSize => Vector2.Zero;
+    public override Vector2 PreferredSize => layout.PreferredSize with { Y = layout.PreferredSize.Y + previewHeight };
+
+    public FontColor Value
+    {
+        get => value;
+        set
+        {
+            if (this.value == value) return;
+            this.value = value;
+
+            updateWidgets();
+            OnValueChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());
+
+    public object FieldValue
+    {
+        get => Value;
+        set => Value = Unsafe.Unbox<FontColor>(value);
+    }
+
+    public event EventHandler OnValueChanged, OnValueCommited;
+
+    void slider_OnValueChanged(object sender, EventArgs e)
+        => Value = FontColor.FromHsb(new(hueSlider.Value % 1, saturationSlider.Value, brightnessSlider.Value,
+            alphaSlider.Value));
+
     void slider_OnValueCommited(object sender, EventArgs e) => OnValueCommited?.Invoke(this, EventArgs.Empty);
 
     void htmlTextbox_OnValueCommited(object sender, EventArgs e)
@@ -159,6 +112,7 @@ public class HsbColorPicker : Widget, Field
         Value = new(color.R / 255d, color.G / 255d, color.B / 255d, alphaSlider.Value);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
+
     void updateWidgets()
     {
         var hsba = FontColor.ToHsb(value);
@@ -199,21 +153,22 @@ public class HsbColorPicker : Widget, Field
         htmlTextbox.SetValueSilent(ColorTranslator.ToHtml(previewSprite.Color));
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());
-
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
 
         var bounds = Bounds;
-        previewSprite.Draw(drawContext, Manager.Camera, RectangleF.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Top + previewHeight), actualOpacity);
+        previewSprite.Draw(drawContext, Manager.Camera,
+            RectangleF.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Top + previewHeight), actualOpacity);
     }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) previewSprite.Dispose();
         previewSprite = null;
         base.Dispose(disposing);
     }
+
     protected override void Layout()
     {
         base.Layout();

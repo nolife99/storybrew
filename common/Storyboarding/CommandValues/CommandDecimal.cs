@@ -1,8 +1,8 @@
+namespace StorybrewCommon.Storyboarding.CommandValues;
+
 using System;
 using System.Globalization;
 using System.Numerics;
-
-namespace StorybrewCommon.Storyboarding.CommandValues;
 
 ///<summary> Custom decimal handler for storyboarding. </summary>
 public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecimal>, IEquatable<CommandDecimal>
@@ -19,8 +19,10 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
 #pragma warning disable CS1591
     public CommandDecimal(double value)
     {
-        if (double.IsNaN(value) || double.IsInfinity(value)) this.value = 0;
-        else this.value = value;
+        if (double.IsNaN(value) || double.IsInfinity(value))
+            this.value = 0;
+        else
+            this.value = value;
     }
 
     public bool Equals(CommandDecimal other) => value.Equals(other.value);
@@ -50,16 +52,34 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
     static bool INumberBase<CommandDecimal>.IsSubnormal(CommandDecimal value) => double.IsSubnormal(value.value);
     static bool INumberBase<CommandDecimal>.IsZero(CommandDecimal value) => value.value == 0;
 
-    static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitude(CommandDecimal x, CommandDecimal y) => double.MaxMagnitude(x, y);
-    static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitudeNumber(CommandDecimal x, CommandDecimal y) => double.MaxMagnitudeNumber(x, y);
-    static CommandDecimal INumberBase<CommandDecimal>.MinMagnitude(CommandDecimal x, CommandDecimal y) => double.MinMagnitude(x, y);
-    static CommandDecimal INumberBase<CommandDecimal>.MinMagnitudeNumber(CommandDecimal x, CommandDecimal y) => double.MinMagnitudeNumber(x, y);
-    static CommandDecimal INumberBase<CommandDecimal>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider) => double.Parse(s, style, provider);
-    static CommandDecimal INumberBase<CommandDecimal>.Parse(string s, NumberStyles style, IFormatProvider provider) => double.Parse(s.Trim(), style, provider);
+    static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitude(CommandDecimal x, CommandDecimal y)
+        => double.MaxMagnitude(x, y);
 
-    static bool INumberBase<CommandDecimal>.TryConvertFromChecked<TOther>(TOther value, out CommandDecimal result) => TryConvertFrom(value, out result);
-    static bool INumberBase<CommandDecimal>.TryConvertFromSaturating<TOther>(TOther value, out CommandDecimal result) => TryConvertFrom(value, out result);
-    static bool INumberBase<CommandDecimal>.TryConvertFromTruncating<TOther>(TOther value, out CommandDecimal result) => TryConvertFrom(value, out result);
+    static CommandDecimal INumberBase<CommandDecimal>.MaxMagnitudeNumber(CommandDecimal x, CommandDecimal y)
+        => double.MaxMagnitudeNumber(x, y);
+
+    static CommandDecimal INumberBase<CommandDecimal>.MinMagnitude(CommandDecimal x, CommandDecimal y)
+        => double.MinMagnitude(x, y);
+
+    static CommandDecimal INumberBase<CommandDecimal>.MinMagnitudeNumber(CommandDecimal x, CommandDecimal y)
+        => double.MinMagnitudeNumber(x, y);
+
+    static CommandDecimal INumberBase<CommandDecimal>.Parse(ReadOnlySpan<char> s, NumberStyles style,
+        IFormatProvider provider)
+        => double.Parse(s, style, provider);
+
+    static CommandDecimal INumberBase<CommandDecimal>.Parse(string s, NumberStyles style, IFormatProvider provider)
+        => double.Parse(s.Trim(), style, provider);
+
+    static bool INumberBase<CommandDecimal>.TryConvertFromChecked<TOther>(TOther value, out CommandDecimal result)
+        => TryConvertFrom(value, out result);
+
+    static bool INumberBase<CommandDecimal>.TryConvertFromSaturating<TOther>(TOther value, out CommandDecimal result)
+        => TryConvertFrom(value, out result);
+
+    static bool INumberBase<CommandDecimal>.TryConvertFromTruncating<TOther>(TOther value, out CommandDecimal result)
+        => TryConvertFrom(value, out result);
+
     static bool INumberBase<CommandDecimal>.TryConvertToChecked<TOther>(CommandDecimal value, out TOther result)
     {
         try
@@ -73,6 +93,7 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
             return false;
         }
     }
+
     static bool INumberBase<CommandDecimal>.TryConvertToSaturating<TOther>(CommandDecimal value, out TOther result)
     {
         try
@@ -86,6 +107,7 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
             return false;
         }
     }
+
     static bool INumberBase<CommandDecimal>.TryConvertToTruncating<TOther>(CommandDecimal value, out TOther result)
     {
         try
@@ -99,6 +121,7 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
             return false;
         }
     }
+
     static bool TryConvertFrom<TOther>(TOther value, out CommandDecimal result) where TOther : INumberBase<TOther>
     {
         try
@@ -113,35 +136,46 @@ public readonly struct CommandDecimal : CommandValue, ISignedNumber<CommandDecim
         }
     }
 
-    static bool INumberBase<CommandDecimal>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out CommandDecimal result)
+    static bool INumberBase<CommandDecimal>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider,
+        out CommandDecimal result)
     {
-        var success = double.TryParse(s, style, provider, out double dResult);
+        var success = double.TryParse(s, style, provider, out var dResult);
         result = dResult;
         return success;
     }
-    static bool INumberBase<CommandDecimal>.TryParse(string s, NumberStyles style, IFormatProvider provider, out CommandDecimal result)
+
+    static bool INumberBase<CommandDecimal>.TryParse(string s, NumberStyles style, IFormatProvider provider,
+        out CommandDecimal result)
     {
-        var success = double.TryParse(s, style, provider, out double dResult);
+        var success = double.TryParse(s, style, provider, out var dResult);
         result = dResult;
         return success;
     }
-    bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider provider)
+
+    bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format,
+        IFormatProvider provider)
         => value.TryFormat(destination, out charsWritten, format, provider);
 
-    string IFormattable.ToString(string format, IFormatProvider formatProvider) => value.ToString(format, formatProvider);
-    static CommandDecimal ISpanParsable<CommandDecimal>.Parse(ReadOnlySpan<char> s, IFormatProvider provider) => double.Parse(s, provider);
+    string IFormattable.ToString(string format, IFormatProvider formatProvider)
+        => value.ToString(format, formatProvider);
 
-    static bool ISpanParsable<CommandDecimal>.TryParse(ReadOnlySpan<char> s, IFormatProvider provider, out CommandDecimal result)
+    static CommandDecimal ISpanParsable<CommandDecimal>.Parse(ReadOnlySpan<char> s, IFormatProvider provider)
+        => double.Parse(s, provider);
+
+    static bool ISpanParsable<CommandDecimal>.TryParse(ReadOnlySpan<char> s, IFormatProvider provider,
+        out CommandDecimal result)
     {
-        var success = double.TryParse(s, provider, out double dResult);
+        var success = double.TryParse(s, provider, out var dResult);
         result = dResult;
         return success;
     }
 
-    static CommandDecimal IParsable<CommandDecimal>.Parse(string s, IFormatProvider provider) => double.Parse(s, provider);
+    static CommandDecimal IParsable<CommandDecimal>.Parse(string s, IFormatProvider provider)
+        => double.Parse(s, provider);
+
     static bool IParsable<CommandDecimal>.TryParse(string s, IFormatProvider provider, out CommandDecimal result)
     {
-        var success = double.TryParse(s, provider, out double dResult);
+        var success = double.TryParse(s, provider, out var dResult);
         result = dResult;
         return success;
     }

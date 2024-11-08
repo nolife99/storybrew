@@ -1,4 +1,6 @@
-﻿using System;
+﻿namespace StorybrewEditor.UserInterface.Components;
+
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -10,48 +12,21 @@ using System.Text.RegularExpressions;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using osuTK.Graphics;
+using Storyboarding;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Subtitles;
 using StorybrewCommon.Util;
-using StorybrewEditor.Storyboarding;
-
-namespace StorybrewEditor.UserInterface.Components;
 
 public class EffectConfigUi : Widget
 {
     const string effectConfigFormat = "storybrewEffectConfig";
-
-    readonly Label titleLabel;
     readonly LinearLayout layout, configFieldsLayout;
 
-    public override Vector2 MinSize => layout.MinSize;
-    public override Vector2 MaxSize => layout.MaxSize;
-    public override Vector2 PreferredSize => layout.PreferredSize;
+    readonly Label titleLabel;
 
     Effect effect;
-    public Effect Effect
-    {
-        get => effect;
-        set
-        {
-            if (effect == value) return;
-            if (effect is not null)
-            {
-                effect.OnChanged -= Effect_OnChanged;
-                effect.OnConfigFieldsChanged -= Effect_OnConfigFieldsChanged;
-            }
-            effect = value;
-            if (effect is not null)
-            {
-                effect.OnChanged += Effect_OnChanged;
-                effect.OnConfigFieldsChanged += Effect_OnConfigFieldsChanged;
-            }
 
-            updateEffect();
-            updateFields();
-        }
-    }
     public EffectConfigUi(WidgetManager manager) : base(manager)
     {
         Button copyButton, pasteButton, closeButton;
@@ -72,10 +47,7 @@ public class EffectConfigUi : Widget
                     CanGrow = false,
                     Children =
                     [
-                        titleLabel = new(manager)
-                        {
-                            Text = "Configuration"
-                        },
+                        titleLabel = new(manager) { Text = "Configuration" },
                         copyButton = new(Manager)
                         {
                             StyleName = "icon",
@@ -104,10 +76,7 @@ public class EffectConfigUi : Widget
                         }
                     ]
                 },
-                new ScrollArea(manager, configFieldsLayout = new(manager)
-                {
-                    FitChildren = true
-                })
+                new ScrollArea(manager, configFieldsLayout = new(manager) { FitChildren = true })
             ]
         });
 
@@ -119,11 +88,41 @@ public class EffectConfigUi : Widget
             Displayed = false;
         };
     }
+
+    public override Vector2 MinSize => layout.MinSize;
+    public override Vector2 MaxSize => layout.MaxSize;
+    public override Vector2 PreferredSize => layout.PreferredSize;
+
+    public Effect Effect
+    {
+        get => effect;
+        set
+        {
+            if (effect == value) return;
+            if (effect is not null)
+            {
+                effect.OnChanged -= Effect_OnChanged;
+                effect.OnConfigFieldsChanged -= Effect_OnConfigFieldsChanged;
+            }
+
+            effect = value;
+            if (effect is not null)
+            {
+                effect.OnChanged += Effect_OnChanged;
+                effect.OnConfigFieldsChanged += Effect_OnConfigFieldsChanged;
+            }
+
+            updateEffect();
+            updateFields();
+        }
+    }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) Effect = null;
         base.Dispose(disposing);
     }
+
     protected override void Layout()
     {
         base.Layout();
@@ -138,6 +137,7 @@ public class EffectConfigUi : Widget
         if (effect is null) return;
         titleLabel.Text = $"Configuration: {effect.Name} ({effect.BaseName})";
     }
+
     void updateFields()
     {
         configFieldsLayout.ClearWidgets();
@@ -159,10 +159,12 @@ public class EffectConfigUi : Widget
             }
 
             var displayName = field.DisplayName;
-            if (currentGroup is not null) displayName = Regex.Replace(displayName, $@"^{Regex.Escape(currentGroup)}\s+", "");
+            if (currentGroup is not null)
+                displayName = Regex.Replace(displayName, $@"^{Regex.Escape(currentGroup)}\s+", "");
 
             var description = $"Variable: {field.Name} ({field.Type.Name})";
-            if (!string.IsNullOrWhiteSpace(field.Description)) description = "  " + description + "\n" + field.Description;
+            if (!string.IsNullOrWhiteSpace(field.Description))
+                description = "  " + description + "\n" + field.Description;
 
             configFieldsLayout.Add(new LinearLayout(Manager)
             {
@@ -185,6 +187,7 @@ public class EffectConfigUi : Widget
             });
         }
     }
+
     Widget buildFieldEditor(EffectConfig.ConfigField field)
     {
         if (field.AllowedValues is not null)
@@ -200,23 +203,16 @@ public class EffectConfigUi : Widget
             widget.OnValueChanged += (_, _) => setFieldValue(field, widget.Value);
             return widget;
         }
-        else if (field.Type == typeof(bool))
+
+        if (field.Type == typeof(bool))
         {
             Selectbox widget = new(Manager)
             {
                 Value = field.Value,
                 Options =
                 [
-                    new()
-                    {
-                        Name = bool.TrueString,
-                        Value = true
-                    },
-                    new()
-                    {
-                        Name = bool.FalseString,
-                        Value = false
-                    }
+                    new() { Name = bool.TrueString, Value = true },
+                    new() { Name = bool.FalseString, Value = false }
                 ],
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
@@ -225,7 +221,8 @@ public class EffectConfigUi : Widget
             widget.OnValueChanged += (_, _) => setFieldValue(field, widget.Value);
             return widget;
         }
-        else if (field.Type == typeof(string))
+
+        if (field.Type == typeof(string))
         {
             Textbox widget = new(Manager)
             {
@@ -242,8 +239,11 @@ public class EffectConfigUi : Widget
             };
             return widget;
         }
-        if (field.Type == typeof(Vector2) || field.Type == typeof(osuTK.Vector2) || field.Type == typeof(CommandPosition) || field.Type == typeof(CommandScale)) return vector2Field(field);
-        else if (field.Type == typeof(Vector3) || field.Type == typeof(osuTK.Vector3))
+
+        if (field.Type == typeof(Vector2) || field.Type == typeof(osuTK.Vector2) ||
+            field.Type == typeof(CommandPosition) || field.Type == typeof(CommandScale))
+            return vector2Field(field);
+        if (field.Type == typeof(Vector3) || field.Type == typeof(osuTK.Vector3))
         {
             var x = field.Type.GetField("X");
             var y = field.Type.GetField("Y");
@@ -251,7 +251,11 @@ public class EffectConfigUi : Widget
 
             Vector3Picker widget = new(Manager)
             {
-                Value = [Unsafe.Unbox<float>(x.GetValue(field.Value)), Unsafe.Unbox<float>(y.GetValue(field.Value)), Unsafe.Unbox<float>(z.GetValue(field.Value))],
+                Value =
+                [
+                    Unsafe.Unbox<float>(x.GetValue(field.Value)), Unsafe.Unbox<float>(y.GetValue(field.Value)),
+                    Unsafe.Unbox<float>(z.GetValue(field.Value))
+                ],
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -262,10 +266,16 @@ public class EffectConfigUi : Widget
                 setFieldValue(field, ctor.Invoke([widget.Value[0], widget.Value[1], widget.Value[2]]));
 
                 var configVal = effect.Config.GetValue(field.Name);
-                widget.Value = [Unsafe.Unbox<float>(x.GetValue(configVal)), Unsafe.Unbox<float>(y.GetValue(configVal)), Unsafe.Unbox<float>(z.GetValue(configVal))];
+                widget.Value =
+                [
+                    Unsafe.Unbox<float>(x.GetValue(configVal)), Unsafe.Unbox<float>(y.GetValue(configVal)),
+                    Unsafe.Unbox<float>(z.GetValue(configVal))
+                ];
             };
         }
-        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color4) || field.Type == typeof(Color) || field.Type == typeof(FontColor)) return colorField(field);
+        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color4) || field.Type == typeof(Color) ||
+            field.Type == typeof(FontColor))
+            return colorField(field);
         else if (field.Type.GetInterface(nameof(IConvertible)) is not null)
         {
             Textbox widget = new(Manager)
@@ -282,11 +292,16 @@ public class EffectConfigUi : Widget
                     var value = Convert.ChangeType(widget.Value, field.Type, CultureInfo.InvariantCulture);
                     setFieldValue(field, value);
                 }
-                catch { }
+                catch
+                {
+                    // ignored
+                }
+
                 widget.Value = Convert.ToString(effect.Config.GetValue(field.Name), CultureInfo.InvariantCulture);
             };
             return widget;
         }
+
         return new Label(Manager)
         {
             StyleName = "listItem",
@@ -304,32 +319,45 @@ public class EffectConfigUi : Widget
         {
             Vector2Picker widget = new(Manager)
             {
-                Value = field.Type == typeof(Vector2) ? Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(field.Value)) : Unsafe.As<osuTK.Vector2, CommandPosition>(ref Unsafe.Unbox<osuTK.Vector2>(field.Value)),
+                Value = field.Type == typeof(Vector2)
+                    ? Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(field.Value))
+                    : Unsafe.As<osuTK.Vector2, CommandPosition>(ref Unsafe.Unbox<osuTK.Vector2>(field.Value)),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
             };
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(Vector2)) setFieldValue(field, (Vector2)widget.Value);
-                else setFieldValue(field, (osuTK.Vector2)widget.Value);
-                widget.Value = field.Type == typeof(Vector2) ? Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name))) : Unsafe.As<osuTK.Vector2, CommandPosition>(ref Unsafe.Unbox<osuTK.Vector2>(effect.Config.GetValue(field.Name)));
+                if (field.Type == typeof(Vector2))
+                    setFieldValue(field, (Vector2)widget.Value);
+                else
+                    setFieldValue(field, (osuTK.Vector2)widget.Value);
+                widget.Value = field.Type == typeof(Vector2)
+                    ? Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name)))
+                    : Unsafe.As<osuTK.Vector2, CommandPosition>(
+                        ref Unsafe.Unbox<osuTK.Vector2>(effect.Config.GetValue(field.Name)));
             };
             return widget;
         }
+
         {
             Vector2Picker widget = new(Manager)
             {
-                Value = field.Type == typeof(CommandPosition) ? Unsafe.Unbox<CommandPosition>(field.Value) : Unsafe.As<CommandScale, CommandPosition>(ref Unsafe.Unbox<CommandScale>(field.Value)),
+                Value = field.Type == typeof(CommandPosition) ? Unsafe.Unbox<CommandPosition>(field.Value)
+                    : Unsafe.As<CommandScale, CommandPosition>(ref Unsafe.Unbox<CommandScale>(field.Value)),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
             };
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(CommandPosition)) setFieldValue(field, widget.Value);
-                else setFieldValue(field, (CommandScale)widget.Value);
-                widget.Value = field.Type == typeof(Vector2) ? Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name)) : Unsafe.As<CommandScale, CommandPosition>(ref Unsafe.Unbox<CommandScale>(effect.Config.GetValue(field.Name)));
+                if (field.Type == typeof(CommandPosition))
+                    setFieldValue(field, widget.Value);
+                else
+                    setFieldValue(field, (CommandScale)widget.Value);
+                widget.Value = field.Type == typeof(Vector2) ? Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name))
+                    : Unsafe.As<CommandScale, CommandPosition>(
+                        ref Unsafe.Unbox<CommandScale>(effect.Config.GetValue(field.Name)));
             };
             return widget;
         }
@@ -341,32 +369,42 @@ public class EffectConfigUi : Widget
         {
             HsbColorPicker widget = new(Manager)
             {
-                Value = field.Type == typeof(Color4) ? (FontColor)Unsafe.Unbox<Color4>(field.Value) : (FontColor)Unsafe.Unbox<Color>(field.Value),
+                Value = field.Type == typeof(Color4) ? Unsafe.Unbox<Color4>(field.Value)
+                    : (FontColor)Unsafe.Unbox<Color>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
             };
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(Color4)) setFieldValue(field, (Color4)widget.Value);
-                else setFieldValue(field, (Color)widget.Value);
-                widget.Value = field.Type == typeof(Color4) ? (FontColor)Unsafe.Unbox<Color4>(effect.Config.GetValue(field.Name)) : (FontColor)Unsafe.Unbox<Color>(effect.Config.GetValue(field.Name));
+                if (field.Type == typeof(Color4))
+                    setFieldValue(field, (Color4)widget.Value);
+                else
+                    setFieldValue(field, (Color)widget.Value);
+                widget.Value = field.Type == typeof(Color4) ? Unsafe.Unbox<Color4>(effect.Config.GetValue(field.Name))
+                    : (FontColor)Unsafe.Unbox<Color>(effect.Config.GetValue(field.Name));
             };
             return widget;
         }
+
         {
             HsbColorPicker widget = new(Manager)
             {
-                Value = field.Type == typeof(FontColor) ? Unsafe.Unbox<FontColor>(field.Value) : (FontColor)Unsafe.Unbox<CommandColor>(field.Value),
+                Value = field.Type == typeof(FontColor) ? Unsafe.Unbox<FontColor>(field.Value)
+                    : Unsafe.Unbox<CommandColor>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
             };
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(FontColor)) setFieldValue(field, widget.Value);
-                else setFieldValue(field, (CommandColor)widget.Value);
-                widget.Value = field.Type == typeof(FontColor) ? Unsafe.Unbox<FontColor>(effect.Config.GetValue(field.Name)) : (FontColor)Unsafe.Unbox<CommandColor>(effect.Config.GetValue(field.Name));
+                if (field.Type == typeof(FontColor))
+                    setFieldValue(field, widget.Value);
+                else
+                    setFieldValue(field, (CommandColor)widget.Value);
+                widget.Value = field.Type == typeof(FontColor)
+                    ? Unsafe.Unbox<FontColor>(effect.Config.GetValue(field.Name))
+                    : Unsafe.Unbox<CommandColor>(effect.Config.GetValue(field.Name));
             };
             return widget;
         }
@@ -376,6 +414,7 @@ public class EffectConfigUi : Widget
     {
         if (effect.Config.SetValue(field.Name, value)) effect.Refresh();
     }
+
     void copyConfiguration()
     {
         using MemoryStream stream = new();
@@ -389,6 +428,7 @@ public class EffectConfigUi : Widget
             ClipboardHelper.SetData(effectConfigFormat, stream);
         }
     }
+
     void pasteConfiguration()
     {
         var changed = false;
@@ -419,10 +459,10 @@ public class EffectConfigUi : Widget
         {
             Trace.WriteLine($"Cannot paste clipboard data: {ex}");
         }
-        if (changed)
-        {
-            updateFields();
-            effect.Refresh();
-        }
+
+        if (!changed) return;
+
+        updateFields();
+        effect.Refresh();
     }
 }

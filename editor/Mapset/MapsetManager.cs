@@ -1,19 +1,18 @@
-﻿using System;
+﻿namespace StorybrewEditor.Mapset;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using StorybrewEditor.Util;
-
-namespace StorybrewEditor.Mapset;
+using Util;
 
 public sealed class MapsetManager : IDisposable
 {
-    readonly string path;
-    readonly bool logLoadingExceptions;
-
     readonly List<EditorBeatmap> beatmaps = [];
-    public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
-    public int BeatmapCount => beatmaps.Count;
+    readonly bool logLoadingExceptions;
+    readonly string path;
+
+    bool disposed;
 
     public MapsetManager(string path, bool logLoadingExceptions)
     {
@@ -26,7 +25,11 @@ public sealed class MapsetManager : IDisposable
         initializeMapsetWatcher();
     }
 
-    #region Beatmaps
+    public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
+    public int BeatmapCount => beatmaps.Count;
+    public void Dispose() => Dispose(true);
+
+#region Beatmaps
 
     void loadBeatmaps()
     {
@@ -35,20 +38,35 @@ public sealed class MapsetManager : IDisposable
         var maps = Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly);
         Array.Sort(maps);
 
-        foreach (var beatmapPath in maps) try
+        foreach (var beatmapPath in maps)
+            try
             {
                 beatmaps.Add(EditorBeatmap.Load(beatmapPath));
             }
             catch (Exception e)
             {
-                if (logLoadingExceptions) Trace.TraceError($"Failed to load beatmap: {e}");
-                else throw;
+                if (logLoadingExceptions)
+                    Trace.TraceError($"Failed to load beatmap: {e}");
+                else
+                    throw;
             }
     }
 
-    #endregion
+#endregion
 
-    #region Events
+    void Dispose(bool disposing)
+    {
+        if (disposed) return;
+        fileWatcher?.Dispose();
+
+        if (!disposing) return;
+        beatmaps.Clear();
+
+        fileWatcher = null;
+        disposed = true;
+    }
+
+#region Events
 
     FileSystemWatcher fileWatcher;
     readonly ThrottledActionScheduler scheduler = new();
@@ -59,41 +77,23 @@ public sealed class MapsetManager : IDisposable
     {
         if (!Directory.Exists(path)) return;
 
-        fileWatcher = new()
-        {
-            Path = path,
-            IncludeSubdirectories = true,
-            NotifyFilter = NotifyFilters.Size
-        };
+        fileWatcher = new() { Path = path, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.Size };
 
         fileWatcher.Created += mapsetFileWatcher_Changed;
         fileWatcher.Changed += mapsetFileWatcher_Changed;
         fileWatcher.Renamed += mapsetFileWatcher_Changed;
-        fileWatcher.Error += (sender, e) => Trace.TraceError($"Watcher error (mapset): {e.GetException()}");
+        fileWatcher.Error += (_, e) => Trace.TraceError($"Watcher error (mapset): {e.GetException()}");
         fileWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (mapset): {path}");
     }
-    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath, key =>
-    {
-        if (Path.GetExtension(e.Name) == ".osu") Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
-        OnFileChanged?.Invoke(sender, e);
-    });
 
-    #endregion
-
-    bool disposed;
-    public void Dispose() => Dispose(true);
-    void Dispose(bool disposing)
-    {
-        if (!disposed)
+    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e)
+        => scheduler.Schedule(e.FullPath, _ =>
         {
-            fileWatcher?.Dispose();
-            if (disposing)
-            {
-                beatmaps.Clear();
-                fileWatcher = null;
-                disposed = true;
-            }
-        }
-    }
+            if (Path.GetExtension(e.Name) == ".osu")
+                Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
+            OnFileChanged?.Invoke(sender, e);
+        });
+
+#endregion
 }

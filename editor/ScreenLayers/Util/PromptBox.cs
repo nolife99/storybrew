@@ -1,14 +1,14 @@
-﻿using System;
+﻿namespace StorybrewEditor.ScreenLayers.Util;
+
+using System;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-
-namespace StorybrewEditor.ScreenLayers.Util;
 
 public class PromptBox(string title, string description, string initialText, Action<string> action) : UiScreenLayer
 {
     LinearLayout mainLayout;
-    Textbox textbox;
     Button okButton, cancelButton;
+    Textbox textbox;
 
     public override bool IsPopup => true;
 
@@ -28,15 +28,11 @@ public class PromptBox(string title, string description, string initialText, Act
             [
                 descriptionLabel = new(WidgetManager)
                 {
-                    StyleName = "small",
-                    Text = description,
-                    AnchorFrom = BoxAlignment.Centre
+                    StyleName = "small", Text = description, AnchorFrom = BoxAlignment.Centre
                 },
                 textbox = new(WidgetManager)
                 {
-                    LabelText = title,
-                    AnchorFrom = BoxAlignment.Centre,
-                    Value = initialText
+                    LabelText = title, AnchorFrom = BoxAlignment.Centre, Value = initialText
                 },
                 new LinearLayout(WidgetManager)
                 {
@@ -44,15 +40,10 @@ public class PromptBox(string title, string description, string initialText, Act
                     AnchorFrom = BoxAlignment.Centre,
                     Children =
                     [
-                        okButton = new(WidgetManager)
-                        {
-                            Text = "Ok",
-                            AnchorFrom = BoxAlignment.Centre
-                        },
+                        okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
                         cancelButton = new(WidgetManager)
                         {
-                            Text = "Cancel",
-                            AnchorFrom = BoxAlignment.Centre
+                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
                         }
                     ]
                 }
@@ -68,6 +59,7 @@ public class PromptBox(string title, string description, string initialText, Act
         };
         cancelButton.OnClick += (_, _) => Exit();
     }
+
     public override void OnTransitionIn()
     {
         base.OnTransitionIn();
@@ -75,6 +67,7 @@ public class PromptBox(string title, string description, string initialText, Act
         WidgetManager.KeyboardFocus = textbox;
         textbox.SelectAll();
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);

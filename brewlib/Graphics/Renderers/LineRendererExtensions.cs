@@ -1,8 +1,9 @@
-﻿using System.Drawing;
-using System.Numerics;
-using static System.MathF;
+﻿using static System.MathF;
 
 namespace BrewLib.Graphics.Renderers;
+
+using System.Drawing;
+using System.Numerics;
 
 public static class LineRendererExtensions
 {
@@ -11,25 +12,6 @@ public static class LineRendererExtensions
 
     public static void Draw(this LineRenderer line, Vector2 from, Vector2 to, Color startColor, Color endColor)
         => line.Draw(new(from.X, from.Y, 0), new(to.X, to.Y, 0), startColor, endColor);
-
-    public static void DrawCircle(this LineRenderer line, Vector3 center, float radius, Color color, float precision = 1)
-    {
-        var circumference = Tau * radius;
-        var lineCount = Max(16, Round(circumference * precision));
-
-        var angleStep = Tau / lineCount;
-        Vector3 previousPosition = new(center.X + radius, center.Y, center.Z);
-        for (var i = 1; i <= lineCount; ++i)
-        {
-            var angle = angleStep * i;
-            Vector3 position = new(center.X + Cos(angle) * radius, center.Y + Sin(angle) * radius, center.Z);
-            line.Draw(previousPosition, position, color);
-            previousPosition = position;
-        }
-    }
-
-    public static void DrawCircle(this LineRenderer line, Vector2 center, float radius, Color color, float precision = 1)
-        => line.DrawCircle(new Vector3(center.X, center.Y, 0), radius, color, precision);
 
     public static void DrawSquare(this LineRenderer line, Vector3 from, Vector3 to, Color color)
     {
@@ -42,16 +24,8 @@ public static class LineRendererExtensions
         line.Draw(bottomLeft, from, color);
     }
 
-    public static void DrawSquare(this LineRenderer line, RectangleF box, Color color)
-        => line.DrawSquare(new Vector3(box.Left, box.Top, 0), new Vector3(box.Right, box.Bottom, 0), color);
-
-    public static void DrawSquare(this LineRenderer line, Vector3 at, Vector2 size, Color color)
-        => line.DrawSquare(new Vector3(at.X - size.X * .5f, at.Y - size.Y * .5f, at.Z), new Vector3(at.X + size.X * .5f, at.Y + size.Y * .5f, at.Z), color);
-
-    public static void DrawSquare(this LineRenderer line, Vector2 at, Vector2 size, Color color)
-        => line.DrawSquare(new Vector3(at.X - size.X * .5f, at.Y - size.Y * .5f, 0), new Vector3(at.X + size.X * .5f, at.Y + size.Y * .5f, 0), color);
-
-    public static void DrawCone(this LineRenderer line, Vector3 center, float arc, float orientation, float innerRadius, float radius, Color color, float precision = 1)
+    public static void DrawCone(this LineRenderer line, Vector3 center, float arc, float orientation, float innerRadius,
+        float radius, Color color, float precision = 1)
     {
         var fromAngle = orientation - arc * .5f;
         var toAngle = orientation + arc * .5f;
@@ -83,17 +57,20 @@ public static class LineRendererExtensions
             var innerLineCount = Max(minLineCount, Round(innerCircumference * precision));
 
             angleStep = arc / innerLineCount;
-            previousPosition = new(center.X + Cos(fromAngle) * innerRadius, center.Y + Sin(fromAngle) * innerRadius, center.Z);
+            previousPosition = new(center.X + Cos(fromAngle) * innerRadius, center.Y + Sin(fromAngle) * innerRadius,
+                center.Z);
             for (var i = 1; i <= innerLineCount; ++i)
             {
                 var angle = fromAngle + angleStep * i;
-                Vector3 position = new(center.X + Cos(angle) * innerRadius, center.Y + Sin(angle) * innerRadius, center.Z);
+                Vector3 position = new(center.X + Cos(angle) * innerRadius, center.Y + Sin(angle) * innerRadius,
+                    center.Z);
                 line.Draw(previousPosition, position, color);
                 previousPosition = position;
             }
         }
     }
 
-    public static void DrawCone(this LineRenderer line, Vector2 center, float arc, float orientation, float innerRadius, float radius, Color color, float precision = 1)
+    public static void DrawCone(this LineRenderer line, Vector2 center, float arc, float orientation, float innerRadius,
+        float radius, Color color, float precision = 1)
         => line.DrawCone(new Vector3(center.X, center.Y, 0), arc, orientation, innerRadius, radius, color, precision);
 }

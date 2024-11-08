@@ -1,6 +1,6 @@
-﻿using StorybrewCommon.Storyboarding.Commands;
+﻿namespace StorybrewCommon.Storyboarding.Display;
 
-namespace StorybrewCommon.Storyboarding.Display;
+using Commands;
 
 #pragma warning disable CS1591
 public interface IAnimatedValueBuilder

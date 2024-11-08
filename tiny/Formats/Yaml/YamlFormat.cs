@@ -1,8 +1,8 @@
-﻿using System;
+﻿namespace Tiny.Formats.Yaml;
+
+using System;
 using System.Globalization;
 using System.IO;
-
-namespace Tiny.Formats.Yaml;
 
 public class YamlFormat : Format<YamlTokenType>
 {
@@ -10,20 +10,15 @@ public class YamlFormat : Format<YamlTokenType>
 
     static readonly RegexTokenizer<YamlTokenType>.Definition[] definitions =
     [
-        new(YamlTokenType.Indent, "^(  )+", captureGroup: 0),
-
-        new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
-        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),
-
-        new(YamlTokenType.ArrayIndicator, "- "),
-
-        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"),
-        new(YamlTokenType.Word, "[^\\s:]+"),
-
-        new(YamlTokenType.EndLine, "\n"),
+        new(YamlTokenType.Indent, "^(  )+", 0), new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
+        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""), new(YamlTokenType.ArrayIndicator, "- "),
+        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"), new(YamlTokenType.Word, "[^\\s:]+"),
+        new(YamlTokenType.EndLine, "\n")
     ];
 
-    protected override Tokenizer<YamlTokenType> Tokenizer { get; } = new RegexTokenizer<YamlTokenType>(definitions, YamlTokenType.EndLine);
+    protected override Tokenizer<YamlTokenType> Tokenizer { get; } =
+        new RegexTokenizer<YamlTokenType>(definitions, YamlTokenType.EndLine);
+
     protected override TokenParser<YamlTokenType> TokenParser { get; } = new YamlTokenParser();
 
     public override void Write(TextWriter writer, TinyToken value) => write(writer, value, null, 0);
@@ -32,9 +27,15 @@ public class YamlFormat : Format<YamlTokenType>
     {
         switch (token.Type)
         {
-            case TinyTokenType.Object: writeObject(writer, (TinyObject)token, parent, indentLevel); break;
-            case TinyTokenType.Array: writeArray(writer, (TinyArray)token, parent, indentLevel); break;
-            default: writeValue(writer, (TinyValue)token, parent, indentLevel); break;
+            case TinyTokenType.Object:
+                writeObject(writer, (TinyObject)token, parent, indentLevel);
+                break;
+            case TinyTokenType.Array:
+                writeArray(writer, (TinyArray)token, parent, indentLevel);
+                break;
+            default:
+                writeValue(writer, (TinyValue)token, parent, indentLevel);
+                break;
         }
     }
 
@@ -48,10 +49,12 @@ public class YamlFormat : Format<YamlTokenType>
             if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
             var key = property.Key;
-            if (key.Contains(' ') || key.Contains(':') || key.StartsWith('-')) key = "\"" + YamlUtil.EscapeString(key) + "\"";
+            if (key.Contains(' ') || key.Contains(':') || key.StartsWith('-'))
+                key = "\"" + YamlUtil.EscapeString(key) + "\"";
 
             var value = property.Value;
-            if (value.IsEmpty) writer.WriteLine(key + ":");
+            if (value.IsEmpty)
+                writer.WriteLine(key + ":");
             else if (value.IsInline)
             {
                 writer.Write(key + ": ");
@@ -62,6 +65,7 @@ public class YamlFormat : Format<YamlTokenType>
                 writer.WriteLine(key + ":");
                 write(writer, value, obj, indentLevel + 1);
             }
+
             first = false;
         }
     }
@@ -75,7 +79,8 @@ public class YamlFormat : Format<YamlTokenType>
         {
             if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
-            if (token.IsEmpty) writer.WriteLine("- ");
+            if (token.IsEmpty)
+                writer.WriteLine("- ");
             else if (token.IsInline)
             {
                 writer.Write("- ");
@@ -86,6 +91,7 @@ public class YamlFormat : Format<YamlTokenType>
                 writer.Write("- ");
                 write(writer, token, array, indentLevel + 1);
             }
+
             first = false;
         }
     }
@@ -99,20 +105,43 @@ public class YamlFormat : Format<YamlTokenType>
 
         switch (type)
         {
-            case TinyTokenType.Null: writer.WriteLine(); break;
-            case TinyTokenType.String: writer.WriteLine("\"" + YamlUtil.EscapeString((string)value) + "\""); break;
-            case TinyTokenType.Integer: writer.WriteLine(value?.ToString()); break;
-
-            case TinyTokenType.Float:
-                if (value is float floatFloat) writer.WriteLine(floatFloat.ToString(CultureInfo.InvariantCulture));
-                else if (value is double floatDouble) writer.WriteLine(floatDouble.ToString(CultureInfo.InvariantCulture));
-                else if (value is decimal floatDecimal) writer.WriteLine(floatDecimal.ToString(CultureInfo.InvariantCulture));
-                else if (value is string floatString) writer.WriteLine(floatString);
-                else throw new InvalidDataException(value?.ToString());
+            case TinyTokenType.Null:
+                writer.WriteLine();
+                break;
+            case TinyTokenType.String:
+                writer.WriteLine("\"" + YamlUtil.EscapeString((string)value) + "\"");
+                break;
+            case TinyTokenType.Integer:
+                writer.WriteLine(value?.ToString());
                 break;
 
-            case TinyTokenType.Boolean: writer.WriteLine(((bool)value) ? BooleanTrue : BooleanFalse); break;
-            case TinyTokenType.Array: case TinyTokenType.Object: case TinyTokenType.Invalid: throw new InvalidDataException(type.ToString());
+            case TinyTokenType.Float:
+                switch (value)
+                {
+                    case float floatFloat:
+                        writer.WriteLine(floatFloat.ToString(CultureInfo.InvariantCulture));
+                        break;
+                    case double floatDouble:
+                        writer.WriteLine(floatDouble.ToString(CultureInfo.InvariantCulture));
+                        break;
+                    case decimal floatDecimal:
+                        writer.WriteLine(floatDecimal.ToString(CultureInfo.InvariantCulture));
+                        break;
+                    case string floatString:
+                        writer.WriteLine(floatString);
+                        break;
+                    default: throw new InvalidDataException(value?.ToString());
+                }
+
+                break;
+
+            case TinyTokenType.Boolean:
+                writer.WriteLine((bool)value ? BooleanTrue : BooleanFalse);
+                break;
+            case TinyTokenType.Array:
+            case TinyTokenType.Object:
+            case TinyTokenType.Invalid:
+                throw new InvalidDataException(type.ToString());
             default: throw new NotImplementedException(type.ToString());
         }
     }

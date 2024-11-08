@@ -7,6 +7,7 @@ public interface ReadOnlyTimeSource
     float TimeFactor { get; }
     bool Playing { get; }
 }
+
 public interface TimeSource : ReadOnlyTimeSource
 {
     new float TimeFactor { get; set; }

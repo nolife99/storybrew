@@ -1,127 +1,36 @@
-﻿using System;
+﻿namespace BrewLib.UserInterface;
+
+using System;
 using System.Drawing;
 using System.Numerics;
 using System.Windows.Forms;
-using BrewLib.Graphics;
-using BrewLib.Graphics.Drawables;
-using BrewLib.UserInterface.Skinning.Styles;
-using BrewLib.Util;
+using Graphics;
+using Graphics.Drawables;
 using osuTK.Input;
-
-namespace BrewLib.UserInterface;
+using Skinning.Styles;
+using Util;
 
 public class Textbox : Widget, Field
 {
     readonly Label label, content;
-    Sprite cursorLine;
-    bool hasFocus, hovered, hasCommitPending;
-
-    int cursorPosition, selectionStart;
-    public int SelectionLeft
-    {
-        get => Math.Min(selectionStart, cursorPosition);
-        set
-        {
-            if (selectionStart < cursorPosition) selectionStart = value;
-            else cursorPosition = value;
-        }
-    }
-    public int SelectionRight
-    {
-        get => Math.Max(selectionStart, cursorPosition);
-        set
-        {
-            if (selectionStart > cursorPosition) selectionStart = value;
-            else cursorPosition = value;
-        }
-    }
-    public int SelectionLength => Math.Abs(cursorPosition - selectionStart);
-
-    public override Vector2 MinSize => new(0, PreferredSize.Y);
-    public override Vector2 MaxSize => new(0, PreferredSize.Y);
-    public override Vector2 PreferredSize
-    {
-        get
-        {
-            var contentSize = content.PreferredSize;
-            if (string.IsNullOrWhiteSpace(label.Text)) return new(Math.Max(contentSize.X, DefaultSize.X), contentSize.Y);
-
-            var labelSize = label.PreferredSize;
-            return new(Math.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);
-        }
-    }
-
-    public string LabelText
-    {
-        get => label.Text;
-        set => label.Text = value;
-    }
-    public string Value
-    {
-        get => content.Text;
-        set
-        {
-            if (content.Text == value) return;
-            SetValueSilent(value);
-
-            if (hasFocus) hasCommitPending = true;
-            OnValueChanged?.Invoke(this, EventArgs.Empty);
-            if (!hasFocus) OnValueCommited?.Invoke(this, EventArgs.Empty);
-        }
-    }
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = (string)value;
-    }
-
-    public void SetValueSilent(string value)
-    {
-        content.Text = value ?? "";
-        if (selectionStart > content.Text.Length) selectionStart = content.Text.Length;
-        if (cursorPosition > content.Text.Length) cursorPosition = content.Text.Length;
-    }
 
     bool acceptMultiline;
-    public bool AcceptMultiline
-    {
-        get => acceptMultiline;
-        set
-        {
-            if (acceptMultiline == value) return;
-            acceptMultiline = value;
+    Sprite cursorLine;
 
-            if (!acceptMultiline) Value = Value.Replace("\n", "");
-        }
-    }
+    int cursorPosition, selectionStart;
     public bool EnterCommits = true;
-
-    public event EventHandler OnValueChanged;
-    public event EventHandler OnValueCommited;
+    bool hasFocus, hovered, hasCommitPending;
 
     public Textbox(WidgetManager manager) : base(manager)
     {
         DefaultSize = new(200, 0);
 
-        cursorLine = new()
-        {
-            Texture = DrawState.WhitePixel,
-            ScaleMode = ScaleMode.Fill,
-            Color = Color.White
-        };
+        cursorLine = new() { Texture = DrawState.WhitePixel, ScaleMode = ScaleMode.Fill, Color = Color.White };
 
-        Add(content = new(manager)
-        {
-            AnchorFrom = BoxAlignment.BottomLeft,
-            AnchorTo = BoxAlignment.BottomLeft
-        });
-        Add(label = new(manager)
-        {
-            AnchorFrom = BoxAlignment.TopLeft,
-            AnchorTo = BoxAlignment.TopLeft
-        });
+        Add(content = new(manager) { AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft });
+        Add(label = new(manager) { AnchorFrom = BoxAlignment.TopLeft, AnchorTo = BoxAlignment.TopLeft });
 
-        OnFocusChange += (sender, e) =>
+        OnFocusChange += (_, e) =>
         {
             if (hasFocus == e.HasFocus) return;
             if (hasFocus && hasCommitPending)
@@ -133,12 +42,12 @@ public class Textbox : Widget, Field
             hasFocus = e.HasFocus;
             RefreshStyle();
         };
-        OnHovered += (sender, e) =>
+        OnHovered += (_, e) =>
         {
             hovered = e.Hovered;
             RefreshStyle();
         };
-        OnKeyDown += (sender, e) =>
+        OnKeyDown += (_, e) =>
         {
             if (!hasFocus) return false;
 
@@ -165,10 +74,9 @@ public class Textbox : Widget, Field
 
                 case Key.C:
                     if (inputManager.ControlOnly)
-                        if (selectionStart != cursorPosition)
-                            ClipboardHelper.SetText(Value.Substring(SelectionLeft, SelectionLength), TextDataFormat.UnicodeText);
-                        else
-                            ClipboardHelper.SetText(Value, TextDataFormat.UnicodeText);
+                        ClipboardHelper.SetText(
+                            selectionStart != cursorPosition ? Value.Substring(SelectionLeft, SelectionLength) : Value,
+                            TextDataFormat.UnicodeText);
                     break;
 
                 case Key.V:
@@ -181,6 +89,7 @@ public class Textbox : Widget, Field
                             ReplaceSelection(clipboardText);
                         }
                     }
+
                     break;
 
                 case Key.X:
@@ -188,9 +97,11 @@ public class Textbox : Widget, Field
                     {
                         if (selectionStart == cursorPosition) SelectAll();
 
-                        ClipboardHelper.SetText(Value.Substring(SelectionLeft, SelectionLength), TextDataFormat.UnicodeText);
+                        ClipboardHelper.SetText(Value.Substring(SelectionLeft, SelectionLength),
+                            TextDataFormat.UnicodeText);
                         ReplaceSelection("");
                     }
+
                     break;
 
                 case Key.Left:
@@ -198,8 +109,10 @@ public class Textbox : Widget, Field
                     {
                         if (cursorPosition > 0) cursorPosition--;
                     }
-                    else if (selectionStart != cursorPosition) SelectionRight = SelectionLeft;
+                    else if (selectionStart != cursorPosition)
+                        SelectionRight = SelectionLeft;
                     else if (cursorPosition > 0) cursorPosition = --selectionStart;
+
                     break;
 
                 case Key.Right:
@@ -207,8 +120,10 @@ public class Textbox : Widget, Field
                     {
                         if (cursorPosition < Value.Length) cursorPosition++;
                     }
-                    else if (selectionStart != cursorPosition) SelectionLeft = SelectionRight;
+                    else if (selectionStart != cursorPosition)
+                        SelectionLeft = SelectionRight;
                     else if (cursorPosition < Value.Length) selectionStart = ++cursorPosition;
+
                     break;
 
                 case Key.Up:
@@ -233,38 +148,134 @@ public class Textbox : Widget, Field
 
                 case Key.Enter:
                 case Key.KeypadEnter:
-                    if (AcceptMultiline && (!EnterCommits || inputManager.Shift)) ReplaceSelection("\n");
+                    if (AcceptMultiline && (!EnterCommits || inputManager.Shift))
+                        ReplaceSelection("\n");
                     else if (EnterCommits && hasCommitPending)
                     {
                         OnValueCommited?.Invoke(this, EventArgs.Empty);
                         hasCommitPending = false;
                     }
+
                     break;
             }
+
             return true;
         };
-        OnKeyUp += (sender, e) => hasFocus;
-        OnKeyPress += (sender, e) =>
+        OnKeyUp += (_, _) => hasFocus;
+        OnKeyPress += (_, e) =>
         {
             if (!hasFocus) return false;
             ReplaceSelection(e.KeyChar.ToString());
             return true;
         };
-        OnClickDown += (sender, e) =>
+        OnClickDown += (_, e) =>
         {
             manager.KeyboardFocus = this;
             var fromScreen = Manager.Camera.FromScreen(new Vector2(e.X, e.Y));
             selectionStart = cursorPosition = content.GetCharacterIndexAt(new(fromScreen.X, fromScreen.Y));
             return true;
         };
-        OnClickMove += (sender, e) =>
+        OnClickMove += (_, e) =>
         {
             var fromScreen = Manager.Camera.FromScreen(new Vector2(e.X, e.Y));
             cursorPosition = content.GetCharacterIndexAt(new(fromScreen.X, fromScreen.Y));
         };
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<TextboxStyle>(BuildStyleName(hovered ? "hover" : null, hasFocus ? "focus" : null));
+    public int SelectionLeft
+    {
+        get => Math.Min(selectionStart, cursorPosition);
+        set
+        {
+            if (selectionStart < cursorPosition)
+                selectionStart = value;
+            else
+                cursorPosition = value;
+        }
+    }
+
+    public int SelectionRight
+    {
+        get => Math.Max(selectionStart, cursorPosition);
+        set
+        {
+            if (selectionStart > cursorPosition)
+                selectionStart = value;
+            else
+                cursorPosition = value;
+        }
+    }
+
+    public int SelectionLength => Math.Abs(cursorPosition - selectionStart);
+
+    public override Vector2 MinSize => PreferredSize with { X = 0 };
+    public override Vector2 MaxSize => PreferredSize with { X = 0 };
+
+    public override Vector2 PreferredSize
+    {
+        get
+        {
+            var contentSize = content.PreferredSize;
+            if (string.IsNullOrWhiteSpace(label.Text))
+                return contentSize with { X = Math.Max(contentSize.X, DefaultSize.X) };
+
+            var labelSize = label.PreferredSize;
+            return new(Math.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);
+        }
+    }
+
+    public string LabelText
+    {
+        get => label.Text;
+        set => label.Text = value;
+    }
+
+    public string Value
+    {
+        get => content.Text;
+        set
+        {
+            if (content.Text == value) return;
+            SetValueSilent(value);
+
+            if (hasFocus) hasCommitPending = true;
+            OnValueChanged?.Invoke(this, EventArgs.Empty);
+            if (!hasFocus) OnValueCommited?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    public bool AcceptMultiline
+    {
+        get => acceptMultiline;
+        set
+        {
+            if (acceptMultiline == value) return;
+            acceptMultiline = value;
+
+            if (!acceptMultiline) Value = Value.Replace("\n", "");
+        }
+    }
+
+    protected override WidgetStyle Style
+        => Manager.Skin.GetStyle<TextboxStyle>(BuildStyleName(hovered ? "hover" : null, hasFocus ? "focus" : null));
+
+    public object FieldValue
+    {
+        get => Value;
+        set => Value = (string)value;
+    }
+
+    public event EventHandler OnValueChanged;
+
+    public void SetValueSilent(string value)
+    {
+        content.Text = value ?? "";
+        if (selectionStart > content.Text.Length) selectionStart = content.Text.Length;
+        if (cursorPosition > content.Text.Length) cursorPosition = content.Text.Length;
+    }
+
+    public event EventHandler OnValueCommited;
+
     protected override void ApplyStyle(WidgetStyle style)
     {
         base.ApplyStyle(style);
@@ -273,20 +284,22 @@ public class Textbox : Widget, Field
         label.StyleName = textboxStyle.LabelStyle;
         content.StyleName = textboxStyle.ContentStyle;
     }
+
     protected override void DrawForeground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawForeground(drawContext, actualOpacity);
+        if (!hasFocus) return;
 
-        if (hasFocus)
-        {
-            if (cursorPosition != selectionStart) content.ForTextBounds(SelectionLeft, SelectionRight, selectionBounds =>
-                cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
+        if (cursorPosition != selectionStart)
+            content.ForTextBounds(SelectionLeft, SelectionRight,
+                selectionBounds => cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
 
-            var bounds = content.GetCharacterBounds(cursorPosition);
-            Vector2 position = new(bounds.Left, bounds.Top + bounds.Height * .2f), scale = new(Manager.PixelSize, bounds.Height * .6f);
-            cursorLine.Draw(drawContext, Manager.Camera, new(position.X, position.Y, scale.X, scale.Y), actualOpacity);
-        }
+        var bounds = content.GetCharacterBounds(cursorPosition);
+        Vector2 position = new(bounds.Left, bounds.Top + bounds.Height * .2f),
+            scale = new(Manager.PixelSize, bounds.Height * .6f);
+        cursorLine.Draw(drawContext, Manager.Camera, new(position.X, position.Y, scale.X, scale.Y), actualOpacity);
     }
+
     protected override void Dispose(bool disposing)
     {
         if (disposing) cursorLine.Dispose();
@@ -294,17 +307,20 @@ public class Textbox : Widget, Field
 
         base.Dispose(disposing);
     }
+
     protected override void Layout()
     {
         base.Layout();
         content.Size = new(Size.X, content.PreferredSize.Y);
         label.Size = new(Size.X, label.PreferredSize.Y);
     }
+
     public void SelectAll()
     {
         selectionStart = 0;
         cursorPosition = Value.Length;
     }
+
     public void ReplaceSelection(string text)
     {
         var left = SelectionLeft;

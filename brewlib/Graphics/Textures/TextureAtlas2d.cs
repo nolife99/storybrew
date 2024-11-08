@@ -1,14 +1,13 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Textures;
+
+using System;
 using System.Drawing;
 
-namespace BrewLib.Graphics.Textures;
-
-public sealed class TextureAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0) : IDisposable
+public sealed class TextureAtlas2d(
+    int width, int height, string description, TextureOptions textureOptions = null, int padding = 0) : IDisposable
 {
-    Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
     int currentX, currentY, nextY;
-
-    public float FillRatio => (texture.Width * currentY + currentX * (nextY - currentY)) / (texture.Width * texture.Height);
+    Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
 
     public Texture2dRegion AddRegion(Bitmap bitmap, string description)
     {
@@ -32,9 +31,10 @@ public sealed class TextureAtlas2d(int width, int height, string description, Te
         return region;
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (!disposed)
@@ -47,5 +47,5 @@ public sealed class TextureAtlas2d(int width, int height, string description, Te
         }
     }
 
-    #endregion
+#endregion
 }

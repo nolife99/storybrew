@@ -1,17 +1,13 @@
-﻿using System;
-using ManagedBass;
+﻿namespace BrewLib.Audio;
 
-namespace BrewLib.Audio;
+using System;
+using ManagedBass;
 
 public class FftStream : IDisposable
 {
-    int stream;
-    ChannelInfo info;
-
     readonly float frequency;
-    public float Frequency => frequency;
-
-    public float Duration { get; }
+    ChannelInfo info;
+    int stream;
 
     public FftStream(string path)
     {
@@ -21,6 +17,10 @@ public class FftStream : IDisposable
 
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out frequency);
     }
+
+    public float Frequency => frequency;
+
+    public float Duration { get; }
 
     public float[] GetFft(float time, bool splitChannels = false)
     {
@@ -36,32 +36,31 @@ public class FftStream : IDisposable
         }
 
         var data = GC.AllocateUninitializedArray<float>(size);
-        if (Bass.ChannelGetData(stream, data, unchecked((int)flags)) == -1) throw new BassException(Bass.LastError);
+        if (Bass.ChannelGetData(stream, data, (int)flags) == -1) throw new BassException(Bass.LastError);
         return data;
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            Bass.StreamFree(stream);
-            if (disposing)
-            {
-                stream = 0;
-                disposed = true;
-            }
-        }
+        if (disposed) return;
+        Bass.StreamFree(stream);
+
+        if (!disposing) return;
+        stream = 0;
+        disposed = true;
     }
 
     ~FftStream() => Dispose(false);
+
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
-    #endregion
+#endregion
 }

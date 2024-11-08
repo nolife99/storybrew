@@ -1,19 +1,18 @@
-﻿using System.Diagnostics;
+﻿namespace StorybrewEditor.ScreenLayers;
+
 using System.IO;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using StorybrewEditor.Storyboarding;
-using StorybrewEditor.UserInterface;
+using Storyboarding;
 using StorybrewEditor.Util;
-
-namespace StorybrewEditor.ScreenLayers;
+using UserInterface;
 
 public class NewProjectMenu : UiScreenLayer
 {
     LinearLayout mainLayout;
-    Textbox projectNameTextbox;
     PathSelector mapsetPathSelector;
+    Textbox projectNameTextbox;
     Button startButton, cancelButton;
 
     public override void Load()
@@ -30,15 +29,10 @@ public class NewProjectMenu : UiScreenLayer
             FitChildren = true,
             Children =
             [
-                new Label(WidgetManager)
-                {
-                    Text = "New Project",
-                    AnchorFrom = BoxAlignment.Centre
-                },
+                new Label(WidgetManager) { Text = "New Project", AnchorFrom = BoxAlignment.Centre },
                 projectNameTextbox = new(WidgetManager)
                 {
-                    LabelText = "Project Name",
-                    AnchorFrom = BoxAlignment.Centre
+                    LabelText = "Project Name", AnchorFrom = BoxAlignment.Centre
                 },
                 mapsetPathSelector = new(WidgetManager, PathSelectorMode.OpenDirectory)
                 {
@@ -56,13 +50,11 @@ public class NewProjectMenu : UiScreenLayer
                     [
                         startButton = new(WidgetManager)
                         {
-                            Text = "Start",
-                            AnchorFrom = BoxAlignment.Centre
+                            Text = "Start", AnchorFrom = BoxAlignment.Centre
                         },
                         cancelButton = new(WidgetManager)
                         {
-                            Text = "Cancel",
-                            AnchorFrom = BoxAlignment.Centre
+                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
                         }
                     ]
                 }
@@ -70,12 +62,8 @@ public class NewProjectMenu : UiScreenLayer
         });
 
         projectNameTextbox.OnValueChanged += (_, _) => updateButtonsState();
-        projectNameTextbox.OnValueCommited += (_, _) =>
-        {
-            var name = projectNameTextbox.Value;
-            foreach (var character in Path.GetInvalidFileNameChars()) name = name.Replace(character, '_');
-            projectNameTextbox.Value = name;
-        };
+        projectNameTextbox.OnValueCommited += (_, _) => projectNameTextbox.Value = Path.GetInvalidFileNameChars()
+            .Aggregate(projectNameTextbox.Value, (current, character) => current.Replace(character, '_'));
 
         mapsetPathSelector.OnValueChanged += (_, _) => updateButtonsState();
         mapsetPathSelector.OnValueCommited += (_, _) =>
@@ -85,6 +73,7 @@ public class NewProjectMenu : UiScreenLayer
                 mapsetPathSelector.Value = Path.GetDirectoryName(mapsetPathSelector.Value);
                 return;
             }
+
             updateButtonsState();
         };
         updateButtonsState();
@@ -92,25 +81,29 @@ public class NewProjectMenu : UiScreenLayer
         startButton.OnClick += (_, _) => createProject();
         cancelButton.OnClick += (_, _) => Exit();
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
-        mainLayout.Pack(300, 0);
+        mainLayout.Pack(300);
     }
-    void createProject() => Manager.AsyncLoading("Creating project", () =>
-    {
-        var resourceContainer = Manager.GetContext<Editor>().ResourceContainer;
-        var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true, resourceContainer);
-        Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
-    });
+
+    void createProject()
+        => Manager.AsyncLoading("Creating project", () =>
+        {
+            var resourceContainer = Manager.GetContext<Editor>().ResourceContainer;
+            var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true, resourceContainer);
+            Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
+        });
 
     void updateButtonsState() => startButton.Disabled = !updateFieldsValid();
+
     bool updateFieldsValid()
     {
         var projectFolderName = projectNameTextbox.Value;
         if (string.IsNullOrWhiteSpace(projectFolderName))
         {
-            startButton.Tooltip = $"The project name isn't valid";
+            startButton.Tooltip = "The project name isn't valid";
             return false;
         }
 
@@ -120,14 +113,16 @@ public class NewProjectMenu : UiScreenLayer
             startButton.Tooltip = $"A project named '{projectFolderName}' already exists";
             return false;
         }
+
         if (!Directory.Exists(mapsetPathSelector.Value))
         {
             startButton.Tooltip = "The selected mapset folder does not exist";
             return false;
         }
+
         if (!Directory.EnumerateFiles(mapsetPathSelector.Value, "*.osu", SearchOption.TopDirectoryOnly).Any())
         {
-            startButton.Tooltip = $"No .osu found in the selected mapset folder";
+            startButton.Tooltip = "No .osu found in the selected mapset folder";
             return false;
         }
 

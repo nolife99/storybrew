@@ -1,6 +1,6 @@
-﻿using BrewLib.Graphics.Cameras;
+﻿namespace BrewLib.Graphics.Renderers;
 
-namespace BrewLib.Graphics.Renderers;
+using Cameras;
 
 public interface Renderer
 {

@@ -1,78 +1,78 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <RootNamespace>StorybrewEditor</RootNamespace>
-    <AssemblyName>StorybrewEditor</AssemblyName>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <Platforms>x86;x64</Platforms>
-    <Version>1.92</Version>
-  </PropertyGroup>
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <RootNamespace>StorybrewEditor</RootNamespace>
+        <AssemblyName>StorybrewEditor</AssemblyName>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <Platforms>x86;x64</Platforms>
+        <Version>1.92</Version>
+    </PropertyGroup>
 
-  <PropertyGroup>
-    <StartupObject>StorybrewEditor.Program</StartupObject>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
-    <Product>storybrew editor</Product>
-    <Company>storybrew</Company>
-    <Copyright>Copyright © Damnae 2016</Copyright>
-    <AnalysisLevel>latest-recommended</AnalysisLevel>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
-    <EnableNETAnalyzers>True</EnableNETAnalyzers>
-    <UseWindowsForms>True</UseWindowsForms>
-  </PropertyGroup>
+    <PropertyGroup>
+        <StartupObject>StorybrewEditor.Program</StartupObject>
+        <ApplicationIcon>icon.ico</ApplicationIcon>
+        <Product>storybrew editor</Product>
+        <Company>storybrew</Company>
+        <Copyright>Copyright © Damnae 2016</Copyright>
+        <AnalysisLevel>latest-recommended</AnalysisLevel>
+        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+        <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+        <EnableNETAnalyzers>True</EnableNETAnalyzers>
+        <UseWindowsForms>True</UseWindowsForms>
+    </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <DebugType>embedded</DebugType>
-    <Optimize>True</Optimize>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-    <DebugType>embedded</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-    <DebugType>embedded</DebugType>
-    <Optimize>True</Optimize>
-  </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <DebugType>embedded</DebugType>
+        <Optimize>True</Optimize>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
+        <DebugType>embedded</DebugType>
+        <Optimize>True</Optimize>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Asap-Light.ttf" />
-    <EmbeddedResource Include="Resources\Asap-Regular.ttf" />
-    <EmbeddedResource Include="Resources\MaterialIcons.otf" />
-    <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json" />
-    <EmbeddedResource Include="Resources\ui-line-opt.json" />
-    <EmbeddedResource Include="Resources\ui-stripes-opt.json" />
-    <EmbeddedResource Include="Resources\skin_styles.json" />
-    <EmbeddedResource Include="Resources\skin_drawables_debug.json" />
-    <EmbeddedResource Include="Resources\skin_drawables.json" />
-    <EmbeddedResource Include="Resources\skin_constants.json" />
-    <EmbeddedResource Include="Resources\skin.json" />
-    <EmbeddedResource Include="Resources\scripttemplate.csx" />
-    <EmbeddedResource Include="icon.ico" />
-    <EmbeddedResource Include="Resources\project\scripts.csproj" SubType="Designer" />
-    <EmbeddedResource Include="Resources\project\storyboard.sln" />
-    <EmbeddedResource Include="Resources\ui-line.png" />
-    <EmbeddedResource Include="Resources\ui-stripes.png" />
-    <EmbeddedResource Include="Resources\ui-rounded-borders.png" />
-  </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="icon.ico"/>
+        <EmbeddedResource Include="Resources\Asap-Light.ttf"/>
+        <EmbeddedResource Include="Resources\Asap-Regular.ttf"/>
+        <EmbeddedResource Include="Resources\MaterialIcons.otf"/>
+        <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json"/>
+        <EmbeddedResource Include="Resources\ui-line-opt.json"/>
+        <EmbeddedResource Include="Resources\ui-stripes-opt.json"/>
+        <EmbeddedResource Include="Resources\skin_styles.json"/>
+        <EmbeddedResource Include="Resources\skin_drawables_debug.json"/>
+        <EmbeddedResource Include="Resources\skin_drawables.json"/>
+        <EmbeddedResource Include="Resources\skin_constants.json"/>
+        <EmbeddedResource Include="Resources\skin.json"/>
+        <EmbeddedResource Include="Resources\scripttemplate.csx"/>
+        <EmbeddedResource Include="Resources\project\scripts.csproj" SubType="Designer"/>
+        <EmbeddedResource Include="Resources\project\storyboard.sln"/>
+        <EmbeddedResource Include="Resources\ui-line.png"/>
+        <EmbeddedResource Include="Resources\ui-stripes.png"/>
+        <EmbeddedResource Include="Resources\ui-rounded-borders.png"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="..\brewlib\bass\$(Platform)\*.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+    <ItemGroup>
+        <Content Include="..\brewlib\bass\$(Platform)\*.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
-    <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\brewlib\brewlib.csproj" />
-    <ProjectReference Include="..\common\common.csproj" />
-    <ProjectReference Include="..\tiny\tiny.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
+        <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\brewlib\brewlib.csproj"/>
+        <ProjectReference Include="..\common\common.csproj"/>
+        <ProjectReference Include="..\tiny\tiny.csproj"/>
+    </ItemGroup>
 
 </Project>

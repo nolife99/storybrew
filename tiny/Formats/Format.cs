@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿namespace Tiny.Formats;
 
-namespace Tiny.Formats;
+using System.Collections.Generic;
+using System.IO;
 
 public interface Tokenizer<TokenType>
 {

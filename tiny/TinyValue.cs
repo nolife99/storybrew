@@ -1,28 +1,19 @@
-﻿using System;
-using System.Globalization;
+﻿namespace Tiny;
 
-namespace Tiny;
+using System;
+using System.Globalization;
 
 public enum TinyTokenType
 {
-    Null,
-    Boolean,
-    Integer,
-    Float,
-    String,
-    Object,
-    Array,
-    Invalid
+    Null, Boolean, Integer,
+    Float, String, Object,
+    Array, Invalid
 }
 
 public class TinyValue : TinyToken
 {
-    readonly object value;
     readonly TinyTokenType type;
-
-    public override bool IsInline => true;
-    public override bool IsEmpty => value is null;
-    public override TinyTokenType Type => type;
+    readonly object value;
 
     internal TinyValue(object value, TinyTokenType type)
     {
@@ -31,7 +22,10 @@ public class TinyValue : TinyToken
 
         switch (type)
         {
-            case TinyTokenType.Object: case TinyTokenType.Array: case TinyTokenType.Invalid: throw new ArgumentOutOfRangeException(nameof(type), type.ToString());
+            case TinyTokenType.Object:
+            case TinyTokenType.Array:
+            case TinyTokenType.Invalid:
+                throw new ArgumentOutOfRangeException(nameof(type), type.ToString());
         }
     }
 
@@ -66,6 +60,10 @@ public class TinyValue : TinyToken
     public TinyValue(decimal value) : this(value, TinyTokenType.Float) { }
     public TinyValue(decimal? value) : this(value, TinyTokenType.Float) { }
 
+    public override bool IsInline => true;
+    public override bool IsEmpty => value is null;
+    public override TinyTokenType Type => type;
+
     public override T Value<T>(object key)
     {
         if (key is not null) throw new ArgumentException($"Key must be null, was {key}", nameof(key));
@@ -80,10 +78,10 @@ public class TinyValue : TinyToken
         if (type is TinyTokenType.Null)
         {
             if (targetType == typeof(TinyArray)) return (T)(object)new TinyArray();
-            else if (targetType == typeof(TinyObject)) return (T)(object)new TinyObject();
+            if (targetType == typeof(TinyObject)) return (T)(object)new TinyObject();
         }
 
-        if (targetType.IsEnum && (type is TinyTokenType.String || type is TinyTokenType.Integer))
+        if (targetType.IsEnum && type is TinyTokenType.String or TinyTokenType.Integer)
         {
             if (value is null) return default;
             return (T)Enum.Parse(targetType, value.ToString());
@@ -99,20 +97,12 @@ public class TinyValue : TinyToken
     }
 
     public static TinyTokenType FindValueType(object value)
-    {
-        if (value is null) return TinyTokenType.Null;
-        if (value is string) return TinyTokenType.String;
-        if (value is sbyte || value is byte ||
-            value is short || value is ushort ||
-            value is int || value is uint ||
-            value is long || value is ulong ||
-            value is Enum)
-            return TinyTokenType.Integer;
-
-        if (value is float || value is double || value is decimal) return TinyTokenType.Float;
-        if (value is bool) return TinyTokenType.Boolean;
-        return TinyTokenType.Invalid;
-    }
+        => value switch
+        {
+            null => TinyTokenType.Null, string => TinyTokenType.String,
+            sbyte or byte or short or ushort or int or uint or long or ulong or Enum => TinyTokenType.Integer,
+            float or double or decimal => TinyTokenType.Float, bool => TinyTokenType.Boolean, _ => TinyTokenType.Invalid
+        };
 
     public override string ToString() => $"{value} ({type})";
 }

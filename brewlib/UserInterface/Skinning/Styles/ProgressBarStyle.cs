@@ -1,6 +1,6 @@
-﻿using BrewLib.Graphics.Drawables;
+﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
-namespace BrewLib.UserInterface.Skinning.Styles;
+using Graphics.Drawables;
 
 public class ProgressBarStyle : WidgetStyle
 {

@@ -1,25 +1,24 @@
-﻿using System;
+﻿namespace BrewLib.Graphics.Drawables;
+
+using System;
 using System.Drawing;
 using System.Numerics;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Renderers;
-using BrewLib.Graphics.Textures;
-using BrewLib.Util;
-
-namespace BrewLib.Graphics.Drawables;
+using Cameras;
+using Renderers;
+using Textures;
+using Util;
 
 public class NinePatch : Drawable
 {
-    public Texture2dRegion Texture;
-    public RenderStates RenderStates { get; private set; } = new();
-    public Color Color = Color.White;
     public FourSide Borders, Outset;
     public bool BordersOnly;
+    public Color Color = Color.White;
+    public Texture2dRegion Texture;
+    public RenderStates RenderStates { get; private set; } = new();
 
-    public Vector2 MinSize => Texture is not null ? new Vector2(
-        Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
-        Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
-        Vector2.Zero;
+    public Vector2 MinSize
+        => Texture is not null ? new Vector2(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
+            Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) : Vector2.Zero;
 
     public Vector2 PreferredSize => MinSize;
 
@@ -41,40 +40,48 @@ public class NinePatch : Drawable
         var renderer = DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, RenderStates);
 
         // Center
-        if (!BordersOnly && horizontalScale > 0 && verticalScale > 0) renderer.Draw(Texture, x1, y1, 0, 0,
-            horizontalScale, verticalScale, 0, color, Borders.Left, Borders.Top, Borders.Right, Borders.Bottom);
+        if (!BordersOnly && horizontalScale > 0 && verticalScale > 0)
+            renderer.Draw(Texture, x1, y1, 0, 0, horizontalScale, verticalScale, 0, color, Borders.Left, Borders.Top,
+                Borders.Right, Borders.Bottom);
 
         // Sides
         if (verticalScale > 0)
         {
-            renderer.Draw(Texture, x0, y1, 0, 0, 1, verticalScale, 0, color, 0, Borders.Top, Borders.Left, Borders.Bottom);
-            renderer.Draw(Texture, x2, y1, 0, 0, 1, verticalScale, 0, color, Borders.Right, Borders.Top, Texture.Width, Borders.Bottom);
+            renderer.Draw(Texture, x0, y1, 0, 0, 1, verticalScale, 0, color, 0, Borders.Top, Borders.Left,
+                Borders.Bottom);
+            renderer.Draw(Texture, x2, y1, 0, 0, 1, verticalScale, 0, color, Borders.Right, Borders.Top, Texture.Width,
+                Borders.Bottom);
         }
+
         if (horizontalScale > 0)
         {
-            renderer.Draw(Texture, x1, y0, 0, 0, horizontalScale, 1, 0, color, Borders.Left, 0, Borders.Right, Borders.Top);
-            renderer.Draw(Texture, x1, y2, 0, 0, horizontalScale, 1, 0, color, Borders.Left, Borders.Bottom, Borders.Right, Texture.Height);
+            renderer.Draw(Texture, x1, y0, 0, 0, horizontalScale, 1, 0, color, Borders.Left, 0, Borders.Right,
+                Borders.Top);
+            renderer.Draw(Texture, x1, y2, 0, 0, horizontalScale, 1, 0, color, Borders.Left, Borders.Bottom,
+                Borders.Right, Texture.Height);
         }
 
         // Corners
         renderer.Draw(Texture, x0, y0, 0, 0, 1, 1, 0, color, 0, 0, Borders.Left, Borders.Top);
         renderer.Draw(Texture, x2, y0, 0, 0, 1, 1, 0, color, Borders.Right, 0, Texture.Width, Borders.Top);
         renderer.Draw(Texture, x0, y2, 0, 0, 1, 1, 0, color, 0, Borders.Bottom, Borders.Left, Texture.Height);
-        renderer.Draw(Texture, x2, y2, 0, 0, 1, 1, 0, color, Borders.Right, Borders.Bottom, Texture.Width, Texture.Height);
+        renderer.Draw(Texture, x2, y2, 0, 0, 1, 1, 0, color, Borders.Right, Borders.Bottom, Texture.Width,
+            Texture.Height);
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
     protected virtual void Dispose(bool disposing)
     {
         Texture = null;
         RenderStates = null;
     }
 
-    #endregion
+#endregion
 }

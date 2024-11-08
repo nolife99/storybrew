@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace BrewLib.Time;
 
-namespace BrewLib.Time;
+using System;
 
 public interface FrameTimeSource : ReadOnlyTimeSource
 {
@@ -9,6 +9,7 @@ public interface FrameTimeSource : ReadOnlyTimeSource
 
     event EventHandler Changed;
 }
+
 public class FrameClock : FrameTimeSource
 {
     public float Current { get; private set; }
@@ -28,6 +29,7 @@ public class FrameClock : FrameTimeSource
 
         if (Previous != Current) Changed?.Invoke(this, EventArgs.Empty);
     }
+
     public void AdvanceFrameTo(float time)
     {
         Previous = Current;
@@ -35,5 +37,6 @@ public class FrameClock : FrameTimeSource
 
         if (Previous != Current) Changed?.Invoke(this, EventArgs.Empty);
     }
+
     public void Reset() => Current = 0;
 }

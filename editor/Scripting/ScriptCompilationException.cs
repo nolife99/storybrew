@@ -1,10 +1,5 @@
-﻿using System;
+﻿namespace StorybrewEditor.Scripting;
 
-namespace StorybrewEditor.Scripting;
+using System;
 
-public class ScriptCompilationException : Exception
-{
-    public ScriptCompilationException() { }
-    public ScriptCompilationException(string message) : base(message) { }
-    public ScriptCompilationException(string message, Exception innerException) : base(message, innerException) { }
-}
+public class ScriptCompilationException(string message) : Exception(message);

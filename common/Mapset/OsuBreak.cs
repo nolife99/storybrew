@@ -1,6 +1,6 @@
-﻿using System.Globalization;
+﻿namespace StorybrewCommon.Mapset;
 
-namespace StorybrewCommon.Mapset;
+using System.Globalization;
 
 #pragma warning disable CS1591
 public class OsuBreak
@@ -9,6 +9,7 @@ public class OsuBreak
     public int EndTime { get; internal set; }
 
     public override string ToString() => $"Break from {StartTime}ms to {EndTime}ms";
+
     public static OsuBreak Parse(string line)
     {
         var values = line.Split(',');

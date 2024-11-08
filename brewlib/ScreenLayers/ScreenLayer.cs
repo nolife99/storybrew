@@ -1,29 +1,33 @@
-﻿using System;
-using BrewLib.Graphics;
-using BrewLib.Input;
-using osuTK.Input;
+﻿namespace BrewLib.ScreenLayers;
 
-namespace BrewLib.ScreenLayers;
+using System;
+using Graphics;
+using Input;
+using osuTK.Input;
 
 public abstract class ScreenLayer : InputAdapter, IDisposable
 {
-    public ScreenLayerManager Manager { get; set; }
+    public enum State
+    {
+        Hidden, FadingIn, Active,
+        FadingOut
+    }
 
-    protected float TransitionInDuration = .25f, TransitionOutDuration = .25f, TransitionProgress;
-    public float MinTween;
+    readonly InputDispatcher inputDispatcher = new(), innerInputDispatcher = new();
 
     public State CurrentState = State.Hidden;
 
-    bool hasStarted, hasFocus;
-    public bool HasFocus => hasFocus;
+    bool hasStarted;
+    public float MinTween;
+
+    protected float TransitionInDuration = .25f, TransitionOutDuration = .25f, TransitionProgress;
+    public ScreenLayerManager Manager { get; set; }
+    public bool HasFocus { get; private set; }
 
     public virtual bool IsPopup => false;
-    public bool IsActive => hasFocus && (CurrentState == State.FadingIn || CurrentState == State.Active);
+    public bool IsActive => HasFocus && CurrentState is State.FadingIn or State.Active;
 
-    bool isExiting;
-    public bool IsExiting => isExiting;
-
-    readonly InputDispatcher inputDispatcher = new(), innerInputDispatcher = new();
+    public bool IsExiting { get; private set; }
     public InputHandler InputHandler => inputDispatcher;
 
     public virtual void Load()
@@ -32,44 +36,40 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
         inputDispatcher.Add(this);
     }
 
-    public virtual void GainFocus() => hasFocus = true;
-    public virtual void LoseFocus() => hasFocus = false;
+    public void GainFocus() => HasFocus = true;
+    public void LoseFocus() => HasFocus = false;
 
     protected void AddInputHandler(InputHandler handler) => innerInputDispatcher.Add(handler);
-    protected void RemoveInputHandler(InputHandler handler) => innerInputDispatcher.Remove(handler);
-    protected void ClearInputHandlers() => innerInputDispatcher.Clear();
 
     public virtual void Resize(int width, int height) { }
 
     public virtual void Update(bool isTopFocus, bool isCovered)
     {
-        if (!hasStarted && !isExiting && !isCovered)
+        if (!hasStarted && !IsExiting && !isCovered)
         {
             OnStart();
             hasStarted = true;
         }
-        if (isExiting)
+
+        if (IsExiting)
         {
-            if (CurrentState != State.FadingOut) OnTransitionOut();
+            if (CurrentState is not State.FadingOut) OnTransitionOut();
 
             CurrentState = State.FadingOut;
-            if (!updateTransition(Manager.TimeSource.Elapsed, TransitionOutDuration, -1))
-            {
-                OnHidden();
-                Manager.Remove(this);
-            }
+            if (updateTransition(Manager.TimeSource.Elapsed, TransitionOutDuration, -1)) return;
+            OnHidden();
+            Manager.Remove(this);
         }
         else if (isCovered)
         {
             if (updateTransition(Manager.TimeSource.Elapsed, TransitionOutDuration, -1))
             {
-                if (CurrentState != State.FadingOut) OnTransitionOut();
+                if (CurrentState is not State.FadingOut) OnTransitionOut();
                 CurrentState = State.FadingOut;
-
             }
             else
             {
-                if (CurrentState != State.Hidden) OnHidden();
+                if (CurrentState is not State.Hidden) OnHidden();
                 CurrentState = State.Hidden;
             }
         }
@@ -77,16 +77,17 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
         {
             if (updateTransition(Manager.TimeSource.Elapsed, TransitionInDuration, 1))
             {
-                if (CurrentState != State.FadingIn) OnTransitionIn();
+                if (CurrentState is not State.FadingIn) OnTransitionIn();
                 CurrentState = State.FadingIn;
             }
             else
             {
-                if (CurrentState != State.Active) OnActive();
+                if (CurrentState is not State.Active) OnActive();
                 CurrentState = State.Active;
             }
         }
     }
+
     public virtual void FixedUpdate() { }
     public virtual void Draw(DrawContext drawContext, double tween) { }
 
@@ -101,61 +102,52 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
-        {
-            Close();
-            return true;
-        }
-        return base.OnKeyDown(e);
+        if (e.Key is not Key.Escape) return base.OnKeyDown(e);
+        Close();
+        return true;
     }
 
     public void Exit() => Exit(false);
+
     public void Exit(bool skipTransition)
     {
-        if (isExiting) return;
-        isExiting = true;
+        if (IsExiting) return;
+        IsExiting = true;
 
         OnExit();
 
         if (skipTransition || TransitionOutDuration == 0) Manager.Remove(this);
     }
+
     bool updateTransition(float delta, float duration, int direction)
     {
         var progress = duration > 0 ? delta / duration : 1;
         TransitionProgress += progress * direction;
 
-        if (TransitionProgress <= 0)
+        switch (TransitionProgress)
         {
-            TransitionProgress = 0;
-            return false;
+            case <= 0:
+                TransitionProgress = 0;
+                return false;
+            case >= 1:
+                TransitionProgress = 1;
+                return false;
+            default: return true;
         }
-        if (TransitionProgress >= 1)
-        {
-            TransitionProgress = 1;
-            return false;
-        }
-        return true;
     }
 
-    #region IDisposable Support
+#region IDisposable Support
 
-    bool disposed;
-    public bool IsDisposed => disposed;
+    public bool IsDisposed { get; private set; }
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            if (disposing && hasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
-            disposed = true;
-        }
+        if (IsDisposed) return;
+        if (disposing && HasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
+        IsDisposed = true;
     }
+
     public void Dispose() => Dispose(true);
 
-    #endregion
-
-    public enum State
-    {
-        Hidden, FadingIn, Active, FadingOut
-    }
+#endregion
 }

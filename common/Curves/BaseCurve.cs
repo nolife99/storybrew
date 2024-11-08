@@ -1,22 +1,22 @@
-﻿using System.Collections.Generic;
-using System.Numerics;
+﻿namespace StorybrewCommon.Curves;
 
-namespace StorybrewCommon.Curves;
+using System.Collections.Generic;
+using System.Numerics;
 
 ///<summary> Represents a base curve. </summary>
 public abstract class BaseCurve : Curve
 {
-    ///<inheritdoc/>
-    public abstract Vector2 EndPosition { get; }
-
-    ///<inheritdoc/>
-    public abstract Vector2 StartPosition { get; }
-
     List<(float Distance, Vector2 Position)> distancePosition;
 
     float length;
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
+    public abstract Vector2 EndPosition { get; }
+
+    /// <inheritdoc />
+    public abstract Vector2 StartPosition { get; }
+
+    /// <inheritdoc />
     public float Length
     {
         get
@@ -26,16 +26,7 @@ public abstract class BaseCurve : Curve
         }
     }
 
-    void initialize()
-    {
-        distancePosition = [];
-        Initialize(distancePosition, out length);
-    }
-
-    ///<summary/>
-    protected abstract void Initialize(List<(float, Vector2)> distancePosition, out float length);
-
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Vector2 PositionAtDistance(float distance)
     {
         if (distancePosition is null) initialize();
@@ -70,6 +61,15 @@ public abstract class BaseCurve : Curve
         return previousPosition + previousToNext * delta;
     }
 
-    ///<inheritdoc/>
+    /// <inheritdoc />
     public Vector2 PositionAtDelta(float delta) => PositionAtDistance(delta * Length);
+
+    void initialize()
+    {
+        distancePosition = [];
+        Initialize(distancePosition, out length);
+    }
+
+    /// <summary />
+    protected abstract void Initialize(List<(float, Vector2)> distancePosition, out float length);
 }

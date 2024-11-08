@@ -1,8 +1,8 @@
-﻿using System.IO;
+﻿namespace StorybrewEditor.Storyboarding;
+
+using System.IO;
 using BrewLib.Audio;
 using StorybrewCommon.Storyboarding;
-
-namespace StorybrewEditor.Storyboarding;
 
 public class EditorOsbSample : OsbSample, EventObject
 {

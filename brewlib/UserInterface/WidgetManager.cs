@@ -1,76 +1,40 @@
-﻿using System;
+﻿namespace BrewLib.UserInterface;
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
-using BrewLib.Graphics;
-using BrewLib.Graphics.Cameras;
-using BrewLib.Graphics.Drawables;
-using BrewLib.Input;
-using BrewLib.ScreenLayers;
-using BrewLib.UserInterface.Skinning;
-using BrewLib.Util;
+using Graphics;
+using Graphics.Cameras;
+using Graphics.Drawables;
+using Input;
+using osuTK;
 using osuTK.Input;
-
-namespace BrewLib.UserInterface;
+using ScreenLayers;
+using Skinning;
+using Util;
+using Vector2 = System.Numerics.Vector2;
 
 public sealed class WidgetManager : InputHandler, IDisposable
 {
-    public readonly InputManager InputManager;
-    public readonly ScreenLayerManager ScreenLayerManager;
-    public readonly Skin Skin;
-
-    public readonly Widget Root;
-
-    StackLayout rootContainer;
-    readonly Widget tooltipOverlay;
     readonly Dictionary<MouseButton, Widget> clickTargets = [];
     readonly Dictionary<GamepadButton, Widget> gamepadButtonTargets = [];
+    public readonly InputManager InputManager;
 
-    public Vector2 Size
-    {
-        get => rootContainer.Size;
-        set => rootContainer.Size = value;
-    }
-    public float Opacity
-    {
-        get => rootContainer.Opacity;
-        set => rootContainer.Opacity = value;
-    }
+    public readonly Widget Root;
+    public readonly ScreenLayerManager ScreenLayerManager;
+    public readonly Skin Skin;
+    readonly Widget tooltipOverlay;
+
+    Camera camera;
     public Widget HoveredWidget;
 
     Widget keyboardFocus;
-    public Widget KeyboardFocus
-    {
-        get => keyboardFocus;
-        set
-        {
-            if (keyboardFocus == value) return;
-
-            if (keyboardFocus is not null) fire((w, evt) => w.NotifyFocusChange(evt, new(false)), keyboardFocus, value);
-            var previousFocus = keyboardFocus;
-            keyboardFocus = value;
-
-            if (keyboardFocus is not null) fire((w, evt) => w.NotifyFocusChange(evt, new(true)), keyboardFocus, previousFocus);
-        }
-    }
 
     Vector2 mousePosition;
-    public Vector2 MousePosition => mousePosition;
 
-    Camera camera;
-    public Camera Camera
-    {
-        get => camera;
-        set
-        {
-            if (camera == value) return;
-            if (camera is not null) camera.Changed -= camera_Changed;
-            camera = value;
-            if (camera is not null) camera.Changed += camera_Changed;
-            RefreshHover();
-        }
-    }
+    StackLayout rootContainer;
+
     public WidgetManager(ScreenLayerManager screenLayerManager, InputManager inputManager, Skin skin)
     {
         ScreenLayerManager = screenLayerManager;
@@ -84,6 +48,49 @@ public sealed class WidgetManager : InputHandler, IDisposable
         initializeDragAndDrop();
     }
 
+    public Vector2 Size
+    {
+        get => rootContainer.Size;
+        set => rootContainer.Size = value;
+    }
+
+    public float Opacity
+    {
+        get => rootContainer.Opacity;
+        set => rootContainer.Opacity = value;
+    }
+
+    public Widget KeyboardFocus
+    {
+        get => keyboardFocus;
+        set
+        {
+            if (keyboardFocus == value) return;
+
+            if (keyboardFocus is not null) fire((w, evt) => w.NotifyFocusChange(evt, new(false)), keyboardFocus, value);
+            var previousFocus = keyboardFocus;
+            keyboardFocus = value;
+
+            if (keyboardFocus is not null)
+                fire((w, evt) => w.NotifyFocusChange(evt, new(true)), keyboardFocus, previousFocus);
+        }
+    }
+
+    public Vector2 MousePosition => mousePosition;
+
+    public Camera Camera
+    {
+        get => camera;
+        set
+        {
+            if (camera == value) return;
+            if (camera is not null) camera.Changed -= camera_Changed;
+            camera = value;
+            if (camera is not null) camera.Changed += camera_Changed;
+            RefreshHover();
+        }
+    }
+
     public void RefreshHover()
     {
         if (camera is not null && InputManager.HasMouseFocus)
@@ -93,8 +100,10 @@ public sealed class WidgetManager : InputHandler, IDisposable
             changeHoveredWidget(rootContainer.GetWidgetAt(fromScreen.X, fromScreen.Y));
             updateHoveredDraggable();
         }
-        else changeHoveredWidget(null);
+        else
+            changeHoveredWidget(null);
     }
+
     public void NotifyWidgetDisposed(Widget widget)
     {
         if (HoveredWidget == widget) RefreshHover();
@@ -102,26 +111,26 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
         DisableGamepadEvents(widget);
 
-        foreach (var key in clickTargets.Keys) if (clickTargets[key] == widget) clickTargets.Remove(key);
-        foreach (var key in gamepadButtonTargets.Keys) if (gamepadButtonTargets[key] == widget) gamepadButtonTargets.Remove(key);
+        foreach (var key in clickTargets.Keys.Where(key => clickTargets[key] == widget)) clickTargets.Remove(key);
+        foreach (var key in gamepadButtonTargets.Keys.Where(key => gamepadButtonTargets[key] == widget))
+            gamepadButtonTargets.Remove(key);
     }
+
     public void Draw(DrawContext drawContext)
     {
         if (rootContainer.Visible) rootContainer.Draw(drawContext, 1);
         drawDragIndicator(drawContext);
     }
+
     void camera_Changed(object sender, EventArgs e) => InvalidateAnchors();
 
-    #region Tooltip
+#region Tooltip
 
     readonly Dictionary<Widget, Widget> tooltips = [];
 
-    public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget, new Label(this)
-    {
-        StyleName = "tooltip",
-        AnchorTarget = widget,
-        Text = text
-    });
+    public void RegisterTooltip(Widget widget, string text)
+        => RegisterTooltip(widget, new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
+
     public void RegisterTooltip(Widget widget, Widget tooltip)
     {
         UnregisterTooltip(widget);
@@ -134,21 +143,23 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
         if (widget == HoveredWidget) displayTooltip(tooltip);
     }
+
     public void UnregisterTooltip(Widget widget)
     {
-        if (tooltips.TryGetValue(widget, out var tooltip))
-        {
-            tooltips.Remove(widget);
-            tooltip.Dispose();
-            widget.OnHovered -= TooltipWidget_OnHovered;
-        }
+        if (!tooltips.Remove(widget, out var tooltip)) return;
+        tooltip.Dispose();
+        widget.OnHovered -= TooltipWidget_OnHovered;
     }
+
     void TooltipWidget_OnHovered(WidgetEvent evt, WidgetHoveredEventArgs e)
     {
         var tooltip = tooltips[evt.Listener];
-        if (e.Hovered) displayTooltip(tooltip);
-        else tooltip.Displayed = false;
+        if (e.Hovered)
+            displayTooltip(tooltip);
+        else
+            tooltip.Displayed = false;
     }
+
     void displayTooltip(Widget tooltip)
     {
         var rootBounds = rootContainer.Bounds;
@@ -176,16 +187,17 @@ public sealed class WidgetManager : InputHandler, IDisposable
         }
 
         var offsetX = 0f;
-        if (bounds.Right > rootBounds.Right - 16) offsetX = rootBounds.Right - 16 - bounds.Right;
+        if (bounds.Right > rootBounds.Right - 16)
+            offsetX = rootBounds.Right - 16 - bounds.Right;
         else if (bounds.Left < rootBounds.Left + 16) offsetX = rootBounds.Left + 16 - bounds.Left;
         tooltip.Offset = new(offsetX, 0);
 
         tooltip.Displayed = true;
     }
 
-    #endregion
+#endregion
 
-    #region Placement
+#region Placement
 
     bool needsAnchorUpdate, refreshingAnchors;
     int anchoringIteration;
@@ -195,6 +207,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
         needsAnchorUpdate = true;
         if (!keyboardFocus?.Visible ?? false) KeyboardFocus = null;
     }
+
     public void RefreshAnchors()
     {
         if (!needsAnchorUpdate || refreshingAnchors) return;
@@ -212,8 +225,10 @@ public sealed class WidgetManager : InputHandler, IDisposable
                     Trace.TraceWarning("Could not resolve ui layout");
                     break;
                 }
+
                 rootContainer.UpdateAnchoring(++anchoringIteration);
             }
+
             RefreshHover();
         }
         finally
@@ -229,32 +244,33 @@ public sealed class WidgetManager : InputHandler, IDisposable
         var scaling = (camera as CameraOrtho)?.HeightScaling ?? 1;
         return MathF.Round(value * scaling) / scaling;
     }
+
     public Vector2 SnapToPixel(Vector2 value)
     {
         var scaling = (camera as CameraOrtho)?.HeightScaling ?? 1;
         return new(MathF.Round(value.X * scaling) / scaling, MathF.Round(value.Y * scaling) / scaling);
     }
 
-    #endregion
+#endregion
 
-    #region Drag and Drop
+#region Drag and Drop
 
     Drawable dragDrawable;
     Vector2 dragOffset, dragSize;
     Widget hoveredDraggableWidget;
     readonly Dictionary<MouseButton, object> dragData = [];
 
-    public bool CanDrag => hoveredDraggableWidget is not null;
     public bool IsDragging => dragData.Values.Any(v => v is not null);
 
     void startDragAndDrop(MouseButton button)
     {
-        if (hoveredDraggableWidget is null || (dragData.TryGetValue(button, out var data) && data is not null)) return;
+        if (hoveredDraggableWidget is null || dragData.TryGetValue(button, out var data) && data is not null) return;
 
         dragOffset = hoveredDraggableWidget.AbsolutePosition - mousePosition;
         dragSize = hoveredDraggableWidget.Size;
         dragData[button] = hoveredDraggableWidget.GetDragData();
     }
+
     void endDragAndDrop(MouseButton button)
     {
         if (!dragData.TryGetValue(button, out var data) || data is null) return;
@@ -267,75 +283,93 @@ public sealed class WidgetManager : InputHandler, IDisposable
             dropTarget = dropTarget.Parent;
         }
     }
+
     void initializeDragAndDrop() => dragDrawable = Skin.GetDrawable("dragCursor");
+
     void updateHoveredDraggable()
     {
         hoveredDraggableWidget = HoveredWidget;
-        while (hoveredDraggableWidget is not null && hoveredDraggableWidget.GetDragData is null) hoveredDraggableWidget = hoveredDraggableWidget.Parent;
+        while (hoveredDraggableWidget is not null && hoveredDraggableWidget.GetDragData is null)
+            hoveredDraggableWidget = hoveredDraggableWidget.Parent;
     }
+
     void drawDragIndicator(DrawContext drawContext)
     {
         if (!IsDragging) return;
-        dragDrawable.Draw(drawContext, Camera, new(mousePosition.X + dragOffset.X, mousePosition.Y + dragOffset.Y, dragSize.X, dragSize.Y));
+        dragDrawable.Draw(drawContext, Camera,
+            new(mousePosition.X + dragOffset.X, mousePosition.Y + dragOffset.Y, dragSize.X, dragSize.Y));
     }
 
-    #endregion
+#endregion
 
-    #region Input events
+#region Input events
 
     readonly List<Widget> gamepadTargets = [];
 
-    public void EnableGamepadEvents(Widget widget) => gamepadTargets.Insert(0, widget);
     public void DisableGamepadEvents(Widget widget) => gamepadTargets.Remove(widget);
 
     public void OnFocusChanged(FocusChangedEventArgs e) => RefreshHover();
+
     public bool OnClickDown(MouseButtonEventArgs e)
     {
         var target = HoveredWidget ?? rootContainer;
-        if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus)) KeyboardFocus = null;
+        if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus))
+            KeyboardFocus = null;
 
         var widgetEvent = fire((w, evt) => w.NotifyClickDown(evt, e), target);
         if (widgetEvent.Handled) clickTargets[e.Button] = widgetEvent.Listener;
 
         return widgetEvent.Handled;
     }
+
     public bool OnClickUp(MouseButtonEventArgs e)
     {
         endDragAndDrop(e.Button);
-        if (clickTargets.TryGetValue(e.Button, out Widget clickTarget)) clickTargets[e.Button] = null;
+        if (clickTargets.TryGetValue(e.Button, out var clickTarget)) clickTargets[e.Button] = null;
 
         var target = clickTarget ?? HoveredWidget ?? rootContainer;
-        return fire((w, evt) => w.NotifyClickUp(evt, e), target, relatedTarget: HoveredWidget ?? rootContainer).Handled;
+        return fire((w, evt) => w.NotifyClickUp(evt, e), target, HoveredWidget ?? rootContainer).Handled;
     }
+
     public void OnMouseMove(MouseMoveEventArgs e)
     {
         RefreshHover();
-        foreach (var entry in clickTargets)
+        foreach (var (key, clickTarget) in clickTargets)
         {
-            var clickTarget = entry.Value;
             if (clickTarget is null) continue;
 
-            startDragAndDrop(entry.Key);
-            fire((w, evt) => w.NotifyClickMove(evt, e), clickTarget, relatedTarget: HoveredWidget);
+            startDragAndDrop(key);
+            fire((w, evt) => w.NotifyClickMove(evt, e), clickTarget, HoveredWidget);
         }
     }
-    public bool OnMouseWheel(MouseWheelEventArgs e) => fire((w, evt) => w.NotifyMouseWheel(evt, e), HoveredWidget ?? rootContainer).Handled;
-    public bool OnKeyDown(KeyboardKeyEventArgs e) => fire((w, evt) => w.NotifyKeyDown(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
-    public bool OnKeyUp(KeyboardKeyEventArgs e) => fire((w, evt) => w.NotifyKeyUp(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
-    public bool OnKeyPress(osuTK.KeyPressEventArgs e) => fire((w, evt) => w.NotifyKeyPress(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
+
+    public bool OnMouseWheel(MouseWheelEventArgs e)
+        => fire((w, evt) => w.NotifyMouseWheel(evt, e), HoveredWidget ?? rootContainer).Handled;
+
+    public bool OnKeyDown(KeyboardKeyEventArgs e)
+        => fire((w, evt) => w.NotifyKeyDown(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
+
+    public bool OnKeyUp(KeyboardKeyEventArgs e)
+        => fire((w, evt) => w.NotifyKeyUp(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
+
+    public bool OnKeyPress(KeyPressEventArgs e)
+        => fire((w, evt) => w.NotifyKeyPress(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
 
     void changeHoveredWidget(Widget widget)
     {
         if (widget == HoveredWidget) return;
-        if (HoveredWidget is not null) fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(false)), HoveredWidget, widget);
+        if (HoveredWidget is not null)
+            fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(false)), HoveredWidget, widget);
 
         var previousWidget = HoveredWidget;
         HoveredWidget = widget;
 
-        if (HoveredWidget is not null) fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(true)), HoveredWidget, previousWidget);
+        if (HoveredWidget is not null)
+            fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(true)), HoveredWidget, previousWidget);
     }
 
     public void OnGamepadConnected(GamepadEventArgs e) { }
+
     public bool OnGamepadButtonDown(GamepadButtonEventArgs e)
     {
         var widgetEvent = fire((w, evt) => w.NotifyGamepadButtonDown(evt, e), gamepadTargets, bubbles: false);
@@ -343,25 +377,25 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
         return widgetEvent.Handled;
     }
+
     public bool OnGamepadButtonUp(GamepadButtonEventArgs e)
     {
-        if (gamepadButtonTargets.TryGetValue(e.Button, out Widget buttonTarget))
-        {
-            gamepadButtonTargets[e.Button] = null;
-            return fire((w, evt) => w.NotifyGamepadButtonUp(evt, e), buttonTarget, bubbles: false).Handled;
-        }
-        return false;
+        if (!gamepadButtonTargets.TryGetValue(e.Button, out var buttonTarget)) return false;
+        gamepadButtonTargets[e.Button] = null;
+        return fire((w, evt) => w.NotifyGamepadButtonUp(evt, e), buttonTarget, bubbles: false).Handled;
     }
-    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, List<Widget> targets, Widget relatedTarget = null, bool bubbles = true)
+
+    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, List<Widget> targets, Widget relatedTarget = null,
+        bool bubbles = true)
     {
-        for (var i = 0; i < targets.Count; ++i)
-        {
-            var widgetEvent = fire(notify, targets[i], relatedTarget, bubbles);
-            if (widgetEvent.Handled) return widgetEvent;
-        }
+        foreach (var widgetEvent in targets.Select(t => fire(notify, t, relatedTarget, bubbles))
+            .Where(widgetEvent => widgetEvent.Handled))
+            return widgetEvent;
         return new(targets.Count > 0 ? targets[^1] : null, relatedTarget);
     }
-    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, Widget target, Widget relatedTarget = null, bool bubbles = true)
+
+    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, Widget target, Widget relatedTarget = null,
+        bool bubbles = true)
     {
         ObjectDisposedException.ThrowIf(target.IsDisposed, nameof(target));
 
@@ -380,11 +414,12 @@ public sealed class WidgetManager : InputHandler, IDisposable
         return widgetEvent;
     }
 
-    #endregion
+#endregion
 
-    #region IDisposable Support
+#region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         Dispose(true);
@@ -393,20 +428,16 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
     void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            rootContainer.Dispose();
-            if (camera is not null) camera.Changed -= camera_Changed;
+        if (disposed) return;
+        rootContainer.Dispose();
+        if (camera is not null) camera.Changed -= camera_Changed;
 
-            if (disposing)
-            {
-                camera = null;
-                rootContainer = null;
+        if (!disposing) return;
+        camera = null;
+        rootContainer = null;
 
-                disposed = true;
-            }
-        }
+        disposed = true;
     }
 
-    #endregion
+#endregion
 }

@@ -1,15 +1,18 @@
-﻿using System;
+﻿namespace Tiny;
+
+using System;
 using System.Collections;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
-using Tiny.Formats;
-using Tiny.Formats.Json;
-using Tiny.Formats.Yaml;
-
-namespace Tiny;
+using Formats;
+using Formats.Json;
+using Formats.Yaml;
 
 public abstract class TinyToken
 {
+    public static readonly YamlFormat Yaml = new();
+    public static readonly JsonFormat Json = new();
     public abstract bool IsInline { get; }
     public abstract bool IsEmpty { get; }
     public abstract TinyTokenType Type { get; }
@@ -50,19 +53,18 @@ public abstract class TinyToken
     {
         if (value is TinyToken token) return token;
 
-        if (TinyValue.FindValueType(value) == TinyTokenType.Invalid)
+        if (TinyValue.FindValueType(value) != TinyTokenType.Invalid) return new TinyValue(value);
+        switch (value)
         {
-            if (value is IDictionary dictionary)
+            case IDictionary dictionary:
             {
                 TinyObject o = [];
-                foreach (var key in dictionary.Keys) o.Add((string)key, ToToken(dictionary[key]));
+                foreach (var key in dictionary.Keys) o.Add(Unsafe.As<string>(key), ToToken(dictionary[key]));
                 return o;
             }
-
-            if (value is IEnumerable enumerable) return new TinyArray(enumerable);
+            case IEnumerable enumerable: return new TinyArray(enumerable);
+            default: return new TinyValue(value);
         }
-
-        return new TinyValue(value);
     }
 
     public static TinyToken Read(Stream stream, Format format)
@@ -70,6 +72,7 @@ public abstract class TinyToken
         using StreamReader reader = new(stream, Encoding.ASCII);
         return format.Read(reader);
     }
+
     public static TinyToken Read(string path)
     {
         using var stream = File.OpenRead(path);
@@ -81,33 +84,28 @@ public abstract class TinyToken
         using StringReader reader = new(data);
         return format.Read(reader);
     }
+
     public static TinyToken ReadString<T>(string data) where T : Format, new() => ReadString(data, new T());
 
     public void Write(Stream stream, Format format)
     {
-        using StreamWriter writer = new(stream, Encoding.ASCII)
-        {
-            NewLine = "\n"
-        };
+        using StreamWriter writer = new(stream, Encoding.ASCII) { NewLine = "\n" };
         format.Write(writer, this);
     }
+
     public void Write(string path)
     {
         using var stream = File.Create(path);
         Write(stream, GetFormat(path));
     }
 
-    public readonly static YamlFormat Yaml = new();
-    public readonly static JsonFormat Json = new();
-
     public static Format GetFormat(string path)
     {
         var extension = Path.GetExtension(path);
         return extension switch
         {
-            ".yml" or ".yaml" => Yaml,
-            ".json" => Json,
-            _ => throw new NotImplementedException($"No format matches extension '{extension}'."),
+            ".yml" or ".yaml" => Yaml, ".json" => Json,
+            _ => throw new NotImplementedException($"No format matches extension '{extension}'.")
         };
     }
 }

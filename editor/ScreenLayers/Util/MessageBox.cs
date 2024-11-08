@@ -1,17 +1,17 @@
-﻿using System;
+﻿namespace StorybrewEditor.ScreenLayers.Util;
+
+using System;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using osuTK.Input;
 
-namespace StorybrewEditor.ScreenLayers.Util;
-
 public class MessageBox(string message, Action yesAction, Action noAction, bool cancelable) : UiScreenLayer
 {
     LinearLayout mainLayout, buttonsLayout;
-    public override bool IsPopup => true;
 
     public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
     public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
+    public override bool IsPopup => true;
 
     public override void Load()
     {
@@ -26,25 +26,17 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             Padding = new(16),
             Children =
             [
-                new ScrollArea(WidgetManager, new Label(WidgetManager)
-                {
-                    Text = message,
-                    AnchorFrom = BoxAlignment.Centre
-                })
+                new ScrollArea(WidgetManager,
+                    new Label(WidgetManager) { Text = message, AnchorFrom = BoxAlignment.Centre })
                 {
                     ScrollsHorizontally = true
                 },
-                buttonsLayout = new(WidgetManager)
-                {
-                    Horizontal = true,
-                    AnchorFrom = BoxAlignment.Centre
-                }
+                buttonsLayout = new(WidgetManager) { Horizontal = true, AnchorFrom = BoxAlignment.Centre }
             ]
         });
         Button yesButton = new(WidgetManager)
         {
-            Text = noAction is not null ? "Yes" : "Ok",
-            AnchorFrom = BoxAlignment.Centre
+            Text = noAction is not null ? "Yes" : "Ok", AnchorFrom = BoxAlignment.Centre
         };
         yesButton.OnClick += (_, _) =>
         {
@@ -55,11 +47,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
 
         if (noAction is not null)
         {
-            Button noButton = new(WidgetManager)
-            {
-                Text = "No",
-                AnchorFrom = BoxAlignment.Centre
-            };
+            Button noButton = new(WidgetManager) { Text = "No", AnchorFrom = BoxAlignment.Centre };
             noButton.OnClick += (_, _) =>
             {
                 Exit();
@@ -67,26 +55,22 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             };
             buttonsLayout.Add(noButton);
         }
+
         if (cancelable)
         {
-            Button cancelButton = new(WidgetManager)
-            {
-                Text = "Cancel",
-                AnchorFrom = BoxAlignment.Centre
-            };
+            Button cancelButton = new(WidgetManager) { Text = "Cancel", AnchorFrom = BoxAlignment.Centre };
             cancelButton.OnClick += (_, _) => Exit();
             buttonsLayout.Add(cancelButton);
         }
     }
+
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
     {
-        if (!e.IsRepeat && e.Key is Key.C && e.Control)
-        {
-            ClipboardHelper.SetText(message);
-            return true;
-        }
-        return base.OnKeyDown(e);
+        if (e.IsRepeat || e.Key is not Key.C || !e.Control) return base.OnKeyDown(e);
+        ClipboardHelper.SetText(message);
+        return true;
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);

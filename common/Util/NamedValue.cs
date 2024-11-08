@@ -6,5 +6,5 @@ public struct NamedValue
     public string Name;
     public object Value;
 
-    public override readonly string ToString() => Name;
+    public readonly override string ToString() => Name;
 }

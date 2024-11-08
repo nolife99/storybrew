@@ -1,22 +1,23 @@
-﻿using System;
+﻿namespace BrewLib.Graphics;
+
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using osuTK.Graphics.OpenGL;
 
-namespace BrewLib.Graphics;
-
 public interface RenderState
 {
     void Apply();
 }
+
 public class RenderStates
 {
     public static readonly RenderStates Default = new();
-    public BlendingFactorState BlendingFactor = BlendingFactorState.Default;
 
     static readonly FieldInfo[] fields = typeof(RenderStates).GetFields();
     static readonly Dictionary<Type, RenderState> currentStates = [];
+    public BlendingFactorState BlendingFactor = BlendingFactorState.Default;
 
     public void Apply()
     {
@@ -26,7 +27,8 @@ public class RenderStates
             if (field.IsStatic) return;
 
             var newState = Unsafe.As<RenderState>(field.GetValue(this));
-            if (currentStates.TryGetValue(field.FieldType, out var currentState) && currentState.Equals(newState)) return;
+            if (currentStates.TryGetValue(field.FieldType, out var currentState) && currentState.Equals(newState))
+                return;
 
             if (!flushed)
             {
@@ -42,15 +44,19 @@ public class RenderStates
     public override string ToString() => string.Join('\n', currentStates.Values);
     public static void ClearStateCache() => currentStates.Clear();
 }
+
 public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
 {
+    public static readonly BlendingFactorState Default = new();
+
+    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha,
+        alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+
     readonly bool enabled = true;
     readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, alphaSrc = BlendingFactorSrc.SrcAlpha;
-    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha, alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-
-    public readonly static BlendingFactorState Default = new();
 
     public BlendingFactorState() { }
+
     public BlendingFactorState(BlendingMode mode)
     {
         switch (mode)
@@ -59,7 +65,7 @@ public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
                 enabled = false;
                 break;
 
-            case BlendingMode.Alphablend:
+            case BlendingMode.AlphaBlend:
                 src = alphaSrc = BlendingFactorSrc.SrcAlpha;
                 dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
                 break;
@@ -83,11 +89,19 @@ public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
                 alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
                 break;
 
-            case BlendingMode.BlendAdd: case BlendingMode.Premultiplied:
+            case BlendingMode.BlendAdd:
+            case BlendingMode.Premultiplied:
                 src = alphaSrc = BlendingFactorSrc.One;
                 dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
                 break;
         }
+    }
+
+    public bool Equals(BlendingFactorState other)
+    {
+        if (!enabled && !other.enabled) return true;
+        return enabled == other.enabled && src == other.src && dest == other.dest && alphaSrc == other.alphaSrc &&
+            alphaDest == other.alphaDest;
     }
 
     public void Apply()
@@ -97,10 +111,5 @@ public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
     }
 
     public override bool Equals(object obj) => Equals(obj as BlendingFactorState);
-    public bool Equals(BlendingFactorState other)
-    {
-        if (!enabled && !other.enabled) return true;
-        return enabled == other.enabled && src == other.src && dest == other.dest && alphaSrc == other.alphaSrc && alphaDest == other.alphaDest;
-    }
     public override int GetHashCode() => HashCode.Combine(src, dest, alphaSrc, alphaDest, enabled);
 }

@@ -1,6 +1,6 @@
-﻿using System.IO;
+﻿namespace StorybrewCommon.Storyboarding;
 
-namespace StorybrewCommon.Storyboarding;
+using System.IO;
 
 ///<summary> Basic class for storyboarding objects. </summary>
 public abstract class StoryboardObject
@@ -10,7 +10,7 @@ public abstract class StoryboardObject
 
     ///<summary> End time of this storyboard object. </summary>
     public abstract float EndTime { get; }
-
 #pragma warning disable CS1591
-    public abstract void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform);
+    public abstract void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer,
+        StoryboardTransform transform);
 }

@@ -1,25 +1,25 @@
-﻿using System;
+﻿namespace StorybrewEditor;
+
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using Storyboarding;
 using StorybrewCommon.Util;
-using StorybrewEditor.Storyboarding;
-
-namespace StorybrewEditor;
 
 public class Settings
 {
     public const string DefaultPath = "settings.cfg";
+    public readonly Setting<bool> FitStoryboard = new(false), ShowStats = new(true), VerboseVsCode = new(false);
+    public readonly Setting<int> FrameRate = new(0), UpdateRate = new(60), EffectThreads = new(0);
 
     public readonly Setting<string> Id = new(Guid.NewGuid().ToString("N")), TimeCopyFormat = new(@"h\:mm\:ss\.ff");
-    public readonly Setting<int> FrameRate = new(0), UpdateRate = new(60), EffectThreads = new(0);
-    public readonly Setting<float> Volume = new(.5f);
-    public readonly Setting<bool> FitStoryboard = new(false), ShowStats = new(true), VerboseVsCode = new(false);
 
     readonly string path;
+    public readonly Setting<float> Volume = new(.5f);
 
     public Settings(string path = DefaultPath)
     {
@@ -40,7 +40,9 @@ public class Settings
             reader.ParseKeyValueSection((key, value) =>
             {
                 var field = type.GetField(key);
-                if (field is null || !field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
+                if (field is null || !field.FieldType.IsGenericType ||
+                    !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
+                    return;
 
                 try
                 {
@@ -59,6 +61,7 @@ public class Settings
             Save();
         }
     }
+
     public void Save()
     {
         Trace.WriteLine($"Saving settings at '{path}'");
@@ -68,19 +71,25 @@ public class Settings
 
         foreach (var field in GetType().GetFields())
         {
-            if (!field.FieldType.IsGenericType || !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) continue;
+            if (!field.FieldType.IsGenericType ||
+                !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
+                continue;
             writer.WriteLine($"{field.Name}: {Unsafe.As<Setting>(field.GetValue(this))}");
         }
+
         stream.Commit();
     }
 }
+
 public interface Setting
 {
     void Set(object value);
 }
+
 public class Setting<T>(T defaultValue) : Setting
 {
     T value = defaultValue;
+    public void Set(object value) => Set((T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture));
     public event EventHandler OnValueChanged;
 
     public void Set(T value)
@@ -89,7 +98,6 @@ public class Setting<T>(T defaultValue) : Setting
         this.value = value;
         OnValueChanged?.Invoke(this, EventArgs.Empty);
     }
-    public void Set(object value) => Set((T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture));
 
     public void Bind(Field field, Action changedAction)
     {
@@ -103,11 +111,10 @@ public class Setting<T>(T defaultValue) : Setting
         field.OnDisposed += (_, _) => OnValueChanged -= handler;
         handler(this, EventArgs.Empty);
     }
+
     public override string ToString()
-    {
-        if (typeof(T).GetInterface(nameof(IConvertible)) is not null) return Convert.ToString(value, CultureInfo.InvariantCulture);
-        return value.ToString();
-    }
+        => typeof(T).GetInterface(nameof(IConvertible)) is not null
+            ? Convert.ToString(value, CultureInfo.InvariantCulture) : value.ToString();
 
     public static implicit operator T(Setting<T> setting) => setting.value;
 }
