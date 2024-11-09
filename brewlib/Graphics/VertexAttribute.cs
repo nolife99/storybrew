@@ -5,7 +5,8 @@ using osuTK.Graphics.OpenGL;
 
 public class VertexAttribute
 {
-    public const string PositionAttributeName = "a_position", TextureCoordAttributeName = "a_textureCoord", ColorAttributeName = "a_color";
+    public const string PositionAttributeName = "a_position", TextureCoordAttributeName = "a_textureCoord",
+        ColorAttributeName = "a_color";
 
     public int ComponentSize = 4, ComponentCount = 1, Offset;
 
@@ -22,8 +23,7 @@ public class VertexAttribute
         if (obj == this) return true;
         return obj is VertexAttribute otherAttribute && Name == otherAttribute.Name && Type == otherAttribute.Type &&
             ComponentSize == otherAttribute.ComponentSize && ComponentCount == otherAttribute.ComponentCount &&
-            Normalized == otherAttribute.Normalized && Offset == otherAttribute.Offset &&
-            Usage == otherAttribute.Usage;
+            Normalized == otherAttribute.Normalized && Offset == otherAttribute.Offset && Usage == otherAttribute.Usage;
     }
 
     public override int GetHashCode() => HashCode.Combine(Name, Type, ComponentSize, ComponentCount, Offset, Normalized, Usage);
@@ -54,5 +54,6 @@ public class VertexAttribute
 
 public enum AttributeUsage
 {
-    Undefined, Position, Color, DiffuseMapCoord
+    Undefined, Position, Color,
+    DiffuseMapCoord
 }

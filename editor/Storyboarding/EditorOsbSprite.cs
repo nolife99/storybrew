@@ -9,13 +9,14 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
+using CommunityToolkit.HighPerformance.Buffers;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
 
 public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 {
-    static readonly RenderStates AlphaBlendStates = new(), AdditiveStates = new();
+    static readonly RenderStates AlphaBlendStates = new(), AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
     public void Draw(DrawContext drawContext,
         Camera camera,
@@ -61,13 +62,20 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
 
         Texture2dRegion texture;
-        var fullPath = Path.Combine(project.MapsetPath, texturePath);
+
+        Span<char> span = stackalloc char[project.MapsetPath.Length + texturePath.Length + 1];
+        Path.TryJoin(project.MapsetPath, texturePath, span, out _);
+        var fullPath = StringPool.Shared.GetOrAdd(span);
+
         try
         {
             texture = project.TextureContainer.Get(fullPath);
             if (texture is null)
             {
-                fullPath = Path.Combine(project.ProjectAssetFolderPath, texturePath);
+                Span<char> span2 = stackalloc char[project.ProjectAssetFolderPath.Length + texturePath.Length + 1];
+                Path.TryJoin(project.ProjectAssetFolderPath, texturePath, span2, out _);
+
+                fullPath = StringPool.Shared.GetOrAdd(span);
                 texture = project.TextureContainer.Get(fullPath);
             }
         }

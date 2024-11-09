@@ -357,7 +357,7 @@ public class EffectList : Widget
                 if (!File.Exists(path)) continue;
 
                 Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
-                var process = Process.Start(new ProcessStartInfo(path, arguments)
+                Process.Start(new ProcessStartInfo(path, arguments)
                 {
                     UseShellExecute = true,
                     WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden

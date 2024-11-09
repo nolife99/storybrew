@@ -113,7 +113,7 @@ public static class ScreenLayerManagerExtensions
         screenLayer.OpenFilePicker("", "", Project.ProjectsFolder, Project.FileFilter, projectPath =>
         {
             if (!PathHelper.FolderContainsPath(Project.ProjectsFolder, projectPath) ||
-                PathHelper.GetRelativePath(Project.ProjectsFolder, projectPath).Any(c => c == '/'))
+                Path.GetRelativePath(Project.ProjectsFolder, projectPath).Any(c => c == '/'))
                 screenLayer.ShowMessage("Projects must be placed in a folder directly inside the 'projects' folder.");
 
             else

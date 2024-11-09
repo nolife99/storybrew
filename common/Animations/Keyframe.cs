@@ -20,15 +20,11 @@ public readonly struct Keyframe<TValue>(float time, TValue value, Func<float, fl
     /// <summary> Reserved for <see cref="Storyboarding.Util.CommandGenerator"/>. </summary>
     internal readonly bool Until = until;
 
-    /// <summary> Initializes a new keyframe with a default value. </summary>
-    /// <param name="time"> Time of the keyframe. </param>
-    public Keyframe(float time) : this(time, default) { }
-
     /// <summary> Initializes a new keyframe. </summary>
     /// <param name="time"> Time of the keyframe. </param>
     /// <param name="value"> A value to be assigned to the keyframe. </param>
     /// <param name="easing"> <see cref="EasingFunctions"/> easing to be assigned. </param>
-    public Keyframe(float time, TValue value, Func<float, float> easing = null) : this(time, value, easing, false) { }
+    public Keyframe(float time, TValue value = default, Func<float, float> easing = null) : this(time, value, easing, false) { }
 
     ///<summary> Overrides a keyframe's time. </summary>
     public Keyframe<TValue> WithTime(float time) => new(time, Value, Ease);

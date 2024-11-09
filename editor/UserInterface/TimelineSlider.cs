@@ -77,7 +77,6 @@ public class TimelineSlider : Slider
         var leftTime = (int)((Value - timeSpan) * 1000);
         var rightTime = (int)((Value + timeSpan) * 1000);
         var timeScale = Bounds.Width / (rightTime - leftTime);
-        var valueLength = MaxValue - MinValue;
 
         // Repeat
         if (RepeatStart != RepeatEnd)

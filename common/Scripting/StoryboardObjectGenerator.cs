@@ -363,7 +363,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
         }
 
-        remainingFieldNames.ForEach(config.RemoveField);
+        foreach (var remaining in remainingFieldNames) config.RemoveField(remaining);
     }
 
     /// <summary/>

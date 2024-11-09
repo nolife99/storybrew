@@ -55,7 +55,7 @@ public abstract class Effect : IDisposable
         get
         {
             var min = float.MaxValue;
-            layers.ForEach(l => min = Math.Min(l.StartTime, min));
+            foreach (var l in layers) min = Math.Min(l.EndTime, min);
             return min == float.MaxValue ? 0 : min;
         }
     }
@@ -65,7 +65,7 @@ public abstract class Effect : IDisposable
         get
         {
             var max = float.MinValue;
-            layers.ForEach(l => max = Math.Max(l.EndTime, max));
+            foreach (var l in layers) max = Math.Max(l.EndTime, max);
             return max == float.MinValue ? 0 : max;
         }
     }
@@ -115,8 +115,10 @@ public abstract class Effect : IDisposable
 
     public abstract void Update();
 
-    void refreshLayerNames() => layers.ForEach(layer
-        => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})");
+    void refreshLayerNames()
+    {
+        foreach (var layer in layers) layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})";
+    }
 
     #region IDisposable Support
 
@@ -125,7 +127,10 @@ public abstract class Effect : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         if (Disposed) return;
-        if (disposing) layers.ForEach(Project.LayerManager.Remove);
+        if (disposing)
+            foreach (var l in layers)
+                Project.LayerManager.Remove(l);
+
         layers.Clear();
 
         layers = null;

@@ -42,7 +42,7 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
     {
         null => (T)(object)this,
         string k when keyToIndexMap.TryGetValue(k, out var index) => items[index].Value.Value<T>(),
-        string k => default,
+        string => default,
         int index => items[index].Value.Value<T>(),
         _ => throw new ArgumentException($"Key must be an integer or a string, was {key}", nameof(key))
     };

@@ -1,41 +1,76 @@
 ﻿namespace BrewLib.Graphics;
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-
-public interface RenderState
-{
-    void Apply();
-}
+using osuTK.Graphics.OpenGL;
 
 public class RenderStates
 {
-    static readonly FieldInfo[] fields = typeof(RenderStates).GetFields();
-    static readonly Dictionary<Type, RenderState> currentStates = [];
+    static BlendingFactorState currentState;
+    public BlendingFactorState BlendingFactor { get; init; } = BlendingFactorState.Default;
 
     public void Apply()
     {
-        var flushed = false;
-        foreach (var field in fields)
+        if (currentState is not null && currentState.Equals(BlendingFactor)) return;
+
+        DrawState.FlushRenderer();
+
+        BlendingFactor.Apply();
+        currentState = BlendingFactor;
+    }
+    public static void ClearStateCache() => currentState = null;
+}
+
+public class BlendingFactorState
+{
+    public static readonly BlendingFactorState Default = new();
+
+    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha, alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+
+    readonly bool enabled = true;
+    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, alphaSrc = BlendingFactorSrc.SrcAlpha;
+
+    BlendingFactorState() { }
+    public BlendingFactorState(BlendingMode mode)
+    {
+        switch (mode)
         {
-            if (field.IsStatic) return;
+            case BlendingMode.Off:
+                enabled = false;
+                break;
 
-            var newState = Unsafe.As<RenderState>(field.GetValue(this));
-            if (currentStates.TryGetValue(field.FieldType, out var currentState) && currentState.Equals(newState)) return;
+            case BlendingMode.AlphaBlend:
+                src = alphaSrc = BlendingFactorSrc.SrcAlpha;
+                dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+                break;
 
-            if (!flushed)
-            {
-                DrawState.FlushRenderer();
-                flushed = true;
-            }
+            case BlendingMode.Color:
+                src = BlendingFactorSrc.SrcAlpha;
+                dest = BlendingFactorDest.OneMinusSrcAlpha;
+                alphaSrc = BlendingFactorSrc.Zero;
+                alphaDest = BlendingFactorDest.One;
+                break;
 
-            newState.Apply();
-            currentStates[field.FieldType] = newState;
+            case BlendingMode.Additive:
+                src = alphaSrc = BlendingFactorSrc.SrcAlpha;
+                dest = alphaDest = BlendingFactorDest.One;
+                break;
+
+            case BlendingMode.Premultiply:
+                src = BlendingFactorSrc.SrcAlpha;
+                dest = BlendingFactorDest.OneMinusSrcAlpha;
+                alphaSrc = BlendingFactorSrc.One;
+                alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+                break;
+
+            case BlendingMode.BlendAdd:
+            case BlendingMode.Premultiplied:
+                src = alphaSrc = BlendingFactorSrc.One;
+                dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+                break;
         }
     }
-
-    public override string ToString() => string.Join('\n', currentStates.Values);
-    public static void ClearStateCache() => currentStates.Clear();
+    public void Apply()
+    {
+        DrawState.SetCapability(EnableCap.Blend, enabled);
+        if (enabled) GL.BlendFuncSeparate(src, dest, alphaSrc, alphaDest);
+    }
 }

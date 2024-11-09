@@ -560,7 +560,6 @@ internal class Jigoku : StoryboardObjectGenerator
         var fallDistance = 400;
 
         var t0 = time - inTime;
-        var t1 = time - inTime * 2 / 5;
         var t1b = time - MathF.Min(200, inTime * 2 / 5);
         var t3 = time + outTime / 5;
         var t4 = time + outTime;

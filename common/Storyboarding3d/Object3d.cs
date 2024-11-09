@@ -93,7 +93,7 @@ public class Object3d
     ///     <see cref="State"/>'s time).
     /// </param>
     /// <param name="timeOffset"> The time offset of the commands. </param>
-    /// <param name="loopable"> Whether or not the commands are encapsulated in a loop group. </param>
+    /// <param name="loopable"> Whether the commands are encapsulated in a loop group. </param>
     public void GenerateTreeCommands(Action<Action, OsbSprite> action = null,
         float? startTime = null,
         float? endTime = null,
@@ -112,7 +112,7 @@ public class Object3d
     ///     The amount of times to loop within <paramref name="startTime"/> and
     ///     <paramref name="endTime"/>.
     /// </param>
-    /// <param name="offsetCommands"> Whether or not to offset the commands to relative inside the loop. </param>
+    /// <param name="offsetCommands"> Whether to offset the commands to relative inside the loop. </param>
     public void GenerateTreeLoopCommands(float startTime,
         float endTime,
         int loopCount,
@@ -157,7 +157,7 @@ public class Object3d
         bool loopable) { }
 }
 #pragma warning disable CS1591
-public class Object3dState(Matrix4x4 worldTransform, CommandColor color, float opacity)
+public readonly struct Object3dState(Matrix4x4 worldTransform, CommandColor color, float opacity)
 {
     public static readonly Object3dState InitialState = new(Matrix4x4.Identity, CommandColor.White, 1);
     public Matrix4x4 WorldTransform => worldTransform;

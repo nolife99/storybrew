@@ -348,7 +348,7 @@ public class EditorBeatmap(string path) : Beatmap
         var hitObjectRadius = 64 * hitobjectScale;
         var stackOffset = hitObjectRadius / 10;
 
-        hitObjects.ForEach(h => h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex);
+        foreach (var h in hitObjects) h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex;
     }
 
     static string removePathQuotes(string path) => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1] : path;

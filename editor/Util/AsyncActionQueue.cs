@@ -203,7 +203,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     }
                     catch (Exception e)
                     {
-                        var target = task.Target;
                         context.TriggerActionFailed(task.Target, e);
                     }
 

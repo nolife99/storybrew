@@ -7,7 +7,6 @@ using Graphics;
 using Input;
 using osuTK;
 using Time;
-using Util;
 
 public sealed class ScreenLayerManager : IDisposable
 {
@@ -81,7 +80,7 @@ public sealed class ScreenLayerManager : IDisposable
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
-        layers.ForEach(updateQueue.Add);
+        foreach (var layer in layers) updateQueue.Add(layer);
 
         bool covered = false, top = true, hasFocus = active;
         while (updateQueue.Count > 0)
@@ -124,13 +123,17 @@ public sealed class ScreenLayerManager : IDisposable
         if (layers.Count == 0) window.Exit();
     }
 
-    public void Draw(DrawContext drawContext, float tween) => layers.ForEach(layer =>
+    public void Draw(DrawContext drawContext, float tween)
     {
-        var layerTween = Math.Max(layer.MinTween, tween);
-        layer.MinTween = layerTween;
+        foreach (var layer in layers)
+            if (layer.CurrentState is not ScreenLayer.State.Hidden)
+            {
+                var layerTween = Math.Max(layer.MinTween, tween);
+                layer.MinTween = layerTween;
 
-        layer.Draw(drawContext, layerTween);
-    }, layer => layer.CurrentState != ScreenLayer.State.Hidden);
+                layer.Draw(drawContext, layerTween);
+            }
+    }
 
     void changeFocus(ScreenLayer layer)
     {

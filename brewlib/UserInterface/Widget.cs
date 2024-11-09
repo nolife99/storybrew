@@ -18,13 +18,14 @@ public class Widget(WidgetManager manager) : IDisposable
 {
     static int nextId;
     public readonly int Id = nextId++;
+
     Drawable background = NullDrawable.Instance, foreground = NullDrawable.Instance;
     bool clipChildren, displayed = true, hoverable = true;
 
     public float Opacity = 1;
 
     string styleName, tooltip;
-    public WidgetManager Manager => manager;
+    protected WidgetManager Manager => manager;
 
     public bool Displayed
     {
@@ -51,7 +52,7 @@ public class Widget(WidgetManager manager) : IDisposable
         }
     }
 
-    public bool ClipChildren
+    protected bool ClipChildren
     {
         get => clipChildren;
         set
@@ -145,7 +146,9 @@ public class Widget(WidgetManager manager) : IDisposable
     {
         if (children.Count == 0) return;
         using (ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : null)
-            children.ForEach(child => child.Draw(drawContext, actualOpacity), child => child.displayed);
+            foreach (var child in children)
+                if (child.Displayed)
+                    child.Draw(drawContext, actualOpacity);
     }
     protected virtual void DrawForeground(DrawContext drawContext, float actualOpacity)
         => foreground?.Draw(drawContext, manager.Camera, Bounds, actualOpacity);

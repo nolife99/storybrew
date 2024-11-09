@@ -23,10 +23,10 @@ public class OsbAnimation : OsbSprite
     /// <summary> Gets the path of the frame at <paramref name="time"/>. </summary>
     public override string GetTexturePathAt(float time)
     {
-        var dotIndex = TexturePath.LastIndexOf('.');
-        return dotIndex < 0 ?
-            $"{TexturePath}{GetFrameAt(time)}" :
-            $"{TexturePath.AsSpan()[..dotIndex]}{GetFrameAt(time)}{TexturePath[dotIndex..]}";
+        var span = TexturePath.AsSpan();
+        var dotIndex = span.LastIndexOf('.');
+
+        return dotIndex < 0 ? $"{span}{GetFrameAt(time)}" : $"{span[..dotIndex]}{GetFrameAt(time)}{span[dotIndex..]}";
     }
 
     int GetFrameAt(float time)

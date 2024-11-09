@@ -22,20 +22,19 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
 
     public Texture2dRegion Get(string filename)
     {
-        filename = PathHelper.WithStandardSeparators(filename);
-        if (!textures.TryGetValue(filename, out var texture))
-        {
-            var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
-            if (!atlases.TryGetValue(options, out var atlas))
-                atlases.Add(options, atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding));
+        PathHelper.WithStandardSeparatorsUnsafe(filename);
+        if (textures.TryGetValue(filename, out var texture)) return texture;
 
-            using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer))
-                if (bitmap is not null)
-                    texture = atlas.AddRegion(bitmap, filename);
+        var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
+        if (!atlases.TryGetValue(options, out var atlas))
+            atlases.Add(options, atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding));
 
-            textures.Add(filename, texture);
-            ResourceLoaded?.Invoke(filename, texture);
-        }
+        using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer))
+            if (bitmap is not null)
+                texture = atlas.AddRegion(bitmap, filename);
+
+        textures.Add(filename, texture);
+        ResourceLoaded?.Invoke(filename, texture);
 
         return texture;
     }
@@ -46,17 +45,15 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
 
     public void Dispose()
     {
-        if (!disposed)
-        {
-            atlases.Dispose();
-            textures.Clear();
+        if (disposed) return;
+        atlases.Dispose();
+        textures.Clear();
 
-            atlases = null;
-            textures = null;
+        atlases = null;
+        textures = null;
 
-            GC.SuppressFinalize(this);
-            disposed = true;
-        }
+        GC.SuppressFinalize(this);
+        disposed = true;
     }
 
     #endregion

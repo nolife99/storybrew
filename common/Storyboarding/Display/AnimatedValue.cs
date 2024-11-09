@@ -27,7 +27,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     {
         if (command is not TriggerDecorator<TValue> triggerable)
         {
-            var found = findCommandIndex(command.StartTime, out var index);
+            findCommandIndex(command.StartTime, out var index);
             while (index < commands.Count)
                 if (commands[index].CompareTo(command) < 0) ++index;
                 else break;

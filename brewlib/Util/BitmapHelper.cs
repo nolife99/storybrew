@@ -326,7 +326,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         disposed = true;
     }
 
-    struct Enumerator(PinnedBitmap data) : IEnumerator<int>, IEnumerator
+    struct Enumerator(PinnedBitmap data) : IEnumerator<int>
     {
         int _index = -1;
 

@@ -31,7 +31,7 @@ public class LayerManager
     public void Replace(List<EditorStoryboardLayer> oldLayers, List<EditorStoryboardLayer> newLayers)
     {
         oldLayers = [..oldLayers];
-        newLayers.ForEach(newLayer =>
+        foreach (var newLayer in newLayers)
         {
             var oldLayer = oldLayers.Find(l => l.Name == newLayer.Name);
             if (oldLayer is not null)
@@ -48,13 +48,13 @@ public class LayerManager
             else layers.Insert(findLayerIndex(newLayer), newLayer);
 
             newLayer.OnChanged += layer_OnChanged;
-        });
+        }
 
-        oldLayers.ForEach(oldLayer =>
+        foreach (var oldLayer in oldLayers)
         {
             oldLayer.OnChanged -= layer_OnChanged;
             layers.Remove(oldLayer);
-        });
+        }
 
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -64,11 +64,11 @@ public class LayerManager
         var index = layers.IndexOf(oldLayer);
         if (index != -1)
         {
-            newLayers.ForEach(newLayer =>
+            foreach (var newLayer in newLayers)
             {
                 newLayer.CopySettings(oldLayer);
                 newLayer.OnChanged += layer_OnChanged;
-            });
+            }
 
             layers.InsertRange(index, newLayers);
 
@@ -112,10 +112,15 @@ public class LayerManager
                 layerToMove.Name}'");
     }
 
-    public void TriggerEvents(float startTime, float endTime) => layers.ForEach(layer => layer.TriggerEvents(startTime, endTime));
+    public void TriggerEvents(float startTime, float endTime)
+    {
+        foreach (var layer in layers) layer.TriggerEvents(startTime, endTime);
+    }
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
-        => layers.ForEach(layer => layer.Draw(drawContext, camera, bounds, opacity, frameStats));
+    {
+        foreach (var layer in layers) layer.Draw(drawContext, camera, bounds, opacity, frameStats);
+    }
 
     void layer_OnChanged(object sender, ChangedEventArgs e)
     {

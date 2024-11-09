@@ -197,10 +197,11 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 
     public void TriggerEvents(float fromTime, float toTime)
     {
-        eventObjects.ForEach(eventObject => eventObject.TriggerEvent(Effect.Project, toTime),
-            eventObject => fromTime <= eventObject.EventTime && eventObject.EventTime < toTime);
+        foreach (var eventObject in eventObjects)
+            if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime)
+                eventObject.TriggerEvent(Effect.Project, toTime);
 
-        segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
+        foreach (var s in segments) s.TriggerEvents(fromTime, toTime);
     }
 
     public override void WriteOsb(TextWriter writer,

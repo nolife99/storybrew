@@ -862,12 +862,19 @@ public class OsbSprite : StoryboardObject
     }
 
     void startDisplayLoop(LoopCommand loopCommand)
-        => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayLoop(loopCommand));
+    {
+        foreach (var builders in displayValueBuilders) builders.Value.StartDisplayLoop(loopCommand);
+    }
 
     void startDisplayTrigger(TriggerCommand triggerCommand)
-        => displayValueBuilders.ForEach(builders => builders.Value.StartDisplayTrigger(triggerCommand));
+    {
+        foreach (var builders in displayValueBuilders) builders.Value.StartDisplayTrigger(triggerCommand);
+    }
 
-    void endDisplayComposites() => displayValueBuilders.ForEach(builders => builders.Value.EndDisplayComposite());
+    void endDisplayComposites()
+    {
+        foreach (var builders in displayValueBuilders) builders.Value.EndDisplayComposite();
+    }
 
     #endregion
 }

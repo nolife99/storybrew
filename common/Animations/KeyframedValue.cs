@@ -3,7 +3,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 
 /// <summary> Defines a set of keyframes. </summary>
@@ -184,7 +183,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time)
             {
                 var initialPair = stepStart.Value.WithTime(startTime);
-                pair(loopable && previousPairEnd.HasValue ? previousPairEnd.Value : initialPair, initialPair);
+                pair(initialPair, initialPair);
             }
 
             pair(stepStart.Value, previous.Value);
@@ -240,7 +239,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         return i;
     }
 
-    internal int indexAt(float time, bool before) => indexFor(new(time), before);
+    int indexAt(float time, bool before) => indexFor(new(time), before);
 
     #region Manipulation
 
@@ -295,11 +294,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
                 .LengthSquared();
         });
 
-    /// <summary> Smooths a list of keyframes. </summary>
-    /// <param name="tolerance"> Distance threshold from which keyframes can be removed. </param>
-    /// <param name="getDistanceSq"> A function that gets the squared distance between three specific keyframes. </param>
-    public void SimplifyKeyframes(float tolerance,
-        Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
+    void SimplifyKeyframes(float tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
     {
         if (tolerance <= .00001f)
         {
@@ -338,7 +333,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
         List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
         keep.Sort();
-        simplifiedKeyframes.AddRange(keep.Select(t => keyframes[t]));
+        foreach (var t in keep) simplifiedKeyframes.Add(keyframes[t]);
 
         Clear(true);
         keyframes = simplifiedKeyframes;

@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using BrewLib.Util;
 using CommandValues;
 
 /// <summary> Provides a way to optimize filesize and creates a way for sprites to be reused. </summary>
@@ -94,10 +93,11 @@ public class OsbSpritePool(StoryboardSegment segment,
     public OsbSprite Get(float startTime, float endTime)
     {
         PooledSprite result = null;
-        pooled.ForEach(sprite => { result = sprite; },
-            sprite => (MaxPoolDuration > 0 ?
-                sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration :
-                sprite.EndTime <= startTime) && (result is null || sprite.StartTime < result.StartTime));
+        foreach (var pooledSprite in pooled)
+            if ((MaxPoolDuration > 0 ?
+                pooledSprite.EndTime <= startTime && startTime < pooledSprite.StartTime + MaxPoolDuration :
+                pooledSprite.EndTime <= startTime) && (result is null || pooledSprite.StartTime < result.StartTime))
+                result = pooledSprite;
 
         if (result is not null)
         {

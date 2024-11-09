@@ -1,19 +1,18 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 using System.Numerics;
+using CommunityToolkit.HighPerformance.Buffers;
 using Data;
 using Util;
 
 public sealed class TextGenerator : IDisposable
 {
-    readonly LinkedList<string> recentlyUsedFonts = [];
     ResourceContainer container;
     Dictionary<string, PrivateFontCollection> fontCollections = [];
     Dictionary<string, FontFamily> fontFamilies = [];
@@ -94,17 +93,17 @@ public sealed class TextGenerator : IDisposable
             using (var stream = container.GetStream(name, ResourceSource.Embedded))
                 if (stream is not null)
                 {
-                    if (!fontCollections.TryGetValue(name, out var fontCollection))
-                        fontCollections.Add(name, fontCollection = new());
+                    if (!fontCollections.TryGetValue(name, out var collection)) fontCollections.Add(name, collection = new());
 
                     var len = (int)stream.Length;
-                    var arr = ArrayPool<byte>.Shared.Rent(len);
-                    var read = stream.Read(arr, 0, len);
+                    using (var span = SpanOwner<byte>.Allocate(len))
+                    {
+                        var arr = span.Span;
+                        var read = stream.Read(arr);
+                        fixed (void* pinned = arr) collection.AddMemoryFont((nint)pinned, read);
+                    }
 
-                    fixed (void* pinned = arr) fontCollection.AddMemoryFont((nint)pinned, read);
-                    ArrayPool<byte>.Shared.Return(arr);
-
-                    var families = fontCollection.Families;
+                    var families = collection.Families;
                     if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
                     else
                     {

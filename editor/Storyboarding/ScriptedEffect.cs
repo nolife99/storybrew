@@ -79,7 +79,7 @@ public class ScriptedEffect : Effect
             changeStatus(EffectStatus.Updating);
 
             script.Generate(context);
-            context.EditorLayers.ForEach(layer => layer.PostProcess());
+            foreach (var layer in context.EditorLayers) layer.PostProcess();
 
             success = true;
         }

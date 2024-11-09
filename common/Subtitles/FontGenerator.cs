@@ -228,7 +228,7 @@ public sealed class FontGenerator : IDisposable
 
         if (description.TrimTransparency)
         {
-            var foundTrim = cache.Keys.FirstOrDefault(x => x.AsSpan().Trim().Equals(trimmedText, StringComparison.Ordinal));
+            var foundTrim = cache.Keys.FirstOrDefault(s => s.AsSpan().Trim().Equals(trimmedText, StringComparison.Ordinal));
             if (foundTrim is not null)
             {
                 trimExist = true;
@@ -244,11 +244,12 @@ public sealed class FontGenerator : IDisposable
             $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1)
                 .ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
-        if (trimExist)
-            return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth,
-                baseHeight, width, height, segments.PathData);
+        var texturePath = Path.Combine(Directory, filename);
+        PathHelper.WithStandardSeparatorsUnsafe(texturePath);
 
-        var path = Path.Combine(assetDirectory, Directory, filename);
+        if (trimExist) return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
+
+        var path = Path.Combine(assetDirectory, texturePath);
         using (var stream = File.Create(path))
             if (validBounds)
             {
@@ -264,8 +265,7 @@ public sealed class FontGenerator : IDisposable
             path.Contains(StoryboardObjectGenerator.Current.AssetPath))
             StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(7));
 
-        return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight,
-            width, height, segments.PathData);
+        return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
     }
 
     /// <summary/>

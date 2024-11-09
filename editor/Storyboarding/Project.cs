@@ -82,7 +82,12 @@ public sealed partial class Project : IDisposable
             (effect, e) => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
 
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
-        OnMainBeatmapChanged += (_, _) => effects.ForEach(QueueEffectUpdate, effect => effect.BeatmapDependant);
+        OnMainBeatmapChanged += (_, _) =>
+        {
+            foreach (var effect in effects)
+                if (effect.BeatmapDependant)
+                    QueueEffectUpdate(effect);
+        };
     }
 
     public string ProjectFolderPath => Path.GetDirectoryName(projectPath);
@@ -252,8 +257,7 @@ public sealed partial class Project : IDisposable
         var isUpdating = effectUpdateQueue?.TaskCount > 0;
         var hasError = false;
 
-        effects.ForEach(effect =>
-        {
+        foreach (var effect in effects)
             switch (effect.Status)
             {
                 case EffectStatus.Loading:
@@ -270,7 +274,6 @@ public sealed partial class Project : IDisposable
                 case EffectStatus.Initializing:
                 case EffectStatus.Ready: break;
             }
-        });
 
         EffectsStatus = hasError ? EffectStatus.ExecutionFailed :
             isUpdating ? EffectStatus.Updating : EffectStatus.Ready;
@@ -508,7 +511,7 @@ public sealed partial class Project : IDisposable
         w.Write(OwnsOsb);
 
         w.Write(effects.Count);
-        effects.ForEach(effect =>
+        foreach (var effect in effects)
         {
             w.Write(effect.BaseName);
             w.Write(effect.Multithreaded);
@@ -529,7 +532,7 @@ public sealed partial class Project : IDisposable
                     ObjectSerializer.Write(w, t.Value);
                 }
             }
-        });
+        }
 
         w.Write(LayerManager.LayersCount);
         foreach (var layer in LayerManager.Layers)
@@ -645,7 +648,7 @@ public sealed partial class Project : IDisposable
         var userPath = directoryWriter.GetPath("user.yaml");
         userRoot.Write(userPath);
 
-        effects.ForEach(effect =>
+        foreach (var effect in effects)
         {
             TinyObject effectRoot = new()
             {
@@ -696,7 +699,7 @@ public sealed partial class Project : IDisposable
 
             var effectPath = directoryWriter.GetPath("effect." + StringHelper.GetMd5(effect.Name) + ".yaml");
             effectRoot.Write(effectPath);
-        });
+        }
 
         directoryWriter.Commit();
         Changed = false;

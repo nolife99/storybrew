@@ -91,7 +91,7 @@ public static class Builder
     {
         path = Path.GetFullPath(path);
 
-        var entryName = PathHelper.GetRelativePath(sourceDirectory, path);
+        var entryName = Path.GetRelativePath(sourceDirectory, path);
         if (targetPath is not null)
         {
             if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);

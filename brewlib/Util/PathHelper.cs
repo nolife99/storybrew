@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 public static class PathHelper
 {
@@ -52,44 +53,46 @@ public static class PathHelper
 
     public static void OpenExplorer(string path) => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
 
-    public static bool SafeDelete(string path)
+    public static void SafeDelete(string path)
     {
         try
         {
             File.Delete(path);
-            return true;
         }
-        catch (SystemException)
-        {
-            return false;
-        }
+        catch (SystemException) { }
     }
     public static string WithStandardSeparators(string path)
     {
+        var chars = new Span<char>(path.ToCharArray());
         if (Path.DirectorySeparatorChar != StandardDirectorySeparator)
-            path = path.Replace(Path.DirectorySeparatorChar, StandardDirectorySeparator);
+            chars.Replace(Path.DirectorySeparatorChar, StandardDirectorySeparator);
 
-        path = path.Replace('\\', StandardDirectorySeparator);
-        return path;
+        chars.Replace('\\', StandardDirectorySeparator);
+        return chars.ToString();
+    }
+    public static void WithStandardSeparatorsUnsafe(ReadOnlySpan<char> path)
+    {
+        var chars = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(path), path.Length);
+        if (Path.DirectorySeparatorChar != StandardDirectorySeparator)
+            chars.Replace(Path.DirectorySeparatorChar, StandardDirectorySeparator);
+
+        chars.Replace('\\', StandardDirectorySeparator);
     }
     public static bool FolderContainsPath(string folder, string path)
     {
-        folder = WithStandardSeparators(Path.GetFullPath(folder)).TrimEnd('/');
-        path = WithStandardSeparators(Path.GetFullPath(path)).TrimEnd('/');
+        folder = WithStandardSeparators(Path.GetFullPath(folder));
+        path = WithStandardSeparators(Path.GetFullPath(path));
 
-        return path.Length >= folder.Length + 1 && path[folder.Length] == '/' &&
-            path.StartsWith(folder, StringComparison.Ordinal);
+        var _folder = folder.AsSpan().TrimEnd('/');
+        var _path = path.AsSpan().TrimEnd('/');
+
+        return _path.Length >= _folder.Length + 1 && _path[_folder.Length] == '/' &&
+            _path.StartsWith(_folder, StringComparison.Ordinal);
     }
     public static string GetRelativePath(string folder, string path) => Path.GetRelativePath(folder, path);
 
     public static bool IsValidPath(string path) => path.All(c => !invalidChars.Contains(c));
-    public static bool IsValidFilename(string filename)
-    {
-        foreach (var character in filename)
-            if (invalidChars.Contains(character) ||
-                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character)))
-                return false;
-
-        return true;
-    }
+    public static bool IsValidFilename(string filename) => filename.All(character
+        => !invalidChars.Contains(character) &&
+        (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character)));
 }

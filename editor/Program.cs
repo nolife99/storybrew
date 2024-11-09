@@ -27,7 +27,6 @@ public static class Program
 
     public static AudioManager AudioManager { get; set; }
     public static Settings Settings { get; set; }
-    public static bool IsMainThread => Environment.CurrentManagedThreadId == mainThreadId;
 
     [STAThread] static void Main(string[] args)
     {
@@ -264,7 +263,7 @@ public static class Program
 
     public static void RunMainThread(Action action)
     {
-        if (IsMainThread)
+        if (Environment.CurrentManagedThreadId == mainThreadId)
         {
             action();
             return;

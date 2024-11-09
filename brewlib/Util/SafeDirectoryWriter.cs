@@ -6,9 +6,9 @@ using System.IO;
 
 public class SafeDirectoryWriter : IDisposable
 {
-    readonly HashSet<string> paths = [];
     readonly string targetDirectory, tempDirectory, backupDirectory;
     bool committed;
+    HashSet<string> paths = [];
 
     public SafeDirectoryWriter(string targetDirectory)
     {
@@ -36,12 +36,17 @@ public class SafeDirectoryWriter : IDisposable
             if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
         }
         else if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
+
+        paths.Clear();
+        paths = null;
+
+        GC.SuppressFinalize(this);
     }
     public string GetPath(string path)
     {
-        var fullpath = Path.Combine(tempDirectory, path);
-        paths.Add(fullpath);
-        return fullpath;
+        var fullPath = Path.Combine(tempDirectory, path);
+        paths.Add(fullPath);
+        return fullPath;
     }
     public void Commit(bool checkPaths = true)
     {
