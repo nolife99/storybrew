@@ -9,19 +9,19 @@ using Storyboarding.CommandValues;
 ///<summary> Base struct for coloring commands. </summary>
 public readonly struct FontColor : IEquatable<FontColor>
 {
-    /// <summary> Represents a <see cref="FontColor" /> value as the color black. </summary>
+    /// <summary> Represents a <see cref="FontColor"/> value as the color black. </summary>
     public static readonly FontColor Black = new(0, 0, 0);
 
-    /// <summary> Represents a <see cref="FontColor" /> value as the color white. </summary>
+    /// <summary> Represents a <see cref="FontColor"/> value as the color white. </summary>
     public static readonly FontColor White = new(1);
 
-    /// <summary> Represents a <see cref="FontColor" /> value as the color red. </summary>
+    /// <summary> Represents a <see cref="FontColor"/> value as the color red. </summary>
     public static readonly FontColor Red = new(1, 0, 0);
 
-    /// <summary> Represents a <see cref="FontColor" /> value as the color green. </summary>
+    /// <summary> Represents a <see cref="FontColor"/> value as the color green. </summary>
     public static readonly FontColor Green = new(0, 1, 0);
 
-    /// <summary> Represents a <see cref="FontColor" /> value as the color blue. </summary>
+    /// <summary> Represents a <see cref="FontColor"/> value as the color blue. </summary>
     public static readonly FontColor Blue = new(0, 0);
 
     readonly double r, g, b, a;
@@ -38,13 +38,12 @@ public readonly struct FontColor : IEquatable<FontColor>
     ///<summary> Gets the blue value of this instance. </summary>
     public byte A => byte.CreateTruncating(a * 255);
 
-    /// <summary> Constructs a new <see cref="CommandColor" /> from red, green, and blue values from 0.0 to 1.0. </summary>
+    /// <summary> Constructs a new <see cref="CommandColor"/> from red, green, and blue values from 0.0 to 1.0. </summary>
     public FontColor(double r = 1, double g = 1, double b = 1, double a = 1)
     {
         if (double.IsNaN(r) || double.IsInfinity(r) || double.IsNaN(g) || double.IsInfinity(g) || double.IsNaN(b) ||
-            double.IsInfinity(b) || double.IsNaN(a) || double.IsInfinity(a) || r > 1 || g > 1 || b > 1 || a > 1 ||
-            r < 0 || g < 0 || b < 0 || a < 0)
-            throw new ArgumentException($"Invalid font color {r}, {g}, {b}");
+            double.IsInfinity(b) || double.IsNaN(a) || double.IsInfinity(a) || r > 1 || g > 1 || b > 1 || a > 1 || r < 0 ||
+            g < 0 || b < 0 || a < 0) throw new ArgumentException($"Invalid font color {r}, {g}, {b}");
 
         this.r = r;
         this.g = g;
@@ -52,10 +51,10 @@ public readonly struct FontColor : IEquatable<FontColor>
         this.a = a;
     }
 
-    /// <summary> Returns whether this instance and <paramref name="other" /> are equal to each other. </summary>
+    /// <summary> Returns whether this instance and <paramref name="other"/> are equal to each other. </summary>
     public bool Equals(FontColor other) => r == other.r && g == other.g && b == other.b && a == other.a;
 
-    /// <summary> Returns whether this instance and <paramref name="obj" /> are equal to each other. </summary>
+    /// <summary> Returns whether this instance and <paramref name="obj"/> are equal to each other. </summary>
     public override bool Equals(object obj) => obj is FontColor color && Equals(color);
 
     /// <summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
@@ -65,16 +64,16 @@ public readonly struct FontColor : IEquatable<FontColor>
     ///<summary> Converts this instance into a string, formatted as "R, G, B, A". </summary>
     public override string ToString() => $"{R}, {G}, {B}, {A}";
 
-    /// <summary> Returns a <see cref="FontColor" /> structure that represents the hash code's color information. </summary>
+    /// <summary> Returns a <see cref="FontColor"/> structure that represents the hash code's color information. </summary>
     /// <remarks> Some color information could be lost. </remarks>
     public static FontColor FromHashCode(int code) => Color.FromArgb(code);
 
-    /// <summary> Creates a <see cref="FontColor" /> from RGB byte values. </summary>
+    /// <summary> Creates a <see cref="FontColor"/> from RGB byte values. </summary>
     public static FontColor FromRgba(int r, int g, int b, int a) => new(r / 255d, g / 255d, b / 255d, a / 255d);
 
     /// <summary>
-    ///     Creates a <see cref="Vector4" /> containing the hue, saturation, brightness, and alpha values from a
-    ///     <see cref="FontColor" />.
+    ///     Creates a <see cref="Vector4"/> containing the hue, saturation, brightness, and alpha values from a
+    ///     <see cref="FontColor"/>.
     /// </summary>
     public static Vector4 ToHsb(FontColor rgb)
     {
@@ -83,11 +82,10 @@ public readonly struct FontColor : IEquatable<FontColor>
         var delta = max - min;
 
         var hue = 0d;
-        if (rgb.r == max)
-            hue = (rgb.g - rgb.b) / delta;
-        else if (rgb.g == max)
-            hue = 2 + (rgb.b - rgb.r) / delta;
+        if (rgb.r == max) hue = (rgb.g - rgb.b) / delta;
+        else if (rgb.g == max) hue = 2 + (rgb.b - rgb.r) / delta;
         else if (rgb.b == max) hue = 4 + (rgb.r - rgb.g) / delta;
+
         hue /= 6;
         if (hue < 0) ++hue;
 
@@ -97,8 +95,8 @@ public readonly struct FontColor : IEquatable<FontColor>
     }
 
     /// <summary>
-    ///     Creates a <see cref="Vector4" /> containing the hue, saturation, brightness, and alpha values from a
-    ///     <see cref="FontColor" />.
+    ///     Creates a <see cref="Vector4"/> containing the hue, saturation, brightness, and alpha values from a
+    ///     <see cref="FontColor"/>.
     /// </summary>
     public static FontColor FromHsb(Vector4 hsba)
     {
@@ -152,7 +150,7 @@ public readonly struct FontColor : IEquatable<FontColor>
         return new(r + m, g + m, b + m, hsba.W);
     }
 
-    /// <summary> Creates a <see cref="FontColor" /> from a hex-code color. </summary>
+    /// <summary> Creates a <see cref="FontColor"/> from a hex-code color. </summary>
     public static FontColor FromHtml(string htmlColor)
         => ColorTranslator.FromHtml(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
 

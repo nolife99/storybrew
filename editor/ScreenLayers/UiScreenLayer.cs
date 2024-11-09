@@ -35,8 +35,9 @@ public class UiScreenLayer : ScreenLayer
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
             var targetOpacity = isTop ? 1 : .3f;
-            opacity = Math.Abs(opacity - targetOpacity) <= .07f ? targetOpacity
-                : Math.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);
+            opacity = Math.Abs(opacity - targetOpacity) <= .07f ?
+                targetOpacity :
+                Math.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);
         }
 
         WidgetManager.Opacity = opacity * TransitionProgress;
@@ -68,7 +69,7 @@ public class UiScreenLayer : ScreenLayer
         }
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
 
@@ -90,5 +91,5 @@ public class UiScreenLayer : ScreenLayer
         base.Dispose(disposing);
     }
 
-#endregion
+    #endregion
 }

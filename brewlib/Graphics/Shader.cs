@@ -32,6 +32,11 @@ public class Shader : IDisposable
     }
 
     public int SortId { get; private set; } = -1;
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     public void Begin()
     {
@@ -86,8 +91,7 @@ public class Shader : IDisposable
         GL.GetShader(id, ShaderParameter.CompileStatus, out var compileStatus);
 
         if (compileStatus != 0) return id;
-        log.AppendLine(CultureInfo.InvariantCulture,
-            $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
+        log.AppendLine(CultureInfo.InvariantCulture, $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
         return -1;
     }
     int linkProgram()
@@ -127,11 +131,6 @@ public class Shader : IDisposable
     }
 
     ~Shader() => Dispose(false);
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     protected virtual void Dispose(bool disposing)
     {
         if (isInitialized) isInitialized = false;

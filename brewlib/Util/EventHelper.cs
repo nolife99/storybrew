@@ -20,6 +20,7 @@ public static class EventHelper
 
                 if (!Array.Exists(currentList, h => h == t)) continue;
             }
+
             raise(t);
         }
     }

@@ -16,14 +16,14 @@ public static class ListExtensions
         else
             for (var i = from; i > to; --i)
                 list[i] = list[i - 1];
+
         list[to] = item;
     }
 
-    public static void ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition)
-        => list.ForEach(item =>
-        {
-            if (condition(item)) action(item);
-        });
+    public static void ForEach<T>(this List<T> list, Action<T> action, Func<T, bool> condition) => list.ForEach(item =>
+    {
+        if (condition(item)) action(item);
+    });
 
     public static void Dispose<TKey, TValue>(this IDictionary<TKey, TValue> disposable) where TValue : IDisposable
     {

@@ -7,8 +7,8 @@ using Skinning.Styles;
 
 public class Slider : ProgressBar
 {
-    MouseButton dragButton;
     bool disabled, hovered, dragged;
+    MouseButton dragButton;
 
     public float Step;
 
@@ -19,6 +19,7 @@ public class Slider : ProgressBar
             hovered = e.Hovered;
             if (!disabled) RefreshStyle();
         };
+
         OnClickDown += (_, e) =>
         {
             if (disabled || dragged) return false;
@@ -28,6 +29,7 @@ public class Slider : ProgressBar
             DragStart(dragButton);
             return true;
         };
+
         OnClickUp += (_, e) =>
         {
             if (disabled || !dragged) return;
@@ -37,6 +39,7 @@ public class Slider : ProgressBar
             DragEnd(dragButton);
             OnValueCommited?.Invoke(this, e);
         };
+
         OnClickMove += (_, e) =>
         {
             if (disabled || !dragged) return;
@@ -56,8 +59,9 @@ public class Slider : ProgressBar
             RefreshStyle();
         }
     }
-    protected override WidgetStyle Style
-        => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" : dragged || hovered ? "hover" : null));
+
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" :
+        dragged || hovered ? "hover" : null));
 
     public event EventHandler OnValueCommited;
 

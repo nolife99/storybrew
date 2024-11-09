@@ -94,15 +94,16 @@ public class SettingsMenu : Widget
         });
 
         helpButton.OnClick += (_, _) => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/wiki");
-        referencedAssemblyButton.OnClick +=
-            (_, _) => Manager.ScreenLayerManager.Add(new ReferencedAssemblyConfig(project));
+        referencedAssemblyButton.OnClick += (_, _) => Manager.ScreenLayerManager.Add(new ReferencedAssemblyConfig(project));
         dimSlider.OnValueChanged += (_, _) =>
         {
             project.DimFactor = dimSlider.Value;
             dimLabel.Text = $"Dim ({project.DimFactor:p})";
         };
+
         floatingPointTimeButton.OnValueChanged +=
             (_, _) => project.ExportSettings.UseFloatForTime = floatingPointTimeButton.Checked;
+
         displayWarningbutton.OnValueChanged += (_, _) => project.DisplayDebugWarning = displayWarningbutton.Checked;
         hitObjectsButton.OnValueChanged += (_, _) => project.ShowHitObjects = hitObjectsButton.Checked;
     }

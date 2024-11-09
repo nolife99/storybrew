@@ -19,25 +19,17 @@ internal class Spectrum : StoryboardObjectGenerator
     [Configurable] public int LogScale = 600;
     [Configurable] public float MinimalHeight = .05f;
 
-    [Group("Bars"), Configurable]
-    
-    public Vector2 Position = new(0, 400);
+    [Group("Bars"), Configurable] public Vector2 Position = new(0, 400);
 
     [Configurable] public OsbOrigin SpriteOrigin = OsbOrigin.BottomLeft;
 
-    [Group("Sprite"), Configurable]
-    
-    public string SpritePath = "sb/bar.png";
+    [Group("Sprite"), Configurable] public string SpritePath = "sb/bar.png";
 
     [Configurable] public Vector2 SpriteScale = new(1, 100);
 
-    [Group("Timing"), Configurable]
-    
-    public int StartTime;
+    [Group("Timing"), Configurable] public int StartTime;
 
-    [Group("Optimization"), Configurable]
-    
-    public float Tolerance = .2f;
+    [Group("Optimization"), Configurable] public float Tolerance = .2f;
 
     [Configurable] public float Width = 640;
 
@@ -93,6 +85,7 @@ internal class Spectrum : StoryboardObjectGenerator
                 hasScale = true;
                 bar.ScaleVec(start.Time, end.Time, scaleX, start.Value, scaleX, end.Value);
             }, MinimalHeight, s => MathF.Round(s, CommandDecimals));
+
             if (!hasScale) bar.ScaleVec(StartTime, scaleX, MinimalHeight);
         }
     }

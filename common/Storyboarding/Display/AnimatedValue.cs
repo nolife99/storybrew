@@ -29,18 +29,15 @@ public class AnimatedValue<TValue> where TValue : CommandValue
         {
             var found = findCommandIndex(command.StartTime, out var index);
             while (index < commands.Count)
-                if (commands[index].CompareTo(command) < 0)
-                    ++index;
-                else
-                    break;
+                if (commands[index].CompareTo(command) < 0) ++index;
+                else break;
 
             HasOverlap |= index > 0 && Math.Round(command.StartTime) < Math.Round(commands[index - 1].EndTime) ||
                 index < commands.Count && Math.Round(commands[index].StartTime) < Math.Round(command.EndTime);
 
             commands.Insert(index, command);
         }
-        else
-            triggerable.OnStateChanged += triggerable_OnStateChanged;
+        else triggerable.OnStateChanged += triggerable_OnStateChanged;
     }
     public TValue ValueAtTime(float time)
     {
@@ -68,11 +65,10 @@ public class AnimatedValue<TValue> where TValue : CommandValue
             index = left + (right - left >> 1);
             var commandTime = commands[index].StartTime;
             if (commandTime == time) return true;
-            if (commandTime < time)
-                left = index + 1;
-            else
-                right = index - 1;
+            if (commandTime < time) left = index + 1;
+            else right = index - 1;
         }
+
         index = left;
 
         return false;

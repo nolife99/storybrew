@@ -22,6 +22,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             return minSize;
         }
     }
+
     public override Vector2 PreferredSize
     {
         get
@@ -30,6 +31,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             return preferredSize;
         }
     }
+
     public bool Horizontal
     {
         get => horizontal;
@@ -40,6 +42,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
+
     public float Spacing
     {
         get => spacing;
@@ -50,6 +53,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
+
     public FourSide Padding
     {
         get => padding;
@@ -60,6 +64,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
+
     public bool FitChildren
     {
         get => fitChildren;
@@ -70,6 +75,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateLayout();
         }
     }
+
     public bool Fill
     {
         get => fill;
@@ -80,6 +86,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             InvalidateLayout();
         }
     }
+
     protected override WidgetStyle Style => Manager.Skin.GetStyle<LinearLayoutStyle>(StyleName);
 
     protected override void ApplyStyle(WidgetStyle style)
@@ -119,6 +126,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                 Length = length,
                 Scalable = true
             });
+
             usedSpace += length;
         }
 
@@ -170,6 +178,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                         else ++scalableItems;
                     }
                 }
+
                 usedSpace += item.Length;
             }
         }
@@ -183,23 +192,25 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
 
             if (horizontal)
             {
-                var childBreadth = fitChildren ? Math.Max(minSize.Y, innerSize.Y)
-                    : Math.Max(minSize.Y, Math.Min(item.PreferredSize.Y, innerSize.Y));
+                var childBreadth = fitChildren ?
+                    Math.Max(minSize.Y, innerSize.Y) :
+                    Math.Max(minSize.Y, Math.Min(item.PreferredSize.Y, innerSize.Y));
+
                 if (maxSize.Y > 0 && childBreadth > maxSize.Y) childBreadth = maxSize.Y;
 
                 var anchor = child.AnchorFrom & BoxAlignment.Vertical | BoxAlignment.Left;
-                PlaceChildren(child, new(distance, padding.GetVerticalOffset(anchor)), new(item.Length, childBreadth),
-                    anchor);
+                PlaceChildren(child, new(distance, padding.GetVerticalOffset(anchor)), new(item.Length, childBreadth), anchor);
             }
             else
             {
-                var childBreadth = fitChildren ? Math.Max(minSize.X, innerSize.X)
-                    : Math.Max(minSize.X, Math.Min(item.PreferredSize.X, innerSize.X));
+                var childBreadth = fitChildren ?
+                    Math.Max(minSize.X, innerSize.X) :
+                    Math.Max(minSize.X, Math.Min(item.PreferredSize.X, innerSize.X));
+
                 if (maxSize.X > 0 && childBreadth > maxSize.X) childBreadth = maxSize.X;
 
                 var anchor = child.AnchorFrom & BoxAlignment.Horizontal | BoxAlignment.Top;
-                PlaceChildren(child, new(padding.GetHorizontalOffset(anchor), distance), new(childBreadth, item.Length),
-                    anchor);
+                PlaceChildren(child, new(padding.GetHorizontalOffset(anchor), distance), new(childBreadth, item.Length), anchor);
             }
 
             distance += item.Length + spacing;
@@ -255,6 +266,7 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
                     minHeight += spacing;
                 }
             }
+
             firstChild = false;
         }
 
@@ -272,7 +284,6 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
         public bool Scalable;
         public Widget Widget;
 
-        public override string ToString()
-            => $"{Widget} Scalable:{Scalable} Length:{Length} PreferredSize:{PreferredSize}";
+        public override string ToString() => $"{Widget} Scalable:{Scalable} Length:{Length} PreferredSize:{PreferredSize}";
     }
 }

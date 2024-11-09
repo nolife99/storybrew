@@ -35,20 +35,16 @@ public sealed partial class Project : IDisposable
         FileFilter = "project files|" + DefaultBinaryFilename + ";" + DefaultTextFilename;
 
     public static readonly Encoding Encoding = Encoding.ASCII;
-    readonly string CommonScriptsPath, ScriptsLibraryPath;
+    readonly string CommonScriptsPath, projectPath;
 
     public readonly ExportSettings ExportSettings = new();
     public readonly LayerManager LayerManager = new();
-
-    readonly string projectPath;
-
     public readonly string ScriptsPath;
 
     internal bool DisplayDebugWarning, ShowHitObjects;
-
     ScriptManager<StoryboardObjectGenerator> scriptManager;
 
-    public Project(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
+    Project(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
     {
         this.projectPath = projectPath;
 
@@ -66,24 +62,24 @@ public sealed partial class Project : IDisposable
             }
         }
 
-        ScriptsLibraryPath = Path.Combine(ScriptsPath, "scriptslibrary");
-        if (!Directory.Exists(ScriptsLibraryPath)) Directory.CreateDirectory(ScriptsLibraryPath);
+        var scriptsLibraryPath = Path.Combine(ScriptsPath, "scriptslibrary");
+        if (!Directory.Exists(scriptsLibraryPath)) Directory.CreateDirectory(scriptsLibraryPath);
 
-        Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{ScriptsLibraryPath
+        Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
         }");
 
         var compiledScriptsPath = Path.GetFullPath("cache/scripts");
         if (Directory.Exists(compiledScriptsPath))
             foreach (var script in Directory.EnumerateFiles(compiledScriptsPath))
                 PathHelper.SafeDelete(script);
-        else
-            Directory.CreateDirectory(compiledScriptsPath);
+        else Directory.CreateDirectory(compiledScriptsPath);
 
         initializeAssetWatcher();
-        scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, ScriptsLibraryPath,
+        scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, scriptsLibraryPath,
             compiledScriptsPath, ReferencedAssemblies);
-        effectUpdateQueue.OnActionFailed += (effect, e)
-            => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
+
+        effectUpdateQueue.OnActionFailed +=
+            (effect, e) => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
 
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
         OnMainBeatmapChanged += (_, _) => effects.ForEach(QueueEffectUpdate, effect => effect.BeatmapDependant);
@@ -112,7 +108,7 @@ public sealed partial class Project : IDisposable
         }
     }
 
-    public string OsbPath
+    string OsbPath
     {
         get
         {
@@ -122,8 +118,7 @@ public sealed partial class Project : IDisposable
             var osuFilename = Path.GetFileName(MainBeatmap.Path);
 
             Match match;
-            if ((match = regex.Match(osuFilename)).Success)
-                return Path.Combine(MapsetPath, match.Groups[1].Value + ".osb");
+            if ((match = regex.Match(osuFilename)).Success) return Path.Combine(MapsetPath, match.Groups[1].Value + ".osb");
 
             foreach (var osbFilePath in Directory.EnumerateFiles(MapsetPath, "*.osb", SearchOption.TopDirectoryOnly))
                 return osbFilePath;
@@ -132,7 +127,7 @@ public sealed partial class Project : IDisposable
         }
     }
 
-#region Audio and Display
+    #region Audio and Display
 
     public static readonly OsbLayer[] OsbLayers =
     [
@@ -168,9 +163,9 @@ public sealed partial class Project : IDisposable
         AudioContainer = new(Program.AudioManager);
     }
 
-#endregion
+    #endregion
 
-#region Effects
+    #region Effects
 
     readonly List<Effect> effects = [];
     public IEnumerable<Effect> Effects => effects;
@@ -205,10 +200,8 @@ public sealed partial class Project : IDisposable
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        ScriptedEffect effect = new(this, scriptManager.Get(scriptName), multithreaded)
-        {
-            Name = GetUniqueEffectName(scriptName)
-        };
+        ScriptedEffect effect =
+            new(this, scriptManager.Get(scriptName), multithreaded) { Name = GetUniqueEffectName(scriptName) };
 
         effects.Add(effect);
         Changed = true;
@@ -234,13 +227,13 @@ public sealed partial class Project : IDisposable
         OnEffectsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public string GetUniqueEffectName(string baseName)
+    string GetUniqueEffectName(string baseName)
     {
         var count = 1;
         string name;
-        do
-            name = $"{baseName} {count++}";
+        do name = $"{baseName} {count++}";
         while (effects.Find(e => e.Name == name) is not null);
+
         return name;
     }
 
@@ -275,18 +268,19 @@ public sealed partial class Project : IDisposable
                     hasError = true;
                     break;
                 case EffectStatus.Initializing:
-                case EffectStatus.Ready:
-                    break;
+                case EffectStatus.Ready: break;
             }
         });
+
         EffectsStatus = hasError ? EffectStatus.ExecutionFailed :
             isUpdating ? EffectStatus.Updating : EffectStatus.Ready;
+
         if (EffectsStatus != previousStatus) OnEffectsStatusChanged?.Invoke(this, EventArgs.Empty);
     }
 
-#endregion
+    #endregion
 
-#region Mapset
+    #region Mapset
 
     public bool MapsetPathIsValid;
 
@@ -392,9 +386,9 @@ public sealed partial class Project : IDisposable
         }
     }
 
-#endregion
+    #endregion
 
-#region Asset library folder
+    #region Asset library folder
 
     FileSystemWatcher assetWatcher;
 
@@ -403,10 +397,8 @@ public sealed partial class Project : IDisposable
         var assetsFolderPath = Path.GetFullPath(ProjectAssetFolderPath);
         if (!Directory.Exists(assetsFolderPath)) Directory.CreateDirectory(assetsFolderPath);
 
-        assetWatcher = new()
-        {
-            Path = assetsFolderPath, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.Size
-        };
+        assetWatcher = new() { Path = assetsFolderPath, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.Size };
+
         assetWatcher.Created += assetWatcher_OnFileChanged;
         assetWatcher.Changed += assetWatcher_OnFileChanged;
         assetWatcher.Renamed += assetWatcher_OnFileChanged;
@@ -415,32 +407,36 @@ public sealed partial class Project : IDisposable
         Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
     }
 
-    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e)
-        => Program.Schedule(() =>
+    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e) => Program.Schedule(() =>
+    {
+        if (Disposed) return;
+
+        var extension = Path.GetExtension(e.Name);
+        switch (extension)
         {
-            if (Disposed) return;
+            case ".png" or ".jpg" or ".jpeg":
+                reloadTextures();
+                break;
+            case ".wav" or ".mp3" or ".ogg":
+                reloadAudio();
+                break;
+        }
+    });
 
-            var extension = Path.GetExtension(e.Name);
-            switch (extension)
-            {
-                case ".png" or ".jpg" or ".jpeg":
-                    reloadTextures();
-                    break;
-                case ".wav" or ".mp3" or ".ogg":
-                    reloadAudio();
-                    break;
-            }
-        });
+    #endregion
 
-#endregion
+    #region Assemblies
 
-#region Assemblies
-
-    public static readonly ICollection<string> DefaultAssemblies = [
-        typeof(Bitmap).Assembly.Location, typeof(Toolkit).Assembly.Location, typeof(Script).Assembly.Location,
-        typeof(Camera).Assembly.Location, .. Directory.EnumerateFiles(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..",
-            "..", "..", "packs", "Microsoft.NETCore.App.Ref", RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
-            string.Concat("net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))), "*.dll")
+    public static readonly ICollection<string> DefaultAssemblies =
+    [
+        typeof(Bitmap).Assembly.Location,
+        typeof(Toolkit).Assembly.Location,
+        typeof(Script).Assembly.Location,
+        typeof(Camera).Assembly.Location,
+        .. Directory.EnumerateFiles(
+            Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", "packs", "Microsoft.NETCore.App.Ref",
+                RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
+                string.Concat("net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))), "*.dll")
     ];
 
     HashSet<string> importedAssemblies = [];
@@ -457,18 +453,18 @@ public sealed partial class Project : IDisposable
         }
     }
 
-    public IEnumerable<string> ReferencedAssemblies => DefaultAssemblies.Union(importedAssemblies);
+    IEnumerable<string> ReferencedAssemblies => DefaultAssemblies.Union(importedAssemblies);
 
-#endregion
+    #endregion
 
-#region Save / Load / Export
+    #region Save / Load / Export
 
-    public const int Version = 8;
+    const int Version = 8;
     public bool Changed;
 
     bool ownsOsb;
 
-    public bool OwnsOsb
+    bool OwnsOsb
     {
         get => ownsOsb;
         set
@@ -482,19 +478,16 @@ public sealed partial class Project : IDisposable
     public void Save()
     {
         var text = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
-        if (File.Exists(text))
-            saveText(text);
-        else
-            saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
+        if (File.Exists(text)) saveText(text);
+        else saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
     }
 
     public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
     {
         Project project = new(projectPath, withCommonScripts, resourceContainer);
-        if (projectPath.EndsWith(BinaryExtension, StringComparison.Ordinal))
-            project.loadBinary(projectPath);
-        else
-            project.loadText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
+        if (projectPath.EndsWith(BinaryExtension, StringComparison.Ordinal)) project.loadBinary(projectPath);
+        else project.loadText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
+
         return project;
     }
 
@@ -530,10 +523,10 @@ public sealed partial class Project : IDisposable
 
                 w.Write(field.AllowedValues?.Length ?? 0);
                 if (field.AllowedValues is null) continue;
-                for (var i = 0; i < field.AllowedValues.Length; ++i)
+                foreach (var t in field.AllowedValues)
                 {
-                    w.Write(field.AllowedValues[i].Name);
-                    ObjectSerializer.Write(w, field.AllowedValues[i].Value);
+                    w.Write(t.Name);
+                    ObjectSerializer.Write(w, t.Value);
                 }
             }
         });
@@ -586,11 +579,10 @@ public sealed partial class Project : IDisposable
                 var allowedValueCount = r.ReadInt32();
                 var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : null;
                 for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
-                    allowedValues[allowedValueIndex] =
-                        new() { Name = r.ReadString(), Value = ObjectSerializer.Read(r) };
+                    allowedValues[allowedValueIndex] = new() { Name = r.ReadString(), Value = ObjectSerializer.Read(r) };
 
-                effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(),
-                    fieldValue, allowedValues, null);
+                effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue,
+                    allowedValues, null);
             }
         }
 
@@ -672,19 +664,17 @@ public sealed partial class Project : IDisposable
                 {
                     { "Type", field.Type.FullName }, { "Value", ObjectSerializer.ToString(field.Type, field.Value) }
                 };
+
                 if (field.DisplayName != field.Name) fieldRoot.Add("DisplayName", field.DisplayName);
                 if (!string.IsNullOrWhiteSpace(field.BeginsGroup)) fieldRoot.Add("BeginsGroup", field.BeginsGroup);
                 configRoot.Add(field.Name, fieldRoot);
 
-                if ((field.AllowedValues?.Length ?? 0) > 0)
-                {
-                    TinyObject allowedValuesRoot = [];
-                    fieldRoot.Add("AllowedValues", allowedValuesRoot);
+                if ((field.AllowedValues?.Length ?? 0) <= 0) continue;
+                TinyObject allowedValuesRoot = [];
+                fieldRoot.Add("AllowedValues", allowedValuesRoot);
 
-                    foreach (var allowedValue in field.AllowedValues)
-                        allowedValuesRoot.Add(allowedValue.Name,
-                            ObjectSerializer.ToString(field.Type, allowedValue.Value));
-                }
+                foreach (var allowedValue in field.AllowedValues)
+                    allowedValuesRoot.Add(allowedValue.Name, ObjectSerializer.ToString(field.Type, allowedValue.Value));
             }
 
             TinyObject layersRoot = [];
@@ -700,6 +690,7 @@ public sealed partial class Project : IDisposable
                         { "DiffSpecific", layer.DiffSpecific },
                         { "Visible", layer.Visible }
                     };
+
                     layersRoot.Add(StringHelper.GetMd5(layer.Identifier), layerRoot);
                 }
 
@@ -707,7 +698,7 @@ public sealed partial class Project : IDisposable
             effectRoot.Write(effectPath);
         });
 
-        directoryWriter.Commit(true);
+        directoryWriter.Commit();
         Changed = false;
     }
 
@@ -743,8 +734,7 @@ public sealed partial class Project : IDisposable
 
         // Load effects
         Dictionary<string, Action> layerInserters = [];
-        foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml",
-            SearchOption.TopDirectoryOnly))
+        foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
         {
             var effectRoot = TinyToken.Read(effectPath);
 
@@ -780,13 +770,12 @@ public sealed partial class Project : IDisposable
                 var layerHash = layerProperty.Key;
                 var layerRoot = layerProperty.Value;
 
-                layerInserters[layerHash] = ()
-                    => layerEffect.AddPlaceholder(new(layerRoot.Value<string>("Name"), layerEffect)
-                    {
-                        OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
-                        DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
-                        Visible = layerRoot.Value<bool>("Visible")
-                    });
+                layerInserters[layerHash] = () => layerEffect.AddPlaceholder(new(layerRoot.Value<string>("Name"), layerEffect)
+                {
+                    OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
+                    DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
+                    Visible = layerRoot.Value<bool>("Visible")
+                });
             }
         }
 
@@ -800,7 +789,9 @@ public sealed partial class Project : IDisposable
         foreach (var key in layerInserters.Keys.Except(layersOrder)) layerInserters[key]();
     }
 
-    public static Project Create(string projectFolderName, string mapsetPath, bool withCommonScripts,
+    public static Project Create(string projectFolderName,
+        string mapsetPath,
+        bool withCommonScripts,
         ResourceContainer resourceContainer)
     {
         if (!Directory.Exists(ProjectsFolder)) Directory.CreateDirectory(ProjectsFolder);
@@ -819,6 +810,7 @@ public sealed partial class Project : IDisposable
             {
                 MapsetPath = mapsetPath
             };
+
         project.Save();
 
         return project;
@@ -857,8 +849,7 @@ public sealed partial class Project : IDisposable
             while (reader.ReadLine() is { } line)
             {
                 var trimmedLine = line.AsSpan().Trim();
-                if (!inEvents && trimmedLine == "[Events]")
-                    inEvents = true;
+                if (!inEvents && trimmedLine == "[Events]") inEvents = true;
                 else if (trimmedLine.Length == 0) inEvents = false;
 
                 if (inEvents)
@@ -880,8 +871,7 @@ public sealed partial class Project : IDisposable
                             inStoryboard = true;
                         }
                     }
-                    else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.Ordinal))
-                        inStoryboard = false;
+                    else if (inStoryboard && trimmedLine.StartsWith("//", StringComparison.Ordinal)) inStoryboard = false;
 
                     if (inStoryboard) continue;
                 }
@@ -913,9 +903,9 @@ public sealed partial class Project : IDisposable
         }
     }
 
-#endregion
+    #endregion
 
-#region IDisposable Support
+    #region IDisposable Support
 
     public bool Disposed { get; private set; }
     public void Dispose() => Dispose(true);
@@ -949,5 +939,5 @@ public sealed partial class Project : IDisposable
     [GeneratedRegex(@"^(.+ - .+ \(.+\)) \[.+\].osu$")]
     private static partial Regex OsuFileRegex();
 
-#endregion
+    #endregion
 }

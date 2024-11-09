@@ -10,13 +10,13 @@ public abstract class BaseCurve : Curve
 
     float length;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public abstract Vector2 EndPosition { get; }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public abstract Vector2 StartPosition { get; }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public float Length
     {
         get
@@ -26,7 +26,7 @@ public abstract class BaseCurve : Curve
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public Vector2 PositionAtDistance(float distance)
     {
         if (distancePosition is null) initialize();
@@ -61,7 +61,7 @@ public abstract class BaseCurve : Curve
         return previousPosition + previousToNext * delta;
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public Vector2 PositionAtDelta(float delta) => PositionAtDistance(delta * Length);
 
     void initialize()
@@ -70,6 +70,6 @@ public abstract class BaseCurve : Curve
         Initialize(distancePosition, out length);
     }
 
-    /// <summary />
+    /// <summary/>
     protected abstract void Initialize(List<(float, Vector2)> distancePosition, out float length);
 }

@@ -11,7 +11,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
 
     public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
     public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
-    
+
     public override bool IsPopup => true;
 
     public override void Load()
@@ -34,31 +34,34 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
                 buttonsLayout = new(WidgetManager) { Horizontal = true, AnchorFrom = BoxAlignment.Centre }
             ]
         });
-        Button yesButton = new(WidgetManager)
-        {
-            Text = noAction is not null ? "Yes" : "Ok", AnchorFrom = BoxAlignment.Centre
-        };
+
+        Button yesButton = new(WidgetManager) { Text = noAction is not null ? "Yes" : "Ok", AnchorFrom = BoxAlignment.Centre };
+
         yesButton.OnClick += (_, _) =>
         {
             Exit();
             yesAction?.Invoke();
         };
+
         buttonsLayout.Add(yesButton);
 
         if (noAction is not null)
         {
             Button noButton = new(WidgetManager) { Text = "No", AnchorFrom = BoxAlignment.Centre };
+
             noButton.OnClick += (_, _) =>
             {
                 Exit();
                 noAction.Invoke();
             };
+
             buttonsLayout.Add(noButton);
         }
 
         if (cancelable)
         {
             Button cancelButton = new(WidgetManager) { Text = "Cancel", AnchorFrom = BoxAlignment.Centre };
+
             cancelButton.OnClick += (_, _) => Exit();
             buttonsLayout.Add(cancelButton);
         }

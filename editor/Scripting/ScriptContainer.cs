@@ -19,8 +19,11 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
     List<string> referencedAssemblies = [];
     Type scriptType;
 
-    public ScriptContainer(string scriptTypeName, string mainSourcePath, string libraryFolder,
-        string compiledScriptsPath, IEnumerable<string> referencedAssemblies)
+    public ScriptContainer(string scriptTypeName,
+        string mainSourcePath,
+        string libraryFolder,
+        string compiledScriptsPath,
+        IEnumerable<string> referencedAssemblies)
     {
         ScriptTypeName = scriptTypeName;
         MainSourcePath = mainSourcePath;
@@ -62,8 +65,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         {
             var newReferencedAssemblies = value as List<string> ?? value.ToList();
             if (newReferencedAssemblies.Count == referencedAssemblies.Count &&
-                newReferencedAssemblies.All(referencedAssemblies.Contains))
-                return;
+                newReferencedAssemblies.All(referencedAssemblies.Contains)) return;
 
             referencedAssemblies = newReferencedAssemblies;
             ReloadScript();
@@ -94,6 +96,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
                     scriptType = ScriptCompiler
                         .Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, referencedAssemblies)
                         .GetType(ScriptTypeName, true);
+
                     appDomain = scriptDomain;
                 }
                 catch
@@ -140,7 +143,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         return new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
 
@@ -165,5 +168,5 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

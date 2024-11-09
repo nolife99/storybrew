@@ -15,8 +15,7 @@ public class EditorBeatmap(string path) : Beatmap
 {
     static readonly Color[] defaultComboColors =
     [
-        Color.FromArgb(255, 192, 0), Color.FromArgb(0, 202, 0), Color.FromArgb(18, 124, 255),
-        Color.FromArgb(242, 24, 57)
+        Color.FromArgb(255, 192, 0), Color.FromArgb(0, 202, 0), Color.FromArgb(18, 124, 255), Color.FromArgb(242, 24, 57)
     ];
 
     readonly HashSet<int> bookmarks = [];
@@ -76,7 +75,7 @@ public class EditorBeatmap(string path) : Beatmap
 
     public override string ToString() => Name;
 
-#region Timing
+    #region Timing
 
     readonly List<ControlPoint> controlPoints = [];
 
@@ -93,8 +92,7 @@ public class EditorBeatmap(string path) : Beatmap
             if (predicate is not null && !predicate(controlPoint)) continue;
             if (closestTimingPoint is null || controlPoint.Offset - time <= ControlPointLeniency)
                 closestTimingPoint = controlPoint;
-            else
-                break;
+            else break;
         }
 
         return closestTimingPoint ?? ControlPoint.Default;
@@ -103,9 +101,9 @@ public class EditorBeatmap(string path) : Beatmap
     public override ControlPoint GetControlPointAt(float time) => GetControlPointAt(time, null);
     public override ControlPoint GetTimingPointAt(float time) => GetControlPointAt(time, cp => !cp.IsInherited);
 
-#endregion
+    #endregion
 
-#region .osu parsing
+    #region .osu parsing
 
     public static EditorBeatmap Load(string path)
     {
@@ -132,6 +130,7 @@ public class EditorBeatmap(string path) : Beatmap
                                     break;
                             }
                         });
+
                         break;
 
                     case "Editor":
@@ -143,9 +142,11 @@ public class EditorBeatmap(string path) : Beatmap
                                     foreach (var bookmark in value.Split(','))
                                         if (value.Length > 0)
                                             beatmap.bookmarks.Add(int.Parse(bookmark, CultureInfo.InvariantCulture));
+
                                     break;
                             }
                         });
+
                         break;
 
                     case "Metadata":
@@ -161,6 +162,7 @@ public class EditorBeatmap(string path) : Beatmap
                                     break;
                             }
                         });
+
                         break;
 
                     case "Difficulty":
@@ -188,6 +190,7 @@ public class EditorBeatmap(string path) : Beatmap
                                     break;
                             }
                         });
+
                         break;
 
                     case "Events":
@@ -207,6 +210,7 @@ public class EditorBeatmap(string path) : Beatmap
                                     break;
                             }
                         }, false);
+
                         break;
 
                     case "TimingPoints":
@@ -251,8 +255,7 @@ public class EditorBeatmap(string path) : Beatmap
                                 colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
                                 comboIndex = 1;
                             }
-                            else
-                                ++comboIndex;
+                            else ++comboIndex;
 
                             hitobject.ComboIndex = comboIndex;
                             hitobject.ColorIndex = colorIndex;
@@ -266,12 +269,13 @@ public class EditorBeatmap(string path) : Beatmap
                     }
                 }
             });
+
             return beatmap;
         }
         catch (Exception e)
         {
-            throw new BeatmapLoadingException(
-                $"Failed to load beatmap \"{System.IO.Path.GetFileNameWithoutExtension(path)}\".", e);
+            throw new BeatmapLoadingException($"Failed to load beatmap \"{System.IO.Path.GetFileNameWithoutExtension(path)}\".",
+                e);
         }
     }
 
@@ -298,8 +302,7 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectN is OsuSpinner) continue;
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.EndTime) break;
 
-                        if (objectN is OsuSlider spanN &&
-                            (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared <
+                        if (objectN is OsuSlider spanN && (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared <
                             stackLenienceSquared)
                         {
                             var offset = objectI.StackIndex - objectN.StackIndex + 1;
@@ -312,8 +315,8 @@ public class EditorBeatmap(string path) : Beatmap
                         }
 
                         if (!((objectN.PlayfieldPosition - objectI.PlayfieldPosition).LengthSquared <
-                            stackLenienceSquared))
-                            continue;
+                            stackLenienceSquared)) continue;
+
                         objectN.StackIndex = objectI.StackIndex + 1;
                         objectI = objectN;
                     }
@@ -330,8 +333,8 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.StartTime) break;
 
                         if (!((((objectN as OsuSlider)?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) -
-                            objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared))
-                            continue;
+                            objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)) continue;
+
                         objectN.StackIndex = objectI.StackIndex + 1;
                         objectI = objectN;
                     }
@@ -350,5 +353,5 @@ public class EditorBeatmap(string path) : Beatmap
 
     static string removePathQuotes(string path) => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1] : path;
 
-#endregion
+    #endregion
 }

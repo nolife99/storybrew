@@ -20,8 +20,14 @@ public class EffectConfig
 
     public string[] FieldNames => fields.Keys.ToArray();
 
-    public void UpdateField(string name, string displayName, string description, int order, Type fieldType,
-        object defaultValue, NamedValue[] allowedValues, string beginsGroup)
+    public void UpdateField(string name,
+        string displayName,
+        string description,
+        int order,
+        Type fieldType,
+        object defaultValue,
+        NamedValue[] allowedValues,
+        string beginsGroup)
     {
         if (fieldType is null) return;
         if (string.IsNullOrWhiteSpace(displayName))
@@ -30,8 +36,9 @@ public class EffectConfig
             displayName = Regex.Replace(displayName, @"(\p{Ll})(\P{Ll})", "$1 $2");
         }
 
-        var value = fields.TryGetValue(name, out var field)
-            ? convertFieldValue(field.Value, field.Type, fieldType, defaultValue) : defaultValue;
+        var value = fields.TryGetValue(name, out var field) ?
+            convertFieldValue(field.Value, field.Type, fieldType, defaultValue) :
+            defaultValue;
 
         var isAllowed = allowedValues is null;
         if (!isAllowed)
@@ -64,6 +71,7 @@ public class EffectConfig
         if (field.Value.Equals(value)) return false;
 
         fields[name] = field with { Value = value };
+
         return true;
     }
     public object GetValue(string name) => fields[name].Value;

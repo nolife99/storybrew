@@ -6,8 +6,8 @@ using Util;
 
 public class TextFontManager : IDisposable
 {
-    Dictionary<int, int> references = [];
     Dictionary<int, TextFontAtlased> fonts = [];
+    Dictionary<int, int> references = [];
 
     public TextFont GetTextFont(string fontName, float fontSize, float scaling)
     {
@@ -24,7 +24,7 @@ public class TextFontManager : IDisposable
         });
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     protected virtual void Dispose(bool disposing)
@@ -36,14 +36,14 @@ public class TextFontManager : IDisposable
 
         fonts.Dispose();
         fonts = null;
-                
+
         disposed = true;
     }
-    public void Dispose() 
+    public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

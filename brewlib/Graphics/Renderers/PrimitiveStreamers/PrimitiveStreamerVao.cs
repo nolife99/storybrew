@@ -11,11 +11,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     protected int VertexArrayId = -1, VertexBufferId = -1, IndexBufferId = -1, PrimitiveSize, MinRenderableVertexCount;
     protected VertexDeclaration VertexDeclaration;
 
-    public PrimitiveStreamerVao(VertexDeclaration vertexDeclaration, int minRenderableVertexCount,
-        ushort[] indexes = null)
+    public PrimitiveStreamerVao(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
     {
-        if (vertexDeclaration.AttributeCount < 1)
-            throw new ArgumentException("At least one vertex attribute is required");
+        if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
         if (indexes is not null && minRenderableVertexCount > ushort.MaxValue)
             throw new ArgumentException("Can't have more than " + ushort.MaxValue + " indexed vertices");
 
@@ -45,6 +43,11 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         Bound = false;
     }
     public abstract unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     protected virtual void initializeVertexBuffer() => VertexBufferId = GL.GenBuffer();
     protected virtual void initializeIndexBuffer(ushort[] indexes)
@@ -83,11 +86,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     }
 
     ~PrimitiveStreamerVao() => Dispose(false);
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     protected virtual void Dispose(bool disposing)
     {
         Unbind();
@@ -96,11 +94,13 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
             GL.BindVertexArray(0);
             GL.DeleteVertexArray(VertexArrayId);
         }
+
         if (VertexBufferId != -1)
         {
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.DeleteBuffer(VertexBufferId);
         }
+
         if (IndexBufferId != -1)
         {
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);

@@ -14,6 +14,7 @@ public class Label(WidgetManager manager) : Widget(manager)
     TextDrawable textDrawable = new();
 
     public override Vector2 MinSize => PreferredSize with { X = 0 };
+
     public override Vector2 PreferredSize => textDrawable.Size;
 
     public string Text
@@ -26,6 +27,7 @@ public class Label(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
+
     public IconFont Icon
     {
         get => textDrawable.Icon;
@@ -36,6 +38,7 @@ public class Label(WidgetManager manager) : Widget(manager)
             InvalidateAncestorLayout();
         }
     }
+
     public RectangleF TextBounds
     {
         get
@@ -45,17 +48,17 @@ public class Label(WidgetManager manager) : Widget(manager)
             Vector2 textSize = new(Math.Min(textDrawable.Size.X, size.X), Math.Min(textDrawable.Size.Y, size.Y));
 
             var alignment = textDrawable.Alignment;
-            if ((alignment & BoxAlignment.Right) > 0)
-                position.X += size.X - textSize.X;
+            if ((alignment & BoxAlignment.Right) > 0) position.X += size.X - textSize.X;
             else if ((alignment & BoxAlignment.Left) == 0) position.X += size.X * .5f - textSize.X * .5f;
-            if ((alignment & BoxAlignment.Bottom) > 0)
-                position.Y += size.Y - textSize.Y;
+
+            if ((alignment & BoxAlignment.Bottom) > 0) position.Y += size.Y - textSize.Y;
             else if ((alignment & BoxAlignment.Top) == 0) position.Y += size.Y * .5f - textSize.Y * .5f;
 
             position = Manager.SnapToPixel(position);
             return new(position.X, position.Y, textSize.X, textSize.Y);
         }
     }
+
     protected override WidgetStyle Style => Manager.Skin.GetStyle<LabelStyle>(StyleName);
 
     protected override void Dispose(bool disposing)
@@ -119,8 +122,8 @@ public class Label(WidgetManager manager) : Widget(manager)
     {
         var position = AbsolutePosition;
         textDrawable.ForTextBounds(startIndex, endIndex,
-            bounds => action(RectangleF.FromLTRB(position.X + bounds.Left, position.Y + bounds.Top,
-                position.X + bounds.Right, position.Y + bounds.Bottom)));
+            bounds => action(RectangleF.FromLTRB(position.X + bounds.Left, position.Y + bounds.Top, position.X + bounds.Right,
+                position.Y + bounds.Bottom)));
     }
 
     public int GetCharacterIndexAt(Vector2 position) => textDrawable.GetCharacterIndexAt(position - AbsolutePosition);

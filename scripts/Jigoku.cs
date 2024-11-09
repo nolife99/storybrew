@@ -7,10 +7,10 @@ using StorybrewCommon.Storyboarding.Util;
 
 /// <summary>
 ///     An example script containing en entire storyboard.
-///     <para />
+///     <para/>
 ///     It is best to split yours into multiple effects, or it could take a long time to update in the editor.
-///     <para />
-///     To be used with <see href="https://osu.ppy.sh/s/183628" />
+///     <para/>
+///     To be used with <see href="https://osu.ppy.sh/s/183628"/>
 /// </summary>
 internal class Jigoku : StoryboardObjectGenerator
 {
@@ -338,6 +338,7 @@ internal class Jigoku : StoryboardObjectGenerator
         y -= 20;
         for (var i = 0; i < 5; ++i)
             MakeNote(50186 + Offset + BeatDuration * i / 2, x - i * 128, y, -MathF.PI / 2, distance, 500, 2000);
+
         MakeNote(50892 + Offset, 64 + 16, y - distance, -MathF.PI / 2 - MathF.PI / 16, 0, 200, 600);
         MakeNote(50892 + Offset, 64 - 16, y - distance, -MathF.PI / 2 + MathF.PI / 16, 0, 200, 600);
 
@@ -445,6 +446,7 @@ internal class Jigoku : StoryboardObjectGenerator
             MakeNote(56010 + Offset, x, y, angle, distance, 400, 2000);
             MakeNote(56010 + Offset, x, y, angle + MathF.PI, distance, 400, 1000);
         }
+
         x -= 100;
         y += 180;
         {
@@ -452,6 +454,7 @@ internal class Jigoku : StoryboardObjectGenerator
             MakeNote(56186 + Offset, x, y, angle, distance, 400, 2000);
             MakeNote(56186 + Offset, x, y, angle + MathF.PI, distance, 400, 1000);
         }
+
         x += 300;
         y -= 140;
         {
@@ -459,6 +462,7 @@ internal class Jigoku : StoryboardObjectGenerator
             MakeNote(56362 + Offset, x, y, angle, distance, 400, 1000);
             MakeNote(56362 + Offset, x, y, angle + MathF.PI, distance, 400, 1000);
         }
+
         x += 200;
         y += 140;
         {
@@ -549,8 +553,7 @@ internal class Jigoku : StoryboardObjectGenerator
 
     void MakeNote(int time, float angle, float distance) => MakeNote(time, 140, 340, angle, distance);
 
-    void MakeNote(int time, float x, float y, float angle, float distance)
-        => MakeNote(time, x, y, angle, distance, 200, 250);
+    void MakeNote(int time, float x, float y, float angle, float distance) => MakeNote(time, x, y, angle, distance, 200, 250);
 
     void MakeNote(int time, float x, float y, float angle, float distance, int inTime, int outTime)
     {
@@ -675,8 +678,7 @@ internal class Jigoku : StoryboardObjectGenerator
             c3.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5f);
             c3.ColorHsb(interruptTime, 0, 0, 0);
         }
-        else
-            c3.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
+        else c3.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
 
         var c2 = spritePools.Get(t2, t5, "sb/c2.png", OsbOrigin.BottomRight);
         c2.Scale(t2, scale);
@@ -687,8 +689,7 @@ internal class Jigoku : StoryboardObjectGenerator
             c2.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5f);
             c2.ColorHsb(interruptTime, 0, 0, 0);
         }
-        else
-            c2.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
+        else c2.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
 
         var c1 = spritePools.Get(t1, t5, "sb/c1.png", OsbOrigin.BottomRight);
         c1.Scale(t1, scale);
@@ -699,8 +700,7 @@ internal class Jigoku : StoryboardObjectGenerator
             c1.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5f);
             c1.ColorHsb(interruptTime, 0, 0, 0);
         }
-        else
-            c1.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
+        else c1.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
 
         var c0 = spritePools.Get(t, t5, "sb/c0.png", OsbOrigin.BottomRight);
         c0.Scale(t, scale);
@@ -711,11 +711,10 @@ internal class Jigoku : StoryboardObjectGenerator
             c0.ColorHsb(OsbEasing.In, t4, interruptTime, 0, 0, 1, 0, 0, .5f);
             c0.ColorHsb(interruptTime, 0, 0, 0);
         }
-        else
-            c0.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
+        else c0.ColorHsb(OsbEasing.In, t4, t5, 0, 0, 1, 0, 0, 0);
     }
 
-#region Timing
+    #region Timing
 
     const int Offset = 0;
     const int BeatDuration = 11715 - 11363;
@@ -736,5 +735,5 @@ internal class Jigoku : StoryboardObjectGenerator
     const int TimeEnd = Offset + 124127;
     const int TimeSbEnd = Offset + 126774;
 
-#endregion
+    #endregion
 }

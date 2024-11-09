@@ -3,8 +3,11 @@
 using System;
 using System.Drawing;
 
-public sealed class TextureAtlas2d(
-    int width, int height, string description, TextureOptions textureOptions = null, int padding = 0) : IDisposable
+public sealed class TextureAtlas2d(int width,
+    int height,
+    string description,
+    TextureOptions textureOptions = null,
+    int padding = 0) : IDisposable
 {
     int currentX, currentY, nextY;
     Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
@@ -31,7 +34,7 @@ public sealed class TextureAtlas2d(
         return region;
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -46,5 +49,5 @@ public sealed class TextureAtlas2d(
         }
     }
 
-#endregion
+    #endregion
 }

@@ -3,7 +3,6 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using Util;
 
 public class ProgramScope
 {
@@ -34,35 +33,46 @@ public class ProgramScope
     }
 
     public void DeclareTypes(StringBuilder code)
-        => types.ForEach(type =>
+    {
+        foreach (var type in types)
         {
             code.AppendLine(CultureInfo.InvariantCulture, $"struct {type.Name} {{");
             foreach (var field in type.Fields)
                 code.AppendLine(CultureInfo.InvariantCulture, $"    {field.ShaderTypeName} {field.Name};");
+
             code.AppendLine("};");
-        });
+        }
+    }
 
     public void DeclareUniforms(StringBuilder code)
-        => uniforms.ForEach(uniform =>
+    {
+        foreach (var uniform in uniforms)
         {
             code.Append(CultureInfo.InvariantCulture, $"uniform {uniform.ShaderTypeName} {uniform.Name}");
             if (uniform.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{uniform.ArrayCount}]");
             code.AppendLine(";");
-        });
+        }
+    }
 
     public void DeclareVaryings(StringBuilder code, ShaderContext context)
-        => varyings.ForEach(varying =>
-        {
-            code.Append(CultureInfo.InvariantCulture, $"varying {varying.ShaderTypeName} {varying.Name}");
-            if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-            code.AppendLine(";");
-        }, context.Uses);
+    {
+        foreach (var varying in varyings)
+            if (context.Uses(varying))
+            {
+                code.Append(CultureInfo.InvariantCulture, $"varying {varying.ShaderTypeName} {varying.Name}");
+                if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
+                code.AppendLine(";");
+            }
+    }
 
     public void DeclareUnusedVaryingsAsVariables(StringBuilder code, ShaderContext context)
-        => varyings.ForEach(varying =>
-        {
-            code.Append(CultureInfo.InvariantCulture, $"{varying.ShaderTypeName} {varying.Name}");
-            if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-            code.AppendLine(";");
-        }, varying => !context.Uses(varying));
+    {
+        foreach (var varying in varyings)
+            if (!context.Uses(varying))
+            {
+                code.Append(CultureInfo.InvariantCulture, $"{varying.ShaderTypeName} {varying.Name}");
+                if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
+                code.AppendLine(";");
+            }
+    }
 }

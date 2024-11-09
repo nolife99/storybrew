@@ -64,10 +64,11 @@ public class EffectList : Widget
             ]
         });
 
-        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect",
-            name => project.AddScriptedEffect(name), project.GetEffectNames());
-        newScriptButton.OnClick += (_, _)
-            => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name));
+        addEffectButton.OnClick += (_, _)
+            => Manager.ScreenLayerManager.ShowContextMenu("Select an effect", name => project.AddScriptedEffect(name),
+                project.GetEffectNames());
+
+        newScriptButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name));
 
         project.OnEffectsChanged += project_OnEffectsChanged;
         refreshEffects();
@@ -193,37 +194,42 @@ public class EffectList : Widget
             detailsLabel.Text = getEffectDetails(ef);
             updateStatusButton(statusButton, ef);
         };
+
         effectWidget.OnHovered += (_, e) =>
         {
             ef.Highlight = e.Hovered;
             OnEffectPreselect?.Invoke(e.Hovered ? ef : null);
         };
+
         var handledClick = false;
         effectWidget.OnClickDown += (_, _) =>
         {
             handledClick = true;
             return true;
         };
+
         effectWidget.OnClickUp += (evt, _) =>
         {
             if (handledClick && (evt.RelatedTarget == effectWidget || evt.RelatedTarget.HasAncestor(effectWidget)))
                 OnEffectSelected?.Invoke(ef);
+
             handledClick = false;
         };
+
         effectWidget.OnDisposed += (_, _) =>
         {
             ef.Highlight = false;
             ef.OnChanged -= changedHandler;
         };
 
-        statusButton.OnClick += (_, _)
-            => Manager.ScreenLayerManager.ShowMessage($"Status: {ef.Status}\n\n{ef.StatusMessage}");
-        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name",
-            $"Pick a new name for {ef.Name}", ef.Name, newName =>
+        statusButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowMessage($"Status: {ef.Status}\n\n{ef.StatusMessage}");
+        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name", $"Pick a new name for {ef.Name}",
+            ef.Name, newName =>
             {
                 ef.Name = newName;
                 refreshEffects();
             });
+
         editButton.OnClick += (_, _) => openEffectEditor(ef);
         configButton.OnClick += (_, _) =>
         {
@@ -232,9 +238,9 @@ public class EffectList : Widget
                 effectConfigUi.Effect = ef;
                 effectConfigUi.Displayed = true;
             }
-            else
-                effectConfigUi.Displayed = false;
+            else effectConfigUi.Displayed = false;
         };
+
         removeButton.OnClick += (_, _)
             => Manager.ScreenLayerManager.ShowMessage($"Remove {ef.Name}?", () => project.Remove(ef), true);
 
@@ -285,8 +291,7 @@ public class EffectList : Widget
         if (name.Length == 0) name = "EffectScript";
 
         var path = Path.Combine(project.ScriptsPath, $"{name}.cs");
-        var script =
-            resourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded | ResourceSource.Relative);
+        var script = resourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded | ResourceSource.Relative);
         script = script.Replace("%CLASSNAME%", name);
 
         if (File.Exists(path))
@@ -325,23 +330,23 @@ public class EffectList : Widget
 
         List<string> paths =
         [
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code",
-                "bin", "code"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code",
-                "bin", "code"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                "Microsoft VS Code Insiders", "bin", "code-insiders"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                "Microsoft VS Code Insiders", "bin", "code-insiders")
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code", "bin",
+                "code"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code", "bin",
+                "code"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code Insiders",
+                "bin", "code-insiders"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code Insiders",
+                "bin", "code-insiders")
         ];
+
         foreach (var path in Environment.GetEnvironmentVariable("path").Split(';'))
             if (PathHelper.IsValidPath(path))
             {
                 paths.Add(Path.Combine(path, "code"));
                 paths.Add(Path.Combine(path, "code-insiders"));
             }
-            else
-                Trace.TraceWarning($"Invalid path in environment variables: {path}");
+            else Trace.TraceWarning($"Invalid path in environment variables: {path}");
 
         var arguments = $"\"{solutionFolder}\" \"{effect.Path}\" -r";
         if (Program.Settings.VerboseVsCode) arguments += " --verbose";
@@ -355,9 +360,9 @@ public class EffectList : Widget
                 var process = Process.Start(new ProcessStartInfo(path, arguments)
                 {
                     UseShellExecute = true,
-                    WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal
-                        : ProcessWindowStyle.Hidden
+                    WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
                 });
+
                 return;
             }
             catch (Exception e)
@@ -370,7 +375,7 @@ public class EffectList : Widget
             () => NetHelper.OpenUrl("https://code.visualstudio.com/"), true);
     }
 
-    static string getEffectDetails(Effect effect)
-        => effect.EstimatedSize > 40960 ? $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})"
-            : $"using {effect.BaseName}";
+    static string getEffectDetails(Effect effect) => effect.EstimatedSize > 40960 ?
+        $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})" :
+        $"using {effect.BaseName}";
 }

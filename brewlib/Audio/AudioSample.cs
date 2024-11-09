@@ -43,16 +43,14 @@ public class AudioSample : IDisposable
     {
         if (sample == 0) return;
 
-        AudioChannel channel = new(manager, Bass.SampleGetChannel(sample), true)
-        {
-            Volume = volume, Pitch = pitch, Pan = pan
-        };
+        AudioChannel channel = new(manager, Bass.SampleGetChannel(sample), true) { Volume = volume, Pitch = pitch, Pan = pan };
+
         manager.RegisterChannel(channel);
 
         channel.Playing = true;
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     protected virtual void Dispose(bool disposing)
@@ -60,7 +58,7 @@ public class AudioSample : IDisposable
         if (disposed) return;
         if (sample != 0) Bass.SampleFree(sample);
         if (!disposing) return;
-        
+
         sample = 0;
         manager = null;
         disposed = true;
@@ -73,5 +71,5 @@ public class AudioSample : IDisposable
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

@@ -97,8 +97,7 @@ public sealed class MultiFileWatcher : IDisposable
 
                 Trace.WriteLine($"Watching folder and subfolders: {parentDirectoryPath}");
             }
-            else
-                Trace.TraceError($"Cannot watch file: {filename}, directory does not exist");
+            else Trace.TraceError($"Cannot watch file: {filename}, directory does not exist");
         }
     }
 

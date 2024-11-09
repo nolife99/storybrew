@@ -56,6 +56,7 @@ public class SafeDirectoryWriter : IDisposable
                 if (file.Length == 0) throw new InvalidOperationException($"File path requested but is empty: {path}");
             }
         }
+
         committed = true;
     }
 }

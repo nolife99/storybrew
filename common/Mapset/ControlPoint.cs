@@ -36,10 +36,9 @@ public class ControlPoint : IComparable<ControlPoint>
     public bool OmitFirstBarLine { get; init; }
 
     ///<returns> The duration of a beat based on the BPM measure of the control point. </returns>
-    public float BeatDuration
-        => IsInherited
-            ? throw new InvalidOperationException("Control points don't have a beat duration, use timing points")
-            : beatDurationSV;
+    public float BeatDuration => IsInherited ?
+        throw new InvalidOperationException("Control points don't have a beat duration, use timing points") :
+        beatDurationSV;
 
     ///<summary> The beats per minute measure of this control point. </summary>
     public float BPM => BeatDuration == 0 ? 0 : 60000 / BeatDuration;
@@ -47,19 +46,19 @@ public class ControlPoint : IComparable<ControlPoint>
     ///<summary> The slider velocity multiplier of this control point. </summary>
     public float SliderMultiplier => beatDurationSV > 0 ? 1 : -(beatDurationSV / 100);
 
-    /// <summary> Compares this control point to <paramref name="other" />. </summary>
+    /// <summary> Compares this control point to <paramref name="other"/>. </summary>
     public int CompareTo(ControlPoint other)
     {
         var value = (int)(Offset - other.Offset);
         return value != 0 ? value : (other.IsInherited ? 0 : 1) - (IsInherited ? 0 : 1);
     }
 
-    /// <summary> Converts this control point to a <see cref="string" /> representation. </summary>
+    /// <summary> Converts this control point to a <see cref="string"/> representation. </summary>
     public override string ToString()
-        => (IsInherited ? $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4"
-            : $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") + (IsKiai ? " Kiai" : "");
+        => (IsInherited ? $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4" : $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") +
+            (IsKiai ? " Kiai" : "");
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override int GetHashCode() => ToString().GetHashCode();
 
     ///<summary> Parses a control point from a given line. </summary>
@@ -74,9 +73,7 @@ public class ControlPoint : IComparable<ControlPoint>
             Offset = float.Parse(values[0], CultureInfo.InvariantCulture),
             beatDurationSV = float.Parse(values[1], CultureInfo.InvariantCulture),
             BeatPerMeasure = values.Length > 2 ? int.Parse(values[2], CultureInfo.InvariantCulture) : 4,
-            SampleSet =
-                values.Length > 3 ? (SampleSet)int.Parse(values[3], CultureInfo.InvariantCulture)
-                    : SampleSet.Normal,
+            SampleSet = values.Length > 3 ? (SampleSet)int.Parse(values[3], CultureInfo.InvariantCulture) : SampleSet.Normal,
             CustomSampleSet = values.Length > 4 ? int.Parse(values[4], CultureInfo.InvariantCulture) : 0,
             Volume = values.Length > 5 ? int.Parse(values[5], CultureInfo.InvariantCulture) : 100,
             IsInherited = values.Length > 6 && int.Parse(values[6], CultureInfo.InvariantCulture) == 0,

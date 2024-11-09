@@ -10,7 +10,7 @@ public sealed class TextFontProxy(TextFont textFont, Action dispose) : TextFont
 
     public FontGlyph GetGlyph(char c) => textFont.GetGlyph(c);
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -25,5 +25,5 @@ public sealed class TextFontProxy(TextFont textFont, Action dispose) : TextFont
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

@@ -47,8 +47,7 @@ public static class NetHelper
         }
     }
 
-    public static void BlockingPost(string url, Dictionary<string, string> data,
-        Action<string, Exception> action = null)
+    public static void BlockingPost(string url, Dictionary<string, string> data, Action<string, Exception> action = null)
     {
         try
         {
@@ -67,7 +66,9 @@ public static class NetHelper
         }
     }
 
-    public static async void Download(string url, string filename, Func<float, bool> progressFunc,
+    public static async void Download(string url,
+        string filename,
+        Func<float, bool> progressFunc,
         Action<Exception> completedAction = null)
     {
         try
@@ -75,8 +76,7 @@ public static class NetHelper
             var fullPath = Path.GetFullPath(filename);
             var folder = Path.GetDirectoryName(fullPath);
 
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
+            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
             else if (File.Exists(filename)) File.Delete(filename);
 
             Trace.WriteLine($"Downloading {url}");
@@ -85,8 +85,7 @@ public static class NetHelper
             {
                 response.EnsureSuccessStatusCode();
 
-                using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192,
-                    true);
+                using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                 var bytesRead = 0L;
                 var isMoreToRead = true;

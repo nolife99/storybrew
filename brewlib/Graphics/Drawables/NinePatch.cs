@@ -17,9 +17,11 @@ public class NinePatch : Drawable
     public RenderStates RenderStates { get; private set; } = new();
 
     public Vector2 PreferredSize => MinSize;
-    public Vector2 MinSize
-        => Texture is not null ? new Vector2(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
-            Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) : Vector2.Zero;
+
+    public Vector2 MinSize => Texture is not null ?
+        new Vector2(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
+            Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
+        Vector2.Zero;
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
     {
@@ -46,17 +48,16 @@ public class NinePatch : Drawable
         // Sides
         if (verticalScale > 0)
         {
-            renderer.Draw(Texture, x0, y1, 0, 0, 1, verticalScale, 0, color, 0, Borders.Top, Borders.Left,
-                Borders.Bottom);
+            renderer.Draw(Texture, x0, y1, 0, 0, 1, verticalScale, 0, color, 0, Borders.Top, Borders.Left, Borders.Bottom);
             renderer.Draw(Texture, x2, y1, 0, 0, 1, verticalScale, 0, color, Borders.Right, Borders.Top, Texture.Width,
                 Borders.Bottom);
         }
+
         if (horizontalScale > 0)
         {
-            renderer.Draw(Texture, x1, y0, 0, 0, horizontalScale, 1, 0, color, Borders.Left, 0, Borders.Right,
-                Borders.Top);
-            renderer.Draw(Texture, x1, y2, 0, 0, horizontalScale, 1, 0, color, Borders.Left, Borders.Bottom,
-                Borders.Right, Texture.Height);
+            renderer.Draw(Texture, x1, y0, 0, 0, horizontalScale, 1, 0, color, Borders.Left, 0, Borders.Right, Borders.Top);
+            renderer.Draw(Texture, x1, y2, 0, 0, horizontalScale, 1, 0, color, Borders.Left, Borders.Bottom, Borders.Right,
+                Texture.Height);
         }
 
         // Corners
@@ -66,7 +67,7 @@ public class NinePatch : Drawable
         renderer.Draw(Texture, x2, y2, 0, 0, 1, 1, 0, color, Borders.Right, Borders.Bottom, Texture.Width, Texture.Height);
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     public void Dispose()
     {
@@ -79,5 +80,5 @@ public class NinePatch : Drawable
         RenderStates = null;
     }
 
-#endregion
+    #endregion
 }

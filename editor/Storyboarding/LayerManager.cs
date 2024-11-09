@@ -17,8 +17,7 @@ public class LayerManager
     public int LayersCount => layers.Count;
     public IEnumerable<EditorStoryboardLayer> Layers => layers;
 
-    public IEnumerable<EditorStoryboardLayer> FindLayers(Func<EditorStoryboardLayer, bool> predicate)
-        => layers.Where(predicate);
+    public IEnumerable<EditorStoryboardLayer> FindLayers(Func<EditorStoryboardLayer, bool> predicate) => layers.Where(predicate);
 
     public event EventHandler OnLayersChanged;
 
@@ -46,16 +45,17 @@ public class LayerManager
 
                 oldLayers.Remove(oldLayer);
             }
-            else
-                layers.Insert(findLayerIndex(newLayer), newLayer);
+            else layers.Insert(findLayerIndex(newLayer), newLayer);
 
             newLayer.OnChanged += layer_OnChanged;
         });
+
         oldLayers.ForEach(oldLayer =>
         {
             oldLayer.OnChanged -= layer_OnChanged;
             layers.Remove(oldLayer);
         });
+
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -69,14 +69,15 @@ public class LayerManager
                 newLayer.CopySettings(oldLayer);
                 newLayer.OnChanged += layer_OnChanged;
             });
+
             layers.InsertRange(index, newLayers);
 
             oldLayer.OnChanged -= layer_OnChanged;
             layers.Remove(oldLayer);
         }
         else
-            throw new InvalidOperationException($"Cannot replace layer '{oldLayer.Name
-            }' with multiple layers, old layer not found");
+            throw new InvalidOperationException(
+                $"Cannot replace layer '{oldLayer.Name}' with multiple layers, old layer not found");
 
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -91,10 +92,8 @@ public class LayerManager
     public void MoveToOsbLayer(EditorStoryboardLayer layer, OsbLayer osbLayer)
     {
         var firstLayer = layers.FirstOrDefault(l => l.OsbLayer == osbLayer);
-        if (firstLayer is not null)
-            MoveToLayer(layer, firstLayer);
-        else
-            layer.OsbLayer = osbLayer;
+        if (firstLayer is not null) MoveToLayer(layer, firstLayer);
+        else layer.OsbLayer = osbLayer;
     }
 
     public void MoveToLayer(EditorStoryboardLayer layerToMove, EditorStoryboardLayer toLayer)
@@ -113,16 +112,14 @@ public class LayerManager
                 layerToMove.Name}'");
     }
 
-    public void TriggerEvents(float startTime, float endTime)
-        => layers.ForEach(layer => layer.TriggerEvents(startTime, endTime));
+    public void TriggerEvents(float startTime, float endTime) => layers.ForEach(layer => layer.TriggerEvents(startTime, endTime));
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
         => layers.ForEach(layer => layer.Draw(drawContext, camera, bounds, opacity, frameStats));
 
     void layer_OnChanged(object sender, ChangedEventArgs e)
     {
-        if (e.PropertyName is null or nameof(EditorStoryboardLayer.OsbLayer)
-            or nameof(EditorStoryboardLayer.DiffSpecific))
+        if (e.PropertyName is null or nameof(EditorStoryboardLayer.OsbLayer) or nameof(EditorStoryboardLayer.DiffSpecific))
             sortLayer(Unsafe.As<EditorStoryboardLayer>(sender));
     }
 
@@ -132,8 +129,8 @@ public class LayerManager
         if (initialIndex < 0) throw new InvalidOperationException($"Layer '{layer.Name}' cannot be found");
 
         var newIndex = initialIndex;
-        while (newIndex > 0 && layer.CompareTo(layers[newIndex - 1]) < 0) newIndex--;
-        while (newIndex < layers.Count - 1 && layer.CompareTo(layers[newIndex + 1]) > 0) newIndex++;
+        while (newIndex > 0 && layer.CompareTo(layers[newIndex - 1]) < 0) --newIndex;
+        while (newIndex < layers.Count - 1 && layer.CompareTo(layers[newIndex + 1]) > 0) ++newIndex;
 
         layers.Move(initialIndex, newIndex);
         OnLayersChanged?.Invoke(this, EventArgs.Empty);

@@ -45,7 +45,8 @@ public class SynchronousCompressor : ImageCompressor
                         process ??= Process.Start(startInfo);
                         var error = await process.StandardError.ReadToEndAsync();
                         if (!string.IsNullOrEmpty(error) && process.ExitCode != 0)
-                            throw new OperationCanceledException($"Image compression closed with code {process.ExitCode}: {error}");
+                            throw new OperationCanceledException(
+                                $"Image compression closed with code {process.ExitCode}: {error}");
                     }
                     finally
                     {
@@ -71,7 +72,8 @@ public class SynchronousCompressor : ImageCompressor
                         process ??= Process.Start(startInfo);
                         var error = await process.StandardError.ReadToEndAsync();
                         if (!string.IsNullOrEmpty(error) && process.ExitCode != 0)
-                            throw new OperationCanceledException($"Image compression failed with code {process.ExitCode}: {error}");
+                            throw new OperationCanceledException(
+                                $"Image compression failed with code {process.ExitCode}: {error}");
                     }
                     finally
                     {
@@ -83,8 +85,7 @@ public class SynchronousCompressor : ImageCompressor
                 await lossyTask;
             }
     }
-    protected override string appendArgs(string path, bool useLossy, 
-        LossyInputSettings lossy, LosslessInputSettings lossless)
+    protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {
         var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
         StringBuilder str = new();
@@ -109,6 +110,7 @@ public class SynchronousCompressor : ImageCompressor
                     var lvl = (byte)lossless.OptimizationLevel;
                     str.Append(CultureInfo.InvariantCulture,
                         $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
+
                     str.Append(CultureInfo.InvariantCulture, $" {lossless.CustomInputArgs} ");
                 }
 
@@ -118,8 +120,7 @@ public class SynchronousCompressor : ImageCompressor
         else
         {
             var lvl = lossless?.OptimizationLevel ?? 4;
-            str.Append(CultureInfo.InvariantCulture,
-                $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
+            str.Append(CultureInfo.InvariantCulture, $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
             str.Append(CultureInfo.InvariantCulture, $" {lossless?.CustomInputArgs} ");
             str.Append(CultureInfo.InvariantCulture, $"-s -a {input}");
         }

@@ -10,14 +10,14 @@ using Util;
 ///<summary> Parsing methods for .ass subtitle files. </summary>
 public class AssParser : SubtitleParser
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SubtitleSet Parse(string path)
     {
         using var stream = Misc.WithRetries(() => File.OpenRead(path));
         return Parse(stream);
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SubtitleSet Parse(Stream stream)
     {
         List<SubtitleLine> lines = [];
@@ -40,9 +40,11 @@ public class AssParser : SubtitleParser
                                     break;
                             }
                         });
+
                         break;
                 }
             });
+
         return new(lines);
     }
 }

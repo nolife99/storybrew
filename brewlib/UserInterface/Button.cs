@@ -17,10 +17,7 @@ public class Button : Widget, Field
 
     public Button(WidgetManager manager) : base(manager)
     {
-        Add(label = new(manager)
-        {
-            AnchorFrom = BoxAlignment.Centre, AnchorTo = BoxAlignment.Centre, Hoverable = false
-        });
+        Add(label = new(manager) { AnchorFrom = BoxAlignment.Centre, AnchorTo = BoxAlignment.Centre, Hoverable = false });
 
         clickBehavior = new(this);
         clickBehavior.OnStateChanged += (_, _) => RefreshStyle();
@@ -28,19 +25,13 @@ public class Button : Widget, Field
     }
 
     public override Vector2 MinSize => new(label.MinSize.X + padding.Horizontal, label.MinSize.Y + padding.Vertical);
+
     public override Vector2 PreferredSize
         => new(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
 
-    public string Text
-    {
-        get => label.Text;
-        set => label.Text = value;
-    }
-    public IconFont Icon
-    {
-        get => label.Icon;
-        set => label.Icon = value;
-    }
+    public string Text { get => label.Text; set => label.Text = value; }
+
+    public IconFont Icon { get => label.Icon; set => label.Icon = value; }
 
     public FourSide Padding
     {
@@ -63,6 +54,7 @@ public class Button : Widget, Field
             if (!isCheckable) Checked = false;
         }
     }
+
     public bool Checked
     {
         get => isChecked;
@@ -74,21 +66,14 @@ public class Button : Widget, Field
             OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
     }
-    public bool Disabled
-    {
-        get => clickBehavior.Disabled;
-        set => clickBehavior.Disabled = value;
-    }
 
-    protected override WidgetStyle Style
-        => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(clickBehavior.Disabled ? "disabled" : null,
-            clickBehavior.Hovered ? "hover" : null, clickBehavior.Pressed || isChecked ? "pressed" : null));
+    public bool Disabled { get => clickBehavior.Disabled; set => clickBehavior.Disabled = value; }
 
-    public object FieldValue
-    {
-        get => Checked;
-        set => Checked = Unsafe.Unbox<bool>(value);
-    }
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(
+        clickBehavior.Disabled ? "disabled" : null, clickBehavior.Hovered ? "hover" : null,
+        clickBehavior.Pressed || isChecked ? "pressed" : null));
+
+    public object FieldValue { get => Checked; set => Checked = Unsafe.Unbox<bool>(value); }
 
     public event EventHandler OnValueChanged;
     public event EventHandler<MouseButton> OnClick;

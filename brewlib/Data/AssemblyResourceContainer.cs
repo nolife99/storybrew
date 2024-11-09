@@ -1,17 +1,17 @@
 ﻿namespace BrewLib.Data;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using Util;
 
-public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null) : ResourceContainer
+public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null)
+    : ResourceContainer
 {
     readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
+
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
 
@@ -34,6 +34,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
                 var combinedPath = basePath is not null ? Path.Combine(basePath, path) : path;
                 if (File.Exists(combinedPath)) return File.OpenRead(combinedPath);
             }
+
             if (sources.HasFlag(ResourceSource.Embedded))
             {
                 var stream = assembly.GetManifestResourceStream($"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");

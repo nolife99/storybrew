@@ -19,56 +19,42 @@ internal class Particles : StoryboardObjectGenerator
      Description(
          "The angle in degrees at which particles will be moving.\n0 is to the right, positive values rotate counterclockwise."),
      Configurable]
-    
     public float Angle = 110;
 
     [Description("The spread in degrees around Angle."), Configurable]
-    
     public float AngleSpread = 60;
 
     [Configurable] public Color4 Color = Color4.White;
 
     [Description("Varies the saturation and brightness of the selected Color for each particle."), Configurable]
-    
     public float ColorVariance = .6f;
 
     [Description("Eases the motion of particles."), Configurable]
-    
     public OsbEasing Easing = OsbEasing.None;
 
     [Configurable] public int EndTime;
     [Configurable] public float Lifetime = 1000;
     [Configurable] public OsbOrigin Origin = OsbOrigin.Centre;
 
-    [Group("Spawn"), Configurable]
-    
-    public int ParticleCount = 32;
+    [Group("Spawn"), Configurable] public int ParticleCount = 32;
 
-    [Group("Sprite"), Configurable]
-    
-    public string Path = "sb/particle.png";
+    [Group("Sprite"), Configurable] public string Path = "sb/particle.png";
 
     [Description("Rotation of the sprite; does not influences particle motion direction."), Configurable]
-    
     public float Rotation = 0;
 
     [Configurable] public Vector2 Scale = Vector2.One;
 
     [Description("The point around which particles will be created."), Configurable]
-    
     public Vector2 SpawnOrigin = new(420, 0);
 
     [Description("The distance around the Spawn Origin point where particles will be created."), Configurable]
-    
     public float SpawnSpread = 360;
 
     [Description("The speed at which particles move, in osupixels."), Configurable]
-    
     public float Speed = 480;
 
-    [Group("Timing"), Configurable]
-    
-    public int StartTime;
+    [Group("Timing"), Configurable] public int StartTime;
 
     protected override void Generate()
     {
@@ -124,10 +110,8 @@ internal class Particles : StoryboardObjectGenerator
             if (color.R != 1 || color.G != 1 || color.B != 1) particle.Color(startTime, color);
             if (Scale.X != 1 || Scale.Y != 1)
             {
-                if (Scale.X != Scale.Y)
-                    particle.ScaleVec(startTime, Scale.X, Scale.Y);
-                else
-                    particle.Scale(startTime, Scale.X);
+                if (Scale.X != Scale.Y) particle.ScaleVec(startTime, Scale.X, Scale.Y);
+                else particle.Scale(startTime, Scale.X);
             }
 
             if (Additive) particle.Additive(startTime, endTime);

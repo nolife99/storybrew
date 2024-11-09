@@ -2,7 +2,7 @@
 
 using System.IO;
 
-/// <summary> A type of <see cref="StoryboardObject" /> that plays an audio file. </summary>
+/// <summary> A type of <see cref="StoryboardObject"/> that plays an audio file. </summary>
 public class OsbSample : StoryboardObject
 {
     string audioPath = "";
@@ -24,15 +24,14 @@ public class OsbSample : StoryboardObject
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override float StartTime => Time;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override float EndTime => Time;
 
-    /// <summary />
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer,
-        StoryboardTransform transform)
+    /// <summary/>
+    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
         => writer.WriteLine($"Sample,{((int)Time).ToString(exportSettings.NumberFormat)},{layer},\"{AudioPath.Trim()
         }\",{((int)Volume).ToString(exportSettings.NumberFormat)}");
 }

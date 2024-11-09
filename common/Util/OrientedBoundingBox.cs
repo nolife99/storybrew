@@ -37,18 +37,18 @@ public class OrientedBoundingBox
     public RectangleF GetAABB()
     {
         float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
-        Array.ForEach(corners, corner =>
+        foreach (var corner in corners)
         {
             minX = Math.Min(minX, corner.X);
             maxX = Math.Max(maxX, corner.X);
             minY = Math.Min(minY, corner.Y);
             maxY = Math.Max(maxY, corner.Y);
-        });
+        }
+
         return RectangleF.FromLTRB(minX, minY, maxX, maxY);
     }
 
-    public bool Intersects(OrientedBoundingBox other) => intersects1Way(other) && other.intersects1Way(this);
-
+    bool Intersects(OrientedBoundingBox other) => intersects1Way(other) && other.intersects1Way(this);
     public bool Intersects(RectangleF other)
         => Intersects(new OrientedBoundingBox(new(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
 
@@ -63,8 +63,7 @@ public class OrientedBoundingBox
             for (var c = 1; c < 4; ++c)
             {
                 t = Vector2.Dot(other.corners[c], axis[a]);
-                if (t < tMin)
-                    tMin = t;
+                if (t < tMin) tMin = t;
                 else if (t > tMax) tMax = t;
             }
 

@@ -8,8 +8,10 @@ public static class PrimitiveStreamerUtil<TPrimitive> where TPrimitive : unmanag
     {
         if (PrimitiveStreamerPersistentMap<TPrimitive>.HasCapabilities())
             return new PrimitiveStreamerPersistentMap<TPrimitive>(vertDec, minVert);
+
         if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities())
             return new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert);
+
         if (PrimitiveStreamerVbo<TPrimitive>.HasCapabilities()) return new PrimitiveStreamerVbo<TPrimitive>(vertDec);
 
         throw new NotSupportedException();

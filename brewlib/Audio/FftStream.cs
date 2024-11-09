@@ -36,7 +36,7 @@ public class FftStream : IDisposable
         return data;
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     void Dispose(bool disposing)
@@ -56,5 +56,5 @@ public class FftStream : IDisposable
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

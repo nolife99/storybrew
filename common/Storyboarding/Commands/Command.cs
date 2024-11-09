@@ -7,9 +7,12 @@ using Animations;
 using CommandValues;
 
 #pragma warning disable CS1591
-public abstract class Command<TValue>(
-    string identifier, OsbEasing easing, float startTime, float endTime, TValue startValue, TValue endValue)
-    : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
+public abstract class Command<TValue>(string identifier,
+    OsbEasing easing,
+    float startTime,
+    float endTime,
+    TValue startValue,
+    TValue endValue) : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
 {
     public string Identifier { get; set; } = identifier;
     public OsbEasing Easing { get; set; } = easing;
@@ -63,16 +66,14 @@ public abstract class Command<TValue>(
     public abstract TValue Midpoint(Command<TValue> endCommand, float progress);
 
     public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
-    public bool Equals(Command<TValue> obj)
-        => Identifier == obj.Identifier && Easing == obj.Easing && StartTime == obj.StartTime &&
-            EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) && EndValue.Equals(obj.EndValue);
+    public bool Equals(Command<TValue> obj) => Identifier == obj.Identifier && Easing == obj.Easing &&
+        StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) &&
+        EndValue.Equals(obj.EndValue);
 
     public virtual string ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
     {
-        var startTimeString =
-            (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);
-        var endTimeString =
-            (exportSettings.UseFloatForTime ? EndTime : (int)EndTime).ToString(exportSettings.NumberFormat);
+        var startTimeString = (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);
+        var endTimeString = (exportSettings.UseFloatForTime ? EndTime : (int)EndTime).ToString(exportSettings.NumberFormat);
 
         var tranformedStartValue = transform is not null ? GetTransformedStartValue(transform) : StartValue;
         var tranformedEndValue = transform is not null ? GetTransformedEndValue(transform) : EndValue;
@@ -80,8 +81,9 @@ public abstract class Command<TValue>(
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
         if (startTimeString == endTimeString) endTimeString = "";
-        var result = string.Join(",", Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), 
-            startTimeString, endTimeString, startValueString);
+        var result = string.Join(",", Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString,
+            endTimeString, startValueString);
+
         if (startValueString != endValueString) result += "," + endValueString;
         return result;
     }

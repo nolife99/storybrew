@@ -29,7 +29,7 @@ public sealed class MapsetManager : IDisposable
     public int BeatmapCount => beatmaps.Count;
     public void Dispose() => Dispose(true);
 
-#region Beatmaps
+    #region Beatmaps
 
     void loadBeatmaps()
     {
@@ -45,14 +45,12 @@ public sealed class MapsetManager : IDisposable
             }
             catch (Exception e)
             {
-                if (logLoadingExceptions)
-                    Trace.TraceError($"Failed to load beatmap: {e}");
-                else
-                    throw;
+                if (logLoadingExceptions) Trace.TraceError($"Failed to load beatmap: {e}");
+                else throw;
             }
     }
 
-#endregion
+    #endregion
 
     void Dispose(bool disposing)
     {
@@ -66,7 +64,7 @@ public sealed class MapsetManager : IDisposable
         disposed = true;
     }
 
-#region Events
+    #region Events
 
     FileSystemWatcher fileWatcher;
     readonly ThrottledActionScheduler scheduler = new();
@@ -87,13 +85,13 @@ public sealed class MapsetManager : IDisposable
         Trace.WriteLine($"Watching (mapset): {path}");
     }
 
-    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e)
-        => scheduler.Schedule(e.FullPath, _ =>
-        {
-            if (Path.GetExtension(e.Name) == ".osu")
-                Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
-            OnFileChanged?.Invoke(sender, e);
-        });
+    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath, _ =>
+    {
+        if (Path.GetExtension(e.Name) == ".osu")
+            Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
 
-#endregion
+        OnFileChanged?.Invoke(sender, e);
+    });
+
+    #endregion
 }

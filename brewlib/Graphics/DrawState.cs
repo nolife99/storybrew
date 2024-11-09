@@ -55,6 +55,7 @@ public static class DrawState
         {
             GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer, FramebufferAttachment.BackLeft,
                 FramebufferParameterName.FramebufferAttachmentColorEncoding, out var defaultFramebufferColorEncoding);
+
             if (defaultFramebufferColorEncoding == 0x8C40)
             {
                 SetCapability(EnableCap.FramebufferSrgb, true);
@@ -67,8 +68,10 @@ public static class DrawState
         maxFpTextureUnits = HasCapabilities(1, 3) ? GL.GetInteger(GetPName.MaxTextureUnits) : 1;
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
-        maxGeometryTextureImageUnits = HasCapabilities(3, 2, "GL_ARB_geometry_shader4")
-            ? GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) : 0;
+        maxGeometryTextureImageUnits = HasCapabilities(3, 2, "GL_ARB_geometry_shader4") ?
+            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
+            0;
+
         maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
         maxTextureCoords = GL.GetInteger(GetPName.MaxTextureCoords);
         MaxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
@@ -76,7 +79,9 @@ public static class DrawState
         // glDrawBuffers requires opengl 2.0
         MaxDrawBuffers = HasCapabilities(2, 0) ? GL.GetInteger(GetPName.MaxDrawBuffers) : 1;
 
-        Trace.WriteLine($"texture units available: fp:{maxFpTextureUnits} ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits} coords:{maxTextureCoords}");
+        Trace.WriteLine(
+            $"texture units available: fp:{maxFpTextureUnits} ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits} coords:{maxTextureCoords}");
+
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
         samplerTextureIds = new int[maxTextureImageUnits];
@@ -86,6 +91,7 @@ public static class DrawState
 
         WhitePixel = Texture2d.Create(Color.White, "whitepixel");
         NormalPixel = Texture2d.Create(Color.FromArgb(127, 127, 255), "normalpixel", 1, 1, new() { Srgb = UseSrgb });
+
         TextGenerator = new(resourceContainer);
         TextFontManager = new();
 
@@ -132,7 +138,7 @@ public static class DrawState
         return renderer;
     }
 
-#region Texture states
+    #region Texture states
 
     public static Texture2d WhitePixel { get; private set; }
     public static Texture2d NormalPixel { get; private set; }
@@ -140,7 +146,7 @@ public static class DrawState
     static int[] samplerTextureIds;
     static TexturingModes[] samplerTexturingModes;
 
-    static int activeTextureUnit, lastRecycledTextureUnit = -1, maxFpTextureUnits, maxTextureImageUnits, 
+    static int activeTextureUnit, lastRecycledTextureUnit = -1, maxFpTextureUnits, maxTextureImageUnits,
         maxVertexTextureImageUnits, maxGeometryTextureImageUnits, maxCombinedTextureImageUnits, maxTextureCoords;
 
     public static int ActiveTextureUnit
@@ -246,11 +252,12 @@ public static class DrawState
             }
     }
 
-#endregion
+    #endregion
 
-#region Other states
+    #region Other states
 
     static Rectangle viewport;
+
     public static Rectangle Viewport
     {
         get => viewport;
@@ -267,6 +274,7 @@ public static class DrawState
     public static event Action ViewportChanged;
 
     static Rectangle? clipRegion;
+
     public static Rectangle? ClipRegion
     {
         get => clipRegion;
@@ -289,16 +297,18 @@ public static class DrawState
     public static IDisposable Clip(Rectangle? newRegion)
     {
         var previousClipRegion = clipRegion;
-        ClipRegion = clipRegion.HasValue && newRegion.HasValue ? Rectangle.Intersect(clipRegion.Value, newRegion.Value)
-            : newRegion;
+        ClipRegion = clipRegion.HasValue && newRegion.HasValue ?
+            Rectangle.Intersect(clipRegion.Value, newRegion.Value) :
+            newRegion;
+
         return new ActionDisposable(() => ClipRegion = previousClipRegion);
     }
     public static IDisposable Clip(RectangleF bounds, Camera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
         return Clip(new((int)MathF.Round(screenBounds.Left),
-            viewport.Height - (int)MathF.Round(screenBounds.Top + screenBounds.Height),
-            (int)MathF.Round(screenBounds.Width), (int)MathF.Round(screenBounds.Height)));
+            viewport.Height - (int)MathF.Round(screenBounds.Top + screenBounds.Height), (int)MathF.Round(screenBounds.Width),
+            (int)MathF.Round(screenBounds.Height)));
     }
     public static RectangleF? GetClipRegion(Camera camera)
     {
@@ -310,6 +320,7 @@ public static class DrawState
     }
 
     static int programId;
+
     public static int ProgramId
     {
         get => programId;
@@ -333,9 +344,9 @@ public static class DrawState
         capabilityCache[capability] = enable;
     }
 
-#endregion
+    #endregion
 
-#region Utilities
+    #region Utilities
 
     public static TextGenerator TextGenerator { get; private set; }
     public static TextFontManager TextFontManager { get; private set; }
@@ -359,7 +370,8 @@ public static class DrawState
         Trace.WriteLine($"renderer: {rendererName}, vendor: {rendererVendor}");
 
         if (!HasCapabilities(2, 0))
-            throw new NotSupportedException($"This application requires at least OpenGL 2.0 (version {openGlVersion} found)\n{rendererName} ({rendererVendor})");
+            throw new NotSupportedException(
+                $"This application requires at least OpenGL 2.0 (version {openGlVersion} found)\n{rendererName} ({rendererVendor})");
 
         CheckError("retrieving glsl version");
         Trace.WriteLine($"glsl version: {GL.GetString(StringName.ShadingLanguageVersion)}");
@@ -376,13 +388,12 @@ public static class DrawState
     public static bool HasExtensions(params string[] extensions)
         => extensions.All(t => Array.BinarySearch(supportedExtensions, t) >= 0);
 
-    public static TextureTarget ToTextureTarget(TexturingModes mode)
-        => mode switch
-        {
-            TexturingModes.Texturing2d => TextureTarget.Texture2D,
-            TexturingModes.Texturing3d => TextureTarget.Texture3D,
-            _ => throw new InvalidOperationException("Not texture target matches the texturing mode " + mode)
-        };
+    public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
+    {
+        TexturingModes.Texturing2d => TextureTarget.Texture2D,
+        TexturingModes.Texturing3d => TextureTarget.Texture3D,
+        _ => throw new InvalidOperationException("Not texture target matches the texturing mode " + mode)
+    };
 
     public static void CheckError(string context = null, bool alwaysThrow = false)
     {
@@ -392,7 +403,7 @@ public static class DrawState
                 (error != ErrorCode.NoError ? ": " + error : ""));
     }
 
-#endregion
+    #endregion
 }
 
 public enum BlendingMode
@@ -401,6 +412,7 @@ public enum BlendingMode
     Additive, BlendAdd, Premultiply,
     Premultiplied
 }
+
 public enum TexturingModes
 {
     None, Texturing2d, Texturing3d

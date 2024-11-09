@@ -29,13 +29,11 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             Children =
             [
                 actionLabel = new(WidgetManager) { Text = "Updating", AnchorFrom = BoxAlignment.Centre },
-                new Label(WidgetManager)
-                {
-                    StyleName = "small", Text = downloadUrl, AnchorFrom = BoxAlignment.Centre
-                },
+                new Label(WidgetManager) { StyleName = "small", Text = downloadUrl, AnchorFrom = BoxAlignment.Centre },
                 progressBar = new(WidgetManager) { Value = 0, AnchorFrom = BoxAlignment.Centre }
             ]
         });
+
         NetHelper.Download(downloadUrl, Updater.UpdateArchivePath, progress =>
         {
             if (IsDisposed) return false;
@@ -91,12 +89,13 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                         UseShellExecute = true, WorkingDirectory = Updater.UpdateFolderPath
                     }
                 };
-                if (process.Start())
-                    Manager.Exit();
+
+                if (process.Start()) Manager.Exit();
                 else
                 {
                     Manager.ShowMessage("Failed to start the update process, please update manually.",
                         Updater.OpenLatestReleasePage);
+
                     Exit();
                 }
             }
@@ -105,6 +104,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 Trace.TraceError($"Failed to start the update process.\n\n{e}");
                 Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}",
                     Updater.OpenLatestReleasePage);
+
                 Exit();
             }
         });

@@ -31,21 +31,13 @@ public class StartMenu : UiScreenLayer
             FitChildren = true,
             Children =
             [
-                newProjectButton = new(WidgetManager)
-                {
-                    Text = "New project", AnchorFrom = BoxAlignment.Centre
-                },
-                openProjectButton = new(WidgetManager)
-                {
-                    Text = "Open project", AnchorFrom = BoxAlignment.Centre
-                },
-                new Button(WidgetManager)
-                {
-                    Text = "Preferences", AnchorFrom = BoxAlignment.Centre, Disabled = true
-                },
+                newProjectButton = new(WidgetManager) { Text = "New project", AnchorFrom = BoxAlignment.Centre },
+                openProjectButton = new(WidgetManager) { Text = "Open project", AnchorFrom = BoxAlignment.Centre },
+                new Button(WidgetManager) { Text = "Preferences", AnchorFrom = BoxAlignment.Centre, Disabled = true },
                 closeButton = new(WidgetManager) { Text = "Close", AnchorFrom = BoxAlignment.Centre }
             ]
         });
+
         WidgetManager.Root.Add(bottomRightLayout = new(WidgetManager)
         {
             AnchorTarget = WidgetManager.Root,
@@ -60,12 +52,10 @@ public class StartMenu : UiScreenLayer
                 {
                     StyleName = "small", Text = "Join Discord", AnchorFrom = BoxAlignment.Centre
                 },
-                wikiButton = new(WidgetManager)
-                {
-                    StyleName = "small", Text = "Wiki", AnchorFrom = BoxAlignment.Centre
-                }
+                wikiButton = new(WidgetManager) { StyleName = "small", Text = "Wiki", AnchorFrom = BoxAlignment.Centre }
             ]
         });
+
         WidgetManager.Root.Add(bottomLayout = new(WidgetManager)
         {
             AnchorTarget = WidgetManager.Root,
@@ -97,6 +87,7 @@ public class StartMenu : UiScreenLayer
         {
             if (e.Button is MouseButton.Left) NetHelper.OpenUrl($"https://github.com/{Program.Repository}");
         };
+
         checkLatestVersion();
     }
 
@@ -108,8 +99,8 @@ public class StartMenu : UiScreenLayer
         bottomRightLayout.Pack((1024 - bottomLayout.Width) / 2);
     }
 
-    void checkLatestVersion()
-        => NetHelper.Request($"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", (r, e) =>
+    void checkLatestVersion() => NetHelper.Request(
+        $"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1", (r, e) =>
         {
             if (IsDisposed) return;
             if (e is not null)
@@ -156,6 +147,7 @@ public class StartMenu : UiScreenLayer
                         var publishedAt = release.Value<string>("published_at");
                         var publishDate = DateTimeOffset.ParseExact(publishedAt, @"yyyy-MM-dd\THH:mm:ss\Z",
                             CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal);
+
                         var authorName = release.Value<string>("author", "login");
 
                         var body = release.Value<string>("body");
@@ -168,8 +160,7 @@ public class StartMenu : UiScreenLayer
 
                         description = newDescription;
                     }
-                    else
-                        break;
+                    else break;
                 }
 
                 if (Program.Version < latestVersion)
@@ -180,9 +171,9 @@ public class StartMenu : UiScreenLayer
                     {
                         if (downloadUrl is not null && latestVersion >= new Version(1, 4))
                             Manager.Add(new UpdateMenu(downloadUrl));
-                        else
-                            Updater.OpenLatestReleasePage();
+                        else Updater.OpenLatestReleasePage();
                     };
+
                     updateButton.StyleName = "";
                     updateButton.Disabled = false;
                 }
@@ -202,8 +193,7 @@ public class StartMenu : UiScreenLayer
 
     void handleLatestVersionException(Exception exception)
     {
-        Trace.TraceError(
-            $"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
+        Trace.TraceError($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message
         }\n\n{versionLabel.Text}";
 

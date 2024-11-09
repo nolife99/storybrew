@@ -29,16 +29,18 @@ public class TextFontAtlased(string name, float size) : TextFont
         {
             DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, default, BoxAlignment.Centre,
                 StringTrimming.None, out measuredSize, true);
+
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }
 
         atlas ??= new(512, 512, $"Font Atlas {name}:{size:n1}");
-        using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, default,
-            BoxAlignment.Centre, StringTrimming.None, out measuredSize, false);
+        using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, default, BoxAlignment.Centre,
+            StringTrimming.None, out measuredSize, false);
+
         return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     protected virtual void Dispose(bool disposing)
@@ -58,5 +60,5 @@ public class TextFontAtlased(string name, float size) : TextFont
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

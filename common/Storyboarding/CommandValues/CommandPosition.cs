@@ -29,44 +29,41 @@ public readonly struct CommandPosition : CommandValue, IEquatable<CommandPositio
     ///<summary> Gets the vector length (magnitude). </summary>
     public float Length => internalVec.Length();
 
-    /// <summary> Constructs a <see cref="CommandPosition" /> from an X and Y value. </summary>
+    /// <summary> Constructs a <see cref="CommandPosition"/> from an X and Y value. </summary>
     public CommandPosition(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
 
-    /// <summary> Constructs a <see cref="CommandPosition" /> from a value. </summary>
+    /// <summary> Constructs a <see cref="CommandPosition"/> from a value. </summary>
     public CommandPosition(CommandDecimal value) : this(value, value) { }
 
-    /// <summary> Constructs a <see cref="CommandPosition" /> from a <see cref="Vector2" />. </summary>
+    /// <summary> Constructs a <see cref="CommandPosition"/> from a <see cref="Vector2"/>. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition(Vector2 vector) => internalVec = vector;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool Equals(CommandPosition other) => internalVec == other.internalVec;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override bool Equals(object obj) => obj is CommandPosition position && Equals(position);
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override int GetHashCode() => internalVec.GetHashCode();
 
     ///<summary> Converts this instance to a .osb string. </summary>
-    public string ToOsbString(ExportSettings exportSettings)
-        => exportSettings.UseFloatForMove ? $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}"
-            : $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
+    public string ToOsbString(ExportSettings exportSettings) => exportSettings.UseFloatForMove ?
+        $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}" :
+        $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
 
     ///<summary> Converts this instance to a string. </summary>
     public override string ToString() => internalVec.ToString();
 
 #pragma warning disable CS1591
-    public static CommandPosition operator +(CommandPosition left, CommandPosition right)
-        => left.internalVec + right.internalVec;
+    public static CommandPosition operator +(CommandPosition left, CommandPosition right) => left.internalVec + right.internalVec;
 
-    public static CommandPosition operator -(CommandPosition left, CommandPosition right)
-        => left.internalVec - right.internalVec;
+    public static CommandPosition operator -(CommandPosition left, CommandPosition right) => left.internalVec - right.internalVec;
 
     public static CommandPosition operator -(CommandPosition pos) => -pos.internalVec;
 
-    public static CommandPosition operator *(CommandPosition left, CommandPosition right)
-        => left.internalVec * right.internalVec;
+    public static CommandPosition operator *(CommandPosition left, CommandPosition right) => left.internalVec * right.internalVec;
 
     public static CommandPosition operator *(CommandPosition left, CommandDecimal right)
         => new(left.internalVec.X * right, left.internalVec.Y * right);
@@ -74,8 +71,7 @@ public readonly struct CommandPosition : CommandValue, IEquatable<CommandPositio
     public static CommandPosition operator *(CommandDecimal left, CommandPosition right)
         => new(right.internalVec.X * left, right.internalVec.Y * left);
 
-    public static CommandPosition operator /(CommandPosition left, CommandPosition right)
-        => left.internalVec / right.internalVec;
+    public static CommandPosition operator /(CommandPosition left, CommandPosition right) => left.internalVec / right.internalVec;
 
     public static CommandPosition operator /(CommandPosition left, CommandDecimal right)
         => new(left.internalVec.X / right, left.internalVec.Y / right);

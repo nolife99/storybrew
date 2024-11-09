@@ -19,13 +19,9 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 {
     readonly List<DisplayableObject> displayableObjects = [];
     readonly List<EventObject> eventObjects = [];
-
     readonly Dictionary<string, EditorStoryboardSegment> namedSegments = [];
     readonly List<EditorStoryboardSegment> segments = [];
-
     readonly List<StoryboardObject> storyboardObjects = [];
-
-    public bool Highlight;
 
     float startTime, endTime;
     public Effect Effect => effect;
@@ -41,8 +37,13 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override float StartTime => startTime;
     public override float EndTime => endTime;
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity,
-        StoryboardTransform transform, Project project, FrameStats frameStats)
+    public void Draw(DrawContext drawContext,
+        Camera camera,
+        RectangleF bounds,
+        float opacity,
+        StoryboardTransform transform,
+        Project project,
+        FrameStats frameStats)
     {
         var displayTime = project.DisplayTime * 1000;
         if (displayTime < StartTime || EndTime < displayTime) return;
@@ -50,8 +51,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             opacity *= (MathF.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
         StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale);
-        displayableObjects.ForEach(o
-            => o.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats));
+        foreach (var o in displayableObjects) o.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);
     }
 
     public void PostProcess()
@@ -76,25 +76,28 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 
     public event Action<object, ChangedEventArgs> OnChanged;
 
-    protected void RaiseChanged(string propertyName)
-        => EventHelper.InvokeStrict(() => OnChanged,
-            d => ((Action<object, ChangedEventArgs>)d)(this, new(propertyName)));
+    protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged,
+        d => ((Action<object, ChangedEventArgs>)d)(this, new(propertyName)));
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
     {
-        EditorOsbSprite storyboardObject =
-            new() { TexturePath = path, Origin = origin, InitialPosition = initialPosition };
+        EditorOsbSprite storyboardObject = new() { TexturePath = path, Origin = origin, InitialPosition = initialPosition };
+
         storyboardObjects.Add(storyboardObject);
         displayableObjects.Add(storyboardObject);
 
         return storyboardObject;
     }
 
-    public override OsbSprite CreateSprite(string path, OsbOrigin origin)
+    public override OsbSprite CreateSprite(string path, OsbOrigin origin = OsbOrigin.Centre)
         => CreateSprite(path, origin, OsbSprite.DefaultPosition);
 
-    public override OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType,
-        OsbOrigin origin, CommandPosition initialPosition)
+    public override OsbAnimation CreateAnimation(string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        CommandPosition initialPosition)
     {
         if (frameCount < 1)
         {
@@ -123,19 +126,24 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             LoopType = loopType,
             InitialPosition = initialPosition
         };
+
         storyboardObjects.Add(storyboardObject);
         displayableObjects.Add(storyboardObject);
 
         return storyboardObject;
     }
 
-    public override OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType,
+    public override OsbAnimation CreateAnimation(string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
         OsbOrigin origin = OsbOrigin.Centre)
         => CreateAnimation(path, frameCount, frameDelay, loopType, origin, OsbSprite.DefaultPosition);
 
     public override OsbSample CreateSample(string path, float time, float volume)
     {
         EditorOsbSample storyboardObject = new() { AudioPath = path, Time = time, Volume = volume };
+
         storyboardObjects.Add(storyboardObject);
         eventObjects.Add(storyboardObject);
         return storyboardObject;
@@ -143,12 +151,10 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 
     public override StoryboardSegment CreateSegment(string identifier = null)
     {
-        if (identifier is not null)
-        {
-            var originalName = identifier;
-            var count = 0;
-            while (namedSegments.ContainsKey(identifier)) identifier = $"{originalName}#{++count}";
-        }
+        if (identifier is null) return getSegment(identifier);
+        var originalName = identifier;
+        var count = 0;
+        while (namedSegments.ContainsKey(identifier)) identifier = $"{originalName}#{++count}";
 
         return getSegment(identifier);
     }
@@ -158,17 +164,15 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     EditorStoryboardSegment getSegment(string identifier = null)
     {
         if (identifier is not null && Name is null)
-            throw new InvalidOperationException($"Cannot add a named segment to a segment that isn't named ({identifier
-            })");
-        if (identifier is null || !namedSegments.TryGetValue(identifier, out var segment))
-        {
-            segment = new(Effect, Layer, identifier);
-            storyboardObjects.Add(segment);
-            displayableObjects.Add(segment);
+            throw new InvalidOperationException($"Cannot add a named segment to a segment that isn't named ({identifier})");
 
-            segments.Add(segment);
-            if (identifier is not null) namedSegments.Add(identifier, segment);
-        }
+        if (identifier is not null && namedSegments.TryGetValue(identifier, out var segment)) return segment;
+        segment = new(Effect, Layer, identifier);
+        storyboardObjects.Add(segment);
+        displayableObjects.Add(segment);
+
+        segments.Add(segment);
+        if (identifier is not null) namedSegments.Add(identifier, segment);
 
         return segment;
     }
@@ -176,23 +180,32 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override void Discard(StoryboardObject storyboardObject)
     {
         storyboardObjects.Remove(storyboardObject);
-        if (storyboardObject is DisplayableObject displayableObject) displayableObjects.Remove(displayableObject);
-        if (storyboardObject is EventObject eventObject) eventObjects.Remove(eventObject);
-        if (storyboardObject is EditorStoryboardSegment segment)
+        switch (storyboardObject)
         {
-            segments.Remove(segment);
-            if (segment.Name is not null) namedSegments.Remove(segment.Name);
+            case DisplayableObject displayableObject:
+                displayableObjects.Remove(displayableObject);
+                break;
+            case EventObject eventObject:
+                eventObjects.Remove(eventObject);
+                break;
         }
+
+        if (storyboardObject is not EditorStoryboardSegment segment) return;
+        segments.Remove(segment);
+        if (segment.Name is not null) namedSegments.Remove(segment.Name);
     }
 
     public void TriggerEvents(float fromTime, float toTime)
     {
         eventObjects.ForEach(eventObject => eventObject.TriggerEvent(Effect.Project, toTime),
             eventObject => fromTime <= eventObject.EventTime && eventObject.EventTime < toTime);
+
         segments.ForEach(s => s.TriggerEvents(fromTime, toTime));
     }
 
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer osbLayer,
+    public override void WriteOsb(TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer osbLayer,
         StoryboardTransform transform)
     {
         StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale);

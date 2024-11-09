@@ -11,8 +11,8 @@ public abstract class Script
     public string Identifier
     {
         get => identifier;
-        set
-            => identifier = identifier is null ? value
-                : throw new InvalidOperationException("This script already has an identifier");
+        set => identifier = identifier is null ?
+            value :
+            throw new InvalidOperationException("This script already has an identifier");
     }
 }

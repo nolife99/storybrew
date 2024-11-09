@@ -10,11 +10,7 @@ public class ByteCounterStream : Stream
     public override bool CanWrite => true;
     public override long Length => length;
 
-    public override long Position
-    {
-        get => length;
-        set { }
-    }
+    public override long Position { get => length; set { } }
 
     public override void Flush() { }
 

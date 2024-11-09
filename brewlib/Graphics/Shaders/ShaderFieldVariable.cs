@@ -18,7 +18,7 @@ internal class ShaderFieldVariable(ShaderContext context, ShaderVariable baseVar
     {
         readonly ShaderType.Field field = field;
 
-        public override string this[string index] => $"{base[index]}.{field.Name}";
+        protected override string this[string index] => $"{base[index]}.{field.Name}";
         public override string ToString() => $"{base.ToString()}.{field.Name}";
     }
 }

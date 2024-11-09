@@ -24,11 +24,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
     public override bool IsEmpty => Count == 0;
     public override TinyTokenType Type => TinyTokenType.Array;
 
-    public TinyToken this[int index]
-    {
-        get => tokens[index];
-        set => tokens[index] = value;
-    }
+    public TinyToken this[int index] { get => tokens[index]; set => tokens[index] = value; }
 
     public int Count { get; private set; }
 
@@ -51,6 +47,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
         for (var i = 0; i < Count; ++i)
             if (tokens[i] == item)
                 return true;
+
         return false;
     }
 
@@ -61,6 +58,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
         for (var i = 0; i < Count; ++i)
             if (tokens[i] == item)
                 return i;
+
         return -1;
     }
 
@@ -95,12 +93,12 @@ public class TinyArray : TinyToken, IList<TinyToken>
 
     IEnumerator IEnumerable.GetEnumerator() => tokens.GetEnumerator();
 
-    public override T Value<T>(object key)
-        => key switch
-        {
-            null => (T)(object)this, int index => this[index].Value<T>(),
-            _ => throw new ArgumentException($"Key must be an integer, was {key}", nameof(key))
-        };
+    public override T Value<T>(object key) => key switch
+    {
+        null => (T)(object)this,
+        int index => this[index].Value<T>(),
+        _ => throw new ArgumentException($"Key must be an integer, was {key}", nameof(key))
+    };
 
     public override string ToString() => string.Join(", ", tokens, 0, Count);
 

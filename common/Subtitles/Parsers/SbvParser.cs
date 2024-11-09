@@ -9,20 +9,19 @@ using BrewLib.Util;
 ///<summary> Parsing methods for .sbv subtitle files. </summary>
 public class SbvParser : SubtitleParser
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SubtitleSet Parse(string path)
     {
         using var stream = Misc.WithRetries(() => File.OpenRead(path));
         return Parse(stream);
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SubtitleSet Parse(Stream stream)
     {
         List<SubtitleLine> lines = [];
         lines.AddRange(from block in parseBlocks(stream)
-            select block.Split('\n')
-            into blockLines
+            select block.Split('\n') into blockLines
             let timestamps = blockLines[0].Split(',')
             let startTime = SubtitleParser.ParseTimestamp(timestamps[0])
             let endTime = SubtitleParser.ParseTimestamp(timestamps[1])
@@ -44,8 +43,7 @@ public class SbvParser : SubtitleParser
                 if (block.Length > 0) yield return block.ToString();
                 sb.Clear();
             }
-            else
-                sb.AppendLine(line);
+            else sb.AppendLine(line);
 
         var endBlock = sb.Trim();
         if (endBlock.Length > 0) yield return endBlock.ToString();

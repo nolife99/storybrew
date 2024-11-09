@@ -5,8 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-public class RegexTokenizer<TokenType>(
-    IEnumerable<RegexTokenizer<TokenType>.Definition> definitions, TokenType? endLineToken)
+public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Definition> definitions, TokenType? endLineToken)
     : Tokenizer<TokenType> where TokenType : struct
 {
     public IEnumerable<Token<TokenType>> Tokenize(TextReader reader)
@@ -37,6 +36,7 @@ public class RegexTokenizer<TokenType>(
             if (previousMatch is not null && bestMatch.StartIndex < previousMatch.EndIndex) continue;
 
             yield return new(bestMatch.Type, bestMatch.Value) { CharNumber = bestMatch.StartIndex };
+
             previousMatch = bestMatch;
         }
 
@@ -69,8 +69,7 @@ public class RegexTokenizer<TokenType>(
             public TokenType Type;
             public string Value;
 
-            public override string ToString()
-                => $"{Type} <{Value}> from {StartIndex} to {EndIndex}, priority:{Priority}";
+            public override string ToString() => $"{Type} <{Value}> from {StartIndex} to {EndIndex}, priority:{Priority}";
         }
     }
 }

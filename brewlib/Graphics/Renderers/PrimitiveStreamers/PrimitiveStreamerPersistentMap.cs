@@ -3,8 +3,9 @@
 using osuTK.Graphics.OpenGL;
 using Util;
 
-public class PrimitiveStreamerPersistentMap<TPrimitive>(
-    VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
+public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
+    int minRenderableVertexCount,
+    ushort[] indexes = null)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes), PrimitiveStreamer
     where TPrimitive : unmanaged
 {
@@ -12,8 +13,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
     nint bufferPointer;
     GpuCommandSync commandSync = new();
 
-    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount,
-        bool canBuffer = false)
+    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false)
     {
         var vertexDataSize = count * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize)
@@ -21,6 +21,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
             bufferOffset = 0;
             drawOffset = 0;
         }
+
         if (commandSync.WaitForRange(bufferOffset, vertexDataSize))
         {
             ++BufferWaitCount;
@@ -61,6 +62,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
             commandSync.Dispose();
             commandSync = null;
         }
+
         base.Dispose(disposing);
     }
     void expandVertexBuffer()
@@ -96,8 +98,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(
         ++DiscardedBufferCount;
     }
 
-    public new static bool HasCapabilities()
-        => DrawState.HasCapabilities(4, 4, "GL_ARB_buffer_storage") &&
-            DrawState.HasCapabilities(3, 0, "GL_ARB_map_buffer_range") && DrawState.HasCapabilities(1, 5) &&
-            GpuCommandSync.HasCapabilities() && PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
+    public new static bool HasCapabilities() => DrawState.HasCapabilities(4, 4, "GL_ARB_buffer_storage") &&
+        DrawState.HasCapabilities(3, 0, "GL_ARB_map_buffer_range") && DrawState.HasCapabilities(1, 5) &&
+        GpuCommandSync.HasCapabilities() && PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
 }

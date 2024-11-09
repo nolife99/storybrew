@@ -17,7 +17,7 @@ public sealed class DrawContext : IDisposable
         if (dispose && obj is IDisposable disposable) disposables.Add(disposable);
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -35,5 +35,5 @@ public sealed class DrawContext : IDisposable
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

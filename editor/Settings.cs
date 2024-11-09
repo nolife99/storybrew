@@ -41,8 +41,7 @@ public class Settings
             {
                 var field = type.GetField(key);
                 if (field is null || !field.FieldType.IsGenericType ||
-                    !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
-                    return;
+                    !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
 
                 try
                 {
@@ -72,8 +71,8 @@ public class Settings
         foreach (var field in GetType().GetFields())
         {
             if (!field.FieldType.IsGenericType ||
-                !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition()))
-                continue;
+                !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) continue;
+
             writer.WriteLine($"{field.Name}: {Unsafe.As<Setting>(field.GetValue(this))}");
         }
 
@@ -108,13 +107,14 @@ public class Setting<T>(T defaultValue) : Setting
             field.FieldValue = value;
             changedAction?.Invoke();
         };
+
         field.OnDisposed += (_, _) => OnValueChanged -= handler;
         handler(this, EventArgs.Empty);
     }
 
-    public override string ToString()
-        => typeof(T).GetInterface(nameof(IConvertible)) is not null
-            ? Convert.ToString(value, CultureInfo.InvariantCulture) : value.ToString();
+    public override string ToString() => typeof(T).GetInterface(nameof(IConvertible)) is not null ?
+        Convert.ToString(value, CultureInfo.InvariantCulture) :
+        value.ToString();
 
     public static implicit operator T(Setting<T> setting) => setting.value;
 }

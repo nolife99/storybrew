@@ -10,6 +10,11 @@ public interface DisplayableObject
     float StartTime { get; }
     float EndTime { get; }
 
-    void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, StoryboardTransform transform,
-        Project project, FrameStats frameStats);
+    void Draw(DrawContext drawContext,
+        Camera camera,
+        RectangleF bounds,
+        float opacity,
+        StoryboardTransform transform,
+        Project project,
+        FrameStats frameStats);
 }

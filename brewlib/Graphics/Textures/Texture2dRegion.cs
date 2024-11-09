@@ -6,8 +6,8 @@ using System.Numerics;
 
 public class Texture2dRegion : Texture
 {
-    readonly string description;
     readonly RectangleF bounds;
+    readonly string description;
     Texture2d texture;
 
     public Texture2dRegion(Texture2d texture, RectangleF bounds, string description)
@@ -17,16 +17,15 @@ public class Texture2dRegion : Texture
         this.description = description;
     }
 
-    public RectangleF Bounds => bounds;
     public Vector2 Size => new(bounds.Width, bounds.Height);
-    
+
     public float X => bounds.Left;
     public float Y => bounds.Top;
     public float Width => bounds.Width;
     public float Height => bounds.Height;
 
-    public RectangleF UvBounds
-        => RectangleF.FromLTRB(bounds.Left / texture.Width, bounds.Top / texture.Height, bounds.Right / texture.Width, bounds.Bottom / texture.Height);
+    public RectangleF UvBounds => RectangleF.FromLTRB(bounds.Left / texture.Width, bounds.Top / texture.Height,
+        bounds.Right / texture.Width, bounds.Bottom / texture.Height);
 
     public Vector2 UvRatio => new(1 / texture.Width, 1 / texture.Height);
     public string Description => texture != this ? $"{description} (from {texture.Description})" : description;
@@ -46,7 +45,7 @@ public class Texture2dRegion : Texture
         texture.Update(bitmap, (int)updateX, (int)updateY, textureOptions);
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     ~Texture2dRegion() => Dispose(false);
     public void Dispose()
@@ -63,5 +62,5 @@ public class Texture2dRegion : Texture
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

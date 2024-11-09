@@ -5,10 +5,7 @@ using System.Text;
 
 public abstract class ShaderSnippet
 {
-    public virtual IEnumerable<string> RequiredExtensions
-    {
-        get { yield break; }
-    }
+    public virtual IEnumerable<string> RequiredExtensions { get { yield break; } }
 
     public virtual int MinVersion => 110;
 

@@ -18,7 +18,7 @@ public interface FontEffect
 }
 
 /// <summary> Stores information about a font's appearance. </summary>
-/// <remarks> Creates a new <see cref="FontDescription" /> storing a descriptor for <see cref="FontGenerator" />. </remarks>
+/// <remarks> Creates a new <see cref="FontDescription"/> storing a descriptor for <see cref="FontGenerator"/>. </remarks>
 /// <param name="fontPath"> The path to the font file. </param>
 /// <param name="fontSize"> The relative size of the font. </param>
 /// <param name="color"> The coloring tint of the font. </param>
@@ -27,9 +27,14 @@ public interface FontEffect
 /// <param name="trimTransparency"> Trim transparent space around the font. </param>
 /// <param name="effectsOnly"> Leave out the original font and keep the effects. </param>
 /// <param name="debug"> Draw a randomly colored background behind the font. </param>
-public class FontDescription(
-    string fontPath, int fontSize = 76, FontColor color = default, Vector2 padding = default,
-    FontStyle fontStyle = default, bool trimTransparency = true, bool effectsOnly = false, bool debug = false)
+public class FontDescription(string fontPath,
+    int fontSize = 76,
+    FontColor color = default,
+    Vector2 padding = default,
+    FontStyle fontStyle = default,
+    bool trimTransparency = true,
+    bool effectsOnly = false,
+    bool debug = false)
 {
     ///<summary> The path to the font file. </summary>
     public string FontPath => fontPath;
@@ -46,7 +51,7 @@ public class FontDescription(
     ///<summary> The format/style of the font (for example: bold, italics, etc). </summary>
     public FontStyle FontStyle => fontStyle;
 
-    /// <summary> Trim transparent space around the font. Should always be <see langword="true" />. </summary>
+    /// <summary> Trim transparent space around the font. Should always be <see langword="true"/>. </summary>
     public bool TrimTransparency => trimTransparency;
 
     ///<summary> Leave out the original font and keep the effects. </summary>

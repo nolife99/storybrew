@@ -10,11 +10,18 @@ using CommandValues;
 using Display;
 
 ///<summary> Writes a sprite to text in .osb format. </summary>
-public class OsbSpriteWriter(
-    OsbSprite sprite, AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX,
-    AnimatedValue<CommandDecimal> moveY, AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
-    AnimatedValue<CommandDecimal> rotate, AnimatedValue<CommandDecimal> fade, AnimatedValue<CommandColor> color,
-    TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
+public class OsbSpriteWriter(OsbSprite sprite,
+    AnimatedValue<CommandPosition> move,
+    AnimatedValue<CommandDecimal> moveX,
+    AnimatedValue<CommandDecimal> moveY,
+    AnimatedValue<CommandDecimal> scale,
+    AnimatedValue<CommandScale> scaleVec,
+    AnimatedValue<CommandDecimal> rotate,
+    AnimatedValue<CommandDecimal> fade,
+    AnimatedValue<CommandColor> color,
+    TextWriter writer,
+    ExportSettings exportSettings,
+    OsbLayer layer)
 {
 #pragma warning disable CS1591
     public void WriteOsb(StoryboardTransform transform)
@@ -39,6 +46,7 @@ public class OsbSpriteWriter(
         {
             TexturePath = sprite.TexturePath, InitialPosition = sprite.InitialPosition, Origin = sprite.Origin
         };
+
         foreach (var command in segment) spr.AddCommand(command);
         return spr;
     }
@@ -63,20 +71,19 @@ public class OsbSpriteWriter(
 
         if (!move.HasCommands && !moveX.HasCommands)
             writer.Write("," + transformedInitialPosition.X.ToString(exportSettings.NumberFormat));
-        else
-            writer.Write(",0");
+        else writer.Write(",0");
+
         if (!move.HasCommands && !moveY.HasCommands)
             writer.Write("," + transformedInitialPosition.Y.ToString(exportSettings.NumberFormat));
-        else
-            writer.Write(",0");
+        else writer.Write(",0");
     }
     protected virtual bool IsFragmentable()
     {
         // if there are commands with nondeterministic results (aka triggercommands) the sprite can't reliably be split
         if (sprite.Commands.Any(c => c is not IFragmentableCommand)) return false;
 
-        return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap || 
-            rotate.HasOverlap || scale.HasOverlap || scaleVec.HasOverlap || fade.HasOverlap || color.HasOverlap);
+        return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap || rotate.HasOverlap || scale.HasOverlap ||
+            scaleVec.HasOverlap || fade.HasOverlap || color.HasOverlap);
     }
     protected virtual HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
     {
@@ -97,8 +104,9 @@ public class OsbSpriteWriter(
                 var sTime = Math.Max(startTime, (int)MathF.Round(cmd.StartTime));
                 var eTime = Math.Min(endTime, (int)MathF.Round(cmd.EndTime));
 
-                segment.Add(sTime != (int)MathF.Round(cmd.StartTime) || eTime != (int)MathF.Round(cmd.EndTime)
-                    ? cmd.GetFragment(sTime, eTime) : cmd);
+                segment.Add(sTime != (int)MathF.Round(cmd.StartTime) || eTime != (int)MathF.Round(cmd.EndTime) ?
+                    cmd.GetFragment(sTime, eTime) :
+                    cmd);
             }
 
         addStaticCommands(segment, startTime);
@@ -116,8 +124,8 @@ public class OsbSpriteWriter(
 
         if (commands.Count < sprite.CommandSplitThreshold * 2 && commands.Count > sprite.CommandSplitThreshold)
             maxCommandCount = (int)MathF.Ceiling(commands.Count / 2f);
-        if (commands.Count < maxCommandCount)
-            endTime = fragmentationTimes.Max() + 1;
+
+        if (commands.Count < maxCommandCount) endTime = fragmentationTimes.Max() + 1;
         else
         {
             var lastCommand = commands.OrderBy(c => c.StartTime).ElementAt(maxCommandCount - 1);
@@ -143,31 +151,37 @@ public class OsbSpriteWriter(
             var value = move.ValueAtTime(startTime);
             segment.Add(new MoveCommand(OsbEasing.None, startTime, startTime, value, value));
         }
+
         if (moveX.HasCommands && !segment.Any(c => c is MoveXCommand && c.StartTime == startTime))
         {
             var value = moveX.ValueAtTime(startTime);
             segment.Add(new MoveXCommand(OsbEasing.None, startTime, startTime, value, value));
         }
+
         if (moveY.HasCommands && !segment.Any(c => c is MoveYCommand && c.StartTime == startTime))
         {
             var value = moveY.ValueAtTime(startTime);
             segment.Add(new MoveYCommand(OsbEasing.None, startTime, startTime, value, value));
         }
+
         if (rotate.HasCommands && !segment.Any(c => c is RotateCommand && c.StartTime == startTime))
         {
             var value = rotate.ValueAtTime(startTime);
             segment.Add(new RotateCommand(OsbEasing.None, startTime, startTime, value, value));
         }
+
         if (scale.HasCommands && !segment.Any(c => c is ScaleCommand && c.StartTime == startTime))
         {
             var value = scale.ValueAtTime(startTime);
             segment.Add(new ScaleCommand(OsbEasing.None, startTime, startTime, value, value));
         }
+
         if (scaleVec.HasCommands && !segment.Any(c => c is VScaleCommand && c.StartTime == startTime))
         {
             var value = scaleVec.ValueAtTime(startTime);
             segment.Add(new VScaleCommand(OsbEasing.None, startTime, startTime, value, value));
         }
+
         if (color.HasCommands && !segment.Any(c => c is ColorCommand && c.StartTime == startTime))
         {
             var value = color.ValueAtTime(startTime);
@@ -184,16 +198,24 @@ public class OsbSpriteWriter(
 
 public static class OsbWriterFactory
 {
-    public static OsbSpriteWriter CreateWriter(OsbSprite sprite, AnimatedValue<CommandPosition> move,
-        AnimatedValue<CommandDecimal> moveX, AnimatedValue<CommandDecimal> moveY, AnimatedValue<CommandDecimal> scale,
-        AnimatedValue<CommandScale> scaleVec, AnimatedValue<CommandDecimal> rotate, AnimatedValue<CommandDecimal> fade,
-        AnimatedValue<CommandColor> color, TextWriter writer, ExportSettings exportSettings, OsbLayer layer)
+    public static OsbSpriteWriter CreateWriter(OsbSprite sprite,
+        AnimatedValue<CommandPosition> move,
+        AnimatedValue<CommandDecimal> moveX,
+        AnimatedValue<CommandDecimal> moveY,
+        AnimatedValue<CommandDecimal> scale,
+        AnimatedValue<CommandScale> scaleVec,
+        AnimatedValue<CommandDecimal> rotate,
+        AnimatedValue<CommandDecimal> fade,
+        AnimatedValue<CommandColor> color,
+        TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer layer)
     {
         if (sprite is OsbAnimation animation)
             return new OsbAnimationWriter(animation, move, moveX, moveY, scale, scaleVec, rotate, fade, color, writer,
                 exportSettings, layer);
 
-        return new OsbSpriteWriter(sprite, move, moveX, moveY, scale, scaleVec, rotate, fade, color, writer,
-            exportSettings, layer);
+        return new OsbSpriteWriter(sprite, move, moveX, moveY, scale, scaleVec, rotate, fade, color, writer, exportSettings,
+            layer);
     }
 }

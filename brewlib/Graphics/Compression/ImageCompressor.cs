@@ -15,8 +15,8 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 
     protected string utilName;
 
-    public string UtilityPath { get; protected set; } = utilityPath ??
-        Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
+    public string UtilityPath { get; protected set; } =
+        utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
 
     public virtual string UtilityName
     {
@@ -33,15 +33,12 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
     public void LosslessCompress(string path) => compress(new Argument(path), false);
     public void Compress(string path) => compress(new Argument(path), true);
 
-    public void LosslessCompress(string path, LosslessInputSettings settings)
-        => compress(new Argument(path, settings), false);
+    public void LosslessCompress(string path, LosslessInputSettings settings) => compress(new Argument(path, settings), false);
 
-    public void Compress(string path, LossyInputSettings settings)
-        => compress(new Argument(path, null, settings), true);
+    public void Compress(string path, LossyInputSettings settings) => compress(new Argument(path, null, settings), true);
 
     protected abstract void compress(Argument arg, bool useLossy);
-    protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy,
-        LosslessInputSettings lossless);
+    protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
 
     protected abstract void ensureTool();
     protected void ensureStop()

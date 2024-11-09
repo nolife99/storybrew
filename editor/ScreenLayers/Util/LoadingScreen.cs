@@ -42,6 +42,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
 
                     Manager.ShowMessage($"{title} failed:\n\n{exceptionMessage}\n\nDetails:\n{exception.GetBaseException()}");
                 }
+
                 Exit();
             });
         });

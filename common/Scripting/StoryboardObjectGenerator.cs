@@ -48,7 +48,7 @@ public abstract class StoryboardObjectGenerator : Script
     public static StoryboardObjectGenerator Current => instance.Value;
 
     /// <summary>
-    ///     Set to <see langword="true" /> if this script uses multiple threads. It prevents other effects from updating
+    ///     Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating
     ///     in parallel to this one.
     /// </summary>
     public bool Multithreaded { get; protected set; }
@@ -69,35 +69,35 @@ public abstract class StoryboardObjectGenerator : Script
     public string MapsetPath => context.MapsetPath;
 
     /// <summary> Creates or retrieves a layer. </summary>
-    /// <remarks> The identifier will be shown in the editor as <b>Effect name (<paramref name="name" />)</b>. </remarks>
+    /// <remarks> The identifier will be shown in the editor as <b>Effect name (<paramref name="name"/>)</b>. </remarks>
     public StoryboardLayer GetLayer(string name) => context.GetLayer(name);
 
     ///<summary> Gets the beatmap with the specified difficulty name, or if not found, the default beatmap. </summary>
     public Beatmap GetBeatmap(string name) => context.Beatmaps.FirstOrDefault(b => b.Name == name);
 
-    /// <summary> Watches a dependency at <paramref name="path" />. </summary>
+    /// <summary> Watches a dependency at <paramref name="path"/>. </summary>
     public void AddDependency(string path) => context.AddDependency(path);
 
     /// <summary> Logs a message on the effect. </summary>
     /// <param name="message"> Message to be displayed. </param>
     public void Log(object message) => context.AppendLog(message.ToString());
 
-    /// <summary> Throws an exception if <paramref name="condition" /> returns false. </summary>
+    /// <summary> Throws an exception if <paramref name="condition"/> returns false. </summary>
     /// <param name="condition"> The condition to be asserted. </param>
     /// <param name="message"> The message to display if assertion fails. </param>
     /// <param name="line"> The line at which the condition should be taken into account. </param>
     public static void Assert(bool condition, string message = null, [CallerLineNumber] int line = -1)
     {
         if (!condition)
-            throw new ArgumentException(message is not null ? $"Assertion failed line {line}: {message}"
-                : $"Assertion failed line {line}");
+            throw new ArgumentException(message is not null ?
+                $"Assertion failed line {line}: {message}" :
+                $"Assertion failed line {line}");
     }
 
     ///<summary> Generates the storyboard created by this script. </summary>
     public void Generate(GeneratorContext context)
     {
-        if (instance.Value is not null)
-            throw new InvalidOperationException("A script is already running in this thread");
+        if (instance.Value is not null) throw new InvalidOperationException("A script is already running in this thread");
         try
         {
             this.context = context;
@@ -122,21 +122,21 @@ public abstract class StoryboardObjectGenerator : Script
     ///<summary> Main body for storyboard generation. </summary>
     protected abstract void Generate();
 
-#region File loading
+    #region File loading
 
     internal readonly Dictionary<string, Bitmap> bitmaps = [];
 
-    /// <summary> Returns a <see cref="Bitmap" /> from the project's directory. </summary>
+    /// <summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
     /// <param name="path"> The image path, relative to the project's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
     public Bitmap GetProjectBitmap(string path, bool watch = true)
         => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
 
-    /// <summary> Returns a <see cref="Bitmap" /> from the mapset's directory. </summary>
+    /// <summary> Returns a <see cref="Bitmap"/> from the mapset's directory. </summary>
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
-    public Bitmap GetMapsetBitmap(string path, bool watch = true)
-        => getBitmap(Path.Combine(context.MapsetPath, path), Path.Combine(context.ProjectAssetPath, path), watch);
+    public Bitmap GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),
+        Path.Combine(context.ProjectAssetPath, path), watch);
 
     Bitmap getBitmap(string path, string alternatePath, bool watch)
     {
@@ -168,14 +168,12 @@ public abstract class StoryboardObjectGenerator : Script
     }
 
     /// <summary> Opens a file, relative to the project folder, in read-only mode. </summary>
-    /// <remarks> Dispose of the returned <see cref="Stream" /> as soon as possible. </remarks>
-    public Stream OpenProjectFile(string path, bool watch = true)
-        => openFile(Path.Combine(context.ProjectPath, path), watch);
+    /// <remarks> Dispose of the returned <see cref="Stream"/> as soon as possible. </remarks>
+    public Stream OpenProjectFile(string path, bool watch = true) => openFile(Path.Combine(context.ProjectPath, path), watch);
 
     /// <summary> Opens a file, relative to the mapset folder, in read-only mode. </summary>
-    /// <remarks> Dispose of the returned <see cref="Stream" /> as soon as possible. </remarks>
-    public Stream OpenMapsetFile(string path, bool watch = true)
-        => openFile(Path.Combine(context.MapsetPath, path), watch);
+    /// <remarks> Dispose of the returned <see cref="Stream"/> as soon as possible. </remarks>
+    public Stream OpenMapsetFile(string path, bool watch = true) => openFile(Path.Combine(context.MapsetPath, path), watch);
 
     FileStream openFile(string path, bool watch)
     {
@@ -184,64 +182,68 @@ public abstract class StoryboardObjectGenerator : Script
         return Misc.WithRetries(() => File.OpenRead(path));
     }
 
-#endregion
+    #endregion
 
-#region Random
+    #region Random
 
-    /// <summary />
+    /// <summary/>
     [Group("Common"), Description("Changes the result of Random(...) calls."), Configurable]
-    
     public int RandomSeed;
 
     FastRandom rnd;
 
-    /// <summary> Gets a random integer between <paramref name="minValue" /> and <paramref name="maxValue" />. </summary>
+    /// <summary> Gets a random integer between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
     public int Random(int minValue, int maxValue) => rnd.Next(minValue, maxValue);
 
-    /// <summary> Gets a random integer between 0 and <paramref name="maxValue" />. </summary>
+    /// <summary> Gets a random integer between 0 and <paramref name="maxValue"/>. </summary>
     public int Random(int maxValue) => rnd.Next(maxValue);
 
     /// <summary>
-    ///     Gets a random double-precision floating-point number between <paramref name="minValue" /> and
-    ///     <paramref name="maxValue" />.
+    ///     Gets a random double-precision floating-point number between <paramref name="minValue"/> and
+    ///     <paramref name="maxValue"/>.
     /// </summary>
     public double Random(double minValue, double maxValue) => minValue + (maxValue - minValue) * rnd.NextDouble();
 
-    /// <summary> Gets a random double-precision floating-point number between 0 and <paramref name="maxValue" />. </summary>
+    /// <summary> Gets a random double-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
     public double Random(double maxValue) => rnd.NextDouble() * maxValue;
 
     /// <summary>
-    ///     Gets a random single-precision floating-point number between <paramref name="minValue" /> and
-    ///     <paramref name="maxValue" />.
+    ///     Gets a random single-precision floating-point number between <paramref name="minValue"/> and
+    ///     <paramref name="maxValue"/>.
     /// </summary>
     public float Random(float minValue, float maxValue) => (float)(minValue + (maxValue - minValue) * rnd.NextDouble());
 
-    /// <summary> Gets a random single-precision floating-point number between 0 and <paramref name="maxValue" />. </summary>
+    /// <summary> Gets a random single-precision floating-point number between 0 and <paramref name="maxValue"/>. </summary>
     public float Random(float maxValue) => (float)(rnd.NextDouble() * maxValue);
 
-#endregion
+    #endregion
 
-#region Audio
+    #region Audio
 
     ///<summary> Gets the audio duration of the beatmap in milliseconds. </summary>
     public float AudioDuration => context.AudioDuration;
 
-    /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time" />, with default magnitudes. </summary>
+    /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with default magnitudes. </summary>
     public float[] GetFft(float time, string path = null, bool splitChannels = false)
     {
         if (path is not null) AddDependency(path);
         return context.GetFft(time, path, splitChannels);
     }
 
-    /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time" />, with the given amount of magnitudes. </summary>
-    public float[] GetFft(float time, int magnitudes, string path = null, OsbEasing easing = OsbEasing.None,
+    /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
+    public float[] GetFft(float time,
+        int magnitudes,
+        string path = null,
+        OsbEasing easing = OsbEasing.None,
         float frequencyCutOff = 0)
     {
         var fft = GetFft(time, path);
         if (magnitudes == fft.Length && easing is OsbEasing.None) return fft;
 
-        var usedFftLength = frequencyCutOff > 0
-            ? (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) : fft.Length;
+        var usedFftLength = frequencyCutOff > 0 ?
+            (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
+            fft.Length;
+
         var resultFft = GC.AllocateUninitializedArray<float>(magnitudes);
 
         var baseIndex = 0;
@@ -260,9 +262,9 @@ public abstract class StoryboardObjectGenerator : Script
         return resultFft;
     }
 
-#endregion
+    #endregion
 
-#region Subtitles
+    #region Subtitles
 
     static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
     internal readonly Dictionary<string, FontGenerator> fonts = [];
@@ -273,48 +275,49 @@ public abstract class StoryboardObjectGenerator : Script
         context.AddDependency(Path.Combine(context.ProjectPath, path));
         return Path.GetExtension(path) switch
         {
-            ".srt" => srt.Parse(path), ".ssa" or ".ass" => ass.Parse(path), ".sbv" => sbv.Parse(path),
+            ".srt" => srt.Parse(path),
+            ".ssa" or ".ass" => ass.Parse(path),
+            ".sbv" => sbv.Parse(path),
             _ => throw new NotSupportedException($"{Path.GetExtension(path)} isn't a supported subtitle format")
         };
     }
 
-    /// <summary> Returns a <see cref="FontGenerator" /> to create and use textures. </summary>
+    /// <summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
     /// <param name="directory"> The path to the font file. </param>
-    /// <param name="description"> A <see cref="FontDescription" /> class with information of the texture. </param>
-    /// <param name="effects"> A list of font effects, such as <see cref="FontGlow" />. </param>
+    /// <param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
+    /// <param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
     public FontGenerator LoadFont(string directory, FontDescription description, params FontEffect[] effects)
         => LoadFont(directory, false, description, effects);
 
-    /// <summary> Returns a <see cref="FontGenerator" /> to create and use textures. </summary>
+    /// <summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
     /// <param name="directory"> The relative path to place the font textures. </param>
     /// <param name="asAsset"> Output textures in the asset library directory. </param>
-    /// <param name="description"> A <see cref="FontDescription" /> class with information of the texture. </param>
-    /// <param name="effects"> A list of font effects, such as <see cref="FontGlow" />. </param>
-    /// <exception cref="InvalidOperationException" />
-    public FontGenerator LoadFont(string directory, bool asAsset, FontDescription description,
-        params FontEffect[] effects)
+    /// <param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
+    /// <param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
+    /// <exception cref="InvalidOperationException"/>
+    public FontGenerator LoadFont(string directory, bool asAsset, FontDescription description, params FontEffect[] effects)
     {
         var assetDirectory = asAsset ? context.ProjectAssetPath : context.MapsetPath;
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));
 
         if (fonts.ContainsKey(fontDirectory))
             throw new InvalidOperationException($"This effect already generated a font inside \"{fontDirectory}\"");
+
         if (Directory.Exists(fontDirectory))
             foreach (var file in Directory.EnumerateFiles(fontDirectory, "*.png"))
                 PathHelper.SafeDelete(file);
-        else
-            Directory.CreateDirectory(fontDirectory);
+        else Directory.CreateDirectory(fontDirectory);
 
         FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
         fonts[fontDirectory] = fontGenerator;
         return fontGenerator;
     }
 
-#endregion
+    #endregion
 
-#region Configuration
+    #region Configuration
 
-    /// <summary />
+    /// <summary/>
     public void UpdateConfiguration(EffectConfig config)
     {
         if (context is not null) throw new InvalidOperationException();
@@ -337,8 +340,7 @@ public abstract class StoryboardObjectGenerator : Script
                     var value = enumValues.GetValue(i);
                     allowedValues[i] = new()
                     {
-                        Name = value.ToString(),
-                        Value = Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture)
+                        Name = value.ToString(), Value = Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture)
                     };
                 }
             }
@@ -346,10 +348,9 @@ public abstract class StoryboardObjectGenerator : Script
             try
             {
                 var displayName = configurableField.Attribute.DisplayName;
-                var initialValue = Convert.ChangeType(configurableField.InitialValue, fieldType,
-                    CultureInfo.InvariantCulture);
-                config.UpdateField(field.Name, displayName, configurableField.Description, configurableField.Order,
-                    fieldType, initialValue, allowedValues, configurableField.BeginsGroup);
+                var initialValue = Convert.ChangeType(configurableField.InitialValue, fieldType, CultureInfo.InvariantCulture);
+                config.UpdateField(field.Name, displayName, configurableField.Description, configurableField.Order, fieldType,
+                    initialValue, allowedValues, configurableField.BeginsGroup);
 
                 var value = config.GetValue(field.Name);
                 field.SetValue(this, value);
@@ -365,7 +366,7 @@ public abstract class StoryboardObjectGenerator : Script
         remainingFieldNames.ForEach(config.RemoveField);
     }
 
-    /// <summary />
+    /// <summary/>
     public void ApplyConfiguration(EffectConfig config)
     {
         if (context is not null) throw new InvalidOperationException();
@@ -382,8 +383,11 @@ public abstract class StoryboardObjectGenerator : Script
             }
     }
 
-    struct ConfigurableField(
-        FieldInfo field, ConfigurableAttribute attribute, object initialValue, string beginsGroup, string description,
+    struct ConfigurableField(FieldInfo field,
+        ConfigurableAttribute attribute,
+        object initialValue,
+        string beginsGroup,
+        string description,
         int order)
     {
         internal readonly FieldInfo Field = field;
@@ -393,5 +397,5 @@ public abstract class StoryboardObjectGenerator : Script
         internal readonly int Order = order;
     }
 
-#endregion
+    #endregion
 }

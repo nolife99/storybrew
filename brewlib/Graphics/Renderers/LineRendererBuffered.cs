@@ -37,8 +37,10 @@ public unsafe class LineRendererBuffered : LineRenderer
     public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0) : this(
         PrimitiveStreamerUtil<Int128>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
-    public LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer, Shader shader,
-        int maxLinesPerBatch, int primitiveBufferSize)
+    public LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
+        Shader shader,
+        int maxLinesPerBatch,
+        int primitiveBufferSize)
     {
         if (shader is null)
         {
@@ -57,6 +59,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     }
 
     public Shader Shader => ownsShader ? null : shader;
+
     public Camera Camera
     {
         get => camera;
@@ -68,6 +71,7 @@ public unsafe class LineRendererBuffered : LineRenderer
             camera = value;
         }
     }
+
     public Matrix4x4 TransformMatrix
     {
         get => transformMatrix;
@@ -137,8 +141,13 @@ public unsafe class LineRendererBuffered : LineRenderer
         ++RenderedLineCount;
         ++linesInBatch;
     }
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-#region Default Shader
+    #region Default Shader
 
     public static Shader CreateDefaultShader()
     {
@@ -147,23 +156,18 @@ public unsafe class LineRendererBuffered : LineRenderer
         var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
         var color = sb.AddVarying("vec4");
 
-        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
-            new Assign(sb.GlPosition,
-                () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
-                }, 1)"));
+        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)), new Assign(
+            sb.GlPosition, () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
+            }, 1)"));
+
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref}"));
 
         return sb.Build();
     }
 
-#endregion
+    #endregion
 
     ~LineRendererBuffered() => Dispose(false);
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     void Dispose(bool disposing)
     {
         if (disposed) return;

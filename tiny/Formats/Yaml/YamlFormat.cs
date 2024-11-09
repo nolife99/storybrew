@@ -10,9 +10,12 @@ public class YamlFormat : Format<YamlTokenType>
 
     static readonly RegexTokenizer<YamlTokenType>.Definition[] definitions =
     [
-        new(YamlTokenType.Indent, "^(  )+", 0), new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
-        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""), new(YamlTokenType.ArrayIndicator, "- "),
-        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"), new(YamlTokenType.Word, "[^\\s:]+"),
+        new(YamlTokenType.Indent, "^(  )+", 0),
+        new(YamlTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
+        new(YamlTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),
+        new(YamlTokenType.ArrayIndicator, "- "),
+        new(YamlTokenType.Property, "([^\\s:-][^\\s:]*) *:"),
+        new(YamlTokenType.Word, "[^\\s:]+"),
         new(YamlTokenType.EndLine, "\n")
     ];
 
@@ -49,12 +52,10 @@ public class YamlFormat : Format<YamlTokenType>
             if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
             var key = property.Key;
-            if (key.Contains(' ') || key.Contains(':') || key.StartsWith('-'))
-                key = "\"" + YamlUtil.EscapeString(key) + "\"";
+            if (key.Contains(' ') || key.Contains(':') || key.StartsWith('-')) key = "\"" + YamlUtil.EscapeString(key) + "\"";
 
             var value = property.Value;
-            if (value.IsEmpty)
-                writer.WriteLine(key + ":");
+            if (value.IsEmpty) writer.WriteLine(key + ":");
             else if (value.IsInline)
             {
                 writer.Write(key + ": ");
@@ -79,8 +80,7 @@ public class YamlFormat : Format<YamlTokenType>
         {
             if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
-            if (token.IsEmpty)
-                writer.WriteLine("- ");
+            if (token.IsEmpty) writer.WriteLine("- ");
             else if (token.IsInline)
             {
                 writer.Write("- ");
@@ -140,8 +140,7 @@ public class YamlFormat : Format<YamlTokenType>
                 break;
             case TinyTokenType.Array:
             case TinyTokenType.Object:
-            case TinyTokenType.Invalid:
-                throw new InvalidDataException(type.ToString());
+            case TinyTokenType.Invalid: throw new InvalidDataException(type.ToString());
             default: throw new NotImplementedException(type.ToString());
         }
     }

@@ -2,13 +2,12 @@
 
 using osuTK.Graphics.OpenGL;
 
-public class PrimitiveStreamerBufferData<TPrimitive>(
-    VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes)
-    where TPrimitive : unmanaged
+public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
+    int minRenderableVertexCount,
+    ushort[] indexes = null)
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes) where TPrimitive : unmanaged
 {
-    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount,
-        bool canBuffer = false)
+    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false)
     {
         GL.BufferData(BufferTarget.ArrayBuffer, count * PrimitiveSize, (nint)primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;

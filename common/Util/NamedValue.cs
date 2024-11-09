@@ -1,10 +1,10 @@
 ﻿namespace StorybrewCommon.Util;
 
 #pragma warning disable CS1591
-public struct NamedValue
+public readonly struct NamedValue
 {
-    public string Name;
-    public object Value;
+    public string Name { get; init; }
+    public object Value { get; init; }
 
-    public readonly override string ToString() => Name;
+    public override string ToString() => Name;
 }

@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 
 /// <summary> A font outline effect. </summary>
-/// <remarks> Creates a new <see cref="FontOutline" /> descriptor with information about an outlining effect. </remarks>
+/// <remarks> Creates a new <see cref="FontOutline"/> descriptor with information about an outlining effect. </remarks>
 /// <param name="thickness"> The thickness of the outline. </param>
 /// <param name="color"> The color of the outline. </param>
 public class FontOutline(int thickness = 1, FontColor color = default) : FontEffect
@@ -17,13 +17,13 @@ public class FontOutline(int thickness = 1, FontColor color = default) : FontEff
     ///<summary> The color of the outline. </summary>
     public FontColor Color => color;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool Overlay => false;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SizeF Measure => new(Thickness * diagonal * 2, Thickness * diagonal * 2);
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
         if (Thickness < 1) return;
@@ -32,6 +32,7 @@ public class FontOutline(int thickness = 1, FontColor color = default) : FontEff
         using (Pen outlinePen = new(Color)) outlined.Widen(outlinePen);
 
         using Pen pen = new(Color, thickness) { LineJoin = LineJoin.Round };
+
         textGraphics.DrawPath(pen, outlined);
     }
 }

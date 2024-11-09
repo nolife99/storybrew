@@ -17,6 +17,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
     float value = .5f;
 
     public override Vector2 MinSize => bar.MinSize;
+
     public override Vector2 PreferredSize
         => new(Math.Max(200, bar.PreferredSize.X), Math.Max(preferredHeight, bar.PreferredSize.Y));
 
@@ -32,13 +33,10 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
             OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
     }
+
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(StyleName);
 
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = Unsafe.Unbox<float>(value);
-    }
+    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<float>(value); }
 
     public event EventHandler OnValueChanged;
 

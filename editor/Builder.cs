@@ -18,6 +18,7 @@ public static class Builder
     {
         var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{
             RuntimeInformation.RuntimeIdentifier}.zip";
+
         var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
 
         try
@@ -47,8 +48,10 @@ public static class Builder
 
         foreach (var path in Directory.EnumerateFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
             addFile(archive, path, appDirectory);
+
         foreach (var path in Directory.EnumerateFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly))
             addFile(archive, path, appDirectory);
+
         foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
             addFile(archive, path, scriptsDirectory, "scripts");
     }

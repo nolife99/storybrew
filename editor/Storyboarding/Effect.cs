@@ -98,8 +98,7 @@ public abstract class Effect : IDisposable
             Project.LayerManager.Replace(placeHolderLayer, newLayers);
             placeHolderLayer = null;
         }
-        else
-            Project.LayerManager.Replace(layers, newLayers);
+        else Project.LayerManager.Replace(layers, newLayers);
 
         layers = newLayers;
         refreshLayerNames();
@@ -116,11 +115,10 @@ public abstract class Effect : IDisposable
 
     public abstract void Update();
 
-    void refreshLayerNames()
-        => layers.ForEach(layer
-            => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})");
+    void refreshLayerNames() => layers.ForEach(layer
+        => layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})");
 
-#region IDisposable Support
+    #region IDisposable Support
 
     public bool Disposed;
 
@@ -137,7 +135,7 @@ public abstract class Effect : IDisposable
 
     public void Dispose() => Dispose(true);
 
-#endregion
+    #endregion
 }
 
 public enum EffectStatus

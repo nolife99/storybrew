@@ -18,12 +18,12 @@ public class Widget(WidgetManager manager) : IDisposable
 {
     static int nextId;
     public readonly int Id = nextId++;
-
-    string styleName, tooltip;
     Drawable background = NullDrawable.Instance, foreground = NullDrawable.Instance;
     bool clipChildren, displayed = true, hoverable = true;
 
     public float Opacity = 1;
+
+    string styleName, tooltip;
     public WidgetManager Manager => manager;
 
     public bool Displayed
@@ -37,6 +37,7 @@ public class Widget(WidgetManager manager) : IDisposable
             if (hoverable) manager.RefreshHover();
         }
     }
+
     public bool Visible => displayed && (Parent is null || Parent.Visible);
 
     public bool Hoverable
@@ -49,6 +50,7 @@ public class Widget(WidgetManager manager) : IDisposable
             if (Visible) manager.RefreshHover();
         }
     }
+
     public bool ClipChildren
     {
         get => clipChildren;
@@ -59,6 +61,7 @@ public class Widget(WidgetManager manager) : IDisposable
             if (Visible && hoverable) manager.RefreshHover();
         }
     }
+
     public string StyleName
     {
         get => styleName;
@@ -69,6 +72,7 @@ public class Widget(WidgetManager manager) : IDisposable
             RefreshStyle();
         }
     }
+
     public Drawable Background
     {
         get => background;
@@ -79,6 +83,7 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateLayout();
         }
     }
+
     public Drawable Foreground
     {
         get => foreground;
@@ -89,6 +94,7 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateLayout();
         }
     }
+
     public string Tooltip
     {
         get => tooltip;
@@ -105,6 +111,7 @@ public class Widget(WidgetManager manager) : IDisposable
             else Manager.RegisterTooltip(this, tooltip);
         }
     }
+
     public event EventHandler OnDisplayedChanged;
 
     public Widget GetWidgetAt(float x, float y)
@@ -121,6 +128,7 @@ public class Widget(WidgetManager manager) : IDisposable
             var result = children[i].GetWidgetAt(x, y);
             if (result is not null) return result;
         }
+
         return overThis ? this : null;
     }
     public void Draw(DrawContext drawContext, float parentOpacity)
@@ -144,7 +152,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public override string ToString() => $"{GetType().Name} {StyleName} #{Id} {Width}x{Height}";
 
-#region Styling
+    #region Styling
 
     protected virtual WidgetStyle Style => Manager.Skin.GetStyle<WidgetStyle>(StyleName);
 
@@ -176,16 +184,18 @@ public class Widget(WidgetManager manager) : IDisposable
             sb.Append(" #");
             sb.Append(modifier);
         }
+
         return sb.ToString();
     }
 
-#endregion
+    #endregion
 
-#region Parenting
+    #region Parenting
 
     public Widget Parent { get; private set; }
 
     readonly List<Widget> children = [];
+
     public IEnumerable<Widget> Children
     {
         get => children;
@@ -201,8 +211,7 @@ public class Widget(WidgetManager manager) : IDisposable
         if (children.Contains(widget)) return;
 
         if (widget == this) throw new InvalidOperationException("Cannot parent a widget to itself");
-        if (widget.HasDescendant(this))
-            throw new InvalidOperationException("Cannot recursively parent a widget to itself");
+        if (widget.HasDescendant(this)) throw new InvalidOperationException("Cannot recursively parent a widget to itself");
 
         widget.Parent?.Remove(widget);
         children.Add(widget);
@@ -237,9 +246,9 @@ public class Widget(WidgetManager manager) : IDisposable
         for (var ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent) yield return ancestor;
     }
 
-#endregion
+    #endregion
 
-#region Placement
+    #region Placement
 
     Vector2 offset, size, absolutePosition;
     BoxAlignment anchorFrom = BoxAlignment.TopLeft, anchorTo = BoxAlignment.TopLeft;
@@ -254,6 +263,7 @@ public class Widget(WidgetManager manager) : IDisposable
             manager.InvalidateAnchors();
         }
     }
+
     public Vector2 Size
     {
         get => size;
@@ -264,16 +274,11 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateLayout();
         }
     }
-    public float Width
-    {
-        get => Size.X;
-        set => Size = Size with { X = value };
-    }
-    public float Height
-    {
-        get => Size.Y;
-        set => Size = Size with { Y = value };
-    }
+
+    public float Width { get => Size.X; set => Size = Size with { X = value }; }
+
+    public float Height { get => Size.Y; set => Size = Size with { Y = value }; }
+
     public Vector2 AbsolutePosition
     {
         get
@@ -282,9 +287,11 @@ public class Widget(WidgetManager manager) : IDisposable
             return absolutePosition;
         }
     }
+
     public RectangleF Bounds => new(AbsolutePosition.X, AbsolutePosition.Y, Size.X, Size.Y);
 
     Widget anchorTarget;
+
     public Widget AnchorTarget
     {
         get => anchorTarget;
@@ -295,6 +302,7 @@ public class Widget(WidgetManager manager) : IDisposable
             manager.InvalidateAnchors();
         }
     }
+
     public BoxAlignment AnchorFrom
     {
         get => anchorFrom;
@@ -305,6 +313,7 @@ public class Widget(WidgetManager manager) : IDisposable
             manager.InvalidateAnchors();
         }
     }
+
     public BoxAlignment AnchorTo
     {
         get => anchorTo;
@@ -324,8 +333,9 @@ public class Widget(WidgetManager manager) : IDisposable
         {
             anchoringIteration = iteration;
             var actualAnchorTarget =
-                anchorTarget is not null && (anchorTarget.Parent is not null || anchorTarget == manager.Root)
-                    ? anchorTarget : Parent;
+                anchorTarget is not null && (anchorTarget.Parent is not null || anchorTarget == manager.Root) ?
+                    anchorTarget :
+                    Parent;
 
             if (actualAnchorTarget is not null)
             {
@@ -348,12 +358,15 @@ public class Widget(WidgetManager manager) : IDisposable
 
             absolutePosition = manager.SnapToPixel(absolutePosition);
         }
-        if (includeChildren) foreach (var child in children) child.UpdateAnchoring(iteration);
+
+        if (includeChildren)
+            foreach (var child in children)
+                child.UpdateAnchoring(iteration);
     }
 
-#endregion
+    #endregion
 
-#region Layout
+    #region Layout
 
     public virtual Vector2 MinSize => PreferredSize;
     public virtual Vector2 MaxSize => Vector2.Zero;
@@ -362,6 +375,7 @@ public class Widget(WidgetManager manager) : IDisposable
     public Vector2 DefaultSize = Vector2.Zero;
 
     bool canGrow = true;
+
     public bool CanGrow
     {
         get => canGrow;
@@ -372,6 +386,7 @@ public class Widget(WidgetManager manager) : IDisposable
             InvalidateAncestorLayout();
         }
     }
+
     public bool NeedsLayout { get; private set; } = true;
 
     public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
@@ -414,9 +429,9 @@ public class Widget(WidgetManager manager) : IDisposable
     }
     protected virtual void Layout() => NeedsLayout = false;
 
-#endregion
+    #endregion
 
-#region Events
+    #region Events
 
     public delegate void WidgetEventHandler<TEventArgs>(WidgetEvent evt, TEventArgs e);
     public delegate bool HandleableWidgetEventHandler<TEventArgs>(WidgetEvent evt, TEventArgs e);
@@ -470,8 +485,7 @@ public class Widget(WidgetManager manager) : IDisposable
     }
 
     public event HandleableWidgetEventHandler<GamepadButtonEventArgs> OnGamepadButtonDown;
-    public bool NotifyGamepadButtonDown(WidgetEvent evt, GamepadButtonEventArgs e)
-        => Raise(OnGamepadButtonDown, evt, e);
+    public bool NotifyGamepadButtonDown(WidgetEvent evt, GamepadButtonEventArgs e) => Raise(OnGamepadButtonDown, evt, e);
 
     public event WidgetEventHandler<GamepadButtonEventArgs> OnGamepadButtonUp;
     public bool NotifyGamepadButtonUp(WidgetEvent evt, GamepadButtonEventArgs e)
@@ -505,16 +519,16 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public event EventHandler OnDisposed;
 
-#endregion
+    #endregion
 
-#region Drag and Drop
+    #region Drag and Drop
 
     public Func<object> GetDragData;
     public Func<object, bool> HandleDrop;
 
-#endregion
+    #endregion
 
-#region IDisposable Support
+    #region IDisposable Support
 
     public bool IsDisposed { get; private set; }
 
@@ -541,5 +555,5 @@ public class Widget(WidgetManager manager) : IDisposable
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

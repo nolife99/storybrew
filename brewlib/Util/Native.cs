@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 public static unsafe partial class Native
 {
     /// <summary>
-    ///     <see href="https://learn.microsoft.com/en-us/windows/win32/winmsg/window-reference" />
+    ///     <see href="https://learn.microsoft.com/en-us/windows/win32/winmsg/window-reference"/>
     /// </summary>
     public enum Message : uint
     {
@@ -27,7 +27,7 @@ public static unsafe partial class Native
         ///         </item>
         ///     </list>
         /// </remarks>
-        /// <returns>If successful, the menu handle for the current window; otherwise <see cref="nint.Zero" />.</returns>
+        /// <returns>If successful, the menu handle for the current window; otherwise <see cref="nint.Zero"/>.</returns>
         GetHMenu = 0x01E1,
 
         /// <summary>
@@ -62,7 +62,7 @@ public static unsafe partial class Native
         ///         </item>
         ///     </list>
         /// </remarks>
-        /// <returns>A handle to the font used by the control, or <see cref="nint.Zero" /> if the control is using the system font.</returns>
+        /// <returns>A handle to the font used by the control, or <see cref="nint.Zero"/> if the control is using the system font.</returns>
         GetFont = 0x0031,
 
         /// <summary>Copies the text that corresponds to a window into a buffer provided by the caller.</summary>
@@ -72,7 +72,7 @@ public static unsafe partial class Native
         ///             <term>wParam</term>
         ///             <description>
         ///                 The maximum number of characters to be copied, including the terminating null character.
-        ///                 <para />
+        ///                 <para/>
         ///                 ANSI applications may have the string in the buffer reduced in size (to a minimum of half that of the
         ///                 wParam value) due to conversion from ANSI to Unicode.
         ///             </description>
@@ -108,7 +108,7 @@ public static unsafe partial class Native
         ///         <item>
         ///             <term>wParam</term>
         ///             <description>
-        ///                 A handle to the font. If <see langword="null" />, the control uses the default system font to
+        ///                 A handle to the font. If <see langword="null"/>, the control uses the default system font to
         ///                 draw text.
         ///             </description>
         ///         </item>
@@ -117,7 +117,7 @@ public static unsafe partial class Native
         ///             <description>
         ///                 The low-order word of <c>lParam</c> specifies whether the control should be redrawn immediately upon
         ///                 setting the font.
-        ///                 If <see langword="true" />, the control redraws itself.
+        ///                 If <see langword="true"/>, the control redraws itself.
         ///             </description>
         ///         </item>
         ///     </list>
@@ -150,7 +150,7 @@ public static unsafe partial class Native
         ///         <item>
         ///             <term>lParam</term>
         ///             <description>
-        ///                 A handle to the new large or small icon. If <see langword="null" />, the icon indicated by
+        ///                 A handle to the new large or small icon. If <see langword="null"/>, the icon indicated by
         ///                 <c>wParam</c> is removed.
         ///             </description>
         ///         </item>
@@ -158,7 +158,7 @@ public static unsafe partial class Native
         /// </remarks>
         /// <returns>
         ///     A handle to the previous large or small icon, depending on the value of <c>wParam</c>.
-        ///     It is <see cref="nint.Zero" /> if the window previously had no icon of the type indicated by <c>wParam</c>.
+        ///     It is <see cref="nint.Zero"/> if the window previously had no icon of the type indicated by <c>wParam</c>.
         /// </returns>
         SetIcon = 0x0080,
 
@@ -179,7 +179,7 @@ public static unsafe partial class Native
         SetText = 0x000C
     }
 
-#region Memory
+    #region Memory
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void CopyMemory(nint source, nint destination, int count)
@@ -197,15 +197,15 @@ public static unsafe partial class Native
     public static void CopyMemory(void* source, nint destination, int count)
         => Unsafe.CopyBlock(destination.ToPointer(), source, (uint)count);
 
-#endregion
+    #endregion
 
-#region Win32
+    #region Win32
 
     [LibraryImport("user32")] private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
 
     /// <summary> Sends the specified message to a window or windows. </summary>
     /// <remarks>
-    ///     Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage" />
+    ///     Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage"/>
     /// </remarks>
     /// <typeparam name="TWide"> The type of the first parameter, which is platform-dependent. </typeparam>
     /// <typeparam name="TLong"> The type of the second parameter, which is platform-dependent. </typeparam>
@@ -215,10 +215,9 @@ public static unsafe partial class Native
     /// <param name="wParam"> The first value to wrap within the message. </param>
     /// <param name="lParam"> The second value to wrap within the message. </param>
     /// <returns> The result from the call procedure. </returns>
-    /// <exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint" />. </exception>
-    /// <exception cref="OverflowException"> Type can't be represented as <see cref="nint" />. </exception>
-    public static TResult
-        SendMessage<TWide, TLong, TResult>(nint windowHandle, Message message, TWide wParam, TLong lParam)
+    /// <exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint"/>. </exception>
+    /// <exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
+    public static TResult SendMessage<TWide, TLong, TResult>(nint windowHandle, Message message, TWide wParam, TLong lParam)
         where TWide : INumberBase<TWide> where TLong : INumberBase<TLong> where TResult : INumberBase<TResult>
         => TResult.CreateChecked(SendMessageW(windowHandle, (uint)message, nuint.CreateChecked(wParam),
             nint.CreateChecked(lParam)));
@@ -236,14 +235,11 @@ public static unsafe partial class Native
     private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
-    public static nint MainWindowHandle
-        => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static void InitializeHandle(string windowTitle, nint hWndFallback)
-    {
-        handle = hWndFallback;
+    public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-        /* var cont = true;
+    public static void InitializeHandle(string windowTitle, nint hWndFallback) => handle = hWndFallback;
+    /* var cont = true;
         var threads = Process.GetCurrentProcess().Threads;
 
         for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, _) =>
@@ -262,7 +258,6 @@ public static unsafe partial class Native
             }
             return cont;
         }, 0); */
-    }
 
-#endregion
+    #endregion
 }

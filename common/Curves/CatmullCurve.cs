@@ -4,19 +4,19 @@ using System.Collections.Generic;
 using System.Numerics;
 
 /// <summary> Represents a Catmull-Rom spline curve. </summary>
-/// <remarks> Constructs a Catmull-Rom curve from given control points <paramref name="points" />. </remarks>
+/// <remarks> Constructs a Catmull-Rom curve from given control points <paramref name="points"/>. </remarks>
 public class CatmullCurve(Vector2[] points, int precision) : BaseCurve
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override Vector2 StartPosition => points[0];
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override Vector2 EndPosition => points[^1];
 
     ///<summary> Whether the curve is straight (linear). </summary>
     public bool IsLinear => points.Length < 3;
 
-    /// <summary />
+    /// <summary/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
         var accuracy = points.Length > 2 ? precision : 0;
@@ -28,10 +28,8 @@ public class CatmullCurve(Vector2[] points, int precision) : BaseCurve
         for (var lineIndex = 0; lineIndex < points.Length - 1; ++lineIndex)
         for (var i = 1f; i <= linePrecision; ++i)
         {
-            var nextPosition = positionAtDelta(
-                lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex], 
-                points[lineIndex], points[lineIndex + 1], 
-                lineIndex < points.Length - 2 ? points[lineIndex + 2] : points[lineIndex + 1], 
+            var nextPosition = positionAtDelta(lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex], points[lineIndex],
+                points[lineIndex + 1], lineIndex < points.Length - 2 ? points[lineIndex + 2] : points[lineIndex + 1],
                 i / (linePrecision + 1));
 
             distance += (nextPosition - previousPosition).Length();

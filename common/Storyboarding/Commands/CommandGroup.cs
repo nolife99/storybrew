@@ -20,6 +20,7 @@ public abstract class CommandGroup : ICommand
             return commandsStartTime;
         }
     }
+
     public float CommandsEndTime
     {
         get
@@ -29,6 +30,7 @@ public abstract class CommandGroup : ICommand
             return commandsEndTime;
         }
     }
+
     public float CommandsDuration
     {
         get
@@ -41,6 +43,7 @@ public abstract class CommandGroup : ICommand
                 commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
                 commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
             }
+
             return commandsEndTime - commandsStartTime;
         }
     }
@@ -51,8 +54,7 @@ public abstract class CommandGroup : ICommand
     public int Cost => commands.Count;
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform,
-        int indentation)
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
     {
         if (commands.Count <= 0) return;
 

@@ -42,8 +42,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     StoryboardDrawable storyboardDrawable, previewDrawable;
     Vector2 storyboardPosition;
 
-    Button timeB, divisorB, audioTimeB, mapB, fitB, playB, projFolderB, mapFolderB, saveB, exportB, settingB, effectB,
-        layerB;
+    Button timeB, divisorB, audioTimeB, mapB, fitB, playB, projFolderB, mapFolderB, saveB, exportB, settingB, effectB, layerB;
 
     TimelineSlider timeline;
     TimeSourceExtender timeSource;
@@ -60,6 +59,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             AnchorFrom = BoxAlignment.Centre,
             AnchorTo = BoxAlignment.Centre
         });
+
         WidgetManager.Root.Add(bottomLeftLayout = new(WidgetManager)
         {
             AnchorTarget = WidgetManager.Root,
@@ -94,10 +94,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
                 },
-                timeline = new(WidgetManager, proj)
-                {
-                    AnchorFrom = BoxAlignment.Centre, SnapDivisor = defaultDiv
-                },
+                timeline = new(WidgetManager, proj) { AnchorFrom = BoxAlignment.Centre, SnapDivisor = defaultDiv },
                 mapB = new(WidgetManager)
                 {
                     StyleName = "icon",
@@ -125,6 +122,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 }
             ]
         });
+
         WidgetManager.Root.Add(bottomRightLayout = new(WidgetManager)
         {
             AnchorTarget = WidgetManager.Root,
@@ -192,6 +190,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 }
             ]
         });
+
         WidgetManager.Root.Add(effectUI = new(WidgetManager)
         {
             AnchorTarget = WidgetManager.Root,
@@ -200,6 +199,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Offset = new(16, 16),
             Displayed = false
         });
+
         effectUI.OnDisplayedChanged += (_, _) => resizeStoryboard();
 
         WidgetManager.Root.Add(effects = new(WidgetManager, proj, effectUI)
@@ -209,13 +209,13 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             AnchorTo = BoxAlignment.TopRight,
             Offset = new(-16, 0)
         });
+
         effects.OnEffectPreselect += effect =>
         {
-            if (effect is not null)
-                timeline.Highlight(effect.StartTime, effect.EndTime);
-            else
-                timeline.ClearHighlight();
+            if (effect is not null) timeline.Highlight(effect.StartTime, effect.EndTime);
+            else timeline.ClearHighlight();
         };
+
         effects.OnEffectSelected += effect => timeline.Value = effect.StartTime * .001f;
 
         WidgetManager.Root.Add(layers = new(WidgetManager, proj.LayerManager)
@@ -225,13 +225,13 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             AnchorTo = BoxAlignment.TopRight,
             Offset = new(-16, 0)
         });
+
         layers.OnLayerPreselect += layer =>
         {
-            if (layer is not null)
-                timeline.Highlight(layer.StartTime, layer.EndTime);
-            else
-                timeline.ClearHighlight();
+            if (layer is not null) timeline.Highlight(layer.StartTime, layer.EndTime);
+            else timeline.ClearHighlight();
         };
+
         layers.OnLayerSelected += layer => timeline.Value = layer.StartTime * .001f;
 
         WidgetManager.Root.Add(settings = new(WidgetManager, proj)
@@ -241,6 +241,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             AnchorTo = BoxAlignment.TopRight,
             Offset = new(-16, 0)
         });
+
         WidgetManager.Root.Add(statusLayout = new(WidgetManager)
         {
             StyleName = "tooltip",
@@ -253,13 +254,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Displayed = false,
             Children =
             [
-                statusIcon = new(WidgetManager)
-                {
-                    StyleName = "icon", AnchorFrom = BoxAlignment.Left, CanGrow = false
-                },
+                statusIcon = new(WidgetManager) { StyleName = "icon", AnchorFrom = BoxAlignment.Left, CanGrow = false },
                 statusMessage = new(WidgetManager) { AnchorFrom = BoxAlignment.Left }
             ]
         });
+
         WidgetManager.Root.Add(warningsLabel = new(WidgetManager)
         {
             StyleName = "tooltip",
@@ -268,6 +267,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             AnchorTo = BoxAlignment.TopLeft,
             Offset = new(0, -8)
         });
+
         WidgetManager.Root.Add(previewContainer = new(WidgetManager)
         {
             StyleName = "storyboardPreview",
@@ -279,6 +279,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Displayed = false,
             Size = new(256, 144)
         });
+
         timeB.OnClick += (_, _) => Manager.ShowPrompt("Skip to...", value =>
         {
             if (float.TryParse(value, out var time)) timeline.Value = time * .001f;
@@ -292,10 +293,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         mapB.OnClick += (_, _) =>
         {
             if (proj.MapsetManager.BeatmapCount > 2)
-                Manager.ShowContextMenu("Select a beatmap", map => proj.SelectBeatmap(map.Id, map.Name), proj.MapsetManager.Beatmaps);
-            else
-                proj.SwitchMainBeatmap();
+                Manager.ShowContextMenu("Select a beatmap", map => proj.SelectBeatmap(map.Id, map.Name),
+                    proj.MapsetManager.Beatmaps);
+            else proj.SwitchMainBeatmap();
         };
+
         Program.Settings.FitStoryboard.Bind(fitB, resizeStoryboard);
         playB.OnClick += (_, _) => timeSource.Playing = !timeSource.Playing;
 
@@ -309,6 +311,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             timeline.SnapDivisor = defaultDiv;
             divisorB.Text = $"1/{defaultDiv}";
         };
+
         audioTimeB.OnClick += (_, e) =>
         {
             switch (e)
@@ -345,21 +348,19 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             var path = Path.GetFullPath(proj.ProjectFolderPath);
             if (Directory.Exists(path)) PathHelper.OpenExplorer(path);
         };
+
         mapFolderB.OnClick += (_, e) =>
         {
             var path = Path.GetFullPath(proj.MapsetPath);
-            if (e is MouseButton.Right || !Directory.Exists(path))
-                changeMapsetFolder();
-            else
-                PathHelper.OpenExplorer(path);
+            if (e is MouseButton.Right || !Directory.Exists(path)) changeMapsetFolder();
+            else PathHelper.OpenExplorer(path);
         };
+
         saveB.OnClick += (_, _) => saveProject();
         exportB.OnClick += (_, e) =>
         {
-            if (e is MouseButton.Right)
-                exportProjectAll();
-            else
-                exportProject();
+            if (e is MouseButton.Right) exportProjectAll();
+            else exportProject();
         };
 
         proj.OnMapsetPathChanged += project_OnMapsetPathChanged;
@@ -378,24 +379,24 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             case Key.Right:
                 if (e.Control)
                 {
-                    var nextBookmark = proj.MainBeatmap.Bookmarks.FirstOrDefault(bookmark
-                        => bookmark > MathF.Round(timeline.Value * 1000) + 50);
+                    var nextBookmark =
+                        proj.MainBeatmap.Bookmarks.FirstOrDefault(bookmark => bookmark > MathF.Round(timeline.Value * 1000) + 50);
+
                     if (nextBookmark != 0) timeline.Value = nextBookmark * .001f;
                 }
-                else
-                    timeline.Scroll(e.Shift ? 4 : 1);
+                else timeline.Scroll(e.Shift ? 4 : 1);
 
                 return true;
 
             case Key.Left:
                 if (e.Control)
                 {
-                    var prevBookmark = proj.MainBeatmap.Bookmarks.LastOrDefault(bookmark
-                        => bookmark < MathF.Round(timeline.Value * 1000) - 500);
+                    var prevBookmark =
+                        proj.MainBeatmap.Bookmarks.LastOrDefault(bookmark => bookmark < MathF.Round(timeline.Value * 1000) - 500);
+
                     if (prevBookmark != 0) timeline.Value = prevBookmark * .001f;
                 }
-                else
-                    timeline.Scroll(e.Shift ? -4 : -1);
+                else timeline.Scroll(e.Shift ? -4 : -1);
 
                 return true;
         }
@@ -424,11 +425,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     if (e.Shift)
                         ClipboardHelper.SetText(TimeSpan.FromMilliseconds(timeSource.Current * 1000)
                             .ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
-                    else if (e.Alt)
-                        ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
-                    else
-                        ClipboardHelper.SetText(
-                            (timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
+                    else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
+                    else ClipboardHelper.SetText((timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
+
                     return true;
                 }
 
@@ -471,33 +470,33 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     void saveProject() => Manager.AsyncLoading("Saving", () => Program.RunMainThread(() => proj.Save()));
     void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
     void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
+    {
+        var first = true;
+        var mainBeatmap = proj.MainBeatmap;
+
+        foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
         {
-            var first = true;
-            var mainBeatmap = proj.MainBeatmap;
-
-            foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
+            Program.RunMainThread(() => proj.MainBeatmap = map);
+            while (proj.EffectsStatus != EffectStatus.Ready)
             {
-                Program.RunMainThread(() => proj.MainBeatmap = map);
-                while (proj.EffectsStatus != EffectStatus.Ready)
+                switch (proj.EffectsStatus)
                 {
-                    switch (proj.EffectsStatus)
-                    {
-                        case EffectStatus.CompilationFailed:
-                        case EffectStatus.ExecutionFailed:
-                        case EffectStatus.LoadingFailed:
-                            throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
-                            })\nCheck its log for the actual error.");
-                    }
-
-                    Thread.Sleep(200);
+                    case EffectStatus.CompilationFailed:
+                    case EffectStatus.ExecutionFailed:
+                    case EffectStatus.LoadingFailed:
+                        throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
+                        })\nCheck its log for the actual error.");
                 }
 
-                proj.ExportToOsb(first);
-                first = false;
+                Thread.Sleep(200);
             }
 
-            if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
-        });
+            proj.ExportToOsb(first);
+            first = false;
+        }
+
+        if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
+    });
 
     public override void FixedUpdate()
     {
@@ -522,8 +521,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         if (timeSource.Playing)
         {
-            if (timeline.RepeatStart != timeline.RepeatEnd &&
-                (time < timeline.RepeatStart - .005f || timeline.RepeatEnd < time))
+            if (timeline.RepeatStart != timeline.RepeatEnd && (time < timeline.RepeatStart - .005f || timeline.RepeatEnd < time))
                 pendingSeek = time = timeline.RepeatStart;
             else if (timeSource.Current > timeline.MaxValue)
             {
@@ -535,8 +533,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         timeline.SetValueSilent(time);
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
-            timeB.Text = Manager.GetContext<Editor>().InputManager.Alt
-                ? $"{storyboardPosition.X:000}, {storyboardPosition.Y:000}" : $"{(time < 0 ? "-" : "")}{
+            timeB.Text = Manager.GetContext<Editor>().InputManager.Alt ?
+                $"{storyboardPosition.X:000}, {storyboardPosition.Y:000}" :
+                $"{(time < 0 ? "-" : "")}{
                     (int)Math.Abs(time / 60):00}:{(int)Math.Abs(time % 60):00}:{(int)Math.Abs(time * 1000) % 1000:000}";
 
             warningsLabel.Text = buildWarningMessage();
@@ -550,8 +549,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         storyboardDrawable.Time = time;
         storyboardDrawable.Clip = !Manager.GetContext<Editor>().InputManager.Alt;
         if (previewContainer.Visible)
-            previewDrawable.Time =
-                timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
+            previewDrawable.Time = timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
     }
 
     string buildWarningMessage()
@@ -562,12 +560,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var activeSprites = stats.SpriteCount;
         if (proj.DisplayDebugWarning && activeSprites < 1500)
             warnings.AppendLine(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites");
-        else if (activeSprites >= 1500)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {activeSprites:n0} Sprites");
+        else if (activeSprites >= 1500) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {activeSprites:n0} Sprites");
 
         var batches = proj.FrameStats.Batches;
-        if (proj.DisplayDebugWarning && batches < 500)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"{batches:0} Batches");
+        if (proj.DisplayDebugWarning && batches < 500) warnings.AppendLine(CultureInfo.InvariantCulture, $"{batches:0} Batches");
         else if (batches >= 500) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {batches:0} Batches");
 
         var commands = stats.CommandCount;
@@ -577,6 +573,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands,
             unusedRatio = unusedCommands / Math.Max(1, commands);
+
         if (unusedCommands >= 5000 && unusedRatio > .5f || unusedCommands >= 10000 && unusedRatio > .2f ||
             unusedCommands >= 15000)
             warnings.AppendLine(CultureInfo.InvariantCulture,
@@ -638,8 +635,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             storyboardContainer.Offset = new(effectUI.Bounds.Right / 2, 0);
             parentSize.X -= effectUI.Bounds.Right;
         }
-        else
-            storyboardContainer.Offset = Vector2.Zero;
+        else storyboardContainer.Offset = Vector2.Zero;
 
         storyboardContainer.Size = fitB.Checked ? parentSize with { Y = parentSize.X * 9 / 16 } : parentSize;
     }
@@ -650,20 +646,19 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         timeline.MaxValue = Math.Max(audio.Duration, proj.EndTime * .001f);
     }
 
-    public override void Close()
-        => withSavePrompt(() =>
+    public override void Close() => withSavePrompt(() =>
+    {
+        proj.StopEffectUpdates();
+        Manager.AsyncLoading("Stopping effect updates", () =>
         {
-            proj.StopEffectUpdates();
-            Manager.AsyncLoading("Stopping effect updates", () =>
-            {
-                proj.CancelEffectUpdates(true);
-                Program.Schedule(() => Manager.GetContext<Editor>().Restart());
-            });
-
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            GCSettings.LatencyMode = GCLatencyMode.Batch;
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+            proj.CancelEffectUpdates(true);
+            Program.Schedule(() => Manager.GetContext<Editor>().Restart());
         });
+
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GCSettings.LatencyMode = GCLatencyMode.Batch;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+    });
 
     void withSavePrompt(Action action)
     {
@@ -673,8 +668,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 proj.Save();
                 Program.Schedule(action);
             }), action, true);
-        else
-            action();
+        else action();
     }
 
     void refreshAudio()
@@ -709,6 +703,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 statusIcon.Icon = IconFont.BugReport;
                 statusMessage.Text =
                     "An effect failed to execute.\nClick the Effects tab and the bug icon to see the error message.";
+
                 statusLayout.Pack(1024 - bottomRightLayout.Width - 24);
                 statusLayout.Displayed = true;
                 break;
@@ -726,7 +721,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         }
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     protected override void Dispose(bool disposing)
@@ -748,5 +743,5 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

@@ -16,9 +16,27 @@ public interface SpriteRenderer : Renderer, IDisposable
     int BufferWaitCount { get; }
     int LargestBatch { get; }
 
-    void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY,
-        float rotation, Color color);
+    void Draw(Texture2dRegion texture,
+        float x,
+        float y,
+        float originX,
+        float originY,
+        float scaleX,
+        float scaleY,
+        float rotation,
+        Color color);
 
-    void Draw(Texture2dRegion texture, float x, float y, float originX, float originY, float scaleX, float scaleY,
-        float rotation, Color color, float textureX0, float textureY0, float textureX1, float textureY1);
+    void Draw(Texture2dRegion texture,
+        float x,
+        float y,
+        float originX,
+        float originY,
+        float scaleX,
+        float scaleY,
+        float rotation,
+        Color color,
+        float textureX0,
+        float textureY0,
+        float textureX1,
+        float textureY1);
 }

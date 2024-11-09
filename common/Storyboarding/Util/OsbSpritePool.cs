@@ -6,14 +6,16 @@ using BrewLib.Util;
 using CommandValues;
 
 /// <summary> Provides a way to optimize filesize and creates a way for sprites to be reused. </summary>
-/// <remarks> Constructs a <see cref="OsbSpritePool" />. </remarks>
-/// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
+/// <remarks> Constructs a <see cref="OsbSpritePool"/>. </remarks>
+/// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
 /// <param name="path"> Image path of the available sprite. </param>
-/// <param name="origin"> <see cref="OsbOrigin" /> of the sprites in the pool. </param>
-/// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprites in the pool. </param>
+/// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
+/// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
 /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
-public class OsbSpritePool(
-    StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position,
+public class OsbSpritePool(StoryboardSegment segment,
+    string path,
+    OsbOrigin origin,
+    CommandPosition position,
     Action<OsbSprite, float, float> attributes = null) : IDisposable
 {
     readonly List<PooledSprite> pooled = [];
@@ -23,63 +25,66 @@ public class OsbSpritePool(
     ///<summary> The maximum duration for a sprite to be pooled. </summary>
     public int MaxPoolDuration;
 
-    /// <summary> Constructs a <see cref="OsbSpritePool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
+    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprites in the pool. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin,
+    public OsbSpritePool(StoryboardSegment segment,
+        string path,
+        OsbOrigin origin,
         Action<OsbSprite, float, float> attributes = null) : this(segment, path, origin, default, attributes) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
+    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprites in the pool. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null) :
-        this(segment, path, OsbOrigin.Centre, position, attributes) { }
+    public OsbSpritePool(StoryboardSegment segment,
+        string path,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes = null) : this(segment, path, OsbOrigin.Centre, position, attributes) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
+    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
     /// <param name="path"> Image path of the sprite to be used. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> attributes = null) :
-        this(segment, path, OsbOrigin.Centre, default, attributes) { }
+    public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> attributes = null) : this(
+        segment, path, OsbOrigin.Centre, default, attributes) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
+    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
     /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprites in the pool. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprites in the pool. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position,
-        bool additive) : this(segment, path, origin, position, additive ? (pS, sT, _) => pS.Additive(sT) : null) { }
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, bool additive) :
+        this(segment, path, origin, position, additive ? (pS, sT, _) => pS.Additive(sT) : null) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
+    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
     /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprites in the pool. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive) : this(segment, path,
-        origin, default, additive) { }
-
-    /// <summary> Constructs a <see cref="OsbSpritePool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
-    /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprites in the pool. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position, bool additive) : this(
-        segment, path, OsbOrigin.Centre, position, additive) { }
-
-    /// <summary> Constructs a <see cref="OsbSpritePool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the pool. </param>
-    /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, bool additive) : this(segment, path, OsbOrigin.Centre,
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive) : this(segment, path, origin,
         default, additive) { }
 
-    /// <inheritdoc />
+    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
+    /// <param name="path"> Image path of the sprite to be used. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position, bool additive) : this(segment, path,
+        OsbOrigin.Centre, position, additive) { }
+
+    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
+    /// <param name="path"> Image path of the sprite to be used. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbSpritePool(StoryboardSegment segment, string path, bool additive) : this(segment, path, OsbOrigin.Centre, default,
+        additive) { }
+
+    /// <inheritdoc/>
     public void Dispose() => Dispose(true);
 
     /// <summary> Gets an available sprite from the sprite pool. </summary>
@@ -90,9 +95,9 @@ public class OsbSpritePool(
     {
         PooledSprite result = null;
         pooled.ForEach(sprite => { result = sprite; },
-            sprite => (MaxPoolDuration > 0
-                ? sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration
-                : sprite.EndTime <= startTime) && (result is null || sprite.StartTime < result.StartTime));
+            sprite => (MaxPoolDuration > 0 ?
+                sprite.EndTime <= startTime && startTime < sprite.StartTime + MaxPoolDuration :
+                sprite.EndTime <= startTime) && (result is null || sprite.StartTime < result.StartTime));
 
         if (result is not null)
         {
@@ -107,8 +112,7 @@ public class OsbSpritePool(
     }
 
 #pragma warning disable CS1591
-    protected virtual OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin,
-        CommandPosition position)
+    protected virtual OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
 #pragma warning restore CS1591
         => segment.CreateSprite(path, origin, position);
 
@@ -142,8 +146,8 @@ public class OsbSpritePool(
 ///     performance.
 /// </summary>
 /// <remarks> Includes support for animation pools. </remarks>
-/// <remarks> Constructs a <see cref="OsbSpritePools" />. </remarks>
-/// <param name="segment"> <see cref="StoryboardSegment" /> of the sprites in the pool. </param>
+/// <remarks> Constructs a <see cref="OsbSpritePools"/>. </remarks>
+/// <param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
 public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 {
     readonly Dictionary<int, OsbAnimationPool> animationPools = [];
@@ -164,42 +168,52 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         }
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Dispose() => Dispose(true);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, OsbOrigin origin, CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null, int group = 0)
-        => getPool(path, origin, position, attributes, group).Get(startTime, endTime);
+    public OsbSprite Get(float startTime,
+        float endTime,
+        string path,
+        OsbOrigin origin,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => getPool(path, origin, position, attributes, group).Get(startTime, endTime);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null, int group = 0)
-        => Get(startTime, endTime, path, OsbOrigin.Centre, position, attributes, group);
+    public OsbSprite Get(float startTime,
+        float endTime,
+        string path,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, position, attributes, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, OsbOrigin origin,
-        Action<OsbSprite, float, float> attributes = null, int group = 0)
-        => Get(startTime, endTime, path, origin, default, attributes, group);
+    public OsbSprite Get(float startTime,
+        float endTime,
+        string path,
+        OsbOrigin origin,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => Get(startTime, endTime, path, origin, default, attributes, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
@@ -207,28 +221,35 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the sprite. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, Action<OsbSprite, float, float> attributes = null,
+    public OsbSprite Get(float startTime,
+        float endTime,
+        string path,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => Get(startTime, endTime, path, OsbOrigin.Centre, default, attributes, group);
+
+    /// <summary> Gets an available sprite from the sprite pools. </summary>
+    /// <param name="startTime"> The start time of the sprite. </param>
+    /// <param name="endTime"> The end time of the sprite. </param>
+    /// <param name="path"> Image path of the sprite. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    /// <param name="group"> Pool group to get a sprite from. </param>
+    public OsbSprite Get(float startTime,
+        float endTime,
+        string path,
+        OsbOrigin origin,
+        CommandPosition position,
+        bool additive,
         int group = 0)
-        => Get(startTime, endTime, path, OsbOrigin.Centre, default, attributes, group);
-
-    /// <summary> Gets an available sprite from the sprite pools. </summary>
-    /// <param name="startTime"> The start time of the sprite. </param>
-    /// <param name="endTime"> The end time of the sprite. </param>
-    /// <param name="path"> Image path of the sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, OsbOrigin origin, CommandPosition position,
-        bool additive, int group = 0)
         => Get(startTime, endTime, path, origin, position, additive ? (pS, sT, _) => pS.Additive(sT) : null, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbSprite Get(float startTime, float endTime, string path, OsbOrigin origin, bool additive, int group = 0)
         => Get(startTime, endTime, path, origin, default, additive, group);
@@ -237,18 +258,17 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the  sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbSprite Get(float startTime, float endTime, string path, CommandPosition position, bool additive,
-        int group = 0)
+    public OsbSprite Get(float startTime, float endTime, string path, CommandPosition position, bool additive, int group = 0)
         => Get(startTime, endTime, path, OsbOrigin.Centre, position, additive, group);
 
     /// <summary> Gets an available sprite from the sprite pools. </summary>
     /// <param name="startTime"> The start time of the sprite. </param>
     /// <param name="endTime"> The end time of the sprite. </param>
     /// <param name="path"> Image path of the sprite. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
     public OsbSprite Get(float startTime, float endTime, string path, bool additive, int group = 0)
         => Get(startTime, endTime, path, OsbOrigin.Centre, default, additive, group);
@@ -259,16 +279,22 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, OsbOrigin origin, CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null, int group = 0)
-        => (OsbAnimation)getPool(path, frameCount, frameDelay, loopType, origin, position, attributes, group)
-            .Get(startTime, endTime);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => (OsbAnimation)getPool(path, frameCount, frameDelay, loopType, origin, position, attributes, group)
+        .Get(startTime, endTime);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -276,13 +302,19 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, float, float> attributes = null, int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, attributes, group);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, attributes, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -290,15 +322,20 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, CommandPosition position, Action<OsbSprite, float, float> attributes = null,
-        int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, attributes,
-            group);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, attributes,
+        group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -306,13 +343,18 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
     /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, Action<OsbSprite, float, float> attributes = null, int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, attributes,
-            group);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        Action<OsbSprite, float, float> attributes = null,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, attributes,
+        group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -320,15 +362,22 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, OsbOrigin origin, CommandPosition position, bool additive, int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, position,
-            additive ? (pS, sT, _) => pS.Additive(sT) : null, group);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        CommandPosition position,
+        bool additive,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, position,
+        additive ? (pS, sT, _) => pS.Additive(sT) : null, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -336,13 +385,19 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the sprite. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprite. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, OsbOrigin origin, bool additive, int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, additive, group);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        bool additive,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, default, additive, group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -350,13 +405,20 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition" /> position of the sprite. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
+    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprite. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, CommandPosition position, bool additive, int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, additive, group);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        CommandPosition position,
+        bool additive,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, additive,
+        group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -364,24 +426,40 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="path"> Image path of the animation. </param>
     /// <param name="frameCount"> Frame count of the animation. </param>
     /// <param name="frameDelay"> Delay between frames of the animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the animation. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the animation. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
     /// <param name="group"> Pool group to get a sprite from. </param>
-    public OsbAnimation Get(float startTime, float endTime, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, bool additive, int group = 0)
-        => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive, group);
+    public OsbAnimation Get(float startTime,
+        float endTime,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        bool additive,
+        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive,
+        group);
 
-    OsbSpritePool getPool(string path, OsbOrigin origin, CommandPosition position,
-        Action<OsbSprite, float, float> attributes, int group)
+    OsbSpritePool getPool(string path,
+        OsbOrigin origin,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes,
+        int group)
     {
         var key = getKey(path, origin, attributes, group);
         if (!pools.TryGetValue(key, out var pool))
             pools[key] = pool = new(segment, path, origin, position, attributes) { MaxPoolDuration = maxPoolDuration };
+
         return pool;
     }
 
-    OsbAnimationPool getPool(string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin,
-        CommandPosition position, Action<OsbSprite, float, float> attributes, int group)
+    OsbAnimationPool getPool(string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes,
+        int group)
     {
         var key = getKey(path, frameCount, frameDelay, loopType, origin, attributes, group);
         if (!animationPools.TryGetValue(key, out var pool))
@@ -397,8 +475,13 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     static int getKey(string path, OsbOrigin origin, Action<OsbSprite, float, float> action, int group)
         => HashCode.Combine(path, origin, action?.Target, action?.Method.Name, group);
 
-    static int getKey(string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin,
-        Action<OsbSprite, float, float> action, int group)
+    static int getKey(string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        Action<OsbSprite, float, float> action,
+        int group)
         => HashCode.Combine(path, frameCount, frameDelay, loopType, origin, action?.Target, action?.Method.Name, group);
 
     void Dispose(bool disposing)
@@ -421,106 +504,140 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 ///     Provides a way to optimize filesize and creates a way for animations to be reused at a minor cost of
 ///     performance.
 /// </summary>
-/// <remarks> Constructs a new <see cref="OsbAnimationPool" />. </remarks>
-/// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+/// <remarks> Constructs a new <see cref="OsbAnimationPool"/>. </remarks>
+/// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
 /// <param name="path"> Image path of the available sprite. </param>
-/// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-/// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-/// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
-/// <param name="origin"> <see cref="OsbOrigin" /> of the <see cref="OsbAnimation" />. </param>
-/// <param name="position"> Initial position of the <see cref="OsbAnimation" />. </param>
+/// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+/// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+/// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+/// <param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
+/// <param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
 /// <param name="attributes"> Commands to be run on each animation in the pool. </param>
-public sealed class OsbAnimationPool(
-    StoryboardSegment segment, string path, int frameCount, float frameDelay, OsbLoopType loopType, OsbOrigin origin,
-    CommandPosition position, Action<OsbSprite, float, float> attributes = null)
-    : OsbSpritePool(segment, path, origin, position, attributes)
+public sealed class OsbAnimationPool(StoryboardSegment segment,
+    string path,
+    int frameCount,
+    float frameDelay,
+    OsbLoopType loopType,
+    OsbOrigin origin,
+    CommandPosition position,
+    Action<OsbSprite, float, float> attributes = null) : OsbSpritePool(segment, path, origin, position, attributes)
 {
-    /// <summary> Constructs a new <see cref="OsbAnimationPool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+    /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the <see cref="OsbAnimation" />. </param>
+    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
     /// <param name="attributes"> Commands to be run on each animation in the pool. </param>
-    public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, OsbOrigin origin, Action<OsbSprite, float, float> attributes = null) : this(segment, path,
-        frameCount, frameDelay, loopType, origin, default, attributes) { }
+    public OsbAnimationPool(StoryboardSegment segment,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        Action<OsbSprite, float, float> attributes = null) : this(segment, path, frameCount, frameDelay, loopType, origin,
+        default, attributes) { }
 
-    /// <summary> Constructs a new <see cref="OsbAnimationPool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+    /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="position"> Initial position of the <see cref="OsbAnimation" />. </param>
+    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
     /// <param name="attributes"> Commands to be run on each animation in the pool. </param>
-    public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, CommandPosition position, Action<OsbSprite, float, float> attributes = null) : this(
-        segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, attributes) { }
+    public OsbAnimationPool(StoryboardSegment segment,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes = null) : this(segment, path, frameCount, frameDelay, loopType,
+        OsbOrigin.Centre, position, attributes) { }
 
-    /// <summary> Constructs a new <see cref="OsbAnimationPool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+    /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
+    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
     /// <param name="attributes"> Commands to be run on each animation in the pool. </param>
-    public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, Action<OsbSprite, float, float> attributes = null) : this(segment, path, frameCount,
-        frameDelay, loopType, OsbOrigin.Centre, default, attributes) { }
+    public OsbAnimationPool(StoryboardSegment segment,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        Action<OsbSprite, float, float> attributes = null) : this(segment, path, frameCount, frameDelay, loopType,
+        OsbOrigin.Centre, default, attributes) { }
 
-    /// <summary> Constructs a new <see cref="OsbAnimationPool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+    /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="position"> Initial position of the <see cref="OsbAnimation" />. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, OsbOrigin origin, CommandPosition position, bool additive) : this(segment, path,
-        frameCount, frameDelay, loopType, origin, position, additive ? (pA, sT, _) => pA.Additive(sT) : null) { }
+    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbAnimationPool(StoryboardSegment segment,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        CommandPosition position,
+        bool additive) : this(segment, path, frameCount, frameDelay, loopType, origin, position,
+        additive ? (pA, sT, _) => pA.Additive(sT) : null) { }
 
-    /// <summary> Constructs a new <see cref="OsbAnimationPool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+    /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, OsbOrigin origin, bool additive) : this(segment, path, frameCount, frameDelay, loopType,
-        origin, default, additive) { }
+    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbAnimationPool(StoryboardSegment segment,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        bool additive) : this(segment, path, frameCount, frameDelay, loopType, origin, default, additive) { }
 
-    /// <summary> Constructs a new <see cref="OsbAnimationPool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+    /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="position"> Initial position of the <see cref="OsbAnimation" />. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, CommandPosition position, bool additive) : this(segment, path, frameCount, frameDelay,
-        loopType, OsbOrigin.Centre, position, additive) { }
+    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbAnimationPool(StoryboardSegment segment,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        CommandPosition position,
+        bool additive) : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, additive) { }
 
-    /// <summary> Constructs a new <see cref="OsbAnimationPool" />. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment" /> of the <see cref="OsbAnimationPool" />. </param>
+    /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
+    /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
     /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation" />. </param>
-    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation" />. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of the <see cref="OsbAnimation" />. </param>
-    /// <param name="additive"> <see cref="bool" /> toggle for the sprite's additive blending. </param>
-    public OsbAnimationPool(StoryboardSegment segment, string path, int frameCount, float frameDelay,
-        OsbLoopType loopType, bool additive) : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre,
-        default, additive) { }
+    /// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
+    /// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
+    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    public OsbAnimationPool(StoryboardSegment segment,
+        string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        bool additive) : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive) { }
 
 #pragma warning disable CS1591
-    protected override OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin,
-        CommandPosition position)
+    protected override OsbSprite CreateSprite(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position)
 #pragma warning restore CS1591
         => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);
 }

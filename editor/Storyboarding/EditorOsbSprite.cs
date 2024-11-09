@@ -18,17 +18,27 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
     public static readonly RenderStates AlphaBlendStates = new(),
         AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity,
-        StoryboardTransform transform, Project project, FrameStats frameStats)
-        => Draw(drawContext, camera, bounds, opacity, transform, project, frameStats, this);
+    public void Draw(DrawContext drawContext,
+        Camera camera,
+        RectangleF bounds,
+        float opacity,
+        StoryboardTransform transform,
+        Project project,
+        FrameStats frameStats) => Draw(drawContext, camera, bounds, opacity, transform, project, frameStats, this);
 
     public void PostProcess()
     {
         if (InGroup) EndGroup();
     }
 
-    public static void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity,
-        StoryboardTransform transform, Project project, FrameStats frameStats, OsbSprite sprite)
+    public static void Draw(DrawContext drawContext,
+        Camera camera,
+        RectangleF bounds,
+        float opacity,
+        StoryboardTransform transform,
+        Project project,
+        FrameStats frameStats,
+        OsbSprite sprite)
     {
         var time = project.DisplayTime * 1000;
         var texturePath = sprite.GetTexturePathAt(time);
@@ -77,10 +87,8 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         var origin = GetOriginVector(sprite.Origin, texture.Width, texture.Height);
         if (transform is not null)
         {
-            if (sprite.HasMoveXYCommands)
-                position = transform.ApplyToPositionXY(position);
-            else
-                position = transform.ApplyToPosition(position);
+            position = sprite.HasMoveXYCommands ? transform.ApplyToPositionXY(position) : transform.ApplyToPosition(position);
+
             if (sprite.HasRotateCommands) rotation = transform.ApplyToRotation(rotation);
             if (sprite.HasScalingCommands) scale = transform.ApplyToScale(scale);
         }
@@ -97,8 +105,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
                 var aabb = spriteBox.GetAABB();
                 var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);
 
-                var intersectionArea = size.X * size.Y *
-                    (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
+                var intersectionArea = size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
                 frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
                     OsuHitObject.WidescreenStoryboardArea;
             }
@@ -118,11 +125,9 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         }
 
         var boundsScaling = bounds.Height / 480;
-        DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates).Draw(
-            texture, bounds.Left + bounds.Width * .5f + (position.X - 320) * boundsScaling,
-            bounds.Top + position.Y * boundsScaling, origin.X, origin.Y, scale.X * boundsScaling,
-            scale.Y * boundsScaling, rotation,
-            ((Color)sprite.ColorAt(time)).LerpColor(System.Drawing.Color.Black, project.DimFactor)
-            .WithOpacity(opacity * fade));
+        DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates).Draw(texture,
+            bounds.Left + bounds.Width * .5f + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
+            origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation,
+            ((Color)sprite.ColorAt(time)).LerpColor(System.Drawing.Color.Black, project.DimFactor).WithOpacity(opacity * fade));
     }
 }

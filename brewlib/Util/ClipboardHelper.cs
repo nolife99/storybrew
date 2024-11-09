@@ -10,8 +10,7 @@ public static class ClipboardHelper
     public static string GetText(TextDataFormat format = TextDataFormat.Text)
         => Misc.WithRetries(() => Clipboard.GetText(format), 500, false);
 
-    public static void SetData(string format, object data)
-        => Misc.WithRetries(() => Clipboard.SetData(format, data), 500, false);
+    public static void SetData(string format, object data) => Misc.WithRetries(() => Clipboard.SetData(format, data), 500, false);
 
     public static object GetData(string format) => Misc.WithRetries(() => Clipboard.GetData(format), 500, false);
 }

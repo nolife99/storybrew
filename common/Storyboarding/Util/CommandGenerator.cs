@@ -10,21 +10,20 @@ using Commands;
 using CommandValues;
 using Scripting;
 
-/// <summary> Generates commands on an <see cref="OsbSprite" /> based on the states of that sprite. </summary>
+/// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
 
-    readonly KeyframedValue<bool> flipH = new(InterpolatingFunctions.BoolFrom),
-        flipV = new(InterpolatingFunctions.BoolFrom), additive = new(InterpolatingFunctions.BoolFrom);
+    readonly KeyframedValue<bool> flipH = new(InterpolatingFunctions.BoolFrom), flipV = new(InterpolatingFunctions.BoolFrom),
+        additive = new(InterpolatingFunctions.BoolFrom);
 
     readonly KeyframedValue<CommandPosition> positions = new(InterpolatingFunctions.Position),
         finalPositions = new(InterpolatingFunctions.Position);
 
-    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle),
-        fades = new(InterpolatingFunctions.Float), finalRotations = new(InterpolatingFunctions.FloatAngle),
-        finalFades = new(InterpolatingFunctions.Float);
+    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle), fades = new(InterpolatingFunctions.Float),
+        finalRotations = new(InterpolatingFunctions.FloatAngle), finalFades = new(InterpolatingFunctions.Float);
 
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
@@ -58,13 +57,13 @@ public class CommandGenerator
     ///<summary> The tolerance threshold for scaling keyframe simplification. </summary>
     public float ScaleTolerance = 1;
 
-    /// <summary> Gets the <see cref="CommandGenerator" />'s start state. </summary>
+    /// <summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
     public State StartState => states.Count == 0 ? null : states[0];
 
-    /// <summary> Gets the <see cref="CommandGenerator" />'s end state. </summary>
+    /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     public State EndState => states.Count == 0 ? null : states[^1];
 
-    /// <summary> Adds a <see cref="State" /> to this instance that will be automatically sorted. </summary>
+    /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
     {
         var count = states.Count;
@@ -78,28 +77,31 @@ public class CommandGenerator
         if (i >= 0)
             while (i < count - 1 && states[i + 1].Time <= state.Time)
                 ++i;
-        else
-            i = ~i;
+        else i = ~i;
 
         states.Insert(i, state);
     }
 
     /// <summary> Generates commands on a sprite based on this generator's states. </summary>
-    /// <param name="sprite"> The <see cref="OsbSprite" /> to have commands generated on. </param>
-    /// <param name="action"> Encapsulates a group of commands to be generated on <paramref name="sprite" />. </param>
+    /// <param name="sprite"> The <see cref="OsbSprite"/> to have commands generated on. </param>
+    /// <param name="action"> Encapsulates a group of commands to be generated on <paramref name="sprite"/>. </param>
     /// <param name="startTime">
-    ///     The explicit start time of the command generation. Can be left <see langword="null" /> if
-    ///     <see cref="State.Time" /> is used.
+    ///     The explicit start time of the command generation. Can be left <see langword="null"/> if
+    ///     <see cref="State.Time"/> is used.
     /// </param>
     /// <param name="endTime">
-    ///     The explicit end time of the command generation. Can be left <see langword="null" /> if
-    ///     <see cref="State.Time" /> is used.
+    ///     The explicit end time of the command generation. Can be left <see langword="null"/> if
+    ///     <see cref="State.Time"/> is used.
     /// </param>
     /// <param name="timeOffset"> The time offset of the command times. </param>
-    /// <param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand" />. </param>
-    /// <returns> <see langword="true" /> if any commands were generated, else returns <see langword="false" />. </returns>
-    public bool GenerateCommands(OsbSprite sprite, Action<Action, OsbSprite> action = null, float? startTime = null,
-        float? endTime = null, float timeOffset = 0, bool loopable = false)
+    /// <param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
+    /// <returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
+    public bool GenerateCommands(OsbSprite sprite,
+        Action<Action, OsbSprite> action = null,
+        float? startTime = null,
+        float? endTime = null,
+        float timeOffset = 0,
+        bool loopable = false)
     {
         if (states.Count == 0) return false;
 
@@ -119,6 +121,7 @@ public class CommandGenerator
                 case false when isVisible:
                     if (!stateAdded && previousState is not null)
                         addKeyframes(previousState, loopable ? time : previousState.Time + timeOffset);
+
                     addKeyframes(state, time);
                     if (!stateAdded) stateAdded = true;
                     break;
@@ -128,10 +131,9 @@ public class CommandGenerator
                     break;
                 default:
                 {
-                    if (isVisible)
-                        addKeyframes(state, time);
-                    else
-                        stateAdded = false;
+                    if (isVisible) addKeyframes(state, time);
+                    else stateAdded = false;
+
                     break;
                 }
             }
@@ -143,10 +145,8 @@ public class CommandGenerator
         if (wasVisible) commitKeyframes(imageSize);
         if (everVisible)
         {
-            if (action is null)
-                convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable);
-            else
-                action(() => convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable), sprite);
+            if (action is null) convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable);
+            else action(() => convertToCommands(sprite, startTime, endTime, timeOffset, imageSize, loopable), sprite);
         }
 
         clearKeyframes();
@@ -177,8 +177,7 @@ public class CommandGenerator
         colors.TransferKeyframes(finalColors);
     }
 
-    void convertToCommands(OsbSprite sprite, float? startTime, float? endTime, float timeOffset, SizeF imageSize,
-        bool loopable)
+    void convertToCommands(OsbSprite sprite, float? startTime, float? endTime, float timeOffset, SizeF imageSize, bool loopable)
     {
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
@@ -198,32 +197,30 @@ public class CommandGenerator
                     sprite.MoveY(s.Time, e.Time, s.Value.Y, e.Value.Y);
                     sprite.InitialPosition = new(s.Value.X, 0);
                 }
-                else
-                    sprite.Move(s.Time, e.Time, s.Value, e.Value);
-            }, new(320, 240), p => new(MathF.Round(p.X, PositionDecimals), MathF.Round(p.Y, PositionDecimals)),
-            startState,
-            endState, loopable);
+                else sprite.Move(s.Time, e.Time, s.Value, e.Value);
+            }, new(320, 240), p => new(MathF.Round(p.X, PositionDecimals), MathF.Round(p.Y, PositionDecimals)), startState,
+            endState,
+            loopable);
 
         var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) > 1);
         finalScales.ForEachPair((s, e) =>
             {
-                if (vec)
-                    sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
-                else
-                    sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
-            }, Vector2.One, s => new(MathF.Round(s.X, ScaleDecimals), MathF.Round(s.Y, ScaleDecimals)), startState,
-            endState, loopable);
+                if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
+                else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
+            }, Vector2.One, s => new(MathF.Round(s.X, ScaleDecimals), MathF.Round(s.Y, ScaleDecimals)), startState, endState,
+            loopable);
 
         finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0,
             r => MathF.Round(r, RotationDecimals), startState, endState, loopable);
-        finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null,
-            startState, endState, loopable);
+
+        finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState,
+            endState, loopable);
+
         finalFades.ForEachPair((s, e) =>
         {
             // what the hell???
             if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 || s.Time == sprite.EndTime ||
-                s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0))
-                sprite.Fade(s.Time, e.Time, s.Value, e.Value);
+                s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0)) sprite.Fade(s.Time, e.Time, s.Value, e.Value);
         }, -1, o => MathF.Round(o, OpacityDecimals), startState, endState, loopable);
 
         flipH.ForEachFlag(sprite.FlipH);
@@ -267,12 +264,11 @@ public class CommandGenerator
         additive.Clear(true);
     }
 
-    internal static SizeF BitmapDimensions(string path)
-        => StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0)
-            .PhysicalDimension;
+    internal static SizeF BitmapDimensions(string path) => StoryboardObjectGenerator.Current
+        .GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).PhysicalDimension;
 }
 
-/// <summary> Defines all of an <see cref="OsbSprite" />'s states as a class. </summary>
+/// <summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
 public class State : IComparer<State>
 {
     ///<summary> Represents the additive toggle condition of this state. </summary>
@@ -305,12 +301,12 @@ public class State : IComparer<State>
     int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
 
     /// <summary>
-    ///     Determines the visibility of the sprite in the current <see cref="State" /> based on its image dimensions and
-    ///     <see cref="OsbOrigin" />.
+    ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and
+    ///     <see cref="OsbOrigin"/>.
     /// </summary>
     /// <returns>
-    ///     <see langword="true" /> if the sprite is visible within widescreen boundaries, else returns
-    ///     <see langword="false" />.
+    ///     <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns
+    ///     <see langword="false"/>.
     /// </returns>
     public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
@@ -318,9 +314,8 @@ public class State : IComparer<State>
         CommandScale scale = new(noGen ? (float)Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals),
             noGen ? (float)Scale.Y : MathF.Round(Scale.Y, generator.ScaleDecimals));
 
-        if (Additive && Color == CommandColor.Black ||
-            (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 || scale.X <= 0 || scale.Y <= 0)
-            return false;
+        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
+            scale.X <= 0 || scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
             new(noGen ? (float)Position.X : MathF.Round(Position.X, generator.PositionDecimals),

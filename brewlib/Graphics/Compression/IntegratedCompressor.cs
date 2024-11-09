@@ -52,8 +52,7 @@ public class IntegratedCompressor : ImageCompressor
             }
         }, TaskCreationOptions.LongRunning));
     }
-    protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy,
-        LosslessInputSettings lossless)
+    protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {
         var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
         StringBuilder str = new();
@@ -72,8 +71,7 @@ public class IntegratedCompressor : ImageCompressor
         else
         {
             var lvl = lossless?.OptimizationLevel ?? 4;
-            str.Append(CultureInfo.InvariantCulture,
-                $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
+            str.Append(CultureInfo.InvariantCulture, $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
             str.Append(CultureInfo.InvariantCulture, $" {lossless?.CustomInputArgs} ");
             str.Append(CultureInfo.InvariantCulture, $"−s -a {input}");
         }
@@ -86,8 +84,8 @@ public class IntegratedCompressor : ImageCompressor
 
         var utility = GetUtility();
         if (!File.Exists(utility))
-            File.WriteAllBytes(GetUtility(),
-                container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
+            File.WriteAllBytes(GetUtility(), container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
+
         toCleanup.Add(utility);
     }
     protected override async void Dispose(bool disposing)

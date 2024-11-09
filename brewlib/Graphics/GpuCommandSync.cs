@@ -31,6 +31,7 @@ public sealed class GpuCommandSync : IDisposable
             clearToIndex(i);
             return blocked;
         }
+
         return false;
     }
     public void LockRange(int index, int length) => syncRanges.Add(new(index, length));
@@ -98,7 +99,7 @@ public sealed class GpuCommandSync : IDisposable
                 }
         }
 
-#region IDisposable Support
+        #region IDisposable Support
 
         bool disposed;
         void Dispose(bool disposing)
@@ -116,10 +117,10 @@ public sealed class GpuCommandSync : IDisposable
             GC.SuppressFinalize(this);
         }
 
-#endregion
+        #endregion
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -131,5 +132,5 @@ public sealed class GpuCommandSync : IDisposable
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

@@ -49,6 +49,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
             OnStart();
             hasStarted = true;
         }
+
         if (IsExiting)
         {
             if (CurrentState is not State.FadingOut) OnTransitionOut();
@@ -133,7 +134,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
         }
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     public bool IsDisposed { get; private set; }
     protected virtual void Dispose(bool disposing)
@@ -144,5 +145,5 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     }
     public void Dispose() => Dispose(true);
 
-#endregion
+    #endregion
 }

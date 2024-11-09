@@ -51,7 +51,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         }
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -64,12 +64,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         disposed = true;
     }
 
-#endregion
+    #endregion
 
-#region Loading
+    #region Loading
 
-    public void Load(string filename, ResourceContainer resourceContainer = null)
-        => load(loadJson(filename, resourceContainer));
+    public void Load(string filename, ResourceContainer resourceContainer = null) => load(loadJson(filename, resourceContainer));
 
     void load(TinyObject data)
     {
@@ -152,6 +151,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
         var drawableB = (Drawable)Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type") ??
             throw new InvalidDataException($"Drawable '{data}' must declare a type")));
+
         parseFields(drawableB, data.Value<TinyObject>(), null, constants);
         return drawableB;
     }
@@ -180,14 +180,16 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         {
                             if (!styles.TryGetValue(implicitParentStyleName, out parentStyle) &&
                                 styleTypeObject.Value<TinyToken>(implicitParentStyleName) is not null)
-                                throw new InvalidDataException($"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
+                                throw new InvalidDataException(
+                                    $"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
 
                             parentStyle = GetStyle(styleType, implicitParentStyleName);
                         }
 
                         var parentName = styleObject.Value<string>("_parent");
                         if (parentName is not null && !styles.TryGetValue(parentName, out parentStyle))
-                            throw new InvalidDataException($"Parent style '{parentName}' style must be defined before '{styleName}'");
+                            throw new InvalidDataException(
+                                $"Parent style '{parentName}' style must be defined before '{styleName}'");
 
                         parseFields(style, styleObject, parentStyle, constants);
 
@@ -241,6 +243,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 }
                 else if (parent is not null) field.SetValue(skinnable, field.GetValue(parent));
             }
+
             type = type.BaseType;
         }
     }
@@ -256,6 +259,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
             else break;
         }
+
         return fieldData;
     }
     static T resolve<T>(TinyToken data, TinyObject constants) => resolveConstants(data, constants).Value<T>();
@@ -283,9 +287,10 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             if (fieldParsers.TryGetValue(fieldType, out var parser)) return parser;
             fieldType = fieldType.BaseType;
         }
+
         return null;
     }
-    
+
     static readonly Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new()
     {
         [typeof(string)] = (data, _, _) => data.Value<string>(),
@@ -299,6 +304,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         {
             if (data is TinyArray tinyArray)
                 return new Vector2(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants));
+
             throw new InvalidDataException($"Incorrect vector2 format: {data}");
         },
         [typeof(Color)] = (data, constants, _) =>
@@ -323,6 +329,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         (int)(resolve<float>(tinyArray[1], constants) * 255),
                         (int)(resolve<float>(tinyArray[2], constants) * 255))
                 };
+
             throw new InvalidDataException($"Incorrect color format: {data}");
         },
         [typeof(FourSide)] = (data, constants, _) =>
@@ -337,9 +344,10 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     _ => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
                         resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
                 };
+
             throw new InvalidDataException($"Incorrect four side format: {data}");
         }
     };
 
-#endregion
+    #endregion
 }

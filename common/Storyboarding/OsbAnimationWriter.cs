@@ -7,26 +7,31 @@ using Commands;
 using CommandValues;
 using Display;
 
-/// <summary> Base class for writing and exporting an <see cref="OsbAnimation" />. </summary>
-public class OsbAnimationWriter(
-    OsbAnimation animation, AnimatedValue<CommandPosition> move, AnimatedValue<CommandDecimal> moveX,
-    AnimatedValue<CommandDecimal> moveY, AnimatedValue<CommandDecimal> scale, AnimatedValue<CommandScale> scaleVec,
-    AnimatedValue<CommandDecimal> rotate, AnimatedValue<CommandDecimal> fade, AnimatedValue<CommandColor> color,
-    TextWriter writer, ExportSettings exportSettings, OsbLayer layer) : OsbSpriteWriter(animation, move, moveX, moveY,
-    scale, scaleVec, rotate, fade, color, writer, exportSettings, layer)
+/// <summary> Base class for writing and exporting an <see cref="OsbAnimation"/>. </summary>
+public class OsbAnimationWriter(OsbAnimation animation,
+    AnimatedValue<CommandPosition> move,
+    AnimatedValue<CommandDecimal> moveX,
+    AnimatedValue<CommandDecimal> moveY,
+    AnimatedValue<CommandDecimal> scale,
+    AnimatedValue<CommandScale> scaleVec,
+    AnimatedValue<CommandDecimal> rotate,
+    AnimatedValue<CommandDecimal> fade,
+    AnimatedValue<CommandColor> color,
+    TextWriter writer,
+    ExportSettings exportSettings,
+    OsbLayer layer) : OsbSpriteWriter(animation, move, moveX, moveY, scale, scaleVec, rotate, fade, color, writer, exportSettings,
+    layer)
 {
     readonly OsbAnimation animation = animation;
 
-    string getLastFramePath()
-        => Path.Combine(Path.GetDirectoryName(animation.TexturePath),
-            string.Concat(Path.GetFileNameWithoutExtension(animation.TexturePath), animation.FrameCount - 1,
-                Path.GetExtension(animation.TexturePath)));
+    string getLastFramePath() => Path.Combine(Path.GetDirectoryName(animation.TexturePath),
+        string.Concat(Path.GetFileNameWithoutExtension(animation.TexturePath), animation.FrameCount - 1,
+            Path.GetExtension(animation.TexturePath)));
 
 #pragma warning disable CS1591
     protected override OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
     {
-        if (this.animation.LoopType is OsbLoopType.LoopOnce &&
-            segment.Min(c => c.StartTime) >= this.animation.AnimationEndTime)
+        if (this.animation.LoopType is OsbLoopType.LoopOnce && segment.Min(c => c.StartTime) >= this.animation.AnimationEndTime)
         {
             OsbSprite sprite = new()
             {
@@ -62,8 +67,7 @@ public class OsbAnimationWriter(
             WriteHeaderCommon(sprite, transform);
             writer.WriteLine($",{animation.FrameCount},{frameDelay.ToString(exportSettings.NumberFormat)},{animation.LoopType}");
         }
-        else
-            base.WriteHeader(sprite, transform);
+        else base.WriteHeader(sprite, transform);
     }
 
     protected override HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)

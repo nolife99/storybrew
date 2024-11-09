@@ -3,13 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using Data;
 using osuTK.Graphics.OpenGL;
 using Tiny;
 using Tiny.Formats.Json;
-using Util;
 
 public class TextureOptions : IEquatable<TextureOptions>
 {
@@ -33,10 +31,9 @@ public class TextureOptions : IEquatable<TextureOptions>
     public TextureMinFilter TextureMinFilter = TextureMinFilter.Linear;
     public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge, TextureWrapT = TextureWrapMode.ClampToEdge;
 
-    public bool Equals(TextureOptions other)
-        => Srgb == other.Srgb && GenerateMipmaps == other.GenerateMipmaps && TextureLodBias == other.TextureLodBias &&
-            TextureMinFilter == other.TextureMinFilter && TextureMagFilter == other.TextureMagFilter &&
-            TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
+    public bool Equals(TextureOptions other) => Srgb == other.Srgb && GenerateMipmaps == other.GenerateMipmaps &&
+        TextureLodBias == other.TextureLodBias && TextureMinFilter == other.TextureMinFilter &&
+        TextureMagFilter == other.TextureMagFilter && TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
 
     public void ApplyParameters(TextureTarget target)
     {
@@ -54,9 +51,8 @@ public class TextureOptions : IEquatable<TextureOptions>
     public override int GetHashCode()
         => HashCode.Combine(TextureLodBias, TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
 
-    public static string GetOptionsFilename(string textureFilename)
-        => Path.Combine(Path.GetDirectoryName(textureFilename),
-            Path.GetFileNameWithoutExtension(textureFilename) + "-opt.json");
+    public static string GetOptionsFilename(string textureFilename) => Path.Combine(Path.GetDirectoryName(textureFilename),
+        Path.GetFileNameWithoutExtension(textureFilename) + "-opt.json");
 
     public static TextureOptions Load(string filename, ResourceContainer resourceContainer = null)
     {
@@ -98,6 +94,7 @@ public class TextureOptions : IEquatable<TextureOptions>
                     else Trace.TraceWarning($"No parser for {fieldType}");
                 }
             }
+
             type = type.BaseType;
         }
     }
@@ -109,6 +106,7 @@ public class TextureOptions : IEquatable<TextureOptions>
             if (fieldParsers.TryGetValue(fieldType, out var parser)) return parser;
             fieldType = fieldType.BaseType;
         }
+
         return null;
     }
 }

@@ -45,6 +45,7 @@ public class Vector2Picker : Widget, Field
                 }
             ]
         });
+
         updateWidgets();
 
         xTextbox.OnValueCommited += xTextbox_OnValueCommited;
@@ -68,11 +69,7 @@ public class Vector2Picker : Widget, Field
         }
     }
 
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = Unsafe.Unbox<CommandPosition>(value);
-    }
+    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<CommandPosition>(value); }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 

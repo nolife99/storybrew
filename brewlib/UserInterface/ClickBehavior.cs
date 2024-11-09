@@ -63,7 +63,7 @@ public sealed class ClickBehavior : IDisposable
         OnStateChanged?.Invoke(this, e);
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -81,5 +81,5 @@ public sealed class ClickBehavior : IDisposable
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

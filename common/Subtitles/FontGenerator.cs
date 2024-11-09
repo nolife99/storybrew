@@ -15,7 +15,7 @@ using Scripting;
 using Storyboarding;
 
 /// <summary> Stores information about a font image. </summary>
-/// <remarks> Creates a new <see cref="FontTexture" /> storing information of the texture. </remarks>
+/// <remarks> Creates a new <see cref="FontTexture"/> storing information of the texture. </remarks>
 /// <param name="path"> The path to the font texture. </param>
 /// <param name="offsetX"> The texture offset in X-units. </param>
 /// <param name="offsetY"> The texture offset in Y-units. </param>
@@ -24,13 +24,19 @@ using Storyboarding;
 /// <param name="width"> The actual width of the texture in pixels. </param>
 /// <param name="height"> The actual width of the texture in pixels. </param>
 /// <param name="paths"> The path data which comprises this font. </param>
-public class FontTexture(
-    string path, float offsetX, float offsetY, int baseWidth, int baseHeight, int width, int height, PathData paths)
+public class FontTexture(string path,
+    float offsetX,
+    float offsetY,
+    int baseWidth,
+    int baseHeight,
+    int width,
+    int height,
+    PathData paths)
 {
     ///<summary> The path to the font texture. </summary>
     public string Path => path;
 
-    /// <returns> <see langword="true" /> if the texture does not exist. </returns>
+    /// <returns> <see langword="true"/> if the texture does not exist. </returns>
     public bool IsEmpty => path is null;
 
     ///<summary> The texture offset in X-units. </summary>
@@ -54,19 +60,19 @@ public class FontTexture(
     ///<summary> The line segments that comprise this text. </summary>
     public PathData PathData => paths;
 
-    /// <summary> Gets the font offset for the given <see cref="OsbOrigin" />. </summary>
-    public Vector2 OffsetFor(OsbOrigin origin)
-        => origin switch
-        {
-            OsbOrigin.TopCentre => new(OffsetX + Width * .5f, OffsetY),
-            OsbOrigin.TopRight => new(OffsetX + Width, OffsetY),
-            OsbOrigin.CentreLeft => new(OffsetX, OffsetY + Height * .5f),
-            OsbOrigin.Centre => new(OffsetX + Width * .5f, OffsetY + Height * .5f),
-            OsbOrigin.CentreRight => new(OffsetX + Width, OffsetY + Height * .5f),
-            OsbOrigin.BottomLeft => new(OffsetX, OffsetY + Height),
-            OsbOrigin.BottomCentre => new(OffsetX + Width * .5f, OffsetY + Height),
-            OsbOrigin.BottomRight => new(OffsetX + Width, OffsetY + Height), _ => new(OffsetX, OffsetY)
-        };
+    /// <summary> Gets the font offset for the given <see cref="OsbOrigin"/>. </summary>
+    public Vector2 OffsetFor(OsbOrigin origin) => origin switch
+    {
+        OsbOrigin.TopCentre => new(OffsetX + Width * .5f, OffsetY),
+        OsbOrigin.TopRight => new(OffsetX + Width, OffsetY),
+        OsbOrigin.CentreLeft => new(OffsetX, OffsetY + Height * .5f),
+        OsbOrigin.Centre => new(OffsetX + Width * .5f, OffsetY + Height * .5f),
+        OsbOrigin.CentreRight => new(OffsetX + Width, OffsetY + Height * .5f),
+        OsbOrigin.BottomLeft => new(OffsetX, OffsetY + Height),
+        OsbOrigin.BottomCentre => new(OffsetX + Width * .5f, OffsetY + Height),
+        OsbOrigin.BottomRight => new(OffsetX + Width, OffsetY + Height),
+        _ => new(OffsetX, OffsetY)
+    };
 }
 
 ///<summary> A class that generates and manages font textures. </summary>
@@ -100,6 +106,7 @@ public sealed class FontGenerator : IDisposable
             Alignment = StringAlignment.Center,
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
+
         textBrush = new(description.Color);
 
         metrics = Graphics.FromHwnd(0);
@@ -118,8 +125,7 @@ public sealed class FontGenerator : IDisposable
         }
 
         var ptSize = 96 / metrics.DpiY * description.FontSize;
-        font = family is null ? new(fontPath, ptSize, description.FontStyle)
-            : new(family[0], ptSize, description.FontStyle);
+        font = family is null ? new(fontPath, ptSize, description.FontStyle) : new(family[0], ptSize, description.FontStyle);
         if (family is not null && family.Length > 1)
             for (var i = 1; i < family.Length; ++i)
                 family[i].Dispose();
@@ -188,12 +194,12 @@ public sealed class FontGenerator : IDisposable
                 textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
             }
 
-            segments.AddString(text, font.FontFamily, (int)description.FontStyle, emSize, new PointF(x, paddingY),
-                format);
+            segments.AddString(text, font.FontFamily, (int)description.FontStyle, emSize, new PointF(x, paddingY), format);
 
             foreach (var t in effects)
                 if (!t.Overlay)
                     t.Draw(realText, textGraphics, segments, x, paddingY);
+
             if (!description.EffectsOnly) textGraphics.FillPath(textBrush, segments);
             foreach (var t in effects)
                 if (t.Overlay)
@@ -222,8 +228,7 @@ public sealed class FontGenerator : IDisposable
 
         if (description.TrimTransparency)
         {
-            var foundTrim =
-                cache.Keys.FirstOrDefault(x => x.AsSpan().Trim().Equals(trimmedText, StringComparison.Ordinal));
+            var foundTrim = cache.Keys.FirstOrDefault(x => x.AsSpan().Trim().Equals(trimmedText, StringComparison.Ordinal));
             if (foundTrim is not null)
             {
                 trimExist = true;
@@ -231,15 +236,17 @@ public sealed class FontGenerator : IDisposable
             }
         }
 
-        filename ??= (description.TrimTransparency ? trimmedText : text).Length == 1 ? $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ?
+        filename ??= (description.TrimTransparency ? trimmedText : text).Length == 1 ?
+            $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ?
                 ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') :
                 char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' :
-                    char.ToString(text[0]))}.png" : $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1)
-                        .ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
+                    char.ToString(text[0]))}.png" :
+            $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1)
+                .ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
         if (trimExist)
-            return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY,
-                baseWidth, baseHeight, width, height, segments.PathData);
+            return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth,
+                baseHeight, width, height, segments.PathData);
 
         var path = Path.Combine(assetDirectory, Directory, filename);
         using (var stream = File.Create(path))
@@ -250,18 +257,18 @@ public sealed class FontGenerator : IDisposable
                 realText = cropped;
                 Misc.WithRetries(() => cropped.Save(stream, ImageFormat.Png));
             }
-            else
-                Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
+            else Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
 
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
         if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) ||
             path.Contains(StoryboardObjectGenerator.Current.AssetPath))
             StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(7));
-        return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth,
-            baseHeight, width, height, segments.PathData);
+
+        return new(PathHelper.WithStandardSeparators(Path.Combine(Directory, filename)), offsetX, offsetY, baseWidth, baseHeight,
+            width, height, segments.PathData);
     }
 
-    /// <summary />
+    /// <summary/>
     ~FontGenerator() => Dispose(false);
 
     void Dispose(bool disposing)

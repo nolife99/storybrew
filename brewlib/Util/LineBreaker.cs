@@ -203,12 +203,14 @@ public static class LineBreaker
                 endIndex = findBreakIndex(text, startIndex, endIndex);
                 completeLine();
             }
+
             lineWidth += characterWidth;
 
             if (!mustBreakAfter(text, endIndex)) continue;
             completeLine();
             --endIndex;
         }
+
         if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add("");
 
         return lines;

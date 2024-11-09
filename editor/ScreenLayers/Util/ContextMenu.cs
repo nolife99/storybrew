@@ -1,8 +1,8 @@
 ﻿namespace StorybrewEditor.ScreenLayers.Util;
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 
@@ -26,13 +26,13 @@ public class ContextMenu<T> : UiScreenLayer
     {
         this.title = title;
         this.callback = callback;
-        this.options.AddRange(options.Select(option => new(option.ToString(), option)));
+        this.options.AddRange(options.Select(option => new Option(option.ToString(), option)));
     }
     public ContextMenu(string title, Action<T> callback, IEnumerable<T> options)
     {
         this.title = title;
         this.callback = callback;
-        this.options.AddRange(options.Select(option => new(option.ToString(), option)));
+        this.options.AddRange(options.Select(option => new Option(option.ToString(), option)));
     }
 
     public override bool IsPopup => true;
@@ -74,6 +74,7 @@ public class ContextMenu<T> : UiScreenLayer
                 new ScrollArea(WidgetManager, optionsLayout = new(WidgetManager) { FitChildren = true })
             ]
         });
+
         cancelButton.OnClick += (_, _) => Exit();
 
         searchTextbox.OnValueChanged += (_, _) => refreshOptions();
@@ -85,14 +86,11 @@ public class ContextMenu<T> : UiScreenLayer
         foreach (var option in options)
         {
             if (!string.IsNullOrEmpty(searchTextbox.Value) &&
-                !option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal))
-                continue;
+                !option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal)) continue;
 
             Button button;
-            optionsLayout.Add(button = new(WidgetManager)
-            {
-                StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre
-            });
+            optionsLayout.Add(button =
+                new(WidgetManager) { StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre });
 
             var result = option.Value;
             button.OnClick += (_, _) =>

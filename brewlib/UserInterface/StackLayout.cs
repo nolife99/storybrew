@@ -17,6 +17,7 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             return minSize;
         }
     }
+
     public override Vector2 PreferredSize
     {
         get
@@ -25,6 +26,7 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             return preferredSize;
         }
     }
+
     public bool FitChildren
     {
         get => fitChildren;
@@ -35,6 +37,7 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             InvalidateLayout();
         }
     }
+
     protected override WidgetStyle Style => Manager.Skin.GetStyle<StackLayoutStyle>(StyleName);
 
     public override void InvalidateLayout()
@@ -54,12 +57,10 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             var minSize = child.MinSize;
             var maxSize = child.MaxSize;
 
-            var childWidth = fitChildren ? Math.Max(minSize.X, Size.X)
-                : Math.Max(minSize.X, Math.Min(preferredSize.X, Size.X));
+            var childWidth = fitChildren ? Math.Max(minSize.X, Size.X) : Math.Max(minSize.X, Math.Min(preferredSize.X, Size.X));
             if (maxSize.X > 0 && childWidth > maxSize.X) childWidth = maxSize.X;
 
-            var childHeight = fitChildren ? Math.Max(minSize.Y, Size.Y)
-                : Math.Max(minSize.Y, Math.Min(preferredSize.Y, Size.Y));
+            var childHeight = fitChildren ? Math.Max(minSize.Y, Size.Y) : Math.Max(minSize.Y, Math.Min(preferredSize.Y, Size.Y));
             if (maxSize.Y > 0 && childHeight > maxSize.Y) childHeight = maxSize.Y;
 
             PlaceChildren(child, Vector2.Zero, new(childWidth, childHeight));

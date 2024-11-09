@@ -138,8 +138,9 @@ public class LayerList : Widget
                         StyleName = "icon",
                         Icon = layer.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy,
                         Tooltip =
-                            layer.DiffSpecific ? "Difficulty specific\n(exports to .osu)"
-                                : "Entire mapset\n(exports to .osb)",
+                            layer.DiffSpecific ?
+                                "Difficulty specific\n(exports to .osu)" :
+                                "Entire mapset\n(exports to .osb)",
                         AnchorFrom = BoxAlignment.Centre,
                         AnchorTo = BoxAlignment.Centre,
                         CanGrow = false
@@ -183,29 +184,35 @@ public class LayerList : Widget
             {
                 nameLabel.Text = la.Identifier;
                 diffSpecificButton.Icon = la.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy;
-                diffSpecificButton.Tooltip = la.DiffSpecific ? "Difficulty specific\n(exports to .osu)"
-                    : "Entire mapset\n(exports to .osb)";
+                diffSpecificButton.Tooltip =
+                    la.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)";
+
                 showHideButton.Icon = la.Visible ? IconFont.Visibility : IconFont.VisibilityOff;
                 showHideButton.Checked = la.Visible;
             };
+
             effect.OnChanged += effectChangedHandler = (_, _) => detailsLabel.Text = getLayerDetails(la, effect);
             layerRoot.OnHovered += (_, e) =>
             {
                 la.Highlight = e.Hovered;
                 OnLayerPreselect?.Invoke(e.Hovered ? la : null);
             };
+
             var handledClick = false;
             layerRoot.OnClickDown += (_, _) =>
             {
                 handledClick = true;
                 return true;
             };
+
             layerRoot.OnClickUp += (evt, _) =>
             {
                 if (handledClick && (evt.RelatedTarget == layerRoot || evt.RelatedTarget.HasAncestor(layerRoot)))
                     OnLayerSelected?.Invoke(la);
+
                 handledClick = false;
             };
+
             layerRoot.OnDisposed += (_, _) =>
             {
                 la.Highlight = false;
@@ -219,7 +226,7 @@ public class LayerList : Widget
         }
     }
 
-    static string getLayerDetails(EditorStoryboardLayer layer, Effect effect)
-        => layer.EstimatedSize > 30720 ? $"using {effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})"
-            : "using " + effect.BaseName;
+    static string getLayerDetails(EditorStoryboardLayer layer, Effect effect) => layer.EstimatedSize > 30720 ?
+        $"using {effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})" :
+        "using " + effect.BaseName;
 }

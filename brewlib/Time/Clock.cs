@@ -10,6 +10,7 @@ public class Clock : TimeSource
     float timeFactor = 1, timeOrigin;
 
     public float Current => timeOrigin + (float)stopwatch.Elapsed.TotalSeconds * timeFactor;
+
     public float TimeFactor
     {
         get => timeFactor;
@@ -22,6 +23,7 @@ public class Clock : TimeSource
             timeOrigin = timeOrigin + elapsed * timeFactor - elapsed * timeFactor;
         }
     }
+
     public bool Playing
     {
         get => playing;

@@ -11,13 +11,13 @@ public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTim
 {
     public float Duration => EndTime - StartTime;
     public float RepeatDuration => repeatDuration < 0 ? command.EndTime : repeatDuration;
-    public float StartTime => startTime;
-    public float EndTime => StartTime + RepeatDuration * repeats;
 
     public OsbEasing Easing => throw new InvalidOperationException();
+    public float StartTime => startTime;
+    public float EndTime => StartTime + RepeatDuration * repeats;
     public TValue StartValue => command.StartValue;
     public TValue EndValue => command.EndValue;
-    
+
     public bool Active => true;
     public int Cost => throw new InvalidOperationException();
 
@@ -33,14 +33,14 @@ public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTim
 
         if (repeated && repeatTime < command.StartTime)
             return command.ValueAtTime(repeated ? command.EndTime : command.StartTime);
+
         if (command.EndTime < repeatTime) return command.ValueAtTime(command.EndTime);
         return command.ValueAtTime(repeatTime);
     }
 
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform,
-        int indentation)
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
         => throw new InvalidOperationException();
 
     public override string ToString() => $"loop x{repeats} ({StartTime}s - {EndTime}s)";

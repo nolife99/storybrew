@@ -6,8 +6,11 @@ using System.Collections.Generic;
 #pragma warning disable CS1591
 public static class BeatmapExtensions
 {
-    /// <summary> Calls <paramref name="tickAction" /> for each beatmap tick divided by <paramref name="snapDivisor" />. </summary>
-    public static void ForEachTick(this Beatmap beatmap, float startTime, float endTime, int snapDivisor,
+    /// <summary> Calls <paramref name="tickAction"/> for each beatmap tick divided by <paramref name="snapDivisor"/>. </summary>
+    public static void ForEachTick(this Beatmap beatmap,
+        float startTime,
+        float endTime,
+        int snapDivisor,
         Action<ControlPoint, float, int, int> tickAction)
     {
         var leftTimingPoint = beatmap.GetTimingPointAt(startTime);
@@ -31,7 +34,7 @@ public static class BeatmapExtensions
             var step = Math.Max(1, timingPoint.BeatDuration / snapDivisor);
             var sectionStartTime = timingPoint.Offset;
             var sectionEndTime = Math.Min(nextTimingPoint?.Offset ?? endTime, endTime);
-            
+
             if (timingPoint == leftTimingPoint)
                 while (startTime < sectionStartTime)
                 {
@@ -51,8 +54,7 @@ public static class BeatmapExtensions
         }
     }
 
-    public static void AsSliderNodes(this IEnumerable<OsuHitObject> hitobjects,
-        Action<OsuSliderNode, OsuHitObject> action)
+    public static void AsSliderNodes(this IEnumerable<OsuHitObject> hitobjects, Action<OsuSliderNode, OsuHitObject> action)
     {
         foreach (var hitobject in hitobjects)
             switch (hitobject)
@@ -68,6 +70,7 @@ public static class BeatmapExtensions
                             CustomSampleSet = circle.CustomSampleSet,
                             Volume = circle.Volume
                         }, hitobject);
+
                     break;
 
                 case OsuSlider slider:
@@ -85,6 +88,7 @@ public static class BeatmapExtensions
                             CustomSampleSet = spinner.CustomSampleSet,
                             Volume = spinner.Volume
                         }, hitobject);
+
                     break;
             }
     }

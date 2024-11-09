@@ -15,8 +15,7 @@ public class Object3d
     readonly List<Object3d> children = [];
 
     ///<summary> A keyframed value representing this instance's color keyframes. </summary>
-    public readonly KeyframedValue<CommandColor>
-        Coloring = new(InterpolatingFunctions.CommandColor, CommandColor.White);
+    public readonly KeyframedValue<CommandColor> Coloring = new(InterpolatingFunctions.CommandColor, CommandColor.White);
 
     ///<summary> A keyframed value representing this instance's opacity/fade keyframes. </summary>
     public readonly KeyframedValue<float> Opacity = new(InterpolatingFunctions.Float, 1);
@@ -42,11 +41,11 @@ public class Object3d
     ///<summary> Adds 3D sub-objects to this instance. </summary>
     public void AddRange(IEnumerable<Object3d> child) => children.AddRange(child);
 
-    /// <summary> Gets this instance's 3D-world transform at <paramref name="time" />. </summary>
+    /// <summary> Gets this instance's 3D-world transform at <paramref name="time"/>. </summary>
     public virtual Matrix4x4 WorldTransformAt(float time) => Matrix4x4.Identity;
 
     /// <summary> Generates the base sprites for this instance. </summary>
-    /// <param name="parentSegment"> The <see cref="StoryboardSegment" /> for the sprite to be generated in. </param>
+    /// <param name="parentSegment"> The <see cref="StoryboardSegment"/> for the sprite to be generated in. </param>
     public void GenerateTreeSprite(StoryboardSegment parentSegment)
     {
         var layer = Segment ?? parentSegment;
@@ -55,6 +54,7 @@ public class Object3d
         foreach (var child in children)
             if (child.DrawBelowParent)
                 child.GenerateTreeSprite(childrenLayer);
+
         GenerateSprite(layer);
         foreach (var child in children)
             if (!child.DrawBelowParent)
@@ -62,15 +62,15 @@ public class Object3d
     }
 
     /// <summary>
-    ///     Generates a <see cref="State" /> for this instance at <paramref name="time" /> based on the given
-    ///     <see cref="Camera" />'s state.
+    ///     Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given
+    ///     <see cref="Camera"/>'s state.
     /// </summary>
     public void GenerateTreeStates(float time, Camera camera)
         => GenerateTreeStates(time, camera.StateAt(time), Object3dState.InitialState);
 
     /// <summary>
-    ///     Generates a <see cref="State" /> for this instance at <paramref name="time" /> based on the given
-    ///     <see cref="CameraState" /> and <see cref="Object3dState" />.
+    ///     Generates a <see cref="State"/> for this instance at <paramref name="time"/> based on the given
+    ///     <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
     public void GenerateTreeStates(float time, CameraState camState, Object3dState parentState)
     {
@@ -82,73 +82,80 @@ public class Object3d
         foreach (var child in children) child.GenerateTreeStates(time, camState, state);
     }
 
-    /// <summary> Generates commands on this instance's base sprites based on its <see cref="State" />s. </summary>
+    /// <summary> Generates commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
     /// <param name="action"> Runs an action on this instance's sprites. </param>
     /// <param name="startTime">
-    ///     The explicit start time of the commands (can be left <see langword="null" /> to use the
-    ///     <see cref="State" />'s time).
+    ///     The explicit start time of the commands (can be left <see langword="null"/> to use the
+    ///     <see cref="State"/>'s time).
     /// </param>
     /// <param name="endTime">
-    ///     The explicit end time of the commands (can be left <see langword="null" /> to use the
-    ///     <see cref="State" />'s time).
+    ///     The explicit end time of the commands (can be left <see langword="null"/> to use the
+    ///     <see cref="State"/>'s time).
     /// </param>
     /// <param name="timeOffset"> The time offset of the commands. </param>
     /// <param name="loopable"> Whether or not the commands are encapsulated in a loop group. </param>
-    public void GenerateTreeCommands(Action<Action, OsbSprite> action = null, float? startTime = null,
-        float? endTime = null, float timeOffset = 0, bool loopable = false)
+    public void GenerateTreeCommands(Action<Action, OsbSprite> action = null,
+        float? startTime = null,
+        float? endTime = null,
+        float timeOffset = 0,
+        bool loopable = false)
     {
         GenerateCommands(action, startTime, endTime, timeOffset, loopable);
         foreach (var child in children) child.GenerateTreeCommands(action, startTime, endTime, timeOffset, loopable);
     }
 
-    /// <summary> Generates loop commands on this instance's base sprites based on its <see cref="State" />s. </summary>
+    /// <summary> Generates loop commands on this instance's base sprites based on its <see cref="State"/>s. </summary>
     /// <param name="action"> Runs an looping action on this instance's sprites. </param>
     /// <param name="startTime"> The explicit start time of the loop group. </param>
     /// <param name="endTime"> The explicit end time of the loop group. </param>
     /// <param name="loopCount">
-    ///     The amount of times to loop within <paramref name="startTime" /> and
-    ///     <paramref name="endTime" />.
+    ///     The amount of times to loop within <paramref name="startTime"/> and
+    ///     <paramref name="endTime"/>.
     /// </param>
     /// <param name="offsetCommands"> Whether or not to offset the commands to relative inside the loop. </param>
-    public void GenerateTreeLoopCommands(float startTime, float endTime, int loopCount,
-        Action<LoopCommand, OsbSprite> action = null, bool offsetCommands = true)
-        => GenerateTreeCommands((commands, s) =>
-        {
-            var loop = s.StartLoopGroup(startTime, loopCount);
-            commands();
-            action?.Invoke(loop, s);
-            s.EndGroup();
-        }, startTime, endTime, offsetCommands ? -startTime : 0, true);
+    public void GenerateTreeLoopCommands(float startTime,
+        float endTime,
+        int loopCount,
+        Action<LoopCommand, OsbSprite> action = null,
+        bool offsetCommands = true) => GenerateTreeCommands((commands, s) =>
+    {
+        var loop = s.StartLoopGroup(startTime, loopCount);
+        commands();
+        action?.Invoke(loop, s);
+        s.EndGroup();
+    }, startTime, endTime, offsetCommands ? -startTime : 0, true);
 
-    /// <summary> Generates a <see cref="HasOsbSprites" /> object's sprites. </summary>
-    /// <param name="segment"> The <see cref="StoryboardSegment" /> for the sprites to be generated in. </param>
+    /// <summary> Generates a <see cref="HasOsbSprites"/> object's sprites. </summary>
+    /// <param name="segment"> The <see cref="StoryboardSegment"/> for the sprites to be generated in. </param>
     public virtual void GenerateSprite(StoryboardSegment segment) { }
 
     /// <summary>
-    ///     Generates a <see cref="State" /> for this <see cref="HasOsbSprites" /> object at <paramref name="time" />
-    ///     based on the given <see cref="CameraState" /> and <see cref="Object3dState" />.
+    ///     Generates a <see cref="State"/> for this <see cref="HasOsbSprites"/> object at <paramref name="time"/>
+    ///     based on the given <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
     public virtual void GenerateStates(float time, CameraState cameraState, Object3dState object3dState) { }
 
     /// <summary>
-    ///     Generates commands on this <see cref="HasOsbSprites" /> object's base sprites based on its
-    ///     <see cref="State" />s.
+    ///     Generates commands on this <see cref="HasOsbSprites"/> object's base sprites based on its
+    ///     <see cref="State"/>s.
     /// </summary>
     /// <param name="action"> Runs an action on this object's sprites. </param>
     /// <param name="startTime">
-    ///     The explicit start time of the commands (can be left <see langword="null" /> to use the
-    ///     <see cref="State" />'s time).
+    ///     The explicit start time of the commands (can be left <see langword="null"/> to use the
+    ///     <see cref="State"/>'s time).
     /// </param>
     /// <param name="endTime">
-    ///     The explicit end time of the commands (can be left <see langword="null" /> to use the
-    ///     <see cref="State" />'s time).
+    ///     The explicit end time of the commands (can be left <see langword="null"/> to use the
+    ///     <see cref="State"/>'s time).
     /// </param>
     /// <param name="timeOffset"> The time offset of the commands. </param>
     /// <param name="loopable"> Whether or not the commands are encapsulated in a loop group. </param>
-    public virtual void GenerateCommands(Action<Action, OsbSprite> action, float? startTime, float? endTime,
-        float timeOffset, bool loopable) { }
+    public virtual void GenerateCommands(Action<Action, OsbSprite> action,
+        float? startTime,
+        float? endTime,
+        float timeOffset,
+        bool loopable) { }
 }
-
 #pragma warning disable CS1591
 public class Object3dState(Matrix4x4 worldTransform, CommandColor color, float opacity)
 {

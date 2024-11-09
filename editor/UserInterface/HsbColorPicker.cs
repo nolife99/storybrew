@@ -25,6 +25,7 @@ public class HsbColorPicker : Widget, Field
     public HsbColorPicker(WidgetManager manager) : base(manager)
     {
         previewSprite = new() { Texture = DrawState.WhitePixel, ScaleMode = ScaleMode.Fill };
+
         Add(layout = new(manager)
         {
             StyleName = "condensed",
@@ -34,10 +35,7 @@ public class HsbColorPicker : Widget, Field
                 new Label(manager) { StyleName = "small", Text = "Hue" },
                 hueSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 0 },
                 new Label(manager) { StyleName = "small", Text = "Saturation" },
-                saturationSlider = new(manager)
-                {
-                    StyleName = "small", MinValue = 0, MaxValue = 1, Value = .7f
-                },
+                saturationSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = .7f },
                 new Label(manager) { StyleName = "small", Text = "Brightness" },
                 brightnessSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 1 },
                 new Label(manager) { StyleName = "small", Text = "Alpha" },
@@ -61,7 +59,9 @@ public class HsbColorPicker : Widget, Field
     }
 
     public override Vector2 MinSize => layout.MinSize with { Y = layout.MinSize.Y + previewHeight };
+
     public override Vector2 MaxSize => Vector2.Zero;
+
     public override Vector2 PreferredSize => layout.PreferredSize with { Y = layout.PreferredSize.Y + previewHeight };
 
     public FontColor Value
@@ -79,17 +79,12 @@ public class HsbColorPicker : Widget, Field
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());
 
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = Unsafe.Unbox<FontColor>(value);
-    }
+    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<FontColor>(value); }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 
-    void slider_OnValueChanged(object sender, EventArgs e)
-        => Value = FontColor.FromHsb(new(hueSlider.Value % 1, saturationSlider.Value, brightnessSlider.Value,
-            alphaSlider.Value));
+    void slider_OnValueChanged(object sender, EventArgs e) => Value = FontColor.FromHsb(new(hueSlider.Value % 1,
+        saturationSlider.Value, brightnessSlider.Value, alphaSlider.Value));
 
     void slider_OnValueCommited(object sender, EventArgs e) => OnValueCommited?.Invoke(this, EventArgs.Empty);
 

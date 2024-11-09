@@ -9,45 +9,17 @@ public struct Affine2(Vector3 row0, Vector3 row1) : IEquatable<Affine2>
     public static readonly Affine2 Identity = new(Vector3.UnitX, Vector3.UnitY);
     public Vector3 Row0 = row0, Row1 = row1;
 
-    public float M11
-    {
-        readonly get => Row0.X;
-        set => Row0.X = value;
-    }
+    public float M11 { readonly get => Row0.X; set => Row0.X = value; }
 
-    public float M21
-    {
-        readonly get => Row0.Y;
-        set => Row0.Y = value;
-    }
+    public float M21 { readonly get => Row0.Y; set => Row0.Y = value; }
 
-    public float M31
-    {
-        readonly get => Row0.Z;
-        set => Row0.Z = value;
-    }
+    public float M31 { readonly get => Row0.Z; set => Row0.Z = value; }
 
-    public float M12
-    {
-        readonly get => Row1.X;
-        set => Row1.X = value;
-    }
+    public float M12 { readonly get => Row1.X; set => Row1.X = value; }
 
-    public float M22
-    {
-        readonly get => Row1.Y;
-        set => Row1.Y = value;
-    }
+    public float M22 { readonly get => Row1.Y; set => Row1.Y = value; }
 
-    public float M32
-    {
-        readonly get => Row1.Z;
-        set => Row1.Z = value;
-    }
-
-    public readonly bool IsTranslationOnly => Row0 is { X: 1, Y: 0 } && Row1 is { X: 0, Y: 1 };
-
-    public Affine2(Affine2 affine2) : this(affine2.Row0, affine2.Row1) { }
+    public float M32 { readonly get => Row1.Z; set => Row1.Z = value; }
 
     public void Translate(float x, float y)
     {
@@ -78,11 +50,10 @@ public struct Affine2(Vector3 row0, Vector3 row1) : IEquatable<Affine2>
         Row1.Y = row1.X * -sin + row1.Y * cos;
     }
 
-    public readonly Vector2 Transform(in Vector2 vector)
-        => new(Row0.X * vector.X + Row0.Y * vector.Y + Row0.Z, Row1.X * vector.X + Row1.Y * vector.Y + Row1.Z);
+    public readonly Vector2 Transform(in Vector2 vector) => new(Row0.X * vector.X + Row0.Y * vector.Y + Row0.Z,
+        Row1.X * vector.X + Row1.Y * vector.Y + Row1.Z);
 
-    public readonly Vector2 TransformSeparate(in Vector2 vector)
-        => new(Row0.X * vector.X + Row0.Z, Row1.Y * vector.Y + Row1.Z);
+    public readonly Vector2 TransformSeparate(in Vector2 vector) => new(Row0.X * vector.X + Row0.Z, Row1.Y * vector.Y + Row1.Z);
 
     public readonly float TransformX(float value) => Row0.X * value + Row0.Z;
     public readonly float TransformY(float value) => Row1.Y * value + Row1.Z;

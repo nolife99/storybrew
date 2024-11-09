@@ -51,34 +51,35 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                     Children =
                     [
                         okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
-                        cancelButton = new(WidgetManager)
-                        {
-                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
-                        }
+                        cancelButton = new(WidgetManager) { Text = "Cancel", AnchorFrom = BoxAlignment.Centre }
                     ]
                 }
             ]
         });
 
-        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "",
-            project.ProjectFolderPath, ".NET Assemblies (*.dll)|*.dll", path =>
+        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "", project.ProjectFolderPath,
+            ".NET Assemblies (*.dll)|*.dll", path =>
             {
                 if (!isValidAssembly(path))
                 {
                     WidgetManager.ScreenLayerManager.ShowMessage(
                         "Invalid assembly file. Are you sure that the file is made for .NET?");
+
                     return;
                 }
 
                 if (validateAssembly(path))
-                    addReferencedAssembly(PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path
-                        : copyReferencedAssembly(path));
+                    addReferencedAssembly(PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ?
+                        path :
+                        copyReferencedAssembly(path));
             });
+
         okButton.OnClick += (_, _) =>
         {
             project.ImportedAssemblies = selectedAssemblies;
             Exit();
         };
+
         cancelButton.OnClick += (_, _) => Exit();
 
         refreshAssemblies();
@@ -169,9 +170,9 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         }
     }
 
-    string getRelativePath(string assembly)
-        => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ? assembly
-            : Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
+    string getRelativePath(string assembly) => PathHelper.FolderContainsPath(project.ProjectFolderPath, assembly) ?
+        assembly :
+        Path.Combine(project.ProjectFolderPath, Path.GetFileName(assembly));
 
     static bool isValidAssembly(string assembly)
     {
@@ -217,25 +218,24 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         refreshAssemblies();
     }
 
-    void changeReferencedAssembly(string assembly)
-        => WidgetManager.ScreenLayerManager.OpenFilePicker("", "", Path.GetDirectoryName(assembly),
-            ".NET Assemblies (*.dll)|*.dll", path =>
+    void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "",
+        Path.GetDirectoryName(assembly), ".NET Assemblies (*.dll)|*.dll", path =>
+        {
+            if (!isValidAssembly(path))
             {
-                if (!isValidAssembly(path))
-                {
-                    WidgetManager.ScreenLayerManager.ShowMessage(
-                        "Invalid assembly file. Are you sure that the file is intended for .NET?");
-                    return;
-                }
+                WidgetManager.ScreenLayerManager.ShowMessage(
+                    "Invalid assembly file. Are you sure that the file is intended for .NET?");
 
-                if (!validateAssembly(path, selectedAssemblies.Where(ass => ass != assembly))) return;
+                return;
+            }
 
-                var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path
-                    : copyReferencedAssembly(path);
-                if (path == assembly) return;
+            if (!validateAssembly(path, selectedAssemblies.Where(ass => ass != assembly))) return;
 
-                selectedAssemblies.Remove(assembly);
-                selectedAssemblies.Add(newPath);
-                refreshAssemblies();
-            });
+            var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ? path : copyReferencedAssembly(path);
+            if (path == assembly) return;
+
+            selectedAssemblies.Remove(assembly);
+            selectedAssemblies.Add(newPath);
+            refreshAssemblies();
+        });
 }

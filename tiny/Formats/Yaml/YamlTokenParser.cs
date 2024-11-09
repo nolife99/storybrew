@@ -35,8 +35,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
         return result;
     }
 
-    abstract class MultilineParser(Action<TinyToken> callback, int virtualIndent)
-        : Parser<YamlTokenType>(callback, virtualIndent)
+    abstract class MultilineParser(Action<TinyToken> callback, int virtualIndent) : Parser<YamlTokenType>(callback, virtualIndent)
     {
         int? indent;
         protected abstract int ResultCount { get; }
@@ -95,8 +94,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                             context.PushParser(new ValueParser(r => result.Add(key, r)));
                             break;
                         case YamlTokenType.EndLine:
-                            context.PushParser(new EmptyProperyParser(r => result.Add(key, r),
-                                context.IndentLevel + 1));
+                            context.PushParser(new EmptyProperyParser(r => result.Add(key, r), context.IndentLevel + 1));
                             break;
                         default:
                             throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
@@ -117,8 +115,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
     {
         readonly TinyArray result = [];
 
-        public ArrayParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent)
-            => callback(result);
+        public ArrayParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent) => callback(result);
 
         protected override int ResultCount => result.Count;
 
@@ -142,8 +139,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
 
     class ValueParser(Action<TinyToken> callback) : Parser<YamlTokenType>(callback, 0)
     {
-        static readonly Regex floatRegex =
-                new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             boolRegex = new($"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -164,18 +160,16 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                 {
                     var value = context.CurrentToken.Value;
                     Match match;
-                    if ((match = floatRegex.Match(value)).Success)
-                        Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if ((match = integerRegex.Match(value)).Success)
-                        Callback(new TinyValue(value, TinyTokenType.Integer));
+                    if ((match = floatRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Float));
+                    else if ((match = integerRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
                     else if ((match = boolRegex.Match(value)).Success)
-                        Callback(
-                            new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.OrdinalIgnoreCase)));
-                    else
-                        Callback(new TinyValue(value));
+                        Callback(new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.OrdinalIgnoreCase)));
+                    else Callback(new TinyValue(value));
+
                     context.ConsumeToken();
                     context.PopParser();
                 }
+
                     return;
 
                 case YamlTokenType.WordQuoted:
@@ -185,6 +179,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                     context.ConsumeToken();
                     context.PopParser();
                 }
+
                     return;
             }
 

@@ -2,9 +2,10 @@
 
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Runtime.CompilerServices;
 
 /// <summary> A font drop shadow effect. </summary>
-/// <remarks> Creates a new <see cref="FontShadow" /> descriptor with information about a drop shadow effect. </remarks>
+/// <remarks> Creates a new <see cref="FontShadow"/> descriptor with information about a drop shadow effect. </remarks>
 /// <param name="thickness"> The thickness of the shadow. </param>
 /// <param name="color"> The color tinting of the shadow. </param>
 public class FontShadow(int thickness = 1, FontColor color = default) : FontEffect
@@ -15,18 +16,18 @@ public class FontShadow(int thickness = 1, FontColor color = default) : FontEffe
     ///<summary> The color tinting of the shadow. </summary>
     public FontColor Color => color;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public bool Overlay => false;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SizeF Measure => new(Thickness * 2, Thickness * 2);
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y)
     {
         if (Thickness < 1) return;
 
-        using var transformed = (GraphicsPath)path.Clone();
+        using var transformed = Unsafe.As<GraphicsPath>(path.Clone());
         using (Matrix translate = new())
         {
             translate.Translate(thickness, thickness);

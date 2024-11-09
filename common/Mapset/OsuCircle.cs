@@ -5,8 +5,15 @@ using System.Globalization;
 #pragma warning disable CS1591
 public class OsuCircle : OsuHitObject
 {
-    public static OsuCircle Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags,
-        HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet,
+    public static OsuCircle Parse(string[] values,
+        int x,
+        int y,
+        int startTime,
+        HitObjectFlag flags,
+        HitSoundAddition additions,
+        SampleSet sampleSet,
+        SampleSet additionsSampleSet,
+        int customSampleSet,
         float volume)
     {
         var samplePath = "";
@@ -23,6 +30,7 @@ public class OsuCircle : OsuHitObject
                 Volume = volume,
                 SamplePath = samplePath
             };
+
         var special = values[5];
         var specialValues = special.Split(':');
 

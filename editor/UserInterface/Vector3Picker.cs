@@ -55,6 +55,7 @@ public class Vector3Picker : Widget, Field
                 }
             ]
         });
+
         updateWidgets();
 
         xTextbox.OnValueCommited += xTextbox_OnValueCommited;
@@ -79,11 +80,7 @@ public class Vector3Picker : Widget, Field
         }
     }
 
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = Unsafe.As<float[]>(value);
-    }
+    public object FieldValue { get => Value; set => Value = Unsafe.As<float[]>(value); }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 

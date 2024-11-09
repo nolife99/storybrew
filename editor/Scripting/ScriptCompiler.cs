@@ -15,7 +15,9 @@ using Storyboarding;
 
 public static class ScriptCompiler
 {
-    public static Assembly Compile(AssemblyLoadContext context, IEnumerable<string> sourcePaths, string asmName,
+    public static Assembly Compile(AssemblyLoadContext context,
+        IEnumerable<string> sourcePaths,
+        string asmName,
         IEnumerable<string> referencedAssemblies)
     {
         Dictionary<SyntaxTree, (string SourcePath, SourceText SourceText)> trees = [];
@@ -23,26 +25,22 @@ public static class ScriptCompiler
         {
             using var sourceStream = File.OpenRead(src);
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-            trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] =
-                (src, sourceText);
+            trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = (src, sourceText);
         }
 
         EmitResult result;
         using (MemoryStream assemblyStream = new())
         {
             result = CSharpCompilation.Create(asmName, trees.Keys, referencedAssemblies.Select(asmPath =>
-                    {
-                        using var stream = File.OpenRead(asmPath);
-                        if (!Project.DefaultAssemblies.Contains(asmPath))
-                            AssemblyLoadContext.Default.LoadFromStream(stream);
-                        stream.Position = 0;
-                        return MetadataReference.CreateFromStream(stream);
-                    }),
-                    new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true,
-                        optimizationLevel: OptimizationLevel.Release))
-                .Emit(assemblyStream,
-                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
-                    options: new(debugInformationFormat: DebugInformationFormat.Embedded));
+            {
+                using var stream = File.OpenRead(asmPath);
+                if (!Project.DefaultAssemblies.Contains(asmPath)) AssemblyLoadContext.Default.LoadFromStream(stream);
+                stream.Position = 0;
+
+                return MetadataReference.CreateFromStream(stream);
+            }), new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release)).Emit(
+                assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
+                options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
             if (result.Success)
             {
@@ -51,15 +49,13 @@ public static class ScriptCompiler
             }
         }
 
-        var failureGroup = result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
-            .Reverse().GroupBy(k =>
+        StringBuilder error = new("Compilation error\n\n");
+        foreach (var kvp in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse()
+            .GroupBy(k =>
             {
                 if (k.Location.SourceTree is null) return "";
                 return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
-            }).ToDictionary(k => k.Key, k => k);
-
-        StringBuilder error = new("Compilation error\n\n");
-        foreach (var kvp in failureGroup)
+            }).ToDictionary(k => k.Key, k => k))
         {
             var file = kvp.Key;
             var diagnostics = kvp.Value;

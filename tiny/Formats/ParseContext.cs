@@ -18,7 +18,6 @@ public class ParseContext<TokenType>
     }
 
     public Parser<TokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
-    public int ParserCount => parserStack.Count;
 
     public int IndentLevel { get; private set; }
 

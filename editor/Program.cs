@@ -63,7 +63,7 @@ public static class Program
         return false;
     }
 
-#region Editor
+    #region Editor
 
     public static string Stats { get; private set; }
 
@@ -79,6 +79,7 @@ public static class Program
         {
             Trace.WriteLine($"{Environment.OSVersion} / Handle: 0x{
                 Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture)}");
+
             Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
 
             using Icon icon = new(typeof(Editor), "icon.ico");
@@ -150,13 +151,15 @@ public static class Program
             }
         }
 
-        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice,
-            2, 1, GraphicsContextFlags.ForwardCompatible);
+        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 2, 1,
+            GraphicsContextFlags.ForwardCompatible);
+
         Native.InitializeHandle(Name, window.WindowInfo.Handle);
         Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
 
         window.Location = new(workArea.X + (workArea.Width - window.Size.Width) / 2,
             workArea.Y + (workArea.Height - window.Size.Height) / 2);
+
         if (window.Location is { X: >= 0, Y: >= 0 }) return window;
 
         window.Location = workArea.Location;
@@ -169,6 +172,7 @@ public static class Program
     static AudioManager createAudioManager()
     {
         AudioManager audioManager = new(Native.MainWindowHandle) { Volume = Settings.Volume };
+
         Settings.Volume.OnValueChanged += (_, _) => audioManager.Volume = Settings.Volume;
 
         return audioManager;
@@ -239,19 +243,17 @@ public static class Program
         }
     }
 
-#endregion
+    #endregion
 
-#region Scheduling
+    #region Scheduling
 
     static bool schedulingEnabled;
     static readonly ConcurrentQueue<Action> scheduledActions = new();
 
     public static void Schedule(Action action)
     {
-        if (schedulingEnabled)
-            scheduledActions.Enqueue(action);
-        else
-            throw new InvalidOperationException("Scheduling isn't enabled!");
+        if (schedulingEnabled) scheduledActions.Enqueue(action);
+        else throw new InvalidOperationException("Scheduling isn't enabled!");
     }
 
     public static async void Schedule(Action action, int delay)
@@ -284,17 +286,18 @@ public static class Program
 
                 completed.Set();
             });
+
             completed.Wait();
         }
 
         if (ex is not null) throw ex;
     }
 
-#endregion
+    #endregion
 
-#region Error Handling
+    #region Error Handling
 
-    public const string DefaultLogPath = "logs";
+    const string DefaultLogPath = "logs";
 
     static readonly object errorHandlerLock = new();
     static volatile bool insideErrorHandler;
@@ -306,16 +309,14 @@ public static class Program
         var exceptionPath = Path.Combine(logsPath, commonLogFilename ?? "exception.log");
         var crashPath = Path.Combine(logsPath, commonLogFilename ?? "crash.log");
 
-        if (!Directory.Exists(logsPath))
-            Directory.CreateDirectory(logsPath);
+        if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
         else if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
 
         TextWriterTraceListener listener = new(File.CreateText(tracePath), Name);
         AppDomain.CurrentDomain.ProcessExit += (_, _) => listener.Dispose();
 
         AppDomain.CurrentDomain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, null, false);
-        AppDomain.CurrentDomain.UnhandledException +=
-            (_, e) => logError((Exception)e.ExceptionObject, crashPath, "crash", true);
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, "crash", true);
 
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
@@ -342,11 +343,9 @@ public static class Program
                 }
 
                 if (reportType is not null) Report(reportType, e);
-                if (show && MessageBox.Show(
-                    $"An error occured:\n\n{e.Message} ({e.GetType().Name
-                    })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
-                    FullName, MessageBoxButtons.OKCancel) is DialogResult.OK)
-                    NetHelper.OpenUrl(DiscordUrl);
+                if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name
+                })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
+                    FullName, MessageBoxButtons.OKCancel) is DialogResult.OK) NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)
             {
@@ -359,15 +358,15 @@ public static class Program
         }
     }
 
-    public static void Report(string type, Exception e)
-        => NetHelper.BlockingPost("http://a-damnae.rhcloud.com/storybrew/report.php",
-            new()
-            {
-                { "reporttype", type },
-                { "source", Settings?.Id ?? "-" },
-                { "version", Version.ToString() },
-                { "content", e.ToString() }
-            });
+    public static void Report(string type, Exception e) => NetHelper.BlockingPost(
+        "http://a-damnae.rhcloud.com/storybrew/report.php",
+        new()
+        {
+            { "reporttype", type },
+            { "source", Settings?.Id ?? "-" },
+            { "version", Version.ToString() },
+            { "content", e.ToString() }
+        });
 
-#endregion
+    #endregion
 }

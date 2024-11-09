@@ -18,66 +18,51 @@ internal class Karaoke : StoryboardObjectGenerator
      Description(
          "The name of a system font, or the path to a font relative to your project's folder.\nIt is preferable to add fonts to the project folder and use their file name rather than installing fonts."),
      Configurable]
-    
     public string FontName = "Verdana";
 
     [Description(
          "The Scale of the font.\nIncreasing the font scale does not creates larger images, but the result may be blurrier."),
      Configurable]
-    
     public float FontScale = .5f;
 
     [Description("The Size of the font.\nIncreasing the font size creates larger images."), Configurable]
-    
     public int FontSize = 26;
 
     [Configurable] public FontStyle FontStyle = FontStyle.Regular;
     [Configurable] public bool GlowAdditive = true;
     [Configurable] public Color GlowColor = Color.FromArgb(100, 255, 255, 255);
 
-    [Group("Glow"), Configurable]
-    
-    public int GlowRadius = 0;
+    [Group("Glow"), Configurable] public int GlowRadius = 0;
 
     [Configurable] public OsbOrigin Origin = OsbOrigin.Centre;
     [Configurable] public Color OutlineColor = Color.FromArgb(200, 50, 50, 50);
 
-    [Group("Outline"), Configurable]
-    
-    public int OutlineThickness = 3;
+    [Group("Outline"), Configurable] public int OutlineThickness = 3;
 
     [Description(
          "How much extra space is allocated around the text when generating it.\nShould be increased when characters look cut off."),
      Configurable]
-    
     public Vector2 Padding = Vector2.Zero;
 
     [Configurable] public Color ShadowColor = Color.FromArgb(100, 0, 0, 0);
 
-    [Group("Shadow"), Configurable]
-    
-    public int ShadowThickness = 0;
+    [Group("Shadow"), Configurable] public int ShadowThickness = 0;
 
     [Description("A path inside your mapset's folder where lyrics images will be generated."), Configurable]
-    
     public string SpritesPath = "sb/f";
 
     [Description(
          "Path to a .sbv, .srt, .ass or .ssa file in your project's folder.\nThese can be made with a tool like aegisub."),
      Configurable]
-    
     public string SubtitlesPath = "lyrics.srt";
 
     [Configurable] public float SubtitleY = 400;
 
-    [Group("Misc"), Configurable]
-    
-    public bool TrimTransparency = true;
+    [Group("Misc"), Configurable] public bool TrimTransparency = true;
 
     protected override void Generate()
     {
-        var font = LoadFont(SpritesPath,
-            new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
+        var font = LoadFont(SpritesPath, new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
             new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor), new FontOutline(OutlineThickness, OutlineColor),
             new FontShadow(ShadowThickness, ShadowColor));
 
@@ -88,6 +73,7 @@ internal class Karaoke : StoryboardObjectGenerator
             var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"),
                 new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true),
                 new FontGlow(GlowRadius, 0, GlowColor));
+
             generateLyrics(glowFont, subtitles, "glow", true);
         }
 
@@ -124,8 +110,10 @@ internal class Karaoke : StoryboardObjectGenerator
                 foreach (Match match in matches)
                 {
                     var durationString = match.Groups[2].Value;
-                    var duration = string.IsNullOrEmpty(durationString) ? subtitleLine.EndTime - subtitleLine.StartTime
-                        : int.Parse(durationString) * 10;
+                    var duration = string.IsNullOrEmpty(durationString) ?
+                        subtitleLine.EndTime - subtitleLine.StartTime :
+                        int.Parse(durationString) * 10;
+
                     var karaokeEndTime = karaokeStartTime + duration;
 
                     var text = match.Groups[3].Value;

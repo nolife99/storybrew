@@ -18,10 +18,8 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
         get => keyToIndexMap.TryGetValue(key, out var index) ? items[index].Value : null;
         set
         {
-            if (keyToIndexMap.TryGetValue(key, out var index))
-                items[index] = new KeyValuePair<string, TinyToken>(key, value);
-            else
-                Add(key, value);
+            if (keyToIndexMap.TryGetValue(key, out var index)) items[index] = new KeyValuePair<string, TinyToken>(key, value);
+            else Add(key, value);
         }
     }
 
@@ -40,14 +38,14 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
 
     public void Add(KeyValuePair<string, TinyToken> item) => Add(item.Key, item.Value);
 
-    public override T Value<T>(object key)
-        => key switch
-        {
-            null => (T)(object)this,
-            string k when keyToIndexMap.TryGetValue(k, out var index) => items[index].Value.Value<T>(),
-            string k => default, int index => items[index].Value.Value<T>(),
-            _ => throw new ArgumentException($"Key must be an integer or a string, was {key}", nameof(key))
-        };
+    public override T Value<T>(object key) => key switch
+    {
+        null => (T)(object)this,
+        string k when keyToIndexMap.TryGetValue(k, out var index) => items[index].Value.Value<T>(),
+        string k => default,
+        int index => items[index].Value.Value<T>(),
+        _ => throw new ArgumentException($"Key must be an integer or a string, was {key}", nameof(key))
+    };
 
     public override string ToString() => string.Join(", ", items);
 }

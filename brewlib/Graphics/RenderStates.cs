@@ -27,8 +27,7 @@ public class RenderStates
             if (field.IsStatic) return;
 
             var newState = Unsafe.As<RenderState>(field.GetValue(this));
-            if (currentStates.TryGetValue(field.FieldType, out var currentState) && currentState.Equals(newState))
-                return;
+            if (currentStates.TryGetValue(field.FieldType, out var currentState) && currentState.Equals(newState)) return;
 
             if (!flushed)
             {
@@ -49,12 +48,11 @@ public class BlendingFactorState : RenderState, IEquatable<BlendingFactorState>
 {
     public static readonly BlendingFactorState Default = new();
 
-    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha,
-        alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha, alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
 
     readonly bool enabled = true;
-    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, 
-        alphaSrc = BlendingFactorSrc.SrcAlpha;
+
+    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, alphaSrc = BlendingFactorSrc.SrcAlpha;
 
     public BlendingFactorState() { }
     public BlendingFactorState(BlendingMode mode)

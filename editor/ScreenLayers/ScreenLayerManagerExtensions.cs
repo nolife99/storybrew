@@ -13,52 +13,62 @@ using MessageBox = Util.MessageBox;
 
 public static class ScreenLayerManagerExtensions
 {
-    public static void OpenFolderPicker(this ScreenLayerManager screenLayer, string description, string initialValue,
-        Action<string> callback)
-        => screenLayer.AsyncLoading("Select a folder", () =>
+    public static void OpenFolderPicker(this ScreenLayerManager screenLayer,
+        string description,
+        string initialValue,
+        Action<string> callback) => screenLayer.AsyncLoading("Select a folder", () =>
+    {
+        using FolderBrowserDialog dialog = new()
         {
-            using FolderBrowserDialog dialog = new()
-            {
-                Description = description, ShowNewFolderButton = true, SelectedPath = initialValue
-            };
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
-                Program.Schedule(() => callback(dialog.SelectedPath));
-        });
+            Description = description, ShowNewFolderButton = true, SelectedPath = initialValue
+        };
 
-    public static void OpenFilePicker(this ScreenLayerManager screenLayer, string description, string initialValue,
-        string initialDirectory, string filter, Action<string> callback)
-        => screenLayer.AsyncLoading("Select a file", () =>
-        {
-            using OpenFileDialog dialog = new()
-            {
-                Title = description,
-                RestoreDirectory = true,
-                ShowHelp = false,
-                FileName = initialValue,
-                Filter = filter,
-                InitialDirectory = initialDirectory != null ? Path.GetFullPath(initialDirectory) : ""
-            };
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
-                Program.Schedule(() => callback(dialog.FileName));
-        });
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+            Program.Schedule(() => callback(dialog.SelectedPath));
+    });
 
-    public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer, string description,
-        string initialValue, string extension, string filter, Action<string> callback)
-        => screenLayer.AsyncLoading("Select a location", () =>
+    public static void OpenFilePicker(this ScreenLayerManager screenLayer,
+        string description,
+        string initialValue,
+        string initialDirectory,
+        string filter,
+        Action<string> callback) => screenLayer.AsyncLoading("Select a file", () =>
+    {
+        using OpenFileDialog dialog = new()
         {
-            using SaveFileDialog dialog = new()
-            {
-                Title = description,
-                RestoreDirectory = true,
-                ShowHelp = false,
-                FileName = initialValue,
-                OverwritePrompt = true,
-                DefaultExt = extension,
-                Filter = filter
-            };
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
-                Program.Schedule(() => callback(dialog.FileName));
-        });
+            Title = description,
+            RestoreDirectory = true,
+            ShowHelp = false,
+            FileName = initialValue,
+            Filter = filter,
+            InitialDirectory = initialDirectory != null ? Path.GetFullPath(initialDirectory) : ""
+        };
+
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+            Program.Schedule(() => callback(dialog.FileName));
+    });
+
+    public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
+        string description,
+        string initialValue,
+        string extension,
+        string filter,
+        Action<string> callback) => screenLayer.AsyncLoading("Select a location", () =>
+    {
+        using SaveFileDialog dialog = new()
+        {
+            Title = description,
+            RestoreDirectory = true,
+            ShowHelp = false,
+            FileName = initialValue,
+            OverwritePrompt = true,
+            DefaultExt = extension,
+            Filter = filter
+        };
+
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+            Program.Schedule(() => callback(dialog.FileName));
+    });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Action action)
         => screenLayer.Add(new LoadingScreen(message, action));
@@ -69,32 +79,33 @@ public static class ScreenLayerManagerExtensions
     public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action ok, bool cancel)
         => screenLayer.Add(new MessageBox(message, ok, cancel));
 
-    public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action yes, Action no,
-        bool cancel)
+    public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action yes, Action no, bool cancel)
         => screenLayer.Add(new MessageBox(message, yes, no, cancel));
 
     public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, Action<string> action)
         => screenLayer.Add(new PromptBox(title, "", "", action));
 
-    public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, string description,
-        Action<string> action)
+    public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, string description, Action<string> action)
         => screenLayer.Add(new PromptBox(title, description, "", action));
 
-    public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, string description, string text,
-        Action<string> action)
-        => screenLayer.Add(new PromptBox(title, description, text, action));
+    public static void ShowPrompt(this ScreenLayerManager screenLayer,
+        string title,
+        string description,
+        string text,
+        Action<string> action) => screenLayer.Add(new PromptBox(title, description, text, action));
 
-    public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer, string title, Action<T> action,
-        params ContextMenu<T>.Option[] options)
+    public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer,
+        string title,
+        Action<T> action,
+        params ContextMenu<T>.Option[] options) => screenLayer.Add(new ContextMenu<T>(title, action, options));
+
+    public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer, string title, Action<T> action, params T[] options)
         => screenLayer.Add(new ContextMenu<T>(title, action, options));
 
-    public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer, string title, Action<T> action,
-        params T[] options)
-        => screenLayer.Add(new ContextMenu<T>(title, action, options));
-
-    public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer, string title, Action<T> action,
-        IEnumerable<T> options)
-        => screenLayer.Add(new ContextMenu<T>(title, action, options));
+    public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer,
+        string title,
+        Action<T> action,
+        IEnumerable<T> options) => screenLayer.Add(new ContextMenu<T>(title, action, options));
 
     public static void ShowOpenProject(this ScreenLayerManager screenLayer)
     {

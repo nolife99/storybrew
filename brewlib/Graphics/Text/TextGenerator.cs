@@ -31,25 +31,35 @@ public sealed class TextGenerator : IDisposable
         container = resourceContainer;
     }
 
-    public Bitmap CreateBitmap(string text, string fontName, float fontSize, SizeF maxSize, Vector2 padding,
-        BoxAlignment alignment, StringTrimming trimming, out Vector2 textureSize, bool measureOnly)
+    public Bitmap CreateBitmap(string text,
+        string fontName,
+        float fontSize,
+        SizeF maxSize,
+        Vector2 padding,
+        BoxAlignment alignment,
+        StringTrimming trimming,
+        out Vector2 textureSize,
+        bool measureOnly)
     {
         if (string.IsNullOrEmpty(text)) text = " ";
         using StringFormat stringFormat = new(StringFormat.GenericTypographic)
         {
-            Alignment = (alignment & BoxAlignment.Horizontal) switch
-            {
-                BoxAlignment.Left => StringAlignment.Near, BoxAlignment.Right => StringAlignment.Far,
-                _ => StringAlignment.Center
-            },
-            LineAlignment = (alignment & BoxAlignment.Vertical) switch
-            {
-                BoxAlignment.Top => StringAlignment.Near, BoxAlignment.Bottom => StringAlignment.Far,
-                _ => StringAlignment.Center
-            },
+            Alignment =
+                (alignment & BoxAlignment.Horizontal) switch
+                {
+                    BoxAlignment.Left => StringAlignment.Near,
+                    BoxAlignment.Right => StringAlignment.Far,
+                    _ => StringAlignment.Center
+                },
+            LineAlignment =
+                (alignment & BoxAlignment.Vertical) switch
+                {
+                    BoxAlignment.Top => StringAlignment.Near,
+                    BoxAlignment.Bottom => StringAlignment.Far,
+                    _ => StringAlignment.Center
+                },
             Trimming = trimming,
-            FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces |
-                StringFormatFlags.NoClip
+            FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
 
         var font = getFont(fontName, 96 / metrics.DpiY * fontSize, FontStyle.Regular);
@@ -68,10 +78,8 @@ public sealed class TextGenerator : IDisposable
         textGraphics.InterpolationMode = InterpolationMode.NearestNeighbor;
         textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
 
-        textGraphics.DrawString(text, font, shadow, new RectangleF(padding.X + 1, padding.Y + 1, width, height),
-            stringFormat);
-        textGraphics.DrawString(text, font, Brushes.White, new RectangleF(padding.X, padding.Y, width, height),
-            stringFormat);
+        textGraphics.DrawString(text, font, shadow, new RectangleF(padding.X + 1, padding.Y + 1, width, height), stringFormat);
+        textGraphics.DrawString(text, font, Brushes.White, new RectangleF(padding.X, padding.Y, width, height), stringFormat);
 
         return bitmap;
     }
@@ -115,8 +123,7 @@ public sealed class TextGenerator : IDisposable
                     ArrayPool<byte>.Shared.Return(arr);
 
                     var families = fontCollection.Families;
-                    if (families.Length == 1)
-                        Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
+                    if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
                     else
                     {
                         Trace.TraceError($"Failed to load font {name}: Expected one family, got {families.Length}");
@@ -127,8 +134,7 @@ public sealed class TextGenerator : IDisposable
             fontFamilies.Add(name, fontFamily);
         }
 
-        if (fontFamily is not null)
-            font = new(fontFamily, emSize, style);
+        if (fontFamily is not null) font = new(fontFamily, emSize, style);
         else
         {
             font = new(name, emSize, style);
@@ -139,7 +145,7 @@ public sealed class TextGenerator : IDisposable
         return font;
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     void Dispose(bool disposing)
@@ -163,6 +169,7 @@ public sealed class TextGenerator : IDisposable
                 fontCollections = null;
                 fontFamilies = null;
             }
+
             disposed = true;
         }
     }
@@ -174,5 +181,5 @@ public sealed class TextGenerator : IDisposable
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

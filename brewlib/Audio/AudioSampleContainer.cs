@@ -14,11 +14,11 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
         filename = PathHelper.WithStandardSeparators(filename);
         if (!samples.TryGetValue(filename, out var sample))
             samples.Add(filename, sample = manager.LoadSample(filename, container));
-            
+
         return sample;
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -32,5 +32,5 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

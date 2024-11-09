@@ -26,11 +26,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         Parallel.For(0, runnerCount, i => actionRunners.Add(new(context, $"{threadName} #{i + 1}")));
     }
 
-    public bool Enabled
-    {
-        get => context.Enabled;
-        set => context.Enabled = value;
-    }
+    public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
 
     public int TaskCount
     {
@@ -48,8 +44,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         remove => context.OnActionFailed -= value;
     }
 
-    public void Queue(T target, Action<T> action, bool mustRunAlone = false)
-        => Queue(target, null, action, mustRunAlone);
+    public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
 
     public void Queue(T target, string uniqueKey, Action<T> action, bool mustRunAlone = false)
     {
@@ -103,21 +98,19 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 if (enabled == value) return;
                 enabled = value;
 
-                if (enabled)
-                    lock (Queue)
-                        if (Queue.Count > 0)
-                            Monitor.PulseAll(Queue);
+                if (!enabled) return;
+                lock (Queue)
+                    if (Queue.Count > 0)
+                        Monitor.PulseAll(Queue);
             }
         }
 
         internal event Action<T, Exception> OnActionFailed;
 
-        internal bool TriggerActionFailed(T target, Exception e)
+        internal void TriggerActionFailed(T target, Exception e)
         {
-            if (OnActionFailed is null) return false;
-
+            if (OnActionFailed is null) return;
             OnActionFailed.Invoke(target, e);
-            return true;
         }
     }
 
@@ -188,6 +181,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             task = context.Queue.Find(t
                                 => context.Running.Add(t.UniqueKey) && !t.MustRunAlone ||
                                 t.MustRunAlone && context.Running.Count == 0);
+
                             if (task is null)
                             {
                                 mustSleep = true;
@@ -226,27 +220,25 @@ public sealed class AsyncActionQueue<T> : IDisposable
         }
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose() => Dispose(true);
 
     void Dispose(bool disposing)
     {
-        if (!disposed)
+        if (disposed) return;
+        context.Enabled = false;
+        CancelQueuedActions(true);
+
+        if (disposing)
         {
-            context.Enabled = false;
-            CancelQueuedActions(true);
-
-            if (disposing)
-            {
-                actionRunners.Clear();
-                actionRunners = null;
-            }
-
-            disposed = true;
+            actionRunners.Clear();
+            actionRunners = null;
         }
+
+        disposed = true;
     }
 
-#endregion
+    #endregion
 }

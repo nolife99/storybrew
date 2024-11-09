@@ -71,7 +71,9 @@ public sealed class ScreenLayerManager : IDisposable
     }
     public void Exit()
     {
-        foreach (var layer in layers.ToArray()) if (!layer.IsExiting) layer.Exit();
+        foreach (var layer in layers.ToArray())
+            if (!layer.IsExiting)
+                layer.Exit();
     }
     public void Update(bool isFixedRateUpdate)
     {
@@ -106,6 +108,7 @@ public sealed class ScreenLayerManager : IDisposable
                 layer.FixedUpdate();
                 layer.MinTween = 0;
             }
+
             layer.Update(top, covered);
 
             if (!layer.IsPopup) covered = true;
@@ -117,17 +120,17 @@ public sealed class ScreenLayerManager : IDisposable
             foreach (var layer in removedLayers) layer.Dispose();
             removedLayers.Clear();
         }
+
         if (layers.Count == 0) window.Exit();
     }
 
-    public void Draw(DrawContext drawContext, float tween)
-        => layers.ForEach(layer =>
-        {
-            var layerTween = Math.Max(layer.MinTween, tween);
-            layer.MinTween = layerTween;
+    public void Draw(DrawContext drawContext, float tween) => layers.ForEach(layer =>
+    {
+        var layerTween = Math.Max(layer.MinTween, tween);
+        layer.MinTween = layerTween;
 
-            layer.Draw(drawContext, layerTween);
-        }, layer => layer.CurrentState != ScreenLayer.State.Hidden);
+        layer.Draw(drawContext, layerTween);
+    }, layer => layer.CurrentState != ScreenLayer.State.Hidden);
 
     void changeFocus(ScreenLayer layer)
     {
@@ -137,6 +140,7 @@ public sealed class ScreenLayerManager : IDisposable
             focusedLayer.LoseFocus();
             focusedLayer = null;
         }
+
         if (layer is null) return;
 
         inputDispatcher.Add(layer.InputHandler);
@@ -153,7 +157,7 @@ public sealed class ScreenLayerManager : IDisposable
         foreach (var layer in layers) layer.Resize(width, height);
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose() => Dispose(true);
@@ -175,5 +179,5 @@ public sealed class ScreenLayerManager : IDisposable
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

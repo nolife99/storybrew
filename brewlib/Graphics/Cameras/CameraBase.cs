@@ -9,10 +9,10 @@ public abstract class CameraBase : Camera
     static readonly Vector3 DefaultForward = new(0, -1, 0), DefaultUp = new(0, 0, 1);
 
     float farPlane, nearPlane;
-    bool needsUpdate;
 
     Vector3 forward = DefaultForward, up = DefaultUp, position = Vector3.Zero;
     Rectangle internalViewport, extendedViewport, viewport;
+    bool needsUpdate;
     Matrix4x4 projection, view, projectionView, invertedProjectionView;
 
     public CameraBase()
@@ -181,8 +181,8 @@ public abstract class CameraBase : Camera
         var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) /
             Math.Abs(transformedPosition.W);
 
-        return new Vector3((devicePosition.X + 1) * .5f * viewport.Width,
-            (-devicePosition.Y + 1) * .5f * viewport.Height, devicePosition.Z);
+        return new Vector3((devicePosition.X + 1) * .5f * viewport.Width, (-devicePosition.Y + 1) * .5f * viewport.Height,
+            devicePosition.Z);
     }
 
     public Vector3 ToScreen(Vector2 worldCoords) => ToScreen(new Vector3(worldCoords.X, worldCoords.Y, 0));
@@ -213,6 +213,8 @@ public abstract class CameraBase : Camera
 
     void drawState_ViewportChanged() => Viewport = DrawState.Viewport;
 
-    protected abstract void Recalculate(out Matrix4x4 view, out Matrix4x4 projection, out Rectangle internalViewport,
+    protected abstract void Recalculate(out Matrix4x4 view,
+        out Matrix4x4 projection,
+        out Rectangle internalViewport,
         out Rectangle extendedViewport);
 }

@@ -3,22 +3,20 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using BrewLib.Util;
 using Util;
 
 public static class Updater
 {
-    public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update",
-        FirstRunPath = "firstrun";
+    public const string UpdateArchivePath = "cache/net/update", UpdateFolderPath = "cache/update", FirstRunPath = "firstrun";
 
-    static readonly string[] ignoredPaths = [".vscode/", "cache/", "logs/", "settings.cfg"],
-        readOnlyPaths = ["scripts/"];
+    static readonly string[] ignoredPaths = [".vscode/", "cache/", "logs/", "settings.cfg"], readOnlyPaths = ["scripts/"];
 
     static readonly Version readOnlyVersion = new(1, 8);
 
-    public static void OpenLatestReleasePage()
-        => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/releases/latest");
+    public static void OpenLatestReleasePage() => NetHelper.OpenUrl($"https://github.com/{Program.Repository}/releases/latest");
 
     public static void Update(string destinationFolder, Version fromVersion)
     {
@@ -53,8 +51,7 @@ public static class Updater
         var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
         Trace.WriteLine($"\nUpdate complete, starting {processPath}");
-        Process.Start(
-            new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder });
+        Process.Start(new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder });
     }
 
     public static void NotifyEditorRun()
@@ -66,8 +63,7 @@ public static class Updater
         }
 
         if (File.Exists(UpdateArchivePath)) Misc.WithRetries(() => File.Delete(UpdateArchivePath), canThrow: false);
-        if (Directory.Exists(UpdateFolderPath))
-            Misc.WithRetries(() => Directory.Delete(UpdateFolderPath, true), canThrow: false);
+        if (Directory.Exists(UpdateFolderPath)) Misc.WithRetries(() => Directory.Delete(UpdateFolderPath, true), canThrow: false);
     }
 
     static void updateData(string destinationFolder, Version fromVersion)
@@ -145,15 +141,14 @@ public static class Updater
             var attributes = File.GetAttributes(destinationFilename);
             if (!attributes.HasFlag(FileAttributes.ReadOnly))
             {
-                // Don't update files that became readonly when coming from a version that didn't have them 
+                // Don't update files that became readonly when coming from a version that didn't have them
                 if (fromVersion < readOnlyVersion) return;
 
                 Trace.WriteLine($"  Creating backup for {destinationFilename}");
                 var backupFilename = destinationFilename + $".{DateTimeOffset.UtcNow.Ticks}.bak";
                 File.Move(destinationFilename, backupFilename);
             }
-            else
-                File.SetAttributes(destinationFilename, attributes & ~FileAttributes.ReadOnly);
+            else File.SetAttributes(destinationFilename, attributes & ~FileAttributes.ReadOnly);
         }
 
         Misc.WithRetries(() => File.Copy(sourceFilename, destinationFilename, true), 5000);
@@ -161,10 +156,5 @@ public static class Updater
     }
 
     static bool matchFilter(string filename, string[] filters)
-    {
-        foreach (var filter in filters)
-            if (filename.StartsWith(filter, StringComparison.Ordinal))
-                return true;
-        return false;
-    }
+        => filters.Any(filter => filename.StartsWith(filter, StringComparison.Ordinal));
 }

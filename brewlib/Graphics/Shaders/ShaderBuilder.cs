@@ -33,11 +33,9 @@ public class ShaderBuilder
 
     public ShaderVariable AddVarying(string shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
 
-    public ShaderVariable AddVertexVariable(string shaderTypeName)
-        => VertexShaderScope.AddVariable(Context, shaderTypeName);
+    public ShaderVariable AddVertexVariable(string shaderTypeName) => VertexShaderScope.AddVariable(Context, shaderTypeName);
 
-    public ShaderVariable AddFragmentVariable(string shaderTypeName)
-        => FragmentShaderScope.AddVariable(Context, shaderTypeName);
+    public ShaderVariable AddFragmentVariable(string shaderTypeName) => FragmentShaderScope.AddVariable(Context, shaderTypeName);
 
     public Shader Build(bool log = false)
     {
@@ -87,6 +85,7 @@ public class ShaderBuilder
         // Attributes
         foreach (var attribute in VertexDeclaration)
             code.AppendLine(CultureInfo.InvariantCulture, $"attribute {attribute.ShaderTypeName} {attribute.Name};");
+
         VertexShader.GenerateFunctions(code);
 
         // Main function

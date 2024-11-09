@@ -8,10 +8,9 @@ public class CameraOrtho : CameraBase
 {
     readonly bool yDown;
     int virtualHeight, virtualWidth;
-    float zoom = 1;
 
     public CameraOrtho(bool yDown = true) : this(0, 0, yDown) { }
-    public CameraOrtho(int virtualWidth, int virtualHeight, bool yDown = true)
+    CameraOrtho(int virtualWidth, int virtualHeight, bool yDown = true)
     {
         this.virtualWidth = virtualWidth;
         this.virtualHeight = virtualHeight;
@@ -34,6 +33,7 @@ public class CameraOrtho : CameraBase
             Invalidate();
         }
     }
+
     public int VirtualHeight
     {
         get => virtualHeight;
@@ -44,19 +44,12 @@ public class CameraOrtho : CameraBase
             Invalidate();
         }
     }
-    public float Zoom
-    {
-        get => zoom;
-        set
-        {
-            if (zoom == value) return;
-            zoom = value;
-            Invalidate();
-        }
-    }
+
     public float HeightScaling => VirtualHeight != 0 ? (float)Viewport.Height / VirtualHeight : 1;
 
-    protected override void Recalculate(out Matrix4x4 view, out Matrix4x4 projection, out Rectangle internalViewport,
+    protected override void Recalculate(out Matrix4x4 view,
+        out Matrix4x4 projection,
+        out Rectangle internalViewport,
         out Rectangle extendedViewport)
     {
         var screenViewport = Viewport;
@@ -75,11 +68,9 @@ public class CameraOrtho : CameraBase
 
         extendedViewport = orthoViewport;
 
-        projection =
-            Matrix4x4.CreateTranslation(orthoViewport.X - extendedViewport.Width * .5f,
+        projection = Matrix4x4.CreateTranslation(orthoViewport.X - extendedViewport.Width * .5f,
                 orthoViewport.Y - (yDown ? -extendedViewport.Height : extendedViewport.Height) * .5f, 0) *
-            Matrix4x4.CreateOrthographic(extendedViewport.Width * zoom, extendedViewport.Height * zoom, NearPlane,
-                FarPlane);
+            Matrix4x4.CreateOrthographic(extendedViewport.Width, extendedViewport.Height, NearPlane, FarPlane);
 
         view = Matrix4x4.CreateLookAt(Position, Position + Forward, Up);
     }

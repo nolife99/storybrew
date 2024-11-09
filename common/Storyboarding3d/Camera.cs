@@ -20,9 +20,14 @@ public abstract class Camera
     public abstract CameraState StateAt(float time);
 }
 
-public class CameraState(
-    Matrix4x4 viewProjection, float aspectRatio, float focusDistance, float resolutionScale, float nearClip,
-    float nearFade, float farFade, float farClip)
+public class CameraState(Matrix4x4 viewProjection,
+    float aspectRatio,
+    float focusDistance,
+    float resolutionScale,
+    float nearClip,
+    float nearFade,
+    float farFade,
+    float farClip)
 {
     public float AspectRatio => aspectRatio;
     public float FocusDistance => focusDistance;
@@ -36,8 +41,11 @@ public class CameraState(
     public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
     {
         var transformedPoint = Vector4.Transform(new Vector4(point, 1), transform);
-        var screenPosition = (new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W) + Vector2.One) / 2 * new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
-        return new(screenPosition.X - (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2, screenPosition.Y, transformedPoint.Z / transformedPoint.W, transformedPoint.W);
+        var screenPosition = (new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W) + Vector2.One) /
+            2 * new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
+
+        return new(screenPosition.X - (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2,
+            screenPosition.Y, transformedPoint.Z / transformedPoint.W, transformedPoint.W);
     }
     public float OpacityAt(float distance)
     {
@@ -47,7 +55,6 @@ public class CameraState(
     }
 }
 #pragma warning restore CS1591
-
 ///<summary> Represents a three-dimensional perspective camera. </summary>
 public class PerspectiveCamera : Camera
 {
@@ -84,7 +91,7 @@ public class PerspectiveCamera : Camera
     ///<summary> Represents the camera's vertical field-of-view. </summary>
     public readonly KeyframedValue<float> VerticalFov = new(InterpolatingFunctions.Float);
 
-    /// <summary> Returns the camera's state and information at <paramref name="time" />. </summary>
+    /// <summary> Returns the camera's state and information at <paramref name="time"/>. </summary>
     public override CameraState StateAt(float time)
     {
         var aspectRatio = AspectRatio;
@@ -97,8 +104,10 @@ public class PerspectiveCamera : Camera
             var fovX = MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
             fovY = 2 * MathF.Atan(MathF.Tan(fovX / 2) / aspectRatio);
         }
-        else fovY = VerticalFov.Count > 0 ? MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) : 2 *
-            MathF.Atan(Resolution.Height / 2 / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
+        else
+            fovY = VerticalFov.Count > 0 ?
+                MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
+                2 * MathF.Atan(Resolution.Height / 2 / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
 
         var focusDistance = Resolution.Height / 2 / MathF.Tan(fovY / 2);
         var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance / 2, 1);
@@ -107,8 +116,7 @@ public class PerspectiveCamera : Camera
         var view = Matrix4x4.CreateLookAt(cameraPosition, targetPosition, Up.ValueAt(time) * (1 / Up.ValueAt(time).Length()));
         var projection = Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip);
 
-        return new(view * projection, aspectRatio, focusDistance, ResolutionScale, nearClip, 
-            NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip, FarFade.Count > 0 ? FarFade.ValueAt(time) : farClip,
-            farClip);
+        return new(view * projection, aspectRatio, focusDistance, ResolutionScale, nearClip,
+            NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip, FarFade.Count > 0 ? FarFade.ValueAt(time) : farClip, farClip);
     }
 }

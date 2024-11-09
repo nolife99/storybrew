@@ -15,8 +15,7 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
 
     public PrimitiveStreamerVbo(VertexDeclaration vertexDeclaration, ushort[] indexes = null)
     {
-        if (vertexDeclaration.AttributeCount < 1)
-            throw new ArgumentException("At least one vertex attribute is required");
+        if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
 
         this.vertexDeclaration = vertexDeclaration;
         primitiveSize = Marshal.SizeOf<TPrimitive>();
@@ -50,14 +49,18 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
         if (indexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, 0);
         else GL.DrawArrays(type, 0, drawCount);
     }
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     protected virtual void initializeVertexBuffer() => vertexBufferId = GL.GenBuffer();
     protected virtual void initializeIndexBuffer(ushort[] indexes)
     {
         indexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId);
-        GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), indexes,
-            BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), indexes, BufferUsageHint.StaticDraw);
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
     protected virtual void internalBind(Shader shader)
@@ -78,11 +81,6 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
     }
 
     ~PrimitiveStreamerVbo() => Dispose(false);
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     protected virtual void Dispose(bool disposing)
     {
         if (disposed) return;

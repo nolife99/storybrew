@@ -23,8 +23,7 @@ public class Selectbox : Widget, Field
         {
             if (options is null) return;
             if (options.Length > 2)
-                Manager.ScreenLayerManager.ShowContextMenu("Select a value", optionValue => Value = optionValue.Value,
-                    options);
+                Manager.ScreenLayerManager.ShowContextMenu("Select a value", optionValue => Value = optionValue.Value, options);
             else
             {
                 var optionFound = false;
@@ -73,11 +72,7 @@ public class Selectbox : Widget, Field
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<SelectboxStyle>(BuildStyleName());
 
-    public object FieldValue
-    {
-        get => Value;
-        set => Value = value;
-    }
+    public object FieldValue { get => Value; set => Value = value; }
 
     public event EventHandler OnValueChanged;
 
@@ -101,6 +96,7 @@ public class Selectbox : Widget, Field
         foreach (var option in options)
             if (option.Value.Equals(value))
                 return option.Name;
+
         return "";
     }
 }

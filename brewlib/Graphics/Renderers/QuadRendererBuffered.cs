@@ -36,11 +36,12 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
     public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0) : this(
-        PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, maxQuadsPerBatch,
-        primitiveBufferSize) { }
+        PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, maxQuadsPerBatch, primitiveBufferSize) { }
 
-    public QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer, Shader shader,
-        int maxQuadsPerBatch, int primitiveBufferSize)
+    public QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
+        Shader shader,
+        int maxQuadsPerBatch,
+        int primitiveBufferSize)
     {
         if (shader is null)
         {
@@ -53,8 +54,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
         textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
 
-        var primitiveBatchSize = Math.Max(maxQuadsPerBatch,
-            primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize));
+        var primitiveBatchSize = Math.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize));
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerQuad);
 
         primitives = NativeMemory.Alloc((nuint)(maxQuadsPerBatch * Marshal.SizeOf<QuadPrimitive>()));
@@ -62,6 +62,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     }
 
     public Shader Shader => ownsShader ? null : shader;
+
     public Camera Camera
     {
         get => camera;
@@ -153,8 +154,13 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         ++RenderedQuadCount;
         ++quadsInBatch;
     }
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
-#region Default Shader
+    #region Default Shader
 
     public static Shader CreateDefaultShader()
     {
@@ -167,24 +173,19 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         var textureCoord = sb.AddVarying("vec2");
 
         sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
-            new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
-            new Assign(sb.GlPosition,
+            new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)), new Assign(sb.GlPosition,
                 () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                 }, 0, 1)"));
-        sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor,
-            () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
+
+        sb.FragmentShader =
+            new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
 
         return sb.Build();
     }
 
-#endregion
+    #endregion
 
     ~QuadRendererBuffered() => Dispose(false);
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     void Dispose(bool disposing)
     {
         if (disposed) return;

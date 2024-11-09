@@ -8,14 +8,32 @@ using Util;
 
 public static class QuadRendererExtensions
 {
-    public static void Draw(this QuadRenderer renderer, Texture2dRegion texture, float x, float y, float originX,
-        float originY, float scaleX, float scaleY, float rotation, Color color)
-        => renderer.Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width,
-            texture.Height);
+    public static void Draw(this QuadRenderer renderer,
+        Texture2dRegion texture,
+        float x,
+        float y,
+        float originX,
+        float originY,
+        float scaleX,
+        float scaleY,
+        float rotation,
+        Color color) => renderer.Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width,
+        texture.Height);
 
-    public static void Draw(this QuadRenderer renderer, Texture2dRegion texture, float x, float y, float originX,
-        float originY, float scaleX, float scaleY, float rotation, Color color, float textureX0, float textureY0,
-        float textureX1, float textureY1)
+    public static void Draw(this QuadRenderer renderer,
+        Texture2dRegion texture,
+        float x,
+        float y,
+        float originX,
+        float originY,
+        float scaleX,
+        float scaleY,
+        float rotation,
+        Color color,
+        float textureX0,
+        float textureY0,
+        float textureX1,
+        float textureY1)
     {
         var width = textureX1 - textureX0;
         var height = textureY1 - textureY0;
@@ -78,14 +96,7 @@ public static class QuadRendererExtensions
 
         QuadPrimitive primitive = new()
         {
-            x1 = x1 + x,
-            y1 = y1 + y,
-            x2 = x2 + x,
-            y2 = y2 + y,
-            x3 = x3 + x,
-            y3 = y3 + y,
-            x4 = x4 + x,
-            y4 = y4 + y
+            x1 = x1 + x, y1 = y1 + y, x2 = x2 + x, y2 = y2 + y, x3 = x3 + x, y3 = y3 + y, x4 = x4 + x, y4 = y4 + y
         };
 
         var textureUvBounds = texture.UvBounds;
@@ -132,13 +143,26 @@ public static class QuadRendererExtensions
         renderer.Draw(ref primitive, texture);
     }
 
-    public static void DrawArc(this QuadRenderer renderer, Vector2 center, float innerRadius, float outerRadius,
-        float startAngle, float angleLength, Texture2dRegion texture, Color color, float precision = 1)
-        => DrawArc(renderer, center, innerRadius, outerRadius, startAngle, angleLength, texture, color, color,
-            precision);
+    public static void DrawArc(this QuadRenderer renderer,
+        Vector2 center,
+        float innerRadius,
+        float outerRadius,
+        float startAngle,
+        float angleLength,
+        Texture2dRegion texture,
+        Color color,
+        float precision = 1) => DrawArc(renderer, center, innerRadius, outerRadius, startAngle, angleLength, texture, color,
+        color, precision);
 
-    public static void DrawArc(this QuadRenderer renderer, Vector2 center, float innerRadius, float outerRadius,
-        float startAngle, float angleLength, Texture2dRegion texture, Color innerColor, Color outerColor,
+    public static void DrawArc(this QuadRenderer renderer,
+        Vector2 center,
+        float innerRadius,
+        float outerRadius,
+        float startAngle,
+        float angleLength,
+        Texture2dRegion texture,
+        Color innerColor,
+        Color outerColor,
         float precision = 1)
     {
         texture ??= DrawState.WhitePixel;
@@ -149,8 +173,7 @@ public static class QuadRendererExtensions
 
         var absAngleLength = Math.Abs(angleLength);
         var circumference = absAngleLength * outerRadius;
-        var lineCount = Math.Max(2,
-            Math.Max(absAngleLength / MathF.PI * 16, (int)MathF.Round(circumference * precision)));
+        var lineCount = Math.Max(2, Math.Max(absAngleLength / MathF.PI * 16, (int)MathF.Round(circumference * precision)));
 
         var u = (uMax - uMin) / lineCount;
         var angleStep = angleLength / lineCount;

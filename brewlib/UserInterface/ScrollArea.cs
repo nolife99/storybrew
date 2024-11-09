@@ -16,6 +16,7 @@ public class ScrollArea : Widget
     {
         ClipChildren = true;
         Add(scrollContainer = new(manager) { FitChildren = true, Children = [scrollable] });
+
         Add(scrollIndicatorTop = new(manager)
         {
             StyleName = "icon",
@@ -25,6 +26,7 @@ public class ScrollArea : Widget
             Hoverable = false,
             Opacity = .6f
         });
+
         Add(scrollIndicatorBottom = new(manager)
         {
             StyleName = "icon",
@@ -34,6 +36,7 @@ public class ScrollArea : Widget
             Hoverable = false,
             Opacity = .6f
         });
+
         Add(scrollIndicatorLeft = new(manager)
         {
             StyleName = "icon",
@@ -43,6 +46,7 @@ public class ScrollArea : Widget
             Hoverable = false,
             Opacity = .6f
         });
+
         Add(scrollIndicatorRight = new(manager)
         {
             StyleName = "icon",
@@ -52,31 +56,37 @@ public class ScrollArea : Widget
             Hoverable = false,
             Opacity = .6f
         });
+
         OnHovered += (_, e) =>
         {
             hovered = e.Hovered;
             updateScrollIndicators();
         };
+
         OnClickDown += (_, e) =>
         {
             if (e.Button != MouseButton.Left) return false;
             dragged = true;
             return true;
         };
+
         OnClickUp += (_, e) =>
         {
             if (e.Button != MouseButton.Left) return;
             dragged = false;
         };
+
         OnClickMove += (_, e) =>
         {
             if (!dragged) return;
             scroll(e.XDelta, e.YDelta);
         };
+
         OnMouseWheel += (_, e) =>
         {
             if (scrollsVertically) scroll(0, e.DeltaPrecise * 64);
             else if (scrollsHorizontally) scroll(e.DeltaPrecise * 64, 0);
+
             return true;
         };
 
@@ -100,6 +110,7 @@ public class ScrollArea : Widget
             updateScrollIndicators();
         }
     }
+
     public bool ScrollsHorizontally
     {
         get => scrollsHorizontally;
@@ -133,6 +144,7 @@ public class ScrollArea : Widget
 
         scrollContainer.Offset = new(Math.Max(-ScrollableX, Math.Min(scrollContainer.Offset.X + x, 0)),
             Math.Max(-ScrollableY, Math.Min(scrollContainer.Offset.Y + y, 0)));
+
         updateScrollIndicators();
     }
     void updateScrollIndicators()
@@ -142,9 +154,7 @@ public class ScrollArea : Widget
         scrollIndicatorLeft.Displayed = hovered && scrollsHorizontally && scrollContainer.Offset.X < 0;
         scrollIndicatorRight.Displayed = hovered && scrollsHorizontally && scrollContainer.Offset.X > -ScrollableX;
 
-        scrollIndicatorBottom.Offset =
-            scrollIndicatorRight.Displayed ? new(0, -scrollIndicatorRight.Height) : Vector2.Zero;
-        scrollIndicatorRight.Offset =
-            scrollIndicatorBottom.Displayed ? new(-scrollIndicatorBottom.Width, 0) : Vector2.Zero;
+        scrollIndicatorBottom.Offset = scrollIndicatorRight.Displayed ? new(0, -scrollIndicatorRight.Height) : Vector2.Zero;
+        scrollIndicatorRight.Offset = scrollIndicatorBottom.Displayed ? new(-scrollIndicatorBottom.Width, 0) : Vector2.Zero;
     }
 }

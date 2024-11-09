@@ -51,14 +51,14 @@ public sealed class Editor(GameWindow window) : IDisposable
 
     public void Initialize(ScreenLayer initialLayer = null)
     {
-        ResourceContainer = new AssemblyResourceContainer(typeof(Editor).Assembly,
-            $"{nameof(StorybrewEditor)}.Resources", "resources");
+        ResourceContainer =
+            new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
+
         DrawState.Initialize(ResourceContainer, window.Width, window.Height);
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, width: 1024, height: 1024),
-            true);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, width: 1024, height: 1024), true);
         drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
 
@@ -67,25 +67,20 @@ public sealed class Editor(GameWindow window) : IDisposable
             var brewLibAssembly = typeof(Drawable).Assembly;
             Skin = new(drawContext.Get<TextureContainer>())
             {
-                ResolveDrawableType =
-                    drawableTypeName
-                        => brewLibAssembly.GetType(
-                            $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{
-                                drawableTypeName}", true, true),
+                ResolveDrawableType = drawableTypeName => brewLibAssembly.GetType(
+                    $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{
+                        drawableTypeName}", true, true),
                 ResolveWidgetType =
                     widgetTypeName
-                        => Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}",
-                            false, true) ??
-                        brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true,
-                            true),
-                ResolveStyleType = styleTypeName
-                    => Type.GetType(
-                        $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{
-                            nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ??
-                    brewLibAssembly.GetType(
-                        $"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{
-                            nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true)
+                        => Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
+                        brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true, true),
+                ResolveStyleType = styleTypeName => Type.GetType(
+                    $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{
+                        nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ?? brewLibAssembly.GetType(
+                    $"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{
+                        nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true)
             };
+
             Skin.Load("skin.json", ResourceContainer);
         }
         catch (Exception e)
@@ -157,7 +152,7 @@ public sealed class Editor(GameWindow window) : IDisposable
         public nint Handle => Native.MainWindowHandle;
     }
 
-#region Overlay
+    #region Overlay
 
     WidgetManager overlay;
     CameraOrtho overlayCamera;
@@ -190,6 +185,7 @@ public sealed class Editor(GameWindow window) : IDisposable
                 }
             ]
         });
+
         overlayTop.Pack(1024, 16);
 
         overlay.Root.Add(altOverlayTop = new(overlay)
@@ -206,6 +202,7 @@ public sealed class Editor(GameWindow window) : IDisposable
                 volumeSlider = new(overlay) { Step = .01f }
             ]
         });
+
         altOverlayTop.Pack(0, 0, 1024);
 
         Program.Settings.Volume.Bind(volumeSlider, () => volumeSlider.Tooltip = $"Volume: {volumeSlider.Value:P0}");
@@ -230,8 +227,9 @@ public sealed class Editor(GameWindow window) : IDisposable
 
         var altOpacity = altOverlayTop.Opacity;
         var targetOpacity = showAltOverlayTop ? 1f : 0;
-        altOpacity = Math.Abs(altOpacity - targetOpacity) <= .07f ? targetOpacity
-            : Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
+        altOpacity = Math.Abs(altOpacity - targetOpacity) <= .07f ?
+            targetOpacity :
+            Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
 
         overlayTop.Opacity = 1 - altOpacity;
         overlayTop.Displayed = altOpacity < 1;
@@ -242,5 +240,5 @@ public sealed class Editor(GameWindow window) : IDisposable
         if (statsLabel.Visible) statsLabel.Text = Program.Stats;
     }
 
-#endregion
+    #endregion
 }

@@ -23,6 +23,7 @@ public class ShaderContext
     {
         if (dependantVariables is null && !flowDependant)
             throw new InvalidOperationException("Cannot reference variables while dependencies aren't defined");
+
         if (flowDependant) flowVariables.Add(referencedVariable);
 
         if (dependantVariables is null) return;
@@ -38,8 +39,9 @@ public class ShaderContext
     public void MarkUsedVariables(Action action, params ShaderVariable[] outputVariables)
     {
         if (canReceiveCommands)
-            throw new InvalidOperationException(code is null ? "Already marking used variables"
-                : "Can't mark used variables while generate code");
+            throw new InvalidOperationException(code is null ?
+                "Already marking used variables" :
+                "Can't mark used variables while generate code");
 
         canReceiveCommands = true;
         action();
@@ -51,8 +53,9 @@ public class ShaderContext
     public void GenerateCode(StringBuilder code, Action action)
     {
         if (canReceiveCommands)
-            throw new InvalidOperationException(this.code is not null ? "Already generating code"
-                : "Can't generate code while mark used variables");
+            throw new InvalidOperationException(this.code is not null ?
+                "Already generating code" :
+                "Can't generate code while mark used variables");
 
         this.code = code;
         canReceiveCommands = true;
@@ -101,15 +104,14 @@ public class ShaderContext
         ArgumentNullException.ThrowIfNull(result);
         if (declare && components is not null)
             throw new InvalidOperationException("Cannot set components when declaring a variable");
+
         if (expression is not null)
             Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
                 components is not null ? $"{result.Ref}.{components} = {expression()}" :
                 $"{result.Ref} = {expression()}", result);
 
-        else if (declare)
-            code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName} {result.Name};");
-        else
-            throw new ArgumentNullException(nameof(expression));
+        else if (declare) code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName} {result.Name};");
+        else throw new ArgumentNullException(nameof(expression));
     }
     void markUsed(ShaderVariable var)
     {
@@ -120,6 +122,7 @@ public class ShaderContext
     void checkCanReceiveCommands()
     {
         if (!canReceiveCommands)
-            throw new InvalidOperationException($"Cannot receive commands outside of {nameof(MarkUsedVariables)} or {nameof(GenerateCode)}");
+            throw new InvalidOperationException(
+                $"Cannot receive commands outside of {nameof(MarkUsedVariables)} or {nameof(GenerateCode)}");
     }
 }

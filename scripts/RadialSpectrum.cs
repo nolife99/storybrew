@@ -18,27 +18,19 @@ internal class RadialSpectrum : StoryboardObjectGenerator
     [Configurable] public int FrequencyCutOff = 16000;
     [Configurable] public int LogScale = 600;
 
-    [Group("Bars"), Configurable]
-    
-    public Vector2 Position = new(320, 240);
+    [Group("Bars"), Configurable] public Vector2 Position = new(320, 240);
 
     [Configurable] public int Radius = 50;
     [Configurable] public float Scale = 50;
     [Configurable] public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
 
-    [Group("Sprite"), Configurable]
-    
-    public string SpritePath = "sb/bar.png";
+    [Group("Sprite"), Configurable] public string SpritePath = "sb/bar.png";
 
     [Configurable] public Vector2 SpriteScale = Vector2.One;
 
-    [Group("Timing"), Configurable]
-    
-    public int StartTime;
+    [Group("Timing"), Configurable] public int StartTime;
 
-    [Group("Optimization"), Configurable]
-    
-    public float Tolerance = 2;
+    [Group("Optimization"), Configurable] public float Tolerance = 2;
 
     protected override void Generate()
     {
@@ -82,10 +74,9 @@ internal class RadialSpectrum : StoryboardObjectGenerator
 
             var bar = layer.CreateSprite(SpritePath, SpriteOrigin);
             bar.ColorHsb(StartTime, i * 360f / BarCount + Random(-10f, 10), .6f + Random(.4f), 1);
-            if (SpriteScale.X == SpriteScale.Y)
-                bar.Scale(StartTime, barScale * SpriteScale.X);
-            else
-                bar.ScaleVec(StartTime, barScale * SpriteScale.X, barScale * SpriteScale.Y);
+            if (SpriteScale.X == SpriteScale.Y) bar.Scale(StartTime, barScale * SpriteScale.X);
+            else bar.ScaleVec(StartTime, barScale * SpriteScale.X, barScale * SpriteScale.Y);
+
             bar.Rotate(StartTime, angle);
             bar.Additive(StartTime);
 

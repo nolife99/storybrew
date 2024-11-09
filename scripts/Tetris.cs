@@ -23,23 +23,15 @@ internal class Tetris : StoryboardObjectGenerator
     [Configurable] public int GridWidth = 10;
     [Configurable] public float Rotation = 0;
 
-    [Group("Grid"), Configurable]
-    
-    public Vector2 ShadowOffset = new(4);
+    [Group("Grid"), Configurable] public Vector2 ShadowOffset = new(4);
 
-    [Group("Sprite"), Configurable]
-    
-    public string SpritePath = "sb/sq.png";
+    [Group("Sprite"), Configurable] public string SpritePath = "sb/sq.png";
 
     [Configurable] public float SpriteScale = .625f;
 
-    [Group("Timing"), Configurable]
-    
-    public int StartTime = 0;
+    [Group("Timing"), Configurable] public int StartTime = 0;
 
-    [Group("AI"), Configurable]
-    
-    public bool Wait = true;
+    [Group("AI"), Configurable] public bool Wait = true;
 
     protected override void Generate()
     {

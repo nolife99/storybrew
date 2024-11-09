@@ -12,17 +12,14 @@ public class OsuHitObject
     public static readonly SizeF PlayfieldSize = new(512, 384), StoryboardSize = new(640, 480);
 
     ///<summary> Represents the offset between the playfield and the storyboard field in osu!. </summary>
-    public static readonly CommandPosition PlayfieldToStoryboardOffset =
-        new((StoryboardSize.Width - PlayfieldSize.Width) / 2,
-            (StoryboardSize.Height - PlayfieldSize.Height) * .75 - 16);
+    public static readonly CommandPosition PlayfieldToStoryboardOffset = new((StoryboardSize.Width - PlayfieldSize.Width) / 2,
+        (StoryboardSize.Height - PlayfieldSize.Height) * .75 - 16);
 
     ///<summary> Represents the widescreen storyboard size in osu!. </summary>
-    public static readonly SizeF WidescreenStoryboardSize =
-        StoryboardSize with { Width = StoryboardSize.Width * 4 / 3 };
+    public static readonly SizeF WidescreenStoryboardSize = StoryboardSize with { Width = StoryboardSize.Width * 4 / 3 };
 
     ///<summary> Represents the area of the widescreen storyboard size in osu!. </summary>
-    public static readonly float WidescreenStoryboardArea =
-        WidescreenStoryboardSize.Width * WidescreenStoryboardSize.Height;
+    public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.Width * WidescreenStoryboardSize.Height;
 
     ///<summary> Represents the bounds of the storyboard size in osu!. </summary>
     public static readonly RectangleF StoryboardBounds = new(default, StoryboardSize);
@@ -91,13 +88,13 @@ public class OsuHitObject
     ///<summary> Represents this hit object's combo color number. </summary>
     public int ComboOffset => (int)Flags >> 4 & 7;
 
-    /// <returns> This hit object's position at <paramref name="time" />. </returns>
+    /// <returns> This hit object's position at <paramref name="time"/>. </returns>
     public virtual CommandPosition PlayfieldPositionAtTime(float time) => PlayfieldPosition;
 
-    /// <returns> This hit object's storyboard position at <paramref name="time" />. </returns>
+    /// <returns> This hit object's storyboard position at <paramref name="time"/>. </returns>
     public CommandPosition PositionAtTime(float time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public override string ToString() => $"{StartTime}, {Flags}";
 
     ///<summary> Parses a hit object from a given beatmap and line. </summary>
@@ -120,17 +117,20 @@ public class OsuHitObject
         var volume = controlPoint.Volume;
 
         if (flags.HasFlag(HitObjectFlag.Circle))
-            return OsuCircle.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet,
-                customSampleSet, volume);
+            return OsuCircle.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
+                volume);
+
         if (flags.HasFlag(HitObjectFlag.Slider))
-            return OsuSlider.Parse(beatmap, values, x, y, startTime, flags, additions, timingPoint, controlPoint,
-                sampleSet, additionsSampleSet, customSampleSet, volume);
+            return OsuSlider.Parse(beatmap, values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet,
+                additionsSampleSet, customSampleSet, volume);
+
         if (flags.HasFlag(HitObjectFlag.Hold))
-            return OsuHold.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet,
-                customSampleSet, volume);
+            return OsuHold.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
+                volume);
+
         if (flags.HasFlag(HitObjectFlag.Spinner))
-            return OsuSpinner.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet,
-                customSampleSet, volume);
+            return OsuSpinner.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
+                volume);
 
         throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line
         }");

@@ -50,6 +50,7 @@ public class Sprite : Drawable
                     textureX0 = (Texture.Width - bounds.Width / scale) * .5f;
                     textureX1 = Texture.Width - textureX0;
                 }
+
                 break;
 
             case ScaleMode.Fit:
@@ -70,17 +71,19 @@ public class Sprite : Drawable
                     renderer.Draw(Texture, x, y, 0, 0, scale, scale, 0, color, 0, 0,
                         Math.Min((bounds.Right - x) / scale, Texture.Width),
                         Math.Min((bounds.Bottom - y) / scale, Texture.Height));
+
                 break;
 
             default:
                 renderer.Draw(Texture, (bounds.Left + bounds.Right) * .5f, (bounds.Top + bounds.Bottom) * .5f,
-                    (textureX1 - textureX0) * .5f, (textureY1 - textureY0) * .5f, scale, scale, Rotation, color,
-                    textureX0, textureY0, textureX1, textureY1);
+                    (textureX1 - textureX0) * .5f, (textureY1 - textureY0) * .5f, scale, scale, Rotation, color, textureX0,
+                    textureY0, textureX1, textureY1);
+
                 break;
         }
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     public void Dispose()
     {
@@ -96,5 +99,5 @@ public class Sprite : Drawable
         }
     }
 
-#endregion
+    #endregion
 }

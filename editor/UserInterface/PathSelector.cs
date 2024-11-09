@@ -10,12 +10,12 @@ using Skinning.Styles;
 
 public class PathSelector : Widget
 {
+    const string SaveExtension = "";
     readonly Button button;
     readonly LinearLayout layout;
     readonly Textbox textbox;
 
     public string Filter = "All files (*.*)|*.*";
-    public string SaveExtension = "";
 
     public PathSelector(WidgetManager manager, PathSelectorMode mode) : base(manager)
     {
@@ -28,10 +28,7 @@ public class PathSelector : Widget
             FitChildren = true,
             Children =
             [
-                textbox = new(manager)
-                {
-                    AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft
-                },
+                textbox = new(manager) { AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft },
                 button = new(manager)
                 {
                     Icon = IconFont.FolderOpen,
@@ -56,16 +53,17 @@ public class PathSelector : Widget
                 case PathSelectorMode.OpenFile:
                     Manager.ScreenLayerManager.OpenFilePicker(LabelText, textbox.Value, null, Filter,
                         path => textbox.Value = path);
+
                     break;
 
                 case PathSelectorMode.OpenDirectory:
-                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, "", textbox.Value, Filter,
-                        path => textbox.Value = path);
+                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, "", textbox.Value, Filter, path => textbox.Value = path);
                     break;
 
                 case PathSelectorMode.SaveFile:
                     Manager.ScreenLayerManager.OpenSaveLocationPicker(LabelText, textbox.Value, SaveExtension, Filter,
                         path => textbox.Value = path);
+
                     break;
             }
         };
@@ -75,17 +73,9 @@ public class PathSelector : Widget
     public override Vector2 MaxSize => layout.MaxSize;
     public override Vector2 PreferredSize => layout.PreferredSize;
 
-    public string LabelText
-    {
-        get => textbox.LabelText;
-        set => textbox.LabelText = value;
-    }
+    public string LabelText { get => textbox.LabelText; init => textbox.LabelText = value; }
 
-    public string Value
-    {
-        get => textbox.Value;
-        set => textbox.Value = value;
-    }
+    public string Value { get => textbox.Value; set => textbox.Value = value; }
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<PathSelectorStyle>(BuildStyleName());
 

@@ -4,7 +4,7 @@ public interface ReadOnlyTimeSource
 {
     float Current { get; }
     float TimeFactor { get; }
-    
+
     bool Playing { get; }
 }
 

@@ -2,5 +2,6 @@
 
 public enum ScaleMode
 {
-    None, Fill, Fit, Repeat, RepeatFit
+    None, Fill, Fit,
+    Repeat, RepeatFit
 }

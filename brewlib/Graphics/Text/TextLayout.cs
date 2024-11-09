@@ -29,7 +29,7 @@ public class TextLayout
         if (lines.Count == 0) lines.Add(new(this, 0, alignment, true));
         var lastLine = lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
-        lastLine.Add(new(null, 0, font.LineHeight), glyphIndex++);
+        lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);
 
         Size = new(width, height);
     }
@@ -40,7 +40,10 @@ public class TextLayout
     {
         get
         {
-            foreach (var glyph in lines.SelectMany(line => line.Glyphs)) if (!glyph.Glyph.IsEmpty) yield return glyph;
+            foreach (var line in lines)
+            foreach (var glyph in line.Glyphs)
+                if (!glyph.Glyph.IsEmpty)
+                    yield return glyph;
         }
     }
 
@@ -79,8 +82,10 @@ public class TextLayout
                 if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * .5f) return index;
                 ++index;
             }
+
             if (lineMatches) return index - 1;
         }
+
         return index - 1;
     }
     public int GetCharacterIndexAbove(int index)
@@ -99,6 +104,7 @@ public class TextLayout
             index -= line.GlyphCount;
             ++lineIndex;
         }
+
         return getLastGlyph().Index;
     }
     public int GetCharacterIndexBelow(int index)
@@ -122,6 +128,7 @@ public class TextLayout
             index -= line.GlyphCount;
             ++lineIndex;
         }
+
         return getLastGlyph().Index;
     }
     public TextLayoutGlyph GetGlyph(int index)
@@ -131,6 +138,7 @@ public class TextLayout
             if (index < line.GlyphCount) return line.GetGlyph(index);
             index -= line.GlyphCount;
         }
+
         return getLastGlyph();
     }
     TextLayoutGlyph getLastGlyph()
@@ -142,29 +150,27 @@ public class TextLayout
 
 public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph)
 {
-    readonly List<TextLayoutGlyph> glyphs = [];
-    public IEnumerable<TextLayoutGlyph> Glyphs => glyphs;
-
-    public int GlyphCount => glyphs.Count;
+    public List<TextLayoutGlyph> Glyphs { get; } = [];
+    public int GlyphCount => Glyphs.Count;
 
     public int Width { get; private set; }
     public int Height { get; private set; }
 
-    public Vector2 Position
-        => new((alignment & BoxAlignment.Left) > 0 ? 0 :
-            (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f, y);
+    public Vector2 Position => new((alignment & BoxAlignment.Left) > 0 ? 0 :
+        (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f, y);
 
     public void Add(FontGlyph glyph, int glyphIndex)
     {
         if (!glyph.IsEmpty) advanceOnEmptyGlyph = true;
 
-        glyphs.Add(new(this, glyph, glyphIndex, Width));
+        Glyphs.Add(new(this, glyph, glyphIndex, Width));
         if (advanceOnEmptyGlyph) Width += glyph.Width;
         Height = Math.Max(Height, glyph.Height);
     }
 
-    public TextLayoutGlyph GetGlyph(int index) => glyphs[index];
+    public TextLayoutGlyph GetGlyph(int index) => Glyphs[index];
 }
+
 public class TextLayoutGlyph(TextLayoutLine line, FontGlyph glyph, int index, float x)
 {
     public FontGlyph Glyph => glyph;

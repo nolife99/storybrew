@@ -11,8 +11,7 @@ public class GamepadManager(int gamepadIndex)
     GamePadState state = GamePad.GetState(gamepadIndex);
     Vector2 thumb, thumbAlt;
 
-    public float TriggerInnerDeadzone = .1f, TriggerOuterDeadzone = .1f, AxisInnerDeadzone = .3f,
-        AxisOuterDeadzone = .1f;
+    public float TriggerInnerDeadzone = .1f, TriggerOuterDeadzone = .1f, AxisInnerDeadzone = .3f, AxisOuterDeadzone = .1f;
 
     public int PlayerIndex => gamepadIndex;
     public bool Connected => state.IsConnected;
@@ -25,11 +24,9 @@ public class GamepadManager(int gamepadIndex)
 
     public bool IsDown(GamepadButton button) => (pressedButtons & button) != 0;
 
-    public bool IsPressed(GamepadButton button)
-        => (previousPressedButtons & button) == 0 && (pressedButtons & button) != 0;
+    public bool IsPressed(GamepadButton button) => (previousPressedButtons & button) == 0 && (pressedButtons & button) != 0;
 
-    public bool IsReleased(GamepadButton button)
-        => (previousPressedButtons & button) != 0 && (pressedButtons & button) == 0;
+    public bool IsReleased(GamepadButton button) => (previousPressedButtons & button) != 0 && (pressedButtons & button) == 0;
 
     public event EventHandler<GamepadEventArgs> OnConnected;
     public event EventHandler<GamepadButtonEventArgs> OnButtonDown, OnButtonUp;
@@ -104,8 +101,7 @@ public class GamepadManager(int gamepadIndex)
 
             if (((int)pressedButtons & button) != 0)
                 OnButtonDown?.Invoke(this, new GamepadButtonEventArgs(this, (GamepadButton)button));
-            else
-                OnButtonUp?.Invoke(this, new GamepadButtonEventArgs(this, (GamepadButton)button));
+            else OnButtonUp?.Invoke(this, new GamepadButtonEventArgs(this, (GamepadButton)button));
         }
     }
 
@@ -117,8 +113,7 @@ public class GamepadManager(int gamepadIndex)
     {
         if (state > .5f || isKeyDown(key)) pressedButtons |= button;
     }
-    void updateAxis(float state, GamepadButton negativeButton, GamepadButton positiveButton, Key negativeKey,
-        Key positiveKey)
+    void updateAxis(float state, GamepadButton negativeButton, GamepadButton positiveButton, Key negativeKey, Key positiveKey)
     {
         if (state > .5f || isKeyDown(positiveKey)) pressedButtons |= positiveButton;
         if (state < -.5f || isKeyDown(negativeKey)) pressedButtons |= negativeButton;
@@ -132,8 +127,8 @@ public class GamepadManager(int gamepadIndex)
     Vector2 applyAxisFilters(Vector2 value)
     {
         var length = value.Length;
-        return length < AxisInnerDeadzone ? 
-            Vector2.Zero : 
+        return length < AxisInnerDeadzone ?
+            Vector2.Zero :
             value * Math.Min(1, (length - AxisInnerDeadzone) / (1 - AxisOuterDeadzone - AxisInnerDeadzone)) / length;
     }
 
@@ -144,6 +139,7 @@ public class GamepadEventArgs(GamepadManager manager) : EventArgs
 {
     public GamepadManager Manager = manager;
 }
+
 public class GamepadButtonEventArgs(GamepadManager manager, GamepadButton button) : GamepadEventArgs(manager)
 {
     public GamepadButton Button = button;

@@ -30,10 +30,7 @@ public class PromptBox(string title, string description, string initialText, Act
                 {
                     StyleName = "small", Text = description, AnchorFrom = BoxAlignment.Centre
                 },
-                textbox = new(WidgetManager)
-                {
-                    LabelText = title, AnchorFrom = BoxAlignment.Centre, Value = initialText
-                },
+                textbox = new(WidgetManager) { LabelText = title, AnchorFrom = BoxAlignment.Centre, Value = initialText },
                 new LinearLayout(WidgetManager)
                 {
                     Horizontal = true,
@@ -41,10 +38,7 @@ public class PromptBox(string title, string description, string initialText, Act
                     Children =
                     [
                         okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
-                        cancelButton = new(WidgetManager)
-                        {
-                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
-                        }
+                        cancelButton = new(WidgetManager) { Text = "Cancel", AnchorFrom = BoxAlignment.Centre }
                     ]
                 }
             ]
@@ -57,6 +51,7 @@ public class PromptBox(string title, string description, string initialText, Act
             Exit();
             action?.Invoke(textbox.Value);
         };
+
         cancelButton.OnClick += (_, _) => Exit();
     }
     public override void OnTransitionIn()

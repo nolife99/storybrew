@@ -6,7 +6,7 @@ using System.Linq;
 using System.Numerics;
 
 #pragma warning disable CS1591
-/// <summary> Constructs a bézier curve from a list of points <paramref name="points" />. </summary>
+/// <summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
 public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
 {
     [ThreadStatic] static Vector2[] intermediatePoints;

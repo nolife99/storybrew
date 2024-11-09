@@ -14,10 +14,10 @@ public readonly struct Keyframe<TValue>(float time, TValue value, Func<float, fl
     ///<summary> Value of this keyframe. </summary>
     public readonly TValue Value = value;
 
-    /// <summary> <see cref="EasingFunctions" /> easing of this keyframe. </summary>
+    /// <summary> <see cref="EasingFunctions"/> easing of this keyframe. </summary>
     public readonly Func<float, float> Ease = easing ?? EasingFunctions.Linear;
 
-    /// <summary> Reserved for <see cref="Storyboarding.Util.CommandGenerator" />. </summary>
+    /// <summary> Reserved for <see cref="Storyboarding.Util.CommandGenerator"/>. </summary>
     internal readonly bool Until = until;
 
     /// <summary> Initializes a new keyframe with a default value. </summary>
@@ -27,7 +27,7 @@ public readonly struct Keyframe<TValue>(float time, TValue value, Func<float, fl
     /// <summary> Initializes a new keyframe. </summary>
     /// <param name="time"> Time of the keyframe. </param>
     /// <param name="value"> A value to be assigned to the keyframe. </param>
-    /// <param name="easing"> <see cref="EasingFunctions" /> easing to be assigned. </param>
+    /// <param name="easing"> <see cref="EasingFunctions"/> easing to be assigned. </param>
     public Keyframe(float time, TValue value, Func<float, float> easing = null) : this(time, value, easing, false) { }
 
     ///<summary> Overrides a keyframe's time. </summary>
@@ -43,6 +43,6 @@ public readonly struct Keyframe<TValue>(float time, TValue value, Func<float, fl
 
     int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Math.Sign(x.Time - y.Time);
 
-    /// <summary> Creates a formatted string with this <see cref="Keyframe{TValue}" />'s time and value. </summary>
+    /// <summary> Creates a formatted string with this <see cref="Keyframe{TValue}"/>'s time and value. </summary>
     public override string ToString() => $"{Time:0.000}s {typeof(TValue)}:{Value}";
 }

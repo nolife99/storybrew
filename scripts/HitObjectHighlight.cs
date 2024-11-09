@@ -14,15 +14,11 @@ internal class HitObjectHighlight : StoryboardObjectGenerator
     [Configurable] public int EndTime = 0;
     [Configurable] public float FadeDuration = 1000;
 
-    [Group("Sprite"), Configurable]
-    
-    public string SpritePath = "sb/glow.png";
+    [Group("Sprite"), Configurable] public string SpritePath = "sb/glow.png";
 
     [Configurable] public float SpriteScale = 1;
 
-    [Group("Timing"), Configurable]
-    
-    public int StartTime = 0;
+    [Group("Timing"), Configurable] public int StartTime = 0;
 
     protected override void Generate()
     {
@@ -30,19 +26,17 @@ internal class HitObjectHighlight : StoryboardObjectGenerator
         foreach (var hitobject in Beatmap.HitObjects)
         {
             if ((StartTime != 0 || EndTime != 0) &&
-                (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime))
-                continue;
+                (hitobject.StartTime < StartTime - 5 || EndTime - 5 <= hitobject.StartTime)) continue;
 
             var hSprite = pool.Get(hitobject.StartTime, hitobject.EndTime + FadeDuration);
 
             var pos = hitobject.Position + hitobject.StackOffset;
             if (hSprite.PositionAt(hitobject.StartTime) != pos && hitobject is not OsuSlider)
                 hSprite.Move(hitobject.StartTime, pos + hitobject.StackOffset);
-            hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale,
-                SpriteScale / 5);
+
+            hSprite.Scale(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, SpriteScale, SpriteScale / 5);
             hSprite.Fade(OsbEasing.In, hitobject.StartTime, hitobject.EndTime + FadeDuration, 1, 0);
-            if (hSprite.ColorAt(hitobject.StartTime) != hitobject.Color)
-                hSprite.Color(hitobject.StartTime, hitobject.Color);
+            if (hSprite.ColorAt(hitobject.StartTime) != hitobject.Color) hSprite.Color(hitobject.StartTime, hitobject.Color);
 
             if (hitobject is OsuSlider)
             {

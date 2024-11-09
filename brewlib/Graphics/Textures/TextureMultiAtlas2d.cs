@@ -14,8 +14,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
     List<Texture2d> oversizeTextures;
     TextureOptions textureOptions;
 
-    public TextureMultiAtlas2d(int width, int height, string description, TextureOptions textureOptions = null,
-        int padding = 0)
+    public TextureMultiAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0)
     {
         this.width = width;
         this.height = height;
@@ -57,7 +56,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
         return atlas;
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -81,5 +80,5 @@ public sealed class TextureMultiAtlas2d : IDisposable
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

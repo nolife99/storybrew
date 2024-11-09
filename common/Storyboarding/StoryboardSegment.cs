@@ -31,37 +31,44 @@ public abstract class StoryboardSegment : StoryboardObject
 
     public abstract StoryboardSegment GetSegment(string identifier);
 
-    /// <summary> Creates an <see cref="OsbSprite" />. </summary>
+    /// <summary> Creates an <see cref="OsbSprite"/>. </summary>
     /// <param name="path"> Path to the image of this sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of this sprite. </param>
-    /// <param name="initialPosition"> The initial <see cref="CommandPosition" /> value of this sprite. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of this sprite. </param>
+    /// <param name="initialPosition"> The initial <see cref="CommandPosition"/> value of this sprite. </param>
     public abstract OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition);
 
-    /// <summary> Creates an <see cref="OsbSprite" />. </summary>
+    /// <summary> Creates an <see cref="OsbSprite"/>. </summary>
     /// <param name="path"> Path to the image of this sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of this sprite. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of this sprite. </param>
     public abstract OsbSprite CreateSprite(string path, OsbOrigin origin = OsbOrigin.Centre);
 
-    /// <summary> Creates an <see cref="OsbAnimation" />. </summary>
+    /// <summary> Creates an <see cref="OsbAnimation"/>. </summary>
     /// <param name="path"> Path to the image of this animation. </param>
     /// <param name="frameCount"> Amount of frames to loop through in this animation. </param>
     /// <param name="frameDelay"> Delay between frames in this animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of this animation. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of this animation. </param>
-    /// <param name="initialPosition"> The initial <see cref="CommandPosition" /> value of this animation. </param>
-    public abstract OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay, OsbLoopType loopType,
-        OsbOrigin origin, CommandPosition initialPosition);
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of this animation. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of this animation. </param>
+    /// <param name="initialPosition"> The initial <see cref="CommandPosition"/> value of this animation. </param>
+    public abstract OsbAnimation CreateAnimation(string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType,
+        OsbOrigin origin,
+        CommandPosition initialPosition);
 
-    /// <summary> Creates an <see cref="OsbAnimation" />. </summary>
+    /// <summary> Creates an <see cref="OsbAnimation"/>. </summary>
     /// <param name="path"> Path to the image of this animation. </param>
     /// <param name="frameCount"> Amount of frames to loop through in this animation. </param>
     /// <param name="frameDelay"> Delay between frames in this animation. </param>
-    /// <param name="loopType"> <see cref="OsbLoopType" /> of this animation. </param>
-    /// <param name="origin"> <see cref="OsbOrigin" /> of this animation. </param>
-    public abstract OsbAnimation CreateAnimation(string path, int frameCount, float frameDelay,
-        OsbLoopType loopType = OsbLoopType.LoopForever, OsbOrigin origin = OsbOrigin.Centre);
+    /// <param name="loopType"> <see cref="OsbLoopType"/> of this animation. </param>
+    /// <param name="origin"> <see cref="OsbOrigin"/> of this animation. </param>
+    public abstract OsbAnimation CreateAnimation(string path,
+        int frameCount,
+        float frameDelay,
+        OsbLoopType loopType = OsbLoopType.LoopForever,
+        OsbOrigin origin = OsbOrigin.Centre);
 
-    /// <summary> Creates an <see cref="OsbSample" />. </summary>
+    /// <summary> Creates an <see cref="OsbSample"/>. </summary>
     /// <param name="path"> Path to the audio file of this sample. </param>
     /// <param name="time"> Time for the audio to be played. </param>
     /// <param name="volume"> Volume of the audio sample. </param>

@@ -30,10 +30,7 @@ public class NewProjectMenu : UiScreenLayer
             Children =
             [
                 new Label(WidgetManager) { Text = "New Project", AnchorFrom = BoxAlignment.Centre },
-                projectNameTextbox = new(WidgetManager)
-                {
-                    LabelText = "Project Name", AnchorFrom = BoxAlignment.Centre
-                },
+                projectNameTextbox = new(WidgetManager) { LabelText = "Project Name", AnchorFrom = BoxAlignment.Centre },
                 mapsetPathSelector = new(WidgetManager, PathSelectorMode.OpenDirectory)
                 {
                     Value = OsuHelper.GetOsuSongFolder(),
@@ -48,14 +45,8 @@ public class NewProjectMenu : UiScreenLayer
                     Fill = true,
                     Children =
                     [
-                        startButton = new(WidgetManager)
-                        {
-                            Text = "Start", AnchorFrom = BoxAlignment.Centre
-                        },
-                        cancelButton = new(WidgetManager)
-                        {
-                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
-                        }
+                        startButton = new(WidgetManager) { Text = "Start", AnchorFrom = BoxAlignment.Centre },
+                        cancelButton = new(WidgetManager) { Text = "Cancel", AnchorFrom = BoxAlignment.Centre }
                     ]
                 }
             ]
@@ -76,6 +67,7 @@ public class NewProjectMenu : UiScreenLayer
 
             updateButtonsState();
         };
+
         updateButtonsState();
 
         startButton.OnClick += (_, _) => createProject();
@@ -86,13 +78,12 @@ public class NewProjectMenu : UiScreenLayer
         base.Resize(width, height);
         mainLayout.Pack(300);
     }
-    void createProject()
-        => Manager.AsyncLoading("Creating project", () =>
-        {
-            var resourceContainer = Manager.GetContext<Editor>().ResourceContainer;
-            var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true, resourceContainer);
-            Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
-        });
+    void createProject() => Manager.AsyncLoading("Creating project", () =>
+    {
+        var resourceContainer = Manager.GetContext<Editor>().ResourceContainer;
+        var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true, resourceContainer);
+        Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
+    });
 
     void updateButtonsState() => startButton.Disabled = !updateFieldsValid();
     bool updateFieldsValid()

@@ -24,10 +24,10 @@ public sealed class WidgetManager : InputHandler, IDisposable
     public readonly Widget Root;
     public readonly ScreenLayerManager ScreenLayerManager;
     public readonly Skin Skin;
-    public Widget HoveredWidget;
 
     readonly Widget tooltipOverlay;
     Camera camera;
+    public Widget HoveredWidget;
     Widget keyboardFocus;
     Vector2 mousePosition;
     StackLayout rootContainer;
@@ -39,22 +39,18 @@ public sealed class WidgetManager : InputHandler, IDisposable
         Skin = skin;
 
         rootContainer = new(this) { FitChildren = true };
+
         rootContainer.Add(Root = new StackLayout(this) { FitChildren = true });
+
         rootContainer.Add(tooltipOverlay = new(this) { Hoverable = false });
 
         initializeDragAndDrop();
     }
 
-    public Vector2 Size
-    {
-        get => rootContainer.Size;
-        set => rootContainer.Size = value;
-    }
-    public float Opacity
-    {
-        get => rootContainer.Opacity;
-        set => rootContainer.Opacity = value;
-    }
+    public Vector2 Size { get => rootContainer.Size; set => rootContainer.Size = value; }
+
+    public float Opacity { get => rootContainer.Opacity; set => rootContainer.Opacity = value; }
+
     public Widget KeyboardFocus
     {
         get => keyboardFocus;
@@ -66,10 +62,10 @@ public sealed class WidgetManager : InputHandler, IDisposable
             var previousFocus = keyboardFocus;
             keyboardFocus = value;
 
-            if (keyboardFocus is not null)
-                fire((w, evt) => w.NotifyFocusChange(evt, new(true)), keyboardFocus, previousFocus);
+            if (keyboardFocus is not null) fire((w, evt) => w.NotifyFocusChange(evt, new(true)), keyboardFocus, previousFocus);
         }
     }
+
     public Vector2 MousePosition => mousePosition;
 
     public Camera Camera
@@ -114,12 +110,12 @@ public sealed class WidgetManager : InputHandler, IDisposable
     }
     void camera_Changed(object sender, EventArgs e) => InvalidateAnchors();
 
-#region Tooltip
+    #region Tooltip
 
     readonly Dictionary<Widget, Widget> tooltips = [];
 
-    public void RegisterTooltip(Widget widget, string text)
-        => RegisterTooltip(widget, new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
+    public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget,
+        new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
 
     public void RegisterTooltip(Widget widget, Widget tooltip)
     {
@@ -174,13 +170,14 @@ public sealed class WidgetManager : InputHandler, IDisposable
         var offsetX = 0f;
         if (bounds.Right > rootBounds.Right - 16) offsetX = rootBounds.Right - 16 - bounds.Right;
         else if (bounds.Left < rootBounds.Left + 16) offsetX = rootBounds.Left + 16 - bounds.Left;
+
         tooltip.Offset = new(offsetX, 0);
         tooltip.Displayed = true;
     }
 
-#endregion
+    #endregion
 
-#region Placement
+    #region Placement
 
     bool needsAnchorUpdate, refreshingAnchors;
     int anchoringIteration;
@@ -207,8 +204,10 @@ public sealed class WidgetManager : InputHandler, IDisposable
                     Trace.TraceWarning("Could not resolve ui layout");
                     break;
                 }
+
                 rootContainer.UpdateAnchoring(++anchoringIteration);
             }
+
             RefreshHover();
         }
         finally
@@ -229,9 +228,9 @@ public sealed class WidgetManager : InputHandler, IDisposable
         return new(MathF.Round(value.X * scaling) / scaling, MathF.Round(value.Y * scaling) / scaling);
     }
 
-#endregion
+    #endregion
 
-#region Drag and Drop
+    #region Drag and Drop
 
     Drawable dragDrawable;
     Vector2 dragOffset, dragSize;
@@ -275,9 +274,9 @@ public sealed class WidgetManager : InputHandler, IDisposable
             new(mousePosition.X + dragOffset.X, mousePosition.Y + dragOffset.Y, dragSize.X, dragSize.Y));
     }
 
-#endregion
+    #endregion
 
-#region Input events
+    #region Input events
 
     readonly List<Widget> gamepadTargets = [];
 
@@ -287,8 +286,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
     public bool OnClickDown(MouseButtonEventArgs e)
     {
         var target = HoveredWidget ?? rootContainer;
-        if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus))
-            KeyboardFocus = null;
+        if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus)) KeyboardFocus = null;
 
         var widgetEvent = fire((w, evt) => w.NotifyClickDown(evt, e), target);
         if (widgetEvent.Handled) clickTargets[e.Button] = widgetEvent.Listener;
@@ -329,8 +327,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
     void changeHoveredWidget(Widget widget)
     {
         if (widget == HoveredWidget) return;
-        if (HoveredWidget is not null)
-            fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(false)), HoveredWidget, widget);
+        if (HoveredWidget is not null) fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(false)), HoveredWidget, widget);
 
         var previousWidget = HoveredWidget;
         HoveredWidget = widget;
@@ -354,15 +351,19 @@ public sealed class WidgetManager : InputHandler, IDisposable
         return fire((w, evt) => w.NotifyGamepadButtonUp(evt, e), buttonTarget, bubbles: false).Handled;
     }
 
-    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, List<Widget> targets, Widget relatedTarget = null,
+    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify,
+        List<Widget> targets,
+        Widget relatedTarget = null,
         bool bubbles = true)
     {
         foreach (var widgetEvent in targets.Select(t => fire(notify, t, relatedTarget, bubbles))
-            .Where(widgetEvent => widgetEvent.Handled))
-            return widgetEvent;
+            .Where(widgetEvent => widgetEvent.Handled)) return widgetEvent;
+
         return new(targets.Count > 0 ? targets[^1] : null, relatedTarget);
     }
-    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify, Widget target, Widget relatedTarget = null,
+    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify,
+        Widget target,
+        Widget relatedTarget = null,
         bool bubbles = true)
     {
         ObjectDisposedException.ThrowIf(target.IsDisposed, nameof(target));
@@ -378,12 +379,13 @@ public sealed class WidgetManager : InputHandler, IDisposable
             widgetEvent.Listener = ancestor;
             if (notify(ancestor, widgetEvent)) return widgetEvent;
         }
+
         return widgetEvent;
     }
 
-#endregion
+    #endregion
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
     public void Dispose()
@@ -404,5 +406,5 @@ public sealed class WidgetManager : InputHandler, IDisposable
         disposed = true;
     }
 
-#endregion
+    #endregion
 }

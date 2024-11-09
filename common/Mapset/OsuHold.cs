@@ -8,8 +8,15 @@ public class OsuHold : OsuHitObject
     int endTime;
     public override float EndTime => endTime;
 
-    public static OsuHold Parse(string[] values, int x, int y, int startTime, HitObjectFlag flags,
-        HitSoundAddition additions, SampleSet sampleSet, SampleSet additionsSampleSet, int customSampleSet,
+    public static OsuHold Parse(string[] values,
+        int x,
+        int y,
+        int startTime,
+        HitObjectFlag flags,
+        HitSoundAddition additions,
+        SampleSet sampleSet,
+        SampleSet additionsSampleSet,
+        int customSampleSet,
         float volume)
     {
         var samplePath = "";

@@ -8,14 +8,14 @@ using BrewLib.Util;
 ///<summary> Parsing methods for .srt subtitle files. </summary>
 public class SrtParser : SubtitleParser
 {
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SubtitleSet Parse(string path)
     {
         using var stream = Misc.WithRetries(() => File.OpenRead(path));
         return Parse(stream);
     }
 
-    /// <inheritdoc />
+    /// <inheritdoc/>
     public SubtitleSet Parse(Stream stream)
     {
         List<SubtitleLine> lines = [];
@@ -44,8 +44,7 @@ public class SrtParser : SubtitleParser
                 if (block.Length > 0) yield return block.ToString();
                 sb.Clear();
             }
-            else
-                sb.AppendLine(line);
+            else sb.AppendLine(line);
 
         var endBlock = sb.Trim();
         if (endBlock.Length > 0) yield return endBlock.ToString();

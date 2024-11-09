@@ -34,8 +34,8 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
             var attributeLocation = shader.GetAttributeLocation(attribute.Name);
             if (attributeLocation < 0) continue;
             GL.EnableVertexAttribArray(attributeLocation);
-            GL.VertexAttribPointer(attributeLocation, attribute.ComponentCount, attribute.Type, attribute.Normalized,
-                VertexSize, attribute.Offset);
+            GL.VertexAttribPointer(attributeLocation, attribute.ComponentCount, attribute.Type, attribute.Normalized, VertexSize,
+                attribute.Offset);
         }
     }
     public void DeactivateAttributes(Shader shader)
@@ -47,12 +47,11 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
         }
     }
 
-#region Enumerable
+    #region Enumerable
 
-    public IEnumerator<VertexAttribute> GetEnumerator()
-        => ((IEnumerable<VertexAttribute>)vertexAttributes).GetEnumerator();
+    public IEnumerator<VertexAttribute> GetEnumerator() => ((IEnumerable<VertexAttribute>)vertexAttributes).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-#endregion
+    #endregion
 }

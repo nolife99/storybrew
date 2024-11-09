@@ -99,9 +99,9 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
 
             case SliderCurveType.Perfect:
                 if (controlPoints.Length > 2) goto case SliderCurveType.Bezier;
-                if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition,
-                    controlPoints[0].PlayfieldPosition, controlPoints[1].PlayfieldPosition))
-                    goto case SliderCurveType.Linear;
+                if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0].PlayfieldPosition,
+                    controlPoints[1].PlayfieldPosition)) goto case SliderCurveType.Linear;
+
                 curve = generateCircleCurve();
                 break;
 
@@ -165,9 +165,19 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         return new(curves);
     }
 
-    public static OsuSlider Parse(Beatmap beatmap, string[] values, int x, int y, int startTime, HitObjectFlag flags,
-        HitSoundAddition additions, ControlPoint timingPoint, ControlPoint controlPoint, SampleSet sampleSet,
-        SampleSet additionsSampleSet, int customSampleSet, float volume)
+    public static OsuSlider Parse(Beatmap beatmap,
+        string[] values,
+        int x,
+        int y,
+        int startTime,
+        HitObjectFlag flags,
+        HitSoundAddition additions,
+        ControlPoint timingPoint,
+        ControlPoint controlPoint,
+        SampleSet sampleSet,
+        SampleSet additionsSampleSet,
+        int customSampleSet,
+        float volume)
     {
         var slider = values[5];
         var sliderValues = slider.Split('|');
@@ -227,10 +237,8 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
             {
                 var node = sliderNodes[i];
                 var sampleAndAdditionSampleSetValues2 = sampleAndAdditionSampleSetValues[i].Split(':');
-                var nodeSampleSet =
-                    (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0], CultureInfo.InvariantCulture);
-                var nodeAdditionsSampleSet =
-                    int.Parse(sampleAndAdditionSampleSetValues2[1], CultureInfo.InvariantCulture);
+                var nodeSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0], CultureInfo.InvariantCulture);
+                var nodeAdditionsSampleSet = int.Parse(sampleAndAdditionSampleSetValues2[1], CultureInfo.InvariantCulture);
 
                 if (nodeSampleSet != 0)
                 {
@@ -260,6 +268,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
                 TravelDurationBeats = travelDurationBeats,
                 TravelDuration = travelDuration
             };
+
         var special = values[10];
         var specialValues = special.Split(':');
 
@@ -299,14 +308,14 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         };
     }
 
-    public static SliderCurveType LetterToCurveType(string letter)
+    public static SliderCurveType LetterToCurveType(string letter) => letter switch
     {
-        return letter switch
-        {
-            "L" => SliderCurveType.Linear, "C" => SliderCurveType.Catmull, "B" => SliderCurveType.Bezier,
-            "P" => SliderCurveType.Perfect, _ => SliderCurveType.Unknown
-        };
-    }
+        "L" => SliderCurveType.Linear,
+        "C" => SliderCurveType.Catmull,
+        "B" => SliderCurveType.Bezier,
+        "P" => SliderCurveType.Perfect,
+        _ => SliderCurveType.Unknown
+    };
 }
 
 public class OsuSliderNode

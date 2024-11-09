@@ -27,6 +27,7 @@ public class CompositeDrawable : Drawable
             return new(minWidth, minHeight);
         }
     }
+
     public Vector2 PreferredSize
     {
         get
@@ -50,7 +51,7 @@ public class CompositeDrawable : Drawable
         foreach (var drawable in Drawables) drawable.Draw(drawContext, camera, bounds, opacity);
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     public void Dispose()
     {
@@ -59,5 +60,5 @@ public class CompositeDrawable : Drawable
         GC.SuppressFinalize(this);
     }
 
-#endregion
+    #endregion
 }

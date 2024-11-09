@@ -24,8 +24,7 @@ public class TinyValue : TinyToken
         {
             case TinyTokenType.Object:
             case TinyTokenType.Array:
-            case TinyTokenType.Invalid:
-                throw new ArgumentOutOfRangeException(nameof(type), type.ToString());
+            case TinyTokenType.Invalid: throw new ArgumentOutOfRangeException(nameof(type), type.ToString());
         }
     }
 
@@ -96,13 +95,15 @@ public class TinyValue : TinyToken
         return (T)Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
     }
 
-    public static TinyTokenType FindValueType(object value)
-        => value switch
-        {
-            null => TinyTokenType.Null, string => TinyTokenType.String,
-            sbyte or byte or short or ushort or int or uint or long or ulong or Enum => TinyTokenType.Integer,
-            float or double or decimal => TinyTokenType.Float, bool => TinyTokenType.Boolean, _ => TinyTokenType.Invalid
-        };
+    public static TinyTokenType FindValueType(object value) => value switch
+    {
+        null => TinyTokenType.Null,
+        string => TinyTokenType.String,
+        sbyte or byte or short or ushort or int or uint or long or ulong or Enum => TinyTokenType.Integer,
+        float or double or decimal => TinyTokenType.Float,
+        bool => TinyTokenType.Boolean,
+        _ => TinyTokenType.Invalid
+    };
 
     public override string ToString() => $"{value} ({type})";
 }

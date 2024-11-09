@@ -9,8 +9,7 @@ public class StoryboardTransform
     readonly Affine2 transform;
     readonly float transformScale, transformAngle;
 
-    public StoryboardTransform(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation,
-        float scale)
+    public StoryboardTransform(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale)
     {
         transform = parent?.transform ?? Affine2.Identity;
         if (position != Vector2.Zero) transform.Translate(position.X, position.Y);

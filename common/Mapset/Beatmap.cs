@@ -66,7 +66,7 @@ public abstract class Beatmap
     ///<summary> Finds the timing point (red line) active at a specific time. </summary>
     public abstract ControlPoint GetTimingPointAt(float time);
 
-    /// <summary />
+    /// <summary/>
     protected static double GetDifficultyRange(float difficulty, float min, float mid, float max)
     {
         if (difficulty > 5) return mid + (max - mid) * (difficulty - 5) / 5;

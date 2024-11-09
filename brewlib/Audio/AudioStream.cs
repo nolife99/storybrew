@@ -19,13 +19,14 @@ public class AudioStream : AudioChannel
         {
             var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
             if (resourceStream is not null)
-                decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags, new()
-                {
-                    Read =  (buffer, _, _) => resourceStream.Read(new(buffer.ToPointer(), (int)resourceStream.Length)),
-                    Length = _ => resourceStream.Length,
-                    Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
-                    Close = _ => resourceStream.Dispose()
-                });
+                decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags,
+                    new()
+                    {
+                        Read = (buffer, _, _) => resourceStream.Read(new(buffer.ToPointer(), (int)resourceStream.Length)),
+                        Length = _ => resourceStream.Length,
+                        Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
+                        Close = _ => resourceStream.Dispose()
+                    });
         }
 
         if (decodeStream == 0)
@@ -42,7 +43,7 @@ public class AudioStream : AudioChannel
         Channel = stream;
     }
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
 
@@ -55,15 +56,18 @@ public class AudioStream : AudioChannel
                 Bass.StreamFree(stream);
                 stream = 0;
             }
+
             if (decodeStream != 0)
             {
                 Bass.StreamFree(decodeStream);
                 decodeStream = 0;
             }
+
             disposed = true;
         }
+
         base.Dispose(disposing);
     }
 
-#endregion
+    #endregion
 }

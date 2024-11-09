@@ -19,8 +19,7 @@ public class InputDispatcher : InputHandler
     public bool OnKeyUp(KeyboardKeyEventArgs e) => handlers.Any(h => h.OnKeyUp(e));
     public bool OnKeyPress(KeyPressEventArgs e) => handlers.Any(h => h.OnKeyPress(e));
 
-    public virtual void OnGamepadConnected(GamepadEventArgs e)
-        => handlers.ForEach(handler => handler.OnGamepadConnected(e));
+    public virtual void OnGamepadConnected(GamepadEventArgs e) => handlers.ForEach(handler => handler.OnGamepadConnected(e));
 
     public virtual bool OnGamepadButtonDown(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonDown(e));
     public virtual bool OnGamepadButtonUp(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonUp(e));

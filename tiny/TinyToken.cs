@@ -90,6 +90,7 @@ public abstract class TinyToken
     public void Write(Stream stream, Format format)
     {
         using StreamWriter writer = new(stream, Encoding.ASCII) { NewLine = "\n" };
+
         format.Write(writer, this);
     }
 
@@ -104,7 +105,8 @@ public abstract class TinyToken
         var extension = Path.GetExtension(path);
         return extension switch
         {
-            ".yml" or ".yaml" => Yaml, ".json" => Json,
+            ".yml" or ".yaml" => Yaml,
+            ".json" => Json,
             _ => throw new NotImplementedException($"No format matches extension '{extension}'.")
         };
     }

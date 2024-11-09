@@ -27,8 +27,12 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     List<string> referencedAssemblies = [];
     ThrottledActionScheduler scheduler = new();
 
-    public ScriptManager(ResourceContainer resourceContainer, string scriptsNamespace, string scriptsSourcePath,
-        string commonScriptsPath, string scriptsLibraryPath, string compiledScriptsPath,
+    public ScriptManager(ResourceContainer resourceContainer,
+        string scriptsNamespace,
+        string scriptsSourcePath,
+        string commonScriptsPath,
+        string scriptsLibraryPath,
+        string compiledScriptsPath,
         IEnumerable<string> referencedAssemblies)
     {
         this.resourceContainer = resourceContainer;
@@ -42,10 +46,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         scriptWatcher = new()
         {
-            Filter = "*.cs",
-            Path = scriptsSourcePath,
-            IncludeSubdirectories = false,
-            NotifyFilter = NotifyFilters.LastWrite
+            Filter = "*.cs", Path = scriptsSourcePath, IncludeSubdirectories = false, NotifyFilter = NotifyFilters.LastWrite
         };
 
         scriptWatcher.Created += scriptWatcher_Changed;
@@ -58,10 +59,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         libraryWatcher = new()
         {
-            Filter = "*.cs",
-            Path = scriptsLibraryPath,
-            IncludeSubdirectories = true,
-            NotifyFilter = NotifyFilters.LastWrite
+            Filter = "*.cs", Path = scriptsLibraryPath, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.LastWrite
         };
 
         libraryWatcher.Created += libraryWatcher_Changed;
@@ -79,8 +77,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         set
         {
             referencedAssemblies = value as List<string> ?? value.ToList();
-            foreach (var scriptContainer in scriptContainers)
-                scriptContainer.Value.ReferencedAssemblies = referencedAssemblies;
+            foreach (var scriptContainer in scriptContainers) scriptContainer.Value.ReferencedAssemblies = referencedAssemblies;
             updateSolutionFiles();
         }
     }
@@ -108,6 +105,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         scriptContainers[scriptName] = scriptContainer = new ScriptContainer<TScript>(scriptTypeName, sourcePath,
             scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
+
         return scriptContainer;
     }
 
@@ -158,12 +156,11 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             });
     }
 
-    void scheduleSolutionUpdate()
-        => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}", _ =>
-        {
-            if (disposed) return;
-            updateSolutionFiles();
-        });
+    void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}", _ =>
+    {
+        if (disposed) return;
+        updateSolutionFiles();
+    });
 
     void updateSolutionFiles()
     {
@@ -175,12 +172,14 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
         XmlDocument document = new() { PreserveWhitespace = false };
+
         try
         {
-            using (var stream = resourceContainer.GetStream("project/scripts.csproj",
-                ResourceSource.Embedded | ResourceSource.Relative))
+            using (var stream =
+                resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
             using (XmlTextReader sr = new(stream) { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null })
                 document.Load(sr);
+
             var xmlns = document.DocumentElement.GetAttribute("xmlns");
 
             var referencedAssembliesGroup = document.CreateElement("ItemGroup", xmlns);

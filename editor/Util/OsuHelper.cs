@@ -21,8 +21,9 @@ public static class OsuHelper
         }
         catch { }
 
-        var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "osu!", "osu!.exe");
+        var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "osu!",
+            "osu!.exe");
+
         if (File.Exists(defaultPath)) return defaultPath;
         return "";
     }

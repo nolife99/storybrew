@@ -24,8 +24,7 @@ public static class BitmapHelper
         if (compressor is null)
             using (compressor = new IntegratedCompressor())
                 compressor.LosslessCompress(path, defaultSettings);
-        else
-            compressor.LosslessCompress(path, defaultSettings);
+        else compressor.LosslessCompress(path, defaultSettings);
     }
 
     public static void Compress(string path, ImageCompressor compressor = null)
@@ -34,8 +33,7 @@ public static class BitmapHelper
         if (compressor is null)
             using (compressor = new IntegratedCompressor())
                 compressor.Compress(path, defaultSettings);
-        else
-            compressor.Compress(path, defaultSettings);
+        else compressor.Compress(path, defaultSettings);
     }
 
     public static PinnedBitmap Premultiply(Bitmap source)
@@ -92,8 +90,7 @@ public static class BitmapHelper
         var kernelHeight = kernel.GetUpperBound(0) + 1;
         var kernelWidth = kernel.GetUpperBound(1) + 1;
 
-        if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0)
-            throw new InvalidOperationException("Invalid kernel size");
+        if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
         var width = source.Width;
         var height = source.Height;
@@ -138,8 +135,7 @@ public static class BitmapHelper
         var kernelHeight = kernel.GetUpperBound(0) + 1;
         var kernelWidth = kernel.GetUpperBound(1) + 1;
 
-        if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0)
-            throw new InvalidOperationException("Invalid kernel size");
+        if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
         var width = source.Width;
         var height = source.Height;
@@ -178,9 +174,8 @@ public static class BitmapHelper
     public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
         var srcSize = src.Size;
-        if (sect.Left < 0 || sect.Top < 0 || sect.Right > srcSize.Width || sect.Bottom > srcSize.Height ||
-            sect.Width <= 0 || sect.Height <= 0)
-            throw new ArgumentOutOfRangeException(nameof(sect), "Invalid dimensions");
+        if (sect.Left < 0 || sect.Top < 0 || sect.Right > srcSize.Width || sect.Bottom > srcSize.Height || sect.Width <= 0 ||
+            sect.Height <= 0) throw new ArgumentOutOfRangeException(nameof(sect), "Invalid dimensions");
 
         var srcDat = src.LockBits(new(default, src.Size), ImageLockMode.ReadOnly, src.PixelFormat);
         Rectangle destRect = new(0, 0, (int)sect.Width, (int)sect.Height);
@@ -220,6 +215,7 @@ public static class BitmapHelper
         for (var x = 0; x < width; ++x)
             if ((srcData[y * width + x] >> 24 & 0xFF) != 0)
                 return false;
+
         return true;
     }
 
@@ -252,9 +248,8 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     bool disposed;
     int* scan0;
 
-    public PinnedBitmap(int width, int height)
-        => Bitmap = new(Width = width, Height = height, width * sizeof(int), PixelFormat.Format32bppArgb,
-            (nint)(scan0 = (int*)NativeMemory.Alloc((nuint)((Count = width * height) * sizeof(int)))));
+    public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width * sizeof(int),
+        PixelFormat.Format32bppArgb, (nint)(scan0 = (int*)NativeMemory.Alloc((nuint)((Count = width * height) * sizeof(int)))));
 
     public PinnedBitmap(Image image) : this(image.Width, image.Height)
     {
@@ -272,13 +267,16 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 
     public int Width { get; private set; }
     public int Height { get; private set; }
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
     public int Count { get; private set; }
 
     public int this[int pixelIndex]
     {
-        get
-            => (uint)pixelIndex < (uint)Count ? scan0[pixelIndex]
-                : throw new ArgumentOutOfRangeException(nameof(pixelIndex));
+        get => (uint)pixelIndex < (uint)Count ? scan0[pixelIndex] : throw new ArgumentOutOfRangeException(nameof(pixelIndex));
         set
         {
             if ((uint)pixelIndex >= (uint)Count) throw new ArgumentOutOfRangeException(nameof(pixelIndex));
@@ -310,11 +308,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public ReadOnlySpan<int> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref *scan0, Count);
 
     ~PinnedBitmap() => Dispose(false);
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
     void Dispose(bool disposing)
     {
         if (disposed) return;

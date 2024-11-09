@@ -114,8 +114,7 @@ public class JsonTokenParser : TokenParser<JsonTokenType>
 
     class ValueParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
     {
-        static readonly Regex floatRegex =
-                new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             boolRegex = new($"^{bool.TrueString}|{bool.FalseString}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -126,18 +125,16 @@ public class JsonTokenParser : TokenParser<JsonTokenType>
                 case JsonTokenType.Word:
                 {
                     var value = context.CurrentToken.Value;
-                    Match match;
-                    if ((match = floatRegex.Match(value)).Success)
-                        Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if ((match = integerRegex.Match(value)).Success)
-                        Callback(new TinyValue(value, TinyTokenType.Integer));
-                    else if ((match = boolRegex.Match(value)).Success)
+                    if (floatRegex.Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Float));
+                    else if (integerRegex.Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
+                    else if (boolRegex.Match(value).Success)
                         Callback(new TinyValue(value.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)));
-                    else
-                        Callback(new TinyValue(value));
+                    else Callback(new TinyValue(value));
+
                     context.ConsumeToken();
                     context.PopParser();
                 }
+
                     return;
 
                 case JsonTokenType.WordQuoted:
@@ -147,6 +144,7 @@ public class JsonTokenParser : TokenParser<JsonTokenType>
                     context.ConsumeToken();
                     context.PopParser();
                 }
+
                     return;
             }
 

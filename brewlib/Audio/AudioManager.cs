@@ -48,13 +48,12 @@ public sealed class AudioManager : IDisposable
         return audio;
     }
 
-    public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null)
-        => new(this, path, resourceContainer);
+    public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null) => new(this, path, resourceContainer);
 
     internal void RegisterChannel(AudioChannel channel) => audioChannels.Add(channel);
     internal void UnregisterChannel(AudioChannel channel) => audioChannels.Remove(channel);
 
-#region IDisposable Support
+    #region IDisposable Support
 
     bool disposed;
 
@@ -69,5 +68,5 @@ public sealed class AudioManager : IDisposable
         }
     }
 
-#endregion
+    #endregion
 }

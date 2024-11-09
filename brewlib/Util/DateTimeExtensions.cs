@@ -28,14 +28,12 @@ public static class DateTimeExtensions
             if (seconds < threshold.Key)
             {
                 TimeSpan timespan = new(DateTimeOffset.Now.Ticks - date.Ticks);
-                return string.Format(CultureInfo.InvariantCulture, threshold.Value, (timespan.Days > 365 ?
-                    timespan.Days / 365 :
+                return string.Format(CultureInfo.InvariantCulture, threshold.Value, (timespan.Days > 365 ? timespan.Days / 365 :
                     timespan.Days > 30 ? timespan.Days / 30 :
-                        timespan.Days > 0 ? timespan.Days :
-                            timespan.Hours > 0 ? timespan.Hours :
-                                timespan.Minutes > 0 ? timespan.Minutes :
-                                    timespan.Seconds > 0 ? timespan.Seconds :
-                                        0).ToString(CultureInfo.InvariantCulture));
+                    timespan.Days > 0 ? timespan.Days :
+                    timespan.Hours > 0 ? timespan.Hours :
+                    timespan.Minutes > 0 ? timespan.Minutes :
+                    timespan.Seconds > 0 ? timespan.Seconds : 0).ToString(CultureInfo.InvariantCulture));
             }
 
         throw new InvalidOperationException();

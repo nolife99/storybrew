@@ -53,10 +53,8 @@ public class YamlUtil
 
                 special = false;
             }
-            else if (c == '\\')
-                special = true;
-            else
-                sb.Append(c);
+            else if (c == '\\') special = true;
+            else sb.Append(c);
 
         return sb.ToString();
     }
