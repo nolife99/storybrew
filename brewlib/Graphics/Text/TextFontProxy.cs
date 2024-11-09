@@ -17,9 +17,6 @@ public sealed class TextFontProxy(TextFont textFont, Action dispose) : TextFont
     {
         if (disposed) return;
         dispose();
-
-        textFont = null;
-        dispose = null;
         disposed = true;
 
         GC.SuppressFinalize(this);

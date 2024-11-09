@@ -16,7 +16,7 @@ public class Shader : IDisposable
 
     bool isInitialized, started;
     Dictionary<string, Property<ActiveUniformType>> uniforms;
-    int vertexShaderId = -1, fragmentShaderId = -1;
+    int vertexShaderId = -1, fragmentShaderId = -1, SortId = -1;
 
     public Shader(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
@@ -31,7 +31,6 @@ public class Shader : IDisposable
         retrieveUniforms();
     }
 
-    public int SortId { get; private set; } = -1;
     public void Dispose()
     {
         Dispose(true);
@@ -56,14 +55,9 @@ public class Shader : IDisposable
         if (attributes.TryGetValue(name, out var property)) return property.Location;
         return -1;
     }
-    public int TryGetUniformLocation(string name, int index = -1, string field = null)
-    {
-        if (uniforms.TryGetValue(GetUniformIdentifier(name, index, field), out var property)) return property.Location;
-        return -1;
-    }
     public int GetUniformLocation(string name, int index = -1, string field = null)
     {
-        var location = TryGetUniformLocation(name, index, field);
+        var location = uniforms.TryGetValue(GetUniformIdentifier(name, index, field), out var property) ? property.Location : -1;
 
         if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier");
         return location;

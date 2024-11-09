@@ -18,7 +18,7 @@ public sealed class TextGenerator : IDisposable
     Dictionary<string, PrivateFontCollection> fontCollections = [];
     Dictionary<string, FontFamily> fontFamilies = [];
 
-    Dictionary<string, Font> fonts = [];
+    Dictionary<int, Font> fonts = [];
     Graphics metrics;
     SolidBrush shadow = new(Color.FromArgb(220, 0, 0, 0));
 
@@ -86,26 +86,8 @@ public sealed class TextGenerator : IDisposable
 
     unsafe Font getFont(string name, float emSize, FontStyle style)
     {
-        var identifier = $"{name}.{emSize}.{(int)style}";
-
-        if (fonts.TryGetValue(identifier, out var font))
-        {
-            recentlyUsedFonts.Remove(identifier);
-            recentlyUsedFonts.AddFirst(identifier);
-            return font;
-        }
-
-        recentlyUsedFonts.AddFirst(identifier);
-
-        if (recentlyUsedFonts.Count > 64)
-            while (recentlyUsedFonts.Count > 32)
-            {
-                var lastFontIdentifier = recentlyUsedFonts.Last.Value;
-                recentlyUsedFonts.RemoveLast();
-
-                fonts[lastFontIdentifier].Dispose();
-                fonts.Remove(lastFontIdentifier);
-            }
+        var identifier = HashCode.Combine(name, emSize, style);
+        if (fonts.TryGetValue(identifier, out var font)) return font;
 
         if (!fontFamilies.TryGetValue(name, out var fontFamily))
         {
@@ -131,7 +113,7 @@ public sealed class TextGenerator : IDisposable
                     }
                 }
 
-            fontFamilies.Add(name, fontFamily);
+            fontFamilies[name] = fontFamily;
         }
 
         if (fontFamily is not null) font = new(fontFamily, emSize, style);
@@ -141,7 +123,7 @@ public sealed class TextGenerator : IDisposable
             Trace.WriteLine($"Using font system font for {name}");
         }
 
-        fonts.Add(identifier, font);
+        fonts[identifier] = font;
         return font;
     }
 
@@ -150,28 +132,25 @@ public sealed class TextGenerator : IDisposable
     bool disposed;
     void Dispose(bool disposing)
     {
-        if (!disposed)
+        if (disposed) return;
+
+        metrics.Dispose();
+        shadow.Dispose();
+        fonts.Dispose();
+        fontFamilies.Dispose();
+        fontCollections.Dispose();
+
+        if (disposing)
         {
-            metrics.Dispose();
-            shadow.Dispose();
-            fonts.Dispose();
-            fontFamilies.Dispose();
-            fontCollections.Dispose();
-
-            if (disposing)
-            {
-                recentlyUsedFonts.Clear();
-                container = null;
-
-                metrics = null;
-                shadow = null;
-                fonts = null;
-                fontCollections = null;
-                fontFamilies = null;
-            }
-
-            disposed = true;
+            container = null;
+            metrics = null;
+            shadow = null;
+            fonts = null;
+            fontCollections = null;
+            fontFamilies = null;
         }
+
+        disposed = true;
     }
 
     ~TextGenerator() => Dispose(false);

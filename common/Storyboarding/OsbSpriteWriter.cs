@@ -61,7 +61,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
         WriteHeaderCommon(sprite, transform);
         writer.WriteLine();
     }
-    protected virtual void WriteHeaderCommon(OsbSprite sprite, StoryboardTransform transform)
+    protected void WriteHeaderCommon(OsbSprite sprite, StoryboardTransform transform)
     {
         writer.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
 
@@ -77,7 +77,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
             writer.Write("," + transformedInitialPosition.Y.ToString(exportSettings.NumberFormat));
         else writer.Write(",0");
     }
-    protected virtual bool IsFragmentable()
+    protected bool IsFragmentable()
     {
         // if there are commands with nondeterministic results (aka triggercommands) the sprite can't reliably be split
         if (sprite.Commands.Any(c => c is not IFragmentableCommand)) return false;

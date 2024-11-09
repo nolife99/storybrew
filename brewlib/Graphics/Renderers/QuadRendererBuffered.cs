@@ -14,8 +14,8 @@ using Textures;
 
 public unsafe class QuadRendererBuffered : QuadRenderer
 {
-    public const int VertexPerQuad = 4;
-    public const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
+    const int VertexPerQuad = 4;
+    const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
     public static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
         VertexAttribute.CreateDiffuseCoord(), VertexAttribute.CreateColor(true));
@@ -38,7 +38,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0) : this(
         PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, maxQuadsPerBatch, primitiveBufferSize) { }
 
-    public QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
+    QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
         Shader shader,
         int maxQuadsPerBatch,
         int primitiveBufferSize)

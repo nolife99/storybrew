@@ -68,7 +68,7 @@ public sealed class GpuCommandSync : IDisposable
     {
         public readonly int Index = index, Length = length;
         bool expired;
-        nint Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+        readonly nint Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
 
         public bool Wait(bool canBlock = true)
         {

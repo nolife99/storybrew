@@ -15,8 +15,7 @@ using StorybrewCommon.Util;
 
 public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 {
-    public static readonly RenderStates AlphaBlendStates = new(),
-        AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
+    static readonly RenderStates AlphaBlendStates = new(), AdditiveStates = new();
 
     public void Draw(DrawContext drawContext,
         Camera camera,

@@ -116,7 +116,7 @@ public class OsbSpritePool(StoryboardSegment segment,
 #pragma warning restore CS1591
         => segment.CreateSprite(path, origin, position);
 
-    internal virtual void Dispose(bool disposing)
+    internal void Dispose(bool disposing)
     {
         if (disposed) return;
         if (attributes is not null && disposing)

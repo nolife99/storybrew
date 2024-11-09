@@ -18,7 +18,7 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
     public string UtilityPath { get; protected set; } =
         utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
 
-    public virtual string UtilityName
+    public string UtilityName
     {
         get => StringHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
         protected set => utilName = value;
@@ -46,7 +46,7 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
         process?.Dispose();
         process = null;
     }
-    protected virtual string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
+    protected string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
 
     protected virtual void Dispose(bool disposing)
     {

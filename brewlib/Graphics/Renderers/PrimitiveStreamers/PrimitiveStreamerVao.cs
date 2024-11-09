@@ -6,12 +6,12 @@ using osuTK.Graphics.OpenGL;
 
 public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
 {
-    protected bool Bound;
+    bool Bound;
     protected Shader CurrentShader;
     protected int VertexArrayId = -1, VertexBufferId = -1, IndexBufferId = -1, PrimitiveSize, MinRenderableVertexCount;
     protected VertexDeclaration VertexDeclaration;
 
-    public PrimitiveStreamerVao(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
+    protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ushort[] indexes = null)
     {
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
         if (indexes is not null && minRenderableVertexCount > ushort.MaxValue)
@@ -50,7 +50,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     }
 
     protected virtual void initializeVertexBuffer() => VertexBufferId = GL.GenBuffer();
-    protected virtual void initializeIndexBuffer(ushort[] indexes)
+    protected void initializeIndexBuffer(ushort[] indexes)
     {
         IndexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
@@ -62,7 +62,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         if (CurrentShader != shader) setupVertexArray(shader);
         GL.BindVertexArray(VertexArrayId);
     }
-    protected virtual void internalUnbind() => GL.BindVertexArray(0);
+    protected void internalUnbind() => GL.BindVertexArray(0);
 
     void setupVertexArray(Shader shader)
     {
@@ -115,6 +115,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         CurrentShader = null;
     }
 
-    public static bool HasCapabilities()
+    protected static bool HasCapabilities()
         => DrawState.HasCapabilities(2, 0) && DrawState.HasCapabilities(3, 0, "GL_ARB_vertex_array_object");
 }

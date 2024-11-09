@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Cameras;
 using Data;
 using osuTK.Graphics;
@@ -132,7 +133,7 @@ public static class DrawState
 
     public static T Prepare<T>(T renderer, Camera camera, RenderStates renderStates) where T : Renderer
     {
-        Renderer = renderer;
+        Renderer = Unsafe.As<T, Renderer>(ref renderer);
         renderer.Camera = camera;
         renderStates?.Apply();
         return renderer;

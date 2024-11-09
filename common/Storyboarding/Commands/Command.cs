@@ -70,7 +70,7 @@ public abstract class Command<TValue>(string identifier,
         StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) &&
         EndValue.Equals(obj.EndValue);
 
-    public virtual string ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
+    public string ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
     {
         var startTimeString = (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);
         var endTimeString = (exportSettings.UseFloatForTime ? EndTime : (int)EndTime).ToString(exportSettings.NumberFormat);

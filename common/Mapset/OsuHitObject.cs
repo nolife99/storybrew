@@ -53,7 +53,7 @@ public class OsuHitObject
     public CommandPosition Position => PlayfieldPosition + PlayfieldToStoryboardOffset;
 
     ///<summary> Represents this hit object's end position in osu!. </summary>
-    public virtual CommandPosition PlayfieldEndPosition => PlayfieldPositionAtTime(EndTime);
+    public CommandPosition PlayfieldEndPosition => PlayfieldPositionAtTime(EndTime);
 
     ///<summary> Represents this hit object's storyboard end position in osu!. </summary>
     public CommandPosition EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;

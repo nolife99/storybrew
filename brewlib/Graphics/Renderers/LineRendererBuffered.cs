@@ -15,8 +15,8 @@ using Util;
 
 public unsafe class LineRendererBuffered : LineRenderer
 {
-    public const int VertexPerLine = 2;
-    public const string CombinedMatrixUniformName = "u_combinedMatrix";
+    const int VertexPerLine = 2;
+    const string CombinedMatrixUniformName = "u_combinedMatrix";
 
     public static readonly VertexDeclaration VertexDeclaration =
         new(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
@@ -37,7 +37,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0) : this(
         PrimitiveStreamerUtil<Int128>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
-    public LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
+    LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
         Shader shader,
         int maxLinesPerBatch,
         int primitiveBufferSize)
@@ -174,17 +174,16 @@ public unsafe class LineRendererBuffered : LineRenderer
         if (rendering) EndRendering();
 
         NativeMemory.Free(primitives);
-        if (disposing)
-        {
-            primitives = null;
-            camera = null;
+        if (!disposing) return;
 
-            primitiveStreamer.Dispose();
-            primitiveStreamer = null;
+        primitives = null;
+        camera = null;
 
-            if (ownsShader) shader.Dispose();
-            shader = null;
-            disposed = true;
-        }
+        primitiveStreamer.Dispose();
+        primitiveStreamer = null;
+
+        if (ownsShader) shader.Dispose();
+        shader = null;
+        disposed = true;
     }
 }

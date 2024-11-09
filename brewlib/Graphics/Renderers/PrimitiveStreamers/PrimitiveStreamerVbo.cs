@@ -98,12 +98,11 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
             GL.DeleteBuffer(indexBufferId);
         }
 
-        if (disposing)
-        {
-            vertexBufferId = -1;
-            indexBufferId = -1;
-            disposed = true;
-        }
+        if (!disposing) return;
+
+        vertexBufferId = -1;
+        indexBufferId = -1;
+        disposed = true;
     }
 
     public static bool HasCapabilities() => DrawState.HasCapabilities(2, 0);
