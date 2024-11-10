@@ -172,7 +172,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         displayableObjects.Add(segment);
 
         segments.Add(segment);
-        if (identifier is not null) namedSegments.Add(identifier, segment);
+        if (identifier is not null) namedSegments[identifier] = segment;
 
         return segment;
     }

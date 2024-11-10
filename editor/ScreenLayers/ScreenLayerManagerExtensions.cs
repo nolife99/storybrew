@@ -41,7 +41,7 @@ public static class ScreenLayerManagerExtensions
             ShowHelp = false,
             FileName = initialValue,
             Filter = filter,
-            InitialDirectory = initialDirectory != null ? Path.GetFullPath(initialDirectory) : ""
+            InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
         };
 
         if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
@@ -93,11 +93,6 @@ public static class ScreenLayerManagerExtensions
         string description,
         string text,
         Action<string> action) => screenLayer.Add(new PromptBox(title, description, text, action));
-
-    public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer,
-        string title,
-        Action<T> action,
-        params ContextMenu<T>.Option[] options) => screenLayer.Add(new ContextMenu<T>(title, action, options));
 
     public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer, string title, Action<T> action, params T[] options)
         => screenLayer.Add(new ContextMenu<T>(title, action, options));

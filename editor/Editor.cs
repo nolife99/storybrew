@@ -58,7 +58,7 @@ public sealed class Editor(GameWindow window) : IDisposable
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, width: 1024, height: 1024), true);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, null, 1024, 1024), true);
         drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
 
@@ -147,7 +147,7 @@ public sealed class Editor(GameWindow window) : IDisposable
         overlay.Size = new(virtualWidth, virtualHeight);
     }
 
-    class DialogParent : IWin32Window
+    sealed class DialogParent : IWin32Window
     {
         public nint Handle => Native.MainWindowHandle;
     }

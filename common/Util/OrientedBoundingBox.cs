@@ -1,14 +1,15 @@
 ﻿namespace StorybrewCommon.Util;
 
 using System;
+using System.Buffers;
 using System.Drawing;
 using System.Numerics;
 
 #pragma warning disable CS1591
-public class OrientedBoundingBox
+public readonly struct OrientedBoundingBox : IDisposable
 {
-    readonly Vector2[] corners = new Vector2[4], axis = new Vector2[2];
-    readonly float[] origins = new float[2];
+    readonly Vector2[] corners = ArrayPool<Vector2>.Shared.Rent(4), axis = ArrayPool<Vector2>.Shared.Rent(2);
+    readonly float[] origins = ArrayPool<float>.Shared.Rent(4);
 
     public OrientedBoundingBox(Vector2 position, Vector2 origin, float width, float height, float angle)
     {
@@ -48,28 +49,40 @@ public class OrientedBoundingBox
         return RectangleF.FromLTRB(minX, minY, maxX, maxY);
     }
 
-    bool Intersects(OrientedBoundingBox other) => intersects1Way(other) && other.intersects1Way(this);
-    public bool Intersects(RectangleF other)
-        => Intersects(new OrientedBoundingBox(new(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0));
+    bool Intersects(ref readonly OrientedBoundingBox other) => intersects1Way(in other) && other.intersects1Way(in this);
+    public bool Intersects(ref readonly RectangleF other)
+    {
+        using OrientedBoundingBox otherBox = new(new(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0);
+        return Intersects(in otherBox);
+    }
 
-    bool intersects1Way(OrientedBoundingBox other)
+    bool intersects1Way(ref readonly OrientedBoundingBox other)
     {
         for (var a = 0; a < 2; ++a)
         {
-            var t = Vector2.Dot(other.corners[0], axis[a]);
+            var axis = this.axis[a];
+            var t = Vector2.Dot(other.corners[0], axis);
             var tMin = t;
             var tMax = t;
 
             for (var c = 1; c < 4; ++c)
             {
-                t = Vector2.Dot(other.corners[c], axis[a]);
+                t = Vector2.Dot(other.corners[c], axis);
                 if (t < tMin) tMin = t;
                 else if (t > tMax) tMax = t;
             }
 
-            if (tMin > 1 + origins[a] || tMax < origins[a]) return false;
+            var origin = origins[a];
+            if (tMin > 1 + origin || tMax < origin) return false;
         }
 
         return true;
+    }
+
+    public void Dispose()
+    {
+        ArrayPool<Vector2>.Shared.Return(corners);
+        ArrayPool<Vector2>.Shared.Return(axis);
+        ArrayPool<float>.Shared.Return(origins);
     }
 }

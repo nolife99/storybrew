@@ -26,6 +26,9 @@ public readonly struct Keyframe<TValue>(float time, TValue value, Func<float, fl
     /// <param name="easing"> <see cref="EasingFunctions"/> easing to be assigned. </param>
     public Keyframe(float time, TValue value = default, Func<float, float> easing = null) : this(time, value, easing, false) { }
 
+    internal static readonly Comparer<Keyframe<TValue>> Comparer =
+        Comparer<Keyframe<TValue>>.Create((x, y) => Math.Sign(x.Time - y.Time));
+
     ///<summary> Overrides a keyframe's time. </summary>
     public Keyframe<TValue> WithTime(float time) => new(time, Value, Ease);
 
@@ -37,7 +40,7 @@ public readonly struct Keyframe<TValue>(float time, TValue value, Func<float, fl
     /// <returns> A value indicating whether both keyframes are equal. </returns>
     public bool Equals(Keyframe<TValue> other) => Time == other.Time && Value.Equals(other.Value);
 
-    int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Math.Sign(x.Time - y.Time);
+    int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Comparer.Compare(x, y);
 
     /// <summary> Creates a formatted string with this <see cref="Keyframe{TValue}"/>'s time and value. </summary>
     public override string ToString() => $"{Time:0.000}s {typeof(TValue)}:{Value}";

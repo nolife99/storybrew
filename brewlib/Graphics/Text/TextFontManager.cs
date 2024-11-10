@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using Util;
 
-public class TextFontManager : IDisposable
+public sealed class TextFontManager : IDisposable
 {
     Dictionary<int, TextFontAtlased> fonts = [];
     Dictionary<int, int> references = [];
@@ -12,7 +12,7 @@ public class TextFontManager : IDisposable
     public TextFont GetTextFont(string fontName, float fontSize, float scaling)
     {
         var identifier = HashCode.Combine(fontName, fontSize, scaling);
-        if (!fonts.TryGetValue(identifier, out var font)) fonts.Add(identifier, font = new(fontName, fontSize * scaling));
+        if (!fonts.TryGetValue(identifier, out var font)) fonts[identifier] = font = new(fontName, fontSize * scaling);
         if (references.TryGetValue(identifier, out var refCount)) references[identifier] = refCount + 1;
         else references[identifier] = 1;
 
@@ -27,7 +27,7 @@ public class TextFontManager : IDisposable
     #region IDisposable Support
 
     bool disposed;
-    protected virtual void Dispose(bool disposing)
+    void Dispose(bool disposing)
     {
         if (disposed || !disposing) return;
 

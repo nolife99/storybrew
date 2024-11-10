@@ -27,9 +27,8 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
 
     public Texture2dRegion Get(string filename)
     {
-        PathHelper.WithStandardSeparatorsUnsafe(filename);
         if (textures.TryGetValue(filename, out var texture)) return texture;
-        textures.Add(filename, texture = Texture2d.Load(filename, resourceContainer, textureOptions));
+        textures[filename] = texture = Texture2d.Load(filename, resourceContainer, textureOptions);
         ResourceLoaded?.Invoke(filename, texture);
 
         return texture;

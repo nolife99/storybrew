@@ -74,7 +74,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         sw.Stop();
     }
 
-    class ActionContainer(T target, string key, Action<T> action, bool runAlone)
+    sealed class ActionContainer(T target, string key, Action<T> action, bool runAlone)
     {
         internal readonly Action<T> Action = action;
         internal readonly bool MustRunAlone = runAlone;
@@ -82,7 +82,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         internal T Target = target;
     }
 
-    class ActionQueueContext
+    sealed class ActionQueueContext
     {
         internal readonly List<ActionContainer> Queue = [];
         internal readonly HashSet<string> Running = [];
@@ -114,7 +114,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         }
     }
 
-    class ActionRunner(ActionQueueContext context, string threadName) : IDisposable
+    sealed class ActionRunner(ActionQueueContext context, string threadName) : IDisposable
     {
         internal int msTimeout;
         Task thread;

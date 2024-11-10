@@ -224,7 +224,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
-        var i = keyframes.BinarySearch(keyframe, keyframe);
+        var i = keyframes.BinarySearch(keyframe, Keyframe<TValue>.Comparer);
         if (i >= 0)
         {
             if (before)

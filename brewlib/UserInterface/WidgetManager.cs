@@ -123,7 +123,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
         tooltip.Displayed = false;
 
-        tooltips.Add(widget, tooltip);
+        tooltips[widget] = tooltip;
         tooltipOverlay.Add(tooltip);
         widget.OnHovered += TooltipWidget_OnHovered;
 

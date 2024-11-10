@@ -8,7 +8,6 @@ using System.IO;
 public abstract class CommandGroup : ICommand
 {
     protected readonly HashSet<ICommand> commands = [];
-    bool ended;
     public IEnumerable<ICommand> Commands => commands;
 
     public float CommandsStartTime
@@ -65,7 +64,7 @@ public abstract class CommandGroup : ICommand
     public bool Contains(ICommand command) => commands.Contains(command);
     public bool Add(ICommand command) => commands.Add(command);
 
-    public virtual void EndGroup() => ended = true;
+    public virtual void EndGroup() { }
     protected abstract string GetCommandGroupHeader(ExportSettings exportSettings);
 
     public override string ToString() => $"{GetCommandGroupHeader(ExportSettings.Default)} ({commands.Count} commands)";

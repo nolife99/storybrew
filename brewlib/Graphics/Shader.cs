@@ -63,7 +63,7 @@ public class Shader : IDisposable
         return location;
     }
     public static string GetUniformIdentifier(string name, int index, string field)
-        => name + (index >= 0 ? "[" + index + "]" : "") + (field is not null ? "." + field : "");
+        => name + (index >= 0 ? $"[{index}]" : "") + (field is not null ? "." + field : "");
 
     void initialize(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
@@ -173,7 +173,8 @@ public class Shader : IDisposable
 
             sb.Append("> ");
             sb.AppendLine(splitCode[lineNumber]);
-            sb.AppendLine(new string(' ', character + 2) + "^");
+            sb.Append(new string(' ', character + 2));
+            sb.AppendLine("^");
         }
 
         return sb.ToString();

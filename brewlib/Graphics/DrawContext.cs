@@ -13,7 +13,7 @@ public sealed class DrawContext : IDisposable
 
     public void Register<T>(T obj, bool dispose = false) where T : class
     {
-        references.Add(typeof(T), obj);
+        references[typeof(T)] = obj;
         if (dispose && obj is IDisposable disposable) disposables.Add(disposable);
     }
 

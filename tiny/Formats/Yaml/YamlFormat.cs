@@ -52,7 +52,8 @@ public class YamlFormat : Format<YamlTokenType>
             if (!first || !parentIsArray) writeIndent(writer, indentLevel);
 
             var key = property.Key;
-            if (key.Contains(' ') || key.Contains(':') || key.StartsWith('-')) key = "\"" + YamlUtil.EscapeString(key) + "\"";
+            if (key.Contains(' ') || key.Contains(':') || key.StartsWith('-'))
+                key = string.Concat("\"", YamlUtil.EscapeString(key), "\"");
 
             var value = property.Value;
             if (value.IsEmpty) writer.WriteLine(key + ":");
@@ -109,7 +110,7 @@ public class YamlFormat : Format<YamlTokenType>
                 writer.WriteLine();
                 break;
             case TinyTokenType.String:
-                writer.WriteLine("\"" + YamlUtil.EscapeString((string)value) + "\"");
+                writer.WriteLine(string.Concat("\"", YamlUtil.EscapeString((string)value), "\""));
                 break;
             case TinyTokenType.Integer:
                 writer.WriteLine(value?.ToString());

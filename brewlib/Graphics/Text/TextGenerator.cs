@@ -93,7 +93,7 @@ public sealed class TextGenerator : IDisposable
             using (var stream = container.GetStream(name, ResourceSource.Embedded))
                 if (stream is not null)
                 {
-                    if (!fontCollections.TryGetValue(name, out var collection)) fontCollections.Add(name, collection = new());
+                    if (!fontCollections.TryGetValue(name, out var collection)) fontCollections[name] = collection = new();
 
                     var len = (int)stream.Length;
                     using (var span = SpanOwner<byte>.Allocate(len))

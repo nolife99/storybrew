@@ -12,8 +12,8 @@ public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCom
 
     public TValue StartValue => command.StartValue;
     public TValue EndValue => command.EndValue;
-    public float StartTime => triggerTime + command.StartTime;
-    public float EndTime => triggerTime + command.EndTime;
+    public float StartTime => command.StartTime;
+    public float EndTime => command.EndTime;
 
     public bool Active { get; set; }
     public int Cost => throw new NotImplementedException();
@@ -22,10 +22,9 @@ public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCom
     {
         if (!Active) throw new InvalidOperationException("Not triggered");
 
-        var commandTime = time - triggerTime;
-        if (commandTime < command.StartTime) return command.ValueAtTime(command.StartTime);
-        if (command.EndTime < commandTime) return command.ValueAtTime(command.EndTime);
-        return command.ValueAtTime(commandTime);
+        return time < command.StartTime ?
+            command.ValueAtTime(command.StartTime) :
+            command.ValueAtTime(command.EndTime < time ? command.EndTime : time);
     }
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 

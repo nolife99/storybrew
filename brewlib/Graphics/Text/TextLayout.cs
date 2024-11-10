@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Numerics;
 using Util;
 
@@ -38,7 +37,15 @@ public class TextLayout
     public Vector2 Size { get; }
 
     public IEnumerable<TextLayoutGlyph> VisibleGlyphs
-        => from line in lines from glyph in line.Glyphs where !glyph.Glyph.IsEmpty select glyph;
+    {
+        get
+        {
+            foreach (var line in lines)
+            foreach (var glyph in line.Glyphs)
+                if (!glyph.Glyph.IsEmpty)
+                    yield return glyph;
+        }
+    }
 
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {

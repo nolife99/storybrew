@@ -96,14 +96,14 @@ public class CommandGenerator
     /// <param name="timeOffset"> The time offset of the command times. </param>
     /// <param name="loopable"> Whether the commands to be generated are contained within a <see cref="LoopCommand"/>. </param>
     /// <returns> <see langword="true"/> if any commands were generated, else returns <see langword="false"/>. </returns>
-    public bool GenerateCommands(OsbSprite sprite,
+    public void GenerateCommands(OsbSprite sprite,
         Action<Action, OsbSprite> action = null,
         float? startTime = null,
         float? endTime = null,
         float timeOffset = 0,
         bool loopable = false)
     {
-        if (states.Count == 0) return false;
+        if (states.Count == 0) return;
 
         State previousState = null;
         bool wasVisible = false, everVisible = false, stateAdded = false;
@@ -150,14 +150,13 @@ public class CommandGenerator
         }
 
         clearKeyframes();
-        return everVisible;
     }
 
     void commitKeyframes(SizeF imageSize)
     {
         fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f * 100, 0, 100));
-        if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
-        if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
+        if (MathF.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
+        if (MathF.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalFades);
 
         positions.Simplify2dKeyframes(PositionTolerance, s => s);
@@ -234,6 +233,7 @@ public class CommandGenerator
 
     void addKeyframes(State state, float time)
     {
+        // redo to improve memory usage
         positions.Add(time, state.Position);
         scales.Add(time, state.Scale);
         rotations.Add(time, state.Rotation);
@@ -247,21 +247,19 @@ public class CommandGenerator
     void clearKeyframes()
     {
         states.Clear();
-        states.Capacity = 0;
-
-        positions.Clear(true);
-        scales.Clear(true);
-        rotations.Clear(true);
-        colors.Clear(true);
-        fades.Clear(true);
-        finalPositions.Clear(true);
-        finalScales.Clear(true);
-        finalRotations.Clear(true);
-        finalColors.Clear(true);
-        finalFades.Clear(true);
-        flipH.Clear(true);
-        flipV.Clear(true);
-        additive.Clear(true);
+        positions.Clear();
+        scales.Clear();
+        rotations.Clear();
+        colors.Clear();
+        fades.Clear();
+        finalPositions.Clear();
+        finalScales.Clear();
+        finalRotations.Clear();
+        finalColors.Clear();
+        finalFades.Clear();
+        flipH.Clear();
+        flipV.Clear();
+        additive.Clear();
     }
 
     internal static SizeF BitmapDimensions(string path) => StoryboardObjectGenerator.Current
@@ -314,12 +312,12 @@ public class State : IComparer<State>
         CommandScale scale = new(noGen ? (float)Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals),
             noGen ? (float)Scale.Y : MathF.Round(Scale.Y, generator.ScaleDecimals));
 
-        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
+        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : MathF.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
             scale.X <= 0 || scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
             new(noGen ? (float)Position.X : MathF.Round(Position.X, generator.PositionDecimals),
                 noGen ? (float)Position.Y : MathF.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
-            noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
+            noGen ? Rotation : MathF.Round(Rotation, generator.RotationDecimals), origin);
     }
 }

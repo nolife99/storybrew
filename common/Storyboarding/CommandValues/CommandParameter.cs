@@ -27,5 +27,5 @@ public readonly struct CommandParameter : CommandValue
 
     public static bool operator ==(CommandParameter left, CommandParameter right) => left.Equals(right);
     public static bool operator !=(CommandParameter left, CommandParameter right) => !left.Equals(right);
-    public static implicit operator bool(CommandParameter obj) => obj.Type != ParameterType.None;
+    public static implicit operator bool(CommandParameter obj) => obj.Type is not ParameterType.None;
 }

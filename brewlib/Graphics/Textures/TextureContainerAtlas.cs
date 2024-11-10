@@ -27,13 +27,13 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
 
         var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
         if (!atlases.TryGetValue(options, out var atlas))
-            atlases.Add(options, atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding));
+            atlases[options] = atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding);
 
         using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer))
             if (bitmap is not null)
                 texture = atlas.AddRegion(bitmap, filename);
 
-        textures.Add(filename, texture);
+        textures[filename] = texture;
         ResourceLoaded?.Invoke(filename, texture);
 
         return texture;

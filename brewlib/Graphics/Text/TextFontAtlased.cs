@@ -18,7 +18,7 @@ public class TextFontAtlased(string name, float size) : TextFont
 
     public FontGlyph GetGlyph(char c)
     {
-        if (!glyphs.TryGetValue(c, out var glyph)) glyphs.Add(c, glyph = generateGlyph(c));
+        if (!glyphs.TryGetValue(c, out var glyph)) glyphs[c] = glyph = generateGlyph(c);
         return glyph;
     }
 

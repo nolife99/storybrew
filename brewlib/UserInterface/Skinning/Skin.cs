@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Data;
 using Graphics.Drawables;
 using Graphics.Textures;
@@ -149,7 +150,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
         }
 
-        var drawableB = (Drawable)Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type") ??
+        var drawableB = Unsafe.As<Drawable>(Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type")) ??
             throw new InvalidDataException($"Drawable '{data}' must declare a type")));
 
         parseFields(drawableB, data.Value<TinyObject>(), null, constants);
@@ -163,8 +164,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             var styleTypeObject = value.Value<TinyObject>();
             try
             {
-                var styleType = ResolveStyleType($"{styleTypeName}Style");
-                if (!stylesPerType.TryGetValue(styleType, out var styles)) stylesPerType.Add(styleType, styles = []);
+                var styleType = ResolveStyleType(styleTypeName + "Style");
+                if (!stylesPerType.TryGetValue(styleType, out var styles)) stylesPerType[styleType] = styles = [];
 
                 WidgetStyle defaultStyle = null;
                 foreach (var (styleName, tinyToken) in styleTypeObject)
@@ -172,7 +173,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     var styleObject = tinyToken.Value<TinyObject>();
                     try
                     {
-                        var style = (WidgetStyle)Activator.CreateInstance(styleType);
+                        var style = Unsafe.As<WidgetStyle>(Activator.CreateInstance(styleType));
 
                         var parentStyle = defaultStyle;
                         var implicitParentStyleName = getImplicitParentStyleName(styleName);
