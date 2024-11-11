@@ -301,10 +301,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         return array;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<int> AsSpan() => MemoryMarshal.CreateSpan(ref *scan0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<int> AsReadOnlySpan() => MemoryMarshal.CreateReadOnlySpan(ref *scan0, Count);
 
     ~PinnedBitmap() => Dispose(false);

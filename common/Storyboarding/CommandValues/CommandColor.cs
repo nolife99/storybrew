@@ -101,8 +101,8 @@ public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
 #pragma warning disable CS1591
     public static implicit operator Color4(CommandColor obj) => new(obj.internalVec.X, obj.internalVec.Y, obj.internalVec.Z, 1);
     public static implicit operator CommandColor(Color4 obj) => new Vector3(obj.R, obj.G, obj.B);
-    public static implicit operator CommandColor(Color obj) => new Vector3(obj.R / 255f, obj.G / 255f, obj.B / 255f);
     public static implicit operator Color(CommandColor obj) => Color.FromArgb(obj.R, obj.G, obj.B);
+    public static implicit operator CommandColor(Color obj) => new Vector3(obj.R / 255f, obj.G / 255f, obj.B / 255f);
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
     public static implicit operator Vector3(CommandColor obj) => Unsafe.As<CommandColor, Vector3>(ref obj);
     public static implicit operator CommandColor(Vector3 obj) => Unsafe.As<Vector3, CommandColor>(ref obj);
@@ -114,12 +114,7 @@ public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
     public static CommandColor operator -(CommandColor left, CommandColor right) => left.internalVec - right.internalVec;
     public static CommandColor operator *(CommandColor left, CommandColor right) => left.internalVec * right.internalVec;
 
-    public static CommandColor operator *(CommandColor left, double right) => new(left.internalVec.X * right,
-        left.internalVec.Y * right, left.internalVec.Z * right);
-
-    public static CommandColor operator *(double left, CommandColor right) => new(left * right.internalVec.X,
-        left * right.internalVec.Y, left * right.internalVec.Z);
-
-    public static CommandColor operator /(CommandColor left, double right) => new(left.internalVec.X / right,
-        left.internalVec.Y / right, left.internalVec.Z / right);
+    public static CommandColor operator *(CommandColor left, CommandDecimal right) => left.internalVec * right;
+    public static CommandColor operator *(CommandDecimal left, CommandColor right) => right.internalVec * left;
+    public static CommandColor operator /(CommandColor left, CommandDecimal right) => left.internalVec / right;
 }

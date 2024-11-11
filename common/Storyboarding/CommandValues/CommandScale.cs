@@ -30,7 +30,6 @@ public readonly struct CommandScale : CommandValue, IEquatable<CommandScale>,
     public CommandScale(CommandDecimal value) : this(value, value) { }
 
     /// <summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandScale(Vector2 vector) => internalVec = vector;
 
     /// <inheritdoc/>
@@ -51,40 +50,30 @@ public readonly struct CommandScale : CommandValue, IEquatable<CommandScale>,
 
 #pragma warning disable CS1591
     public static CommandScale operator +(CommandScale left, CommandScale right) => left.internalVec + right.internalVec;
-
     public static CommandScale operator -(CommandScale left, CommandScale right) => left.internalVec - right.internalVec;
-
     public static CommandScale operator *(CommandScale left, CommandScale right) => left.internalVec * right.internalVec;
-
-    public static CommandScale operator *(CommandScale left, CommandDecimal right)
-        => new(left.internalVec.X * right, left.internalVec.Y * right);
-
+    public static CommandScale operator *(CommandScale left, CommandDecimal right) => left.internalVec * right;
     public static CommandScale operator /(CommandScale left, CommandScale right) => left.internalVec / right.internalVec;
-
-    public static CommandScale operator /(CommandScale left, CommandDecimal right)
-        => new(left.internalVec.X / right, left.internalVec.Y / right);
+    public static CommandScale operator /(CommandScale left, CommandDecimal right) => left.internalVec / right;
 
     public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
     public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
 
     public static implicit operator CommandScale(osuTK.Vector2 vector) => Unsafe.As<osuTK.Vector2, CommandScale>(ref vector);
+    public static implicit operator osuTK.Vector2(CommandScale obj) => Unsafe.As<CommandScale, osuTK.Vector2>(ref obj);
 
     public static implicit operator CommandScale(Vector2d vector) => new(vector.X, vector.Y);
-    public static implicit operator CommandScale(SizeF vector) => vector.ToVector2();
+    public static implicit operator Vector2d(CommandScale obj) => new(obj.X, obj.Y);
+
+    public static implicit operator CommandScale(SizeF vector) => Unsafe.As<SizeF, CommandScale>(ref vector);
+    public static implicit operator SizeF(CommandScale vector) => Unsafe.As<CommandScale, SizeF>(ref vector);
 
     public static implicit operator CommandScale(CommandPosition position)
         => Unsafe.As<CommandPosition, CommandScale>(ref position);
 
-    public static implicit operator osuTK.Vector2(CommandScale obj) => Unsafe.As<CommandScale, osuTK.Vector2>(ref obj);
-    public static implicit operator Vector2d(CommandScale obj) => new(obj.X, obj.Y);
-    public static implicit operator SizeF(CommandScale vector) => new(vector.internalVec);
-
     public static implicit operator CommandPosition(CommandScale position)
         => Unsafe.As<CommandScale, CommandPosition>(ref position);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Vector2(CommandScale obj) => obj.internalVec;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Vector2(CommandScale obj) => Unsafe.As<CommandScale, Vector2>(ref obj);
     public static implicit operator CommandScale(Vector2 vector) => Unsafe.As<Vector2, CommandScale>(ref vector);
 }

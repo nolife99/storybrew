@@ -36,7 +36,6 @@ public readonly struct CommandPosition : CommandValue, IEquatable<CommandPositio
     public CommandPosition(CommandDecimal value) : this(value, value) { }
 
     /// <summary> Constructs a <see cref="CommandPosition"/> from a <see cref="Vector2"/>. </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition(Vector2 vector) => internalVec = vector;
 
     /// <inheritdoc/>
@@ -58,23 +57,13 @@ public readonly struct CommandPosition : CommandValue, IEquatable<CommandPositio
 
 #pragma warning disable CS1591
     public static CommandPosition operator +(CommandPosition left, CommandPosition right) => left.internalVec + right.internalVec;
-
     public static CommandPosition operator -(CommandPosition left, CommandPosition right) => left.internalVec - right.internalVec;
-
     public static CommandPosition operator -(CommandPosition pos) => -pos.internalVec;
-
     public static CommandPosition operator *(CommandPosition left, CommandPosition right) => left.internalVec * right.internalVec;
-
-    public static CommandPosition operator *(CommandPosition left, CommandDecimal right)
-        => new(left.internalVec.X * right, left.internalVec.Y * right);
-
-    public static CommandPosition operator *(CommandDecimal left, CommandPosition right)
-        => new(right.internalVec.X * left, right.internalVec.Y * left);
-
+    public static CommandPosition operator *(CommandPosition left, CommandDecimal right) => left.internalVec * right;
+    public static CommandPosition operator *(CommandDecimal left, CommandPosition right) => right.internalVec * left;
     public static CommandPosition operator /(CommandPosition left, CommandPosition right) => left.internalVec / right.internalVec;
-
-    public static CommandPosition operator /(CommandPosition left, CommandDecimal right)
-        => new(left.internalVec.X / right, left.internalVec.Y / right);
+    public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => left.internalVec / right;
 
     public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
     public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
@@ -82,18 +71,15 @@ public readonly struct CommandPosition : CommandValue, IEquatable<CommandPositio
     public static implicit operator osuTK.Vector2(CommandPosition position)
         => Unsafe.As<CommandPosition, osuTK.Vector2>(ref position);
 
-    public static implicit operator Vector2d(CommandPosition position) => new(position.X, position.Y);
-    public static implicit operator PointF(CommandPosition position) => Unsafe.As<CommandPosition, PointF>(ref position);
-
     public static implicit operator CommandPosition(osuTK.Vector2 vector)
         => Unsafe.As<osuTK.Vector2, CommandPosition>(ref vector);
 
     public static implicit operator CommandPosition(Vector2d vector) => new(vector.X, vector.Y);
+    public static implicit operator Vector2d(CommandPosition position) => new(position.X, position.Y);
+    
+    public static implicit operator PointF(CommandPosition position) => Unsafe.As<CommandPosition, PointF>(ref position);
     public static implicit operator CommandPosition(PointF vector) => Unsafe.As<PointF, CommandPosition>(ref vector);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Vector2(CommandPosition position) => position.internalVec;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Vector2(CommandPosition position) => Unsafe.As<CommandPosition, Vector2>(ref position);
     public static implicit operator CommandPosition(Vector2 vector) => Unsafe.As<Vector2, CommandPosition>(ref vector);
 }

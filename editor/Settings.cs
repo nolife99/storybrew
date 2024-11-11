@@ -45,8 +45,7 @@ public class Settings
 
                 try
                 {
-                    var setting = Unsafe.As<Setting>(field.GetValue(this));
-                    setting.Set(value);
+                    Unsafe.As<Setting>(field.GetValue(this)).Set(value);
                 }
                 catch (Exception e)
                 {

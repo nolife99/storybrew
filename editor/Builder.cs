@@ -16,9 +16,7 @@ public static class Builder
 
     public static void Build()
     {
-        var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{
-            RuntimeInformation.RuntimeIdentifier}.zip";
-
+        var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{RuntimeInformation.RuntimeIdentifier}.zip";
         var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
 
         try

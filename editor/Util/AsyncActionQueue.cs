@@ -215,7 +215,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             }, tokenSrc.Token), TaskCreationOptions.LongRunning);
 #pragma warning restore SYSLIB0046
 
-            Trace.WriteLine($"Starting thread {threadName} ({thread.Id})");
+            Trace.WriteLine($"Started thread {threadName} ({thread.Id})");
         }
     }
 
