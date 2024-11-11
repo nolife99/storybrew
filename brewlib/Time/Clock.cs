@@ -19,8 +19,9 @@ public class Clock : TimeSource
             if (timeFactor == value) return;
 
             var elapsed = (float)stopwatch.Elapsed.TotalSeconds;
+            var previousTime = timeOrigin + elapsed * timeFactor;
             timeFactor = value;
-            timeOrigin = timeOrigin + elapsed * timeFactor - elapsed * timeFactor;
+            timeOrigin = previousTime - elapsed * timeFactor;
         }
     }
 

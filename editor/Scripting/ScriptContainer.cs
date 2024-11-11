@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using StorybrewCommon.Scripting;
 
@@ -116,7 +117,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
             }
         }
 
-        var script = (TScript)Activator.CreateInstance(scriptType, true);
+        var script = Unsafe.As<TScript>(Activator.CreateInstance(scriptType, true));
         script.Identifier = scriptType.AssemblyQualifiedName + Environment.TickCount;
         return script;
     }

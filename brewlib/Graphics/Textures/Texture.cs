@@ -5,5 +5,5 @@ using System;
 public interface Texture : IDisposable
 {
     string Description { get; }
-    BindableTexture BindableTexture { get; }
+    Texture2d BindableTexture { get; }
 }

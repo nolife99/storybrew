@@ -4,5 +4,4 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 public interface CommandValue
 {
     string ToOsbString(ExportSettings exportSettings);
-    int GetHashCode();
 }

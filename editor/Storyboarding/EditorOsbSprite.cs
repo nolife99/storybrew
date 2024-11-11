@@ -93,7 +93,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         var position = sprite.PositionAt(time);
         var rotation = sprite.RotationAt(time);
 
-        var origin = GetOriginVector(sprite.Origin, texture.Width, texture.Height);
+        var origin = GetOriginVector(sprite.Origin, texture.Size);
         if (transform is not null)
         {
             position = sprite.HasMoveXYCommands ? transform.ApplyToPositionXY(position) : transform.ApplyToPosition(position);
@@ -105,7 +105,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         if (frameStats is not null)
         {
             var size = texture.Size * scale;
-            using (OrientedBoundingBox spriteBox = new(position, (Vector2)origin * scale, size.X, size.Y, rotation))
+            using (OrientedBoundingBox spriteBox = new(position, origin * scale, size.X, size.Y, rotation))
                 if (spriteBox.Intersects(in OsuHitObject.WidescreenStoryboardBounds))
                 {
                     frameStats.EffectiveCommandCount += sprite.CommandCost;

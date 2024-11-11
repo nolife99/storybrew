@@ -19,7 +19,8 @@ public interface QuadRenderer : Renderer, IDisposable
     void Draw(ref QuadPrimitive quad, Texture2dRegion texture);
 }
 
-[StructLayout(LayoutKind.Sequential)] public struct QuadPrimitive
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
+public struct QuadPrimitive
 {
     public float x1, y1, u1, v1;
     public int color1;

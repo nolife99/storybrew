@@ -25,7 +25,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
     Camera camera;
     int currentSamplerUnit, currentLargestBatch, quadsInBatch;
-    BindableTexture currentTexture;
+    Texture2d currentTexture;
 
     bool disposed, lastFlushWasBuffered, rendering;
 

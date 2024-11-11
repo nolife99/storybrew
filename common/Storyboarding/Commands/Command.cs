@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Animations;
 using CommandValues;
 
@@ -50,14 +51,20 @@ public abstract class Command<TValue>(string identifier,
 
         var duration = EndTime - StartTime;
         var progress = duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0;
-        return ValueAtProgress(progress);
+        return ValueAtProgress((float)progress);
     }
 
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
     public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
 
     public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
-        => writer.WriteLine(new string(' ', indentation) + ToOsbString(exportSettings, transform));
+    {
+        Span<char> indent = stackalloc char[indentation];
+        indent.Fill(' ');
+
+        writer.Write(indent);
+        writer.WriteLine(ToOsbString(exportSettings, transform));
+    }
 
     public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
     public virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
@@ -70,7 +77,7 @@ public abstract class Command<TValue>(string identifier,
         StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) &&
         EndValue.Equals(obj.EndValue);
 
-    public string ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
+    public StringBuilder ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
     {
         var startTimeString = (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);
         var endTimeString = (exportSettings.UseFloatForTime ? EndTime : (int)EndTime).ToString(exportSettings.NumberFormat);
@@ -80,12 +87,16 @@ public abstract class Command<TValue>(string identifier,
         var startValueString = tranformedStartValue.ToOsbString(exportSettings);
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
+        StringBuilder result = new();
         if (startTimeString == endTimeString) endTimeString = "";
-        var result = string.Join(",", Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString,
-            endTimeString, startValueString);
 
-        if (startValueString != endValueString) result += "," + endValueString;
-        return result;
+        result.AppendJoin(',', Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString, endTimeString,
+            startValueString);
+
+        if (startValueString == endValueString) return result;
+
+        result.Append(',');
+        return result.Append(endValueString);
     }
-    public override string ToString() => ToOsbString(ExportSettings.Default, null);
+    public override string ToString() => ToOsbString(ExportSettings.Default, null).ToString();
 }

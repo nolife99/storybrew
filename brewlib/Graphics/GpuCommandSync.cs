@@ -3,10 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Microsoft.Extensions.ObjectPool;
 using osuTK.Graphics.OpenGL;
 
 public sealed class GpuCommandSync : IDisposable
 {
+    readonly ObjectPool<SyncRange> syncRangePool = ObjectPool.Create<SyncRange>();
     readonly List<SyncRange> syncRanges = [];
 
     public bool WaitForAll()
@@ -15,7 +17,7 @@ public sealed class GpuCommandSync : IDisposable
 
         var blocked = syncRanges[^1].Wait();
 
-        foreach (var range in syncRanges) range.Dispose();
+        foreach (var range in syncRanges) syncRangePool.Return(range);
         syncRanges.Clear();
 
         return blocked;
@@ -34,7 +36,15 @@ public sealed class GpuCommandSync : IDisposable
 
         return false;
     }
-    public void LockRange(int index, int length) => syncRanges.Add(new(index, length));
+    public void LockRange(int index, int length)
+    {
+        var item = syncRangePool.Get();
+
+        item.Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+        item.Index = index;
+        item.Length = length;
+        syncRanges.Add(item);
+    }
 
     void trimExpiredRanges()
     {
@@ -58,17 +68,24 @@ public sealed class GpuCommandSync : IDisposable
 
     void clearToIndex(int index)
     {
-        for (var i = 0; i <= index; ++i) syncRanges[i].Dispose();
+        for (var i = 0; i <= index; ++i) syncRangePool.Return(syncRanges[i]);
         syncRanges.RemoveRange(0, index + 1);
     }
 
     public static bool HasCapabilities() => DrawState.HasCapabilities(3, 2, "GL_ARB_sync");
 
-    sealed class SyncRange(int index, int length) : IDisposable
+    sealed class SyncRange : IResettable
     {
-        readonly nint Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
-        public readonly int Index = index, Length = length;
         bool expired;
+        public nint Fence;
+        public int Index, Length;
+
+        public bool TryReset()
+        {
+            GL.DeleteSync(Fence);
+            expired = false;
+            return true;
+        }
 
         public bool Wait(bool canBlock = true)
         {
@@ -98,26 +115,6 @@ public sealed class GpuCommandSync : IDisposable
                         break;
                 }
         }
-
-        #region IDisposable Support
-
-        bool disposed;
-        void Dispose(bool disposing)
-        {
-            if (disposed) return;
-            GL.DeleteSync(Fence);
-
-            if (disposing) disposed = true;
-        }
-
-        ~SyncRange() => Dispose(false);
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        #endregion
     }
 
     #region IDisposable Support
@@ -126,7 +123,7 @@ public sealed class GpuCommandSync : IDisposable
     public void Dispose()
     {
         if (disposed) return;
-        foreach (var range in syncRanges) range.Dispose();
+        foreach (var range in syncRanges) syncRangePool.Return(range);
         syncRanges.Clear();
 
         disposed = true;

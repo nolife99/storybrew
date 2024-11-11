@@ -193,13 +193,13 @@ public static class DrawState
     }
     public static int BindTexture(BindableTexture texture, bool activate = false)
     {
-        var samplerUnit = BindTextures(texture)[0];
+        var samplerUnit = BindTextures(texture);
         if (activate) ActiveTextureUnit = samplerUnit;
         return samplerUnit;
     }
-    public static int[] BindTextures(params BindableTexture[] textures)
+    public static unsafe int BindTextures(params BindableTexture[] textures)
     {
-        var samplerIndexes = new int[textures.Length];
+        var samplerIndexes = stackalloc int[textures.Length];
         var samplerCount = samplerTextureIds.Length;
 
         for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)
@@ -229,7 +229,7 @@ public static class DrawState
                 samplerIndex = (samplerIndex + 1) % samplerCount)
             {
                 first = false;
-                if (samplerIndexes.Any(t => t == samplerIndex)) continue;
+                if (*samplerIndexes == samplerIndex) continue;
 
                 BindTexture(textureId, samplerIndex);
                 samplerIndexes[textureIndex] = samplerIndex;
@@ -238,7 +238,7 @@ public static class DrawState
             }
         }
 
-        return samplerIndexes;
+        return *samplerIndexes;
     }
 
     public static void UnbindTexture(BindableTexture texture) => UnbindTexture(texture.TextureId);

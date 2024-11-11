@@ -8,11 +8,14 @@ using System.Numerics;
 using Animations;
 using Commands;
 using CommandValues;
+using Microsoft.Extensions.ObjectPool;
 using Scripting;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
+    internal static readonly ObjectPool<State> statePool = ObjectPool.Create<State>();
+
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
 
@@ -22,8 +25,9 @@ public class CommandGenerator
     readonly KeyframedValue<CommandPosition> positions = new(InterpolatingFunctions.Position),
         finalPositions = new(InterpolatingFunctions.Position);
 
-    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle), fades = new(InterpolatingFunctions.Float),
-        finalRotations = new(InterpolatingFunctions.FloatAngle), finalFades = new(InterpolatingFunctions.Float);
+    readonly KeyframedValue<double> rotations = new(InterpolatingFunctions.DoubleAngle),
+        fades = new(InterpolatingFunctions.Double), finalRotations = new(InterpolatingFunctions.DoubleAngle),
+        finalFades = new(InterpolatingFunctions.Double);
 
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
@@ -109,6 +113,7 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
+        ensureCapacity();
         foreach (var state in states)
         {
             var time = state.Time + timeOffset;
@@ -130,17 +135,18 @@ public class CommandGenerator
                     commitKeyframes(imageSize);
                     break;
                 default:
-                {
                     if (isVisible) addKeyframes(state, time);
                     else stateAdded = false;
 
                     break;
-                }
             }
 
+            if (previousState is not null) statePool.Return(previousState);
             previousState = state;
             wasVisible = isVisible;
         }
+
+        statePool.Return(previousState);
 
         if (wasVisible) commitKeyframes(imageSize);
         if (everVisible)
@@ -154,9 +160,9 @@ public class CommandGenerator
 
     void commitKeyframes(SizeF imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f * 100, 0, 100));
-        if (MathF.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
-        if (MathF.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
+        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp((float)f * 100, 0, 100));
+        if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
+        if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalFades);
 
         positions.Simplify2dKeyframes(PositionTolerance, s => s);
@@ -167,7 +173,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => 180 / MathF.PI * r);
+        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)(180 / Math.PI * r));
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 
@@ -210,30 +216,40 @@ public class CommandGenerator
             loopable);
 
         finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0,
-            r => MathF.Round(r, RotationDecimals), startState, endState, loopable);
+            r => Math.Round(r, RotationDecimals), startState, endState, loopable);
 
         finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState,
             endState, loopable);
 
         finalFades.ForEachPair((s, e) =>
         {
-            // what the hell???
             if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 || s.Time == sprite.EndTime ||
                 s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0)) sprite.Fade(s.Time, e.Time, s.Value, e.Value);
-        }, -1, o => MathF.Round(o, OpacityDecimals), startState, endState, loopable);
+        }, -1, o => Math.Round(o, OpacityDecimals), startState, endState, loopable);
 
         flipH.ForEachFlag(sprite.FlipH);
         flipV.ForEachFlag(sprite.FlipV);
         additive.ForEachFlag(sprite.Additive);
         return;
 
-        float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
-        float checkPos(float value) => MathF.Round(value, PositionDecimals);
+        double checkScale(double value) => value * Math.Max(imageSize.Width, imageSize.Height);
+        double checkPos(double value) => Math.Round(value, PositionDecimals);
+    }
+
+    void ensureCapacity()
+    {
+        colors.keyframes.EnsureCapacity(states.Count);
+        flipH.keyframes.EnsureCapacity(states.Count);
+        flipV.keyframes.EnsureCapacity(states.Count);
+        additive.keyframes.EnsureCapacity(states.Count);
+        positions.keyframes.EnsureCapacity(states.Count);
+        rotations.keyframes.EnsureCapacity(states.Count);
+        fades.keyframes.EnsureCapacity(states.Count);
+        scales.keyframes.EnsureCapacity(states.Count);
     }
 
     void addKeyframes(State state, float time)
     {
-        // redo to improve memory usage
         positions.Add(time, state.Position);
         scales.Add(time, state.Scale);
         rotations.Add(time, state.Rotation);
@@ -267,36 +283,58 @@ public class CommandGenerator
 }
 
 /// <summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
-public class State : IComparer<State>
+public class State : IComparer<State>, IResettable
 {
     ///<summary> Represents the additive toggle condition of this state. </summary>
-    public bool Additive;
+    public bool Additive { get; set; }
 
     ///<summary> Represents the color, in RGB values, of this state. </summary>
-    public CommandColor Color = CommandColor.White;
+    public CommandColor Color { get; set; } = CommandColor.White;
 
     ///<summary> Represents the horizontal flip condition of this state. </summary>
-    public bool FlipH;
+    public bool FlipH { get; set; }
 
     ///<summary> Represents the vertical flip condition of this state. </summary>
-    public bool FlipV;
+    public bool FlipV { get; set; }
 
     ///<summary> Represents the opacity, from 0 to 1, of this state. </summary>
-    public float Opacity;
+    public double Opacity { get; set; }
 
     ///<summary> Represents the position, in osu!pixels, of this state. </summary>
-    public CommandPosition Position = new(320, 240);
+    public CommandPosition Position { get; set; } = new(320, 240);
 
     ///<summary> Represents the rotation, in radians, of this state. </summary>
-    public float Rotation;
+    public double Rotation { get; set; }
 
     ///<summary> Represents the scale, in osu!pixels, of this state. </summary>
-    public CommandScale Scale = CommandScale.One;
+    public CommandScale Scale { get; set; } = CommandScale.One;
 
     ///<summary> Represents the base time, in milliseconds, of this state. </summary>
-    public float Time;
+    public float Time { get; set; }
 
     int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
+
+    bool IResettable.TryReset()
+    {
+        try
+        {
+            Additive = false;
+            Color = CommandColor.White;
+            FlipH = false;
+            FlipV = false;
+            Opacity = 0;
+            Position = new(320, 240);
+            Rotation = 0;
+            Scale = CommandScale.One;
+            Time = 0;
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     /// <summary>
     ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and
@@ -309,15 +347,15 @@ public class State : IComparer<State>
     public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;
-        CommandScale scale = new(noGen ? (float)Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals),
-            noGen ? (float)Scale.Y : MathF.Round(Scale.Y, generator.ScaleDecimals));
+        CommandScale scale = new(noGen ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals),
+            noGen ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals));
 
-        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : MathF.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
+        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
             scale.X <= 0 || scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
-            new(noGen ? (float)Position.X : MathF.Round(Position.X, generator.PositionDecimals),
-                noGen ? (float)Position.Y : MathF.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
-            noGen ? Rotation : MathF.Round(Rotation, generator.RotationDecimals), origin);
+            new(noGen ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
+                noGen ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
+            noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
     }
 }

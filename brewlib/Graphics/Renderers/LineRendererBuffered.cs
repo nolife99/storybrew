@@ -18,7 +18,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     const int VertexPerLine = 2;
     const string CombinedMatrixUniformName = "u_combinedMatrix";
 
-    public static readonly VertexDeclaration VertexDeclaration =
+    static readonly VertexDeclaration VertexDeclaration =
         new(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
 
     readonly int maxLinesPerBatch;

@@ -15,7 +15,7 @@ using System.Numerics;
 public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpolate = null, TValue defaultValue = default)
     : IEnumerable<Keyframe<TValue>>
 {
-    List<Keyframe<TValue>> keyframes = [];
+    internal List<Keyframe<TValue>> keyframes = [];
 
     ///<summary> Returns the start time of the first keyframe. </summary>
     public float StartTime => keyframes.Count == 0 ? int.MaxValue : keyframes[0].Time;
@@ -65,7 +65,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     /// <param name="value"> The value of the <see cref="Keyframe{TValue}"/>. </param>
     /// <param name="easing"> The <see cref="EasingFunctions"/> type of this <see cref="Keyframe{TValue}"/>. </param>
     /// <param name="before"> If a <see cref="Keyframe{TValue}"/> exists at this time, inserted before existing one. </param>
-    public KeyframedValue<TValue> Add(float time, TValue value, Func<float, float> easing, bool before = false)
+    public KeyframedValue<TValue> Add(float time, TValue value, Func<double, double> easing, bool before = false)
         => Add(new(time, value, easing), before);
 
     ///<summary> Adds keyframes to the set. </summary>
@@ -90,6 +90,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     public void TransferKeyframes(KeyframedValue<TValue> to, bool clear = true)
     {
         if (Count == 0) return;
+        to.keyframes.EnsureCapacity(to.Count + keyframes.Count);
         to.AddRange(keyframes);
         if (clear) Clear();
     }
@@ -111,7 +112,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         if (from.Time == to.Time) return to.Value;
 
         var progress = to.Ease((time - from.Time) / (to.Time - from.Time));
-        return interpolate(from.Value, to.Value, progress);
+        return interpolate(from.Value, to.Value, (float)progress);
     }
 
     /// <summary> Converts keyframes to commands. </summary>
