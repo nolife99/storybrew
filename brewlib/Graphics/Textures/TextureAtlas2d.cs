@@ -9,8 +9,8 @@ public sealed class TextureAtlas2d(int width,
     TextureOptions textureOptions = null,
     int padding = 0) : IDisposable
 {
+    readonly Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
     int currentX, currentY, nextY;
-    Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
 
     public Texture2dRegion AddRegion(Bitmap bitmap, string description)
     {
@@ -39,14 +39,9 @@ public sealed class TextureAtlas2d(int width,
     bool disposed;
     public void Dispose()
     {
-        if (!disposed)
-        {
-            texture.Dispose();
-            texture = null;
-
-            GC.SuppressFinalize(this);
-            disposed = true;
-        }
+        if (disposed) return;
+        texture.Dispose();
+        disposed = true;
     }
 
     #endregion

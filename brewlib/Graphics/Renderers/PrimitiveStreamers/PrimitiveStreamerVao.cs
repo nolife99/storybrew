@@ -39,7 +39,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     {
         if (!Bound) return;
 
-        internalUnbind();
+        GL.BindVertexArray(0);
         Bound = false;
     }
     public abstract unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false);
@@ -50,7 +50,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     }
 
     protected virtual void initializeVertexBuffer() => VertexBufferId = GL.GenBuffer();
-    protected void initializeIndexBuffer(ushort[] indexes)
+    void initializeIndexBuffer(ushort[] indexes)
     {
         IndexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
@@ -62,7 +62,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         if (CurrentShader != shader) setupVertexArray(shader);
         GL.BindVertexArray(VertexArrayId);
     }
-    protected void internalUnbind() => GL.BindVertexArray(0);
 
     void setupVertexArray(Shader shader)
     {
@@ -106,13 +105,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
             GL.DeleteBuffer(IndexBufferId);
         }
-
-        if (!disposing) return;
-        VertexArrayId = -1;
-        VertexBufferId = -1;
-        IndexBufferId = -1;
-
-        CurrentShader = null;
     }
 
     protected static bool HasCapabilities()

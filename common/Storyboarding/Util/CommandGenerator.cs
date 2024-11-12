@@ -14,7 +14,7 @@ using Scripting;
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
-    internal static readonly ObjectPool<State> statePool = ObjectPool.Create<State>();
+    static readonly ObjectPool<State> statePool = ObjectPool.Create<State>();
 
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
@@ -25,9 +25,8 @@ public class CommandGenerator
     readonly KeyframedValue<CommandPosition> positions = new(InterpolatingFunctions.Position),
         finalPositions = new(InterpolatingFunctions.Position);
 
-    readonly KeyframedValue<double> rotations = new(InterpolatingFunctions.DoubleAngle),
-        fades = new(InterpolatingFunctions.Double), finalRotations = new(InterpolatingFunctions.DoubleAngle),
-        finalFades = new(InterpolatingFunctions.Double);
+    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle), fades = new(InterpolatingFunctions.Float),
+        finalRotations = new(InterpolatingFunctions.FloatAngle), finalFades = new(InterpolatingFunctions.Float);
 
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
@@ -160,7 +159,7 @@ public class CommandGenerator
 
     void commitKeyframes(SizeF imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp((float)f * 100, 0, 100));
+        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f * 100, 0, 100));
         if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
         if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalFades);
@@ -173,7 +172,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => (float)(180 / Math.PI * r));
+        rotations.Simplify1dKeyframes(RotationTolerance, r => 180 / MathF.PI * r);
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 
@@ -216,7 +215,7 @@ public class CommandGenerator
             loopable);
 
         finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0,
-            r => Math.Round(r, RotationDecimals), startState, endState, loopable);
+            r => MathF.Round(r, RotationDecimals), startState, endState, loopable);
 
         finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState,
             endState, loopable);
@@ -225,15 +224,15 @@ public class CommandGenerator
         {
             if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 || s.Time == sprite.EndTime ||
                 s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0)) sprite.Fade(s.Time, e.Time, s.Value, e.Value);
-        }, -1, o => Math.Round(o, OpacityDecimals), startState, endState, loopable);
+        }, -1, o => MathF.Round(o, OpacityDecimals), startState, endState, loopable);
 
         flipH.ForEachFlag(sprite.FlipH);
         flipV.ForEachFlag(sprite.FlipV);
         additive.ForEachFlag(sprite.Additive);
         return;
 
-        double checkScale(double value) => value * Math.Max(imageSize.Width, imageSize.Height);
-        double checkPos(double value) => Math.Round(value, PositionDecimals);
+        float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
+        float checkPos(float value) => MathF.Round(value, PositionDecimals);
     }
 
     void ensureCapacity()
@@ -298,13 +297,13 @@ public class State : IComparer<State>, IResettable
     public bool FlipV { get; set; }
 
     ///<summary> Represents the opacity, from 0 to 1, of this state. </summary>
-    public double Opacity { get; set; }
+    public float Opacity { get; set; }
 
     ///<summary> Represents the position, in osu!pixels, of this state. </summary>
     public CommandPosition Position { get; set; } = new(320, 240);
 
     ///<summary> Represents the rotation, in radians, of this state. </summary>
-    public double Rotation { get; set; }
+    public float Rotation { get; set; }
 
     ///<summary> Represents the scale, in osu!pixels, of this state. </summary>
     public CommandScale Scale { get; set; } = CommandScale.One;
@@ -347,15 +346,15 @@ public class State : IComparer<State>, IResettable
     public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;
-        CommandScale scale = new(noGen ? (double)Scale.X : Math.Round(Scale.X, generator.ScaleDecimals),
-            noGen ? (double)Scale.Y : Math.Round(Scale.Y, generator.ScaleDecimals));
+        CommandScale scale = new(noGen ? Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals),
+            noGen ? Scale.Y : MathF.Round(Scale.Y, generator.ScaleDecimals));
 
-        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : Math.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
+        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : MathF.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
             scale.X <= 0 || scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
-            new(noGen ? (double)Position.X : Math.Round(Position.X, generator.PositionDecimals),
-                noGen ? (double)Position.Y : Math.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
-            noGen ? Rotation : Math.Round(Rotation, generator.RotationDecimals), origin);
+            new Vector2(noGen ? Position.X : MathF.Round(Position.X, generator.PositionDecimals),
+                noGen ? Position.Y : MathF.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
+            noGen ? Rotation : MathF.Round(Rotation, generator.RotationDecimals), origin);
     }
 }

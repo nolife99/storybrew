@@ -122,8 +122,8 @@ public class ScrollArea : Widget
         }
     }
 
-    public float ScrollableX => Math.Max(0, scrollContainer.Width - Width);
-    public float ScrollableY => Math.Max(0, scrollContainer.Height - Height);
+    float ScrollableX => Math.Max(0, scrollContainer.Width - Width);
+    float ScrollableY => Math.Max(0, scrollContainer.Height - Height);
 
     protected override void DrawChildren(DrawContext drawContext, float actualOpacity)
     {

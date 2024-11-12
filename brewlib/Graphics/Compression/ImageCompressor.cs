@@ -30,14 +30,14 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    public void LosslessCompress(string path) => compress(new Argument(path), false);
-    public void Compress(string path) => compress(new Argument(path), true);
+    ~ImageCompressor() => Dispose(false);
 
-    public void LosslessCompress(string path, LosslessInputSettings settings) => compress(new Argument(path, settings), false);
+    public void LosslessCompress(string path, LosslessInputSettings settings)
+        => InternalCompress(new Argument(path, settings), false);
 
-    public void Compress(string path, LossyInputSettings settings) => compress(new Argument(path, null, settings), true);
+    public void Compress(string path, LossyInputSettings settings) => InternalCompress(new Argument(path, null, settings), true);
 
-    protected abstract void compress(Argument arg, bool useLossy);
+    protected abstract void InternalCompress(Argument arg, bool useLossy);
     protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
 
     protected abstract void ensureTool();
@@ -50,15 +50,9 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            ensureStop();
-            if (disposing)
-            {
-                container = null;
-                disposed = true;
-            }
-        }
+        if (disposed) return;
+        ensureStop();
+        if (disposing) disposed = true;
     }
 
     protected readonly struct Argument

@@ -133,7 +133,7 @@ public class OsbSpritePool(StoryboardSegment segment,
         pooled.Clear();
     }
 
-    class PooledSprite(OsbSprite sprite, float startTime, float endTime)
+    sealed class PooledSprite(OsbSprite sprite, float startTime, float endTime)
     {
         internal readonly OsbSprite Sprite = sprite;
         internal readonly float StartTime = startTime;

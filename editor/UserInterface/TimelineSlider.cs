@@ -24,14 +24,12 @@ public class TimelineSlider : Slider
 
     readonly Project project;
 
-    float dragStart;
-    double highlightStart, highlightEnd;
+    float dragStart, highlightStart, highlightEnd, timeSpan;
 
     Sprite line;
     public float RepeatStart, RepeatEnd;
 
     public int SnapDivisor = 4;
-    float timeSpan;
 
     public TimelineSlider(WidgetManager manager, Project project) : base(manager)
     {
@@ -51,7 +49,7 @@ public class TimelineSlider : Slider
         project.OnMainBeatmapChanged += project_OnMainBeatmapChanged;
     }
 
-    public void Highlight(double startTime, double endTime)
+    public void Highlight(float startTime, float endTime)
     {
         highlightStart = startTime;
         highlightEnd = endTime;
@@ -70,12 +68,12 @@ public class TimelineSlider : Slider
         var hitObjectsY = Bounds.Height * .6f;
         var pixelSize = Manager.PixelSize;
 
-        var currentTimingPoint = project.MainBeatmap.GetTimingPointAt((int)(Value * 1000));
+        var currentTimingPoint = project.MainBeatmap.GetTimingPointAt(Value * 1000);
         var targetTimeSpan = (SnapDivisor >= 2 ? SnapDivisor >= 8 ? 1 : 2 : 4) * (170 / currentTimingPoint.BPM);
         timeSpan += (targetTimeSpan - timeSpan) * .01f;
 
-        var leftTime = (int)((Value - timeSpan) * 1000);
-        var rightTime = (int)((Value + timeSpan) * 1000);
+        var leftTime = (Value - timeSpan) * 1000;
+        var rightTime = (Value + timeSpan) * 1000;
         var timeScale = Bounds.Width / (rightTime - leftTime);
 
         // Repeat
@@ -93,7 +91,7 @@ public class TimelineSlider : Slider
 
         // Kiai
         var inKiai = false;
-        var kiaiStartTime = .0;
+        var kiaiStartTime = 0f;
 
         line.Color = kiaiColor;
         foreach (var controlPoint in project.MainBeatmap.ControlPoints)
@@ -103,14 +101,14 @@ public class TimelineSlider : Slider
             if (inKiai)
             {
                 var kiaiLeft = timeToXTop(kiaiStartTime);
-                var kiaiRight = timeToXTop(controlPoint.Offset * .001);
+                var kiaiRight = timeToXTop(controlPoint.Offset * .001f);
                 if (kiaiRight < kiaiLeft + pixelSize) kiaiRight = kiaiLeft + pixelSize;
 
                 line.Draw(drawContext, Manager.Camera,
                     RectangleF.FromLTRB(kiaiLeft, offset.Y + Bounds.Height * .3f, kiaiRight, offset.Y + Bounds.Height * .4f),
                     actualOpacity);
             }
-            else kiaiStartTime = controlPoint.Offset * .001;
+            else kiaiStartTime = controlPoint.Offset * .001f;
 
             inKiai = controlPoint.IsKiai;
         }
@@ -119,8 +117,8 @@ public class TimelineSlider : Slider
         line.Color = breakColor;
         foreach (var osuBreak in project.MainBeatmap.Breaks)
         {
-            var breakLeft = timeToXTop(osuBreak.StartTime * .001);
-            var breakRight = timeToXTop(osuBreak.EndTime * .001);
+            var breakLeft = timeToXTop(osuBreak.StartTime * .001f);
+            var breakRight = timeToXTop(osuBreak.EndTime * .001f);
             if (breakRight < breakLeft + pixelSize) breakRight = breakLeft + pixelSize;
 
             line.Draw(drawContext, Manager.Camera,
@@ -132,8 +130,8 @@ public class TimelineSlider : Slider
         line.Color = highlightColor;
         if (highlightStart != highlightEnd)
         {
-            var left = timeToXTop(highlightStart * .001);
-            var right = timeToXTop(highlightEnd * .001);
+            var left = timeToXTop(highlightStart * .001f);
+            var right = timeToXTop(highlightEnd * .001f);
             line.Draw(drawContext, Manager.Camera,
                 RectangleF.FromLTRB(left, offset.Y + Bounds.Height * .1f, right, offset.Y + Bounds.Height * .4f), actualOpacity);
         }
@@ -235,9 +233,9 @@ public class TimelineSlider : Slider
         }
     }
 
-    float timeToXTop(double time)
+    float timeToXTop(float time)
     {
-        var progress = (float)(time - MinValue) / (MaxValue - MinValue);
+        var progress = (time - MinValue) / (MaxValue - MinValue);
         return Manager.SnapToPixel(AbsolutePosition.X + progress * Width);
     }
 
@@ -249,16 +247,16 @@ public class TimelineSlider : Slider
 
     public void Scroll(float direction)
     {
-        var time = Value * 1E+3;
-        var timingPoint = project.MainBeatmap.GetTimingPointAt((int)time);
+        var time = Value * 1000;
+        var timingPoint = project.MainBeatmap.GetTimingPointAt(time);
 
         var stepDuration = timingPoint.BeatDuration / SnapDivisor;
         time += stepDuration * direction;
 
         var steps = (time - timingPoint.Offset) / stepDuration;
-        time = timingPoint.Offset + Math.Round(steps) * stepDuration;
+        time = timingPoint.Offset + MathF.Round(steps) * stepDuration;
 
-        Value = (float)(time * .001);
+        Value = time * .001f;
     }
 
     public void Snap() => Scroll(0);

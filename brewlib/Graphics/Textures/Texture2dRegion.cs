@@ -4,7 +4,7 @@ using System;
 using System.Drawing;
 using System.Numerics;
 
-public class Texture2dRegion : Texture
+public class Texture2dRegion : IDisposable
 {
     readonly RectangleF bounds;
     readonly string description;
@@ -26,21 +26,7 @@ public class Texture2dRegion : Texture
 
     public Vector2 UvRatio => new(1 / BindableTexture.Width, 1 / BindableTexture.Height);
     public string Description => BindableTexture != this ? $"{description} (from {BindableTexture.Description})" : description;
-    public Texture2d BindableTexture { get; private set; }
-
-    public virtual void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
-    {
-        if (BindableTexture is null) throw new InvalidOperationException();
-        if (x < 0 || y < 0) throw new ArgumentOutOfRangeException();
-
-        var updateX = bounds.Left + x;
-        var updateY = bounds.Top + y;
-
-        if (updateX + bitmap.Width > bounds.Right || updateY + bitmap.Height > bounds.Bottom)
-            throw new ArgumentOutOfRangeException();
-
-        BindableTexture.Update(bitmap, (int)updateX, (int)updateY, textureOptions);
-    }
+    public Texture2d BindableTexture { get; }
 
     #region IDisposable Support
 
@@ -51,12 +37,10 @@ public class Texture2dRegion : Texture
         GC.SuppressFinalize(this);
     }
 
-    bool disposed;
+    protected bool disposed;
     protected virtual void Dispose(bool disposing)
     {
-        if (disposed || !disposing) return;
-        BindableTexture = null;
-        disposed = true;
+        if (!disposed && disposing) disposed = true;
     }
 
     #endregion

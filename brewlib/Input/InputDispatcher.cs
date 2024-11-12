@@ -5,10 +5,9 @@ using System.Linq;
 using osuTK;
 using osuTK.Input;
 
-public class InputDispatcher : InputHandler
+public sealed class InputDispatcher : InputHandler
 {
-    readonly List<InputHandler> handlers;
-    public InputDispatcher() => handlers = [];
+    readonly List<InputHandler> handlers = [];
 
     public void OnFocusChanged(FocusChangedEventArgs e)
     {
@@ -25,13 +24,13 @@ public class InputDispatcher : InputHandler
     public bool OnKeyUp(KeyboardKeyEventArgs e) => handlers.Any(h => h.OnKeyUp(e));
     public bool OnKeyPress(KeyPressEventArgs e) => handlers.Any(h => h.OnKeyPress(e));
 
-    public virtual void OnGamepadConnected(GamepadEventArgs e)
+    public void OnGamepadConnected(GamepadEventArgs e)
     {
         foreach (var handler in handlers) handler.OnGamepadConnected(e);
     }
 
-    public virtual bool OnGamepadButtonDown(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonDown(e));
-    public virtual bool OnGamepadButtonUp(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonUp(e));
+    public bool OnGamepadButtonDown(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonDown(e));
+    public bool OnGamepadButtonUp(GamepadButtonEventArgs e) => handlers.Any(h => h.OnGamepadButtonUp(e));
 
     public void Add(InputHandler handler) => handlers.Add(handler);
     public void Remove(InputHandler handler) => handlers.Remove(handler);

@@ -23,6 +23,5 @@ public static class ListExtensions
     public static void Dispose<TKey, TValue>(this IDictionary<TKey, TValue> disposable) where TValue : IDisposable
     {
         foreach (var reference in disposable) reference.Value?.Dispose();
-        disposable.Clear();
     }
 }

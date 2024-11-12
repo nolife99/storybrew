@@ -18,8 +18,6 @@ public sealed class TextFontProxy(TextFont textFont, Action dispose) : TextFont
         if (disposed) return;
         dispose();
         disposed = true;
-
-        GC.SuppressFinalize(this);
     }
 
     #endregion

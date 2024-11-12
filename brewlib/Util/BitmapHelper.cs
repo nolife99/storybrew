@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Graphics.Compression;
 
@@ -245,8 +244,8 @@ public static class BitmapHelper
 
 public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
 {
+    readonly int* scan0;
     bool disposed;
-    int* scan0;
 
     public PinnedBitmap(int width, int height) => Bitmap = new(Width = width, Height = height, width * sizeof(int),
         PixelFormat.Format32bppArgb, (nint)(scan0 = (int*)NativeMemory.Alloc((nuint)((Count = width * height) * sizeof(int)))));
@@ -263,16 +262,16 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         fixed (void* pinned = data) Native.CopyMemory(pinned, scan0, Count * sizeof(int));
     }
 
-    public Bitmap Bitmap { get; private set; }
+    public Bitmap Bitmap { get; }
 
-    public int Width { get; private set; }
-    public int Height { get; private set; }
+    public int Width { get; }
+    public int Height { get; }
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-    public int Count { get; private set; }
+    public int Count { get; }
 
     public int this[int pixelIndex]
     {
@@ -313,13 +312,6 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
         if (!disposing) return;
 
         Bitmap.Dispose();
-        Bitmap = null;
-        scan0 = null;
-
-        Count = -1;
-        Width = -1;
-        Height = -1;
-
         disposed = true;
     }
 

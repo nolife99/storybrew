@@ -6,7 +6,7 @@ using System.Drawing;
 using System.Numerics;
 using Cameras;
 
-public class CompositeDrawable : Drawable
+public sealed class CompositeDrawable : Drawable
 {
     public List<Drawable> Drawables { get; private set; } = [];
 
@@ -55,9 +55,7 @@ public class CompositeDrawable : Drawable
 
     public void Dispose()
     {
-        Drawables.Clear();
-        Drawables = null;
-        GC.SuppressFinalize(this);
+        foreach (var drawable in Drawables) drawable.Dispose();
     }
 
     #endregion

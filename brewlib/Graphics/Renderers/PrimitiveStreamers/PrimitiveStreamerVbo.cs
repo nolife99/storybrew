@@ -4,7 +4,7 @@ using System;
 using System.Runtime.InteropServices;
 using osuTK.Graphics.OpenGL;
 
-public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
+public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
 {
     readonly int primitiveSize;
     readonly VertexDeclaration vertexDeclaration;
@@ -24,8 +24,8 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
         if (indexes is not null) initializeIndexBuffer(indexes);
     }
 
-    public int DiscardedBufferCount { get; protected set; }
-    public int BufferWaitCount { get; protected set; }
+    public int DiscardedBufferCount { get; private set; }
+    public int BufferWaitCount { get; }
 
     public void Bind(Shader shader)
     {
@@ -51,19 +51,20 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
     }
     public void Dispose()
     {
-        Dispose(true);
+        if (!disposed) dispose();
         GC.SuppressFinalize(this);
+        disposed = true;
     }
 
-    protected virtual void initializeVertexBuffer() => vertexBufferId = GL.GenBuffer();
-    protected virtual void initializeIndexBuffer(ushort[] indexes)
+    void initializeVertexBuffer() => vertexBufferId = GL.GenBuffer();
+    void initializeIndexBuffer(ushort[] indexes)
     {
         indexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId);
         GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), indexes, BufferUsageHint.StaticDraw);
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
-    protected virtual void internalBind(Shader shader)
+    void internalBind(Shader shader)
     {
         GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferId);
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId);
@@ -71,7 +72,7 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
         vertexDeclaration.ActivateAttributes(shader);
         currentShader = shader;
     }
-    protected virtual void internalUnbind()
+    void internalUnbind()
     {
         GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
@@ -80,11 +81,9 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
         currentShader = null;
     }
 
-    ~PrimitiveStreamerVbo() => Dispose(false);
-    protected virtual void Dispose(bool disposing)
+    ~PrimitiveStreamerVbo() => dispose();
+    void dispose()
     {
-        if (disposed) return;
-
         Unbind();
         if (vertexBufferId != -1)
         {
@@ -97,12 +96,6 @@ public class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimiti
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
             GL.DeleteBuffer(indexBufferId);
         }
-
-        if (!disposing) return;
-
-        vertexBufferId = -1;
-        indexBufferId = -1;
-        disposed = true;
     }
 
     public static bool HasCapabilities() => DrawState.HasCapabilities(2, 0);

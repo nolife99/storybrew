@@ -16,9 +16,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
     Dictionary<string, Texture2dRegion> textures = [];
 
-    public float UncompressedMemoryUseMb => textures.Values.Sum(texture => texture.Size.X * texture.Size.Y) / 1048576;
-
-    public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
+    public float UncompressedMemoryUseMb => textures.Values.Sum(texture => texture.Size.X * texture.Size.Y) / 1024 / 1024;
 
     public Texture2dRegion Get(string filename)
     {
@@ -33,10 +31,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
             if (bitmap is not null)
                 texture = atlas.AddRegion(bitmap, filename);
 
-        textures[filename] = texture;
-        ResourceLoaded?.Invoke(filename, texture);
-
-        return texture;
+        return textures[filename] = texture;
     }
 
     #region IDisposable Support

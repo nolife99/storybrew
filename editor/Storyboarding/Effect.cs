@@ -7,8 +7,6 @@ using StorybrewCommon.Storyboarding;
 
 public abstract class Effect : IDisposable
 {
-    public readonly Project Project;
-
     public EffectConfig Config = new();
 
     public long EstimatedSize;
@@ -18,6 +16,7 @@ public abstract class Effect : IDisposable
 
     string name = "Unnamed Effect";
     EditorStoryboardLayer placeHolderLayer;
+    public Project Project;
 
     public Effect(Project project)
     {
@@ -48,14 +47,14 @@ public abstract class Effect : IDisposable
     public virtual string StatusMessage { get; }
 
     public virtual bool Multithreaded { get; }
-    public virtual bool BeatmapDependant { get; }
+    public virtual bool BeatmapDependent { get; }
 
     public float StartTime
     {
         get
         {
             var min = float.MaxValue;
-            foreach (var l in layers) min = Math.Min(l.EndTime, min);
+            foreach (var l in layers) min = Math.Min(l.StartTime, min);
             return min == float.MaxValue ? 0 : min;
         }
     }
@@ -122,23 +121,30 @@ public abstract class Effect : IDisposable
 
     #region IDisposable Support
 
-    public bool Disposed;
+    protected bool Disposed;
 
     protected virtual void Dispose(bool disposing)
     {
         if (Disposed) return;
-        if (disposing)
-            foreach (var l in layers)
-                Project.LayerManager.Remove(l);
+        if (!disposing) return;
 
+        foreach (var l in layers) Project.LayerManager.Remove(l);
         layers.Clear();
 
         layers = null;
+        Project = null;
+        Config = null;
+        placeHolderLayer = null;
         OnChanged = null;
+        name = null;
         Disposed = true;
     }
 
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

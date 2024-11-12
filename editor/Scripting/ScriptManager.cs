@@ -46,7 +46,11 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         scriptWatcher = new()
         {
-            Filter = "*.cs", Path = scriptsSourcePath, IncludeSubdirectories = false, NotifyFilter = NotifyFilters.LastWrite
+            Filter = "*.cs",
+            Path = scriptsSourcePath,
+            IncludeSubdirectories = false,
+            NotifyFilter = NotifyFilters.LastWrite,
+            InternalBufferSize = 16384
         };
 
         scriptWatcher.Created += scriptWatcher_Changed;
@@ -131,14 +135,12 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         var change = e.ChangeType.ToString().ToLowerInvariant();
         Trace.WriteLine($"Watched script file {change}: {e.FullPath}");
 
-        if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
-        if (e.ChangeType != WatcherChangeTypes.Deleted)
+        if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
+        if (e.ChangeType is not WatcherChangeTypes.Deleted)
             scheduler?.Schedule(e.FullPath, _ =>
             {
-                if (disposed) return;
-                var scriptName = Path.GetFileNameWithoutExtension(e.Name);
-
-                if (scriptContainers.TryGetValue(scriptName, out var container)) container.ReloadScript();
+                if (!disposed && scriptContainers.TryGetValue(Path.GetFileNameWithoutExtension(e.Name), out var container))
+                    container.ReloadScript();
             });
     }
 
@@ -147,8 +149,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         var change = e.ChangeType.ToString().ToLowerInvariant();
         Trace.WriteLine($"Watched library file {change}: {e.FullPath}");
 
-        if (e.ChangeType != WatcherChangeTypes.Changed) scheduleSolutionUpdate();
-        if (e.ChangeType != WatcherChangeTypes.Deleted)
+        if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
+        if (e.ChangeType is not WatcherChangeTypes.Deleted)
             scheduler?.Schedule(e.FullPath, _ =>
             {
                 if (disposed) return;

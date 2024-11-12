@@ -10,10 +10,10 @@ public class ShaderContext
     readonly Dictionary<ShaderVariable, HashSet<ShaderVariable>> dependencies = [];
     readonly HashSet<ShaderVariable> usedVariables = [], flowVariables = [];
 
+    bool canReceiveCommands;
+
     StringBuilder code;
     ShaderVariable[] dependantVariables;
-
-    bool flowDependant, canReceiveCommands;
     int lastId;
     string nextGenericName => $"_tmp_{lastId++:000}";
 
@@ -21,10 +21,10 @@ public class ShaderContext
 
     public void RecordDependency(ShaderVariable referencedVariable)
     {
-        if (dependantVariables is null && !flowDependant)
+        if (dependantVariables is null)
             throw new InvalidOperationException("Cannot reference variables while dependencies aren't defined");
 
-        if (flowDependant) flowVariables.Add(referencedVariable);
+        flowVariables.Add(referencedVariable);
 
         if (dependantVariables is null) return;
         foreach (var dependentVariable in dependantVariables)

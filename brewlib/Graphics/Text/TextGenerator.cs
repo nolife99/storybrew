@@ -139,17 +139,7 @@ public sealed class TextGenerator : IDisposable
         fontFamilies.Dispose();
         fontCollections.Dispose();
 
-        if (disposing)
-        {
-            container = null;
-            metrics = null;
-            shadow = null;
-            fonts = null;
-            fontCollections = null;
-            fontFamilies = null;
-        }
-
-        disposed = true;
+        if (disposing) disposed = true;
     }
 
     ~TextGenerator() => Dispose(false);

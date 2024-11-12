@@ -737,9 +737,6 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             audio.Dispose();
         }
 
-        proj = null;
-        audio = null;
-        timeSource = null;
         disposed = true;
     }
 

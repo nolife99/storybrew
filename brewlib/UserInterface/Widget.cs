@@ -552,11 +552,7 @@ public class Widget(WidgetManager manager) : IDisposable
         IsDisposed = true;
     }
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
 
     #endregion
 }

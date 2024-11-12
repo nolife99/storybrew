@@ -6,8 +6,8 @@ using System.Runtime.CompilerServices;
 
 public sealed class DrawContext : IDisposable
 {
-    List<IDisposable> disposables = [];
-    Dictionary<Type, object> references = [];
+    readonly List<IDisposable> disposables = [];
+    readonly Dictionary<Type, object> references = [];
 
     public T Get<T>() where T : class => Unsafe.As<T>(references[typeof(T)]);
 
@@ -23,15 +23,7 @@ public sealed class DrawContext : IDisposable
     public void Dispose()
     {
         if (disposed) return;
-
         foreach (var disposable in disposables) disposable.Dispose();
-        disposables.Clear();
-        disposables = null;
-
-        references.Clear();
-        references = null;
-
-        GC.SuppressFinalize(this);
         disposed = true;
     }
 

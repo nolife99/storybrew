@@ -6,8 +6,6 @@ public interface FrameTimeSource : ReadOnlyTimeSource
 {
     float Previous { get; }
     float Elapsed { get; }
-
-    event EventHandler Changed;
 }
 
 public class FrameClock : FrameTimeSource
@@ -22,13 +20,6 @@ public class FrameClock : FrameTimeSource
 
     public event EventHandler Changed;
 
-    public void AdvanceFrame(float duration)
-    {
-        Previous = Current;
-        Current += duration;
-
-        if (Previous != Current) Changed?.Invoke(this, EventArgs.Empty);
-    }
     public void AdvanceFrameTo(float time)
     {
         Previous = Current;
@@ -36,6 +27,4 @@ public class FrameClock : FrameTimeSource
 
         if (Previous != Current) Changed?.Invoke(this, EventArgs.Empty);
     }
-
-    public void Reset() => Current = 0;
 }

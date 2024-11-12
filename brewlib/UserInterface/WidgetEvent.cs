@@ -2,9 +2,9 @@
 
 using System;
 
-public class WidgetEvent(Widget target, Widget relatedTarget)
+public class WidgetEvent(Widget relatedTarget)
 {
-    public readonly Widget Target = target, RelatedTarget = relatedTarget;
+    public readonly Widget RelatedTarget = relatedTarget;
     public bool Handled;
     public Widget Listener;
 }

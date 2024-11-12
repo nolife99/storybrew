@@ -10,6 +10,7 @@ using Util;
 
 public sealed class TextDrawable : Drawable
 {
+    readonly RenderStates RenderStates = new();
     BoxAlignment alignment = BoxAlignment.TopLeft;
     public Color Color = Color.White;
     float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
@@ -110,8 +111,6 @@ public sealed class TextDrawable : Drawable
         }
     }
 
-    public RenderStates RenderStates { get; private set; } = new();
-
     public Vector2 MinSize => Size;
     public Vector2 PreferredSize => Size;
 
@@ -142,15 +141,7 @@ public sealed class TextDrawable : Drawable
         }
     }
 
-    public void Dispose()
-    {
-        font?.Dispose();
-        font = null;
-        textLayout = null;
-        RenderStates = null;
-
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => font?.Dispose();
     public RectangleF GetCharacterBounds(int index)
     {
         validate();

@@ -5,9 +5,10 @@ using ManagedBass;
 
 public class AudioChannel : IDisposable
 {
+    readonly AudioManager Manager;
     int channel;
     float frequency, pan, pitch = 1, timeFactor = 1, volume = 1;
-    bool loop, played;
+    bool played;
 
     internal AudioChannel(AudioManager audioManager, int channel = 0, bool temporary = false)
     {
@@ -15,8 +16,6 @@ public class AudioChannel : IDisposable
         Channel = channel;
         Temporary = temporary;
     }
-
-    public AudioManager Manager { get; private set; }
 
     protected int Channel
     {
@@ -145,10 +144,8 @@ public class AudioChannel : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         if (disposed || !disposing) return;
-        channel = 0;
-        disposed = true;
         Manager.UnregisterChannel(this);
-        Manager = null;
+        disposed = true;
     }
 
     ~AudioChannel() => Dispose(false);

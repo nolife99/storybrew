@@ -183,7 +183,7 @@ public class Textbox : Widget, Field
         };
     }
 
-    public int SelectionLeft
+    int SelectionLeft
     {
         get => Math.Min(selectionStart, cursorPosition);
         set
@@ -193,7 +193,7 @@ public class Textbox : Widget, Field
         }
     }
 
-    public int SelectionRight
+    int SelectionRight
     {
         get => Math.Max(selectionStart, cursorPosition);
         set
@@ -203,7 +203,7 @@ public class Textbox : Widget, Field
         }
     }
 
-    public int SelectionLength => Math.Abs(cursorPosition - selectionStart);
+    int SelectionLength => Math.Abs(cursorPosition - selectionStart);
 
     public override Vector2 MinSize => PreferredSize with { X = 0 };
 
@@ -240,7 +240,7 @@ public class Textbox : Widget, Field
     public bool AcceptMultiline
     {
         get => acceptMultiline;
-        set
+        init
         {
             if (acceptMultiline == value) return;
             acceptMultiline = value;
@@ -296,7 +296,7 @@ public class Textbox : Widget, Field
         selectionStart = 0;
         cursorPosition = Value.Length;
     }
-    public void ReplaceSelection(string text)
+    void ReplaceSelection(string text)
     {
         var left = SelectionLeft;
         var right = SelectionRight;
@@ -311,8 +311,6 @@ public class Textbox : Widget, Field
     protected override void Dispose(bool disposing)
     {
         if (disposing) cursorLine.Dispose();
-        cursorLine = null;
-
         base.Dispose(disposing);
     }
 }

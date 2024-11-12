@@ -4,11 +4,12 @@ using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using osuTK;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for movement commands.</summary>
-public readonly struct CommandPosition : CommandValue, IEquatable<CommandPosition>,
+[StructLayout(LayoutKind.Sequential)] public readonly struct CommandPosition : CommandValue, IEquatable<CommandPosition>,
     IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
     ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,
     IMultiplyOperators<CommandPosition, CommandPosition, CommandPosition>,
@@ -76,7 +77,7 @@ public readonly struct CommandPosition : CommandValue, IEquatable<CommandPositio
 
     public static implicit operator CommandPosition(Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator Vector2d(CommandPosition position) => new(position.X, position.Y);
-    
+
     public static implicit operator PointF(CommandPosition position) => Unsafe.As<CommandPosition, PointF>(ref position);
     public static implicit operator CommandPosition(PointF vector) => Unsafe.As<PointF, CommandPosition>(ref vector);
 

@@ -72,20 +72,13 @@ public class UiScreenLayer : ScreenLayer
     #region IDisposable Support
 
     bool disposed;
-
     protected override void Dispose(bool disposing)
     {
-        if (!disposed)
+        if (!disposed && disposing)
         {
-            if (disposing)
-            {
-                WidgetManager.Dispose();
-                uiCamera.Dispose();
-                disposed = true;
-            }
-
-            WidgetManager = null;
-            uiCamera = null;
+            WidgetManager.Dispose();
+            uiCamera.Dispose();
+            disposed = true;
         }
 
         base.Dispose(disposing);

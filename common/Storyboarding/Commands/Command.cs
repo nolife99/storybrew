@@ -51,7 +51,7 @@ public abstract class Command<TValue>(string identifier,
 
         var duration = EndTime - StartTime;
         var progress = duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0;
-        return ValueAtProgress((float)progress);
+        return ValueAtProgress(progress);
     }
 
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);

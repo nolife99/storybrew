@@ -19,7 +19,7 @@ using Util;
 public sealed class Skin(TextureContainer textureContainer) : IDisposable
 {
     readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = [];
-    public readonly TextureContainer TextureContainer = textureContainer;
+    readonly TextureContainer TextureContainer = textureContainer;
 
     Dictionary<string, Drawable> drawables = [];
     public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
@@ -31,7 +31,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     }
 
     public T GetStyle<T>(string name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
-    public WidgetStyle GetStyle(Type type, string name)
+    WidgetStyle GetStyle(Type type, string name)
     {
         while (true)
         {
@@ -59,9 +59,6 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     {
         if (disposed) return;
         drawables.Dispose();
-        stylesPerType.Clear();
-
-        drawables = null;
         disposed = true;
     }
 

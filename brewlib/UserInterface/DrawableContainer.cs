@@ -21,12 +21,6 @@ public class DrawableContainer(WidgetManager manager) : Widget(manager)
         }
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        drawable = null;
-        base.Dispose(disposing);
-    }
-
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);

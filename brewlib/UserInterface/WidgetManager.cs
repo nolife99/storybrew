@@ -359,7 +359,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
         foreach (var widgetEvent in targets.Select(t => fire(notify, t, relatedTarget, bubbles))
             .Where(widgetEvent => widgetEvent.Handled)) return widgetEvent;
 
-        return new(targets.Count > 0 ? targets[^1] : null, relatedTarget);
+        return new(relatedTarget);
     }
     static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify,
         Widget target,
@@ -368,7 +368,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
     {
         ObjectDisposedException.ThrowIf(target.IsDisposed, nameof(target));
 
-        WidgetEvent widgetEvent = new(target, relatedTarget);
+        WidgetEvent widgetEvent = new(relatedTarget);
         var ancestors = bubbles ? target.GetAncestors() : null;
 
         widgetEvent.Listener = target;
@@ -388,22 +388,14 @@ public sealed class WidgetManager : InputHandler, IDisposable
     #region IDisposable Support
 
     bool disposed;
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
     void Dispose(bool disposing)
     {
         if (disposed) return;
         rootContainer.Dispose();
         if (camera is not null) camera.Changed -= camera_Changed;
 
-        if (!disposing) return;
-        camera = null;
-        rootContainer = null;
-
-        disposed = true;
+        if (disposing) disposed = true;
     }
 
     #endregion

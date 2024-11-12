@@ -23,9 +23,7 @@ public static class DrawState
 
     static bool flushingRenderer;
 
-    public static int MaxDrawBuffers { get; private set; }
     public static bool ColorCorrected { get; private set; }
-    public static int TextureBinds { get; private set; }
     public static int MaxTextureSize { get; private set; }
 
     public static Renderer Renderer
@@ -77,9 +75,6 @@ public static class DrawState
         maxTextureCoords = GL.GetInteger(GetPName.MaxTextureCoords);
         MaxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
 
-        // glDrawBuffers requires opengl 2.0
-        MaxDrawBuffers = HasCapabilities(2, 0) ? GL.GetInteger(GetPName.MaxDrawBuffers) : 1;
-
         Trace.WriteLine(
             $"texture units available: fp:{maxFpTextureUnits} ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits} coords:{maxTextureCoords}");
 
@@ -102,16 +97,9 @@ public static class DrawState
     public static void Cleanup()
     {
         NormalPixel.Dispose();
-        NormalPixel = null;
-
         WhitePixel.Dispose();
-        WhitePixel = null;
-
         TextFontManager.Dispose();
-        TextFontManager = null;
-
         TextGenerator.Dispose();
-        TextGenerator = null;
     }
 
     public static void CompleteFrame()
@@ -189,56 +177,39 @@ public static class DrawState
 
         GL.BindTexture(ToTextureTarget(mode), textureId);
         samplerTextureIds[samplerIndex] = textureId;
-        ++TextureBinds;
     }
-    public static int BindTexture(BindableTexture texture, bool activate = false)
+    public static int BindTexture(BindableTexture texture)
     {
-        var samplerUnit = BindTextures(texture);
-        if (activate) ActiveTextureUnit = samplerUnit;
-        return samplerUnit;
-    }
-    public static unsafe int BindTextures(params BindableTexture[] textures)
-    {
-        var samplerIndexes = stackalloc int[textures.Length];
+        var samplerUnit = -1;
         var samplerCount = samplerTextureIds.Length;
 
-        for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)
-        {
-            var textureId = textures[textureIndex].TextureId;
+        var textureId = texture.TextureId;
 
-            samplerIndexes[textureIndex] = -1;
-            for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex)
-                if (samplerTextureIds[samplerIndex] == textureId)
-                {
-                    samplerIndexes[textureIndex] = samplerIndex;
-                    break;
-                }
-        }
-
-        for (var textureIndex = 0; textureIndex < textures.Length; ++textureIndex)
-        {
-            if (samplerIndexes[textureIndex] != -1) continue;
-
-            var texture = textures[textureIndex];
-            var textureId = texture.TextureId;
-
-            var first = true;
-            var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
-
-            for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex;
-                samplerIndex = (samplerIndex + 1) % samplerCount)
+        for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex)
+            if (samplerTextureIds[samplerIndex] == textureId)
             {
-                first = false;
-                if (*samplerIndexes == samplerIndex) continue;
-
-                BindTexture(textureId, samplerIndex);
-                samplerIndexes[textureIndex] = samplerIndex;
-                lastRecycledTextureUnit = samplerIndex;
+                samplerUnit = samplerIndex;
                 break;
             }
+
+        if (samplerUnit != -1) return samplerUnit;
+
+        var first = true;
+        var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
+
+        for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex;
+            samplerIndex = (samplerIndex + 1) % samplerCount)
+        {
+            first = false;
+            if (samplerUnit == samplerIndex) continue;
+
+            BindTexture(textureId, samplerIndex);
+            samplerUnit = samplerIndex;
+            lastRecycledTextureUnit = samplerIndex;
+            break;
         }
 
-        return *samplerIndexes;
+        return samplerUnit;
     }
 
     public static void UnbindTexture(BindableTexture texture) => UnbindTexture(texture.TextureId);

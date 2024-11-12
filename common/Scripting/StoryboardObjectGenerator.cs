@@ -51,7 +51,7 @@ public abstract class StoryboardObjectGenerator : Script
     ///     Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating
     ///     in parallel to this one.
     /// </summary>
-    public bool Multithreaded { get; protected set; }
+    protected bool Multithreaded { get; set; }
 
     ///<summary> Gets the texture and image compressor for this script. </summary>
     public ImageCompressor Compressor { get; private set; }

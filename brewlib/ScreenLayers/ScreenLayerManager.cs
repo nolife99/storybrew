@@ -163,22 +163,15 @@ public sealed class ScreenLayerManager : IDisposable
     #region IDisposable Support
 
     bool disposed;
-    public void Dispose() => Dispose(true);
-
-    void Dispose(bool disposing)
+    public void Dispose()
     {
         if (disposed) return;
         changeFocus(null);
-        if (!disposing) return;
 
         foreach (var layer in layers) layer.Dispose();
         foreach (var layer in removedLayers) layer.Dispose();
 
-        layers.Clear();
-        removedLayers.Clear();
-
         window.Resize -= window_Resize;
-
         disposed = true;
     }
 

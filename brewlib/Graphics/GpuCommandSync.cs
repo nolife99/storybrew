@@ -79,12 +79,18 @@ public sealed class GpuCommandSync : IDisposable
         bool expired;
         public nint Fence;
         public int Index, Length;
-
         public bool TryReset()
         {
             GL.DeleteSync(Fence);
+            Fence = 0;
+
             expired = false;
             return true;
+        }
+
+        ~SyncRange()
+        {
+            if (Fence != 0) GL.DeleteSync(Fence);
         }
 
         public bool Wait(bool canBlock = true)
@@ -123,8 +129,11 @@ public sealed class GpuCommandSync : IDisposable
     public void Dispose()
     {
         if (disposed) return;
-        foreach (var range in syncRanges) syncRangePool.Return(range);
-        syncRanges.Clear();
+        foreach (var range in syncRanges)
+        {
+            syncRangePool.Return(range);
+            GC.SuppressFinalize(range);
+        }
 
         disposed = true;
     }

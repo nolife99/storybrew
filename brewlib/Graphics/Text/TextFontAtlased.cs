@@ -7,7 +7,7 @@ using System.Numerics;
 using Textures;
 using Util;
 
-public class TextFontAtlased(string name, float size) : TextFont
+public sealed class TextFontAtlased(string name, float size) : TextFont
 {
     TextureMultiAtlas2d atlas;
     Dictionary<char, FontGlyph> glyphs = [];
@@ -43,21 +43,13 @@ public class TextFontAtlased(string name, float size) : TextFont
     #region IDisposable Support
 
     bool disposed;
-    protected virtual void Dispose(bool disposing)
+    public void Dispose()
     {
         if (disposed) return;
         foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
         atlas?.Dispose();
 
-        if (!disposing) return;
-        glyphs = null;
-        atlas = null;
         disposed = true;
-    }
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
     #endregion

@@ -183,19 +183,19 @@ public static unsafe partial class Native
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void CopyMemory(nint source, nint destination, int count)
-        => Unsafe.CopyBlock(destination.ToPointer(), source.ToPointer(), (uint)count);
+        => NativeMemory.Copy((void*)source, (void*)destination, (nuint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void CopyMemory(void* source, void* destination, int count)
-        => Unsafe.CopyBlock(destination, source, (uint)count);
+        => NativeMemory.Copy(source, destination, (nuint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void CopyMemory(nint source, void* destination, int count)
-        => Unsafe.CopyBlock(destination, source.ToPointer(), (uint)count);
+        => NativeMemory.Copy((void*)source, destination, (nuint)count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void CopyMemory(void* source, nint destination, int count)
-        => Unsafe.CopyBlock(destination.ToPointer(), source, (uint)count);
+        => NativeMemory.Copy(source, (void*)destination, (nuint)count);
 
     #endregion
 

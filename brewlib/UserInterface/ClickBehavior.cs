@@ -74,10 +74,6 @@ public sealed class ClickBehavior : IDisposable
         widget.OnClickDown -= widget_OnClickDown;
         widget.OnClickUp -= widget_OnClickUp;
 
-        widget = null;
-        OnStateChanged = null;
-        OnClick = null;
-
         disposed = true;
     }
 

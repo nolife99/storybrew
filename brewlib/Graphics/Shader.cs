@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 using osuTK;
 using osuTK.Graphics.OpenGL;
 
-public class Shader : IDisposable
+public sealed partial class Shader : IDisposable
 {
     readonly StringBuilder log = new();
 
@@ -23,7 +23,7 @@ public class Shader : IDisposable
         initialize(vertexShaderCode, fragmentShaderCode);
         if (!isInitialized)
         {
-            Dispose(true);
+            dispose();
             throw new GraphicsException($"Failed to initialize shader:\n\n{log}");
         }
 
@@ -33,7 +33,7 @@ public class Shader : IDisposable
 
     public void Dispose()
     {
-        Dispose(true);
+        dispose();
         GC.SuppressFinalize(this);
     }
 
@@ -62,12 +62,12 @@ public class Shader : IDisposable
         if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier");
         return location;
     }
-    public static string GetUniformIdentifier(string name, int index, string field)
+    static string GetUniformIdentifier(string name, int index, string field)
         => name + (index >= 0 ? $"[{index}]" : "") + (field is not null ? "." + field : "");
 
     void initialize(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
-        Dispose(true);
+        dispose();
 
         vertexShaderId = compileShader(ShaderType.VertexShader, vertexShaderCode.ToString());
         fragmentShaderId = compileShader(ShaderType.FragmentShader, fragmentShaderCode.ToString());
@@ -109,7 +109,7 @@ public class Shader : IDisposable
         {
             var name = GL.GetActiveAttrib(SortId, i, out var size, out var type);
             var location = GL.GetAttribLocation(SortId, name);
-            attributes[name] = new(name, size, type, location);
+            attributes[name] = new(size, type, location);
         }
     }
     void retrieveUniforms()
@@ -120,12 +120,12 @@ public class Shader : IDisposable
         for (var i = 0; i < uniformCount; ++i)
         {
             var name = GL.GetActiveUniform(SortId, i, out var size, out var type);
-            uniforms[name] = new(name, size, type, GL.GetUniformLocation(SortId, name));
+            uniforms[name] = new(size, type, GL.GetUniformLocation(SortId, name));
         }
     }
 
-    ~Shader() => Dispose(false);
-    protected virtual void Dispose(bool disposing)
+    ~Shader() => dispose();
+    void dispose()
     {
         if (isInitialized) isInitialized = false;
         else return;
@@ -135,23 +135,11 @@ public class Shader : IDisposable
         if (SortId != -1) GL.DeleteProgram(SortId);
         if (vertexShaderId != -1) GL.DeleteShader(vertexShaderId);
         if (fragmentShaderId != -1) GL.DeleteShader(fragmentShaderId);
-
-        if (!disposing) return;
-
-        SortId = -1;
-        vertexShaderId = -1;
-        fragmentShaderId = -1;
-
-        attributes.Clear();
-        attributes = null;
-
-        uniforms.Clear();
-        uniforms = null;
     }
 
     static string addLineExtracts(string log, string code)
     {
-        Regex errorRegex = new(@"^ERROR: (\d+):(\d+): ", RegexOptions.IgnoreCase);
+        var errorRegex = ErrRegex();
         var splitCode = code.Replace("\r\n", "\n").Split('\n');
 
         StringBuilder sb = new();
@@ -182,7 +170,10 @@ public class Shader : IDisposable
 
     public override string ToString() => $"program:{SortId} vs:{vertexShaderId} fs:{fragmentShaderId}";
 
-    readonly struct Property<TType>(string name, int size, TType type, int location)
+    [GeneratedRegex(@"^ERROR: (\d+):(\d+): ", RegexOptions.IgnoreCase, "en-US")]
+    private static partial Regex ErrRegex();
+
+    readonly struct Property<TType>(int size, TType type, int location)
     {
         public readonly int Location = location;
         public override string ToString() => $"{size}@{Location} {type}x{size}";

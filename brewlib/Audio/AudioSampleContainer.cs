@@ -7,7 +7,7 @@ using Util;
 
 public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer container = null) : IDisposable
 {
-    Dictionary<string, AudioSample> samples = [];
+    readonly Dictionary<string, AudioSample> samples = [];
 
     public AudioSample Get(string filename)
     {
@@ -23,12 +23,8 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
     public void Dispose()
     {
         if (disposed) return;
-
         samples.Dispose();
-        samples = null;
         disposed = true;
-
-        GC.SuppressFinalize(this);
     }
 
     #endregion

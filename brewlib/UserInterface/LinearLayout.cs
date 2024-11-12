@@ -6,7 +6,7 @@ using System.Numerics;
 using Skinning.Styles;
 using Util;
 
-public class LinearLayout(WidgetManager manager) : Widget(manager)
+public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 {
     bool fill, fitChildren, horizontal, invalidSizes = true;
     Vector2 minSize, preferredSize;
@@ -216,7 +216,8 @@ public class LinearLayout(WidgetManager manager) : Widget(manager)
             distance += item.Length + spacing;
         }
     }
-    protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
+
+    static void PlaceChildren(Widget widget, Vector2 offset, Vector2 size, BoxAlignment anchor)
     {
         widget.Offset = offset;
         widget.Size = size;

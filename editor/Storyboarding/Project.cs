@@ -85,7 +85,7 @@ public sealed partial class Project : IDisposable
         OnMainBeatmapChanged += (_, _) =>
         {
             foreach (var effect in effects)
-                if (effect.BeatmapDependant)
+                if (effect.BeatmapDependent)
                     QueueEffectUpdate(effect);
         };
     }
@@ -462,7 +462,7 @@ public sealed partial class Project : IDisposable
 
     #region Save / Load / Export
 
-    const int Version = 8;
+    const int Version = 9;
     public bool Changed;
 
     bool ownsOsb;
@@ -825,6 +825,7 @@ public sealed partial class Project : IDisposable
 
         string osuPath = null, osbPath = null;
         IEnumerable<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
+
         Program.RunMainThread(() =>
         {
             osuPath = MainBeatmap.Path;

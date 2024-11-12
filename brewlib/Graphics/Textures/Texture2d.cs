@@ -10,12 +10,12 @@ using Data;
 using osuTK.Graphics.OpenGL;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
-public class Texture2d(int textureId, int width, int height, string description)
+public sealed class Texture2d(int textureId, int width, int height, string description)
     : Texture2dRegion(null, new(0, 0, width, height), description), BindableTexture
 {
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
-    public override void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
+    public void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
     {
         DrawState.BindTexture(textureId);
 
@@ -23,7 +23,6 @@ public class Texture2d(int textureId, int width, int height, string description)
         GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, osuTK.Graphics.OpenGL.PixelFormat.Bgra,
             PixelType.UnsignedByte, data.Scan0);
 
-        GL.Finish();
         bitmap.UnlockBits(data);
 
         DrawState.CheckError("updating texture");
@@ -81,7 +80,6 @@ public class Texture2d(int textureId, int width, int height, string description)
                 osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
 
             if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-            GL.Finish();
 
             DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
@@ -116,10 +114,9 @@ public class Texture2d(int textureId, int width, int height, string description)
             GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width,
                 data.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
-            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            GL.Finish();
             bitmap.UnlockBits(data);
+
+            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
             DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
@@ -136,14 +133,14 @@ public class Texture2d(int textureId, int width, int height, string description)
 
     #region IDisposable Support
 
-    bool disposed;
     protected override void Dispose(bool disposing)
     {
         if (!disposed)
         {
-            if (disposing) DrawState.UnbindTexture(this);
+            DrawState.UnbindTexture(this);
             GL.DeleteTexture(textureId);
-            disposed = true;
+
+            if (disposing) disposed = true;
         }
 
         base.Dispose(disposing);

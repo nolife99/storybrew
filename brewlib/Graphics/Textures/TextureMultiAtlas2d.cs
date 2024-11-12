@@ -7,12 +7,11 @@ using System.Drawing;
 
 public sealed class TextureMultiAtlas2d : IDisposable
 {
+    readonly List<TextureAtlas2d> atlases = [];
     readonly string description;
+    readonly TextureOptions textureOptions;
     readonly int width, height, padding;
-
-    List<TextureAtlas2d> atlases = [];
     List<Texture2d> oversizeTextures;
-    TextureOptions textureOptions;
 
     public TextureMultiAtlas2d(int width, int height, string description, TextureOptions textureOptions = null, int padding = 0)
     {
@@ -64,19 +63,10 @@ public sealed class TextureMultiAtlas2d : IDisposable
         if (disposed) return;
 
         foreach (var atlas in atlases) atlas.Dispose();
-        atlases.Clear();
-        atlases = null;
-
         if (oversizeTextures is not null)
-        {
-            foreach (var texture in oversizeTextures) texture.Dispose();
-            oversizeTextures.Clear();
-            oversizeTextures = null;
-        }
+            foreach (var texture in oversizeTextures)
+                texture.Dispose();
 
-        textureOptions = null;
-
-        GC.SuppressFinalize(this);
         disposed = true;
     }
 

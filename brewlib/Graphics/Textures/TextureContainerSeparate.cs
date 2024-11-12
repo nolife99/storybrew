@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
-using System;
 using System.Collections.Generic;
 using Data;
 using Util;
@@ -8,7 +7,7 @@ using Util;
 public sealed class TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
     : TextureContainer
 {
-    Dictionary<string, Texture2d> textures = [];
+    readonly Dictionary<string, Texture2d> textures = [];
 
     public float UncompressedMemoryUseMb
     {
@@ -19,19 +18,14 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
                 if (texture is not null)
                     pixels += texture.Size.X * texture.Size.Y;
 
-            return pixels / 262144;
+            return pixels / 1024 / 1024 * 4;
         }
     }
-
-    public event ResourceLoadedDelegate<Texture2dRegion> ResourceLoaded;
 
     public Texture2dRegion Get(string filename)
     {
         if (textures.TryGetValue(filename, out var texture)) return texture;
-        textures[filename] = texture = Texture2d.Load(filename, resourceContainer, textureOptions);
-        ResourceLoaded?.Invoke(filename, texture);
-
-        return texture;
+        return textures[filename] = Texture2d.Load(filename, resourceContainer, textureOptions);
     }
 
     #region IDisposable Support
@@ -41,9 +35,6 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
     {
         if (disposed) return;
         textures.Dispose();
-        textures = null;
-
-        GC.SuppressFinalize(this);
         disposed = true;
     }
 

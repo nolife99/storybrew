@@ -40,7 +40,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 
     public event EventHandler OnValueChanged;
 
-    public void SetValueSilent(float value) => this.value = Math.Min(Math.Max(MinValue, value), MaxValue);
+    public void SetValueSilent(float value) => this.value = Math.Clamp(value, MinValue, MaxValue);
 
     protected override void Dispose(bool disposing)
     {

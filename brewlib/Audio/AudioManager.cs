@@ -57,15 +57,15 @@ public sealed class AudioManager : IDisposable
 
     bool disposed;
 
-    ~AudioManager() => Dispose();
+    ~AudioManager() => Bass.Free();
 
     public void Dispose()
     {
-        if (!disposed)
-        {
-            Bass.Free();
-            disposed = true;
-        }
+        if (disposed) return;
+        Bass.Free();
+        disposed = true;
+
+        GC.SuppressFinalize(this);
     }
 
     #endregion

@@ -176,14 +176,8 @@ public unsafe class LineRendererBuffered : LineRenderer
         NativeMemory.Free(primitives);
         if (!disposing) return;
 
-        primitives = null;
-        camera = null;
-
         primitiveStreamer.Dispose();
-        primitiveStreamer = null;
-
         if (ownsShader) shader.Dispose();
-        shader = null;
         disposed = true;
     }
 }

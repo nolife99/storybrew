@@ -83,14 +83,11 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         ObjectDisposedException.ThrowIf(disposed, this);
 
         var localTargetVersion = targetVersion;
-        var localCurrentVersion = currentVersion;
-
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
             try
             {
-                appDomain?.Unload();
                 AssemblyLoadContext scriptDomain = new(Name + Id, true);
                 try
                 {
@@ -98,6 +95,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
                         .Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, referencedAssemblies)
                         .GetType(ScriptTypeName, true);
 
+                    appDomain?.Unload();
                     appDomain = scriptDomain;
                 }
                 catch
@@ -108,7 +106,6 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
             }
             catch (ScriptCompilationException)
             {
-                currentVersion = localCurrentVersion;
                 throw;
             }
             catch (Exception e)
@@ -150,17 +147,16 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed)
-        {
-            appDomain?.Unload();
-            if (disposing)
-            {
-                appDomain = null;
-                scriptType = null;
-            }
+        if (disposed) return;
 
-            disposed = true;
+        appDomain?.Unload();
+        if (disposing)
+        {
+            appDomain = null;
+            scriptType = null;
         }
+
+        disposed = true;
     }
 
     public void Dispose()

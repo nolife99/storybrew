@@ -12,13 +12,13 @@ using Util;
 
 public class IntegratedCompressor : ImageCompressor
 {
-    List<Task> tasks = [];
-    HashSet<string> toCleanup = [];
+    readonly List<Task> tasks = [];
+    readonly HashSet<string> toCleanup = [];
 
     public IntegratedCompressor(string utilityPath = null) : base(utilityPath)
         => container = new AssemblyResourceContainer(typeof(Argument).Assembly, "BrewLib");
 
-    protected override void compress(Argument arg, bool useLossy)
+    protected override void InternalCompress(Argument arg, bool useLossy)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         if (!File.Exists(arg.path)) throw new FileNotFoundException(arg.path);
@@ -27,7 +27,7 @@ public class IntegratedCompressor : ImageCompressor
         var path = GetUtility();
         ensureTool();
 
-        tasks.Add(Task.Factory.StartNew(() =>
+        tasks.Add(Task.Run(() =>
         {
             using var localProc = Process.Start(
                 new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
@@ -50,7 +50,7 @@ public class IntegratedCompressor : ImageCompressor
             {
                 localProc.WaitForExit();
             }
-        }, TaskCreationOptions.LongRunning));
+        }));
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {
@@ -95,12 +95,5 @@ public class IntegratedCompressor : ImageCompressor
 
         base.Dispose(disposing);
         foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);
-
-        if (!disposing) return;
-        tasks.Clear();
-        toCleanup.Clear();
-
-        tasks = null;
-        toCleanup = null;
     }
 }

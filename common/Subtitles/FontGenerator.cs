@@ -80,19 +80,19 @@ public sealed class FontGenerator : IDisposable
 {
     readonly string assetDirectory;
 
-    readonly float emSize;
+    readonly Dictionary<string, FontTexture> cache = [];
+    readonly PrivateFontCollection collection;
+    readonly FontDescription description;
+    readonly FontEffect[] effects;
 
-    internal Dictionary<string, FontTexture> cache = [];
-    PrivateFontCollection collection;
-    FontDescription description;
+    readonly float emSize;
+    readonly Font font;
+
+    readonly StringFormat format;
+    readonly Graphics metrics;
+    readonly SolidBrush textBrush;
 
     bool disposed;
-    FontEffect[] effects;
-    Font font;
-
-    StringFormat format;
-    Graphics metrics;
-    SolidBrush textBrush;
 
     internal FontGenerator(string dir, FontDescription desc, FontEffect[] fx, string projDir, string assetDir)
     {
@@ -139,7 +139,18 @@ public sealed class FontGenerator : IDisposable
 
     /// <summary> Deletes and frees all loaded fonts from memory. </summary>
     /// <remarks> Do not call from script code. This is automatically disposed at the end of script execution. </remarks>
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        if (disposed) return;
+
+        format.Dispose();
+        metrics.Dispose();
+        textBrush.Dispose();
+        font.Dispose();
+        collection?.Dispose();
+
+        disposed = true;
+    }
 
     ///<summary> Gets the texture path of the matching item's string representation. </summary>
     public FontTexture GetTexture(object obj)
@@ -266,29 +277,5 @@ public sealed class FontGenerator : IDisposable
             StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(7));
 
         return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
-    }
-
-    /// <summary/>
-    ~FontGenerator() => Dispose(false);
-
-    void Dispose(bool disposing)
-    {
-        if (disposed) return;
-        format.Dispose();
-        metrics.Dispose();
-        textBrush.Dispose();
-        font.Dispose();
-        collection?.Dispose();
-
-        if (!disposing) return;
-        description = null;
-        effects = null;
-        format = null;
-        metrics = null;
-        textBrush = null;
-        font = null;
-        collection = null;
-
-        disposed = true;
     }
 }

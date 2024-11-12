@@ -25,7 +25,6 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     public bool HasFocus { get; private set; }
 
     public virtual bool IsPopup => false;
-    public bool IsActive => HasFocus && CurrentState is State.FadingIn or State.Active;
 
     public bool IsExiting { get; private set; }
     public InputHandler InputHandler => inputDispatcher;
@@ -136,7 +135,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
     #region IDisposable Support
 
-    public bool IsDisposed { get; private set; }
+    protected bool IsDisposed { get; private set; }
     protected virtual void Dispose(bool disposing)
     {
         if (IsDisposed) return;

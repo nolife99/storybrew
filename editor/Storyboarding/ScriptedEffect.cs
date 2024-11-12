@@ -13,7 +13,7 @@ public class ScriptedEffect : Effect
 
     readonly Stopwatch statusStopwatch = new();
 
-    bool beatmapDependant = true;
+    bool beatmapDependent = true;
     string configScriptIdentifier;
     MultiFileWatcher dependencyWatcher;
 
@@ -40,7 +40,7 @@ public class ScriptedEffect : Effect
     public override EffectStatus Status => status;
     public override string StatusMessage => statusMessage;
     public override bool Multithreaded => multithreaded;
-    public override bool BeatmapDependant => beatmapDependant;
+    public override bool BeatmapDependent => beatmapDependent;
 
     public override void Update()
     {
@@ -49,8 +49,7 @@ public class ScriptedEffect : Effect
         MultiFileWatcher newDependencyWatcher = new();
         newDependencyWatcher.OnFileChanged += (_, _) =>
         {
-            if (Disposed) return;
-            Refresh();
+            if (!Disposed) Refresh();
         };
 
         EditorGeneratorContext context = new(this, Project.ProjectFolderPath, Project.ProjectAssetFolderPath, Project.MapsetPath,
@@ -65,7 +64,7 @@ public class ScriptedEffect : Effect
             changeStatus(EffectStatus.Configuring);
             Program.RunMainThread(() =>
             {
-                beatmapDependant = true;
+                beatmapDependent = true;
                 if (script.Identifier != configScriptIdentifier)
                 {
                     script.UpdateConfiguration(Config);
@@ -128,7 +127,7 @@ public class ScriptedEffect : Effect
             }
 
             multithreaded = context.Multithreaded;
-            beatmapDependant = context.BeatmapDependent;
+            beatmapDependent = context.BeatmapDependent;
             dependencyWatcher?.Dispose();
             dependencyWatcher = newDependencyWatcher;
 

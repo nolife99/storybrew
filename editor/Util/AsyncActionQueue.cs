@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,11 +18,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
         this.allowDuplicates = allowDuplicates;
         context = new();
 
-        if (runnerCount == 0) runnerCount = Environment.ProcessorCount - 1;
-        runnerCount = Math.Max(1, runnerCount);
+        if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
 
         actionRunners = [];
-        Parallel.For(0, runnerCount, i => actionRunners.Add(new(context, $"{threadName} #{i + 1}")));
+        for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new(context, $"{threadName} #{i + 1}"));
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
@@ -44,8 +42,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
         remove => context.OnActionFailed -= value;
     }
 
-    public void Queue(T target, Action<T> action, bool mustRunAlone = false) => Queue(target, null, action, mustRunAlone);
-
     public void Queue(T target, string uniqueKey, Action<T> action, bool mustRunAlone = false)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
@@ -63,15 +59,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         lock (context.Queue) context.Queue.Clear();
         if (!stopThreads) return;
-
-        var sw = Stopwatch.StartNew();
-        foreach (var runner in actionRunners.Where(runner => runner is not null))
-        {
-            runner.msTimeout = Math.Max(1000, 5000 - sw.Elapsed.Milliseconds);
-            runner.Dispose();
-        }
-
-        sw.Stop();
+        foreach (var runner in actionRunners) runner?.Dispose();
     }
 
     sealed class ActionContainer(T target, string key, Action<T> action, bool runAlone)
@@ -106,21 +94,15 @@ public sealed class AsyncActionQueue<T> : IDisposable
         }
 
         internal event Action<T, Exception> OnActionFailed;
-
-        internal void TriggerActionFailed(T target, Exception e)
-        {
-            if (OnActionFailed is null) return;
-            OnActionFailed.Invoke(target, e);
-        }
+        internal void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
     }
 
     sealed class ActionRunner(ActionQueueContext context, string threadName) : IDisposable
     {
-        internal int msTimeout;
         Task thread;
         CancellationTokenSource tokenSrc;
 
-        public void Dispose()
+        public async void Dispose()
         {
             if (thread is null) return;
 
@@ -129,12 +111,20 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-            if (!localThread.Wait(msTimeout))
+            if (!localThread.Wait(200))
             {
-                tokenSrc.Cancel();
-                localThread.Dispose();
+                await tokenSrc.CancelAsync();
+                try
+                {
+                    await localThread;
+                }
+                catch
+                {
+                    // ignored
+                }
             }
 
+            localThread.Dispose();
             tokenSrc.Dispose();
         }
 
@@ -145,7 +135,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             tokenSrc = new();
 
 #pragma warning disable SYSLIB0046
-            thread = Task.Factory.StartNew(() => ControlledExecution.Run(() =>
+            thread = Task.Run(() => ControlledExecution.Run(() =>
             {
                 var mustSleep = false;
                 while (!tokenSrc.IsCancellationRequested)
@@ -163,7 +153,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         {
                             if (thread is null)
                             {
-                                Trace.WriteLine($"Exiting thread {threadName} gracefully");
+                                Trace.WriteLine($"Exiting thread {threadName}");
                                 return;
                             }
 
@@ -179,7 +169,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             }
 
                             task = context.Queue.Find(t
-                                => context.Running.Add(t.UniqueKey) && !t.MustRunAlone ||
+                                => !context.Running.Contains(t.UniqueKey) && !t.MustRunAlone ||
                                 t.MustRunAlone && context.Running.Count == 0);
 
                             if (task is null)
@@ -189,6 +179,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             }
 
                             context.Queue.Remove(task);
+                            context.Running.Add(task.UniqueKey);
                             if (task.MustRunAlone) context.RunningLoneTask = true;
                         }
                     }
@@ -199,7 +190,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     }
                     catch (ThreadAbortException)
                     {
-                        Trace.WriteLine($"Aborted thread {threadName}");
+                        Trace.WriteLine($"Killed thread {threadName}");
                     }
                     catch (Exception e)
                     {
@@ -212,7 +203,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         if (task.MustRunAlone) context.RunningLoneTask = false;
                     }
                 }
-            }, tokenSrc.Token), TaskCreationOptions.LongRunning);
+            }, tokenSrc.Token), tokenSrc.Token);
 #pragma warning restore SYSLIB0046
 
             Trace.WriteLine($"Started thread {threadName} ({thread.Id})");

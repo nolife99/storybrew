@@ -19,7 +19,7 @@ public class SynchronousCompressor : ImageCompressor
     public SynchronousCompressor(string utilityPath = null) : base(utilityPath)
         => container = new AssemblyResourceContainer(typeof(SynchronousCompressor).Assembly, "BrewLib");
 
-    protected override void compress(Argument arg, bool useLossy) => (useLossy ? lossyCompress : toCompress).Add(arg);
+    protected override void InternalCompress(Argument arg, bool useLossy) => (useLossy ? lossyCompress : toCompress).Add(arg);
     async Task doCompress()
     {
         ProcessStartInfo startInfo = new("")

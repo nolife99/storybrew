@@ -5,10 +5,11 @@ using System.Drawing;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using osuTK.Graphics;
 
 ///<summary> Base struct for coloring commands. </summary>
-public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
+[StructLayout(LayoutKind.Sequential)] public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
 {
     /// <summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
     public static readonly CommandColor Black = new(0, 0, 0);

@@ -44,9 +44,7 @@ public class FftStream : IDisposable
         if (disposed) return;
         Bass.StreamFree(stream);
 
-        if (!disposing) return;
-        stream = 0;
-        disposed = true;
+        if (disposing) disposed = true;
     }
 
     ~FftStream() => Dispose(false);

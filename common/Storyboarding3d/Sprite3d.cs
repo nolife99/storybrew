@@ -14,7 +14,7 @@ public class Sprite3d : Node3d, HasOsbSprites
     readonly CommandGenerator gen = new();
 
     ///<summary> A keyframed value representing this sprite's rotation keyframes. </summary>
-    public readonly KeyframedValue<double> SpriteRotation = new(InterpolatingFunctions.DoubleAngle);
+    public readonly KeyframedValue<float> SpriteRotation = new(InterpolatingFunctions.FloatAngle);
 
     ///<summary> A keyframed value representing this sprite's scale keyframes. </summary>
     public readonly KeyframedValue<CommandScale> SpriteScale = new(InterpolatingFunctions.Scale, Vector2.One);
@@ -65,19 +65,19 @@ public class Sprite3d : Node3d, HasOsbSprites
         var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
         var screenPosition = CameraState.ToScreen(wvp, Vector3.Zero);
 
-        var angle = 0d;
+        var angle = 0f;
         switch (RotationMode)
         {
             case RotationMode.UnitX:
             {
                 var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
-                angle += Math.Atan2(delta.Y, delta.X);
+                angle += MathF.Atan2(delta.Y, delta.X);
                 break;
             }
             case RotationMode.UnitY:
             {
                 var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
-                angle += Math.Atan2(delta.Y, delta.X) - Math.PI * .5;
+                angle += MathF.Atan2(delta.Y, delta.X) - MathF.PI * .5f;
                 break;
             }
         }

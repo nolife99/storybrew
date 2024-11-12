@@ -4,13 +4,15 @@ using System;
 using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using osuTK;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for scale commands. </summary>
-public readonly struct CommandScale : CommandValue, IEquatable<CommandScale>,
+[StructLayout(LayoutKind.Sequential)] public readonly struct CommandScale : CommandValue, IEquatable<CommandScale>,
     IAdditionOperators<CommandScale, CommandScale, CommandScale>, ISubtractionOperators<CommandScale, CommandScale, CommandScale>,
-    IMultiplyOperators<CommandScale, CommandScale, CommandScale>, IDivisionOperators<CommandScale, CommandScale, CommandScale>
+    IMultiplyOperators<CommandScale, CommandScale, CommandScale>, IDivisionOperators<CommandScale, CommandScale, CommandScale>,
+    IUnaryNegationOperators<CommandScale, CommandScale>
 {
     readonly Vector2 internalVec;
 
@@ -51,6 +53,7 @@ public readonly struct CommandScale : CommandValue, IEquatable<CommandScale>,
 #pragma warning disable CS1591
     public static CommandScale operator +(CommandScale left, CommandScale right) => left.internalVec + right.internalVec;
     public static CommandScale operator -(CommandScale left, CommandScale right) => left.internalVec - right.internalVec;
+    public static CommandScale operator -(CommandScale value) => -value.internalVec;
     public static CommandScale operator *(CommandScale left, CommandScale right) => left.internalVec * right.internalVec;
     public static CommandScale operator *(CommandScale left, CommandDecimal right) => left.internalVec * right;
     public static CommandScale operator /(CommandScale left, CommandScale right) => left.internalVec / right.internalVec;

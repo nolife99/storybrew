@@ -17,7 +17,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     const int VertexPerQuad = 4;
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
-    public static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
+    static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
         VertexAttribute.CreateDiffuseCoord(), VertexAttribute.CreateColor(true));
 
     readonly int maxQuadsPerBatch, textureUniformLocation;
@@ -194,14 +194,8 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         NativeMemory.Free(primitives);
         if (!disposing) return;
 
-        primitives = null;
-        camera = null;
-
         primitiveStreamer.Dispose();
-        primitiveStreamer = null;
-
         if (ownsShader) shader.Dispose();
-        shader = null;
         disposed = true;
     }
 }

@@ -85,7 +85,7 @@ public class Line3d : Node3d, HasOsbSprites
                 _ => new(startVector.X, startVector.Y)
             },
             Scale = new(delta.Length() / spriteBitmap.Width, Thickness.ValueAt(time)),
-            Rotation = InterpolatingFunctions.DoubleAngle(gen.EndState?.Rotation ?? 0, Math.Atan2(delta.Y, delta.X), 1),
+            Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, MathF.Atan2(delta.Y, delta.X), 1),
             Color = object3dState.Color,
             Opacity = opacity,
             Additive = Additive
@@ -198,7 +198,7 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (delta.LengthSquared() == 0) return;
 
         var angle = MathF.Atan2(delta.Y, delta.X);
-        var rotation = InterpolatingFunctions.DoubleAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
+        var rotation = InterpolatingFunctions.FloatAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
 
         var thickness = Thickness.ValueAt(time);
         var matrix = object3dState.WorldTransform;

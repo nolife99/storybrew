@@ -11,7 +11,7 @@ using Util;
 
 public class Label(WidgetManager manager) : Widget(manager)
 {
-    TextDrawable textDrawable = new();
+    readonly TextDrawable textDrawable = new();
 
     public override Vector2 MinSize => PreferredSize with { X = 0 };
 
@@ -64,8 +64,6 @@ public class Label(WidgetManager manager) : Widget(manager)
     protected override void Dispose(bool disposing)
     {
         if (disposing) textDrawable?.Dispose();
-        textDrawable = null;
-
         base.Dispose(disposing);
     }
 

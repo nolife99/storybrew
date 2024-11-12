@@ -1,7 +1,9 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
+using System.Runtime.InteropServices;
+
 ///<summary> Custom decimal handler for storyboarding. </summary>
-public readonly struct CommandDecimal : CommandValue
+[StructLayout(LayoutKind.Sequential)] public readonly struct CommandDecimal : CommandValue
 {
     readonly double value;
 
