@@ -24,13 +24,12 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
         protected set => utilName = value;
     }
 
+    ~ImageCompressor() => Dispose(false);
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
-
-    ~ImageCompressor() => Dispose(false);
 
     public void LosslessCompress(string path, LosslessInputSettings settings)
         => InternalCompress(new Argument(path, settings), false);

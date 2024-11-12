@@ -29,7 +29,6 @@ public static class Builder
             return;
         }
 
-        Trace.WriteLine($"\nOpening {appDirectory}");
         PathHelper.OpenExplorer(appDirectory);
     }
 

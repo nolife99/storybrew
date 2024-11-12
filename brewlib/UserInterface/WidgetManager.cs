@@ -199,11 +199,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
             while (needsAnchorUpdate)
             {
                 needsAnchorUpdate = false;
-                if (anchoringIteration - iterationBefore > 8)
-                {
-                    Trace.TraceWarning("Could not resolve ui layout");
-                    break;
-                }
+                if (anchoringIteration - iterationBefore > 8) break;
 
                 rootContainer.UpdateAnchoring(++anchoringIteration);
             }

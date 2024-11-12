@@ -40,7 +40,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
 
         if (region is null)
         {
-            Trace.WriteLine($"{this.description} is full, adding an atlas");
+            Trace.WriteLine($"{this.description} full, adding an atlas");
             atlas = pushAtlas();
             region = atlas.AddRegion(bitmap, description);
         }

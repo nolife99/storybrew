@@ -359,7 +359,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                Trace.TraceError($"Failed to update configuration for {field.Name} with type {fieldType}:\n{e}");
+                Trace.TraceError($"Updating configuration for {field.Name} with type {fieldType}:\n{e}");
             }
         }
 
@@ -379,7 +379,7 @@ public abstract class StoryboardObjectGenerator : Script
             }
             catch (Exception e)
             {
-                Trace.TraceError($"Failed to apply configuration for {field.Name}:\n{e}");
+                Trace.TraceError($"Applying configuration for {field.Name}:\n{e}");
             }
     }
 

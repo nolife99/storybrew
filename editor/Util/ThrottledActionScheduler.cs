@@ -3,10 +3,6 @@
 using System;
 using System.Collections.Generic;
 
-/// <summary>
-///     Schedules an action on the main thread until it succeeds. Actions come with a key that prevents queuing the
-///     same one multiple times.
-/// </summary>
 public class ThrottledActionScheduler
 {
     readonly HashSet<string> scheduled = [];

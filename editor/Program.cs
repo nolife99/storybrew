@@ -76,10 +76,11 @@ public static class Program
         var displayDevice = findDisplayDevice();
         using (var window = createWindow(displayDevice))
         {
-            Trace.WriteLine($"{Environment.OSVersion} / Handle: 0x{
-                Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture)}");
-
-            Trace.WriteLine($"graphics mode: {window.Context.GraphicsMode}");
+            Trace.Write(Environment.OSVersion);
+            Trace.Write(" / Handle: 0x");
+            Trace.WriteLine(Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture));
+            Trace.Write("Graphics mode: ");
+            Trace.WriteLine(window.Context.GraphicsMode);
 
             using Icon icon = new(typeof(Editor), "icon.ico");
             Native.SetWindowIcon(icon.Handle);
@@ -114,7 +115,7 @@ public static class Program
         }
         catch (Exception e)
         {
-            Trace.TraceWarning($"Failed to use the default display device: {e}");
+            Trace.TraceWarning($"Failed to use default display device: {e}");
 
             var deviceIndex = 0;
             while (deviceIndex <= (int)DisplayIndex.Sixth)
@@ -124,7 +125,7 @@ public static class Program
                 }
                 catch (Exception e2)
                 {
-                    Trace.TraceError($"Failed to use display device #{deviceIndex}: {e2}");
+                    Trace.TraceError($"Using display device #{deviceIndex}: {e2}");
                     ++deviceIndex;
                 }
         }
@@ -215,7 +216,7 @@ public static class Program
                 }
                 catch (Exception e)
                 {
-                    Trace.TraceError($"Scheduled task {action.Method} failed:\n{e}");
+                    Trace.TraceError($"Scheduled task {action.Method}:\n{e}");
                 }
 
             window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;

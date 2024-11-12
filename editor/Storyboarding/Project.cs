@@ -79,7 +79,7 @@ public sealed partial class Project : IDisposable
             compiledScriptsPath, ReferencedAssemblies);
 
         effectUpdateQueue.OnActionFailed +=
-            (effect, e) => Trace.TraceError($"'{effect}' - Action failed: {e.GetType()} ({e.Message})");
+            (effect, e) => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
 
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
         OnMainBeatmapChanged += (_, _) =>
@@ -405,7 +405,7 @@ public sealed partial class Project : IDisposable
         assetWatcher.Created += assetWatcher_OnFileChanged;
         assetWatcher.Changed += assetWatcher_OnFileChanged;
         assetWatcher.Renamed += assetWatcher_OnFileChanged;
-        assetWatcher.Error += (_, e) => Trace.TraceError($"Watcher error (assets): {e.GetException()}");
+        assetWatcher.Error += (_, e) => Trace.TraceError($"Watcher (assets): {e.GetException()}");
         assetWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
     }

@@ -654,10 +654,6 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             proj.CancelEffectUpdates(true);
             Program.Schedule(() => Manager.GetContext<Editor>().Restart());
         });
-
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        GCSettings.LatencyMode = GCLatencyMode.Batch;
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
     });
 
     void withSavePrompt(Action action)
@@ -669,6 +665,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 Program.Schedule(action);
             }), action, true);
         else action();
+
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GCSettings.LatencyMode = GCLatencyMode.Batch;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
     }
 
     void refreshAudio()

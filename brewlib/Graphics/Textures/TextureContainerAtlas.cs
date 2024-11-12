@@ -42,12 +42,6 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     {
         if (disposed) return;
         atlases.Dispose();
-        textures.Clear();
-
-        atlases = null;
-        textures = null;
-
-        GC.SuppressFinalize(this);
         disposed = true;
     }
 

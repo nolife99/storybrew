@@ -127,8 +127,8 @@ public sealed partial class Shader : IDisposable
     ~Shader() => dispose();
     void dispose()
     {
-        if (isInitialized) isInitialized = false;
-        else return;
+        if (!isInitialized) return;
+        isInitialized = false;
 
         if (started) End();
 

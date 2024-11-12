@@ -31,7 +31,7 @@ public class AudioStream : AudioChannel
 
         if (decodeStream == 0)
         {
-            Trace.TraceError($"Failed to load audio stream ({path}): {Bass.LastError}");
+            Trace.TraceError($"Loading audio stream ({path}): {Bass.LastError}");
             return;
         }
 

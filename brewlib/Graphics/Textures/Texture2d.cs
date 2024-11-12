@@ -86,8 +86,8 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         }
         catch
         {
-            GL.DeleteTexture(textureId);
             DrawState.UnbindTexture(textureId);
+            GL.DeleteTexture(textureId);
             throw;
         }
         finally
@@ -123,8 +123,8 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         }
         catch
         {
-            GL.DeleteTexture(textureId);
             DrawState.UnbindTexture(textureId);
+            GL.DeleteTexture(textureId);
             throw;
         }
 
@@ -137,7 +137,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     {
         if (!disposed)
         {
-            DrawState.UnbindTexture(this);
+            DrawState.UnbindTexture(textureId);
             GL.DeleteTexture(textureId);
 
             if (disposing) disposed = true;

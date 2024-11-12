@@ -20,7 +20,7 @@ public static class Misc
                 if (sleepTime >= timeout)
                 {
                     if (canThrow) throw;
-                    Trace.TraceError($"Retryable action failed: {e}");
+                    Trace.TraceError($"Retryable action: {e}");
                     return;
                 }
 
@@ -42,7 +42,7 @@ public static class Misc
                 if (sleepTime >= timeout)
                 {
                     if (canThrow) throw;
-                    Trace.TraceError($"Retryable action failed: {e}");
+                    Trace.TraceError($"Retryable action: {e}");
                     return default;
                 }
 

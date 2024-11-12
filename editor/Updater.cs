@@ -29,7 +29,7 @@ public static class Updater
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Failed to replace files: {e}");
+            Trace.TraceError($"Replacing files: {e}");
             MessageBox.Show($"Update failed, please update manually.\n\n{e}", Program.FullName);
             OpenLatestReleasePage();
             Program.Report("updatefail", e);
@@ -42,7 +42,7 @@ public static class Updater
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Failed to update data: {e}");
+            Trace.TraceError($"Updating data: {e}");
             MessageBox.Show($"Failed to update data.\n\n{e}", Program.FullName);
             Program.Report("updatefail", e);
         }

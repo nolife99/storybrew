@@ -69,16 +69,8 @@ public class NinePatch : Drawable
 
     #region IDisposable Support
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    protected virtual void Dispose(bool disposing)
-    {
-        Texture = null;
-        RenderStates = null;
-    }
+    public void Dispose() => Dispose(true);
+    protected virtual void Dispose(bool disposing) { }
 
     #endregion
 }

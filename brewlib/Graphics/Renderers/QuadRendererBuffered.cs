@@ -48,14 +48,13 @@ public unsafe class QuadRendererBuffered : QuadRenderer
             shader = CreateDefaultShader();
             ownsShader = true;
         }
-
-        this.maxQuadsPerBatch = maxQuadsPerBatch;
         this.shader = shader;
 
         textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
 
-        var primitiveBatchSize = Math.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize));
-        primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, primitiveBatchSize * VertexPerQuad);
+        primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, 
+            Math.Max(this.maxQuadsPerBatch = maxQuadsPerBatch, 
+            primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad);
 
         primitives = NativeMemory.Alloc((nuint)(maxQuadsPerBatch * Marshal.SizeOf<QuadPrimitive>()));
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");

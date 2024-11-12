@@ -49,13 +49,13 @@ public class Settings
                 }
                 catch (Exception e)
                 {
-                    Trace.TraceError($"Failed to load setting {key} with value {value}: {e}");
+                    Trace.TraceError($"Loading setting {key} with value {value}: {e}");
                 }
             });
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Failed to load settings: {e}");
+            Trace.TraceError($"Loading settings: {e}");
             Save();
         }
     }

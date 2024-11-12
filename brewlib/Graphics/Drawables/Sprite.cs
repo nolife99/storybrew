@@ -85,19 +85,8 @@ public class Sprite : Drawable
 
     #region IDisposable Support
 
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-    protected virtual void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            Texture = null;
-            RenderStates = null;
-        }
-    }
+    public void Dispose() => Dispose(true);
+    protected virtual void Dispose(bool disposing) { }
 
     #endregion
 }

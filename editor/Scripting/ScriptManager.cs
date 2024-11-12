@@ -205,7 +205,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
         catch (Exception e)
         {
-            Trace.TraceError($"Failed to update scripts.csproj: {e}");
+            Trace.TraceError($"Updating scripts.csproj: {e}");
         }
     }
 

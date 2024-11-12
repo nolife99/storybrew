@@ -47,12 +47,10 @@ public unsafe class LineRendererBuffered : LineRenderer
             shader = CreateDefaultShader();
             ownsShader = true;
         }
-
-        this.maxLinesPerBatch = maxLinesPerBatch;
         this.shader = shader;
 
-        var batchSize = Math.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize));
-        primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, batchSize * VertexPerLine);
+        primitiveStreamer = createPrimitiveStreamer(VertexDeclaration, Math.Max(this.maxLinesPerBatch = maxLinesPerBatch, 
+            primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine);
 
         primitives = NativeMemory.Alloc((nuint)(maxLinesPerBatch * Marshal.SizeOf<Int128>()));
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");

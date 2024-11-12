@@ -73,7 +73,6 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         }
     }
 
-    ///<summary> Returns false when Script would return null. </summary>
     public bool HasScript => scriptType is not null || currentVersion != targetVersion;
 
     public event EventHandler OnScriptChanged;
@@ -144,26 +143,13 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
     #region IDisposable Support
 
     bool disposed;
-
     protected virtual void Dispose(bool disposing)
     {
         if (disposed) return;
-
         appDomain?.Unload();
-        if (disposing)
-        {
-            appDomain = null;
-            scriptType = null;
-        }
-
         disposed = true;
     }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
 
     #endregion
 }

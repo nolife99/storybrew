@@ -45,7 +45,7 @@ public sealed class MapsetManager : IDisposable
             }
             catch (Exception e)
             {
-                if (logLoadingExceptions) Trace.TraceError($"Failed to load beatmap: {e}");
+                if (logLoadingExceptions) Trace.TraceError($"Loading beatmap: {e}");
                 else throw;
             }
     }
@@ -80,7 +80,7 @@ public sealed class MapsetManager : IDisposable
         fileWatcher.Created += mapsetFileWatcher_Changed;
         fileWatcher.Changed += mapsetFileWatcher_Changed;
         fileWatcher.Renamed += mapsetFileWatcher_Changed;
-        fileWatcher.Error += (_, e) => Trace.TraceError($"Watcher error (mapset): {e.GetException()}");
+        fileWatcher.Error += (_, e) => Trace.TraceError($"Watcher (mapset): {e.GetException()}");
         fileWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (mapset): {path}");
     }
@@ -88,7 +88,7 @@ public sealed class MapsetManager : IDisposable
     void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath, _ =>
     {
         if (Path.GetExtension(e.Name) == ".osu")
-            Trace.WriteLine($"Watched mapset file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
+            Trace.WriteLine($"Watched mapset file {e.ChangeType}: {e.FullPath}");
 
         OnFileChanged?.Invoke(sender, e);
     });

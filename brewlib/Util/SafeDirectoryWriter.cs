@@ -8,7 +8,7 @@ public class SafeDirectoryWriter : IDisposable
 {
     readonly string targetDirectory, tempDirectory, backupDirectory;
     bool committed;
-    HashSet<string> paths = [];
+    readonly HashSet<string> paths = [];
 
     public SafeDirectoryWriter(string targetDirectory)
     {
@@ -16,7 +16,6 @@ public class SafeDirectoryWriter : IDisposable
         tempDirectory = targetDirectory + ".tmp";
         backupDirectory = targetDirectory + ".bak";
 
-        // Clear temporary directory
         if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
         Directory.CreateDirectory(tempDirectory);
     }
@@ -25,7 +24,6 @@ public class SafeDirectoryWriter : IDisposable
     {
         if (committed)
         {
-            // Switch temp and target directories
             if (Directory.Exists(targetDirectory))
             {
                 if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
@@ -36,11 +34,6 @@ public class SafeDirectoryWriter : IDisposable
             if (Directory.Exists(backupDirectory)) Directory.Delete(backupDirectory, true);
         }
         else if (Directory.Exists(tempDirectory)) Directory.Delete(tempDirectory, true);
-
-        paths.Clear();
-        paths = null;
-
-        GC.SuppressFinalize(this);
     }
     public string GetPath(string path)
     {

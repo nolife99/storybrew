@@ -107,7 +107,7 @@ public sealed class TextGenerator : IDisposable
                     if (families.Length == 1) Trace.WriteLine($"Loaded font {(fontFamily = families[0]).Name} for {name}");
                     else
                     {
-                        Trace.TraceError($"Failed to load font {name}: Expected one family, got {families.Length}");
+                        Trace.TraceError($"Font {name}: Expected one family, got {families.Length}");
                         foreach (var family in families) family.Dispose();
                     }
                 }
@@ -119,7 +119,7 @@ public sealed class TextGenerator : IDisposable
         else
         {
             font = new(name, emSize, style);
-            Trace.WriteLine($"Using font system font for {name}");
+            Trace.WriteLine($"Using system font for {name}");
         }
 
         fonts[identifier] = font;

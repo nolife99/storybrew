@@ -74,7 +74,6 @@ public abstract class Effect : IDisposable
     public event EventHandler OnConfigFieldsChanged;
     protected void RaiseConfigFieldsChanged() => OnConfigFieldsChanged?.Invoke(this, EventArgs.Empty);
 
-    ///<summary> Used at load time to let the effect know about placeholder layers it should use. </summary>
     public void AddPlaceholder(EditorStoryboardLayer layer)
     {
         if (placeHolderLayer is not null)
@@ -125,26 +124,11 @@ public abstract class Effect : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (Disposed) return;
-        if (!disposing) return;
-
+        if (Disposed || !disposing) return;
         foreach (var l in layers) Project.LayerManager.Remove(l);
-        layers.Clear();
-
-        layers = null;
-        Project = null;
-        Config = null;
-        placeHolderLayer = null;
-        OnChanged = null;
-        name = null;
         Disposed = true;
     }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
+    public void Dispose() => Dispose(true);
 
     #endregion
 }

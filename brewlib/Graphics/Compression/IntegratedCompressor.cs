@@ -44,7 +44,7 @@ public class IntegratedCompressor : ImageCompressor
                 var error = errorStream.ReadToEnd();
 
                 if (!string.IsNullOrEmpty(error) && localProc.ExitCode != 0)
-                    Trace.TraceError($"Image compression closed with code {localProc.ExitCode}: {error}");
+                    Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
             }
             finally
             {

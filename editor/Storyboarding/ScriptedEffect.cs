@@ -21,6 +21,7 @@ public class ScriptedEffect : Effect
 
     EffectStatus status = EffectStatus.Initializing;
 
+    // TODO: use StringBuilder
     string statusMessage = "";
 
     public ScriptedEffect(Project project,
@@ -150,7 +151,7 @@ public class ScriptedEffect : Effect
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: break;
                 default:
-                    Trace.WriteLine($"{BaseName}'s {this.status} status took {duration}ms");
+                    Trace.WriteLine($"{BaseName}: {this.status} took {duration}ms");
                     break;
             }
 
@@ -169,8 +170,8 @@ public class ScriptedEffect : Effect
     });
 
     string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?
-        $"File not found while {status.ToString().ToLowerInvariant()}. Make sure this path is correct:\n{exception.FileName}\n\nDetails:\n{e}" :
-        $"Unexpected error during {status.ToString().ToLowerInvariant()}:\n{e}";
+        $"File not found while {status.ToString().ToLowerInvariant()}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}" :
+        $"Uncaught error during {status.ToString().ToLowerInvariant()}:\n{e}";
 
     #region IDisposable Support
 

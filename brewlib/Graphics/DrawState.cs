@@ -68,8 +68,7 @@ public static class DrawState
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
         maxGeometryTextureImageUnits = HasCapabilities(3, 2, "GL_ARB_geometry_shader4") ?
-            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
-            0;
+            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) : 0;
 
         maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
         maxTextureCoords = GL.GetInteger(GetPName.MaxTextureCoords);
@@ -212,7 +211,6 @@ public static class DrawState
         return samplerUnit;
     }
 
-    public static void UnbindTexture(BindableTexture texture) => UnbindTexture(texture.TextureId);
     public static void UnbindTexture(int textureId)
     {
         for (var i = 0; i < samplerTextureIds.Length; ++i)
@@ -323,7 +321,7 @@ public static class DrawState
     public static TextGenerator TextGenerator { get; private set; }
     public static TextFontManager TextFontManager { get; private set; }
 
-    static Version openGlVersion;
+    static Version glVer;
     static string[] supportedExtensions;
     static string rendererName, rendererVendor;
 
@@ -331,22 +329,22 @@ public static class DrawState
     {
         CheckError("initializing");
 
-        var openGlVersionString = GL.GetString(StringName.Version);
-        openGlVersion = new(openGlVersionString.Split(' ')[0]);
+        var glVerStr = GL.GetString(StringName.Version);
+        glVer = new(glVerStr.Split(' ')[0]);
         CheckError("retrieving openGL version");
-        Trace.WriteLine($"gl version: {openGlVersionString}");
+        Trace.WriteLine($"OpenGL v{glVerStr}");
 
         rendererName = GL.GetString(StringName.Renderer);
         rendererVendor = GL.GetString(StringName.Vendor);
         CheckError("retrieving renderer information");
-        Trace.WriteLine($"renderer: {rendererName}, vendor: {rendererVendor}");
+        Trace.WriteLine($"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
         if (!HasCapabilities(2, 0))
             throw new NotSupportedException(
-                $"This application requires at least OpenGL 2.0 (version {openGlVersion} found)\n{rendererName} ({rendererVendor})");
+                $"This application requires at least OpenGL 2.0 (version {glVer} found)\n{rendererName} ({rendererVendor})");
 
-        CheckError("retrieving glsl version");
-        Trace.WriteLine($"glsl version: {GL.GetString(StringName.ShadingLanguageVersion)}");
+        CheckError("retrieving GLSL version");
+        Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
 
         var extensionsString = GL.GetString(StringName.Extensions);
         supportedExtensions = extensionsString.Split(' ');
@@ -355,7 +353,7 @@ public static class DrawState
     }
 
     public static bool HasCapabilities(int major, int minor, params string[] extensions)
-        => openGlVersion >= new Version(major, minor) || HasExtensions(extensions);
+        => glVer >= new Version(major, minor) || HasExtensions(extensions);
 
     public static bool HasExtensions(params string[] extensions)
         => extensions.All(t => Array.BinarySearch(supportedExtensions, t) >= 0);
@@ -371,7 +369,7 @@ public static class DrawState
     {
         var error = GL.GetError();
         if (alwaysThrow || error != ErrorCode.NoError)
-            throw new GraphicsErrorException((context is not null ? "openGL error while " + context : "openGL error") +
+            throw new GraphicsErrorException((context is not null ? "OpenGL error while " + context : "OpenGL error") +
                 (error != ErrorCode.NoError ? ": " + error : ""));
     }
 
