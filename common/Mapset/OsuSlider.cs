@@ -6,32 +6,56 @@ using System.Numerics;
 using Curves;
 using Storyboarding.CommandValues;
 
-#pragma warning disable CS1591
+/// <summary>
+/// Represents an osu! slider.
+/// </summary>
 public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints) : OsuHitObject
 {
     Curve curve;
 
-    public SliderCurveType CurveType;
+    /// <summary>
+    /// The curve type of this slider.
+    /// </summary>
+    public SliderCurveType CurveType { get; init; }
 
     ///<summary> The total distance the slider ball travels, in osu!pixels. </summary>
-    public float Length;
+    public float Length { get; init; }
 
     CommandPosition playfieldTipPosition;
 
-    ///<summary> The time it takes for the slider ball to travels across the slider's body in milliseconds. </summary>
-    public float TravelDuration;
+    ///<summary> The time it takes for the slider to complete its body in milliseconds. </summary>
+    public float TravelDuration { get; init; }
 
-    ///<summary> The time it takes for the slider ball to travels across the slider's body in beats. </summary>
-    public float TravelDurationBeats;
+    ///<summary> The time it takes for the slider to complete its body in beats. </summary>
+    public float TravelDurationBeats { get; init; }
 
+    /// <summary>
+    /// Gets an enumeration of nodes that make up the slider.
+    /// Each node contains the sample set and sample volume at a specific time in the slider.
+    /// </summary>
     public IEnumerable<OsuSliderNode> Nodes => nodes;
+
+    /// <summary>
+    /// Gets the number of nodes in this slider.
+    /// </summary>
     public int NodeCount => nodes.Length;
 
+    /// <summary>
+    /// Gets an enumeration of control points that make up the slider's curve.
+    /// </summary>
     public IEnumerable<OsuSliderControlPoint> ControlPoints => controlPoints;
+
+    /// <summary>
+    /// Gets the number of control points in this slider.
+    /// </summary>
     public int ControlPointCount => controlPoints.Length;
 
+    /// <inheritdoc/>
     public override float EndTime => StartTime + TravelCount * TravelDuration;
 
+    /// <summary>
+    /// Gets the curve that represents this slider's shape.
+    /// </summary>
     public Curve Curve
     {
         get
@@ -41,6 +65,9 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         }
     }
 
+    /// <summary>
+    /// Gets the position of the end of the slider's body in playfield coordinates.
+    /// </summary>
     public CommandPosition PlayfieldTipPosition
     {
         get
@@ -49,7 +76,10 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
             return playfieldTipPosition;
         }
     }
-
+    
+    /// <summary>
+    /// Gets the position of the end of the slider's body in storyboard coordinates.
+    /// </summary>
     public CommandPosition TipPosition => PlayfieldTipPosition + PlayfieldToStoryboardOffset;
 
     /// <summary> How many times the slider ball travels across the slider's body. </summary>
@@ -58,6 +88,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     ///<summary> How many times the slider ball hits a repeat. </summary>
     public int RepeatCount => nodes.Length - 2;
 
+    /// <inheritdoc/>
     public override CommandPosition PlayfieldPositionAtTime(float time)
     {
         if (time <= StartTime) return PlayfieldPosition;
@@ -81,6 +112,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         return curve.PositionAtDistance(Length * progress);
     }
 
+    /// <inheritdoc/>
     public override string ToString() => $"{base.ToString()}, {CurveType}, {TravelCount}x";
 
     void generateCurve()
@@ -165,6 +197,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         return new(curves);
     }
 
+    ///<summary> Parses an osu! slider from the given strings. </summary>
     public static OsuSlider Parse(Beatmap beatmap,
         string[] values,
         int x,
@@ -182,7 +215,15 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         var slider = values[5];
         var sliderValues = slider.Split('|');
 
-        var curveType = LetterToCurveType(sliderValues[0]);
+        var curveType = sliderValues[0] switch
+        {
+            "L" => SliderCurveType.Linear,
+            "C" => SliderCurveType.Catmull,
+            "B" => SliderCurveType.Bezier,
+            "P" => SliderCurveType.Perfect,
+            _ => SliderCurveType.Unknown
+        };
+
         var sliderControlPointCount = sliderValues.Length - 1;
         var sliderControlPoints = new OsuSliderControlPoint[sliderControlPointCount];
 
@@ -307,34 +348,95 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
             TravelDuration = travelDuration
         };
     }
-
-    public static SliderCurveType LetterToCurveType(string letter) => letter switch
-    {
-        "L" => SliderCurveType.Linear,
-        "C" => SliderCurveType.Catmull,
-        "B" => SliderCurveType.Bezier,
-        "P" => SliderCurveType.Perfect,
-        _ => SliderCurveType.Unknown
-    };
 }
 
+/// <summary>
+///     Represents a slider node in an osu! slider.
+/// </summary>
 public class OsuSliderNode
 {
-    public HitSoundAddition Additions;
-    public int CustomSampleSet;
-    public SampleSet SampleSet, AdditionsSampleSet;
-    public float Time;
-    public float Volume;
+    /// <summary>
+    ///     The hit sound additions of this node.
+    /// </summary>
+    public HitSoundAddition Additions { get; set; }
+
+    /// <summary>
+    ///     The custom sample set of this node.
+    /// </summary>
+    public int CustomSampleSet { get; set; }
+
+    /// <summary>
+    ///     The sample set of this node.
+    /// </summary>
+    public SampleSet SampleSet { get; set; }
+
+    /// <summary>
+    ///     The additions sample set of this node.
+    /// </summary>
+    public SampleSet AdditionsSampleSet { get; set; }
+
+    /// <summary>
+    ///     The time in milliseconds of this node.
+    /// </summary>
+    public float Time { get; set; }
+
+    /// <summary>
+    ///     The volume of this node.
+    /// </summary>
+    public float Volume { get; set; }
 }
 
-public class OsuSliderControlPoint(Vector2 position)
+/// <summary>
+///     Represents a control point in an osu! slider.
+/// </summary>
+public class OsuSliderControlPoint
 {
-    public Vector2 PlayfieldPosition = position;
+    /// <summary>
+    ///     The playfield position of this control point.
+    /// </summary>
+    public Vector2 PlayfieldPosition { get; }
+
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="OsuSliderControlPoint"/> class.
+    /// </summary>
+    /// <param name="position"> The playfield position of this control point. </param>
+    OsuSliderControlPoint(Vector2 position) => PlayfieldPosition = position;
+
+    /// <summary>
+    ///     Performs an implicit conversion from <see cref="Vector2"/> to <see cref="OsuSliderControlPoint"/>.
+    /// </summary>
+    /// <param name="position"> The playfield position of this control point. </param>
+    /// <returns> The result of the conversion. </returns>
     public static implicit operator OsuSliderControlPoint(Vector2 position) => new(position);
 }
 
+/// <summary>
+///     The curve type of a slider.
+/// </summary>
 public enum SliderCurveType
 {
-    Unknown, Linear, Catmull,
-    Bezier, Perfect
+    /// <summary>
+    ///     The curve type is unknown.
+    /// </summary>
+    Unknown,
+
+    /// <summary>
+    ///     The curve is linear.
+    /// </summary>
+    Linear,
+
+    /// <summary>
+    ///     The curve is a Catmull-Rom spline.
+    /// </summary>
+    Catmull,
+
+    /// <summary>
+    ///     The curve is a bézier curve.
+    /// </summary>
+    Bezier,
+
+    /// <summary>
+    ///     The curve is a perfect circular arc.
+    /// </summary>
+    Perfect
 }

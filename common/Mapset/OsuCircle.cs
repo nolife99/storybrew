@@ -2,9 +2,12 @@
 
 using System.Globalization;
 
-#pragma warning disable CS1591
+/// <summary>
+/// Represents an osu! hit circle.
+/// </summary>
 public class OsuCircle : OsuHitObject
 {
+    ///<summary> Parses an osu! hit circle from the given strings. </summary>
     public static OsuCircle Parse(string[] values,
         int x,
         int y,

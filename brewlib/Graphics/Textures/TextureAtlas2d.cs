@@ -26,7 +26,7 @@ public sealed class TextureAtlas2d(int width,
         }
 
         texture.Update(bitmap, currentX, currentY, textureOptions);
-        Texture2dRegion region = new(texture, new(currentX, currentY, width, height), description);
+        Texture2dRegion region = new(texture, new(currentX, currentY, width, height));
 
         currentX += width + padding;
         nextY = Math.Max(nextY, currentY + height + padding);

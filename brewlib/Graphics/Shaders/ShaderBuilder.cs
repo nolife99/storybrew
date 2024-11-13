@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using Util;
 
 public class ShaderBuilder
 {
@@ -60,7 +61,7 @@ public class ShaderBuilder
 
     ReadOnlySpan<char> buildCommon()
     {
-        StringBuilder code = new();
+        var code = StringHelper.StringBuilderPool.Get();
         code.AppendLine(CultureInfo.InvariantCulture,
             $"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
@@ -76,7 +77,9 @@ public class ShaderBuilder
         ProgramScope.DeclareUniforms(code);
         ProgramScope.DeclareVaryings(code, Context);
 
-        return code.ToString();
+        var codeString = code.ToString();
+        StringHelper.StringBuilderPool.Return(code);
+        return codeString;
     }
     StringBuilder buildVertexShader()
     {

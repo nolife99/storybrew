@@ -2,21 +2,37 @@
 
 using System.Numerics;
 
-///<summary> Represents types of curves. </summary>
+/// <summary>
+/// Represents a curve that can be queried for its length and sampled at points along its length.
+/// </summary>
 public interface Curve
 {
-    ///<summary> The start position (the head) of the curve. </summary>
+    /// <summary>
+    /// The start position of the curve.
+    /// </summary>
     Vector2 StartPosition { get; }
 
-    ///<summary> The end position (the tail) of the curve. </summary>
+    /// <summary>
+    /// The end position of the curve.
+    /// </summary>
     Vector2 EndPosition { get; }
 
-    ///<summary> The total length of the curve from the head to the tail. </summary>
+    /// <summary>
+    /// The total length of the curve.
+    /// </summary>
     float Length { get; }
 
-    /// <summary> Returns the position of the curve at <paramref name="distance"/> pixels. </summary>
+    /// <summary>
+    /// Gets the position along the curve at the specified distance from the start.
+    /// </summary>
+    /// <param name="distance">The distance from the start of the curve.</param>
+    /// <returns>The position at the specified distance.</returns>
     Vector2 PositionAtDistance(float distance);
 
-    /// <summary> Returns the position of the curve at <paramref name="delta"/>. </summary>
+    /// <summary>
+    /// Gets the position along the curve at the specified fraction of its length.
+    /// </summary>
+    /// <param name="delta">The fraction of the curve's length, from 0 to 1.</param>
+    /// <returns>The position at the specified fraction.</returns>
     Vector2 PositionAtDelta(float delta);
 }

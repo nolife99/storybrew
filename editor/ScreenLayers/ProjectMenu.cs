@@ -23,8 +23,6 @@ using UserInterface.Drawables;
 
 public class ProjectMenu(Project proj) : UiScreenLayer
 {
-    readonly StringBuilder warnings = new();
-
     AudioStream audio;
 
     int defaultDiv = 4;
@@ -554,7 +552,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     string buildWarningMessage()
     {
-        warnings.Clear();
+        var warnings = StringHelper.StringBuilderPool.Get();
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
@@ -608,7 +606,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (stats.OverlappedCommands) warnings.AppendLine("⚠ Overlapped Commands");
         if (stats.IncompatibleCommands) warnings.AppendLine("⚠ Incompatible Commands");
 
-        return warnings.Trim().ToString();
+        var str = warnings.TrimEnd().ToString();
+        StringHelper.StringBuilderPool.Return(warnings);
+        return str;
     }
 
     public override void Resize(int width, int height)

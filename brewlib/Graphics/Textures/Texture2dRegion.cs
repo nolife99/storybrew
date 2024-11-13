@@ -6,26 +6,24 @@ using System.Numerics;
 
 public class Texture2dRegion : IDisposable
 {
-    readonly RectangleF bounds;
-    readonly string description;
+    readonly Rectangle bounds;
 
-    public Texture2dRegion(Texture2d texture, RectangleF bounds, string description)
+    public Texture2dRegion(Texture2d texture, Rectangle bounds)
     {
         BindableTexture = texture ?? this as Texture2d;
         this.bounds = bounds;
-        this.description = description;
     }
 
     public Vector2 Size => new(bounds.Width, bounds.Height);
 
-    public float Width => bounds.Width;
-    public float Height => bounds.Height;
+    public int Width => bounds.Width;
+    public int Height => bounds.Height;
 
-    public RectangleF UvBounds => RectangleF.FromLTRB(bounds.Left / BindableTexture.Width, bounds.Top / BindableTexture.Height,
-        bounds.Right / BindableTexture.Width, bounds.Bottom / BindableTexture.Height);
+    public RectangleF UvBounds
+        => RectangleF.FromLTRB((float)bounds.Left / BindableTexture.Width, (float)bounds.Top / BindableTexture.Height,
+        (float)bounds.Right / BindableTexture.Width, (float)bounds.Bottom / BindableTexture.Height);
 
-    public Vector2 UvRatio => new(1 / BindableTexture.Width, 1 / BindableTexture.Height);
-    public string Description => BindableTexture != this ? $"{description} (from {BindableTexture.Description})" : description;
+    public Vector2 UvRatio => new(1f / BindableTexture.Width, 1f / BindableTexture.Height);
     public Texture2d BindableTexture { get; }
 
     #region IDisposable Support

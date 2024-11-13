@@ -2,7 +2,9 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using BrewLib.Util;
 using Scripting;
 using StorybrewCommon.Scripting;
 using Util;
@@ -20,9 +22,7 @@ public class ScriptedEffect : Effect
     bool multithreaded;
 
     EffectStatus status = EffectStatus.Initializing;
-
-    // TODO: use StringBuilder
-    string statusMessage = "";
+    string statusMessage;
 
     public ScriptedEffect(Project project,
         ScriptContainer<StoryboardObjectGenerator> scriptContainer,
@@ -156,13 +156,18 @@ public class ScriptedEffect : Effect
             }
 
         this.status = status;
-        statusMessage = message ?? "";
+
+        var statusMessageBuilder = StringHelper.StringBuilderPool.Get();
+        if (message is not null) statusMessageBuilder.Append(message);
 
         if (!string.IsNullOrWhiteSpace(log))
         {
-            if (!string.IsNullOrWhiteSpace(statusMessage)) statusMessage += "\n\n";
-            statusMessage += $"Log:\n\n{log}";
+            if (statusMessageBuilder.Length > 0) statusMessageBuilder.Append("\n\n");
+            statusMessageBuilder.Append(CultureInfo.InvariantCulture, $"Log:\n\n{log}");
         }
+        statusMessage = statusMessageBuilder.TrimEnd().ToString();
+
+        StringHelper.StringBuilderPool.Return(statusMessageBuilder);
 
         RaiseChanged();
 

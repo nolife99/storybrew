@@ -2,12 +2,17 @@
 
 using System.Globalization;
 
-#pragma warning disable CS1591
+/// <summary>
+/// Represents an osu! spinner.
+/// </summary>
 public class OsuSpinner : OsuHitObject
 {
     int endTime;
+
+    /// <inheritdoc/>
     public override float EndTime => endTime;
 
+    ///<summary> Parses an osu! spinner from the given strings. </summary>
     public static OsuSpinner Parse(string[] values,
         int x,
         int y,

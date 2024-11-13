@@ -5,33 +5,32 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
-#pragma warning disable CS1591
-/// <summary> Constructs a bézier curve from a list of points <paramref name="points"/>. </summary>
+/// <summary>
+///     Represents a bézier curve defined by a set of control points.
+/// </summary>
 public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
 {
     [ThreadStatic] static Vector2[] intermediatePoints;
     readonly Vector2[] points = points as Vector2[] ?? points.ToArray();
 
-    ///<summary> The start position (the head) of the bézier curve. </summary>
+    /// <inheritdoc/>
     public override Vector2 StartPosition => points[0];
 
-    ///<summary> The end position (the tail) of the bézier curve. </summary>
+    /// <inheritdoc/>
     public override Vector2 EndPosition => points[^1];
 
-    ///<summary> Whether the bézier curve is straight (linear). </summary>
-    public bool IsLinear => points.Length < 3;
-
+    /// <inheritdoc/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
         var accuracy = points.Length > 2 ? precision : 0;
 
         var distance = 0f;
-        var previousPosition = StartPosition;
+        var previousPosition = points[0];
 
         for (var i = 1f; i <= accuracy; ++i)
         {
             var delta = i / (accuracy + 1);
-            var nextPosition = positionAtDelta(delta);
+            ref var nextPosition = ref positionAtDelta(delta);
 
             distance += (nextPosition - previousPosition).Length();
             distancePosition.Add((distance, nextPosition));
@@ -39,11 +38,11 @@ public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
             previousPosition = nextPosition;
         }
 
-        distance += (EndPosition - previousPosition).Length();
+        distance += (points[^1] - previousPosition).Length();
         length = distance;
     }
 
-    Vector2 positionAtDelta(float delta)
+    ref Vector2 positionAtDelta(float delta)
     {
         var count = points.Length;
 
@@ -54,6 +53,6 @@ public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
         for (var j = 0; j < count - i; ++j)
             intermediatePoints[j] = intermediatePoints[j] * (1 - delta) + intermediatePoints[j + 1] * delta;
 
-        return intermediatePoints[0];
+        return ref intermediatePoints[0];
     }
 }

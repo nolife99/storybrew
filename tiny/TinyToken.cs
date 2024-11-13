@@ -107,7 +107,7 @@ public abstract class TinyToken
         {
             ".yml" or ".yaml" => Yaml,
             ".json" => Json,
-            _ => throw new NotImplementedException($"No format matches extension '{extension}'.")
+            _ => throw new NotSupportedException($"No format matches extension '{extension}'.")
         };
     }
 }

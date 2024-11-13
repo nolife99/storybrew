@@ -4,8 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
-/// <summary> Represents a composite curve that is constructed from multiple curves. </summary>
-/// <remarks> Constructs a composite curve from a list of curves <paramref name="curves"/>. </remarks>
+/// <summary>
+///     Represents a composite curve made up of multiple other curves.
+/// </summary>
 public class CompositeCurve(IEnumerable<Curve> curves) : Curve
 {
     readonly Curve[] curves = curves as Curve[] ?? curves.ToArray();
@@ -17,15 +18,7 @@ public class CompositeCurve(IEnumerable<Curve> curves) : Curve
     public Vector2 EndPosition => curves[^1].EndPosition;
 
     /// <inheritdoc/>
-    public float Length
-    {
-        get
-        {
-            var length = curves[0].Length;
-            for (var i = 1; i < curves.Length; ++i) length += curves[i].Length;
-            return length;
-        }
-    }
+    public float Length => curves.Sum(c => c.Length);
 
     /// <inheritdoc/>
     public Vector2 PositionAtDistance(float distance)
@@ -52,6 +45,6 @@ public class CompositeCurve(IEnumerable<Curve> curves) : Curve
             d -= curveDelta;
         }
 
-        return EndPosition;
+        return curves[^1].EndPosition;
     }
 }

@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using osuTK;
 using osuTK.Graphics.OpenGL;
+using Util;
 
 public sealed partial class Shader : IDisposable
 {
@@ -142,7 +143,7 @@ public sealed partial class Shader : IDisposable
         var errorRegex = ErrRegex();
         var splitCode = code.Replace("\r\n", "\n").Split('\n');
 
-        StringBuilder sb = new();
+        var sb = StringHelper.StringBuilderPool.Get();
         foreach (var line in log.Split('\n'))
         {
             sb.AppendLine(line);
@@ -165,7 +166,9 @@ public sealed partial class Shader : IDisposable
             sb.AppendLine("^");
         }
 
-        return sb.ToString();
+        var sbCode = sb.ToString();
+        StringHelper.StringBuilderPool.Return(sb);
+        return sbCode;
     }
 
     public override string ToString() => $"program:{SortId} vs:{vertexShaderId} fs:{fragmentShaderId}";

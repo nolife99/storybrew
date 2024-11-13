@@ -1,12 +1,11 @@
 ﻿namespace StorybrewCommon.Mapset;
 
 using System;
-using System.Collections.Generic;
 
 #pragma warning disable CS1591
 public static class BeatmapExtensions
 {
-    /// <summary> Calls <paramref name="tickAction"/> for each beatmap tick divided by <paramref name="snapDivisor"/>. </summary>
+    /// <summary> Executes the specified <paramref name="tickAction"/> for each timing tick in the osu! beatmap, calculated based on the <paramref name="snapDivisor"/>. </summary>
     public static void ForEachTick(this Beatmap beatmap,
         float startTime,
         float endTime,
@@ -52,44 +51,5 @@ public static class BeatmapExtensions
 
             timingPoint = nextTimingPoint;
         }
-    }
-
-    public static void AsSliderNodes(this IEnumerable<OsuHitObject> hitobjects, Action<OsuSliderNode, OsuHitObject> action)
-    {
-        foreach (var hitobject in hitobjects)
-            switch (hitobject)
-            {
-                case OsuCircle circle:
-                    action(
-                        new()
-                        {
-                            Time = circle.StartTime,
-                            Additions = circle.Additions,
-                            SampleSet = circle.SampleSet,
-                            AdditionsSampleSet = circle.AdditionsSampleSet,
-                            CustomSampleSet = circle.CustomSampleSet,
-                            Volume = circle.Volume
-                        }, hitobject);
-
-                    break;
-
-                case OsuSlider slider:
-                    foreach (var node in slider.Nodes) action(node, hitobject);
-                    break;
-
-                case OsuSpinner spinner:
-                    action(
-                        new()
-                        {
-                            Time = spinner.EndTime,
-                            Additions = spinner.Additions,
-                            SampleSet = spinner.SampleSet,
-                            AdditionsSampleSet = spinner.AdditionsSampleSet,
-                            CustomSampleSet = spinner.CustomSampleSet,
-                            Volume = spinner.Volume
-                        }, hitobject);
-
-                    break;
-            }
     }
 }

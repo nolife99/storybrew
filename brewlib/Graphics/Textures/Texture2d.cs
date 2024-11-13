@@ -11,7 +11,7 @@ using osuTK.Graphics.OpenGL;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
-    : Texture2dRegion(null, new(0, 0, width, height), description), BindableTexture
+    : Texture2dRegion(null, new(0, 0, width, height)), BindableTexture
 {
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 

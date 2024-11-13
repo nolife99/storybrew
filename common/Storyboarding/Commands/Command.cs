@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Animations;
+using BrewLib.Util;
 using CommandValues;
 
 #pragma warning disable CS1591
@@ -15,13 +16,12 @@ public abstract class Command<TValue>(string identifier,
     TValue startValue,
     TValue endValue) : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
 {
-    public string Identifier { get; set; } = identifier;
+    readonly string identifier =identifier;
     public OsbEasing Easing { get; set; } = easing;
-    public float Duration => EndTime - StartTime;
-    public virtual bool MaintainValue => true;
-    public virtual bool ExportEndValue => true;
+    protected virtual bool MaintainValue => true;
+    protected virtual bool ExportEndValue => true;
 
-    public bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
+    protected bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
     public abstract IFragmentableCommand GetFragment(float startTime, float endTime);
 
     public IEnumerable<int> GetNonFragmentableTimes()
@@ -55,7 +55,7 @@ public abstract class Command<TValue>(string identifier,
     }
 
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
-    public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
+    public override int GetHashCode() => HashCode.Combine(identifier, StartTime, EndTime, StartValue, EndValue);
 
     public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
     {
@@ -63,7 +63,10 @@ public abstract class Command<TValue>(string identifier,
         indent.Fill(' ');
 
         writer.Write(indent);
-        writer.WriteLine(ToOsbString(exportSettings, transform));
+
+        var str = ToOsbString(exportSettings, transform);
+        writer.WriteLine(str);
+        StringHelper.StringBuilderPool.Return(str);
     }
 
     public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
@@ -73,7 +76,7 @@ public abstract class Command<TValue>(string identifier,
     public abstract TValue Midpoint(Command<TValue> endCommand, float progress);
 
     public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
-    public bool Equals(Command<TValue> obj) => Identifier == obj.Identifier && Easing == obj.Easing &&
+    public bool Equals(Command<TValue> obj) => identifier == obj.identifier && Easing == obj.Easing &&
         StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) &&
         EndValue.Equals(obj.EndValue);
 
@@ -87,10 +90,10 @@ public abstract class Command<TValue>(string identifier,
         var startValueString = tranformedStartValue.ToOsbString(exportSettings);
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
-        StringBuilder result = new();
+        var result = StringHelper.StringBuilderPool.Get();
         if (startTimeString == endTimeString) endTimeString = "";
 
-        result.AppendJoin(',', Identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString, endTimeString,
+        result.AppendJoin(',', identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString, endTimeString,
             startValueString);
 
         if (startValueString == endValueString) return result;
@@ -98,5 +101,11 @@ public abstract class Command<TValue>(string identifier,
         result.Append(',');
         return result.Append(endValueString);
     }
-    public override string ToString() => ToOsbString(ExportSettings.Default, null).ToString();
+    public override string ToString()
+    {
+        var str = ToOsbString(ExportSettings.Default, null);
+        var result = str.ToString();
+        StringHelper.StringBuilderPool.Return(str);
+        return result;
+    }
 }

@@ -774,7 +774,7 @@ public class OsbSprite : StoryboardObject
         return box.Intersects(in OsuHitObject.WidescreenStoryboardBounds);
     }
 
-    /// <summary> Gets the <see cref="CommandPosition"/> origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
+    /// <summary> Gets the origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
     /// <param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>
     /// <param name="size"> The size of the sprite. </param>
     public static Vector2 GetOriginVector(OsbOrigin origin, Vector2 size) => origin switch

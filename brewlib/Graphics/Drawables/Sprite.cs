@@ -14,7 +14,7 @@ public class Sprite : Drawable
     public float Rotation;
     public ScaleMode ScaleMode = ScaleMode.None;
     public Texture2dRegion Texture;
-    public RenderStates RenderStates { get; private set; } = new();
+    readonly RenderStates RenderStates = new();
 
     public Vector2 MinSize => Vector2.Zero;
     public Vector2 PreferredSize => Texture?.Size ?? Vector2.Zero;
@@ -28,8 +28,7 @@ public class Sprite : Drawable
 
         var textureX0 = 0f;
         var textureY0 = 0f;
-        var textureX1 = Texture.Width;
-        var textureY1 = Texture.Height;
+        float textureX1 = Texture.Width, textureY1 = Texture.Height;
 
         var scaleH = bounds.Width / textureX1;
         var scaleV = bounds.Height / textureY1;

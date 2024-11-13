@@ -2,12 +2,17 @@
 
 using System.Globalization;
 
-#pragma warning disable CS1591
+/// <summary>
+/// Represents an osu!mania hold note.
+/// </summary>
 public class OsuHold : OsuHitObject
 {
     int endTime;
+
+    /// <inheritdoc/>
     public override float EndTime => endTime;
 
+    ///<summary> Parses an osu!mania hold note from the given strings. </summary>
     public static OsuHold Parse(string[] values,
         int x,
         int y,

@@ -142,7 +142,7 @@ public class YamlFormat : Format<YamlTokenType>
             case TinyTokenType.Array:
             case TinyTokenType.Object:
             case TinyTokenType.Invalid: throw new InvalidDataException(type.ToString());
-            default: throw new NotImplementedException(type.ToString());
+            default: throw new NotSupportedException(type.ToString());
         }
     }
 

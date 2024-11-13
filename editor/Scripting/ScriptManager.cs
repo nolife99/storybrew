@@ -108,7 +108,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         }
 
         scriptContainers[scriptName] = scriptContainer = new ScriptContainer<TScript>(scriptTypeName, sourcePath,
-            scriptsLibraryPath, compiledScriptsPath, referencedAssemblies);
+            scriptsLibraryPath, referencedAssemblies);
 
         return scriptContainer;
     }

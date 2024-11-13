@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Util;
 
 using System;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -201,7 +202,8 @@ public static unsafe partial class Native
 
     #region Win32
 
-    [LibraryImport("user32")] private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
+    [LibraryImport("user32")]
+    private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
 
     /// <summary> Sends the specified message to a window or windows. </summary>
     /// <remarks>
@@ -232,32 +234,38 @@ public static unsafe partial class Native
     delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
     [LibraryImport("user32")] [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
+    private static partial void EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
 
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static void InitializeHandle(string windowTitle, nint hWndFallback) => handle = hWndFallback;
-    /* var cont = true;
-        var threads = Process.GetCurrentProcess().Threads;
+    public static void InitializeHandle(string windowTitle, nint hWndFallback)
+    {
+        handle = hWndFallback;
 
-        for (var i = 0; i < threads.Count && cont; ++i) EnumThreadWindows(threads[i].Id, (hWnd, _) =>
-        {
-            var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
-            if (length > 0)
-            {
-                var buf = stackalloc sbyte[length * 2 + 1];
-                SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buf);
+        var cont = true;
+        using var currentProcess = Process.GetCurrentProcess();
+        var threads = currentProcess.Threads;
 
-                if (new ReadOnlySpan<char>(buf, length).Equals(windowTitle, StringComparison.Ordinal))
+        for (var i = 0; i < threads.Count && cont; ++i)
+            using (var thread = threads[i])
+                EnumThreadWindows(thread.Id, (hWnd, _) =>
                 {
-                    handle = hWnd;
-                    cont = false;
-                }
-            }
-            return cont;
-        }, 0); */
+                    var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
+                    if (length <= 0) return cont;
+
+                    var buf = stackalloc char[length];
+                    SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buf);
+
+                    if (new ReadOnlySpan<char>(buf, length).Equals(windowTitle, StringComparison.Ordinal))
+                    {
+                        handle = hWnd;
+                        cont = false;
+                    }
+                    return cont;
+                }, 0);
+    }
 
     #endregion
 }

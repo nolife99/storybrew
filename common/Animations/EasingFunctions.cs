@@ -193,8 +193,8 @@ public static class EasingFunctions
     public static Func<float, float> ToEasingFunction(OsbEasing easing) => easing switch
     {
         OsbEasing.In => In,
-        OsbEasing.InQuad => QuadIn,
         OsbEasing.Out => Out,
+        OsbEasing.InQuad => QuadIn,
         OsbEasing.OutQuad => QuadOut,
         OsbEasing.InOutQuad => QuadInOut,
         OsbEasing.InCubic => CubicIn,

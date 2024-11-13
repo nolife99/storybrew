@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
+using BrewLib.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -49,20 +50,22 @@ public static class ScriptCompiler
             }
         }
 
-        StringBuilder error = new("Compilation error\n\n");
-        foreach (var kvp in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse()
+        var error = StringHelper.StringBuilderPool.Get();
+        error.AppendLine("Compilation error\n");
+
+        foreach (var (file, diagnostics) in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse()
             .GroupBy(k =>
             {
                 if (k.Location.SourceTree is null) return "";
                 return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
             }).ToDictionary(k => k.Key, k => k))
         {
-            var file = kvp.Key;
-            var diagnostics = kvp.Value;
             error.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)}:");
             foreach (var diagnostic in diagnostics) error.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
         }
 
-        throw new ScriptCompilationException(error.ToString());
+        var errorStr = error.ToString();
+        StringHelper.StringBuilderPool.Return(error);
+        throw new ScriptCompilationException(errorStr);
     }
 }

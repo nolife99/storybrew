@@ -4,18 +4,11 @@ using System;
 using System.Collections.Generic;
 using CommandValues;
 
-/// <summary> Provides a way to optimize filesize and creates a way for sprites to be reused. </summary>
-/// <remarks> Constructs a <see cref="OsbSpritePool"/>. </remarks>
-/// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-/// <param name="path"> Image path of the available sprite. </param>
-/// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
-/// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
-/// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
-public class OsbSpritePool(StoryboardSegment segment,
-    string path,
-    OsbOrigin origin,
-    CommandPosition position,
-    Action<OsbSprite, float, float> attributes = null) : IDisposable
+/// <summary>
+///     Provides a way to optimize filesize and creates a way for sprites to be reused at a minor cost of
+///     performance.
+/// </summary>
+public class OsbSpritePool : IDisposable
 {
     readonly List<PooledSprite> pooled = [];
 
@@ -24,64 +17,89 @@ public class OsbSpritePool(StoryboardSegment segment,
     ///<summary> The maximum duration for a sprite to be pooled. </summary>
     public int MaxPoolDuration;
 
-    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-    /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    readonly StoryboardSegment _segment;
+    readonly string _path;
+    readonly OsbOrigin _origin;
+    readonly CommandPosition _position;
+    readonly Action<OsbSprite, float, float> _attributes;
+
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="origin"> The origin point for the sprites within the pool. </param>
+    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
     public OsbSpritePool(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
         Action<OsbSprite, float, float> attributes = null) : this(segment, path, origin, default, attributes) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-    /// <param name="path"> Image path of the available sprite. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="position"> The initial position of the sprites in the pool. </param>
+    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
     public OsbSpritePool(StoryboardSegment segment,
         string path,
         CommandPosition position,
         Action<OsbSprite, float, float> attributes = null) : this(segment, path, OsbOrigin.Centre, position, attributes) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-    /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="attributes"> Commands to be run on each sprite in the pool. </param>
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
     public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> attributes = null) : this(
         segment, path, OsbOrigin.Centre, default, attributes) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-    /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
-    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="origin"> The origin point for the sprites within the pool. </param>
+    /// <param name="position"> The initial position of the sprites in the pool. </param>
+    /// <param name="additive"> Toggle the sprites' additive blending. </param>
     public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, CommandPosition position, bool additive) :
         this(segment, path, origin, position, additive ? (pS, sT, _) => pS.Additive(sT) : null) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-    /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="origin"> <see cref="OsbOrigin"/> of the sprites in the pool. </param>
-    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="origin"> The origin point for the sprites within the pool. </param>
+    /// <param name="additive"> Toggle the sprites' additive blending. </param>
     public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive) : this(segment, path, origin,
         default, additive) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-    /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="position"> Initial <see cref="CommandPosition"/> position of the sprites in the pool. </param>
-    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="position"> The initial position of the sprites in the pool. </param>
+    /// <param name="additive"> Toggle the sprites' additive blending. </param>
     public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position, bool additive) : this(segment, path,
         OsbOrigin.Centre, position, additive) { }
 
-    /// <summary> Constructs a <see cref="OsbSpritePool"/>. </summary>
-    /// <param name="segment"> <see cref="StoryboardSegment"/> of the pool. </param>
-    /// <param name="path"> Image path of the sprite to be used. </param>
-    /// <param name="additive"> <see cref="bool"/> toggle for the sprite's additive blending. </param>
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="additive"> Toggle the sprites' additive blending. </param>
     public OsbSpritePool(StoryboardSegment segment, string path, bool additive) : this(segment, path, OsbOrigin.Centre, default,
         additive) { }
+
+    /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
+    /// <param name="segment"> The storyboard segment associated with the pool. </param>
+    /// <param name="path"> The image file path for the sprites in the pool. </param>
+    /// <param name="origin"> The origin point for the sprites within the pool. </param>
+    /// <param name="position"> The initial position of the sprites in the pool. </param>
+    /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
+    public OsbSpritePool(StoryboardSegment segment,
+        string path,
+        OsbOrigin origin,
+        CommandPosition position,
+        Action<OsbSprite, float, float> attributes = null)
+    {
+        _segment = segment;
+        _path = path;
+        _origin = origin;
+        _position = position;
+        _attributes = attributes;
+    }
 
     /// <inheritdoc/>
     public void Dispose() => Dispose(true);
@@ -105,7 +123,7 @@ public class OsbSpritePool(StoryboardSegment segment,
             return result.Sprite;
         }
 
-        var sprite = CreateSprite(segment, path, origin, position);
+        var sprite = CreateSprite(_segment, _path, _origin, _position);
         pooled.Add(new(sprite, startTime, endTime));
 
         return sprite;
@@ -119,18 +137,14 @@ public class OsbSpritePool(StoryboardSegment segment,
     internal void Dispose(bool disposing)
     {
         if (disposed) return;
-        if (attributes is not null && disposing)
+        if (_attributes is null || !disposing) return;
+        foreach (var pooledSprite in pooled)
         {
-            foreach (var pooledSprite in pooled)
-            {
-                var sprite = pooledSprite.Sprite;
-                attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
-            }
-
-            disposed = true;
+            var sprite = pooledSprite.Sprite;
+            _attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
         }
 
-        pooled.Clear();
+        disposed = true;
     }
 
     sealed class PooledSprite(OsbSprite sprite, float startTime, float endTime)

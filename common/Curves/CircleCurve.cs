@@ -4,8 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-/// <summary> Represents a perfect circular curve. </summary>
-/// <remarks> Constructs a perfect circular curve from given control points. </remarks>
+/// <summary>
+///     Represents a circular arc curve defined by three control points: a start point, a midpoint, and an end point.
+/// </summary>
 public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint) : BaseCurve
 {
     /// <inheritdoc/>

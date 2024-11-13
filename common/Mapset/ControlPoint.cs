@@ -3,10 +3,10 @@
 using System;
 using System.Globalization;
 
-///<summary> Represents a control point in osu! </summary>
+///<summary> Represents a control point in an osu! beatmap. </summary>
 public class ControlPoint : IComparable<ControlPoint>
 {
-    ///<summary> Returns a control point with default values. </summary>
+    ///<summary> A control point with default values. </summary>
     public static readonly ControlPoint Default = new();
 
     float beatDurationSV = 500;
@@ -53,7 +53,7 @@ public class ControlPoint : IComparable<ControlPoint>
         return value != 0 ? value : (other.IsInherited ? 0 : 1) - (IsInherited ? 0 : 1);
     }
 
-    /// <summary> Converts this control point to a <see cref="string"/> representation. </summary>
+    /// <inheritdoc/>
     public override string ToString()
         => (IsInherited ? $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4" : $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") +
             (IsKiai ? " Kiai" : "");

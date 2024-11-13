@@ -55,7 +55,7 @@ public class IntegratedCompressor : ImageCompressor
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {
         var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
-        StringBuilder str = new();
+        var str = StringHelper.StringBuilderPool.Get();
 
         if (Environment.Is64BitOperatingSystem && useLossy)
         {
@@ -76,7 +76,9 @@ public class IntegratedCompressor : ImageCompressor
             str.Append(CultureInfo.InvariantCulture, $"−s -a {input}");
         }
 
-        return str.ToString();
+        var output = str.ToString();
+        StringHelper.StringBuilderPool.Return(str);
+        return output;
     }
     protected override void ensureTool()
     {

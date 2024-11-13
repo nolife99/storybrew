@@ -336,8 +336,8 @@ public class State : IComparer<State>, IResettable
     }
 
     /// <summary>
-    ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and
-    ///     <see cref="OsbOrigin"/>.
+    ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions
+    ///     and <see cref="OsbOrigin"/>.
     /// </summary>
     /// <returns>
     ///     <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns

@@ -67,10 +67,8 @@ public abstract class Beatmap
     public abstract ControlPoint GetTimingPointAt(float time);
 
     /// <summary/>
-    protected static double GetDifficultyRange(float difficulty, float min, float mid, float max)
+    protected static double GetDifficultyRange(float difficulty, float min, float mid, float max) => difficulty switch
     {
-        if (difficulty > 5) return mid + (max - mid) * (difficulty - 5) / 5;
-        if (difficulty < 5) return mid - (mid - min) * (5 - difficulty) / 5;
-        return mid;
-    }
+        > 5 => mid + (max - mid) * (difficulty - 5) / 5, < 5 => mid - (mid - min) * (5 - difficulty) / 5, _ => mid
+    };
 }

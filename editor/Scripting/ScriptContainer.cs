@@ -23,18 +23,14 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
     public ScriptContainer(string scriptTypeName,
         string mainSourcePath,
         string libraryFolder,
-        string compiledScriptsPath,
         IEnumerable<string> referencedAssemblies)
     {
         ScriptTypeName = scriptTypeName;
         MainSourcePath = mainSourcePath;
         LibraryFolder = libraryFolder;
-        CompiledScriptsPath = compiledScriptsPath;
 
         ReferencedAssemblies = referencedAssemblies;
     }
-
-    public string CompiledScriptsPath { get; }
 
     public string Name
     {

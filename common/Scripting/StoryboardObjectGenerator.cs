@@ -151,7 +151,7 @@ public abstract class StoryboardObjectGenerator : Script
 
             try
             {
-                bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
+                bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream, false));
             }
             catch (FileNotFoundException e)
             {
@@ -161,7 +161,7 @@ public abstract class StoryboardObjectGenerator : Script
         else
         {
             if (watch) context.AddDependency(path);
-            bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream));
+            bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream, false));
         }
 
         return bitmap;
@@ -266,7 +266,9 @@ public abstract class StoryboardObjectGenerator : Script
 
     #region Subtitles
 
-    static readonly SubtitleParser srt = new SrtParser(), ass = new AssParser(), sbv = new SbvParser();
+    static readonly SrtParser srt = new();
+    static readonly AssParser ass = new();
+    static readonly SbvParser sbv = new();
     internal readonly Dictionary<string, FontGenerator> fonts = [];
 
     ///<summary> Loads subtitles from a given subtitle file. </summary>

@@ -39,13 +39,13 @@ public class SbvParser : SubtitleParser
         while (reader.ReadLine() is { } line)
             if (string.IsNullOrWhiteSpace(line.Trim()))
             {
-                var block = sb.Trim();
+                var block = sb.TrimEnd();
                 if (block.Length > 0) yield return block.ToString();
                 sb.Clear();
             }
             else sb.AppendLine(line);
 
-        var endBlock = sb.Trim();
+        var endBlock = sb.TrimEnd();
         if (endBlock.Length > 0) yield return endBlock.ToString();
     }
 }

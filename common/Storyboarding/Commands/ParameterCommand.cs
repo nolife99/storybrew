@@ -6,8 +6,8 @@ using CommandValues;
 public class ParameterCommand(float startTime, float endTime, CommandParameter value)
     : Command<CommandParameter>("P", 0, startTime, endTime, value, value)
 {
-    public override bool MaintainValue => StartTime == EndTime;
-    public override bool ExportEndValue => false;
+    protected override bool MaintainValue => StartTime == EndTime;
+    protected override bool ExportEndValue => false;
 
     public override CommandParameter ValueAtProgress(float progress) => StartValue;
     public override CommandParameter Midpoint(Command<CommandParameter> endCommand, float progress) => StartValue;

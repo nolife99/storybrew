@@ -86,10 +86,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 if (enabled == value) return;
                 enabled = value;
 
-                if (!enabled) return;
-                lock (Queue)
-                    if (Queue.Count > 0)
-                        Monitor.PulseAll(Queue);
+                if (enabled && Queue.Count > 0) lock (Queue) Monitor.PulseAll(Queue);
             }
         }
 

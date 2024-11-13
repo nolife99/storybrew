@@ -85,7 +85,7 @@ public static class DrawState
         CheckError("initializing openGL context");
 
         WhitePixel = Texture2d.Create(Color.White, "whitepixel");
-        NormalPixel = Texture2d.Create(Color.FromArgb(127, 127, 255), "normalpixel", 1, 1, new() { Srgb = UseSrgb });
+        NormalPixel = Texture2d.Create(Color.FromArgb(127, 127, 255), "normalpixel");
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new();
