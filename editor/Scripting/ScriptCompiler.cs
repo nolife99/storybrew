@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using System.Text;
 using BrewLib.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -53,8 +52,8 @@ public static class ScriptCompiler
         var error = StringHelper.StringBuilderPool.Get();
         error.AppendLine("Compilation error\n");
 
-        foreach (var (file, diagnostics) in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse()
-            .GroupBy(k =>
+        foreach (var (file, diagnostics) in result.Diagnostics
+            .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
             {
                 if (k.Location.SourceTree is null) return "";
                 return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";

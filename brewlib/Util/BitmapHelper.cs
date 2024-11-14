@@ -170,7 +170,7 @@ public static class BitmapHelper
         return result;
     }
 
-    public static Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
+    public static unsafe Bitmap FastCloneSection(this Bitmap src, RectangleF sect)
     {
         var srcSize = src.Size;
         if (sect.Left < 0 || sect.Top < 0 || sect.Right > srcSize.Width || sect.Bottom > srcSize.Height || sect.Width <= 0 ||
@@ -182,17 +182,17 @@ public static class BitmapHelper
         var destDat = dest.LockBits(destRect, ImageLockMode.WriteOnly, src.PixelFormat);
 
         var pixBit = Image.GetPixelFormatSize(src.PixelFormat) / 8;
-        var len = destRect.Width * pixBit;
+        var len = (nuint)(destRect.Width * pixBit);
 
         var left = (int)sect.X * pixBit;
         var top = (int)sect.Y;
         var srcStride = srcDat.Stride;
         var destStride = destDat.Stride;
-        var srcPtr = srcDat.Scan0;
-        var destPtr = destDat.Scan0;
+        var srcPtr = (byte*)srcDat.Scan0;
+        var destPtr = (byte*)destDat.Scan0;
 
         for (var y = 0; y < sect.Height; ++y)
-            Native.CopyMemory(srcPtr + (top + y) * srcStride + left, destPtr + y * destStride, len);
+            NativeMemory.Copy(srcPtr + (top + y) * srcStride + left, destPtr + y * destStride, len);
 
         src.UnlockBits(srcDat);
         dest.UnlockBits(destDat);
@@ -259,7 +259,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     }
     public PinnedBitmap(ReadOnlySpan<int> data, int width, int height) : this(width, height)
     {
-        fixed (void* pinned = data) Native.CopyMemory(pinned, scan0, Count * sizeof(int));
+        fixed (void* pinned = data) NativeMemory.Copy(pinned, scan0, (nuint)Count * sizeof(int));
     }
 
     public Bitmap Bitmap { get; }
@@ -296,7 +296,7 @@ public sealed unsafe class PinnedBitmap : IDisposable, IReadOnlyList<int>
     public int[] ToArray()
     {
         var array = GC.AllocateUninitializedArray<int>(Count);
-        fixed (void* arrAddr = array) Native.CopyMemory(scan0, arrAddr, Count * sizeof(int));
+        fixed (void* arrAddr = array) NativeMemory.Copy(scan0, arrAddr, (nuint)Count * sizeof(int));
         return array;
     }
 

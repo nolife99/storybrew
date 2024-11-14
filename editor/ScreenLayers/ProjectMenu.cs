@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime;
-using System.Text;
 using System.Threading;
 using BrewLib.Audio;
 using BrewLib.Time;

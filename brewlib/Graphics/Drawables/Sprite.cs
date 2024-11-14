@@ -10,11 +10,11 @@ using Util;
 
 public class Sprite : Drawable
 {
+    readonly RenderStates RenderStates = new();
     public Color Color = Color.White;
     public float Rotation;
     public ScaleMode ScaleMode = ScaleMode.None;
     public Texture2dRegion Texture;
-    readonly RenderStates RenderStates = new();
 
     public Vector2 MinSize => Vector2.Zero;
     public Vector2 PreferredSize => Texture?.Size ?? Vector2.Zero;

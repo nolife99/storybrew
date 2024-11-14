@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
+using System.Runtime.InteropServices;
 using osuTK.Graphics.OpenGL;
-using Util;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
@@ -28,7 +28,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        Native.CopyMemory(primitives, bufferPointer + bufferOffset, vertexDataSize);
+        NativeMemory.Copy(primitives, (byte*)bufferPointer + bufferOffset, (nuint)vertexDataSize);
 
         if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * 2);
         else GL.DrawArrays(type, drawOffset, drawCount);

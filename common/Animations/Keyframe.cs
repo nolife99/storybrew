@@ -8,7 +8,8 @@ using System.Collections.Generic;
 /// </summary>
 /// <typeparam name="TValue"> The type of the value of the keyframe. </typeparam>
 /// <remarks>
-///     This structure is used in conjunction with <see cref="KeyframedValue{TValue}"/> to represent values that change over time.
+///     This structure is used in conjunction with <see cref="KeyframedValue{TValue}"/> to represent values that change
+///     over time.
 /// </remarks>
 public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, IComparer<Keyframe<TValue>>
 {

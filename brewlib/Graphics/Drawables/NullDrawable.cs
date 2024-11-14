@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
-using System;
 using System.Drawing;
 using System.Numerics;
 using Cameras;

@@ -78,8 +78,7 @@ public sealed partial class Project : IDisposable
         scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, scriptsLibraryPath,
             compiledScriptsPath, ReferencedAssemblies);
 
-        effectUpdateQueue.OnActionFailed +=
-            (effect, e) => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
+        effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
 
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
         OnMainBeatmapChanged += (_, _) =>

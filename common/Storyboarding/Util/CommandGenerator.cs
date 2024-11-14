@@ -14,7 +14,7 @@ using Scripting;
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
-    static readonly ObjectPool<State> statePool = ObjectPool.Create<State>();
+    internal static readonly ObjectPool<State> statePool = ObjectPool.Create<State>();
 
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
@@ -315,24 +315,16 @@ public class State : IComparer<State>, IResettable
 
     bool IResettable.TryReset()
     {
-        try
-        {
-            Additive = false;
-            Color = CommandColor.White;
-            FlipH = false;
-            FlipV = false;
-            Opacity = 0;
-            Position = new(320, 240);
-            Rotation = 0;
-            Scale = CommandScale.One;
-            Time = 0;
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        Additive = false;
+        Color = CommandColor.White;
+        FlipH = false;
+        FlipV = false;
+        Opacity = 0;
+        Position = new(320, 240);
+        Rotation = 0;
+        Scale = CommandScale.One;
+        Time = 0;
+        return true;
     }
 
     /// <summary>

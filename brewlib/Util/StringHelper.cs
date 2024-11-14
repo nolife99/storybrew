@@ -11,8 +11,8 @@ public static class StringHelper
 {
     static readonly string[] sizeOrders = ["b", "kb", "mb", "gb", "tb"];
     static readonly string utf8Bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
-    public static readonly ObjectPool<StringBuilder> StringBuilderPool =
-        ObjectPool.Create(new StringBuilderPooledObjectPolicy());
+
+    public static readonly ObjectPool<StringBuilder> StringBuilderPool = ObjectPool.Create(new StringBuilderPooledObjectPolicy());
 
     public static string ToByteSize(float byteCount, string format = "{0:0.##} {1}")
     {

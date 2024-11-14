@@ -68,7 +68,8 @@ public static class DrawState
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
         maxGeometryTextureImageUnits = HasCapabilities(3, 2, "GL_ARB_geometry_shader4") ?
-            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) : 0;
+            GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
+            0;
 
         maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
         maxTextureCoords = GL.GetInteger(GetPName.MaxTextureCoords);

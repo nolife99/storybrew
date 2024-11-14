@@ -92,16 +92,16 @@ public class Sprite3d : Node3d, HasOsbSprites
         var opacity = screenPosition.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= cameraState.OpacityAt(screenPosition.W);
 
-        gen.Add(new()
-        {
-            Time = time,
-            Position = new(screenPosition.X, screenPosition.Y),
-            Scale = UseDefaultScale ?? scale,
-            Rotation = angle + SpriteRotation.ValueAt(time),
-            Color = object3dState.Color,
-            Opacity = opacity,
-            Additive = Additive
-        });
+        var state = CommandGenerator.statePool.Get();
+        state.Time = time;
+        state.Position = new(screenPosition.X, screenPosition.Y);
+        state.Scale = UseDefaultScale ?? scale;
+        state.Rotation = angle + SpriteRotation.ValueAt(time);
+        state.Color = object3dState.Color;
+        state.Opacity = opacity;
+        state.Additive = Additive;
+
+        gen.Add(state);
     }
 
     /// <inheritdoc/>

@@ -3,17 +3,17 @@
 using System.Globalization;
 
 /// <summary>
-/// Represents an osu! break, a time period without hit objects.
+///     Represents an osu! break, a time period without hit objects.
 /// </summary>
 public class OsuBreak
 {
     /// <summary>
-    /// The time that the break starts.
+    ///     The time that the break starts.
     /// </summary>
     public int StartTime { get; internal set; }
 
     /// <summary>
-    /// The time that the break end.
+    ///     The time that the break end.
     /// </summary>
     public int EndTime { get; internal set; }
 

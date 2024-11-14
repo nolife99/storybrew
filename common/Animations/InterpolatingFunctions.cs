@@ -50,6 +50,6 @@ public static class InterpolatingFunctions
     /// <summary> Interpolates between 2 <see cref="CommandPosition"/> vectors. </summary>
     public static CommandScale Scale(CommandScale from, CommandScale to, float progress) => Vector2(from, to, progress);
 
-    /// <summary> Interpolates between 2 <see cref="CommandColor"/> RGB values. </summary>
+    /// <summary> Interpolates between 2 <see cref="Storyboarding.CommandValues.CommandColor"/> RGB values. </summary>
     public static CommandColor CommandColor(CommandColor from, CommandColor to, float progress) => from + (to - from) * progress;
 }

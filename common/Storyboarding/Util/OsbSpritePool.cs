@@ -10,18 +10,18 @@ using CommandValues;
 /// </summary>
 public class OsbSpritePool : IDisposable
 {
+    readonly Action<OsbSprite, float, float> _attributes;
+    readonly OsbOrigin _origin;
+    readonly string _path;
+    readonly CommandPosition _position;
+
+    readonly StoryboardSegment _segment;
     readonly List<PooledSprite> pooled = [];
 
     bool disposed;
 
     ///<summary> The maximum duration for a sprite to be pooled. </summary>
     public int MaxPoolDuration;
-
-    readonly StoryboardSegment _segment;
-    readonly string _path;
-    readonly OsbOrigin _origin;
-    readonly CommandPosition _position;
-    readonly Action<OsbSprite, float, float> _attributes;
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>

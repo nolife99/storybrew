@@ -3,7 +3,7 @@
 using System.Globalization;
 
 /// <summary>
-/// Represents an osu!mania hold note.
+///     Represents an osu!mania hold note.
 /// </summary>
 public class OsuHold : OsuHitObject
 {

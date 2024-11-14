@@ -14,9 +14,9 @@ using System.Numerics;
 /// </remarks>
 public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 {
-    internal List<Keyframe<TValue>> keyframes = [];
-    readonly delegate*<TValue, TValue, float, TValue> _interpolate;
     readonly TValue _defaultValue;
+    readonly delegate*<TValue, TValue, float, TValue> _interpolate;
+    internal List<Keyframe<TValue>> keyframes = [];
 
     /// <summary>
     ///     Initializes a <see cref="KeyframedValue{TValue}"/> instance.
@@ -174,7 +174,6 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             _interpolate(from.Value, to.Value, to.Ease((time - from.Time) / (to.Time - from.Time)));
     }
 
-
     /// <summary>
     ///     Enumerates each pair of adjacent keyframes in the keyframed value.
     /// </summary>
@@ -309,7 +308,10 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     /// <summary>
     ///     Flattens keyframes in the set.
     /// </summary>
-    /// <param name="tolerance"> The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes. </param>
+    /// <param name="tolerance">
+    ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
+    ///     keyframes.
+    /// </param>
     /// <param name="getComponent"> A function that extracts a <see cref="float"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 1D parameters. </remarks>
     public void Simplify1dKeyframes(float tolerance, Func<TValue, float> getComponent) => SimplifyKeyframes(tolerance,
@@ -327,7 +329,10 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     /// <summary>
     ///     Flattens keyframes in the set, except for one that stays closest to the original path.
     /// </summary>
-    /// <param name="tolerance"> The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes. </param>
+    /// <param name="tolerance">
+    ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
+    ///     keyframes.
+    /// </param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector2"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 2D parameters. </remarks>
     public void Simplify2dKeyframes(float tolerance, Func<TValue, Vector2> getComponent) => SimplifyKeyframes(tolerance,
@@ -348,7 +353,10 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     /// <summary>
     ///     Flattens keyframes in the set, except for one that stays closest to the original path.
     /// </summary>
-    /// <param name="tolerance"> The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes. </param>
+    /// <param name="tolerance">
+    ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
+    ///     keyframes.
+    /// </param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector3"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 3D parameters. </remarks>
     public void Simplify3dKeyframes(float tolerance, Func<TValue, Vector3> getComponent) => SimplifyKeyframes(tolerance,

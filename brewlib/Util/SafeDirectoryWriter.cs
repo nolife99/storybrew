@@ -6,9 +6,9 @@ using System.IO;
 
 public class SafeDirectoryWriter : IDisposable
 {
+    readonly HashSet<string> paths = [];
     readonly string targetDirectory, tempDirectory, backupDirectory;
     bool committed;
-    readonly HashSet<string> paths = [];
 
     public SafeDirectoryWriter(string targetDirectory)
     {

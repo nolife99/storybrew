@@ -3,7 +3,6 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public static unsafe partial class Native
@@ -180,30 +179,9 @@ public static unsafe partial class Native
         SetText = 0x000C
     }
 
-    #region Memory
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(nint source, nint destination, int count)
-        => NativeMemory.Copy((void*)source, (void*)destination, (nuint)count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(void* source, void* destination, int count)
-        => NativeMemory.Copy(source, destination, (nuint)count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(nint source, void* destination, int count)
-        => NativeMemory.Copy((void*)source, destination, (nuint)count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void CopyMemory(void* source, nint destination, int count)
-        => NativeMemory.Copy(source, (void*)destination, (nuint)count);
-
-    #endregion
-
     #region Win32
 
-    [LibraryImport("user32")]
-    private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
+    [LibraryImport("user32")] private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
 
     /// <summary> Sends the specified message to a window or windows. </summary>
     /// <remarks>
@@ -263,6 +241,7 @@ public static unsafe partial class Native
                         handle = hWnd;
                         cont = false;
                     }
+
                     return cont;
                 }, 0);
     }

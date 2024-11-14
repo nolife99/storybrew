@@ -3,7 +3,7 @@
 using System.Globalization;
 
 /// <summary>
-/// Represents an osu! spinner.
+///     Represents an osu! spinner.
 /// </summary>
 public class OsuSpinner : OsuHitObject
 {

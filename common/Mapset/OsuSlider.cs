@@ -7,21 +7,21 @@ using Curves;
 using Storyboarding.CommandValues;
 
 /// <summary>
-/// Represents an osu! slider.
+///     Represents an osu! slider.
 /// </summary>
 public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints) : OsuHitObject
 {
     Curve curve;
 
+    CommandPosition playfieldTipPosition;
+
     /// <summary>
-    /// The curve type of this slider.
+    ///     The curve type of this slider.
     /// </summary>
     public SliderCurveType CurveType { get; init; }
 
     ///<summary> The total distance the slider ball travels, in osu!pixels. </summary>
     public float Length { get; init; }
-
-    CommandPosition playfieldTipPosition;
 
     ///<summary> The time it takes for the slider to complete its body in milliseconds. </summary>
     public float TravelDuration { get; init; }
@@ -30,23 +30,23 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     public float TravelDurationBeats { get; init; }
 
     /// <summary>
-    /// Gets an enumeration of nodes that make up the slider.
-    /// Each node contains the sample set and sample volume at a specific time in the slider.
+    ///     Gets an enumeration of nodes that make up the slider.
+    ///     Each node contains the sample set and sample volume at a specific time in the slider.
     /// </summary>
     public IEnumerable<OsuSliderNode> Nodes => nodes;
 
     /// <summary>
-    /// Gets the number of nodes in this slider.
+    ///     Gets the number of nodes in this slider.
     /// </summary>
     public int NodeCount => nodes.Length;
 
     /// <summary>
-    /// Gets an enumeration of control points that make up the slider's curve.
+    ///     Gets an enumeration of control points that make up the slider's curve.
     /// </summary>
     public IEnumerable<OsuSliderControlPoint> ControlPoints => controlPoints;
 
     /// <summary>
-    /// Gets the number of control points in this slider.
+    ///     Gets the number of control points in this slider.
     /// </summary>
     public int ControlPointCount => controlPoints.Length;
 
@@ -54,7 +54,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     public override float EndTime => StartTime + TravelCount * TravelDuration;
 
     /// <summary>
-    /// Gets the curve that represents this slider's shape.
+    ///     Gets the curve that represents this slider's shape.
     /// </summary>
     public Curve Curve
     {
@@ -66,7 +66,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     }
 
     /// <summary>
-    /// Gets the position of the end of the slider's body in playfield coordinates.
+    ///     Gets the position of the end of the slider's body in playfield coordinates.
     /// </summary>
     public CommandPosition PlayfieldTipPosition
     {
@@ -76,9 +76,9 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
             return playfieldTipPosition;
         }
     }
-    
+
     /// <summary>
-    /// Gets the position of the end of the slider's body in storyboard coordinates.
+    ///     Gets the position of the end of the slider's body in storyboard coordinates.
     /// </summary>
     public CommandPosition TipPosition => PlayfieldTipPosition + PlayfieldToStoryboardOffset;
 
@@ -392,15 +392,15 @@ public class OsuSliderNode
 public class OsuSliderControlPoint
 {
     /// <summary>
-    ///     The playfield position of this control point.
-    /// </summary>
-    public Vector2 PlayfieldPosition { get; }
-
-    /// <summary>
     ///     Initializes a new instance of the <see cref="OsuSliderControlPoint"/> class.
     /// </summary>
     /// <param name="position"> The playfield position of this control point. </param>
     OsuSliderControlPoint(Vector2 position) => PlayfieldPosition = position;
+
+    /// <summary>
+    ///     The playfield position of this control point.
+    /// </summary>
+    public Vector2 PlayfieldPosition { get; }
 
     /// <summary>
     ///     Performs an implicit conversion from <see cref="Vector2"/> to <see cref="OsuSliderControlPoint"/>.

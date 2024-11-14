@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
 using Data;
 using Util;
@@ -90,10 +89,10 @@ public class IntegratedCompressor : ImageCompressor
 
         toCleanup.Add(utility);
     }
-    protected override async void Dispose(bool disposing)
+    protected override void Dispose(bool disposing)
     {
         if (disposed) return;
-        await Task.WhenAll(tasks);
+        Task.WhenAll(tasks).Wait();
 
         base.Dispose(disposing);
         foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);

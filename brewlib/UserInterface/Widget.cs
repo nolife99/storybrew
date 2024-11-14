@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Text;
 using Graphics;
 using Graphics.Drawables;
 using Input;

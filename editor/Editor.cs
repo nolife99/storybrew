@@ -67,15 +67,22 @@ public sealed class Editor(GameWindow window) : IDisposable
             var brewLibAssembly = typeof(Drawable).Assembly;
             Skin = new(drawContext.Get<TextureContainer>())
             {
-                ResolveDrawableType = drawableTypeName => brewLibAssembly.GetType(
-                    $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}", true, true),
+                ResolveDrawableType =
+                    drawableTypeName
+                        => brewLibAssembly.GetType(
+                            $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}",
+                            true, true),
                 ResolveWidgetType =
                     widgetTypeName
                         => Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
                         brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true, true),
-                ResolveStyleType = styleTypeName => Type.GetType(
-                    $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", false, true) ?? 
-                    brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}", true, true)
+                ResolveStyleType = styleTypeName
+                    => Type.GetType(
+                        $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}",
+                        false, true) ??
+                    brewLibAssembly.GetType(
+                        $"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}",
+                        true, true)
             };
 
             Skin.Load("skin.json", ResourceContainer);

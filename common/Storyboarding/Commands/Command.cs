@@ -16,7 +16,7 @@ public abstract class Command<TValue>(string identifier,
     TValue startValue,
     TValue endValue) : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
 {
-    readonly string identifier =identifier;
+    readonly string identifier = identifier;
     public OsbEasing Easing { get; set; } = easing;
     protected virtual bool MaintainValue => true;
     protected virtual bool ExportEndValue => true;

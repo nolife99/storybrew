@@ -165,6 +165,7 @@ public class ScriptedEffect : Effect
             if (statusMessageBuilder.Length > 0) statusMessageBuilder.Append("\n\n");
             statusMessageBuilder.Append(CultureInfo.InvariantCulture, $"Log:\n\n{log}");
         }
+
         statusMessage = statusMessageBuilder.TrimEnd().ToString();
 
         StringHelper.StringBuilderPool.Return(statusMessageBuilder);

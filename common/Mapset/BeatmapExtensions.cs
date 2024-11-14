@@ -5,7 +5,10 @@ using System;
 #pragma warning disable CS1591
 public static class BeatmapExtensions
 {
-    /// <summary> Executes the specified <paramref name="tickAction"/> for each timing tick in the osu! beatmap, calculated based on the <paramref name="snapDivisor"/>. </summary>
+    /// <summary>
+    ///     Executes the specified <paramref name="tickAction"/> for each timing tick in the osu! beatmap, calculated
+    ///     based on the <paramref name="snapDivisor"/>.
+    /// </summary>
     public static void ForEachTick(this Beatmap beatmap,
         float startTime,
         float endTime,

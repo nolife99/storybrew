@@ -86,7 +86,9 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 if (enabled == value) return;
                 enabled = value;
 
-                if (enabled && Queue.Count > 0) lock (Queue) Monitor.PulseAll(Queue);
+                if (enabled && Queue.Count > 0)
+                    lock (Queue)
+                        Monitor.PulseAll(Queue);
             }
         }
 
@@ -110,10 +112,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             if (!localThread.Wait(200))
             {
-                await tokenSrc.CancelAsync();
+                await tokenSrc.CancelAsync().ConfigureAwait(false);
                 try
                 {
-                    await localThread;
+                    await localThread.ConfigureAwait(false);
                 }
                 catch
                 {
@@ -210,19 +212,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
     #region IDisposable Support
 
     bool disposed;
-    public void Dispose() => Dispose(true);
-
-    void Dispose(bool disposing)
+    public void Dispose()
     {
         if (disposed) return;
         context.Enabled = false;
         CancelQueuedActions(true);
-
-        if (disposing)
-        {
-            actionRunners.Clear();
-            actionRunners = null;
-        }
 
         disposed = true;
     }

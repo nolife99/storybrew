@@ -3,7 +3,7 @@
 using System.Globalization;
 
 /// <summary>
-/// Represents an osu! hit circle.
+///     Represents an osu! hit circle.
 /// </summary>
 public class OsuCircle : OsuHitObject
 {
