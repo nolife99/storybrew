@@ -6,8 +6,8 @@ using System.Threading;
 
 public class ThrottledActionScheduler
 {
-    readonly HashSet<string> scheduled = [];
     readonly Lock _lock = new();
+    readonly HashSet<string> scheduled = [];
     public int Delay = 100;
 
     public void Schedule(string key, Action<string> action) => Schedule(key, k =>

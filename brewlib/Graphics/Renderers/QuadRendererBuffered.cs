@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Cameras;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
 using Shaders.Snippets;

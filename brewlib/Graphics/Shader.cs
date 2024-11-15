@@ -5,8 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using osuTK;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 using Util;
 
 public sealed partial class Shader : IDisposable
@@ -25,7 +24,7 @@ public sealed partial class Shader : IDisposable
         if (!isInitialized)
         {
             dispose();
-            throw new GraphicsException($"Failed to initialize shader:\n\n{log}");
+            throw new InvalidOperationException($"Failed to initialize shader:\n\n{log}");
         }
 
         retrieveAttributes();

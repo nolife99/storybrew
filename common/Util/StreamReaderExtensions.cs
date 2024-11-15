@@ -19,7 +19,6 @@ public static class StreamReaderExtensions
             action(line[1..^1].ToString());
         }
     }
-
     /// <summary>
     ///     Calls <paramref name="action"/> with the content of a line, until it finds a blank line or reaches the end
     ///     of the file.
@@ -35,7 +34,6 @@ public static class StreamReaderExtensions
             action(trimLines ? line.ToString() : l);
         }
     }
-
     /// <summary>
     ///     Calls <paramref name="action"/> with key and value, until it finds a blank line or reaches the end of the
     ///     file.

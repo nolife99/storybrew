@@ -17,7 +17,7 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using Mapset;
-using osuTK;
+using OpenTK.Mathematics;
 using Scripting;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
@@ -262,14 +262,10 @@ public sealed partial class Project : IDisposable
                 case EffectStatus.Loading:
                 case EffectStatus.Configuring:
                 case EffectStatus.Updating:
-                case EffectStatus.ReloadPending:
-                    isUpdating = true;
-                    break;
+                case EffectStatus.ReloadPending: isUpdating = true; break;
                 case EffectStatus.CompilationFailed:
                 case EffectStatus.LoadingFailed:
-                case EffectStatus.ExecutionFailed:
-                    hasError = true;
-                    break;
+                case EffectStatus.ExecutionFailed: hasError = true; break;
                 case EffectStatus.Initializing:
                 case EffectStatus.Ready: break;
             }
@@ -376,15 +372,9 @@ public sealed partial class Project : IDisposable
         var extension = Path.GetExtension(e.Name);
         switch (extension)
         {
-            case ".png" or ".jpg" or ".jpeg":
-                reloadTextures();
-                break;
-            case ".wav" or ".mp3" or ".ogg":
-                reloadAudio();
-                break;
-            case ".osu":
-                refreshMapset();
-                break;
+            case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
+            case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
+            case ".osu": refreshMapset(); break;
         }
     }
 
@@ -416,12 +406,8 @@ public sealed partial class Project : IDisposable
         var extension = Path.GetExtension(e.Name);
         switch (extension)
         {
-            case ".png" or ".jpg" or ".jpeg":
-                reloadTextures();
-                break;
-            case ".wav" or ".mp3" or ".ogg":
-                reloadAudio();
-                break;
+            case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
+            case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
         }
     });
 
@@ -436,11 +422,11 @@ public sealed partial class Project : IDisposable
     public static readonly ICollection<string> DefaultAssemblies =
     [
         typeof(Bitmap).Assembly.Location,
-        typeof(Toolkit).Assembly.Location,
+        typeof(MathHelper).Assembly.Location,
         typeof(Script).Assembly.Location,
         typeof(Camera).Assembly.Location,
         .. Directory.EnumerateFiles(string.Format(runtimePath, "Microsoft.WindowsDesktop.App.Ref"), "*.dll"),
-        .. Directory.EnumerateFiles(string.Format(runtimePath, "Microsoft.NETCore.App.Ref"), "*.dll"),
+        .. Directory.EnumerateFiles(string.Format(runtimePath, "Microsoft.NETCore.App.Ref"), "*.dll")
     ];
 
     HashSet<string> importedAssemblies = [];
@@ -581,7 +567,7 @@ public sealed partial class Project : IDisposable
                 var fieldValue = ObjectSerializer.Read(r);
 
                 var allowedValueCount = r.ReadInt32();
-                var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : null;
+                var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : Array.Empty<NamedValue>();
                 for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
                     allowedValues[allowedValueIndex] = new() { Name = r.ReadString(), Value = ObjectSerializer.Read(r) };
 

@@ -2,7 +2,7 @@
 
 using System;
 using System.Runtime.InteropServices;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
 {

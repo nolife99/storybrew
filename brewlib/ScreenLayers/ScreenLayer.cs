@@ -3,7 +3,8 @@
 using System;
 using Graphics;
 using Input;
-using osuTK.Input;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public abstract class ScreenLayer : InputAdapter, IDisposable
 {
@@ -100,7 +101,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
     {
-        if (e.Key is not Key.Escape) return base.OnKeyDown(e);
+        if (e.Key is not Keys.Escape) return base.OnKeyDown(e);
         Close();
         return true;
     }

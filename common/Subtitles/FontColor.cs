@@ -3,8 +3,8 @@
 using System;
 using System.Drawing;
 using System.Numerics;
-using osuTK.Graphics;
 using Storyboarding.CommandValues;
+using Color4 = OpenTK.Mathematics.Color4;
 
 ///<summary> Base struct for coloring commands. </summary>
 public readonly struct FontColor : IEquatable<FontColor>

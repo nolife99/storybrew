@@ -9,9 +9,7 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
 {
     CompositeCommand<TValue> composite;
     Func<ITypedCommand<TValue>, ITypedCommand<TValue>> decorate;
-
     public void Add(ICommand command) => Add(command as Command<TValue>);
-
     public void StartDisplayLoop(LoopCommand loop)
     {
         if (composite is not null) throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
@@ -27,7 +25,6 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
 
         composite = new();
     }
-
     public void StartDisplayTrigger(TriggerCommand triggerCommand)
     {
         if (composite is not null) throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
@@ -35,7 +32,6 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
         decorate = command => new TriggerDecorator<TValue>(command);
         composite = new();
     }
-
     public void EndDisplayComposite()
     {
         if (composite is null) throw new InvalidOperationException("Cannot complete loop or trigger: Not inside one");
@@ -44,7 +40,6 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
         composite = null;
         decorate = null;
     }
-
     public void Add(Command<TValue> command)
     {
         if (command is null) return;

@@ -14,20 +14,14 @@
         <AnalysisLevel>latest-recommended</AnalysisLevel>
         <UseWindowsForms>True</UseWindowsForms>
         <LangVersion>default</LangVersion>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <DebugType>embedded</DebugType>
         <Optimize>true</Optimize>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.3.2"/>
-        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="9.0.0" />
-        <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211"/>
         <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

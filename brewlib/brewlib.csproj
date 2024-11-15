@@ -13,13 +13,10 @@
         <AnalysisLevel>latest-recommended</AnalysisLevel>
         <UseWindowsForms>True</UseWindowsForms>
         <LangVersion>default</LangVersion>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <DebugType>embedded</DebugType>
         <Optimize>true</Optimize>
     </PropertyGroup>
 
@@ -32,8 +29,12 @@
         <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.3.2"/>
         <PackageReference Include="ManagedBass" Version="3.1.1"/>
         <PackageReference Include="ManagedBass.Fx" Version="3.1.1"/>
-        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="9.0.0" />
-        <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211"/>
+        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="9.0.0"/>
+        <PackageReference Include="OpenTK.Graphics" Version="4.8.2"/>
+        <PackageReference Include="OpenTK.Input" Version="4.8.2"/>
+        <PackageReference Include="OpenTK.Windowing.Common" Version="4.8.2"/>
+        <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.8.2"/>
+        <PackageReference Include="OpenTK.Windowing.GraphicsLibraryFramework" Version="4.8.2"/>
     </ItemGroup>
 
     <ItemGroup>

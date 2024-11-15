@@ -7,7 +7,7 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using osuTK.Input;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Storyboarding;
 using StorybrewCommon.Mapset;
 

@@ -6,7 +6,7 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using osuTK.Graphics;
+using Color4 = OpenTK.Mathematics.Color4;
 
 ///<summary> Base struct for coloring commands. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>

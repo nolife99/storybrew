@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using osuTK;
+using OpenTK.Mathematics;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for scale commands. </summary>
@@ -62,8 +62,10 @@ using Vector2 = System.Numerics.Vector2;
     public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
     public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
 
-    public static implicit operator CommandScale(osuTK.Vector2 vector) => Unsafe.As<osuTK.Vector2, CommandScale>(ref vector);
-    public static implicit operator osuTK.Vector2(CommandScale obj) => Unsafe.As<CommandScale, osuTK.Vector2>(ref obj);
+    public static implicit operator CommandScale(OpenTK.Mathematics.Vector2 vector)
+        => Unsafe.As<OpenTK.Mathematics.Vector2, CommandScale>(ref vector);
+    public static implicit operator OpenTK.Mathematics.Vector2(CommandScale obj)
+        => Unsafe.As<CommandScale, OpenTK.Mathematics.Vector2>(ref obj);
 
     public static implicit operator CommandScale(Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator Vector2d(CommandScale obj) => new(obj.X, obj.Y);

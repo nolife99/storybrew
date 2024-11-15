@@ -4,14 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Numerics;
 using Graphics;
 using Graphics.Drawables;
-using Input;
-using osuTK;
-using osuTK.Input;
+using OpenTK.Windowing.Common;
 using Skinning.Styles;
 using Util;
-using Vector2 = System.Numerics.Vector2;
 
 public class Widget(WidgetManager manager) : IDisposable
 {
@@ -437,8 +435,8 @@ public class Widget(WidgetManager manager) : IDisposable
 
     #region Events
 
-    public delegate void WidgetEventHandler<TEventArgs>(WidgetEvent evt, TEventArgs e);
-    public delegate bool HandleableWidgetEventHandler<TEventArgs>(WidgetEvent evt, TEventArgs e);
+    public delegate void WidgetEventHandler<in TEventArgs>(WidgetEvent evt, TEventArgs e);
+    public delegate bool HandleableWidgetEventHandler<in TEventArgs>(WidgetEvent evt, TEventArgs e);
 
     public event HandleableWidgetEventHandler<MouseButtonEventArgs> OnClickDown;
     public bool NotifyClickDown(WidgetEvent evt, MouseButtonEventArgs e) => Raise(OnClickDown, evt, e);
@@ -466,18 +464,16 @@ public class Widget(WidgetManager manager) : IDisposable
     public event HandleableWidgetEventHandler<KeyboardKeyEventArgs> OnKeyUp;
     public bool NotifyKeyUp(WidgetEvent evt, KeyboardKeyEventArgs e) => Raise(OnKeyUp, evt, e);
 
-    public event HandleableWidgetEventHandler<KeyPressEventArgs> OnKeyPress;
-    public bool NotifyKeyPress(WidgetEvent evt, KeyPressEventArgs e) => Raise(OnKeyPress, evt, e);
+    public event HandleableWidgetEventHandler<TextInputEventArgs> OnKeyPress;
+    public bool NotifyKeyPress(WidgetEvent evt, TextInputEventArgs e) => Raise(OnKeyPress, evt, e);
 
-    public event WidgetEventHandler<WidgetHoveredEventArgs> OnHovered, OnHoveredWidgetChange;
+    public event WidgetEventHandler<WidgetHoveredEventArgs> OnHovered;
     public bool NotifyHoveredWidgetChange(WidgetEvent evt, WidgetHoveredEventArgs e)
     {
         var related = evt.RelatedTarget;
         while (related is not null && related != this) related = related.Parent;
 
         if (related != this) Raise(OnHovered, evt, e);
-
-        Raise(OnHoveredWidgetChange, evt, e);
         return false;
     }
 
@@ -485,16 +481,6 @@ public class Widget(WidgetManager manager) : IDisposable
     public bool NotifyFocusChange(WidgetEvent evt, WidgetFocusEventArgs e)
     {
         Raise(OnFocusChange, evt, e);
-        return false;
-    }
-
-    public event HandleableWidgetEventHandler<GamepadButtonEventArgs> OnGamepadButtonDown;
-    public bool NotifyGamepadButtonDown(WidgetEvent evt, GamepadButtonEventArgs e) => Raise(OnGamepadButtonDown, evt, e);
-
-    public event WidgetEventHandler<GamepadButtonEventArgs> OnGamepadButtonUp;
-    public bool NotifyGamepadButtonUp(WidgetEvent evt, GamepadButtonEventArgs e)
-    {
-        Raise(OnGamepadButtonUp, evt, e);
         return false;
     }
 

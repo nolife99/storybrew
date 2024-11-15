@@ -8,10 +8,8 @@ public class ParameterCommand(float startTime, float endTime, CommandParameter v
 {
     protected override bool MaintainValue => StartTime == EndTime;
     protected override bool ExportEndValue => false;
-
     public override CommandParameter ValueAtProgress(float progress) => StartValue;
     public override CommandParameter Midpoint(Command<CommandParameter> endCommand, float progress) => StartValue;
-
     public override IFragmentableCommand GetFragment(float startTime, float endTime)
         => new ParameterCommand(startTime, endTime, ValueAtTime(startTime));
 }

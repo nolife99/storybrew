@@ -2,8 +2,9 @@
 
 using System;
 using System.Numerics;
-using osuTK.Input;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Skinning.Styles;
+using Util;
 
 public class Slider : ProgressBar
 {
@@ -25,7 +26,7 @@ public class Slider : ProgressBar
             if (disabled || dragged) return false;
             dragButton = e.Button;
             dragged = true;
-            Value = GetValueForPosition(new(e.X, e.Y));
+            Value = GetValueForPosition(Native.GLFWGetCursorPos());
             DragStart(dragButton);
             return true;
         };
@@ -37,7 +38,7 @@ public class Slider : ProgressBar
             dragged = false;
             RefreshStyle();
             DragEnd(dragButton);
-            OnValueCommited?.Invoke(this, e);
+            OnValueCommited?.Invoke(this, EventArgs.Empty);
         };
 
         OnClickMove += (_, e) =>

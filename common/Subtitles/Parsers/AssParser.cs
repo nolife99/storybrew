@@ -39,9 +39,7 @@ public class AssParser : SubtitleParser
                                     lines.Add(new(startTime, endTime, text));
                                     break;
                             }
-                        });
-
-                        break;
+                        }); break;
                 }
             });
 

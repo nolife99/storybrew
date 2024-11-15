@@ -3,7 +3,7 @@
 using System;
 using System.Numerics;
 using Graphics;
-using osuTK.Input;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Util;
 
 public class ScrollArea : Widget
@@ -79,13 +79,13 @@ public class ScrollArea : Widget
         OnClickMove += (_, e) =>
         {
             if (!dragged) return;
-            scroll(e.XDelta, e.YDelta);
+            scroll(e.DeltaX, e.DeltaY);
         };
 
         OnMouseWheel += (_, e) =>
         {
-            if (scrollsVertically) scroll(0, e.DeltaPrecise * 64);
-            else if (scrollsHorizontally) scroll(e.DeltaPrecise * 64, 0);
+            if (scrollsVertically) scroll(0, e.OffsetY * 64);
+            else if (scrollsHorizontally) scroll(e.OffsetX * 64, 0);
 
             return true;
         };

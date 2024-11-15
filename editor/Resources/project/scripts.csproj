@@ -13,8 +13,8 @@
         <BaseIntermediateOutputPath>..\..\cache\obj\</BaseIntermediateOutputPath>
     </PropertyGroup>
     <ItemGroup>
-        <Reference Include="osuTK">
-            <HintPath>..\..\osuTK.dll</HintPath>
+        <Reference Include="OpenTK.Mathematics">
+            <HintPath>..\..\OpenTK.Mathematics.dll</HintPath>
         </Reference>
         <Reference Include="BrewLib">
             <HintPath>..\..\BrewLib.dll</HintPath>

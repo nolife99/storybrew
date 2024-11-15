@@ -269,9 +269,7 @@ public class EffectList : Widget
 
             case EffectStatus.CompilationFailed:
             case EffectStatus.LoadingFailed:
-            case EffectStatus.ExecutionFailed:
-                button.Icon = IconFont.BugReport;
-                break;
+            case EffectStatus.ExecutionFailed: button.Icon = IconFont.BugReport; break;
 
             case EffectStatus.Ready:
                 button.Icon = IconFont.Eco;

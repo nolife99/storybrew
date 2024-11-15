@@ -11,7 +11,8 @@ using BrewLib.Audio;
 using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using osuTK.Input;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Scripting;
 using Storyboarding;
 using StorybrewCommon.Mapset;
@@ -331,9 +332,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     timeSource.TimeFactor = speed;
                     break;
                 }
-                case MouseButton.Middle:
-                    timeSource.TimeFactor = timeSource.TimeFactor == 8 ? 1 : 8;
-                    break;
+                case MouseButton.Middle: timeSource.TimeFactor = timeSource.TimeFactor == 8 ? 1 : 8; break;
             }
 
             audioTimeB.Text = $"{timeSource.TimeFactor:P0}";
@@ -373,7 +372,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     {
         switch (e.Key)
         {
-            case Key.Right:
+            case Keys.Right:
                 if (e.Control)
                 {
                     var nextBookmark =
@@ -385,7 +384,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
                 return true;
 
-            case Key.Left:
+            case Keys.Left:
                 if (e.Control)
                 {
                     var prevBookmark =
@@ -401,14 +400,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (e.IsRepeat) return base.OnKeyDown(e);
         switch (e.Key)
         {
-            case Key.Space:
-            case Key.K:
+            case Keys.Space:
+            case Keys.K:
                 playB.Click();
                 return true;
-            case Key.O:
+            case Keys.O:
                 withSavePrompt(Manager.ShowOpenProject);
                 return true;
-            case Key.S:
+            case Keys.S:
                 if (e.Control)
                 {
                     saveProject();
@@ -416,7 +415,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 }
 
                 break;
-            case Key.C:
+            case Keys.C:
                 if (e.Control)
                 {
                     if (e.Shift)
@@ -448,7 +447,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     public override bool OnMouseWheel(MouseWheelEventArgs e)
     {
         var inputManager = Manager.GetContext<Editor>().InputManager;
-        timeline.Scroll(-e.DeltaPrecise * (inputManager.Shift ? 4 : 1));
+        timeline.Scroll(-Math.Max(e.OffsetX, e.OffsetY) * (inputManager.Shift ? 4 : 1));
         return true;
     }
 
@@ -583,11 +582,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         switch (sbLoad)
         {
             case > 0 and < 5 when proj.DisplayDebugWarning:
-                warnings.AppendLine(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill");
-                break;
-            case >= 5:
-                warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f2}x Screen Fill");
-                break;
+                warnings.AppendLine(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill"); break;
+            case >= 5: warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f2}x Screen Fill"); break;
         }
 
         var frameGpuMemory = stats.GpuMemoryFrameMb;
@@ -714,9 +710,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 statusLayout.Displayed = true;
                 break;
 
-            default:
-                statusLayout.Displayed = false;
-                break;
+            default: statusLayout.Displayed = false; break;
         }
     }
 

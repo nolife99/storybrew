@@ -1,18 +1,19 @@
 ﻿namespace BrewLib.Input;
 
 using System;
-using osuTK;
-using osuTK.Input;
-using Vector2 = System.Numerics.Vector2;
+using System.Numerics;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public sealed class InputManager : IDisposable
 {
     readonly InputHandler handler;
-    readonly GameWindow window;
+    readonly NativeWindow window;
 
     bool hasMouseHover;
 
-    public InputManager(GameWindow window, InputHandler handler)
+    public InputManager(NativeWindow window, InputHandler handler)
     {
         this.window = window;
         this.handler = handler;
@@ -27,10 +28,10 @@ public sealed class InputManager : IDisposable
         window.MouseMove += window_MouseMove;
         window.KeyDown += window_KeyDown;
         window.KeyUp += window_KeyUp;
-        window.KeyPress += window_KeyPress;
+        window.TextInput += window_KeyPress;
     }
 
-    public bool HasMouseFocus => window.Focused && hasMouseHover;
+    public bool HasMouseFocus => window.IsFocused && hasMouseHover;
 
     public Vector2 MousePosition { get; private set; }
 
@@ -58,27 +59,25 @@ public sealed class InputManager : IDisposable
         window.MouseMove += window_MouseMove;
         window.KeyDown -= window_KeyDown;
         window.KeyUp -= window_KeyUp;
-        window.KeyPress -= window_KeyPress;
+        window.TextInput -= window_KeyPress;
     }
 
-    void updateMouseFocus() => handler.OnFocusChanged(new FocusChangedEventArgs(HasMouseFocus));
-    void window_MouseEnter(object sender, EventArgs e)
+    void updateMouseFocus() => handler.OnFocusChanged(new FocusedChangedEventArgs(HasMouseFocus));
+    void window_MouseEnter()
     {
         hasMouseHover = true;
         updateMouseFocus();
     }
-    void window_MouseLeave(object sender, EventArgs e)
+    void window_MouseLeave()
     {
-        // https://github.com/osuTK/osuTK/issues/301
-
-        // hasMouseHover = false;
-        // updateMouseFocus();
+        hasMouseHover = false;
+        updateMouseFocus();
     }
-    void window_FocusedChanged(object sender, EventArgs e) => updateMouseFocus();
+    void window_FocusedChanged(FocusedChangedEventArgs e) => updateMouseFocus();
 
-    void window_MouseDown(object sender, MouseButtonEventArgs e) => handler.OnClickDown(e);
-    void window_MouseUp(object sender, MouseButtonEventArgs e) => handler.OnClickUp(e);
-    void window_MouseMove(object sender, MouseMoveEventArgs e)
+    void window_MouseDown(MouseButtonEventArgs e) => handler.OnClickDown(e);
+    void window_MouseUp(MouseButtonEventArgs e) => handler.OnClickUp(e);
+    void window_MouseMove(MouseMoveEventArgs e)
     {
         MousePosition = new Vector2(e.X, e.Y);
         handler.OnMouseMove(e);
@@ -91,21 +90,17 @@ public sealed class InputManager : IDisposable
         Alt = e.Modifiers.HasFlag(KeyModifiers.Alt);
     }
 
-    void window_KeyDown(object sender, KeyboardKeyEventArgs e)
+    void window_KeyDown(KeyboardKeyEventArgs e)
     {
         updateModifierState(e);
         handler.OnKeyDown(e);
     }
-    void window_KeyUp(object sender, KeyboardKeyEventArgs e)
+    void window_KeyUp(KeyboardKeyEventArgs e)
     {
         updateModifierState(e);
         handler.OnKeyUp(e);
     }
-    void window_KeyPress(object sender, KeyPressEventArgs e) => handler.OnKeyPress(e);
-    void window_MouseWheel(object sender, MouseWheelEventArgs e) => handler.OnMouseWheel(e);
-}
+    void window_KeyPress(TextInputEventArgs e) => handler.OnKeyPress(e);
 
-public class FocusChangedEventArgs(bool hasFocus) : EventArgs
-{
-    public bool HasFocus => hasFocus;
+    void window_MouseWheel(MouseWheelEventArgs e) => handler.OnMouseWheel(e);
 }

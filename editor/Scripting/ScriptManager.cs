@@ -168,13 +168,12 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     {
         Trace.WriteLine("Updating solution files");
 
-        var slnPath = Path.Combine(ScriptsPath, "storyboard.sln");
-        Misc.WithRetries(() => File.WriteAllBytes(slnPath,
-            resourceContainer.GetBytes("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative)));
+        using (var slnStream = Misc.WithRetries(() => File.Create(Path.Combine(ScriptsPath, "storyboard.sln"))))
+        using (var resourceStream =
+            resourceContainer.GetStream("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative))
+            resourceStream.CopyTo(slnStream);
 
-        var csProjPath = Path.Combine(ScriptsPath, "scripts.csproj");
         XmlDocument document = new() { PreserveWhitespace = false };
-
         try
         {
             using (var stream =
@@ -189,19 +188,18 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
             foreach (var path in referencedAssemblies)
             {
-                if (!Project.DefaultAssemblies.Contains(path))
-                {
-                    var compileNode = document.CreateElement("Reference", xmlns);
-                    compileNode.SetAttribute("Include", AssemblyName.GetAssemblyName(path).Name);
+                if (Project.DefaultAssemblies.Contains(path)) continue;
+                var compileNode = document.CreateElement("Reference", xmlns);
+                compileNode.SetAttribute("Include", AssemblyName.GetAssemblyName(path).Name);
 
-                    var hintPath = document.CreateElement("HintPath", xmlns);
-                    hintPath.AppendChild(document.CreateTextNode(PathHelper.GetRelativePath(ScriptsPath, path)));
-                    compileNode.AppendChild(hintPath);
-                    referencedAssembliesGroup.AppendChild(compileNode);
-                }
-
-                document.Save(csProjPath);
+                var hintPath = document.CreateElement("HintPath", xmlns);
+                hintPath.AppendChild(document.CreateTextNode(PathHelper.GetRelativePath(ScriptsPath, path)));
+                compileNode.AppendChild(hintPath);
+                referencedAssembliesGroup.AppendChild(compileNode);
             }
+
+            using var csProjPath = Misc.WithRetries(() => File.Create(Path.Combine(ScriptsPath, "scripts.csproj")));
+            document.Save(csProjPath);
         }
         catch (Exception e)
         {

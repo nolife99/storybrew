@@ -10,19 +10,15 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 {
     readonly List<ITypedCommand<TValue>> commands = [];
     public TValue DefaultValue;
-
     public AnimatedValue() { }
     public AnimatedValue(TValue defaultValue) => DefaultValue = defaultValue;
-
     public bool HasCommands => commands.Count > 0;
     public bool HasOverlap { get; private set; }
-
     public float StartTime => commands.Count > 0 ? commands[0].StartTime : 0;
     public float EndTime => commands.Count > 0 ? commands[^1].EndTime : 0;
     public float Duration => EndTime - StartTime;
     public TValue StartValue => commands.Count > 0 ? commands[0].StartValue : DefaultValue;
     public TValue EndValue => commands.Count > 0 ? commands[^1].EndValue : DefaultValue;
-
     public void Add(ITypedCommand<TValue> command)
     {
         if (command is not TriggerDecorator<TValue> triggerable)

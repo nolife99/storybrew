@@ -8,8 +8,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Cameras;
 using Data;
-using osuTK.Graphics;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 using Renderers;
 using Text;
 using Textures;
@@ -370,7 +369,7 @@ public static class DrawState
     {
         var error = GL.GetError();
         if (alwaysThrow || error != ErrorCode.NoError)
-            throw new GraphicsErrorException((context is not null ? "OpenGL error while " + context : "OpenGL error") +
+            throw new InvalidOperationException((context is not null ? "OpenGL error while " + context : "OpenGL error") +
                 (error != ErrorCode.NoError ? ": " + error : ""));
     }
 

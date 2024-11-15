@@ -47,14 +47,11 @@ public class PathSelector : Widget
             switch (mode)
             {
                 case PathSelectorMode.Folder:
-                    Manager.ScreenLayerManager.OpenFolderPicker(LabelText, textbox.Value, path => textbox.Value = path);
-                    break;
+                    Manager.ScreenLayerManager.OpenFolderPicker(LabelText, textbox.Value, path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenFile:
                     Manager.ScreenLayerManager.OpenFilePicker(LabelText, textbox.Value, null, Filter,
-                        path => textbox.Value = path);
-
-                    break;
+                        path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenDirectory:
                     Manager.ScreenLayerManager.OpenFilePicker(LabelText, "", textbox.Value, Filter, path => textbox.Value = path);
@@ -62,9 +59,7 @@ public class PathSelector : Widget
 
                 case PathSelectorMode.SaveFile:
                     Manager.ScreenLayerManager.OpenSaveLocationPicker(LabelText, textbox.Value, SaveExtension, Filter,
-                        path => textbox.Value = path);
-
-                    break;
+                        path => textbox.Value = path); break;
             }
         };
     }

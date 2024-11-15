@@ -1,9 +1,9 @@
 namespace StorybrewCommon.Storyboarding;
 
 using System.Collections.Generic;
+using System.Numerics;
 using CommandValues;
-using osuTK;
-using Vector2 = System.Numerics.Vector2;
+using MathHelper = OpenTK.Mathematics.MathHelper;
 
 ///<summary> Storyboarding segments for storyboard objects. </summary>
 public abstract class StoryboardSegment : StoryboardObject

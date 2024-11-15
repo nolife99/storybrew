@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public interface PrimitiveStreamer : IDisposable
 {

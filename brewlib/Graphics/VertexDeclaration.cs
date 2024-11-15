@@ -3,7 +3,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public class VertexDeclaration : IEnumerable<VertexAttribute>
 {

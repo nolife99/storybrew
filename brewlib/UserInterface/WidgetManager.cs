@@ -3,21 +3,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Graphics;
 using Graphics.Cameras;
 using Graphics.Drawables;
 using Input;
-using osuTK;
-using osuTK.Input;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using ScreenLayers;
 using Skinning;
 using Util;
-using Vector2 = System.Numerics.Vector2;
 
 public sealed class WidgetManager : InputHandler, IDisposable
 {
     readonly Dictionary<MouseButton, Widget> clickTargets = [];
-    readonly Dictionary<GamepadButton, Widget> gamepadButtonTargets = [];
 
     public readonly InputManager InputManager;
     public readonly Widget Root;
@@ -99,8 +98,6 @@ public sealed class WidgetManager : InputHandler, IDisposable
         DisableGamepadEvents(widget);
 
         foreach (var key in clickTargets.Keys.Where(key => clickTargets[key] == widget)) clickTargets.Remove(key);
-        foreach (var key in gamepadButtonTargets.Keys.Where(key => gamepadButtonTargets[key] == widget))
-            gamepadButtonTargets.Remove(key);
     }
     public void Draw(DrawContext drawContext)
     {
@@ -277,7 +274,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
     public void DisableGamepadEvents(Widget widget) => gamepadTargets.Remove(widget);
 
-    public void OnFocusChanged(FocusChangedEventArgs e) => RefreshHover();
+    public void OnFocusChanged(FocusedChangedEventArgs e) => RefreshHover();
     public bool OnClickDown(MouseButtonEventArgs e)
     {
         var target = HoveredWidget ?? rootContainer;
@@ -316,7 +313,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
     public bool OnKeyUp(KeyboardKeyEventArgs e)
         => fire((w, evt) => w.NotifyKeyUp(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
 
-    public bool OnKeyPress(KeyPressEventArgs e)
+    public bool OnKeyPress(TextInputEventArgs e)
         => fire((w, evt) => w.NotifyKeyPress(evt, e), keyboardFocus ?? HoveredWidget ?? rootContainer).Handled;
 
     void changeHoveredWidget(Widget widget)
@@ -329,21 +326,6 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
         if (HoveredWidget is not null)
             fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(true)), HoveredWidget, previousWidget);
-    }
-
-    public void OnGamepadConnected(GamepadEventArgs e) { }
-    public bool OnGamepadButtonDown(GamepadButtonEventArgs e)
-    {
-        var widgetEvent = fire((w, evt) => w.NotifyGamepadButtonDown(evt, e), gamepadTargets, bubbles: false);
-        if (widgetEvent.Handled) gamepadButtonTargets[e.Button] = widgetEvent.Listener;
-
-        return widgetEvent.Handled;
-    }
-    public bool OnGamepadButtonUp(GamepadButtonEventArgs e)
-    {
-        if (!gamepadButtonTargets.TryGetValue(e.Button, out var buttonTarget)) return false;
-        gamepadButtonTargets[e.Button] = null;
-        return fire((w, evt) => w.NotifyGamepadButtonUp(evt, e), buttonTarget, bubbles: false).Handled;
     }
 
     static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify,

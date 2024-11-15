@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using osuTK.Input;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using StorybrewEditor.Util;
 using Tiny;
 using Tiny.Formats.Json;

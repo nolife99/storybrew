@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System.Runtime.InteropServices;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,

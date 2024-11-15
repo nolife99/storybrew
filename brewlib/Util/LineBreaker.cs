@@ -230,9 +230,7 @@ public static class LineBreaker
             switch (getBreakability(text, index))
             {
                 case Breakability.Opportunity: return index - 1;
-                case Breakability.Allowed when firstAllowed == -1:
-                    firstAllowed = index - 1;
-                    break;
+                case Breakability.Allowed when firstAllowed == -1: firstAllowed = index - 1; break;
             }
 
         if (firstAllowed != -1) return firstAllowed;

@@ -122,16 +122,11 @@ public class EditorBeatmap(string path) : Beatmap
                         {
                             switch (key)
                             {
-                                case "AudioFilename":
-                                    beatmap.audioFilename = value;
-                                    break;
+                                case "AudioFilename": beatmap.audioFilename = value; break;
                                 case "StackLeniency":
-                                    beatmap.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
+                                    beatmap.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture); break;
                             }
-                        });
-
-                        break;
+                        }); break;
 
                     case "Editor":
                         reader.ParseKeyValueSection((key, value) =>
@@ -145,53 +140,35 @@ public class EditorBeatmap(string path) : Beatmap
 
                                     break;
                             }
-                        });
-
-                        break;
+                        }); break;
 
                     case "Metadata":
                         reader.ParseKeyValueSection((key, value) =>
                         {
                             switch (key)
                             {
-                                case "Version":
-                                    beatmap.name = value;
-                                    break;
-                                case "BeatmapID":
-                                    beatmap.id = long.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
+                                case "Version": beatmap.name = value; break;
+                                case "BeatmapID": beatmap.id = long.Parse(value, CultureInfo.InvariantCulture); break;
                             }
-                        });
-
-                        break;
+                        }); break;
 
                     case "Difficulty":
                         reader.ParseKeyValueSection((key, value) =>
                         {
                             switch (key)
                             {
-                                case "HPDrainRate":
-                                    beatmap.hpDrainRate = float.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
-                                case "CircleSize":
-                                    beatmap.circleSize = float.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
+                                case "HPDrainRate": beatmap.hpDrainRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                case "CircleSize": beatmap.circleSize = float.Parse(value, CultureInfo.InvariantCulture); break;
                                 case "OverallDifficulty":
-                                    beatmap.overallDifficulty = float.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
+                                    beatmap.overallDifficulty = float.Parse(value, CultureInfo.InvariantCulture); break;
                                 case "ApproachRate":
-                                    beatmap.approachRate = float.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
+                                    beatmap.approachRate = float.Parse(value, CultureInfo.InvariantCulture); break;
                                 case "SliderMultiplier":
-                                    beatmap.sliderMultiplier = float.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
+                                    beatmap.sliderMultiplier = float.Parse(value, CultureInfo.InvariantCulture); break;
                                 case "SliderTickRate":
-                                    beatmap.sliderTickRate = float.Parse(value, CultureInfo.InvariantCulture);
-                                    break;
+                                    beatmap.sliderTickRate = float.Parse(value, CultureInfo.InvariantCulture); break;
                             }
-                        });
-
-                        break;
+                        }); break;
 
                     case "Events":
                         reader.ParseSectionLines(line =>
@@ -202,16 +179,10 @@ public class EditorBeatmap(string path) : Beatmap
                             var values = line.Split(',');
                             switch (values[0])
                             {
-                                case "0":
-                                    beatmap.backgroundPath = removePathQuotes(values[2]);
-                                    break;
-                                case "2":
-                                    beatmap.breaks.Add(OsuBreak.Parse(line));
-                                    break;
+                                case "0": beatmap.backgroundPath = removePathQuotes(values[2]); break;
+                                case "2": beatmap.breaks.Add(OsuBreak.Parse(line)); break;
                             }
-                        }, false);
-
-                        break;
+                        }, false); break;
 
                     case "TimingPoints":
                     {

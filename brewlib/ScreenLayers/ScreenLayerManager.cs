@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Graphics;
 using Input;
-using osuTK;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
 using Time;
 
 public sealed class ScreenLayerManager : IDisposable
@@ -15,10 +16,10 @@ public sealed class ScreenLayerManager : IDisposable
     readonly InputDispatcher inputDispatcher = new();
 
     readonly List<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
-    readonly GameWindow window;
+    readonly NativeWindow window;
     ScreenLayer focusedLayer;
 
-    public ScreenLayerManager(GameWindow window, FrameTimeSource timeSource, object context)
+    public ScreenLayerManager(NativeWindow window, FrameTimeSource timeSource, object context)
     {
         this.window = window;
         TimeSource = timeSource;
@@ -40,7 +41,9 @@ public sealed class ScreenLayerManager : IDisposable
 
         LayerAdded?.Invoke(layer);
         layer.Load();
-        layer.Resize(Math.Max(1, window.Width), Math.Max(1, window.Height));
+
+        var size = window.ClientSize;
+        layer.Resize(Math.Max(1, size.X), Math.Max(1, size.Y));
     }
     public void Set(ScreenLayer layer)
     {
@@ -76,7 +79,7 @@ public sealed class ScreenLayerManager : IDisposable
     }
     public void Update(bool isFixedRateUpdate)
     {
-        var active = window.Focused;
+        var active = window.IsFocused;
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
@@ -120,7 +123,7 @@ public sealed class ScreenLayerManager : IDisposable
             removedLayers.Clear();
         }
 
-        if (layers.Count == 0) window.Exit();
+        if (layers.Count == 0) window.Close();
     }
 
     public void Draw(DrawContext drawContext, float tween)
@@ -151,10 +154,10 @@ public sealed class ScreenLayerManager : IDisposable
         focusedLayer = layer;
     }
 
-    void window_Resize(object sender, EventArgs e)
+    void window_Resize(ResizeEventArgs e)
     {
-        var width = window.Width;
-        var height = window.Height;
+        var width = e.Width;
+        var height = e.Height;
 
         if (width == 0 || height == 0) return;
         foreach (var layer in layers) layer.Resize(width, height);

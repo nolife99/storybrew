@@ -1,6 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,

@@ -7,7 +7,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using Data;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
@@ -20,7 +20,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         DrawState.BindTexture(textureId);
 
         var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-        GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, osuTK.Graphics.OpenGL.PixelFormat.Bgra,
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
             PixelType.UnsignedByte, data.Scan0);
 
         bitmap.UnlockBits(data);
@@ -77,7 +77,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
             Array.Fill(arr, color.ToArgb(), 0, area);
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0,
-                osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
+                OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
 
             if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
 
@@ -112,7 +112,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         {
             var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width,
-                data.Height, 0, osuTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+                data.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
             bitmap.UnlockBits(data);
 

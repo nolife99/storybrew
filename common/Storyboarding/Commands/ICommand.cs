@@ -10,7 +10,6 @@ public interface ICommand : IComparable<ICommand>
     float EndTime { get; }
     bool Active { get; }
     int Cost { get; }
-
     void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation);
     int GetHashCode();
 }

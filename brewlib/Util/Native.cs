@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public static unsafe partial class Native
 {
@@ -215,12 +216,13 @@ public static unsafe partial class Native
     private static partial void EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
+    static Window* glfwPtr;
 
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static void InitializeHandle(string windowTitle, nint hWndFallback)
+    public static void InitializeHandle(string windowTitle, Window* glfwWindow)
     {
-        handle = hWndFallback;
+        glfwPtr = glfwWindow;
 
         var cont = true;
         using var currentProcess = Process.GetCurrentProcess();
@@ -244,6 +246,12 @@ public static unsafe partial class Native
 
                     return cont;
                 }, 0);
+    }
+
+    public static Vector2 GLFWGetCursorPos()
+    {
+        GLFW.GetCursorPos(glfwPtr, out var x, out var y);
+        return new((float)x, (float)y);
     }
 
     #endregion

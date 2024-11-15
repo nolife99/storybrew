@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public class VertexAttribute
 {

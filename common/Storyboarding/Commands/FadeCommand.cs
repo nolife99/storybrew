@@ -9,7 +9,6 @@ public class FadeCommand(OsbEasing easing, float startTime, float endTime, Comma
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
     public override CommandDecimal Midpoint(Command<CommandDecimal> endCommand, float progress)
         => StartValue + (endCommand.EndValue - StartValue) * progress;
-
     public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
         new FadeCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) :
         this;

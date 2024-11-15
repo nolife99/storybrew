@@ -16,8 +16,9 @@ using BrewLib.Time;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
-using osuTK;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
 using ScreenLayers;
 using Label = BrewLib.UserInterface.Label;
 
@@ -37,7 +38,7 @@ public sealed class Editor(GameWindow window) : IDisposable
 
     public void Dispose()
     {
-        window.Resize -= window_Resize;
+        window.Resize -= resizeToWindow;
         window.Closing -= window_Closing;
 
         screenLayerManager.Dispose();
@@ -54,7 +55,8 @@ public sealed class Editor(GameWindow window) : IDisposable
         ResourceContainer =
             new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
 
-        DrawState.Initialize(ResourceContainer, window.Width, window.Height);
+        var size = window.ClientSize;
+        DrawState.Initialize(ResourceContainer, size.X, size.Y);
 
         drawContext = new();
         drawContext.Register(this);
@@ -102,10 +104,10 @@ public sealed class Editor(GameWindow window) : IDisposable
 
         Restart(initialLayer);
 
-        window.Resize += window_Resize;
+        window.Resize += resizeToWindow;
         window.Closing += window_Closing;
 
-        resizeToWindow();
+        resizeToWindow(new(size));
     }
 
     public void Restart(ScreenLayer initialLayer = null, string message = null)
@@ -133,13 +135,12 @@ public sealed class Editor(GameWindow window) : IDisposable
         DrawState.CompleteFrame();
     }
 
-    void window_Resize(object sender, EventArgs e) => resizeToWindow();
-    void window_Closing(object sender, CancelEventArgs e) => e.Cancel = screenLayerManager.Close();
+    void window_Closing(CancelEventArgs e) => e.Cancel = screenLayerManager.Close();
 
-    void resizeToWindow()
+    void resizeToWindow(ResizeEventArgs e)
     {
-        var width = window.Width;
-        var height = window.Height;
+        var width = e.Width;
+        var height = e.Height;
 
         DrawState.Viewport = new(0, 0, width, height);
 
@@ -214,7 +215,7 @@ public sealed class Editor(GameWindow window) : IDisposable
         {
             if (!InputManager.AltOnly) return false;
 
-            volumeSlider.Value += e.DeltaPrecise * .05f;
+            volumeSlider.Value += e.Offset.Length * .05f;
             return true;
         };
     }

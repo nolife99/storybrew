@@ -138,9 +138,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
                 break;
 
             case SliderCurveType.Linear:
-            default:
-                curve = generateLinearCurve();
-                break;
+            default: curve = generateLinearCurve(); break;
         }
 
         playfieldTipPosition = curve.PositionAtDistance(Length);

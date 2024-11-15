@@ -6,9 +6,9 @@ using System.Numerics;
 using System.Windows.Forms;
 using Graphics;
 using Graphics.Drawables;
-using osuTK.Input;
 using Skinning.Styles;
 using Util;
+using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;
 
 public class Textbox : Widget, Field
 {
@@ -55,25 +55,25 @@ public class Textbox : Widget, Field
             var inputManager = manager.InputManager;
             switch (e.Key)
             {
-                case Key.Escape:
+                case Keys.Escape:
                     if (hasFocus) manager.KeyboardFocus = null;
                     break;
 
-                case Key.BackSpace:
+                case Keys.Backspace:
                     if (selectionStart > 0 && selectionStart == cursorPosition) selectionStart--;
                     ReplaceSelection("");
                     break;
 
-                case Key.Delete:
+                case Keys.Delete:
                     if (selectionStart < Value.Length && selectionStart == cursorPosition) cursorPosition++;
                     ReplaceSelection("");
                     break;
 
-                case Key.A:
+                case Keys.A:
                     if (inputManager.ControlOnly) SelectAll();
                     break;
 
-                case Key.C:
+                case Keys.C:
                     if (inputManager.ControlOnly)
                         ClipboardHelper.SetText(
                             selectionStart != cursorPosition ? Value.Substring(SelectionLeft, SelectionLength) : Value,
@@ -81,7 +81,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Key.V:
+                case Keys.V:
                     if (inputManager.ControlOnly)
                     {
                         var clipboardText = ClipboardHelper.GetText(TextDataFormat.UnicodeText);
@@ -94,7 +94,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Key.X:
+                case Keys.X:
                     if (inputManager.ControlOnly)
                     {
                         if (selectionStart == cursorPosition) SelectAll();
@@ -105,7 +105,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Key.Left:
+                case Keys.Left:
                     if (inputManager.Shift)
                     {
                         if (cursorPosition > 0) cursorPosition--;
@@ -115,7 +115,7 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Key.Right:
+                case Keys.Right:
                     if (inputManager.Shift)
                     {
                         if (cursorPosition < Value.Length) cursorPosition++;
@@ -125,28 +125,28 @@ public class Textbox : Widget, Field
 
                     break;
 
-                case Key.Up:
+                case Keys.Up:
                     cursorPosition = content.GetCharacterIndexAbove(cursorPosition);
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Key.Down:
+                case Keys.Down:
                     cursorPosition = content.GetCharacterIndexBelow(cursorPosition);
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Key.Home:
+                case Keys.Home:
                     cursorPosition = 0;
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Key.End:
+                case Keys.End:
                     cursorPosition = Value.Length;
                     if (!inputManager.Shift) selectionStart = cursorPosition;
                     break;
 
-                case Key.Enter:
-                case Key.KeypadEnter:
+                case Keys.Enter:
+                case Keys.KeyPadEnter:
                     if (AcceptMultiline && (!EnterCommits || inputManager.Shift)) ReplaceSelection("\n");
                     else if (EnterCommits && hasCommitPending)
                     {
@@ -164,14 +164,14 @@ public class Textbox : Widget, Field
         OnKeyPress += (_, e) =>
         {
             if (!hasFocus) return false;
-            ReplaceSelection(e.KeyChar.ToString());
+            ReplaceSelection(e.AsString);
             return true;
         };
 
-        OnClickDown += (_, e) =>
+        OnClickDown += (_, _) =>
         {
             manager.KeyboardFocus = this;
-            var fromScreen = Manager.Camera.FromScreen(new Vector2(e.X, e.Y));
+            var fromScreen = Manager.Camera.FromScreen(Native.GLFWGetCursorPos());
             selectionStart = cursorPosition = content.GetCharacterIndexAt(new(fromScreen.X, fromScreen.Y));
             return true;
         };

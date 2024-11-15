@@ -30,15 +30,9 @@ public class YamlFormat : Format<YamlTokenType>
     {
         switch (token.Type)
         {
-            case TinyTokenType.Object:
-                writeObject(writer, (TinyObject)token, parent, indentLevel);
-                break;
-            case TinyTokenType.Array:
-                writeArray(writer, (TinyArray)token, parent, indentLevel);
-                break;
-            default:
-                writeValue(writer, (TinyValue)token, parent, indentLevel);
-                break;
+            case TinyTokenType.Object: writeObject(writer, (TinyObject)token, parent, indentLevel); break;
+            case TinyTokenType.Array: writeArray(writer, (TinyArray)token, parent, indentLevel); break;
+            default: writeValue(writer, (TinyValue)token, parent, indentLevel); break;
         }
     }
 
@@ -106,39 +100,23 @@ public class YamlFormat : Format<YamlTokenType>
 
         switch (type)
         {
-            case TinyTokenType.Null:
-                writer.WriteLine();
-                break;
-            case TinyTokenType.String:
-                writer.WriteLine(string.Concat("\"", YamlUtil.EscapeString((string)value), "\""));
-                break;
-            case TinyTokenType.Integer:
-                writer.WriteLine(value?.ToString());
-                break;
+            case TinyTokenType.Null: writer.WriteLine(); break;
+            case TinyTokenType.String: writer.WriteLine(string.Concat("\"", YamlUtil.EscapeString((string)value), "\"")); break;
+            case TinyTokenType.Integer: writer.WriteLine(value?.ToString()); break;
 
             case TinyTokenType.Float:
                 switch (value)
                 {
-                    case float floatFloat:
-                        writer.WriteLine(floatFloat.ToString(CultureInfo.InvariantCulture));
-                        break;
-                    case double floatDouble:
-                        writer.WriteLine(floatDouble.ToString(CultureInfo.InvariantCulture));
-                        break;
-                    case decimal floatDecimal:
-                        writer.WriteLine(floatDecimal.ToString(CultureInfo.InvariantCulture));
-                        break;
-                    case string floatString:
-                        writer.WriteLine(floatString);
-                        break;
+                    case float floatFloat: writer.WriteLine(floatFloat.ToString(CultureInfo.InvariantCulture)); break;
+                    case double floatDouble: writer.WriteLine(floatDouble.ToString(CultureInfo.InvariantCulture)); break;
+                    case decimal floatDecimal: writer.WriteLine(floatDecimal.ToString(CultureInfo.InvariantCulture)); break;
+                    case string floatString: writer.WriteLine(floatString); break;
                     default: throw new InvalidDataException(value?.ToString());
                 }
 
                 break;
 
-            case TinyTokenType.Boolean:
-                writer.WriteLine((bool)value ? BooleanTrue : BooleanFalse);
-                break;
+            case TinyTokenType.Boolean: writer.WriteLine((bool)value ? BooleanTrue : BooleanFalse); break;
             case TinyTokenType.Array:
             case TinyTokenType.Object:
             case TinyTokenType.Invalid: throw new InvalidDataException(type.ToString());

@@ -10,21 +10,11 @@ public class YamlUtil
         foreach (var c in value)
             switch (c)
             {
-                case '\r':
-                    sb.Append("\\r");
-                    break;
-                case '\n':
-                    sb.Append("\\n");
-                    break;
-                case '"':
-                    sb.Append("\\\"");
-                    break;
-                case '\\':
-                    sb.Append("\\\\");
-                    break;
-                default:
-                    sb.Append(c);
-                    break;
+                case '\r': sb.Append("\\r"); break;
+                case '\n': sb.Append("\\n"); break;
+                case '"': sb.Append("\\\""); break;
+                case '\\': sb.Append("\\\\"); break;
+                default: sb.Append(c); break;
             }
 
         return sb.ToString();
@@ -40,15 +30,9 @@ public class YamlUtil
             {
                 switch (c)
                 {
-                    case 'r':
-                        sb.Append('\r');
-                        break;
-                    case 'n':
-                        sb.Append('\n');
-                        break;
-                    default:
-                        sb.Append(c);
-                        break;
+                    case 'r': sb.Append('\r'); break;
+                    case 'n': sb.Append('\n'); break;
+                    default: sb.Append(c); break;
                 }
 
                 special = false;

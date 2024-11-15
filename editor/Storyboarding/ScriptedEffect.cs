@@ -150,9 +150,7 @@ public class ScriptedEffect : Effect
                 case EffectStatus.CompilationFailed:
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: break;
-                default:
-                    Trace.WriteLine($"{BaseName}: {this.status} took {duration}ms");
-                    break;
+                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration}ms"); break;
             }
 
         this.status = status;

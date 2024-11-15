@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Extensions.ObjectPool;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public sealed class GpuCommandSync : IDisposable
 {

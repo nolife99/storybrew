@@ -11,12 +11,12 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using osuTK.Graphics;
 using Storyboarding;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Subtitles;
 using StorybrewCommon.Util;
+using Color4 = OpenTK.Mathematics.Color4;
 
 public class EffectConfigUi : Widget
 {
@@ -238,10 +238,10 @@ public class EffectConfigUi : Widget
             return widget;
         }
 
-        if (field.Type == typeof(Vector2) || field.Type == typeof(osuTK.Vector2) || field.Type == typeof(CommandPosition) ||
-            field.Type == typeof(CommandScale)) return vector2Field(field);
+        if (field.Type == typeof(Vector2) || field.Type == typeof(OpenTK.Mathematics.Vector2) ||
+            field.Type == typeof(CommandPosition) || field.Type == typeof(CommandScale)) return vector2Field(field);
 
-        if (field.Type == typeof(Vector3) || field.Type == typeof(osuTK.Vector3))
+        if (field.Type == typeof(Vector3) || field.Type == typeof(OpenTK.Mathematics.Vector3))
         {
             var x = field.Type.GetField("X");
             var y = field.Type.GetField("Y");
@@ -317,13 +317,14 @@ public class EffectConfigUi : Widget
 
     Vector2Picker vector2Field(EffectConfig.ConfigField field)
     {
-        if (field.Type == typeof(Vector2) || field.Type == typeof(osuTK.Vector2))
+        if (field.Type == typeof(Vector2) || field.Type == typeof(OpenTK.Mathematics.Vector2))
         {
             Vector2Picker widget = new(Manager)
             {
                 Value = field.Type == typeof(Vector2) ?
                     Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(field.Value)) :
-                    Unsafe.As<osuTK.Vector2, CommandPosition>(ref Unsafe.Unbox<osuTK.Vector2>(field.Value)),
+                    Unsafe.As<OpenTK.Mathematics.Vector2, CommandPosition>(
+                        ref Unsafe.Unbox<OpenTK.Mathematics.Vector2>(field.Value)),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -332,12 +333,12 @@ public class EffectConfigUi : Widget
             widget.OnValueCommited += (_, _) =>
             {
                 if (field.Type == typeof(Vector2)) setFieldValue(field, (Vector2)widget.Value);
-                else setFieldValue(field, (osuTK.Vector2)widget.Value);
+                else setFieldValue(field, (OpenTK.Mathematics.Vector2)widget.Value);
 
                 widget.Value = field.Type == typeof(Vector2) ?
                     Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name))) :
-                    Unsafe.As<osuTK.Vector2, CommandPosition>(
-                        ref Unsafe.Unbox<osuTK.Vector2>(effect.Config.GetValue(field.Name)));
+                    Unsafe.As<OpenTK.Mathematics.Vector2, CommandPosition>(
+                        ref Unsafe.Unbox<OpenTK.Mathematics.Vector2>(effect.Config.GetValue(field.Name)));
             };
 
             return widget;

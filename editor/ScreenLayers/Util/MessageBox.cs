@@ -3,7 +3,8 @@
 using System;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using osuTK.Input;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public class MessageBox(string message, Action yesAction, Action noAction, bool cancelable) : UiScreenLayer
 {
@@ -68,7 +69,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
     }
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
     {
-        if (e.IsRepeat || e.Key is not Key.C || !e.Control) return base.OnKeyDown(e);
+        if (e.IsRepeat || e.Key is not Keys.C || !e.Control) return base.OnKeyDown(e);
         ClipboardHelper.SetText(message);
         return true;
     }

@@ -34,12 +34,8 @@ public class OsbAnimation : OsbSprite
         var frame = (time - StartTime) / FrameDelay;
         switch (LoopType)
         {
-            case OsbLoopType.LoopForever:
-                frame %= FrameCount;
-                break;
-            case OsbLoopType.LoopOnce:
-                frame = Math.Min(frame, FrameCount - 1);
-                break;
+            case OsbLoopType.LoopForever: frame %= FrameCount; break;
+            case OsbLoopType.LoopOnce: frame = Math.Min(frame, FrameCount - 1); break;
         }
 
         return Math.Max(0, (int)frame);

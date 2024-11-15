@@ -10,8 +10,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using BrewLib.Audio;
 using BrewLib.Util;
-using osuTK;
-using osuTK.Graphics;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
 using Util;
 using Icon = System.Drawing.Icon;
 
@@ -79,14 +79,12 @@ public static class Program
             Trace.Write(Environment.OSVersion);
             Trace.Write(" / Handle: 0x");
             Trace.WriteLine(Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture));
-            Trace.Write("Graphics mode: ");
-            Trace.WriteLine(window.Context.GraphicsMode);
 
             using Icon icon = new(typeof(Editor), "icon.ico");
             Native.SetWindowIcon(icon.Handle);
 
             using Editor editor = new(window);
-            window.Resize += (_, _) =>
+            window.Resize += _ =>
             {
                 editor.Draw(1);
                 window.SwapBuffers();
@@ -99,71 +97,68 @@ public static class Program
 
                 using (AudioManager = createAudioManager())
                     runMainLoop(window, editor,
-                        1000f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.RefreshRate),
-                        1000f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.RefreshRate));
+                        1000f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
+                        1000f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
             }
         }
 
         Settings.Save();
     }
 
-    static DisplayDevice findDisplayDevice()
+    static MonitorInfo findDisplayDevice()
     {
         try
         {
-            return DisplayDevice.GetDisplay(DisplayIndex.Default);
+            return Monitors.GetPrimaryMonitor();
         }
         catch (Exception e)
         {
             Trace.TraceWarning($"Failed to use default display device: {e}");
 
             var deviceIndex = 0;
-            while (deviceIndex <= (int)DisplayIndex.Sixth)
-                try
-                {
-                    return DisplayDevice.GetDisplay((DisplayIndex)deviceIndex);
-                }
-                catch (Exception e2)
-                {
-                    Trace.TraceError($"Using display device #{deviceIndex}: {e2}");
-                    ++deviceIndex;
-                }
+            foreach (var monitor in Monitors.GetMonitors()) return monitor;
         }
 
         throw new InvalidOperationException("Failed to find a display device");
     }
 
-    static GameWindow createWindow(DisplayDevice displayDevice)
+    static unsafe GameWindow createWindow(MonitorInfo displayDevice)
     {
-        var workArea = Screen.PrimaryScreen.WorkingArea;
-        var ratio = displayDevice.Width / (float)displayDevice.Height;
+        var workArea = displayDevice.WorkArea;
+        var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
+        var dpiScale = displayDevice.VerticalScale;
 
-        float windowWidth = 1360, windowHeight = windowWidth / ratio;
-        if (windowHeight >= workArea.Height)
+        float windowWidth = 1360 * dpiScale, windowHeight = windowWidth / ratio;
+        if (windowHeight >= workArea.Max.Y)
         {
-            windowWidth = 1024;
+            windowWidth = 1024 * dpiScale;
             windowHeight = windowWidth / ratio;
 
-            if (windowWidth >= workArea.Width)
+            if (windowWidth >= workArea.Max.X)
             {
-                windowWidth = 896;
+                windowWidth = 896 * dpiScale;
                 windowHeight = windowWidth / ratio;
             }
         }
 
-        GameWindow window = new((int)windowWidth, (int)windowHeight, null, Name, GameWindowFlags.Default, displayDevice, 2, 1,
-            GraphicsContextFlags.ForwardCompatible);
+        GameWindow window = new(GameWindowSettings.Default,
+            new()
+            {
+                Flags = ContextFlags.Default,
+                Profile = ContextProfile.Compatability,
+                CurrentMonitor = displayDevice.Handle,
+                Title = Name,
+                StartVisible = false
+            });
 
-        Native.InitializeHandle(Name, window.WindowInfo.Handle);
-        Trace.WriteLine($"Window dpi scale: {window.Height / windowHeight}");
+        window.CenterWindow(new((int)windowWidth, (int)windowHeight));
 
-        window.Location = new(workArea.X + (workArea.Width - window.Size.Width) / 2,
-            workArea.Y + (workArea.Height - window.Size.Height) / 2);
+        Native.InitializeHandle(Name, window.WindowPtr);
+        Trace.WriteLine($"Window dpi scale: {dpiScale}");
 
         if (window.Location is { X: >= 0, Y: >= 0 }) return window;
 
-        window.Location = workArea.Location;
-        window.Size = workArea.Size;
+        window.ClientRectangle = workArea;
         window.WindowState = WindowState.Maximized;
 
         return window;
@@ -186,10 +181,10 @@ public static class Program
         while (window.Exists && !window.IsExiting)
         {
             var cur = watch.ElapsedMilliseconds;
-            var focused = window.Focused;
+            var focused = window.IsFocused;
             var fixedUpdates = 0;
 
-            window.ProcessEvents();
+            window.ProcessEvents(double.MaxValue);
             AudioManager.Update();
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates < 2)
@@ -208,7 +203,7 @@ public static class Program
             editor.Draw(Math.Min((cur - fixedRate) / fixedRateUpdate, 1));
             window.SwapBuffers();
 
-            if (!window.Visible) window.Visible = true;
+            if (!window.IsVisible) window.IsVisible = true;
             while (scheduledActions.TryDequeue(out var action))
                 try
                 {

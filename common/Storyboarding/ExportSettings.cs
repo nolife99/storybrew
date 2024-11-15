@@ -6,7 +6,6 @@ using System.Globalization;
 public class ExportSettings
 {
     public static readonly ExportSettings Default = new();
-
     public readonly NumberFormatInfo NumberFormat = CultureInfo.InvariantCulture.NumberFormat;
 
     /// <summary> Enables optimisation for sprites that have <see cref="OsbSprite.CommandSplitThreshold"/> > 0. </summary>

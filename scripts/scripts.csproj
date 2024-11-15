@@ -4,7 +4,7 @@
         <OutputType>Library</OutputType>
         <RootNamespace>scripts</RootNamespace>
         <AssemblyName>StorybrewScripts</AssemblyName>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net9.0-windows</TargetFramework>
         <Company>storybrew</Company>
         <Product>storybrew scripts</Product>
         <Copyright>Copyright © Damnae 2016</Copyright>

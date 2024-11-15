@@ -8,6 +8,7 @@
         <Version>1.92</Version>
         <TargetFramework>net9.0-windows</TargetFramework>
         <LangVersion>default</LangVersion>
+        <DebugType>embedded</DebugType>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -23,18 +24,10 @@
         <UseWindowsForms>True</UseWindowsForms>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-        <DebugType>embedded</DebugType>
         <Optimize>True</Optimize>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
-        <DebugType>embedded</DebugType>
-    </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
-        <DebugType>embedded</DebugType>
         <Optimize>True</Optimize>
     </PropertyGroup>
 
@@ -66,9 +59,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.3.2"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
-        <PackageReference Include="ppy.osuTK.NS20" Version="1.0.211"/>
     </ItemGroup>
 
     <ItemGroup>

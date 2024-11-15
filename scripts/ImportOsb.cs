@@ -25,12 +25,8 @@ internal class ImportOsb : StoryboardObjectGenerator
             {
                 switch (section)
                 {
-                    case "Variables":
-                        parseVariables(reader);
-                        break;
-                    case "Events":
-                        parseEvents(reader);
-                        break;
+                    case "Variables": parseVariables(reader); break;
+                    case "Events": parseEvents(reader); break;
                 }
             });
 
@@ -89,9 +85,7 @@ internal class ImportOsb : StoryboardObjectGenerator
                 }
                 case "Sample":
                     GetLayer(v[2]).CreateSample(removeQuotes(v[3]), int.Parse(v[1], CultureInfo.InvariantCulture),
-                        float.Parse(v[4], CultureInfo.InvariantCulture));
-
-                    break;
+                        float.Parse(v[4], CultureInfo.InvariantCulture)); break;
 
                 case "T":
                     sprite.StartTriggerGroup(v[1], int.Parse(v[2], CultureInfo.InvariantCulture),
@@ -187,15 +181,9 @@ internal class ImportOsb : StoryboardObjectGenerator
                         {
                             switch (v[4])
                             {
-                                case "A":
-                                    sprite.Additive(startTime, endTime);
-                                    break;
-                                case "H":
-                                    sprite.FlipH(startTime, endTime);
-                                    break;
-                                case "V":
-                                    sprite.FlipV(startTime, endTime);
-                                    break;
+                                case "A": sprite.Additive(startTime, endTime); break;
+                                case "H": sprite.FlipH(startTime, endTime); break;
+                                case "V": sprite.FlipV(startTime, endTime); break;
                             }
 
                             break;

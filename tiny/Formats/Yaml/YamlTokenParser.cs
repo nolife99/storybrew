@@ -90,12 +90,9 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                     switch (context.LookaheadToken.Type)
                     {
                         case YamlTokenType.Word:
-                        case YamlTokenType.WordQuoted:
-                            context.PushParser(new ValueParser(r => result.Add(key, r)));
-                            break;
+                        case YamlTokenType.WordQuoted: context.PushParser(new ValueParser(r => result.Add(key, r))); break;
                         case YamlTokenType.EndLine:
-                            context.PushParser(new EmptyProperyParser(r => result.Add(key, r), context.IndentLevel + 1));
-                            break;
+                            context.PushParser(new EmptyProperyParser(r => result.Add(key, r), context.IndentLevel + 1)); break;
                         default:
                             throw new InvalidDataException("Unexpected token: " + context.LookaheadToken + ", after: " +
                                 context.CurrentToken);

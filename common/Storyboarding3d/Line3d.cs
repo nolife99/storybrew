@@ -115,7 +115,6 @@ public class Line3d : Node3d, HasOsbSprites
 public class Line3dEx : Node3d, HasOsbSprites
 {
     readonly CommandGenerator genBody = new(), genTopEdge = new(), genBottomEdge = new(), genStartCap = new(), genEndCap = new();
-
     readonly SizeF[] spriteBitmaps = new SizeF[3];
 
     public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3),
@@ -126,10 +125,8 @@ public class Line3dEx : Node3d, HasOsbSprites
 
     public bool Additive, UseDistanceFade = true, EnableStartCap = true, EnableEndCap = true, OrientedCaps;
     public float EdgeOverlap = .5f, CapOverlap = .2f;
-
     Action<OsbSprite> finalize;
     OsbSprite spriteBody, spriteTopEdge, spriteBottomEdge, spriteStartCap, spriteEndCap;
-
     public string SpritePathBody, SpritePathEdge, SpritePathCap;
 
     /// <inheritdoc/>
@@ -157,7 +154,6 @@ public class Line3dEx : Node3d, HasOsbSprites
 
     /// <inheritdoc/>
     public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;
-
     /// <inheritdoc/>
     public void ConfigureGenerators(Action<CommandGenerator> action)
     {
@@ -167,7 +163,6 @@ public class Line3dEx : Node3d, HasOsbSprites
         action(genStartCap);
         action(genTopEdge);
     }
-
     /// <inheritdoc/>
     public override void GenerateSprite(StoryboardSegment segment)
     {
@@ -188,7 +183,6 @@ public class Line3dEx : Node3d, HasOsbSprites
             spriteBitmaps[2] = CommandGenerator.BitmapDimensions(SpritePathCap);
         }
     }
-
     /// <inheritdoc/>
     public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
@@ -307,7 +301,6 @@ public class Line3dEx : Node3d, HasOsbSprites
             });
         }
     }
-
     /// <inheritdoc/>
     public override void GenerateCommands(Action<Action, OsbSprite> action,
         float? startTime,

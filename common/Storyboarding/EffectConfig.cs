@@ -11,7 +11,6 @@ using StorybrewCommon.Util;
 public class EffectConfig
 {
     readonly Dictionary<string, ConfigField> fields = [];
-
     public int FieldCount => fields.Count;
     public IEnumerable<ConfigField> Fields => fields.Values;
 
@@ -19,7 +18,6 @@ public class EffectConfig
         => new SortedSet<ConfigField>(fields.Values, Comparer<ConfigField>.Create((a, b) => a.Order - b.Order));
 
     public string[] FieldNames => fields.Keys.ToArray();
-
     public void UpdateField(string name,
         string displayName,
         string description,
@@ -63,7 +61,6 @@ public class EffectConfig
             Order = order
         };
     }
-
     public void RemoveField(string name) => fields.Remove(name);
     public bool SetValue(string name, object value)
     {
@@ -75,7 +72,6 @@ public class EffectConfig
         return true;
     }
     public object GetValue(string name) => fields[name].Value;
-
     static object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)
     {
         if (newType.IsAssignableFrom(oldType)) return value;

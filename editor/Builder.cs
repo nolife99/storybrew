@@ -51,6 +51,8 @@ public static class Builder
 
         foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
             addFile(archive, path, scriptsDirectory, "scripts");
+
+        addFile(archive, "glfw3.dll", Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native"));
     }
 
     /* static void testUpdate(string archiveName)
@@ -86,7 +88,7 @@ public static class Builder
     } */
     static void addFile(ZipArchive archive, string path, string sourceDirectory, string targetPath = null)
     {
-        path = Path.GetFullPath(path);
+        path = Path.Combine(sourceDirectory, path);
 
         var entryName = Path.GetRelativePath(sourceDirectory, path);
         if (targetPath is not null)
@@ -98,6 +100,7 @@ public static class Builder
         if (ignoredPaths.Contains(entryName)) return;
         if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
 
+        Trace.WriteLine($"Adding {entryName} to archive");
         archive.CreateEntryFromFile(path, entryName, CompressionLevel.SmallestSize);
     }
 }

@@ -182,12 +182,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         storyboardObjects.Remove(storyboardObject);
         switch (storyboardObject)
         {
-            case DisplayableObject displayableObject:
-                displayableObjects.Remove(displayableObject);
-                break;
-            case EventObject eventObject:
-                eventObjects.Remove(eventObject);
-                break;
+            case DisplayableObject displayableObject: displayableObjects.Remove(displayableObject); break;
+            case EventObject eventObject: eventObjects.Remove(eventObject); break;
         }
 
         if (storyboardObject is not EditorStoryboardSegment segment) return;

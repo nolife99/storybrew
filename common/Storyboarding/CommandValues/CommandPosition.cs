@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using osuTK;
+using OpenTK.Mathematics;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for movement commands.</summary>
@@ -69,11 +69,11 @@ using Vector2 = System.Numerics.Vector2;
     public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
     public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
 
-    public static implicit operator osuTK.Vector2(CommandPosition position)
-        => Unsafe.As<CommandPosition, osuTK.Vector2>(ref position);
+    public static implicit operator OpenTK.Mathematics.Vector2(CommandPosition position)
+        => Unsafe.As<CommandPosition, OpenTK.Mathematics.Vector2>(ref position);
 
-    public static implicit operator CommandPosition(osuTK.Vector2 vector)
-        => Unsafe.As<osuTK.Vector2, CommandPosition>(ref vector);
+    public static implicit operator CommandPosition(OpenTK.Mathematics.Vector2 vector)
+        => Unsafe.As<OpenTK.Mathematics.Vector2, CommandPosition>(ref vector);
 
     public static implicit operator CommandPosition(Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator Vector2d(CommandPosition position) => new(position.X, position.Y);

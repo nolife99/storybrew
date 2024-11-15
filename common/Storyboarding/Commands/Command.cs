@@ -20,30 +20,25 @@ public abstract class Command<TValue>(string identifier,
     public OsbEasing Easing { get; set; } = easing;
     protected virtual bool MaintainValue => true;
     protected virtual bool ExportEndValue => true;
-
     protected bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
     public abstract IFragmentableCommand GetFragment(float startTime, float endTime);
-
     public IEnumerable<int> GetNonFragmentableTimes()
     {
         if (!IsFragmentable)
             for (var i = 0; i < EndTime - StartTime - 1; ++i)
                 yield return (int)(StartTime + 1 + i);
     }
-
     public void Offset(float offset)
     {
         StartTime += offset;
         EndTime += offset;
     }
-
     public float StartTime { get; set; } = startTime;
     public float EndTime { get; set; } = endTime;
     public TValue StartValue { get; set; } = startValue;
     public TValue EndValue { get; set; } = endValue;
     public bool Active => true;
     public int Cost => 1;
-
     public TValue ValueAtTime(float time)
     {
         if (time < StartTime) return MaintainValue ? ValueAtProgress(0) : default;
@@ -53,10 +48,8 @@ public abstract class Command<TValue>(string identifier,
         var progress = duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0;
         return ValueAtProgress(progress);
     }
-
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
     public override int GetHashCode() => HashCode.Combine(identifier, StartTime, EndTime, StartValue, EndValue);
-
     public virtual void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
     {
         Span<char> indent = stackalloc char[indentation];
@@ -68,18 +61,14 @@ public abstract class Command<TValue>(string identifier,
         writer.WriteLine(str);
         StringHelper.StringBuilderPool.Return(str);
     }
-
     public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
     public virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
-
     public abstract TValue ValueAtProgress(float progress);
     public abstract TValue Midpoint(Command<TValue> endCommand, float progress);
-
     public override bool Equals(object obj) => obj is Command<TValue> other && Equals(other);
     public bool Equals(Command<TValue> obj) => identifier == obj.identifier && Easing == obj.Easing &&
         StartTime == obj.StartTime && EndTime == obj.EndTime && StartValue.Equals(obj.StartValue) &&
         EndValue.Equals(obj.EndValue);
-
     public StringBuilder ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
     {
         var startTimeString = (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);

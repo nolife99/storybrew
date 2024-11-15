@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Data;
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 using Tiny;
 using Tiny.Formats.Json;
 
@@ -68,7 +68,7 @@ public class TextureOptions : IEquatable<TextureOptions>
     }
     static TextureOptions load(TinyToken data)
     {
-        var options = new TextureOptions();
+        TextureOptions options = new();
         parseFields(options, data);
         return options;
     }

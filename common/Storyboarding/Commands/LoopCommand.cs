@@ -12,7 +12,6 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
         StartTime = startTime;
         LoopCount = loopCount;
     }
-
     public int LoopCount { get; set; }
     public bool IsFragmentable => LoopCount > 1;
 
@@ -31,7 +30,6 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
         foreach (var command in commands) header.Add(command);
         return header.ToHashCode();
     }
-
     public IFragmentableCommand GetFragment(float startTime, float endTime)
     {
         if (!IsFragmentable || (endTime - startTime) % CommandsDuration != 0 ||
@@ -42,7 +40,6 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
         foreach (var c in commands) loopFragment.Add(c);
         return loopFragment;
     }
-
     public IEnumerable<int> GetNonFragmentableTimes()
     {
         var nonFragmentableTimes = new HashSet<int>(LoopCount * (int)(CommandsDuration - 1));
@@ -52,7 +49,6 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
 
         return nonFragmentableTimes;
     }
-
     public override void EndGroup()
     {
         var commandsStartTime = CommandsStartTime;
@@ -64,12 +60,9 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
 
         base.EndGroup();
     }
-
     protected override string GetCommandGroupHeader(ExportSettings exportSettings)
         => $"L,{(exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat)},{LoopCount.ToString(exportSettings.NumberFormat)}";
-
     public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);
-
     public bool Equals(LoopCommand other)
         => other.StartTime == StartTime && other.LoopCount == LoopCount && commands.SequenceEqual(other.commands);
 }

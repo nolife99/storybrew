@@ -2,7 +2,7 @@
 
 using System;
 using System.Drawing;
-using osuTK;
+using OpenTK.Mathematics;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -91,18 +91,10 @@ internal class Tetris : StoryboardObjectGenerator
 
                 switch (option)
                 {
-                    case 0:
-                        ++nextDropX;
-                        break;
-                    case 1:
-                        ++nextDropY;
-                        break;
-                    case 2:
-                        --nextDropX;
-                        break;
-                    case 3:
-                        --nextDropY;
-                        break;
+                    case 0: ++nextDropX; break;
+                    case 1: ++nextDropY; break;
+                    case 2: --nextDropX; break;
+                    case 3: --nextDropY; break;
                 }
 
                 if (nextDropX < 0 || nextDropX >= GridWidth || nextDropY < 0 || nextDropY >= GridHeight) continue;

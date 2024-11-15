@@ -5,10 +5,7 @@ using System.Drawing;
 using System.Numerics;
 using Animations;
 using Mapset;
-using osuTK;
-using Vector2 = System.Numerics.Vector2;
-using Vector3 = System.Numerics.Vector3;
-using Vector4 = System.Numerics.Vector4;
+using MathHelper = OpenTK.Mathematics.MathHelper;
 
 #pragma warning disable CS1591
 public abstract class Camera

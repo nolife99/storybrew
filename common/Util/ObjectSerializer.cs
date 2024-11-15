@@ -7,8 +7,8 @@ using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using osuTK.Graphics;
 using Storyboarding.CommandValues;
+using Color4 = OpenTK.Mathematics.Color4;
 
 #pragma warning disable CS1591
 public abstract class ObjectSerializer
@@ -88,39 +88,40 @@ public abstract class ObjectSerializer
             return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture) + "," +
                 vector.Z.ToString(CultureInfo.InvariantCulture);
         }),
-        new SimpleObjectSerializer<osuTK.Vector2>(r => new osuTK.Vector2(r.ReadSingle(), r.ReadSingle()), (w, v) =>
-        {
-            var vector = Unsafe.Unbox<osuTK.Vector2>(v);
-            w.Write(vector.X);
-            w.Write(vector.Y);
-        }, v =>
-        {
-            var split = v.Split(',');
-            return new osuTK.Vector2(float.Parse(split[0], CultureInfo.InvariantCulture),
-                float.Parse(split[1], CultureInfo.InvariantCulture));
-        }, v =>
-        {
-            var vector = Unsafe.Unbox<osuTK.Vector2>(v);
-            return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture);
-        }),
-        new SimpleObjectSerializer<osuTK.Vector3>(r => new osuTK.Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle()), (w, v)
-            =>
-        {
-            var vector = Unsafe.Unbox<osuTK.Vector3>(v);
-            w.Write(vector.X);
-            w.Write(vector.Y);
-            w.Write(vector.Z);
-        }, v =>
-        {
-            var split = v.Split(',');
-            return new osuTK.Vector3(float.Parse(split[0], CultureInfo.InvariantCulture),
-                float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture));
-        }, v =>
-        {
-            var vector = Unsafe.Unbox<osuTK.Vector3>(v);
-            return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture) + "," +
-                vector.Z.ToString(CultureInfo.InvariantCulture);
-        }),
+        new SimpleObjectSerializer<OpenTK.Mathematics.Vector2>(
+            r => new OpenTK.Mathematics.Vector2(r.ReadSingle(), r.ReadSingle()), (w, v) =>
+            {
+                var vector = Unsafe.Unbox<OpenTK.Mathematics.Vector2>(v);
+                w.Write(vector.X);
+                w.Write(vector.Y);
+            }, v =>
+            {
+                var split = v.Split(',');
+                return new OpenTK.Mathematics.Vector2(float.Parse(split[0], CultureInfo.InvariantCulture),
+                    float.Parse(split[1], CultureInfo.InvariantCulture));
+            }, v =>
+            {
+                var vector = Unsafe.Unbox<OpenTK.Mathematics.Vector2>(v);
+                return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture);
+            }),
+        new SimpleObjectSerializer<OpenTK.Mathematics.Vector3>(
+            r => new OpenTK.Mathematics.Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle()), (w, v) =>
+            {
+                var vector = Unsafe.Unbox<OpenTK.Mathematics.Vector3>(v);
+                w.Write(vector.X);
+                w.Write(vector.Y);
+                w.Write(vector.Z);
+            }, v =>
+            {
+                var split = v.Split(',');
+                return new OpenTK.Mathematics.Vector3(float.Parse(split[0], CultureInfo.InvariantCulture),
+                    float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture));
+            }, v =>
+            {
+                var vector = Unsafe.Unbox<OpenTK.Mathematics.Vector3>(v);
+                return vector.X.ToString(CultureInfo.InvariantCulture) + "," + vector.Y.ToString(CultureInfo.InvariantCulture) +
+                    "," + vector.Z.ToString(CultureInfo.InvariantCulture);
+            }),
         new SimpleObjectSerializer<Color4>(r => new Color4(r.ReadSingle(), r.ReadSingle(), r.ReadSingle(), r.ReadSingle()), (w, v)
             =>
         {
@@ -160,7 +161,6 @@ public abstract class ObjectSerializer
     protected abstract object ReadValue(BinaryReader reader);
     protected abstract string ToString(object value);
     protected abstract object FromString(string value);
-
     public static object Read(BinaryReader reader)
     {
         var typeName = reader.ReadString();
@@ -169,7 +169,6 @@ public abstract class ObjectSerializer
         var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot read objects of type {typeName}");
         return serializer.ReadValue(reader);
     }
-
     public static void Write(BinaryWriter writer, object value)
     {
         if (value is null)
@@ -184,7 +183,6 @@ public abstract class ObjectSerializer
         writer.Write(typeName);
         serializer.WriteValue(writer, value);
     }
-
     public static object FromString(string typeName, string value)
     {
         if (typeName == "") return null;
@@ -192,7 +190,6 @@ public abstract class ObjectSerializer
         var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot read objects of type {typeName}");
         return serializer.FromString(value);
     }
-
     public static string ToString(Type type, object value)
     {
         if (value is null) return "";
@@ -202,7 +199,6 @@ public abstract class ObjectSerializer
         var serializer = GetSerializer(typeName) ?? throw new NotSupportedException($"Cannot write objects of type {typeName}");
         return serializer.ToString(value);
     }
-
     static ObjectSerializer GetSerializer(string typeName)
     {
         foreach (var serializer in serializers)
@@ -219,10 +215,8 @@ public class SimpleObjectSerializer<T>(Func<BinaryReader, object> read,
     Func<object, string> toString = null) : ObjectSerializer
 {
     protected override bool CanSerialize(string typeName) => typeName == typeof(T).FullName;
-
     protected override object ReadValue(BinaryReader reader) => read(reader);
     protected override void WriteValue(BinaryWriter writer, object value) => write(writer, value);
-
     protected override object FromString(string value) => fromString?.Invoke(value) ?? value;
     protected override string ToString(object value) => toString?.Invoke(value) ?? Unsafe.As<string>(value);
 }

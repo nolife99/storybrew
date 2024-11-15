@@ -5,6 +5,5 @@ public interface ITypedCommand<TValue> : ICommand
 {
     TValue StartValue { get; }
     TValue EndValue { get; }
-
     TValue ValueAtTime(float time);
 }

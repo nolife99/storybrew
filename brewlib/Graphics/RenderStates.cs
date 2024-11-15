@@ -1,6 +1,6 @@
 ﻿namespace BrewLib.Graphics;
 
-using osuTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL;
 
 public class RenderStates
 {
@@ -33,9 +33,7 @@ public class BlendingFactorState
     {
         switch (mode)
         {
-            case BlendingMode.Off:
-                enabled = false;
-                break;
+            case BlendingMode.Off: enabled = false; break;
 
             case BlendingMode.AlphaBlend:
                 src = alphaSrc = BlendingFactorSrc.SrcAlpha;

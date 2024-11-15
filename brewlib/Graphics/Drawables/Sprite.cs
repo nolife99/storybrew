@@ -53,12 +53,8 @@ public class Sprite : Drawable
                 break;
 
             case ScaleMode.Fit:
-            case ScaleMode.RepeatFit:
-                scale = Math.Min(scaleH, scaleV);
-                break;
-            default:
-                scale = 1;
-                break;
+            case ScaleMode.RepeatFit: scale = Math.Min(scaleH, scaleV); break;
+            default: scale = 1; break;
         }
 
         switch (ScaleMode)
@@ -76,9 +72,7 @@ public class Sprite : Drawable
             default:
                 renderer.Draw(Texture, (bounds.Left + bounds.Right) * .5f, (bounds.Top + bounds.Bottom) * .5f,
                     (textureX1 - textureX0) * .5f, (textureY1 - textureY0) * .5f, scale, scale, Rotation, color, textureX0,
-                    textureY0, textureX1, textureY1);
-
-                break;
+                    textureY0, textureX1, textureY1); break;
         }
     }
 
