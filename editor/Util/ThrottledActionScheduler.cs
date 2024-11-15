@@ -2,10 +2,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 public class ThrottledActionScheduler
 {
     readonly HashSet<string> scheduled = [];
+    readonly Lock _lock = new();
     public int Delay = 100;
 
     public void Schedule(string key, Action<string> action) => Schedule(key, k =>
@@ -16,13 +18,13 @@ public class ThrottledActionScheduler
 
     public void Schedule(string key, Func<string, bool> action)
     {
-        lock (scheduled)
+        lock (_lock)
             if (!scheduled.Add(key))
                 return;
 
         Program.Schedule(() =>
         {
-            lock (scheduled) scheduled.Remove(key);
+            lock (_lock) scheduled.Remove(key);
             if (!action(key)) Schedule(key, action);
         }, Delay);
     }

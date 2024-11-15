@@ -172,7 +172,7 @@ public class Widget(WidgetManager manager) : IDisposable
     }
 
     public string BuildStyleName(params string[] modifiers) => buildStyleName(StyleName, modifiers);
-    static string buildStyleName(string baseName, params string[] modifiers)
+    static string buildStyleName(string baseName, string[] modifiers)
     {
         if (modifiers.Length == 0) return baseName;
 

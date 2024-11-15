@@ -429,16 +429,18 @@ public sealed partial class Project : IDisposable
 
     #region Assemblies
 
+    static readonly string runtimePath = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", "packs", "{0}",
+        RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
+        string.Concat("net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3)));
+
     public static readonly ICollection<string> DefaultAssemblies =
     [
         typeof(Bitmap).Assembly.Location,
         typeof(Toolkit).Assembly.Location,
         typeof(Script).Assembly.Location,
         typeof(Camera).Assembly.Location,
-        .. Directory.EnumerateFiles(
-            Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", "packs", "Microsoft.NETCore.App.Ref",
-                RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
-                string.Concat("net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))), "*.dll")
+        .. Directory.EnumerateFiles(string.Format(runtimePath, "Microsoft.WindowsDesktop.App.Ref"), "*.dll"),
+        .. Directory.EnumerateFiles(string.Format(runtimePath, "Microsoft.NETCore.App.Ref"), "*.dll"),
     ];
 
     HashSet<string> importedAssemblies = [];

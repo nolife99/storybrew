@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Library</OutputType>
-        <TargetFramework>net8.0-windows</TargetFramework>
+        <TargetFramework>net9.0-windows</TargetFramework>
         <RootNamespace>StorybrewScripts</RootNamespace>
         <AssemblyName>storyboard</AssemblyName>
         <UseWindowsForms>true</UseWindowsForms>

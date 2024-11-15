@@ -4,9 +4,10 @@
         <OutputType>WinExe</OutputType>
         <RootNamespace>StorybrewEditor</RootNamespace>
         <AssemblyName>StorybrewEditor</AssemblyName>
-        <TargetFramework>net8.0-windows</TargetFramework>
         <Platforms>x86;x64</Platforms>
         <Version>1.92</Version>
+        <TargetFramework>net9.0-windows</TargetFramework>
+        <LangVersion>default</LangVersion>
     </PropertyGroup>
 
     <PropertyGroup>
