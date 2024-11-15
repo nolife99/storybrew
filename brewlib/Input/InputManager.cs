@@ -79,7 +79,7 @@ public sealed class InputManager : IDisposable
     void window_MouseUp(MouseButtonEventArgs e) => handler.OnClickUp(e);
     void window_MouseMove(MouseMoveEventArgs e)
     {
-        MousePosition = new Vector2(e.X, e.Y);
+        MousePosition = new(e.X, e.Y);
         handler.OnMouseMove(e);
     }
 

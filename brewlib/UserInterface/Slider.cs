@@ -4,7 +4,6 @@ using System;
 using System.Numerics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Skinning.Styles;
-using Util;
 
 public class Slider : ProgressBar
 {
@@ -26,7 +25,7 @@ public class Slider : ProgressBar
             if (disabled || dragged) return false;
             dragButton = e.Button;
             dragged = true;
-            Value = GetValueForPosition(Native.GLFWGetCursorPos());
+            Value = GetValueForPosition(manager.InputManager.MousePosition);
             DragStart(dragButton);
             return true;
         };

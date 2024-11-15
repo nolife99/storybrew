@@ -248,11 +248,5 @@ public static unsafe partial class Native
                 }, 0);
     }
 
-    public static Vector2 GLFWGetCursorPos()
-    {
-        GLFW.GetCursorPos(glfwPtr, out var x, out var y);
-        return new((float)x, (float)y);
-    }
-
     #endregion
 }

@@ -352,11 +352,8 @@ public static class DrawState
         // Trace.WriteLine($"extensions: {extensionsString}");
     }
 
-    public static bool HasCapabilities(int major, int minor, params string[] extensions)
-        => glVer >= new Version(major, minor) || HasExtensions(extensions);
-
-    public static bool HasExtensions(params string[] extensions)
-        => extensions.All(t => Array.BinarySearch(supportedExtensions, t) >= 0);
+    public static bool HasCapabilities(int major, int minor, params string[] extensions) => glVer >= new Version(major, minor) ||
+        extensions.All(t => Array.BinarySearch(supportedExtensions, t) >= 0);
 
     public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
     {

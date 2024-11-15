@@ -18,11 +18,11 @@ using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
 using ScreenLayers;
 using Label = BrewLib.UserInterface.Label;
+using NativeWindow = OpenTK.Windowing.Desktop.NativeWindow;
 
-public sealed class Editor(GameWindow window) : IDisposable
+public sealed class Editor(NativeWindow window) : IDisposable
 {
     readonly FrameClock clock = new();
     public readonly IWin32Window FormsWindow = new DialogParent();
@@ -215,7 +215,7 @@ public sealed class Editor(GameWindow window) : IDisposable
         {
             if (!InputManager.AltOnly) return false;
 
-            volumeSlider.Value += e.Offset.Length * .05f;
+            volumeSlider.Value += e.OffsetY * .05f;
             return true;
         };
     }

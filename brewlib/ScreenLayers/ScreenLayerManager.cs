@@ -83,7 +83,7 @@ public sealed class ScreenLayerManager : IDisposable
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
-        foreach (var layer in layers) updateQueue.Add(layer);
+        updateQueue.AddRange(layers);
 
         bool covered = false, top = true, hasFocus = active;
         while (updateQueue.Count > 0)
@@ -123,7 +123,11 @@ public sealed class ScreenLayerManager : IDisposable
             removedLayers.Clear();
         }
 
-        if (layers.Count == 0) window.Close();
+        if (layers.Count == 0)
+        {
+            window.IsVisible = false;
+            window.Close();
+        }
     }
 
     public void Draw(DrawContext drawContext, float tween)

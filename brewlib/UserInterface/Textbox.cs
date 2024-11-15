@@ -171,7 +171,7 @@ public class Textbox : Widget, Field
         OnClickDown += (_, _) =>
         {
             manager.KeyboardFocus = this;
-            var fromScreen = Manager.Camera.FromScreen(Native.GLFWGetCursorPos());
+            var fromScreen = Manager.Camera.FromScreen(manager.InputManager.MousePosition);
             selectionStart = cursorPosition = content.GetCharacterIndexAt(new(fromScreen.X, fromScreen.Y));
             return true;
         };

@@ -447,7 +447,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     public override bool OnMouseWheel(MouseWheelEventArgs e)
     {
         var inputManager = Manager.GetContext<Editor>().InputManager;
-        timeline.Scroll(-Math.Max(e.OffsetX, e.OffsetY) * (inputManager.Shift ? 4 : 1));
+        timeline.Scroll(-e.OffsetY * (inputManager.Shift ? 4 : 1));
         return true;
     }
 

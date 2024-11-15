@@ -14,12 +14,12 @@ public class Settings
 {
     public const string DefaultPath = "settings.cfg";
     public readonly Setting<bool> FitStoryboard = new(false), ShowStats = new(true), VerboseVsCode = new(false);
-    public readonly Setting<int> FrameRate = new(0), UpdateRate = new(60), EffectThreads = new(0);
+    public readonly Setting<int> FrameRate = new(0), UpdateRate = new(0), EffectThreads = new(0);
 
     public readonly Setting<string> Id = new(Guid.NewGuid().ToString("N")), TimeCopyFormat = new(@"h\:mm\:ss\.ff");
 
     readonly string path;
-    public readonly Setting<float> Volume = new(.5f);
+    public readonly Setting<float> Volume = new(1);
 
     public Settings(string path = DefaultPath)
     {

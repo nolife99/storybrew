@@ -12,8 +12,10 @@ using BrewLib.Audio;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Util;
 using Icon = System.Drawing.Icon;
+using NativeWindow = OpenTK.Windowing.Desktop.NativeWindow;
 
 public static class Program
 {
@@ -87,7 +89,7 @@ public static class Program
             window.Resize += _ =>
             {
                 editor.Draw(1);
-                window.SwapBuffers();
+                window.Context.SwapBuffers();
             };
 
             using (NetHelper.Client = new())
@@ -122,7 +124,7 @@ public static class Program
         throw new InvalidOperationException("Failed to find a display device");
     }
 
-    static unsafe GameWindow createWindow(MonitorInfo displayDevice)
+    static unsafe NativeWindow createWindow(MonitorInfo displayDevice)
     {
         var workArea = displayDevice.WorkArea;
         var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
@@ -140,16 +142,18 @@ public static class Program
                 windowHeight = windowWidth / ratio;
             }
         }
-
-        GameWindow window = new(GameWindowSettings.Default,
-            new()
-            {
-                Flags = ContextFlags.Default,
-                Profile = ContextProfile.Compatability,
-                CurrentMonitor = displayDevice.Handle,
-                Title = Name,
-                StartVisible = false
-            });
+#if !DEBUG
+        GLFW.WindowHint(WindowHintBool.ContextNoError, true);
+#endif
+        NativeWindow window = new(new()
+        {
+            Flags = ContextFlags.Default,
+            Profile = ContextProfile.Compatability,
+            CurrentMonitor = displayDevice.Handle,
+            APIVersion = new(4, 6),
+            Title = Name,
+            StartVisible = false
+        });
 
         window.CenterWindow(new((int)windowWidth, (int)windowHeight));
 
@@ -173,7 +177,7 @@ public static class Program
         return audioManager;
     }
 
-    static void runMainLoop(GameWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
+    static void runMainLoop(NativeWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
     {
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
         var watch = Stopwatch.StartNew();
@@ -201,7 +205,7 @@ public static class Program
             if (!window.Exists || window.IsExiting) return;
 
             editor.Draw(Math.Min((cur - fixedRate) / fixedRateUpdate, 1));
-            window.SwapBuffers();
+            window.Context.SwapBuffers();
 
             if (!window.IsVisible) window.IsVisible = true;
             while (scheduledActions.TryDequeue(out var action))
@@ -214,10 +218,10 @@ public static class Program
                     Trace.TraceError($"Scheduled task {action.Method}:\n{e}");
                 }
 
-            window.VSync = focused ? VSyncMode.Off : VSyncMode.Adaptive;
+            window.VSync = focused ? VSyncMode.Off : VSyncMode.On;
 
             var active = watch.ElapsedMilliseconds - cur;
-            if (window.VSync is VSyncMode.Off && window.WindowState is not WindowState.Minimized)
+            if (window.VSync is VSyncMode.Off)
             {
                 var sleepTime = (int)((focused ? targetFrame : fixedRateUpdate) - active);
                 if (sleepTime > 0) Thread.Sleep(sleepTime);

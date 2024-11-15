@@ -85,7 +85,7 @@ public class ScrollArea : Widget
         OnMouseWheel += (_, e) =>
         {
             if (scrollsVertically) scroll(0, e.OffsetY * 64);
-            else if (scrollsHorizontally) scroll(e.OffsetX * 64, 0);
+            else if (scrollsHorizontally) scroll(e.OffsetY * 64, 0);
 
             return true;
         };
