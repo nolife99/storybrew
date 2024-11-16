@@ -12,7 +12,6 @@ using BrewLib.Audio;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using Util;
 using Icon = System.Drawing.Icon;
 using NativeWindow = OpenTK.Windowing.Desktop.NativeWindow;
@@ -142,12 +141,10 @@ public static class Program
                 windowHeight = windowWidth / ratio;
             }
         }
-#if !DEBUG
-        GLFW.WindowHint(WindowHintBool.ContextNoError, true);
-#endif
+
         NativeWindow window = new(new()
         {
-            Flags = ContextFlags.Default,
+            Flags = ContextFlags.Debug,
             Profile = ContextProfile.Compatability,
             CurrentMonitor = displayDevice.Handle,
             APIVersion = new(4, 6),
@@ -341,7 +338,6 @@ public static class Program
                     w.WriteLine();
                 }
 
-                if (reportType is not null) Report(reportType, e);
                 if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name
                 })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
                     FullName, MessageBoxButtons.OKCancel) is DialogResult.OK) NetHelper.OpenUrl(DiscordUrl);

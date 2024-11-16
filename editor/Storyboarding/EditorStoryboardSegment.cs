@@ -50,7 +50,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         if (Layer.Highlight || Effect.Highlight)
             opacity *= (MathF.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
-        StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale);
+        var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
         foreach (var o in displayableObjects) o.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);
     }
 
@@ -74,19 +74,14 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         }
     }
 
-    public event Action<object, ChangedEventArgs> OnChanged;
-
-    protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged,
-        d => ((Action<object, ChangedEventArgs>)d)(this, new(propertyName)));
-
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
     {
-        EditorOsbSprite storyboardObject = new() { TexturePath = path, Origin = origin, InitialPosition = initialPosition };
+        EditorOsbSprite sbo = new() { TexturePath = path, Origin = origin, InitialPosition = initialPosition };
 
-        storyboardObjects.Add(storyboardObject);
-        displayableObjects.Add(storyboardObject);
+        storyboardObjects.Add(sbo);
+        displayableObjects.Add(sbo);
 
-        return storyboardObject;
+        return sbo;
     }
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin = OsbOrigin.Centre)
@@ -164,7 +159,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     EditorStoryboardSegment getSegment(string identifier = null)
     {
         if (identifier is not null && Name is null)
-            throw new InvalidOperationException($"Cannot add a named segment to a segment that isn't named ({identifier})");
+            throw new InvalidOperationException($"Cannot add a named segment to an unnamed segment ({identifier})");
 
         if (identifier is not null && namedSegments.TryGetValue(identifier, out var segment)) return segment;
         segment = new(Effect, Layer, identifier);
@@ -205,16 +200,16 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         OsbLayer osbLayer,
         StoryboardTransform transform)
     {
-        StoryboardTransform localTransform = new(transform, Origin, Position, Rotation, Scale);
+        var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
         foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, localTransform);
     }
 
     public int CalculateSize(OsbLayer osbLayer)
     {
-        var exportSettings = new ExportSettings { OptimiseSprites = false };
+        ExportSettings exportSettings = new() { OptimiseSprites = false };
 
-        using var stream = new ByteCounterStream();
-        using var writer = new StreamWriter(stream, Project.Encoding);
+        using ByteCounterStream stream = new();
+        using StreamWriter writer = new(stream, Project.Encoding);
 
         foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, null);
         return (int)stream.Length;

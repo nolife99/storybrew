@@ -8,6 +8,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using Data;
 using OpenTK.Graphics.OpenGL;
+using Util;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
@@ -24,8 +25,6 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             PixelType.UnsignedByte, data.Scan0);
 
         bitmap.UnlockBits(data);
-
-        DrawState.CheckError("updating texture");
     }
     public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
@@ -80,8 +79,6 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
                 OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
 
             if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            DrawState.CheckError("specifying texture");
             textureOptions.ApplyParameters(TextureTarget.Texture2D);
         }
         catch
@@ -108,25 +105,14 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
-        try
-        {
-            var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width,
-                data.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+        var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width,
+            data.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
 
-            bitmap.UnlockBits(data);
+        bitmap.UnlockBits(data);
 
-            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-
-            DrawState.CheckError("specifying texture");
-            textureOptions.ApplyParameters(TextureTarget.Texture2D);
-        }
-        catch
-        {
-            DrawState.UnbindTexture(textureId);
-            GL.DeleteTexture(textureId);
-            throw;
-        }
+        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
         return new(textureId, width, height, description);
     }

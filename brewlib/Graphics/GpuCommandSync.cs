@@ -79,18 +79,14 @@ public sealed class GpuCommandSync : IDisposable
         bool expired;
         public nint Fence;
         public int Index, Length;
-        public bool TryReset()
+
+        bool IResettable.TryReset()
         {
             GL.DeleteSync(Fence);
             Fence = 0;
 
             expired = false;
             return true;
-        }
-
-        ~SyncRange()
-        {
-            if (Fence != 0) GL.DeleteSync(Fence);
         }
 
         public bool Wait(bool canBlock = true)

@@ -165,8 +165,8 @@ public sealed class Editor(NativeWindow window) : IDisposable
     Slider volumeSlider;
     Label statsLabel;
 
-    WidgetManager createOverlay(ScreenLayerManager screenLayerManager)
-        => overlay = new(screenLayerManager, InputManager, Skin) { Camera = overlayCamera = new() };
+    WidgetManager createOverlay(ScreenLayerManager manager)
+        => overlay = new(manager, InputManager, Skin) { Camera = overlayCamera = new() };
 
     void initializeOverlay()
     {

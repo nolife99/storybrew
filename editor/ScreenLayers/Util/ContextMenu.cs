@@ -16,12 +16,6 @@ public class ContextMenu<T> : UiScreenLayer
     LinearLayout mainLayout, optionsLayout;
     Textbox searchTextbox;
 
-    public ContextMenu(string title, Action<T> callback, params Option[] options)
-    {
-        this.title = title;
-        this.callback = callback;
-        this.options.AddRange(options);
-    }
     public ContextMenu(string title, Action<T> callback, params T[] options)
     {
         this.title = title;
@@ -83,14 +77,11 @@ public class ContextMenu<T> : UiScreenLayer
     void refreshOptions()
     {
         optionsLayout.ClearWidgets();
-        foreach (var option in options)
+        foreach (var option in options.Where(option => string.IsNullOrEmpty(searchTextbox.Value) ||
+            option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal)))
         {
-            if (!string.IsNullOrEmpty(searchTextbox.Value) &&
-                !option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal)) continue;
-
-            Button button;
-            optionsLayout.Add(button =
-                new(WidgetManager) { StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre });
+            Button button = new(WidgetManager) { StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre };
+            optionsLayout.Add(button);
 
             var result = option.Value;
             button.OnClick += (_, _) =>

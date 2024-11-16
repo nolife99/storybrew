@@ -19,20 +19,15 @@ public static class OsuHelper
                 return value.Substring(startIndex + 1, endIndex - 1);
             }
         }
-        catch { }
+        catch
+        {
+            // ignored
+        }
 
         var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "osu!",
             "osu!.exe");
 
-        if (File.Exists(defaultPath)) return defaultPath;
-        return "";
-    }
-
-    public static string GetOsuFolder()
-    {
-        var osuPath = GetOsuExePath();
-        if (string.IsNullOrEmpty(osuPath)) return Path.GetPathRoot(Environment.CurrentDirectory);
-        return Path.GetDirectoryName(osuPath);
+        return File.Exists(defaultPath) ? defaultPath : "";
     }
 
     public static string GetOsuSongFolder()

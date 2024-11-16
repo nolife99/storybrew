@@ -98,15 +98,12 @@ public static class NetHelper
                     bytesRead += read.Length;
                     isMoreToRead = read.Length != 0;
 
-                    if (totalBytes != -1L)
-                    {
-                        var progressPercentage = (float)bytesRead / totalBytes * 100;
-                        if (!progressFunc(progressPercentage))
-                        {
-                            isMoreToRead = false;
-                            completedAction(new HttpRequestException("Download cancelled"));
-                        }
-                    }
+                    if (totalBytes == -1L) continue;
+                    var progressPercentage = (float)bytesRead / totalBytes * 100;
+
+                    if (progressFunc(progressPercentage)) continue;
+                    isMoreToRead = false;
+                    completedAction(new HttpRequestException("Download cancelled"));
                 }
                 while (isMoreToRead);
             }

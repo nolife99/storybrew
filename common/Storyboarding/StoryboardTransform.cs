@@ -2,15 +2,18 @@
 
 using System;
 using System.Numerics;
+using Microsoft.Extensions.ObjectPool;
 using StorybrewCommon.Util;
 
 /// <summary>
 ///     A transform that applies to a storyboard element.
 /// </summary>
-public class StoryboardTransform
+public class StoryboardTransform : IResettable, IDisposable
 {
-    readonly Affine2 transform;
-    readonly float transformScale, transformAngle;
+    Affine2 transform;
+    float transformScale, transformAngle;
+
+    static readonly ObjectPool<StoryboardTransform> pool = ObjectPool.Create<StoryboardTransform>();
 
     /// <summary>
     ///     Initializes a new <see cref="StoryboardTransform"/> instance.
@@ -20,19 +23,33 @@ public class StoryboardTransform
     /// <param name="position">The position of the element.</param>
     /// <param name="rotation">The rotation of the element in radians.</param>
     /// <param name="scale">The scale of the element.</param>
-    public StoryboardTransform(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale)
+    public static StoryboardTransform Get(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale)
     {
-        transform = parent?.transform ?? Affine2.Identity;
+        var instance = pool.Get();
+        var transform = instance.transform = parent?.transform ?? Affine2.Identity;
+
         if (position != Vector2.Zero) transform.Translate(position.X, position.Y);
         if (rotation != 0) transform.Rotate(rotation);
         if (scale != 1) transform.Scale(scale, scale);
         if (origin != Vector2.Zero) transform.Translate(-origin.X, -origin.Y);
 
-        transformScale = (parent?.transformScale ?? 1) * scale;
+        instance.transformScale = (parent?.transformScale ?? 1) * scale;
 
         // https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix/13165#13165
-        transformAngle = MathF.Atan2(-transform.M21, transform.M11); // OR MathF.Atan2(-transform.M22, transform.M12);
+        instance.transformAngle = MathF.Atan2(-transform.M21, transform.M11);
+        // OR MathF.Atan2(-transform.M22, transform.M12);
+
+        return instance;
     }
+
+    bool IResettable.TryReset()
+    {
+        transform = Affine2.Identity;
+        transformScale = transformAngle = 0;
+        return true;
+    }
+
+    public void Dispose() => pool.Return(this);
 
     /// <summary>
     ///     Applies the transform to a position.

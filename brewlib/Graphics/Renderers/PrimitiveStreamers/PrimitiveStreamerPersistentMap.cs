@@ -1,7 +1,9 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
+using Util;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
@@ -49,7 +51,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, (BufferStorageFlags)flags);
         bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, (BufferAccessMask)flags);
 
-        DrawState.CheckError("mapping vertex buffer", bufferPointer == 0);
         GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
     }
     protected override void Dispose(bool disposing)
@@ -87,7 +88,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         // Rebuild the VAO
 
         GL.BindVertexArray(0);
-        GL.DeleteVertexArray(VertexArrayId);
 
         Bind(CurrentShader);
         CurrentShader = null;

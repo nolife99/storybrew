@@ -21,7 +21,25 @@ public static class Builder
 
         try
         {
-            buildReleaseZip(archiveName, appDirectory);
+            Trace.WriteLine($"\n\nBuilding {archiveName}\n");
+
+            var scriptsDirectory = Path.GetFullPath(Path.Combine(appDirectory, "../../../../../scripts"));
+
+            using FileStream stream = new(archiveName, FileMode.Create, FileAccess.ReadWrite);
+            using ZipArchive archive = new(stream, ZipArchiveMode.Create);
+            addFile(archive, mainExecutablePath, appDirectory);
+            addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
+
+            foreach (var path in Directory.EnumerateFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
+                addFile(archive, path, appDirectory);
+
+            foreach (var path in Directory.EnumerateFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly))
+                addFile(archive, path, appDirectory);
+
+            foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
+                addFile(archive, path, scriptsDirectory, "scripts");
+
+            addFile(archive, "glfw3.dll", Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native"));
         }
         catch (Exception e)
         {
@@ -30,29 +48,6 @@ public static class Builder
         }
 
         PathHelper.OpenExplorer(appDirectory);
-    }
-
-    static void buildReleaseZip(string archiveName, string appDirectory)
-    {
-        Trace.WriteLine($"\n\nBuilding {archiveName}\n");
-
-        var scriptsDirectory = Path.GetFullPath(Path.Combine(appDirectory, "../../../../../scripts"));
-
-        using FileStream stream = new(archiveName, FileMode.Create, FileAccess.ReadWrite);
-        using ZipArchive archive = new(stream, ZipArchiveMode.Create);
-        addFile(archive, mainExecutablePath, appDirectory);
-        addFile(archive, "StorybrewEditor.runtimeconfig.json", appDirectory);
-
-        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.dll", SearchOption.TopDirectoryOnly))
-            addFile(archive, path, appDirectory);
-
-        foreach (var path in Directory.EnumerateFiles(appDirectory, "*.xml", SearchOption.TopDirectoryOnly))
-            addFile(archive, path, appDirectory);
-
-        foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
-            addFile(archive, path, scriptsDirectory, "scripts");
-
-        addFile(archive, "glfw3.dll", Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native"));
     }
 
     /* static void testUpdate(string archiveName)

@@ -134,11 +134,9 @@ public class StartMenu : UiScreenLayer
                         foreach (var asset in release.Values<TinyObject>("assets"))
                         {
                             var downloadName = asset.Value<string>("name");
-                            if (downloadName.EndsWith(".zip", StringComparison.Ordinal))
-                            {
-                                downloadUrl = asset.Value<string>("browser_download_url");
-                                break;
-                            }
+                            if (!downloadName.EndsWith(".zip", StringComparison.Ordinal)) continue;
+                            downloadUrl = asset.Value<string>("browser_download_url");
+                            break;
                         }
                     }
 

@@ -4,11 +4,14 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Cameras;
 using Data;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Renderers;
 using Text;
 using Textures;
@@ -46,9 +49,43 @@ public static class DrawState
 
     public static void Initialize(ResourceContainer resourceContainer, int width, int height)
     {
-        retrieveRendererInfo();
-        SetCapability(EnableCap.Lighting, false);
+        GL.DebugMessageCallback((source, type, _, severity, _, message, _) =>
+        {
+            var str = Marshal.PtrToStringAnsi(message);
+            Trace.WriteLine("Debug message: " + str);
 
+            switch (source)
+            {
+                case DebugSource.DebugSourceApi: Trace.WriteLine("Source: API"); break;
+                case DebugSource.DebugSourceWindowSystem: Trace.WriteLine("Source: Window System"); break;
+                case DebugSource.DebugSourceShaderCompiler: Trace.WriteLine("Source: Shader Compiler"); break;
+                case DebugSource.DebugSourceThirdParty: Trace.WriteLine("Source: Third Party"); break;
+                case DebugSource.DebugSourceApplication: Trace.WriteLine("Source: Application"); break;
+                case DebugSource.DebugSourceOther: Trace.WriteLine("Source: Other"); break;
+            }
+            switch (type)
+            {
+                case DebugType.DebugTypeError: Trace.WriteLine("Type: Error"); break;
+                case DebugType.DebugTypeDeprecatedBehavior: Trace.WriteLine("Type: Deprecated Behaviour"); break;
+                case DebugType.DebugTypeUndefinedBehavior: Trace.WriteLine("Type: Undefined Behaviour"); break;
+                case DebugType.DebugTypePortability: Trace.WriteLine("Type: Portability"); break;
+                case DebugType.DebugTypePerformance: Trace.WriteLine("Type: Performance"); break;
+                case DebugType.DebugTypeMarker: Trace.WriteLine("Type: Marker"); break;
+                case DebugType.DebugTypePushGroup: Trace.WriteLine("Type: Push Group"); break;
+                case DebugType.DebugTypePopGroup: Trace.WriteLine("Type: Pop Group"); break;
+                case DebugType.DebugTypeOther: Trace.WriteLine("Type: Other"); break;
+            }
+            switch (severity)
+            {
+                case DebugSeverity.DebugSeverityHigh: Trace.WriteLine("Severity: high"); break;
+                case DebugSeverity.DebugSeverityMedium: Trace.WriteLine("Severity: medium"); break;
+                case DebugSeverity.DebugSeverityLow: Trace.WriteLine("Severity: low"); break;
+                case DebugSeverity.DebugSeverityNotification: Trace.WriteLine("Severity: notification"); break;
+            }
+            if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
+        }, 0);
+
+        retrieveRendererInfo();
         if (UseSrgb && HasCapabilities(3, 0, "GL_ARB_framebuffer_object"))
         {
             GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer, FramebufferAttachment.BackLeft,
@@ -81,8 +118,6 @@ public static class DrawState
 
         samplerTextureIds = new int[maxTextureImageUnits];
         samplerTexturingModes = new TexturingModes[maxTextureImageUnits];
-
-        CheckError("initializing openGL context");
 
         WhitePixel = Texture2d.Create(Color.White, "whitepixel");
         NormalPixel = Texture2d.Create(Color.FromArgb(127, 127, 255), "normalpixel");
@@ -322,38 +357,26 @@ public static class DrawState
     public static TextFontManager TextFontManager { get; private set; }
 
     static Version glVer;
-    static string[] supportedExtensions;
-    static string rendererName, rendererVendor;
 
     static void retrieveRendererInfo()
     {
-        CheckError("initializing");
-
         var glVerStr = GL.GetString(StringName.Version);
         glVer = new(glVerStr.Split(' ')[0]);
-        CheckError("retrieving openGL version");
         Trace.WriteLine($"OpenGL v{glVerStr}");
 
-        rendererName = GL.GetString(StringName.Renderer);
-        rendererVendor = GL.GetString(StringName.Vendor);
-        CheckError("retrieving renderer information");
+        var rendererName = GL.GetString(StringName.Renderer);
+        var rendererVendor = GL.GetString(StringName.Vendor);
         Trace.WriteLine($"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
         if (!HasCapabilities(2, 0))
             throw new NotSupportedException(
                 $"This application requires at least OpenGL 2.0 (version {glVer} found)\n{rendererName} ({rendererVendor})");
 
-        CheckError("retrieving GLSL version");
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
-
-        var extensionsString = GL.GetString(StringName.Extensions);
-        supportedExtensions = extensionsString.Split(' ');
-        CheckError("retrieving extensions");
-        // Trace.WriteLine($"extensions: {extensionsString}");
     }
 
-    public static bool HasCapabilities(int major, int minor, params string[] extensions) => glVer >= new Version(major, minor) ||
-        extensions.All(t => Array.BinarySearch(supportedExtensions, t) >= 0);
+    public static bool HasCapabilities(int major, int minor, params string[] extensions)
+        => glVer >= new Version(major, minor) || extensions.All(GLFW.ExtensionSupported);
 
     public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
     {
@@ -361,14 +384,6 @@ public static class DrawState
         TexturingModes.Texturing3d => TextureTarget.Texture3D,
         _ => throw new InvalidOperationException("Not texture target matches the texturing mode " + mode)
     };
-
-    public static void CheckError(string context = null, bool alwaysThrow = false)
-    {
-        var error = GL.GetError();
-        if (alwaysThrow || error != ErrorCode.NoError)
-            throw new InvalidOperationException((context is not null ? "OpenGL error while " + context : "OpenGL error") +
-                (error != ErrorCode.NoError ? ": " + error : ""));
-    }
 
     #endregion
 }

@@ -85,9 +85,6 @@ public static class ScreenLayerManagerExtensions
     public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, Action<string> action)
         => screenLayer.Add(new PromptBox(title, "", "", action));
 
-    public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, string description, Action<string> action)
-        => screenLayer.Add(new PromptBox(title, description, "", action));
-
     public static void ShowPrompt(this ScreenLayerManager screenLayer,
         string title,
         string description,
@@ -114,9 +111,7 @@ public static class ScreenLayerManagerExtensions
             else
                 screenLayer.AsyncLoading("Loading project", () =>
                 {
-                    var resourceContainer = screenLayer.GetContext<Editor>().ResourceContainer;
-
-                    var project = Project.Load(projectPath, true, resourceContainer);
+                    var project = Project.Load(projectPath, true, screenLayer.GetContext<Editor>().ResourceContainer);
                     Program.Schedule(() => screenLayer.Set(new ProjectMenu(project)));
                 });
         });

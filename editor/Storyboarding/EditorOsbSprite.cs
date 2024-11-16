@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Numerics;
@@ -58,16 +59,12 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         var scale = (Vector2)sprite.ScaleAt(time);
         if (scale == default) return;
 
-        if (sprite.FlipHAt(time)) scale.X = -scale.X;
-        if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
-
-        Texture2dRegion texture;
-
         Span<char> span = stackalloc char[project.MapsetPath.Length + texturePath.Length + 1];
         Path.TryJoin(project.MapsetPath, texturePath, span, out _);
         PathHelper.WithStandardSeparatorsUnsafe(span);
         var fullPath = StringPool.Shared.GetOrAdd(span);
 
+        Texture2dRegion texture;
         try
         {
             texture = project.TextureContainer.Get(fullPath);
@@ -86,12 +83,14 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
             // Happens when another process is writing to the file, will try again later.
             return;
         }
-
         if (texture is null) return;
 
         var additive = sprite.AdditiveAt(time);
         var position = sprite.PositionAt(time);
         var rotation = sprite.RotationAt(time);
+
+        if (sprite.FlipHAt(time)) scale.X = -scale.X;
+        if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
 
         var origin = GetOriginVector(sprite.Origin, texture.Size);
         if (transform is not null)

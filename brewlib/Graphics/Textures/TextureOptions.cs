@@ -23,7 +23,7 @@ public class TextureOptions : IEquatable<TextureOptions>
     };
 
     // Settings
-    public bool Srgb = true, PreMultiply, GenerateMipmaps = true;
+    public bool Srgb = true, PreMultiply, GenerateMipmaps;
 
     // Parameters
     public int TextureLodBias;
@@ -44,7 +44,6 @@ public class TextureOptions : IEquatable<TextureOptions>
         GL.TexParameter(target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter);
         GL.TexParameter(target, TextureParameterName.TextureWrapS, (int)TextureWrapS);
         GL.TexParameter(target, TextureParameterName.TextureWrapT, (int)TextureWrapT);
-        DrawState.CheckError("applying texture parameters");
     }
 
     public override bool Equals(object obj) => Equals(obj as TextureOptions);

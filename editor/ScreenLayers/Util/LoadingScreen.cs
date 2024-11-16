@@ -57,7 +57,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
             Padding = new(16),
             FitChildren = true,
             Horizontal = true,
-            Children = [new Label(WidgetManager) { Text = $"{title}..." ?? "Loading..." }]
+            Children = [new Label(WidgetManager) { Text = $"{title}..." }]
         });
     }
     public override void Resize(int width, int height)
