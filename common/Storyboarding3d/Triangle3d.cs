@@ -141,7 +141,7 @@ public class Triangle3d : Node3d, HasOsbSprites
                         (new Vector2(vector1.X, vector1.Y) - position).Length() / spriteBitmap.Height),
                 scale1 = scale0 with { X = (new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.Width };
 
-            var angle = MathF.Atan2(delta.Y, delta.X);
+            var angle = float.Atan2(delta.Y, delta.X);
             var rotation = InterpolatingFunctions.FloatAngle(gen0.EndState?.Rotation ?? 0, angle, 1);
 
             var opacity = vector0.W < 0 && vector1.W < 0 && vector2.W < 0 ? 0 : object3dState.Opacity;

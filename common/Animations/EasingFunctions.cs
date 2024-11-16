@@ -13,7 +13,7 @@ public static class EasingFunctions
     public static float Linear(float x) => x;
 
     ///<summary> An easing function that represents an easing-in progression. </summary>
-    public static float In(float x) => MathF.Pow(x, 1.5f);
+    public static float In(float x) => float.Pow(x, 1.5f);
 
     ///<summary> An easing function that represents an easing-out progression. </summary>
     public static float Out(float x) => Reverse(In, x);
@@ -84,7 +84,7 @@ public static class EasingFunctions
     /// <summary>
     ///     <see href="https://easings.net/#easeInSine"/>
     /// </summary>
-    public static float SineIn(float x) => 1 - MathF.Cos(x * MathF.PI * .5f);
+    public static float SineIn(float x) => 1 - float.Cos(x * float.Pi * .5f);
 
     /// <summary>
     ///     <see href="https://easings.net/#easeOutSine"/>
@@ -99,7 +99,7 @@ public static class EasingFunctions
     /// <summary>
     ///     <see href="https://easings.net/#easeInExpo"/>
     /// </summary>
-    public static float ExpoIn(float x) => MathF.Pow(2, 10 * (x - 1));
+    public static float ExpoIn(float x) => float.Pow(2, 10 * (x - 1));
 
     /// <summary>
     ///     <see href="https://easings.net/#easeOutExpo"/>
@@ -114,7 +114,7 @@ public static class EasingFunctions
     /// <summary>
     ///     <see href="https://easings.net/#easeInCirc"/>
     /// </summary>
-    public static float CircIn(float x) => 1 - MathF.Sqrt(1 - x * x);
+    public static float CircIn(float x) => 1 - float.Sqrt(1 - x * x);
 
     /// <summary>
     ///     <see href="https://easings.net/#easeOutCirc"/>
@@ -166,13 +166,13 @@ public static class EasingFunctions
     /// <summary>
     ///     <see href="https://easings.net/#easeOutElastic"/>
     /// </summary>
-    public static float ElasticOut(float x) => MathF.Pow(2, -10 * x) * MathF.Sin((x - .075f) * MathF.Tau / .3f) + 1;
+    public static float ElasticOut(float x) => float.Pow(2, -10 * x) * float.Sin((x - .075f) * float.Tau / .3f) + 1;
 
     /// <summary/>
-    public static float ElasticOutHalf(float x) => MathF.Pow(2, -10 * x) * MathF.Sin((.5f * x - .075f) * MathF.Tau / .3f) + 1;
+    public static float ElasticOutHalf(float x) => float.Pow(2, -10 * x) * float.Sin((.5f * x - .075f) * float.Tau / .3f) + 1;
 
     /// <summary/>
-    public static float ElasticOutQuarter(float x) => MathF.Pow(2, -10 * x) * MathF.Sin((.25f * x - .075f) * MathF.Tau / .3f) + 1;
+    public static float ElasticOutQuarter(float x) => float.Pow(2, -10 * x) * float.Sin((.25f * x - .075f) * float.Tau / .3f) + 1;
 
     /// <summary>
     ///     <see href="https://easings.net/#easeInOutElastic"/>

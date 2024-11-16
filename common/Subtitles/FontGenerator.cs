@@ -165,8 +165,8 @@ public sealed class FontGenerator : IDisposable
         ObjectDisposedException.ThrowIf(disposed, this);
 
         var measuredSize = metrics.MeasureString(text, font, 0, format);
-        var baseWidth = (int)MathF.Ceiling(measuredSize.Width);
-        var baseHeight = (int)MathF.Ceiling(measuredSize.Height);
+        var baseWidth = (int)float.Ceiling(measuredSize.Width);
+        var baseHeight = (int)float.Ceiling(measuredSize.Height);
 
         float effectsWidth = 0, effectsHeight = 0;
         foreach (var t in effects)
@@ -176,8 +176,8 @@ public sealed class FontGenerator : IDisposable
             effectsHeight = Math.Max(effectsHeight, effectSize.Height);
         }
 
-        var width = (int)MathF.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
-        var height = (int)MathF.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
+        var width = (int)float.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
+        var height = (int)float.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
 
         var paddingX = description.Padding.X + effectsWidth / 2;
         var paddingY = description.Padding.Y + effectsHeight / 2;
@@ -224,7 +224,7 @@ public sealed class FontGenerator : IDisposable
         }
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;
-        var validBounds = !bounds.IsEmpty && !bounds.Equals(new(default, realText.Size));
+        var validBounds = !bounds.IsEmpty && !bounds.Equals(new(0, 0, width, height));
         if (validBounds)
         {
             offsetX += bounds.X;
@@ -247,10 +247,10 @@ public sealed class FontGenerator : IDisposable
             }
         }
 
-        filename ??= (description.TrimTransparency ? trimmedText : text).Length == 1 ?
+        filename ??= (trimmedText ?? text).Length == 1 ?
             $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ?
                 ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') :
-                char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture) + '_' :
+                char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture).ToString() + '_' :
                     char.ToString(text[0]))}.png" :
             $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1)
                 .ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
@@ -258,7 +258,11 @@ public sealed class FontGenerator : IDisposable
         var texturePath = Path.Combine(Directory, filename);
         PathHelper.WithStandardSeparatorsUnsafe(texturePath);
 
-        if (trimExist) return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
+        if (trimExist)
+        {
+            realText.Dispose();
+            return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
+        }
 
         var path = Path.Combine(assetDirectory, texturePath);
         using (var stream = File.Create(path))
@@ -274,7 +278,7 @@ public sealed class FontGenerator : IDisposable
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
         if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) ||
             path.Contains(StoryboardObjectGenerator.Current.AssetPath))
-            StoryboardObjectGenerator.Current.Compressor.LosslessCompress(path, new(7));
+            StoryboardObjectGenerator.Current.Compressor.Compress(path, new(0, 75, 1));
 
         return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
     }

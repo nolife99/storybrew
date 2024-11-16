@@ -38,7 +38,7 @@ public struct Affine2(Vector3 row0, Vector3 row1) : IEquatable<Affine2>
 
     public void Rotate(float angle)
     {
-        var (sin, cos) = MathF.SinCos(angle);
+        var (sin, cos) = float.SinCos(angle);
 
         var row0 = Row0;
         var row1 = Row1;

@@ -172,7 +172,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => 180 / MathF.PI * r);
+        rotations.Simplify1dKeyframes(RotationTolerance, r => 180 / float.Pi * r);
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 
@@ -202,7 +202,7 @@ public class CommandGenerator
                     sprite.InitialPosition = new(s.Value.X, 0);
                 }
                 else sprite.Move(s.Time, e.Time, s.Value, e.Value);
-            }, new(320, 240), p => new(MathF.Round(p.X, PositionDecimals), MathF.Round(p.Y, PositionDecimals)), startState,
+            }, new(320, 240), p => new(float.Round(p.X, PositionDecimals), float.Round(p.Y, PositionDecimals)), startState,
             endState,
             loopable);
 
@@ -211,11 +211,11 @@ public class CommandGenerator
             {
                 if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
                 else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
-            }, Vector2.One, s => new(MathF.Round(s.X, ScaleDecimals), MathF.Round(s.Y, ScaleDecimals)), startState, endState,
+            }, Vector2.One, s => new(float.Round(s.X, ScaleDecimals), float.Round(s.Y, ScaleDecimals)), startState, endState,
             loopable);
 
         finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value), 0,
-            r => MathF.Round(r, RotationDecimals), startState, endState, loopable);
+            r => float.Round(r, RotationDecimals), startState, endState, loopable);
 
         finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value), CommandColor.White, null, startState,
             endState, loopable);
@@ -224,7 +224,7 @@ public class CommandGenerator
         {
             if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 || s.Time == sprite.EndTime ||
                 s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0)) sprite.Fade(s.Time, e.Time, s.Value, e.Value);
-        }, -1, o => MathF.Round(o, OpacityDecimals), startState, endState, loopable);
+        }, -1, o => float.Round(o, OpacityDecimals), startState, endState, loopable);
 
         flipH.ForEachFlag(sprite.FlipH);
         flipV.ForEachFlag(sprite.FlipV);
@@ -232,7 +232,7 @@ public class CommandGenerator
         return;
 
         float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
-        float checkPos(float value) => MathF.Round(value, PositionDecimals);
+        float checkPos(float value) => float.Round(value, PositionDecimals);
     }
 
     void ensureCapacity()
@@ -338,15 +338,15 @@ public class State : IComparer<State>, IResettable
     public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;
-        CommandScale scale = new(noGen ? Scale.X : MathF.Round(Scale.X, generator.ScaleDecimals),
-            noGen ? Scale.Y : MathF.Round(Scale.Y, generator.ScaleDecimals));
+        CommandScale scale = new(noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
+            noGen ? Scale.Y : float.Round(Scale.Y, generator.ScaleDecimals));
 
-        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : MathF.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
+        if (Additive && Color == CommandColor.Black || (noGen ? Opacity : float.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
             scale.X <= 0 || scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
-            new Vector2(noGen ? Position.X : MathF.Round(Position.X, generator.PositionDecimals),
-                noGen ? Position.Y : MathF.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
-            noGen ? Rotation : MathF.Round(Rotation, generator.RotationDecimals), origin);
+            new Vector2(noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
+                noGen ? Position.Y : float.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
+            noGen ? Rotation : float.Round(Rotation, generator.RotationDecimals), origin);
     }
 }

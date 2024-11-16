@@ -61,7 +61,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     protected virtual void internalBind(Shader shader)
     {
         if (CurrentShader != shader) setupVertexArray(shader);
-        GL.BindVertexArray(VertexArrayId);
+        else GL.BindVertexArray(VertexArrayId);
     }
 
     void setupVertexArray(Shader shader)
@@ -81,7 +81,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         // Index
 
         if (initial && IndexBufferId != -1) GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
-        GL.BindVertexArray(0);
         CurrentShader = shader;
     }
 

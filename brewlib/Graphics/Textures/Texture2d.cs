@@ -6,9 +6,9 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using CommunityToolkit.HighPerformance.Buffers;
 using Data;
 using OpenTK.Graphics.OpenGL;
-using Util;
 using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
@@ -51,7 +51,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) :
             null;
     }
-    public static Texture2d Create(Color color,
+    public static unsafe Texture2d Create(Color color,
         string description,
         int width = 1,
         int height = 1,
@@ -63,34 +63,30 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         if (textureOptions.PreMultiply)
         {
             var ratio = color.A / 255f;
-            color = Color.FromArgb(color.A, (byte)(color.R * ratio), (byte)(color.G * ratio), (byte)(color.B * ratio));
+            color = Color.FromArgb(color.A, (int)(color.R * ratio), (int)(color.G * ratio), (int)(color.B * ratio));
         }
 
         var textureId = GL.GenTexture();
-        var area = width * height;
-        var arr = ArrayPool<int>.Shared.Rent(area);
+        using (var spanOwner = SpanOwner<int>.Allocate(width * height))
+            try
+            {
+                var arr = spanOwner.Span;
+                DrawState.BindTexture(textureId);
 
-        try
-        {
-            DrawState.BindTexture(textureId);
+                arr.Fill(color.ToArgb());
+                fixed (void* ptr = arr)
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0,
+                        OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, (nint)ptr);
 
-            Array.Fill(arr, color.ToArgb(), 0, area);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0,
-                OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, arr);
-
-            if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-            textureOptions.ApplyParameters(TextureTarget.Texture2D);
-        }
-        catch
-        {
-            DrawState.UnbindTexture(textureId);
-            GL.DeleteTexture(textureId);
-            throw;
-        }
-        finally
-        {
-            ArrayPool<int>.Shared.Return(arr);
-        }
+                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+                textureOptions.ApplyParameters(TextureTarget.Texture2D);
+            }
+            catch
+            {
+                DrawState.UnbindTexture(textureId);
+                GL.DeleteTexture(textureId);
+                throw;
+            }
 
         return new(textureId, width, height, description);
     }

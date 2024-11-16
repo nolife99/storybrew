@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using CommunityToolkit.HighPerformance;
 using Graphics.Compression;
 
 public static class BitmapHelper
@@ -55,39 +56,42 @@ public static class BitmapHelper
         return result;
     }
 
-    public static float[,] CalculateGaussianKernel(int radius, float weight)
+    public static Span2D<float> CalculateGaussianKernel(int radius, float weight)
     {
         var length = radius * 2 + 1;
-        var kernel = new float[length, length];
+        var span = new Span2D<float>(GC.AllocateUninitializedArray<float>(length * length), length, length);
         var total = 0f;
 
-        var scale = 1 / (weight * weight * MathF.Tau);
+        var scale = 1 / (weight * weight * float.Tau);
         var expFactor = 2 * weight * weight;
 
         for (var y = 0; y <= radius; ++y)
-        for (var x = 0; x <= radius; ++x)
         {
-            var value = scale * MathF.Exp(-(x * x + y * y) / expFactor);
-            kernel[radius + y, radius + x] = value;
-            kernel[radius + y, radius - x] = value;
-            kernel[radius - y, radius + x] = value;
-            kernel[radius - y, radius - x] = value;
+            var ySq = y * y;
+            for (var x = 0; x <= radius; ++x)
+            {
+                var value = scale * float.Exp(-(x * x + ySq) / expFactor);
+                span[radius + y, radius + x] = value;
+                span[radius + y, radius - x] = value;
+                span[radius - y, radius + x] = value;
+                span[radius - y, radius - x] = value;
 
-            total += 4 * value;
+                total += 4 * value;
+            }
         }
 
         var factor = 1 / total;
         for (var y = 0; y < length; ++y)
         for (var x = 0; x < length; ++x)
-            kernel[x, y] *= factor;
+            span[x, y] *= factor;
 
-        return kernel;
+        return span;
     }
 
-    public static PinnedBitmap Convolute(Bitmap source, float[,] kernel)
+    public static PinnedBitmap Convolute(Bitmap source, Span2D<float> kernel)
     {
-        var kernelHeight = kernel.GetUpperBound(0) + 1;
-        var kernelWidth = kernel.GetUpperBound(1) + 1;
+        var kernelHeight = kernel.Height;
+        var kernelWidth = kernel.Width;
 
         if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
@@ -129,10 +133,10 @@ public static class BitmapHelper
         return result;
     }
 
-    public static PinnedBitmap ConvoluteAlpha(Bitmap source, float[,] kernel, Color color)
+    public static unsafe PinnedBitmap ConvoluteAlpha(Bitmap source, Span2D<float> kernel, Color color)
     {
-        var kernelHeight = kernel.GetUpperBound(0) + 1;
-        var kernelWidth = kernel.GetUpperBound(1) + 1;
+        var kernelHeight = kernel.Height;
+        var kernelWidth = kernel.Width;
 
         if ((kernelWidth & 1) == 0 || (kernelHeight & 1) == 0) throw new InvalidOperationException("Invalid kernel size");
 
@@ -145,9 +149,10 @@ public static class BitmapHelper
         var rgb = color.R << 16 | color.G << 8 | color.B;
 
         PinnedBitmap result = new(width, height);
-        using PinnedBitmap src = new(source);
 
-        var srcData = src.AsReadOnlySpan();
+        var srcData = source.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        var srcPtr = (int*)srcData.Scan0;
+
         var resultData = result.AsSpan();
 
         for (int y = 0, index = 0; y < height; ++y)
@@ -159,7 +164,7 @@ public static class BitmapHelper
                 var pixelX = Math.Clamp(kernelX + x, 0, width - 1);
                 for (var kernelY = -halfHeight; kernelY <= halfHeight; ++kernelY)
                 {
-                    var col = srcData[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
+                    var col = srcPtr[Math.Clamp(kernelY + y, 0, height - 1) * width + pixelX];
                     a += (col >> 24 & 0xFF) * kernel[kernelY + halfWidth, kernelX + halfHeight];
                 }
             }
@@ -167,6 +172,7 @@ public static class BitmapHelper
             resultData[index++] = (byte)a << 24 | rgb;
         }
 
+        source.UnlockBits(srcData);
         return result;
     }
 

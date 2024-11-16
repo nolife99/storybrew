@@ -13,7 +13,7 @@ public readonly struct OrientedBoundingBox : IDisposable
 
     public OrientedBoundingBox(Vector2 position, Vector2 origin, float width, float height, float angle)
     {
-        var (sin, cos) = MathF.SinCos(angle);
+        var (sin, cos) = float.SinCos(angle);
         Vector2 unitRight = new(cos, sin), unitUp = new(-sin, cos);
 
         var right = unitRight * (width - origin.X);

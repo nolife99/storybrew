@@ -87,8 +87,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         // Rebuild the VAO
 
-        GL.BindVertexArray(0);
-
         Bind(CurrentShader);
         CurrentShader = null;
 

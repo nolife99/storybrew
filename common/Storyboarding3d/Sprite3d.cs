@@ -71,13 +71,13 @@ public class Sprite3d : Node3d, HasOsbSprites
             case RotationMode.UnitX:
             {
                 var delta = CameraState.ToScreen(wvp, Vector3.UnitX) - screenPosition;
-                angle += MathF.Atan2(delta.Y, delta.X);
+                angle += float.Atan2(delta.Y, delta.X);
                 break;
             }
             case RotationMode.UnitY:
             {
                 var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
-                angle += MathF.Atan2(delta.Y, delta.X) - MathF.PI * .5f;
+                angle += float.Atan2(delta.Y, delta.X) - float.Pi * .5f;
                 break;
             }
         }

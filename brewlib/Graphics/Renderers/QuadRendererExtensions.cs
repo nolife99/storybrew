@@ -72,7 +72,7 @@ public static class QuadRendererExtensions
         float x1, y1, x2, y2, x3, y3, x4, y4;
         if (rotation != 0)
         {
-            var (sin, cos) = MathF.SinCos(rotation);
+            var (sin, cos) = float.SinCos(rotation);
             x1 = cos * p1x - sin * p1y;
             y1 = sin * p1x + cos * p1y;
             x2 = cos * p2x - sin * p2y;

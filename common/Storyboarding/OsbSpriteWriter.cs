@@ -101,10 +101,10 @@ public class OsbSpriteWriter(OsbSprite sprite,
         foreach (var cmd in commands)
             if (cmd.StartTime < endTime)
             {
-                var sTime = Math.Max(startTime, (int)MathF.Round(cmd.StartTime));
-                var eTime = Math.Min(endTime, (int)MathF.Round(cmd.EndTime));
+                var sTime = Math.Max(startTime, (int)float.Round(cmd.StartTime));
+                var eTime = Math.Min(endTime, (int)float.Round(cmd.EndTime));
 
-                segment.Add(sTime != (int)MathF.Round(cmd.StartTime) || eTime != (int)MathF.Round(cmd.EndTime) ?
+                segment.Add(sTime != (int)float.Round(cmd.StartTime) || eTime != (int)float.Round(cmd.EndTime) ?
                     cmd.GetFragment(sTime, eTime) :
                     cmd);
             }
@@ -123,7 +123,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
         var maxCommandCount = sprite.CommandSplitThreshold;
 
         if (commands.Count < sprite.CommandSplitThreshold * 2 && commands.Count > sprite.CommandSplitThreshold)
-            maxCommandCount = (int)MathF.Ceiling(commands.Count / 2f);
+            maxCommandCount = (int)float.Ceiling(commands.Count / 2f);
 
         if (commands.Count < maxCommandCount) endTime = fragmentationTimes.Max() + 1;
         else

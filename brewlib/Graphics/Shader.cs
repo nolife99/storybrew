@@ -50,11 +50,8 @@ public sealed partial class Shader : IDisposable
         started = false;
     }
 
-    public int GetAttributeLocation(string name)
-    {
-        if (attributes.TryGetValue(name, out var property)) return property.Location;
-        return -1;
-    }
+    public int GetAttributeLocation(string name) => attributes.TryGetValue(name, out var property) ? property.Location : -1;
+
     public int GetUniformLocation(string name, int index = -1, string field = null)
     {
         var location = uniforms.TryGetValue(GetUniformIdentifier(name, index, field), out var property) ? property.Location : -1;
@@ -108,8 +105,7 @@ public sealed partial class Shader : IDisposable
         for (var i = 0; i < attributeCount; ++i)
         {
             var name = GL.GetActiveAttrib(SortId, i, out var size, out var type);
-            var location = GL.GetAttribLocation(SortId, name);
-            attributes[name] = new(size, type, location);
+            attributes[name] = new(size, type, GL.GetAttribLocation(SortId, name));
         }
     }
     void retrieveUniforms()

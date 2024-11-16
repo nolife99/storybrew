@@ -212,12 +212,12 @@ public sealed class WidgetManager : InputHandler, IDisposable
     public float SnapToPixel(float value)
     {
         var scaling = (camera as CameraOrtho)?.HeightScaling ?? 1;
-        return MathF.Round(value * scaling) / scaling;
+        return float.Round(value * scaling) / scaling;
     }
     public Vector2 SnapToPixel(Vector2 value)
     {
         var scaling = (camera as CameraOrtho)?.HeightScaling ?? 1;
-        return new(MathF.Round(value.X * scaling) / scaling, MathF.Round(value.Y * scaling) / scaling);
+        return new(float.Round(value.X * scaling) / scaling, float.Round(value.Y * scaling) / scaling);
     }
 
     #endregion

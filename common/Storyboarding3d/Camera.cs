@@ -5,7 +5,6 @@ using System.Drawing;
 using System.Numerics;
 using Animations;
 using Mapset;
-using MathHelper = OpenTK.Mathematics.MathHelper;
 
 #pragma warning disable CS1591
 public abstract class Camera
@@ -98,15 +97,15 @@ public class PerspectiveCamera : Camera
         float fovY;
         if (HorizontalFov.Count > 0)
         {
-            var fovX = MathHelper.DegreesToRadians(HorizontalFov.ValueAt(time));
-            fovY = 2 * MathF.Atan(MathF.Tan(fovX / 2) / aspectRatio);
+            var fovX = float.DegreesToRadians(HorizontalFov.ValueAt(time));
+            fovY = 2 * float.Atan(float.Tan(fovX / 2) / aspectRatio);
         }
         else
             fovY = VerticalFov.Count > 0 ?
-                MathHelper.DegreesToRadians(VerticalFov.ValueAt(time)) :
-                2 * MathF.Atan(Resolution.Height / 2 / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
+                float.DegreesToRadians(VerticalFov.ValueAt(time)) :
+                2 * float.Atan(Resolution.Height / 2 / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
 
-        var focusDistance = Resolution.Height / 2 / MathF.Tan(fovY / 2);
+        var focusDistance = Resolution.Height / 2 / float.Tan(fovY / 2);
         var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance / 2, 1);
         var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5f;
 

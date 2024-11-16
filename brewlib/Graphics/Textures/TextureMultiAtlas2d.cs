@@ -36,13 +36,13 @@ public sealed class TextureMultiAtlas2d : IDisposable
         }
 
         var atlas = atlases[^1];
-        var region = atlas.AddRegion(bitmap, description);
+        var region = atlas.AddRegion(bitmap);
 
         if (region is null)
         {
             Trace.WriteLine($"{this.description} full, adding an atlas");
             atlas = pushAtlas();
-            region = atlas.AddRegion(bitmap, description);
+            region = atlas.AddRegion(bitmap);
         }
 
         return region;

@@ -115,8 +115,6 @@ public static class Program
         catch (Exception e)
         {
             Trace.TraceWarning($"Failed to use default display device: {e}");
-
-            var deviceIndex = 0;
             foreach (var monitor in Monitors.GetMonitors()) return monitor;
         }
 
@@ -218,11 +216,8 @@ public static class Program
             window.VSync = focused ? VSyncMode.Off : VSyncMode.On;
 
             var active = watch.ElapsedMilliseconds - cur;
-            if (window.VSync is VSyncMode.Off)
-            {
-                var sleepTime = (int)((focused ? targetFrame : fixedRateUpdate) - active);
-                if (sleepTime > 0) Thread.Sleep(sleepTime);
-            }
+            var sleepTime = (int)((focused ? targetFrame : fixedRateUpdate) - active);
+            if (sleepTime > 0) Thread.Sleep(sleepTime);
 
             var frameTime = cur - prev;
             prev = cur;
@@ -251,12 +246,7 @@ public static class Program
         if (schedulingEnabled) scheduledActions.Enqueue(action);
         else throw new InvalidOperationException("Scheduling isn't enabled!");
     }
-
-    public static async void Schedule(Action action, int delay)
-    {
-        await Task.Delay(delay).ConfigureAwait(false);
-        Schedule(action);
-    }
+    public static void Schedule(Action action, int delay) => Task.Delay(delay).ContinueWith(_ => Schedule(action));
 
     public static void RunMainThread(Action action)
     {
@@ -308,11 +298,11 @@ public static class Program
         if (!Directory.Exists(logsPath)) Directory.CreateDirectory(logsPath);
         else if (File.Exists(exceptionPath)) File.Delete(exceptionPath);
 
-        TextWriterTraceListener listener = new(File.CreateText(tracePath), Name);
-        AppDomain.CurrentDomain.ProcessExit += (_, _) => listener.Dispose();
+        using TextWriterTraceListener listener = new(File.CreateText(tracePath), Name);
+        var domain = AppDomain.CurrentDomain;
 
-        AppDomain.CurrentDomain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, null, false);
-        AppDomain.CurrentDomain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, "crash", true);
+        domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
+        domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, true);
 
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
@@ -321,7 +311,7 @@ public static class Program
         while (await timer.WaitForNextTickAsync().ConfigureAwait(false)) Trace.Flush();
     }
 
-    static void logError(Exception e, string filename, string reportType, bool show)
+    static void logError(Exception e, string filename, bool show)
     {
         lock (errorHandlerLock)
         {

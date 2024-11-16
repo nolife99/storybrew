@@ -311,9 +311,9 @@ public static class DrawState
     public static IDisposable Clip(RectangleF bounds, Camera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
-        return Clip(new((int)MathF.Round(screenBounds.Left),
-            viewport.Height - (int)MathF.Round(screenBounds.Top + screenBounds.Height), (int)MathF.Round(screenBounds.Width),
-            (int)MathF.Round(screenBounds.Height)));
+        return Clip(new((int)float.Round(screenBounds.Left),
+            viewport.Height - (int)float.Round(screenBounds.Top + screenBounds.Height), (int)float.Round(screenBounds.Width),
+            (int)float.Round(screenBounds.Height)));
     }
     public static RectangleF? GetClipRegion(Camera camera)
     {

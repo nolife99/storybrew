@@ -48,7 +48,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         var displayTime = project.DisplayTime * 1000;
         if (displayTime < StartTime || EndTime < displayTime) return;
         if (Layer.Highlight || Effect.Highlight)
-            opacity *= (MathF.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
+            opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
         var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
         foreach (var o in displayableObjects) o.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);

@@ -226,7 +226,7 @@ public class TimelineSlider : Slider
             }
 
             // Current time (bottom)
-            var centerX = MathF.Round(Bounds.Width * .5f);
+            var centerX = Bounds.Width * .5f;
             lineSize = new(pixelSize, Bounds.Height * .4f);
             drawLine(drawContext, offset + new Vector2(centerX - pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
             drawLine(drawContext, offset + new Vector2(centerX + pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
@@ -234,10 +234,7 @@ public class TimelineSlider : Slider
     }
 
     float timeToXTop(float time)
-    {
-        var progress = (time - MinValue) / (MaxValue - MinValue);
-        return Manager.SnapToPixel(AbsolutePosition.X + progress * Width);
-    }
+        => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
 
     void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Color color, float opacity)
     {
@@ -254,7 +251,7 @@ public class TimelineSlider : Slider
         time += stepDuration * direction;
 
         var steps = (time - timingPoint.Offset) / stepDuration;
-        time = timingPoint.Offset + MathF.Round(steps) * stepDuration;
+        time = timingPoint.Offset + float.Round(steps) * stepDuration;
 
         Value = time * .001f;
     }

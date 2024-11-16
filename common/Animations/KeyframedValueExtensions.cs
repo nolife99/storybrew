@@ -167,7 +167,7 @@ public static class KeyframedValueExtensions
         float angle,
         Func<float, float> easing = null)
     {
-        var (sin, cos) = MathF.SinCos(angle * .5f);
+        var (sin, cos) = float.SinCos(angle * .5f);
         return keyframes.Add(time, new(axis.X * sin, axis.Y * sin, axis.Z * sin, cos), easing);
     }
 

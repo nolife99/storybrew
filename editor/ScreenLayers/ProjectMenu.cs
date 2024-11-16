@@ -376,7 +376,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 if (e.Control)
                 {
                     var nextBookmark =
-                        proj.MainBeatmap.Bookmarks.FirstOrDefault(bookmark => bookmark > MathF.Round(timeline.Value * 1000) + 50);
+                        proj.MainBeatmap.Bookmarks.FirstOrDefault(bookmark => bookmark > float.Round(timeline.Value * 1000) + 50);
 
                     if (nextBookmark != 0) timeline.Value = nextBookmark * .001f;
                 }
@@ -388,7 +388,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 if (e.Control)
                 {
                     var prevBookmark =
-                        proj.MainBeatmap.Bookmarks.LastOrDefault(bookmark => bookmark < MathF.Round(timeline.Value * 1000) - 500);
+                        proj.MainBeatmap.Bookmarks.LastOrDefault(bookmark => bookmark < float.Round(timeline.Value * 1000) - 500);
 
                     if (prevBookmark != 0) timeline.Value = prevBookmark * .001f;
                 }

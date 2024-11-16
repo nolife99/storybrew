@@ -3,6 +3,7 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using BrewLib.Util;
 
 /// <summary> A font glow effect. </summary>
@@ -32,14 +33,18 @@ public class FontGlow(int radius = 6, float power = 0, FontColor color = default
     {
         if (Radius < 1) return;
 
-        using Bitmap src = new(bitmap.Width, bitmap.Height, bitmap.PixelFormat);
+        var width = bitmap.Width;
+        var height = bitmap.Height;
+
+        using Bitmap src = new(width, height, bitmap.PixelFormat);
         using (var graphics = Graphics.FromImage(src))
         {
-            graphics.InterpolationMode = InterpolationMode.Bilinear;
+            graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
+            graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
             graphics.FillPath(Brushes.White, path);
         }
 
         using var blur = BitmapHelper.BlurAlpha(src, Math.Min(Radius, 24), Power >= 1 ? Power : Radius * .5f, Color);
-        textGraphics.DrawImage(blur.Bitmap, 0, 0, bitmap.Width, bitmap.Height);
+        textGraphics.DrawImage(blur.Bitmap, 0, 0, width, height);
     }
 }

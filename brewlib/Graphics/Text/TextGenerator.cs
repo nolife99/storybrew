@@ -13,13 +13,13 @@ using Util;
 
 public sealed class TextGenerator : IDisposable
 {
-    ResourceContainer container;
-    Dictionary<string, PrivateFontCollection> fontCollections = [];
-    Dictionary<string, FontFamily> fontFamilies = [];
+    readonly ResourceContainer container;
+    readonly Dictionary<string, PrivateFontCollection> fontCollections = [];
+    readonly Dictionary<string, FontFamily> fontFamilies = [];
 
-    Dictionary<int, Font> fonts = [];
-    Graphics metrics;
-    SolidBrush shadow = new(Color.FromArgb(220, 0, 0, 0));
+    readonly Dictionary<int, Font> fonts = [];
+    readonly Graphics metrics;
+    readonly SolidBrush shadow = new(Color.FromArgb(220, 0, 0, 0));
 
     public TextGenerator(ResourceContainer resourceContainer)
     {
@@ -41,6 +41,8 @@ public sealed class TextGenerator : IDisposable
         bool measureOnly)
     {
         if (string.IsNullOrEmpty(text)) text = " ";
+
+        var font = getFont(fontName, 96 / metrics.DpiY * fontSize, FontStyle.Regular);
         using StringFormat stringFormat = new(StringFormat.GenericTypographic)
         {
             Alignment =
@@ -60,8 +62,6 @@ public sealed class TextGenerator : IDisposable
             Trimming = trimming,
             FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
         };
-
-        var font = getFont(fontName, 96 / metrics.DpiY * fontSize, FontStyle.Regular);
         var measuredSize = metrics.MeasureString(text, font, maxSize, stringFormat);
 
         var width = (int)(measuredSize.Width + padding.X * 2 + 1);

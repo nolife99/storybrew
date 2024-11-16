@@ -36,8 +36,8 @@ public class StoryboardTransform : IResettable, IDisposable
         instance.transformScale = (parent?.transformScale ?? 1) * scale;
 
         // https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix/13165#13165
-        instance.transformAngle = MathF.Atan2(-transform.M21, transform.M11);
-        // OR MathF.Atan2(-transform.M22, transform.M12);
+        instance.transformAngle = float.Atan2(-transform.M21, transform.M11);
+        // OR float.Atan2(-transform.M22, transform.M12);
 
         return instance;
     }

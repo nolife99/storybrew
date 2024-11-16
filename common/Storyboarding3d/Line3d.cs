@@ -86,7 +86,7 @@ public class Line3d : Node3d, HasOsbSprites
         };
 
         state.Scale = new(delta.Length() / spriteBitmap.Width, Thickness.ValueAt(time));
-        state.Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, MathF.Atan2(delta.Y, delta.X), 1);
+        state.Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, float.Atan2(delta.Y, delta.X), 1);
         state.Color = object3dState.Color;
         state.Opacity = opacity;
         state.Additive = Additive;
@@ -193,7 +193,7 @@ public class Line3dEx : Node3d, HasOsbSprites
         Vector2 delta = new(endVector.X - startVector.X, endVector.Y - startVector.Y);
         if (delta.LengthSquared() == 0) return;
 
-        var angle = MathF.Atan2(delta.Y, delta.X);
+        var angle = float.Atan2(delta.Y, delta.X);
         var rotation = InterpolatingFunctions.FloatAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
 
         var thickness = Thickness.ValueAt(time);
@@ -230,7 +230,7 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (SpritePathEdge is not null)
         {
             Vector2 edgeScale = new(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height),
-                edgeOffset = new Vector2(MathF.Cos(angle - MathF.PI / 2), MathF.Sin(angle - MathF.PI / 2)) *
+                edgeOffset = new Vector2(float.Cos(angle - float.Pi / 2), float.Sin(angle - float.Pi / 2)) *
                     (bodyHeight / 2 - EdgeOverlap);
 
             var positionTop = positionBody + edgeOffset;
@@ -269,7 +269,7 @@ public class Line3dEx : Node3d, HasOsbSprites
             Vector2 startCapScale = new(startScale / spriteBitmaps[2].Width, startScale / spriteBitmaps[2].Height),
                 endCapScale = new(endScale / spriteBitmaps[2].Width, endScale / spriteBitmaps[2].Height);
 
-            var capOffset = OrientedCaps ? new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * CapOverlap : Vector2.Zero;
+            var capOffset = OrientedCaps ? new Vector2(float.Cos(angle), float.Sin(angle)) * CapOverlap : Vector2.Zero;
 
             if (OrientedCaps)
             {
@@ -282,7 +282,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 Time = time,
                 Position = new Vector2(startVector.X, startVector.Y) + capOffset,
                 Scale = startCapScale,
-                Rotation = OrientedCaps ? rotation + MathF.PI : 0,
+                Rotation = OrientedCaps ? rotation + float.Pi : 0,
                 Color = object3dState.Color,
                 Opacity = startScale > .5f ? opacity : 0,
                 Additive = Additive
@@ -293,7 +293,7 @@ public class Line3dEx : Node3d, HasOsbSprites
                 Time = time,
                 Position = new Vector2(endVector.X, endVector.Y) - capOffset,
                 Scale = endCapScale,
-                Rotation = OrientedCaps ? rotation + MathF.PI : 0,
+                Rotation = OrientedCaps ? rotation + float.Pi : 0,
                 Color = object3dState.Color,
                 Opacity = endScale > .5f ? opacity : 0,
                 Additive = Additive,
