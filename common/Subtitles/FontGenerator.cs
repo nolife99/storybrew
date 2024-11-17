@@ -12,7 +12,6 @@ using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Storyboarding;
@@ -82,6 +81,11 @@ public class FontTexture(string path,
 ///<summary> A class that generates and manages font textures. </summary>
 public sealed class FontGenerator
 {
+    internal static readonly DrawingOptions options = new()
+    {
+        ShapeOptions = new() { IntersectionRule = IntersectionRule.NonZero }
+    };
+
     readonly string assetDirectory;
 
     readonly Dictionary<string, FontTexture> cache = [];
@@ -92,18 +96,6 @@ public sealed class FontGenerator
 
     readonly TextOptions format;
     readonly SolidBrush textBrush;
-
-    internal static readonly DrawingOptions options = new()
-    {
-        GraphicsOptions = new()
-        {
-            Antialias = true
-        },
-        ShapeOptions = new()
-        {
-            IntersectionRule = IntersectionRule.NonZero
-        }
-    };
 
     internal FontGenerator(string dir, FontDescription desc, FontEffect[] fx, string projDir, string assetDir)
     {
@@ -124,16 +116,19 @@ public sealed class FontGenerator
             family = collection.Add(fontPath, CultureInfo.InvariantCulture);
         }
 
-
-        emSize = 96f * description.FontSize / 72;
+        const float dpi = 72f;
+        emSize = 96f * description.FontSize / dpi;
         var font = family == default ?
             SystemFonts.CreateFont(fontPath, emSize, description.FontStyle) :
             new(family, emSize, description.FontStyle);
 
+        var foundMetrics = font.Family.TryGetMetrics(desc.FontStyle, out var metrics);
         format = new(font)
         {
             TextAlignment = TextAlignment.Center,
-            HintingMode = HintingMode.Standard
+            HintingMode = HintingMode.Standard,
+            LineSpacing = foundMetrics ? metrics.VerticalMetrics.LineHeight * .001f : 1,
+            Dpi = dpi
         };
     }
 
@@ -162,13 +157,13 @@ public sealed class FontGenerator
             effectsHeight = Math.Max(effectsHeight, effectSize.Height);
         }
 
-        var actualPadding = description.Padding with { Y = description.Padding.Y + 2 };
+        var padding = description.Padding;
 
-        var width = (int)float.Ceiling(baseWidth + effectsWidth + actualPadding.X * 2);
-        var height = (int)float.Ceiling(baseHeight + effectsHeight + actualPadding.Y * 2);
+        var width = (int)float.Ceiling(baseWidth + effectsWidth + padding.X * 2);
+        var height = (int)float.Ceiling(baseHeight + effectsHeight + padding.Y * 2);
 
-        var paddingX = actualPadding.X + effectsWidth / 2;
-        var paddingY = actualPadding.Y + effectsHeight / 2;
+        var paddingX = padding.X + effectsWidth / 2;
+        var paddingY = padding.Y + effectsHeight / 2;
         var x = paddingX + measuredSize.Width / 2;
 
         var offsetX = -paddingX;
@@ -177,30 +172,31 @@ public sealed class FontGenerator
         if (string.IsNullOrWhiteSpace(text) || width == 0 || height == 0)
             return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height, null);
 
-        Image<Rgba32> realText = new(width, height);
-        if (description.Debug)
-        {
-            FastRandom r = new(cache.Count);
-            realText.Mutate(b => b.Clear(new Rgb24((byte)r.Next(100, 255), (byte)r.Next(100, 255), (byte)r.Next(100, 255))));
-        }
-
         var segments = TextBuilder.GenerateGlyphs(text, format).Translate(paddingX, paddingY);
 
-        foreach (var t in effects)
-            if (!t.Overlay)
-                t.Draw(realText, segments, x, paddingY);
-
-        if (!description.EffectsOnly) realText.Mutate(b => b.Fill(options, textBrush, segments));
-        foreach (var t in effects)
-            if (t.Overlay)
-                t.Draw(realText, segments, x, paddingY);
-
-        if (description.Debug)
-            realText.Mutate(b =>
+        Image<Rgba32> realText = new(width, height);
+        realText.Mutate(b =>
+        {
+            if (description.Debug)
             {
-                b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + baseHeight));
-                b.DrawLine(Color.Red, 1, new(x - baseWidth * .5f, paddingY), new(x + baseWidth * .5f, paddingY));
-            });
+                FastRandom r = new(cache.Count);
+                b.Clear(new Rgb24((byte)r.Next(100, 255), (byte)r.Next(100, 255), (byte)r.Next(100, 255)));
+            }
+
+            foreach (var t in effects)
+                if (!t.Overlay)
+                    t.Draw(b, segments, x, paddingY);
+
+            if (!description.EffectsOnly) b.Fill(options, textBrush, segments);
+            foreach (var t in effects)
+                if (t.Overlay)
+                    t.Draw(b, segments, x, paddingY);
+
+            if (!description.Debug) return;
+
+            b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + baseHeight)).DrawLine(Color.Red, 1,
+                new(x - baseWidth * .5f, paddingY), new(x + baseWidth * .5f, paddingY));
+        });
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;
         var validBounds = !bounds.IsEmpty && !bounds.Equals(new(0, 0, width, height));
@@ -244,14 +240,17 @@ public sealed class FontGenerator
         }
 
         var path = Path.Combine(assetDirectory, texturePath);
-        using (var stream = File.Create(path))
+        using (var stream = Misc.WithRetries(() => File.Create(path)))
         {
-            if (validBounds) realText.Mutate(b => b.AutoOrient().Crop(bounds));
-            Misc.WithRetries(()
-                => realText.SaveAsPng(stream, new() { CompressionLevel = PngCompressionLevel.BestCompression }));
+            if (validBounds) realText.Mutate(b => b.Crop(bounds));
+            realText.SaveAsPng(stream);
         }
 
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
+        if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) ||
+            path.Contains(StoryboardObjectGenerator.Current.AssetPath))
+            StoryboardObjectGenerator.Current.Compressor.Compress(path, new(0, 75, 1));
+
         return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
     }
 }

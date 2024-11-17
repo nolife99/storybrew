@@ -2,8 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using SixLabors.ImageSharp;
 using System.Numerics;
+using SixLabors.ImageSharp;
 using Util;
 
 public class TextLayout

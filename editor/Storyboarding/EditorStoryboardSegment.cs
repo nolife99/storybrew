@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using SixLabors.ImageSharp;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -10,6 +9,7 @@ using System.Text.RegularExpressions;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
+using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;

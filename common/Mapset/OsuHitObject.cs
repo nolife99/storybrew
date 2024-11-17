@@ -1,8 +1,8 @@
 ﻿namespace StorybrewCommon.Mapset;
 
 using System;
-using SixLabors.ImageSharp;
 using System.Globalization;
+using SixLabors.ImageSharp;
 using Storyboarding.CommandValues;
 
 ///<summary> Represents a hit object in osu!. </summary>

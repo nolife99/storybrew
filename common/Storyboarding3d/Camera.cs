@@ -1,10 +1,10 @@
 ﻿namespace StorybrewCommon.Storyboarding3d;
 
 using System;
-using SixLabors.ImageSharp;
 using System.Numerics;
 using Animations;
 using Mapset;
+using SixLabors.ImageSharp;
 
 #pragma warning disable CS1591
 public abstract class Camera

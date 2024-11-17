@@ -26,13 +26,14 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
         Vector2 measuredSize;
         if (char.IsWhiteSpace(c))
         {
-            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, new(0, 2), BoxAlignment.Centre, out measuredSize, true);
+            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, BoxAlignment.Centre, out measuredSize, true);
 
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }
 
         atlas ??= new(512, 512, $"Font Atlas {name}:{size:n1}");
-        using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, new(0, 2), BoxAlignment.Centre, out measuredSize, false);
+        using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, BoxAlignment.Centre,
+            out measuredSize, false);
 
         return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
     }

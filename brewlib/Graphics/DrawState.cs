@@ -63,6 +63,7 @@ public static class DrawState
                 case DebugSource.DebugSourceApplication: Trace.WriteLine("Source: Application"); break;
                 case DebugSource.DebugSourceOther: Trace.WriteLine("Source: Other"); break;
             }
+
             switch (type)
             {
                 case DebugType.DebugTypeError: Trace.WriteLine("Type: Error"); break;
@@ -75,6 +76,7 @@ public static class DrawState
                 case DebugType.DebugTypePopGroup: Trace.WriteLine("Type: Pop Group"); break;
                 case DebugType.DebugTypeOther: Trace.WriteLine("Type: Other"); break;
             }
+
             switch (severity)
             {
                 case DebugSeverity.DebugSeverityHigh: Trace.WriteLine("Severity: high"); break;
@@ -82,6 +84,7 @@ public static class DrawState
                 case DebugSeverity.DebugSeverityLow: Trace.WriteLine("Severity: low"); break;
                 case DebugSeverity.DebugSeverityNotification: Trace.WriteLine("Severity: notification"); break;
             }
+
             if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
         }, 0);
 

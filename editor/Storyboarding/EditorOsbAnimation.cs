@@ -1,8 +1,8 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
-using SixLabors.ImageSharp;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
+using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 
 public class EditorOsbAnimation : OsbAnimation, DisplayableObject, HasPostProcess

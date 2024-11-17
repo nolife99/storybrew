@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.UserInterface;
 
 using System;
-using SixLabors.ImageSharp;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
@@ -9,9 +8,9 @@ using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Skinning.Styles;
-using StorybrewCommon.Subtitles;
 
 public class HsbColorPicker : Widget, Field
 {

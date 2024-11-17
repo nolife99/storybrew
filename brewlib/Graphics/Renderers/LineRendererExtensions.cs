@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
-using SixLabors.ImageSharp.PixelFormats;
 using System.Numerics;
+using SixLabors.ImageSharp.PixelFormats;
 
 public static class LineRendererExtensions
 {

@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using SixLabors.ImageSharp;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -21,6 +20,7 @@ using Mapset;
 using OpenTK.Mathematics;
 using Scripting;
 using SixLabors.Fonts;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.Drawing;
 using StorybrewCommon.Scripting;
@@ -419,8 +419,8 @@ public sealed partial class Project : IDisposable
 
     #region Assemblies
 
-    static readonly CompositeFormat runtimePath = CompositeFormat.Parse(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "..", "..", "..", "packs", "{0}",
-        RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
+    static readonly CompositeFormat runtimePath = CompositeFormat.Parse(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(),
+        "..", "..", "..", "packs", "{0}", RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
         string.Concat("net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
     public static readonly ICollection<string> DefaultAssemblies =
@@ -431,8 +431,10 @@ public sealed partial class Project : IDisposable
         typeof(MathHelper).Assembly.Location,
         typeof(Script).Assembly.Location,
         typeof(Camera).Assembly.Location,
-        .. Directory.EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"), "*.dll"),
-        .. Directory.EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"), "*.dll")
+        .. Directory.EnumerateFiles(
+            string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"), "*.dll"),
+        .. Directory.EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
+            "*.dll")
     ];
 
     HashSet<string> importedAssemblies = [];

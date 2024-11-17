@@ -11,7 +11,9 @@ public static class BitmapHelper
         for (var y = 0; y < source.Height; y++)
         {
             var row = source.DangerousGetPixelRowMemory(y).Span;
-            foreach (var pixel in row) if (pixel.A != 0) return false;
+            foreach (var pixel in row)
+                if (pixel.A != 0)
+                    return false;
         }
 
         return true;

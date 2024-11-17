@@ -1,11 +1,11 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
-using SixLabors.ImageSharp;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
+using SixLabors.ImageSharp;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for movement commands.</summary>

@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Cameras;
 
-using SixLabors.ImageSharp;
 using System.Numerics;
+using SixLabors.ImageSharp;
 
 public class CameraOrtho : CameraBase
 {

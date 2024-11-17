@@ -2,7 +2,6 @@
 
 using System;
 using System.Diagnostics;
-using SixLabors.ImageSharp;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -15,7 +14,6 @@ using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
-using StorybrewCommon.Subtitles;
 using StorybrewCommon.Util;
 using Color4 = OpenTK.Mathematics.Color4;
 

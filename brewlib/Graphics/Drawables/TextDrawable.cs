@@ -1,11 +1,10 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
 using System;
-using SixLabors.ImageSharp;
 using System.Numerics;
 using Cameras;
 using Renderers;
-using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
 using Text;
 using Util;
 
@@ -13,7 +12,7 @@ public sealed class TextDrawable : Drawable
 {
     readonly RenderStates RenderStates = new();
     BoxAlignment alignment = BoxAlignment.TopLeft;
-    public Rgba32 Color = SixLabors.ImageSharp.Color.White;
+    public Color Color = Color.White;
     float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
 
     TextFont font;

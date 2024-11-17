@@ -1,10 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
-using System;
 using SixLabors.ImageSharp.PixelFormats;
-using System.Runtime.CompilerServices;
 using Textures;
-using Util;
 
 public static class QuadRendererExtensions
 {

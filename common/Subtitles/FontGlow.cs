@@ -1,11 +1,9 @@
 ﻿namespace StorybrewCommon.Subtitles;
 
 using System;
-using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
-using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Processing.Processors.Convolution;
 
@@ -14,7 +12,7 @@ using SixLabors.ImageSharp.Processing.Processors.Convolution;
 /// <param name="radius"> The radius of the glow. </param>
 /// <param name="power"> The intensity of the glow. </param>
 /// <param name="color"> The coloring tint of the glow. </param>
-public class FontGlow(int radius = 6, float power = 0, Rgba32 color = default) : FontEffect
+public class FontGlow(int radius = 6, float power = 0, Color color = default) : FontEffect
 {
     ///<summary> The radius of the glow. </summary>
     public int Radius => radius;
@@ -23,7 +21,7 @@ public class FontGlow(int radius = 6, float power = 0, Rgba32 color = default) :
     public float Power => power;
 
     ///<summary> The coloring tint of the glow. </summary>
-    public Rgba32 Color => color;
+    public Color Color => color;
 
     /// <inheritdoc/>
     public bool Overlay => false;
@@ -32,14 +30,11 @@ public class FontGlow(int radius = 6, float power = 0, Rgba32 color = default) :
     public SizeF Measure => new(Radius * 2, Radius * 2);
 
     /// <inheritdoc/>
-    public void Draw(Image<Rgba32> bitmap, IPathCollection path, float x, float y)
+    public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y)
     {
         if (Radius < 1) return;
 
-        bitmap.Mutate(b =>
-        {
-            b.Fill(FontGenerator.options, Color, path);
-            b.ApplyProcessor(new GaussianBlurProcessor(Power >= 1 ? Power : Radius * .5f, Math.Min(Radius, 24)));
-        });
+        bitmap.Fill(FontGenerator.options, Color, path)
+            .ApplyProcessor(new GaussianBlurProcessor(Power >= 1 ? Power : Radius * .5f, Math.Min(Radius, 24)));
     }
 }

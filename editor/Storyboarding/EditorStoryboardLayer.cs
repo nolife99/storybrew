@@ -2,12 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using SixLabors.ImageSharp;
 using System.IO;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
+using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 

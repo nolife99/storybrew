@@ -278,8 +278,8 @@ public class CommandGenerator
 
     internal static Vector2 BitmapDimensions(string path)
     {
-        var size = StoryboardObjectGenerator.Current
-            .GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).Size;
+        var size = StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0)
+            .Size;
 
         return new(size.Width, size.Height);
     }

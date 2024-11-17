@@ -13,10 +13,7 @@ using StorybrewCommon.Util;
 
 public class EditorBeatmap(string path) : Beatmap
 {
-    static readonly Rgba32[] defaultComboColors =
-    [
-        new(255, 192, 0), new(0, 202, 0), new(18, 124, 255), new(242, 24, 57)
-    ];
+    static readonly Rgba32[] defaultComboColors = [new(255, 192, 0), new(0, 202, 0), new(18, 124, 255), new(242, 24, 57)];
 
     readonly HashSet<int> bookmarks = [];
 

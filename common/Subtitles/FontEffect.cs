@@ -4,7 +4,7 @@ using System.Numerics;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
-using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 #pragma warning disable CS1591
 public interface FontEffect
@@ -16,7 +16,7 @@ public interface FontEffect
     SizeF Measure { get; }
 
     ///<summary> Draws the font effect over the texture. </summary>
-    void Draw(Image<Rgba32> bitmap, IPathCollection path, float x, float y);
+    void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y);
 }
 
 /// <summary> Stores information about a font's appearance. </summary>
@@ -31,7 +31,7 @@ public interface FontEffect
 /// <param name="debug"> Draw a randomly colored background behind the font. </param>
 public class FontDescription(string fontPath,
     int fontSize = 76,
-    Rgba32 color = default,
+    Color color = default,
     Vector2 padding = default,
     FontStyle fontStyle = default,
     bool trimTransparency = true,
@@ -45,7 +45,7 @@ public class FontDescription(string fontPath,
     public int FontSize => fontSize;
 
     ///<summary> The coloring tint of the font. </summary>
-    public Rgba32 Color => color;
+    public Color Color => color;
 
     ///<summary> How much extra space is allocated around the font when generating it. </summary>
     public Vector2 Padding => padding;

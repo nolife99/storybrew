@@ -9,7 +9,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Forms;
 using System.Windows.Media.Imaging;
 using BrewLib.Audio;
 using BrewLib.Util;
@@ -17,7 +16,6 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.Desktop;
 using Util;
-using NativeWindow = OpenTK.Windowing.Desktop.NativeWindow;
 using WindowState = OpenTK.Windowing.Common.WindowState;
 
 public static class Program
@@ -142,7 +140,7 @@ public static class Program
         }
 
         using var iconResource = typeof(Editor).Assembly.GetManifestResourceStream(typeof(Editor), "icon.ico");
-        var decoder = new IconBitmapDecoder(iconResource, BitmapCreateOptions.None, BitmapCacheOption.Default);
+        IconBitmapDecoder decoder = new(iconResource, BitmapCreateOptions.None, BitmapCacheOption.None);
         var icon = decoder.Frames.First();
 
         var bytes = new byte[icon.PixelWidth * icon.PixelHeight * 4];
@@ -150,7 +148,7 @@ public static class Program
 
         NativeWindow window = new(new()
         {
-            Flags = ContextFlags.Debug,
+            Flags = ContextFlags.Default,
             Profile = ContextProfile.Compatability,
             CurrentMonitor = displayDevice.Handle,
             APIVersion = new(4, 6),
@@ -339,7 +337,8 @@ public static class Program
 
                 if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name
                 })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
-                    FullName, MessageBoxButton.OKCancel) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
+                    FullName, MessageBoxButton.OKCancel, MessageBoxImage.Error) is MessageBoxResult.OK)
+                    NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)
             {

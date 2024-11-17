@@ -10,10 +10,18 @@ using StorybrewCommon.Util;
 /// </summary>
 public class StoryboardTransform : IResettable, IDisposable
 {
+    static readonly ObjectPool<StoryboardTransform> pool = ObjectPool.Create<StoryboardTransform>();
     Affine2 transform;
     float transformScale, transformAngle;
 
-    static readonly ObjectPool<StoryboardTransform> pool = ObjectPool.Create<StoryboardTransform>();
+    public void Dispose() => pool.Return(this);
+
+    bool IResettable.TryReset()
+    {
+        transform = Affine2.Identity;
+        transformScale = transformAngle = 0;
+        return true;
+    }
 
     /// <summary>
     ///     Initializes a new <see cref="StoryboardTransform"/> instance.
@@ -23,7 +31,11 @@ public class StoryboardTransform : IResettable, IDisposable
     /// <param name="position">The position of the element.</param>
     /// <param name="rotation">The rotation of the element in radians.</param>
     /// <param name="scale">The scale of the element.</param>
-    public static StoryboardTransform Get(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale)
+    public static StoryboardTransform Get(StoryboardTransform parent,
+        Vector2 origin,
+        Vector2 position,
+        float rotation,
+        float scale)
     {
         var instance = pool.Get();
         var transform = instance.transform = parent?.transform ?? Affine2.Identity;
@@ -41,15 +53,6 @@ public class StoryboardTransform : IResettable, IDisposable
 
         return instance;
     }
-
-    bool IResettable.TryReset()
-    {
-        transform = Affine2.Identity;
-        transformScale = transformAngle = 0;
-        return true;
-    }
-
-    public void Dispose() => pool.Return(this);
 
     /// <summary>
     ///     Applies the transform to a position.

@@ -1,10 +1,10 @@
 ﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
-using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
 using Util;
 
 public class ImageStyle : WidgetStyle
 {
-    public Rgba32 Color;
+    public Color Color;
     public ScaleMode ScaleMode;
 }

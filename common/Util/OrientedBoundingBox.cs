@@ -2,8 +2,8 @@
 
 using System;
 using System.Buffers;
-using SixLabors.ImageSharp;
 using System.Numerics;
+using SixLabors.ImageSharp;
 
 #pragma warning disable CS1591
 public readonly struct OrientedBoundingBox : IDisposable

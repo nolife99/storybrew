@@ -2,12 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using SixLabors.ImageSharp;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
+using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 
 public class LayerManager

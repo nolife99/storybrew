@@ -15,11 +15,12 @@ using Util;
 
 public sealed class TextGenerator(ResourceContainer resourceContainer)
 {
+    readonly FontFamily[] fallback = [SystemFonts.Get("Segoe UI Symbol", CultureInfo.InvariantCulture)];
+    readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
     readonly Dictionary<string, FontCollection> fontCollections = [];
     readonly Dictionary<string, FontFamily> fontFamilies = [];
 
     readonly Dictionary<int, Font> fonts = [];
-    readonly SolidBrush fill = new(Color.White), shadow = new(new Rgba32(0, 0, 0, 220));
 
     public Image<Rgba32> CreateBitmap(string text,
         string fontName,
@@ -31,26 +32,31 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
     {
         if (string.IsNullOrEmpty(text)) text = " ";
 
-        var font = getFont(fontName, 96 * fontSize / 72, FontStyle.Regular);
-        TextOptions options = new(font)
+        var dpi = 72f;
+        var font = getFont(fontName, 96 * fontSize / dpi, FontStyle.Regular);
+        var foundMetrics = font.Family.TryGetMetrics(FontStyle.Regular, out var metrics);
+
+        RichTextOptions options = new(font)
         {
-            HorizontalAlignment = (alignment & BoxAlignment.Horizontal) switch
-            {
-                BoxAlignment.Left => HorizontalAlignment.Left,
-                BoxAlignment.Right => HorizontalAlignment.Right,
-                _ => HorizontalAlignment.Center
-            },
+            HorizontalAlignment =
+                (alignment & BoxAlignment.Horizontal) switch
+                {
+                    BoxAlignment.Left => HorizontalAlignment.Left,
+                    BoxAlignment.Right => HorizontalAlignment.Right,
+                    _ => HorizontalAlignment.Center
+                },
             VerticalAlignment = (alignment & BoxAlignment.Vertical) switch
             {
                 BoxAlignment.Top => VerticalAlignment.Top,
                 BoxAlignment.Bottom => VerticalAlignment.Bottom,
                 _ => VerticalAlignment.Center
             },
-            HintingMode = HintingMode.Standard,
-            KerningMode = KerningMode.Standard
+            LineSpacing = foundMetrics ? Math.Max(metrics.VerticalMetrics.LineHeight * .001f, 1) : 1,
+            Dpi = dpi,
+            FallbackFontFamilies = fallback
         };
-        var measuredSize = TextMeasurer.MeasureAdvance(text, options);
 
+        var measuredSize = TextMeasurer.MeasureAdvance(text, options);
         var width = (int)(measuredSize.Width + padding.X * 2 + 1);
         var height = (int)(measuredSize.Height + padding.Y * 2 + 1);
 
@@ -59,8 +65,10 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
 
         Image<Rgba32> bitmap = new(width, height);
         bitmap.Mutate(b =>
-            b.DrawText(text, font, shadow, new PointF(padding.X + 1, padding.Y + 1))
-                .DrawText(text, font, fill, new PointF(padding.X, padding.Y)));
+        {
+            RichTextOptions drawOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };
+            b.DrawText(new(drawOptions) { Origin = padding + Vector2.One }, text, shadow).DrawText(drawOptions, text, fill);
+        });
 
         return bitmap;
     }
@@ -76,7 +84,8 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
                 if (stream is not null)
                 {
                     if (!fontCollections.TryGetValue(name, out var collection)) fontCollections[name] = collection = new();
-                    Trace.WriteLine($"Loaded font {(fontFamily = collection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
+                    Trace.WriteLine(
+                        $"Loaded font {(fontFamily = collection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
                 }
 
             fontFamilies[name] = fontFamily;

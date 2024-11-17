@@ -1,18 +1,22 @@
 ﻿namespace BrewLib.Util;
 
 using System.Numerics;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 public static class ColorExtensions
 {
-    public static Rgba32 LerpColor(this Rgba32 color, Rgba32 otherColor, float blend)
+    public static Color LerpColor(this Color color, Color otherColor, float blend)
     {
-        var invBlend = 1 - blend;
-        return new((byte)(color.R * invBlend + otherColor.R * blend),
-            (byte)(color.G * invBlend + otherColor.G * blend), (byte)(color.B * invBlend + otherColor.B * blend), color.A);
+        var rgba = (Vector4)color;
+        return new(Vector4.Lerp(rgba, (Vector4)otherColor, blend) with { Z = rgba.Z });
     }
-    public static Rgba32 WithOpacity(this Rgba32 color, float opacity)
-        => new(color.R, color.G, color.B, (byte)(color.A * opacity));
+    public static Color WithOpacity(this Color color, float opacity)
+    {
+        var vector = (Vector4)color;
+        vector.W *= opacity;
+        return (Color)vector;
+    }
 
     public static Rgba32 FromHsb(Vector4 hsba)
     {

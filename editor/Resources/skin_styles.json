@@ -45,7 +45,7 @@
       },
       "tooltip": {
         FontSize: "@fontSizeSmall",
-        Background: "tooltipBg",
+        Background: "tooltipBg"
       },
       "statusMessage": {
         Background: "tooltipBg"
@@ -53,7 +53,7 @@
       "timelineBeatmapName": {
         FontName: "@lightFont",
         FontSize: "@fontSizeSmall",
-        TextAlignment: "BottomRight",
+        TextAlignment: "BottomRight"
       },
       "small": {
         FontSize: "@fontSizeSmall"

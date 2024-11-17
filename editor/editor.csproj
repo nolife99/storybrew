@@ -21,6 +21,7 @@
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
         <EnableNETAnalyzers>True</EnableNETAnalyzers>
+        <UseWindowsForms>True</UseWindowsForms>
         <UseWpf>True</UseWpf>
     </PropertyGroup>
 

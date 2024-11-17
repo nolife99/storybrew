@@ -1,18 +1,17 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
 using System;
-using SixLabors.ImageSharp;
 using System.Numerics;
 using Cameras;
 using Renderers;
-using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
 using Textures;
 using Util;
 
 public class Sprite : Drawable
 {
     readonly RenderStates RenderStates = new();
-    public Rgba32 Color = SixLabors.ImageSharp.Color.White;
+    public Color Color = Color.White;
     public float Rotation;
     public ScaleMode ScaleMode = ScaleMode.None;
     public Texture2dRegion Texture;

@@ -5,10 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using System.Windows.Interop;
 using BrewLib.ScreenLayers;
 using BrewLib.Util;
-using Microsoft.Win32;
 using Storyboarding;
 using Util;
 using MessageBox = Util.MessageBox;
@@ -18,45 +16,46 @@ public static class ScreenLayerManagerExtensions
     public static void OpenFolderPicker(this ScreenLayerManager screenLayer,
         string description,
         string initialValue,
-        Action<string> callback)
+        Action<string> callback) => screenLayer.AsyncLoading("Select a folder", () =>
     {
-        OpenFolderDialog dialog = new()
+        using FolderBrowserDialog dialog = new()
         {
-            Title = description,
-            InitialDirectory = initialValue
+            Description = description, ShowNewFolderButton = true, SelectedPath = initialValue
         };
 
-        if (dialog.ShowDialog().Value)
-            Program.Schedule(() => callback(dialog.FolderName));
-    }
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+            Program.Schedule(() => callback(dialog.SelectedPath));
+    });
 
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
         string description,
         string initialValue,
         string initialDirectory,
         string filter,
-        Action<string> callback)
+        Action<string> callback) => screenLayer.AsyncLoading("Select a file", () =>
     {
-        OpenFileDialog dialog = new()
+        using OpenFileDialog dialog = new()
         {
             Title = description,
+            RestoreDirectory = true,
+            ShowHelp = false,
             FileName = initialValue,
             Filter = filter,
             InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
         };
 
-        if (dialog.ShowDialog().Value)
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
             Program.Schedule(() => callback(dialog.FileName));
-    }
+    });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
         string description,
         string initialValue,
         string extension,
         string filter,
-        Action<string> callback)
+        Action<string> callback) => screenLayer.AsyncLoading("Select a location", () =>
     {
-        SaveFileDialog dialog = new()
+        using SaveFileDialog dialog = new()
         {
             Title = description,
             RestoreDirectory = true,
@@ -66,9 +65,9 @@ public static class ScreenLayerManagerExtensions
             Filter = filter
         };
 
-        if (dialog.ShowDialog().Value)
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
             Program.Schedule(() => callback(dialog.FileName));
-    }
+    });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Action action)
         => screenLayer.Add(new LoadingScreen(message, action));

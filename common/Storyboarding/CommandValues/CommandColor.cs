@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Vector3 = System.Numerics.Vector3;
 
@@ -104,6 +105,7 @@ using Vector3 = System.Numerics.Vector3;
     public static implicit operator CommandColor(Color4 obj) => new Vector3(obj.R, obj.G, obj.B);
     public static implicit operator Rgba32(CommandColor obj) => new(obj.R, obj.G, obj.B);
     public static implicit operator CommandColor(Rgba32 obj) => new Vector3(obj.R / 255f, obj.G / 255f, obj.B / 255f);
+    public static implicit operator Color(CommandColor obj) => Color.FromRgb(obj.R, obj.G, obj.B);
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
     public static implicit operator Vector3(CommandColor obj) => Unsafe.As<CommandColor, Vector3>(ref obj);
     public static implicit operator CommandColor(Vector3 obj) => Unsafe.As<Vector3, CommandColor>(ref obj);

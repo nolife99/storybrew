@@ -14,12 +14,10 @@ using StorybrewCommon.Mapset;
 
 public class TimelineSlider : Slider
 {
-    static readonly Rgba32 tickBlue = new(50, 128, 255, 225), tickYellow = new(255, 255, 0, 225),
-        tickRed = new(255, 0, 0, 225), tickViolet = new(200, 0, 200, 225),
-        tickWhite = new(255, 255, 255, 220), tickMagenta = new(144, 64, 144, 225),
-        tickGrey = new(160, 160, 160, 225), kiaiColor = new(255, 146, 18, 140),
-        breakColor = new(255, 255, 255, 140), bookmarkColor = new(58, 110, 170, 240),
-        repeatColor = new(58, 110, 170, 80), highlightColor = new(255, 0, 0, 80);
+    static readonly Rgba32 tickBlue = new(50, 128, 255, 225), tickYellow = new(255, 255, 0, 225), tickRed = new(255, 0, 0, 225),
+        tickViolet = new(200, 0, 200, 225), tickWhite = new(255, 255, 255, 220), tickMagenta = new(144, 64, 144, 225),
+        tickGrey = new(160, 160, 160, 225), kiaiColor = new(255, 146, 18, 140), breakColor = new(255, 255, 255, 140),
+        bookmarkColor = new(58, 110, 170, 240), repeatColor = new(58, 110, 170, 80), highlightColor = new(255, 0, 0, 80);
 
     readonly Label beatmapLabel;
 
@@ -234,8 +232,7 @@ public class TimelineSlider : Slider
         }
     }
 
-    float timeToXTop(float time)
-        => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
+    float timeToXTop(float time) => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
 
     void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Rgba32 color, float opacity)
     {

@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using SixLabors.ImageSharp;
 using System.Numerics;
 using System.Windows;
 using Graphics;
 using Graphics.Drawables;
+using SixLabors.ImageSharp;
 using Skinning.Styles;
 using Util;
 using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;

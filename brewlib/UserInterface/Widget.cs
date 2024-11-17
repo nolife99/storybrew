@@ -3,11 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using SixLabors.ImageSharp;
 using System.Numerics;
 using Graphics;
 using Graphics.Drawables;
 using OpenTK.Windowing.Common;
+using SixLabors.ImageSharp;
 using Skinning.Styles;
 using Util;
 
