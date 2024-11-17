@@ -2,7 +2,6 @@ namespace StorybrewCommon.Storyboarding3d;
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
 using Animations;
 using Storyboarding;
@@ -33,7 +32,7 @@ public class Triangle3d : Node3d, HasOsbSprites
 
     OsbSprite sprite0, sprite1;
 
-    SizeF spriteBitmap;
+    Vector2 spriteBitmap;
 
     /// <summary> The path to the image of this <see cref="Triangle3d"/>. </summary>
     public string SpritePath;
@@ -137,9 +136,9 @@ public class Triangle3d : Node3d, HasOsbSprites
 
             var position = project(new(vector0.X, vector0.Y), new(vector2.X, vector2.Y), new(vector1.X, vector1.Y));
             Vector2 scale0 =
-                    new((new Vector2(vector2.X, vector2.Y) - position).Length() / spriteBitmap.Width,
-                        (new Vector2(vector1.X, vector1.Y) - position).Length() / spriteBitmap.Height),
-                scale1 = scale0 with { X = (new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.Width };
+                    new((new Vector2(vector2.X, vector2.Y) - position).Length() / spriteBitmap.X,
+                        (new Vector2(vector1.X, vector1.Y) - position).Length() / spriteBitmap.Y),
+                scale1 = scale0 with { X = (new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.X };
 
             var angle = float.Atan2(delta.Y, delta.X);
             var rotation = InterpolatingFunctions.FloatAngle(gen0.EndState?.Rotation ?? 0, angle, 1);

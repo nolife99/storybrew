@@ -1,24 +1,25 @@
 ﻿namespace StorybrewEditor.UserInterface;
 
 using System;
-using System.Drawing;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using StorybrewCommon.Mapset;
 
 public class TimelineSlider : Slider
 {
-    static readonly Color tickBlue = Color.FromArgb(225, 50, 128, 255), tickYellow = Color.FromArgb(225, 255, 255, 0),
-        tickRed = Color.FromArgb(225, 255, 0, 0), tickViolet = Color.FromArgb(225, 200, 0, 200),
-        tickWhite = Color.FromArgb(220, 255, 255, 255), tickMagenta = Color.FromArgb(225, 144, 64, 144),
-        tickGrey = Color.FromArgb(225, 160, 160, 160), kiaiColor = Color.FromArgb(140, 255, 146, 18),
-        breakColor = Color.FromArgb(140, 255, 255, 255), bookmarkColor = Color.FromArgb(240, 58, 110, 170),
-        repeatColor = Color.FromArgb(80, 58, 110, 170), highlightColor = Color.FromArgb(80, 255, 0, 0);
+    static readonly Rgba32 tickBlue = new(50, 128, 255, 225), tickYellow = new(255, 255, 0, 225),
+        tickRed = new(255, 0, 0, 225), tickViolet = new(200, 0, 200, 225),
+        tickWhite = new(255, 255, 255, 220), tickMagenta = new(144, 64, 144, 225),
+        tickGrey = new(160, 160, 160, 225), kiaiColor = new(255, 146, 18, 140),
+        breakColor = new(255, 255, 255, 140), bookmarkColor = new(58, 110, 170, 240),
+        repeatColor = new(58, 110, 170, 80), highlightColor = new(255, 0, 0, 80);
 
     readonly Label beatmapLabel;
 
@@ -236,7 +237,7 @@ public class TimelineSlider : Slider
     float timeToXTop(float time)
         => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
 
-    void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Color color, float opacity)
+    void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Rgba32 color, float opacity)
     {
         line.Color = color;
         line.Draw(drawContext, Manager.Camera, new(position.X, position.Y, size.X, size.Y), opacity);

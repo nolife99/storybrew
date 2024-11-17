@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Mapset;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Globalization;
 using Storyboarding.CommandValues;
 

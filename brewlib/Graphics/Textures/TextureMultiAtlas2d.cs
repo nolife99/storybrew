@@ -3,7 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 public sealed class TextureMultiAtlas2d : IDisposable
 {
@@ -24,7 +25,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
         pushAtlas();
     }
 
-    public Texture2dRegion AddRegion(Bitmap bitmap, string description)
+    public Texture2dRegion AddRegion(Image<Rgba32> bitmap, string description)
     {
         if (bitmap.Width > width || bitmap.Height > height)
         {

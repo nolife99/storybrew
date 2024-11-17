@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Cameras;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 
 public abstract class CameraBase : Camera

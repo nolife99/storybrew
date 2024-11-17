@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Runtime.CompilerServices;
 using Textures;
 using Util;
@@ -17,10 +17,10 @@ public static class QuadRendererExtensions
         float scaleX,
         float scaleY,
         float rotation,
-        Color color) => renderer.Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width,
+        Rgba32 color) => renderer.Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width,
         texture.Height);
 
-    public static unsafe void Draw(this QuadRenderer renderer,
+    public static void Draw(this QuadRenderer renderer,
         Texture2dRegion texture,
         float x,
         float y,
@@ -29,7 +29,7 @@ public static class QuadRendererExtensions
         float scaleX,
         float scaleY,
         float rotation,
-        Color color,
+        Rgba32 color,
         float textureX0,
         float textureY0,
         float textureX1,
@@ -94,16 +94,10 @@ public static class QuadRendererExtensions
             y4 = p4y;
         }
 
-        var primitive = stackalloc QuadPrimitive[1];
-
-        primitive -> x1 = x1 + x;
-        primitive -> y1 = y1 + y;
-        primitive -> x2 = x2 + x;
-        primitive -> y2 = y2 + y;
-        primitive -> x3 = x3 + x;
-        primitive -> y3 = y3 + y;
-        primitive -> x4 = x4 + x;
-        primitive -> y4 = y4 + y;
+        QuadPrimitive primitive = new()
+        {
+            x1 = x1 + x, y1 = y1 + y, x2 = x2 + x, y2 = y2 + y, x3 = x3 + x, y3 = y3 + y, x4 = x4 + x, y4 = y4 + y
+        };
 
         var textureUvBounds = texture.UvBounds;
         var textureUvRatio = texture.UvRatio;
@@ -136,16 +130,16 @@ public static class QuadRendererExtensions
             v1 = textureV1;
         }
 
-        primitive -> u1 = u0;
-        primitive -> v1 = v0;
-        primitive -> u2 = u0;
-        primitive -> v2 = v1;
-        primitive -> u3 = u1;
-        primitive -> v3 = v1;
-        primitive -> u4 = u1;
-        primitive -> v4 = v0;
+        primitive.u1 = u0;
+        primitive.v1 = v0;
+        primitive.u2 = u0;
+        primitive.v2 = v1;
+        primitive.u3 = u1;
+        primitive.v3 = v1;
+        primitive.u4 = u1;
+        primitive.v4 = v0;
 
-        primitive -> color1 = primitive -> color2 = primitive -> color3 = primitive -> color4 = color.ToRgba();
-        renderer.Draw(ref Unsafe.AsRef<QuadPrimitive>(primitive), texture);
+        primitive.color1 = primitive.color2 = primitive.color3 = primitive.color4 = color;
+        renderer.Draw(ref primitive, texture);
     }
 }

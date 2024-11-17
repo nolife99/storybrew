@@ -2,7 +2,6 @@ namespace StorybrewCommon.Storyboarding3d;
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
 using Animations;
 using Storyboarding;
@@ -28,7 +27,7 @@ public class Line3d : Node3d, HasOsbSprites
     Action<OsbSprite> finalize;
     OsbSprite sprite;
 
-    SizeF spriteBitmap;
+    Vector2 spriteBitmap;
 
     /// <summary> The <see cref="OsbOrigin"/> of this <see cref="Line3d"/>. </summary>
     public OsbOrigin SpriteOrigin = OsbOrigin.Centre;
@@ -85,7 +84,7 @@ public class Line3d : Node3d, HasOsbSprites
             _ => new(startVector.X, startVector.Y)
         };
 
-        state.Scale = new(delta.Length() / spriteBitmap.Width, Thickness.ValueAt(time));
+        state.Scale = new(delta.Length() / spriteBitmap.X, Thickness.ValueAt(time));
         state.Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, float.Atan2(delta.Y, delta.X), 1);
         state.Color = object3dState.Color;
         state.Opacity = opacity;
@@ -115,7 +114,7 @@ public class Line3d : Node3d, HasOsbSprites
 public class Line3dEx : Node3d, HasOsbSprites
 {
     readonly CommandGenerator genBody = new(), genTopEdge = new(), genBottomEdge = new(), genStartCap = new(), genEndCap = new();
-    readonly SizeF[] spriteBitmaps = new SizeF[3];
+    readonly Vector2[] spriteBitmaps = new Vector2[3];
 
     public readonly KeyframedValue<Vector3> StartPosition = new(InterpolatingFunctions.Vector3),
         EndPosition = new(InterpolatingFunctions.Vector3);
@@ -220,7 +219,7 @@ public class Line3dEx : Node3d, HasOsbSprites
         {
             Time = time,
             Position = positionBody,
-            Scale = new(length / spriteBitmaps[0].Width, bodyHeight / spriteBitmaps[0].Height),
+            Scale = new(length / spriteBitmaps[0].X, bodyHeight / spriteBitmaps[0].Y),
             Rotation = rotation,
             Color = object3dState.Color,
             Opacity = opacity,
@@ -229,7 +228,7 @@ public class Line3dEx : Node3d, HasOsbSprites
 
         if (SpritePathEdge is not null)
         {
-            Vector2 edgeScale = new(length / spriteBitmaps[1].Width, edgeHeight / spriteBitmaps[1].Height),
+            Vector2 edgeScale = new(length / spriteBitmaps[1].X, edgeHeight / spriteBitmaps[1].Y),
                 edgeOffset = new Vector2(float.Cos(angle - float.Pi / 2), float.Sin(angle - float.Pi / 2)) *
                     (bodyHeight / 2 - EdgeOverlap);
 
@@ -266,8 +265,8 @@ public class Line3dEx : Node3d, HasOsbSprites
 
         if (SpritePathCap is not null)
         {
-            Vector2 startCapScale = new(startScale / spriteBitmaps[2].Width, startScale / spriteBitmaps[2].Height),
-                endCapScale = new(endScale / spriteBitmaps[2].Width, endScale / spriteBitmaps[2].Height);
+            Vector2 startCapScale = new(startScale / spriteBitmaps[2].X, startScale / spriteBitmaps[2].Y),
+                endCapScale = new(endScale / spriteBitmaps[2].X, endScale / spriteBitmaps[2].Y);
 
             var capOffset = OrientedCaps ? new Vector2(float.Cos(angle), float.Sin(angle)) * CapOverlap : Vector2.Zero;
 

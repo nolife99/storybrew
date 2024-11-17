@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -14,6 +13,8 @@ using Animations;
 using BrewLib.Graphics.Compression;
 using BrewLib.Util;
 using Mapset;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using Subtitles;
 using Subtitles.Parsers;
@@ -114,7 +115,6 @@ public abstract class StoryboardObjectGenerator : Script
             this.context = null;
 
             bitmaps.Dispose();
-            fonts.Dispose();
             Compressor.Dispose();
         }
     }
@@ -124,26 +124,26 @@ public abstract class StoryboardObjectGenerator : Script
 
     #region File loading
 
-    internal readonly Dictionary<string, Bitmap> bitmaps = [];
+    internal readonly Dictionary<string, Image<Rgba32>> bitmaps = [];
 
     /// <summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
     /// <param name="path"> The image path, relative to the project's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
-    public Bitmap GetProjectBitmap(string path, bool watch = true)
+    public Image<Rgba32> GetProjectBitmap(string path, bool watch = true)
         => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
 
     /// <summary> Returns a <see cref="Bitmap"/> from the mapset's directory. </summary>
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
-    public Bitmap GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),
+    public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),
         Path.Combine(context.ProjectAssetPath, path), watch);
 
-    Bitmap getBitmap(string path, string alternatePath, bool watch)
+    Image<Rgba32> getBitmap(string path, string alternatePath, bool watch)
     {
         path = Path.GetFullPath(path);
         if (bitmaps.TryGetValue(path, out var bitmap)) return bitmap;
 
-        using var stream = File.OpenRead(path);
+        using var stream = Misc.WithRetries(() => File.OpenRead(path));
         if (alternatePath is not null && !File.Exists(path))
         {
             alternatePath = Path.GetFullPath(alternatePath);
@@ -151,7 +151,7 @@ public abstract class StoryboardObjectGenerator : Script
 
             try
             {
-                bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream, false));
+                bitmaps[path] = bitmap = Image.Load<Rgba32>(stream);
             }
             catch (FileNotFoundException e)
             {
@@ -161,7 +161,7 @@ public abstract class StoryboardObjectGenerator : Script
         else
         {
             if (watch) context.AddDependency(path);
-            bitmaps[path] = bitmap = Misc.WithRetries(() => new Bitmap(stream, false));
+            bitmaps[path] = bitmap = Image.Load<Rgba32>(stream);
         }
 
         return bitmap;

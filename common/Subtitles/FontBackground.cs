@@ -1,15 +1,18 @@
 ﻿namespace StorybrewCommon.Subtitles;
 
-using System.Drawing;
-using System.Drawing.Drawing2D;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 /// <summary> A font background effect. </summary>
 /// <remarks> Creates a new <see cref="FontBackground"/> descriptor with information about a font background. </remarks>
 /// <param name="color"> The coloring tint of the glow. </param>
-public class FontBackground(FontColor color = default) : FontEffect
+public class FontBackground(Rgba32 color = default) : FontEffect
 {
     ///<summary> The coloring tint of the glow. </summary>
-    public FontColor Color => color;
+    public Rgba32 Color => color;
 
     /// <inheritdoc/>
     public bool Overlay => false;
@@ -18,5 +21,6 @@ public class FontBackground(FontColor color = default) : FontEffect
     public SizeF Measure => default;
 
     /// <inheritdoc/>
-    public void Draw(Bitmap bitmap, Graphics textGraphics, GraphicsPath path, float x, float y) => textGraphics.Clear(Color);
+    public void Draw(Image<Rgba32> bitmap, IPathCollection path, float x, float y)
+        => bitmap.Mutate(b => b.Clear(Color));
 }

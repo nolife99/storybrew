@@ -1,7 +1,7 @@
 ﻿namespace StorybrewEditor.UserInterface;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
@@ -9,6 +9,7 @@ using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
 using BrewLib.Util;
+using SixLabors.ImageSharp.PixelFormats;
 using Skinning.Styles;
 using StorybrewCommon.Subtitles;
 
@@ -20,7 +21,7 @@ public class HsbColorPicker : Widget, Field
     readonly LinearLayout layout;
     Sprite previewSprite;
 
-    FontColor value;
+    Rgba32 value;
 
     public HsbColorPicker(WidgetManager manager) : base(manager)
     {
@@ -64,7 +65,7 @@ public class HsbColorPicker : Widget, Field
 
     public override Vector2 PreferredSize => layout.PreferredSize with { Y = layout.PreferredSize.Y + previewHeight };
 
-    public FontColor Value
+    public Rgba32 Value
     {
         get => value;
         set
@@ -79,11 +80,11 @@ public class HsbColorPicker : Widget, Field
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());
 
-    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<FontColor>(value); }
+    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<Rgba32>(value); }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 
-    void slider_OnValueChanged(object sender, EventArgs e) => Value = FontColor.FromHsb(new(hueSlider.Value % 1,
+    void slider_OnValueChanged(object sender, EventArgs e) => Value = ColorExtensions.FromHsb(new(hueSlider.Value % 1,
         saturationSlider.Value, brightnessSlider.Value, alphaSlider.Value));
 
     void slider_OnValueCommited(object sender, EventArgs e) => OnValueCommited?.Invoke(this, EventArgs.Empty);
@@ -93,10 +94,10 @@ public class HsbColorPicker : Widget, Field
         var htmlColor = htmlTextbox.Value.Trim();
         if (!htmlColor.StartsWith('#')) htmlColor = '#' + htmlColor;
 
-        Color color;
+        Rgba32 color;
         try
         {
-            color = ColorTranslator.FromHtml(htmlColor);
+            color = Rgba32.ParseHex(htmlColor);
         }
         catch
         {
@@ -104,13 +105,13 @@ public class HsbColorPicker : Widget, Field
             return;
         }
 
-        Value = new(color.R / 255d, color.G / 255d, color.B / 255d, alphaSlider.Value);
+        Value = new(color.R / 255f, color.G / 255f, color.B / 255f, alphaSlider.Value);
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
 
     void updateWidgets()
     {
-        var hsba = FontColor.ToHsb(value);
+        var hsba = ColorExtensions.ToHsb(value);
         if (hsba.Z > 0)
         {
             if (!float.IsNaN(hsba.X))
@@ -145,7 +146,7 @@ public class HsbColorPicker : Widget, Field
         alphaSlider.Tooltip = $"{hsba.W:.%}";
 
         previewSprite.Color = value;
-        htmlTextbox.SetValueSilent(ColorTranslator.ToHtml(previewSprite.Color));
+        htmlTextbox.SetValueSilent(previewSprite.Color.ToHex());
     }
 
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)

@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Drawing;
 using System.Numerics;
+using SixLabors.ImageSharp.PixelFormats;
 
 public interface LineRenderer : Renderer, IDisposable
 {
@@ -15,6 +15,6 @@ public interface LineRenderer : Renderer, IDisposable
     int BufferWaitCount { get; }
     int LargestBatch { get; }
 
-    void Draw(Vector3 start, Vector3 end, Color color);
-    void Draw(Vector3 start, Vector3 end, Color startColor, Color endColor);
+    void Draw(Vector3 start, Vector3 end, Rgba32 color);
+    void Draw(Vector3 start, Vector3 end, Rgba32 startColor, Rgba32 endColor);
 }

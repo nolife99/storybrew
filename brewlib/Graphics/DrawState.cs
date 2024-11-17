@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -13,6 +12,7 @@ using Data;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Renderers;
+using SixLabors.ImageSharp;
 using Text;
 using Textures;
 using Util;
@@ -120,7 +120,7 @@ public static class DrawState
         samplerTexturingModes = new TexturingModes[maxTextureImageUnits];
 
         WhitePixel = Texture2d.Create(Color.White, "whitepixel");
-        NormalPixel = Texture2d.Create(Color.FromArgb(127, 127, 255), "normalpixel");
+        NormalPixel = Texture2d.Create(new(127, 127, 255), "normalpixel");
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new();
@@ -133,7 +133,6 @@ public static class DrawState
         NormalPixel.Dispose();
         WhitePixel.Dispose();
         TextFontManager.Dispose();
-        TextGenerator.Dispose();
     }
 
     public static void CompleteFrame()

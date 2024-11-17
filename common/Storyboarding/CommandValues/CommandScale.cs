@@ -1,7 +1,7 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -70,8 +70,8 @@ using Vector2 = System.Numerics.Vector2;
     public static implicit operator CommandScale(Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator Vector2d(CommandScale obj) => new(obj.X, obj.Y);
 
-    public static implicit operator CommandScale(SizeF vector) => Unsafe.As<SizeF, CommandScale>(ref vector);
-    public static implicit operator SizeF(CommandScale vector) => Unsafe.As<CommandScale, SizeF>(ref vector);
+    public static implicit operator CommandScale(SizeF vector) => (Vector2)vector;
+    public static implicit operator SizeF(CommandScale vector) => new(vector.internalVec.X, vector.internalVec.Y);
 
     public static implicit operator CommandScale(CommandPosition position)
         => Unsafe.As<CommandPosition, CommandScale>(ref position);

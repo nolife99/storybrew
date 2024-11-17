@@ -1,9 +1,10 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using Cameras;
 using Renderers;
+using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 using Util;
 
@@ -11,7 +12,7 @@ public class NinePatch : Drawable
 {
     public FourSide Borders, Outset;
     public bool BordersOnly;
-    public Color Color = Color.White;
+    public Rgba32 Color = SixLabors.ImageSharp.Color.White;
     public Texture2dRegion Texture;
     public RenderStates RenderStates { get; private set; } = new();
 

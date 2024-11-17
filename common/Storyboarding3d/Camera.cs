@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Storyboarding3d;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using Animations;
 using Mapset;

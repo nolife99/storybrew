@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using Graphics;
 using Graphics.Cameras;
@@ -75,7 +75,6 @@ public class Label(WidgetManager manager) : Widget(manager)
         textDrawable.FontName = labelStyle.FontName;
         textDrawable.FontSize = labelStyle.FontSize;
         textDrawable.Alignment = labelStyle.TextAlignment;
-        textDrawable.Trimming = labelStyle.Trimming;
         textDrawable.Color = labelStyle.Color;
     }
     public override void PreLayout()

@@ -2,7 +2,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,7 +10,7 @@ using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
 using Shaders.Snippets;
-using Util;
+using SixLabors.ImageSharp.PixelFormats;
 
 public unsafe class LineRendererBuffered : LineRenderer
 {
@@ -127,16 +126,16 @@ public unsafe class LineRendererBuffered : LineRenderer
         lastFlushWasBuffered = canBuffer;
     }
 
-    public void Draw(Vector3 start, Vector3 end, Color color) => Draw(start, end, color, color);
-    public void Draw(Vector3 start, Vector3 end, Color startColor, Color endColor)
+    public void Draw(Vector3 start, Vector3 end, Rgba32 color) => Draw(start, end, color, color);
+    public void Draw(Vector3 start, Vector3 end, Rgba32 startColor, Rgba32 endColor)
     {
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
         var ptr = (int*)Unsafe.Add<Int128>(primitives, linesInBatch);
         Unsafe.Write(ptr, start);
-        Unsafe.Write(ptr + 3, startColor.ToRgba());
+        Unsafe.Write(ptr + 3, startColor);
         Unsafe.Write(ptr + 4, end);
-        Unsafe.Write(ptr + 7, endColor.ToRgba());
+        Unsafe.Write(ptr + 7, endColor);
 
         ++RenderedLineCount;
         ++linesInBatch;

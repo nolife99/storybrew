@@ -1,6 +1,6 @@
 ﻿namespace BrewLib.Graphics.Cameras;
 
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 
 public class CameraOrtho : CameraBase

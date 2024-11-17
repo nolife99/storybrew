@@ -1,7 +1,8 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 public sealed class TextureAtlas2d(int width,
     int height,
@@ -12,7 +13,7 @@ public sealed class TextureAtlas2d(int width,
     readonly Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
     int currentX, currentY, nextY;
 
-    public Texture2dRegion AddRegion(Bitmap bitmap)
+    public Texture2dRegion AddRegion(Image<Rgba32> bitmap)
     {
         var width = bitmap.Width;
         var height = bitmap.Height;

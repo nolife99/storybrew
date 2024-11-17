@@ -1,6 +1,6 @@
 ﻿namespace BrewLib.Util;
 
-using System.Windows.Forms;
+using System.Windows;
 
 public static class ClipboardHelper
 {

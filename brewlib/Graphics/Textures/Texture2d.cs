@@ -1,40 +1,42 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
-using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using CommunityToolkit.HighPerformance.Buffers;
 using Data;
 using OpenTK.Graphics.OpenGL;
-using PixelFormat = System.Drawing.Imaging.PixelFormat;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.PixelFormats;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
     : Texture2dRegion(null, new(0, 0, width, height)), BindableTexture
 {
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
-    public void Update(Bitmap bitmap, int x, int y, TextureOptions textureOptions)
+    public unsafe void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions)
     {
         DrawState.BindTexture(textureId);
 
-        var data = bitmap.LockBits(new(default, bitmap.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-        GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, data.Width, data.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
-            PixelType.UnsignedByte, data.Scan0);
+        bitmap.DangerousTryGetSinglePixelMemory(out var memory);
+        using var pinned = memory.Pin();
 
-        bitmap.UnlockBits(data);
+        GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, bitmap.Width, bitmap.Height, PixelFormat.Rgba,
+            PixelType.UnsignedByte, (nint)pinned.Pointer);
     }
-    public static Bitmap LoadBitmap(string filename, ResourceContainer resourceContainer = null)
+    public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
+        DecoderOptions options = new();
+        options.Configuration.PreferContiguousImageBuffers = true;
+
         if (File.Exists(filename))
             using (var stream = File.OpenRead(filename))
-                return new(stream);
+                return Image.Load<Rgba32>(options, stream);
 
         using (var stream = resourceContainer?.GetStream(filename, ResourceSource.Embedded))
             if (stream is not null)
-                return new(stream);
+                return Image.Load<Rgba32>(options, stream);
 
         Trace.TraceWarning($"Texture not found: {filename}");
         return null;
@@ -51,7 +53,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) :
             null;
     }
-    public static unsafe Texture2d Create(Color color,
+    public static unsafe Texture2d Create(Rgba32 color,
         string description,
         int width = 1,
         int height = 1,
@@ -63,20 +65,20 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         if (textureOptions.PreMultiply)
         {
             var ratio = color.A / 255f;
-            color = Color.FromArgb(color.A, (int)(color.R * ratio), (int)(color.G * ratio), (int)(color.B * ratio));
+            color = new((int)(color.R * ratio), (int)(color.G * ratio), (int)(color.B * ratio), color.A);
         }
 
         var textureId = GL.GenTexture();
-        using (var spanOwner = SpanOwner<int>.Allocate(width * height))
+        using (var spanOwner = SpanOwner<uint>.Allocate(width * height))
             try
             {
                 var arr = spanOwner.Span;
                 DrawState.BindTexture(textureId);
 
-                arr.Fill(color.ToArgb());
+                arr.Fill(color.PackedValue);
                 fixed (void* ptr = arr)
                     GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, width, height, 0,
-                        OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, (nint)ptr);
+                        PixelFormat.Rgba, PixelType.UnsignedByte, (nint)ptr);
 
                 if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
                 textureOptions.ApplyParameters(TextureTarget.Texture2D);
@@ -90,7 +92,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
         return new(textureId, width, height, description);
     }
-    public static Texture2d Load(Bitmap bitmap, string description, TextureOptions textureOptions = null)
+    public static unsafe Texture2d Load(Image<Rgba32> bitmap, string description, TextureOptions textureOptions = null)
     {
         var width = Math.Min(DrawState.MaxTextureSize, bitmap.Width);
         var height = Math.Min(DrawState.MaxTextureSize, bitmap.Height);
@@ -101,11 +103,12 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
-        var data = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-        GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, data.Width,
-            data.Height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
+        if (!bitmap.DangerousTryGetSinglePixelMemory(out var memory))
+            throw new InvalidDataException("Backing buffer is not contiguous.");
 
-        bitmap.UnlockBits(data);
+        using var pinned = memory.Pin();
+        GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.SrgbAlpha : PixelInternalFormat.Rgba, width,
+            height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (nint)pinned.Pointer);
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);

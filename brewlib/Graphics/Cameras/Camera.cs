@@ -1,12 +1,12 @@
 ﻿namespace BrewLib.Graphics.Cameras;
 
 using System;
-using System.Drawing;
 using System.Numerics;
+using SixLabors.ImageSharp;
 
 public interface Camera : IDisposable
 {
-    // Inputs 
+    // Inputs
 
     Rectangle Viewport { get; set; }
     Vector3 Position { get; set; }

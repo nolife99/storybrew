@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
-using System.Windows.Forms;
+using System.Windows;
 using Graphics;
 using Graphics.Drawables;
 using Skinning.Styles;

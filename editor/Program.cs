@@ -5,16 +5,20 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 using BrewLib.Audio;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.Desktop;
 using Util;
-using Icon = System.Drawing.Icon;
 using NativeWindow = OpenTK.Windowing.Desktop.NativeWindow;
+using WindowState = OpenTK.Windowing.Common.WindowState;
 
 public static class Program
 {
@@ -81,9 +85,6 @@ public static class Program
             Trace.Write(" / Handle: 0x");
             Trace.WriteLine(Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture));
 
-            using Icon icon = new(typeof(Editor), "icon.ico");
-            Native.SetWindowIcon(icon.Handle);
-
             using Editor editor = new(window);
             window.Resize += _ =>
             {
@@ -140,6 +141,13 @@ public static class Program
             }
         }
 
+        using var iconResource = typeof(Editor).Assembly.GetManifestResourceStream(typeof(Editor), "icon.ico");
+        var decoder = new IconBitmapDecoder(iconResource, BitmapCreateOptions.None, BitmapCacheOption.Default);
+        var icon = decoder.Frames.First();
+
+        var bytes = new byte[icon.PixelWidth * icon.PixelHeight * 4];
+        icon.CopyPixels(bytes, icon.PixelWidth * 4, 0);
+
         NativeWindow window = new(new()
         {
             Flags = ContextFlags.Debug,
@@ -147,7 +155,8 @@ public static class Program
             CurrentMonitor = displayDevice.Handle,
             APIVersion = new(4, 6),
             Title = Name,
-            StartVisible = false
+            StartVisible = false,
+            Icon = new(new Image(icon.PixelWidth, icon.PixelHeight, bytes))
         });
 
         window.CenterWindow(new((int)windowWidth, (int)windowHeight));
@@ -330,7 +339,7 @@ public static class Program
 
                 if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name
                 })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
-                    FullName, MessageBoxButtons.OKCancel) is DialogResult.OK) NetHelper.OpenUrl(DiscordUrl);
+                    FullName, MessageBoxButton.OKCancel) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)
             {

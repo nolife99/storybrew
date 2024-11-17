@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 
 public class Texture2dRegion : IDisposable

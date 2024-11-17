@@ -2,7 +2,7 @@
 
 using System;
 using System.Buffers;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 
 #pragma warning disable CS1591

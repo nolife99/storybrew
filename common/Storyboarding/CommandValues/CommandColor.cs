@@ -1,12 +1,12 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
-using System.Drawing;
 using System.IO;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Color4 = OpenTK.Mathematics.Color4;
+using OpenTK.Mathematics;
+using SixLabors.ImageSharp.PixelFormats;
+using Vector3 = System.Numerics.Vector3;
 
 ///<summary> Base struct for coloring commands. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
@@ -95,15 +95,15 @@ using Color4 = OpenTK.Mathematics.Color4;
 
     /// <summary> Creates a <see cref="CommandColor"/> from a hex-code color. </summary>
     public static CommandColor FromHtml(string htmlColor)
-        => ColorTranslator.FromHtml(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
+        => Rgba32.ParseHex(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
 
     static byte toByte(float x) => byte.CreateTruncating(x * 255);
 
 #pragma warning disable CS1591
     public static implicit operator Color4(CommandColor obj) => new(obj.internalVec.X, obj.internalVec.Y, obj.internalVec.Z, 1);
     public static implicit operator CommandColor(Color4 obj) => new Vector3(obj.R, obj.G, obj.B);
-    public static implicit operator Color(CommandColor obj) => Color.FromArgb(obj.R, obj.G, obj.B);
-    public static implicit operator CommandColor(Color obj) => new Vector3(obj.R / 255f, obj.G / 255f, obj.B / 255f);
+    public static implicit operator Rgba32(CommandColor obj) => new(obj.R, obj.G, obj.B);
+    public static implicit operator CommandColor(Rgba32 obj) => new Vector3(obj.R / 255f, obj.G / 255f, obj.B / 255f);
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
     public static implicit operator Vector3(CommandColor obj) => Unsafe.As<CommandColor, Vector3>(ref obj);
     public static implicit operator CommandColor(Vector3 obj) => Unsafe.As<Vector3, CommandColor>(ref obj);

@@ -1,7 +1,7 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -78,8 +78,8 @@ using Vector2 = System.Numerics.Vector2;
     public static implicit operator CommandPosition(Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator Vector2d(CommandPosition position) => new(position.X, position.Y);
 
-    public static implicit operator PointF(CommandPosition position) => Unsafe.As<CommandPosition, PointF>(ref position);
-    public static implicit operator CommandPosition(PointF vector) => Unsafe.As<PointF, CommandPosition>(ref vector);
+    public static implicit operator PointF(CommandPosition position) => position.internalVec;
+    public static implicit operator CommandPosition(PointF vector) => (Vector2)vector;
 
     public static implicit operator Vector2(CommandPosition position) => Unsafe.As<CommandPosition, Vector2>(ref position);
     public static implicit operator CommandPosition(Vector2 vector) => Unsafe.As<Vector2, CommandPosition>(ref vector);

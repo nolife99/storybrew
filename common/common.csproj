@@ -12,7 +12,6 @@
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
         <EnableNETAnalyzers>True</EnableNETAnalyzers>
         <AnalysisLevel>latest-recommended</AnalysisLevel>
-        <UseWindowsForms>True</UseWindowsForms>
         <LangVersion>default</LangVersion>
         <DebugType>embedded</DebugType>
     </PropertyGroup>

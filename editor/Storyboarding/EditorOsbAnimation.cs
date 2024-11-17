@@ -1,6 +1,6 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
-using System.Drawing;
+using SixLabors.ImageSharp;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using StorybrewCommon.Storyboarding;

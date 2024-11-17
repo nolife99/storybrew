@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using Data;
 using Graphics.Drawables;
 using Graphics.Textures;
+using SixLabors.ImageSharp.PixelFormats;
 using Styles;
 using Tiny;
 using Tiny.Formats.Json;
@@ -305,27 +306,27 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
             throw new InvalidDataException($"Incorrect vector2 format: {data}");
         },
-        [typeof(Color)] = (data, constants, _) =>
+        [typeof(Rgba32)] = (data, constants, _) =>
         {
             if (data.Type is TinyTokenType.String)
             {
                 var value = data.Value<string>();
-                if (value.StartsWith('#')) return ColorTranslator.FromHtml(value);
+                if (value.StartsWith('#')) return Rgba32.ParseHex(value);
 
-                var colorMethod = typeof(Color).GetMethod($"get_{value}");
-                if (colorMethod?.ReturnType == typeof(Color)) return colorMethod.Invoke(null, null);
+                var colorMethod = typeof(Color).GetField(value);
+                if (colorMethod?.FieldType == typeof(Color)) return (Rgba32)(Color)colorMethod.GetValue(null);
             }
 
             if (data is TinyArray tinyArray)
                 return tinyArray.Count switch
                 {
-                    3 => Color.FromArgb((int)(resolve<float>(tinyArray[0], constants) * 255),
-                        (int)(resolve<float>(tinyArray[1], constants) * 255),
-                        (int)(resolve<float>(tinyArray[2], constants) * 255)),
-                    _ => Color.FromArgb((int)(resolve<float>(tinyArray[3], constants) * 255),
-                        (int)(resolve<float>(tinyArray[0], constants) * 255),
-                        (int)(resolve<float>(tinyArray[1], constants) * 255),
-                        (int)(resolve<float>(tinyArray[2], constants) * 255))
+                    3 => new Rgba32(resolve<float>(tinyArray[0], constants),
+                        resolve<float>(tinyArray[1], constants),
+                        resolve<float>(tinyArray[2], constants)),
+                    _ => new Rgba32(resolve<float>(tinyArray[0], constants),
+                        resolve<float>(tinyArray[1], constants),
+                        resolve<float>(tinyArray[2], constants),
+                        resolve<float>(tinyArray[3], constants))
                 };
 
             throw new InvalidDataException($"Incorrect color format: {data}");

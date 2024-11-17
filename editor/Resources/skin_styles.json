@@ -13,7 +13,6 @@
         FontName: "@mainFont",
         FontSize: "@fontSizeNormal",
         TextAlignment: "TopLeft",
-        Trimming: "None",
         Color: "@colorText"
       },
       "listGroup": {
@@ -47,7 +46,6 @@
       "tooltip": {
         FontSize: "@fontSizeSmall",
         Background: "tooltipBg",
-        Trimming: "EllipsisCharacter"
       },
       "statusMessage": {
         Background: "tooltipBg"
@@ -56,7 +54,6 @@
         FontName: "@lightFont",
         FontSize: "@fontSizeSmall",
         TextAlignment: "BottomRight",
-        Trimming: "EllipsisCharacter"
       },
       "small": {
         FontSize: "@fontSizeSmall"
@@ -106,7 +103,6 @@
       "textboxContent": {
         FontName: "@lightFont",
         FontSize: "@fontSizeNormal",
-        Trimming: "None",
         Background: "button"
       },
       "textboxContent #hover": {

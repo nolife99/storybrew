@@ -2,17 +2,21 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using System.Drawing.Text;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using BrewLib.Util;
 using Scripting;
+using SixLabors.Fonts;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using Storyboarding;
+using Path = System.IO.Path;
 
 /// <summary> Stores information about a font image. </summary>
 /// <remarks> Creates a new <see cref="FontTexture"/> storing information of the texture. </remarks>
@@ -31,7 +35,7 @@ public class FontTexture(string path,
     int baseHeight,
     int width,
     int height,
-    PathData paths)
+    IPathCollection paths)
 {
     ///<summary> The path to the font texture. </summary>
     public string Path => path;
@@ -58,7 +62,7 @@ public class FontTexture(string path,
     public int Height => height;
 
     ///<summary> The line segments that comprise this text. </summary>
-    public PathData PathData => paths;
+    public IPathCollection PathData => paths;
 
     /// <summary> Gets the font offset for the given <see cref="OsbOrigin"/>. </summary>
     public Vector2 OffsetFor(OsbOrigin origin) => origin switch
@@ -76,23 +80,30 @@ public class FontTexture(string path,
 }
 
 ///<summary> A class that generates and manages font textures. </summary>
-public sealed class FontGenerator : IDisposable
+public sealed class FontGenerator
 {
     readonly string assetDirectory;
 
     readonly Dictionary<string, FontTexture> cache = [];
-    readonly PrivateFontCollection collection;
     readonly FontDescription description;
     readonly FontEffect[] effects;
 
     readonly float emSize;
-    readonly Font font;
 
-    readonly StringFormat format;
-    readonly Graphics metrics;
+    readonly TextOptions format;
     readonly SolidBrush textBrush;
 
-    bool disposed;
+    internal static readonly DrawingOptions options = new()
+    {
+        GraphicsOptions = new()
+        {
+            Antialias = true
+        },
+        ShapeOptions = new()
+        {
+            IntersectionRule = IntersectionRule.NonZero
+        }
+    };
 
     internal FontGenerator(string dir, FontDescription desc, FontEffect[] fx, string projDir, string assetDir)
     {
@@ -101,56 +112,33 @@ public sealed class FontGenerator : IDisposable
         effects = fx;
         assetDirectory = assetDir;
 
-        format = new(StringFormat.GenericTypographic)
-        {
-            Alignment = StringAlignment.Center,
-            FormatFlags = StringFormatFlags.FitBlackBox | StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoClip
-        };
-
         textBrush = new(description.Color);
-
-        metrics = Graphics.FromHwnd(0);
-        metrics.TextRenderingHint = TextRenderingHint.SingleBitPerPixel;
-        metrics.InterpolationMode = InterpolationMode.NearestNeighbor;
 
         var fontPath = Path.Combine(projDir, description.FontPath);
         if (!File.Exists(fontPath)) fontPath = description.FontPath;
 
-        FontFamily[] family = null;
+        FontFamily family = default;
         if (File.Exists(fontPath))
         {
-            collection = new();
-            collection.AddFontFile(fontPath);
-            family = collection.Families;
+            FontCollection collection = new();
+            family = collection.Add(fontPath, CultureInfo.InvariantCulture);
         }
 
-        var ptSize = 96 / metrics.DpiY * description.FontSize;
-        font = family is null ? new(fontPath, ptSize, description.FontStyle) : new(family[0], ptSize, description.FontStyle);
-        if (family is not null && family.Length > 1)
-            for (var i = 1; i < family.Length; ++i)
-                family[i].Dispose();
 
-        emSize = font.GetHeight(metrics) * font.FontFamily.GetEmHeight(description.FontStyle) /
-            font.FontFamily.GetLineSpacing(description.FontStyle);
+        emSize = 96f * description.FontSize / 72;
+        var font = family == default ?
+            SystemFonts.CreateFont(fontPath, emSize, description.FontStyle) :
+            new(family, emSize, description.FontStyle);
+
+        format = new(font)
+        {
+            TextAlignment = TextAlignment.Center,
+            HintingMode = HintingMode.Standard
+        };
     }
 
     /// <summary> The directory to the font textures. </summary>
     public string Directory { get; }
-
-    /// <summary> Deletes and frees all loaded fonts from memory. </summary>
-    /// <remarks> Do not call from script code. This is automatically disposed at the end of script execution. </remarks>
-    public void Dispose()
-    {
-        if (disposed) return;
-
-        format.Dispose();
-        metrics.Dispose();
-        textBrush.Dispose();
-        font.Dispose();
-        collection?.Dispose();
-
-        disposed = true;
-    }
 
     ///<summary> Gets the texture path of the matching item's string representation. </summary>
     public FontTexture GetTexture(object obj)
@@ -162,9 +150,7 @@ public sealed class FontGenerator : IDisposable
 
     FontTexture generateTexture(string text)
     {
-        ObjectDisposedException.ThrowIf(disposed, this);
-
-        var measuredSize = metrics.MeasureString(text, font, 0, format);
+        var measuredSize = TextMeasurer.MeasureAdvance(text, format);
         var baseWidth = (int)float.Ceiling(measuredSize.Width);
         var baseHeight = (int)float.Ceiling(measuredSize.Height);
 
@@ -176,11 +162,13 @@ public sealed class FontGenerator : IDisposable
             effectsHeight = Math.Max(effectsHeight, effectSize.Height);
         }
 
-        var width = (int)float.Ceiling(baseWidth + effectsWidth + description.Padding.X * 2);
-        var height = (int)float.Ceiling(baseHeight + effectsHeight + description.Padding.Y * 2);
+        var actualPadding = description.Padding with { Y = description.Padding.Y + 2 };
 
-        var paddingX = description.Padding.X + effectsWidth / 2;
-        var paddingY = description.Padding.Y + effectsHeight / 2;
+        var width = (int)float.Ceiling(baseWidth + effectsWidth + actualPadding.X * 2);
+        var height = (int)float.Ceiling(baseHeight + effectsHeight + actualPadding.Y * 2);
+
+        var paddingX = actualPadding.X + effectsWidth / 2;
+        var paddingY = actualPadding.Y + effectsHeight / 2;
         var x = paddingX + measuredSize.Width / 2;
 
         var offsetX = -paddingX;
@@ -189,39 +177,30 @@ public sealed class FontGenerator : IDisposable
         if (string.IsNullOrWhiteSpace(text) || width == 0 || height == 0)
             return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height, null);
 
-        Bitmap realText = new(width, height);
-        using GraphicsPath segments = new(FillMode.Winding);
-
-        using (var textGraphics = Graphics.FromImage(realText))
+        Image<Rgba32> realText = new(width, height);
+        if (description.Debug)
         {
-            textGraphics.SmoothingMode = SmoothingMode.AntiAlias;
-            textGraphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-            textGraphics.CompositingQuality = CompositingQuality.HighQuality;
-            textGraphics.PixelOffsetMode = PixelOffsetMode.Half;
-
-            if (description.Debug)
-            {
-                FastRandom r = new(cache.Count);
-                textGraphics.Clear(Color.FromArgb(r.Next(100, 255), r.Next(100, 255), r.Next(100, 255)));
-            }
-
-            segments.AddString(text, font.FontFamily, (int)description.FontStyle, emSize, new PointF(x, paddingY), format);
-
-            foreach (var t in effects)
-                if (!t.Overlay)
-                    t.Draw(realText, textGraphics, segments, x, paddingY);
-
-            if (!description.EffectsOnly) textGraphics.FillPath(textBrush, segments);
-            foreach (var t in effects)
-                if (t.Overlay)
-                    t.Draw(realText, textGraphics, segments, x, paddingY);
-
-            if (description.Debug)
-            {
-                textGraphics.DrawLine(Pens.Red, x, paddingY, x, paddingY + baseHeight);
-                textGraphics.DrawLine(Pens.Red, x - baseWidth * .5f, paddingY, x + baseWidth * .5f, paddingY);
-            }
+            FastRandom r = new(cache.Count);
+            realText.Mutate(b => b.Clear(new Rgb24((byte)r.Next(100, 255), (byte)r.Next(100, 255), (byte)r.Next(100, 255))));
         }
+
+        var segments = TextBuilder.GenerateGlyphs(text, format).Translate(paddingX, paddingY);
+
+        foreach (var t in effects)
+            if (!t.Overlay)
+                t.Draw(realText, segments, x, paddingY);
+
+        if (!description.EffectsOnly) realText.Mutate(b => b.Fill(options, textBrush, segments));
+        foreach (var t in effects)
+            if (t.Overlay)
+                t.Draw(realText, segments, x, paddingY);
+
+        if (description.Debug)
+            realText.Mutate(b =>
+            {
+                b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + baseHeight));
+                b.DrawLine(Color.Red, 1, new(x - baseWidth * .5f, paddingY), new(x + baseWidth * .5f, paddingY));
+            });
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;
         var validBounds = !bounds.IsEmpty && !bounds.Equals(new(0, 0, width, height));
@@ -261,25 +240,18 @@ public sealed class FontGenerator : IDisposable
         if (trimExist)
         {
             realText.Dispose();
-            return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
+            return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
         }
 
         var path = Path.Combine(assetDirectory, texturePath);
         using (var stream = File.Create(path))
-            if (validBounds)
-            {
-                using var cropped = realText.FastCloneSection(bounds);
-                realText.Dispose();
-                realText = cropped;
-                Misc.WithRetries(() => cropped.Save(stream, ImageFormat.Png));
-            }
-            else Misc.WithRetries(() => realText.Save(stream, ImageFormat.Png));
+        {
+            if (validBounds) realText.Mutate(b => b.AutoOrient().Crop(bounds));
+            Misc.WithRetries(()
+                => realText.SaveAsPng(stream, new() { CompressionLevel = PngCompressionLevel.BestCompression }));
+        }
 
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
-        if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) ||
-            path.Contains(StoryboardObjectGenerator.Current.AssetPath))
-            StoryboardObjectGenerator.Current.Compressor.Compress(path, new(0, 75, 1));
-
-        return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments.PathData);
+        return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
     }
 }

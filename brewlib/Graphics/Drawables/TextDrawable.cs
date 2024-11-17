@@ -1,10 +1,11 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
 using System;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using Cameras;
 using Renderers;
+using SixLabors.ImageSharp.PixelFormats;
 using Text;
 using Util;
 
@@ -12,7 +13,7 @@ public sealed class TextDrawable : Drawable
 {
     readonly RenderStates RenderStates = new();
     BoxAlignment alignment = BoxAlignment.TopLeft;
-    public Color Color = Color.White;
+    public Rgba32 Color = SixLabors.ImageSharp.Color.White;
     float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
 
     TextFont font;
@@ -21,7 +22,6 @@ public sealed class TextDrawable : Drawable
 
     Vector2 maxSize;
     TextLayout textLayout;
-    StringTrimming trimming = StringTrimming.None;
 
     public Vector2 Size
     {
@@ -96,17 +96,6 @@ public sealed class TextDrawable : Drawable
         {
             if (alignment == value) return;
             alignment = value;
-            invalidate();
-        }
-    }
-
-    public StringTrimming Trimming
-    {
-        get => trimming;
-        set
-        {
-            if (trimming == value) return;
-            trimming = value;
             invalidate();
         }
     }

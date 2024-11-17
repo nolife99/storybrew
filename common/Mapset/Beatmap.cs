@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Mapset;
 
 using System.Collections.Generic;
-using System.Drawing;
+using SixLabors.ImageSharp.PixelFormats;
 
 ///<summary> Represents an osu! beatmap difficulty. </summary>
 public abstract class Beatmap
@@ -55,7 +55,7 @@ public abstract class Beatmap
     public abstract IEnumerable<ControlPoint> TimingPoints { get; }
 
     ///<summary> Returns the hit circle combo colors of this difficulty. </summary>
-    public abstract IEnumerable<Color> ComboColors { get; }
+    public abstract IEnumerable<Rgba32> ComboColors { get; }
 
     ///<summary> Returns the breaks of this difficulty. </summary>
     public abstract IEnumerable<OsuBreak> Breaks { get; }

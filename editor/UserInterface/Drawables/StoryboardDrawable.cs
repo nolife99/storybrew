@@ -1,6 +1,6 @@
 ﻿namespace StorybrewEditor.UserInterface.Drawables;
 
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Numerics;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;

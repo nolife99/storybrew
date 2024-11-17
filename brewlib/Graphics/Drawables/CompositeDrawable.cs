@@ -2,9 +2,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Numerics;
 using Cameras;
+using SixLabors.ImageSharp;
 
 public sealed class CompositeDrawable : Drawable
 {

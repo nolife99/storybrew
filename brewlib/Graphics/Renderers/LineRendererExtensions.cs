@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
-using System.Drawing;
+using SixLabors.ImageSharp.PixelFormats;
 using System.Numerics;
 
 public static class LineRendererExtensions
 {
-    public static void DrawSquare(this LineRenderer line, Vector3 from, Vector3 to, Color color)
+    public static void DrawSquare(this LineRenderer line, Vector3 from, Vector3 to, Rgba32 color)
     {
         Vector3 topRight = new(to.X, from.Y, from.Z);
         Vector3 bottomLeft = new(from.X, to.Y, from.Z);

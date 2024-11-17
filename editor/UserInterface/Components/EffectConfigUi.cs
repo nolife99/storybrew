@@ -2,7 +2,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Drawing;
+using SixLabors.ImageSharp;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
@@ -274,8 +275,8 @@ public class EffectConfigUi : Widget
                 ];
             };
         }
-        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color4) || field.Type == typeof(Color) ||
-            field.Type == typeof(FontColor)) return colorField(field);
+        else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color4) || field.Type == typeof(Rgba32))
+            return colorField(field);
         else if (field.Type.GetInterface(nameof(IConvertible)) is not null)
         {
             Textbox widget = new(Manager)
@@ -371,13 +372,13 @@ public class EffectConfigUi : Widget
 
     HsbColorPicker colorField(EffectConfig.ConfigField field)
     {
-        if (field.Type == typeof(Color4) || field.Type == typeof(Color))
+        if (field.Type == typeof(Color4) || field.Type == typeof(Rgba32))
         {
             HsbColorPicker widget = new(Manager)
             {
                 Value = field.Type == typeof(Color4) ?
-                    Unsafe.Unbox<Color4>(field.Value) :
-                    (FontColor)Unsafe.Unbox<Color>(field.Value),
+                    new(Unsafe.BitCast<Color4, Vector4>(Unsafe.Unbox<Color4>(field.Value))) :
+                    Unsafe.Unbox<Rgba32>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -385,12 +386,12 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(Color4)) setFieldValue(field, (Color4)widget.Value);
-                else setFieldValue(field, (Color)widget.Value);
+                if (field.Type == typeof(Color4)) setFieldValue(field, Unsafe.BitCast<Vector4, Color4>(widget.Value.ToVector4()));
+                else setFieldValue(field, widget.Value);
 
                 widget.Value = field.Type == typeof(Color4) ?
-                    Unsafe.Unbox<Color4>(effect.Config.GetValue(field.Name)) :
-                    (FontColor)Unsafe.Unbox<Color>(effect.Config.GetValue(field.Name));
+                    new(Unsafe.BitCast<Color4, Vector4>(Unsafe.Unbox<Color4>(effect.Config.GetValue(field.Name)))) :
+                    Unsafe.Unbox<Rgba32>(effect.Config.GetValue(field.Name));
             };
 
             return widget;
@@ -399,8 +400,8 @@ public class EffectConfigUi : Widget
         {
             HsbColorPicker widget = new(Manager)
             {
-                Value = field.Type == typeof(FontColor) ?
-                    Unsafe.Unbox<FontColor>(field.Value) :
+                Value = field.Type == typeof(Rgba32) ?
+                    Unsafe.Unbox<Rgba32>(field.Value) :
                     Unsafe.Unbox<CommandColor>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
@@ -409,11 +410,11 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(FontColor)) setFieldValue(field, widget.Value);
+                if (field.Type == typeof(Rgba32)) setFieldValue(field, widget.Value);
                 else setFieldValue(field, (CommandColor)widget.Value);
 
-                widget.Value = field.Type == typeof(FontColor) ?
-                    Unsafe.Unbox<FontColor>(effect.Config.GetValue(field.Name)) :
+                widget.Value = field.Type == typeof(Rgba32) ?
+                    Unsafe.Unbox<Rgba32>(effect.Config.GetValue(field.Name)) :
                     Unsafe.Unbox<CommandColor>(effect.Config.GetValue(field.Name));
             };
 

@@ -2,7 +2,6 @@ namespace StorybrewCommon.Storyboarding.Util;
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
 using System.Numerics;
 using Animations;
@@ -157,7 +156,7 @@ public class CommandGenerator
         clearKeyframes();
     }
 
-    void commitKeyframes(SizeF imageSize)
+    void commitKeyframes(Vector2 imageSize)
     {
         fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f * 100, 0, 100));
         if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
@@ -168,7 +167,7 @@ public class CommandGenerator
         finalPositions.Until(positions.StartTime);
         positions.TransferKeyframes(finalPositions);
 
-        scales.Simplify2dKeyframes(ScaleTolerance, v => new(v.X * imageSize.Width, v.Y * imageSize.Height));
+        scales.Simplify2dKeyframes(ScaleTolerance, v => (Vector2)v * imageSize);
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
@@ -181,7 +180,7 @@ public class CommandGenerator
         colors.TransferKeyframes(finalColors);
     }
 
-    void convertToCommands(OsbSprite sprite, float? startTime, float? endTime, float timeOffset, SizeF imageSize, bool loopable)
+    void convertToCommands(OsbSprite sprite, float? startTime, float? endTime, float timeOffset, Vector2 imageSize, bool loopable)
     {
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
@@ -231,7 +230,7 @@ public class CommandGenerator
         additive.ForEachFlag(sprite.Additive);
         return;
 
-        float checkScale(float value) => value * Math.Max(imageSize.Width, imageSize.Height);
+        float checkScale(float value) => value * Math.Max(imageSize.X, imageSize.Y);
         float checkPos(float value) => float.Round(value, PositionDecimals);
     }
 
@@ -277,8 +276,13 @@ public class CommandGenerator
         additive.Clear();
     }
 
-    internal static SizeF BitmapDimensions(string path) => StoryboardObjectGenerator.Current
-        .GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).PhysicalDimension;
+    internal static Vector2 BitmapDimensions(string path)
+    {
+        var size = StoryboardObjectGenerator.Current
+            .GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0).Size;
+
+        return new(size.Width, size.Height);
+    }
 }
 
 /// <summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
@@ -335,10 +339,10 @@ public class State : IComparer<State>, IResettable
     ///     <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns
     ///     <see langword="false"/>.
     /// </returns>
-    public bool IsVisible(SizeF imageSize, OsbOrigin origin, CommandGenerator generator = null)
+    public bool IsVisible(Vector2 imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;
-        CommandScale scale = new(noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
+        Vector2 scale = new(noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
             noGen ? Scale.Y : float.Round(Scale.Y, generator.ScaleDecimals));
 
         if (Additive && Color == CommandColor.Black || (noGen ? Opacity : float.Round(Opacity, generator.OpacityDecimals)) <= 0 ||
