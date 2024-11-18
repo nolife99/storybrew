@@ -115,11 +115,13 @@ public sealed class TextDrawable : Drawable
             new(new(camera.ExtendedViewport.Left + camera.Position.X, camera.ExtendedViewport.Top + camera.Position.Y),
                 camera.ExtendedViewport.Size);
 
-        foreach (var layoutGlyph in textLayout.VisibleGlyphs)
+        foreach (var line in textLayout.Lines)
+        foreach (var layoutGlyph in line.Glyphs)
         {
             var glyph = layoutGlyph.Glyph;
-            var position = layoutGlyph.Position;
+            if (glyph.IsEmpty) continue;
 
+            var position = layoutGlyph.Position;
             var y = bounds.Top + position.Y * inverseScaling;
             if (y > clipRegion.Bottom) break;
             if (y + glyph.Height * inverseScaling < clipRegion.Top) continue;

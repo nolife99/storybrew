@@ -17,9 +17,9 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
 {
     readonly FontFamily[] fallback = [SystemFonts.Get("Segoe UI Symbol", CultureInfo.InvariantCulture)];
     readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
+
     readonly Dictionary<string, FontCollection> fontCollections = [];
     readonly Dictionary<string, FontFamily> fontFamilies = [];
-
     readonly Dictionary<int, Font> fonts = [];
 
     public Image<Rgba32> CreateBitmap(string text,

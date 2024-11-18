@@ -5,16 +5,14 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Imaging;
 using BrewLib.Audio;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Util;
 using WindowState = OpenTK.Windowing.Common.WindowState;
 
@@ -139,27 +137,29 @@ public static class Program
             }
         }
 
-        using var iconResource = typeof(Editor).Assembly.GetManifestResourceStream(typeof(Editor), "icon.ico");
-        IconBitmapDecoder decoder = new(iconResource, BitmapCreateOptions.None, BitmapCacheOption.None);
-        var icon = decoder.Frames.First();
+        const ContextFlags debugContext =
+#if DEBUG
+        ContextFlags.Debug;
+#else
+            ContextFlags.Default;
+#endif
 
-        var bytes = new byte[icon.PixelWidth * icon.PixelHeight * 4];
-        icon.CopyPixels(bytes, icon.PixelWidth * 4, 0);
+        if (debugContext is not ContextFlags.Debug) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
 
         NativeWindow window = new(new()
         {
-            Flags = ContextFlags.Default,
+            Flags = debugContext,
             Profile = ContextProfile.Compatability,
             CurrentMonitor = displayDevice.Handle,
             APIVersion = new(4, 6),
             Title = Name,
-            StartVisible = false,
-            Icon = new(new Image(icon.PixelWidth, icon.PixelHeight, bytes))
+            StartVisible = false
         });
 
-        window.CenterWindow(new((int)windowWidth, (int)windowHeight));
-
         Native.InitializeHandle(Name, window.WindowPtr);
+        Native.SetWindowIcon(typeof(Editor), "icon.ico");
+
+        window.CenterWindow(new((int)windowWidth, (int)windowHeight));
         Trace.WriteLine($"Window dpi scale: {dpiScale}");
 
         if (window.Location is { X: >= 0, Y: >= 0 }) return window;
@@ -292,7 +292,7 @@ public static class Program
 
     const string DefaultLogPath = "logs";
 
-    static readonly object errorHandlerLock = new();
+    static readonly Lock errorHandlerLock = new();
     static volatile bool insideErrorHandler;
 
     static async void setupLogging(string logsPath = null, string commonLogFilename = null)

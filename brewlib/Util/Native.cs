@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public static unsafe partial class Native
@@ -246,6 +247,21 @@ public static unsafe partial class Native
 
                     return cont;
                 }, 0);
+    }
+
+    public static void SetWindowIcon(Type type, string iconPath)
+    {
+        IconBitmapDecoder decoder;
+        using (var iconResource = type.Assembly.GetManifestResourceStream(type, iconPath))
+            decoder = new(iconResource, BitmapCreateOptions.None, BitmapCacheOption.Default);
+
+        var frame = decoder.Frames[0];
+        var bytesLength = frame.PixelWidth * frame.PixelHeight * 4;
+        var bytes = stackalloc byte[bytesLength];
+
+        frame.CopyPixels(default, (nint)bytes, bytesLength, frame.PixelWidth * 4);
+        Image icon = new(frame.PixelWidth, frame.PixelHeight, bytes);
+        GLFW.SetWindowIconRaw(glfwPtr, 1, &icon);
     }
 
     #endregion

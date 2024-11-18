@@ -9,13 +9,13 @@ public static class ColorExtensions
     public static Color LerpColor(this Color color, Color otherColor, float blend)
     {
         var rgba = (Vector4)color;
-        return new(Vector4.Lerp(rgba, (Vector4)otherColor, blend) with { Z = rgba.Z });
+        return new Rgba32(Vector4.Lerp(rgba, (Vector4)otherColor, blend) with { Z = rgba.Z });
     }
     public static Color WithOpacity(this Color color, float opacity)
     {
         var vector = (Vector4)color;
         vector.W *= opacity;
-        return (Color)vector;
+        return new Rgba32(vector);
     }
 
     public static Rgba32 FromHsb(Vector4 hsba)

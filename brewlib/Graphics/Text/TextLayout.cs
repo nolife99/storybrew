@@ -36,16 +36,7 @@ public class TextLayout
 
     public Vector2 Size { get; }
 
-    public IEnumerable<TextLayoutGlyph> VisibleGlyphs
-    {
-        get
-        {
-            foreach (var line in lines)
-            foreach (var glyph in line.Glyphs)
-                if (!glyph.Glyph.IsEmpty)
-                    yield return glyph;
-        }
-    }
+    public IReadOnlyList<TextLayoutLine> Lines => lines;
 
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {

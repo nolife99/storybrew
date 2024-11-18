@@ -7,32 +7,18 @@ using CommunityToolkit.HighPerformance.Buffers;
 using Data;
 using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 
-public sealed class Texture2d : Texture2dRegion, BindableTexture
+public sealed class Texture2d(int textureId, int width, int height, string description)
+    : Texture2dRegion(null, new(0, 0, width, height)), BindableTexture
 {
-    static readonly DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone(), MaxFrames = 1 };
-
-    readonly string _description;
-    readonly int _textureId;
-
-    Texture2d(int textureId, int width, int height, string description) : base(null, new(0, 0, width, height))
-    {
-        _textureId = textureId;
-        _description = description;
-
-        decoderOptions.Configuration.PreferContiguousImageBuffers = true;
-    }
-
-    public int TextureId => disposed ? throw new ObjectDisposedException(_description) : _textureId;
+    public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
     public unsafe void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions)
     {
-        if (!bitmap.DangerousTryGetSinglePixelMemory(out var memory))
-            throw new InvalidDataException("Image data is not contiguous.");
+        if (!bitmap.DangerousTryGetSinglePixelMemory(out var memory)) throw new InvalidDataException("Image is too large!");
 
-        DrawState.BindTexture(_textureId);
+        DrawState.BindTexture(textureId);
         fixed (void* ptr = memory.Span)
             GL.TexSubImage2D(TextureTarget.Texture2D, 0, x, y, bitmap.Width, bitmap.Height, PixelFormat.Rgba,
                 PixelType.UnsignedByte, (nint)ptr);
@@ -41,11 +27,11 @@ public sealed class Texture2d : Texture2dRegion, BindableTexture
     {
         if (File.Exists(filename))
             using (var stream = File.OpenRead(filename))
-                return Image.Load<Rgba32>(decoderOptions, stream);
+                return Image.Load<Rgba32>(stream);
 
         using (var stream = resourceContainer?.GetStream(filename, ResourceSource.Embedded))
             if (stream is not null)
-                return Image.Load<Rgba32>(decoderOptions, stream);
+                return Image.Load<Rgba32>(stream);
 
         Trace.TraceWarning($"Texture not found: {filename}");
         return null;
@@ -109,8 +95,7 @@ public sealed class Texture2d : Texture2dRegion, BindableTexture
         textureOptions ??= TextureOptions.Default;
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
-        if (!bitmap.DangerousTryGetSinglePixelMemory(out var memory))
-            throw new InvalidDataException("Image data is not contiguous.");
+        if (!bitmap.DangerousTryGetSinglePixelMemory(out var memory)) throw new InvalidDataException("Image is too large!");
 
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
@@ -131,8 +116,8 @@ public sealed class Texture2d : Texture2dRegion, BindableTexture
     {
         if (!disposed)
         {
-            DrawState.UnbindTexture(_textureId);
-            GL.DeleteTexture(_textureId);
+            DrawState.UnbindTexture(textureId);
+            GL.DeleteTexture(textureId);
 
             if (disposing) disposed = true;
         }
