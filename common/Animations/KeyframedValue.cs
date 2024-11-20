@@ -408,7 +408,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
         var lastPoint = keyframes.Count - 1;
         List<int> keep = [0, lastPoint];
-        getSimplifiedKeyframeIndexes(ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
+        getSimplifiedKeyframeIndices(ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
         if (keep.Count == keyframes.Count) return;
 
         List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
@@ -419,7 +419,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         keyframes = simplifiedKeyframes;
     }
 
-    void getSimplifiedKeyframeIndexes(ref List<int> keep,
+    void getSimplifiedKeyframeIndices(ref List<int> keep,
         int first,
         int last,
         float epsilonSq,
@@ -442,7 +442,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             }
 
             if (maxDistSq < epsilonSq || indexFar <= 0) return;
-            getSimplifiedKeyframeIndexes(ref keep, first, indexFar, epsilonSq, getDistance);
+            getSimplifiedKeyframeIndices(ref keep, first, indexFar, epsilonSq, getDistance);
             keep.Add(indexFar);
             first = indexFar;
         }

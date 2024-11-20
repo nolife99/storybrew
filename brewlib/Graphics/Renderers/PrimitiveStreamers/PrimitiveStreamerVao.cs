@@ -11,10 +11,12 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     protected int VertexArrayId = -1, VertexBufferId = -1, IndexBufferId = -1, PrimitiveSize, MinRenderableVertexCount;
     protected VertexDeclaration VertexDeclaration;
 
-    protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration, int minRenderableVertexCount, ReadOnlySpan<ushort> indexes)
+    protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration,
+        int minRenderableVertexCount,
+        ReadOnlySpan<ushort> indices)
     {
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
-        if (!indexes.IsEmpty && minRenderableVertexCount > ushort.MaxValue)
+        if (!indices.IsEmpty && minRenderableVertexCount > ushort.MaxValue)
             throw new ArgumentException("Can't have more than " + ushort.MaxValue + " indexed vertices");
 
         MinRenderableVertexCount = minRenderableVertexCount;
@@ -22,7 +24,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         PrimitiveSize = Marshal.SizeOf<TPrimitive>();
 
         initializeVertexBuffer();
-        if (!indexes.IsEmpty) initializeIndexBuffer(indexes);
+        if (!indices.IsEmpty) initializeIndexBuffer(indices);
     }
 
     public int DiscardedBufferCount { get; protected set; }
@@ -50,12 +52,14 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     }
 
     protected virtual void initializeVertexBuffer() => VertexBufferId = GL.GenBuffer();
-    unsafe void initializeIndexBuffer(ReadOnlySpan<ushort> indexes)
+    unsafe void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         IndexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
-        fixed (void* ptr = indexes)
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), (nint)ptr, BufferUsageHint.StaticDraw);
+        fixed (void* ptr = indices)
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(ushort), (nint)ptr,
+                BufferUsageHint.StaticDraw);
+
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
     protected virtual void internalBind(Shader shader)

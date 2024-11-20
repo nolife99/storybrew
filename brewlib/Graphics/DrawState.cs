@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Cameras;
@@ -370,8 +369,8 @@ public static class DrawState
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }
 
-    public static bool HasCapabilities(int major, int minor, string extension = null)
-        => glVer >= new Version(major, minor) || extension is null || GLFW.ExtensionSupported(extension);
+    public static bool HasCapabilities(int major, int minor, string extension = null) => glVer >= new Version(major, minor) ||
+        extension is null || GLFW.ExtensionSupported(extension);
 
     public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
     {

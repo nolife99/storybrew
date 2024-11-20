@@ -1,14 +1,13 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
-    ReadOnlySpan<ushort> indexes)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes), PrimitiveStreamer
+    ReadOnlySpan<ushort> indices)
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices), PrimitiveStreamer
     where TPrimitive : unmanaged
 {
     int bufferOffset, drawOffset, vertexBufferSize;
@@ -21,7 +20,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         if (bufferOffset + vertexDataSize > vertexBufferSize)
         {
             bufferOffset = 0;
-            Trace.WriteLine(drawOffset);
             drawOffset = 0;
         }
 

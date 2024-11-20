@@ -4,6 +4,7 @@ using System;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 
+[Obsolete("Not supported in OpenGL Core")]
 public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
 {
     readonly int primitiveSize;
@@ -13,7 +14,7 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
 
     int vertexBufferId = -1, indexBufferId = -1;
 
-    public PrimitiveStreamerVbo(VertexDeclaration vertexDeclaration, ReadOnlySpan<ushort> indexes)
+    public PrimitiveStreamerVbo(VertexDeclaration vertexDeclaration, ReadOnlySpan<ushort> indices)
     {
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
 
@@ -21,7 +22,7 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
         primitiveSize = Marshal.SizeOf<TPrimitive>();
 
         initializeVertexBuffer();
-        if (!indexes.IsEmpty) initializeIndexBuffer(indexes);
+        if (!indices.IsEmpty) initializeIndexBuffer(indices);
     }
 
     public int DiscardedBufferCount { get; private set; }
@@ -62,7 +63,9 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
         indexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId);
         fixed (void* ptr = indexes)
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), (nint)ptr, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), (nint)ptr,
+                BufferUsageHint.StaticDraw);
+
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
     void internalBind(Shader shader)

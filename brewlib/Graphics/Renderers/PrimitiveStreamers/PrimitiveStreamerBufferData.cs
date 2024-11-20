@@ -5,8 +5,8 @@ using OpenTK.Graphics.OpenGL;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
-    ReadOnlySpan<ushort> indexes)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes) where TPrimitive : unmanaged
+    ReadOnlySpan<ushort> indices)
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : unmanaged
 {
     public override void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer)
     {

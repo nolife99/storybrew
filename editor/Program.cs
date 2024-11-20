@@ -139,9 +139,9 @@ public static class Program
 
         const ContextFlags debugContext =
 #if DEBUG
-        ContextFlags.Debug;
-#else
             ContextFlags.Debug;
+#else
+            ContextFlags.ForwardCompatible;
 #endif
 
         if (debugContext is not ContextFlags.Debug) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
