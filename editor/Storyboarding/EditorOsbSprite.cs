@@ -10,6 +10,7 @@ using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using CommunityToolkit.HighPerformance.Buffers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
@@ -137,7 +138,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates).Draw(texture,
             bounds.Left + bounds.Width * .5f + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
             origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation,
-            ((Color)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor)
+            ((Rgba32)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor)
             .WithOpacity(opacity * fade));
     }
 }

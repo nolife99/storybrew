@@ -8,26 +8,24 @@ using Util;
 
 public class TextLayout
 {
-    readonly List<TextLayoutLine> lines = [];
-
     public TextLayout(string text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
         var glyphIndex = 0;
         var width = 0f;
         var height = 0f;
 
-        foreach (var textLine in LineBreaker.Split(text, (int)float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
+        foreach (var textLine in LineBreaker.Split(text, float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
         {
-            TextLayoutLine line = new(this, height, alignment, lines.Count == 0);
+            TextLayoutLine line = new(this, height, alignment, Lines.Count == 0);
             foreach (var c in textLine) line.Add(font.GetGlyph(c), glyphIndex++);
 
-            lines.Add(line);
+            Lines.Add(line);
             width = Math.Max(width, line.Width);
             height += line.Height;
         }
 
-        if (lines.Count == 0) lines.Add(new(this, 0, alignment, true));
-        var lastLine = lines[^1];
+        if (Lines.Count == 0) Lines.Add(new(this, 0, alignment, true));
+        var lastLine = Lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
         lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);
 
@@ -36,12 +34,12 @@ public class TextLayout
 
     public Vector2 Size { get; }
 
-    public IReadOnlyList<TextLayoutLine> Lines => lines;
+    public List<TextLayoutLine> Lines { get; } = [];
 
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var index = 0;
-        foreach (var line in lines)
+        foreach (var line in Lines)
         {
             var topLeft = Vector2.Zero;
             var bottomRight = Vector2.Zero;
@@ -65,7 +63,7 @@ public class TextLayout
     public int GetCharacterIndexAt(Vector2 position)
     {
         var index = 0;
-        foreach (var line in lines)
+        foreach (var line in Lines)
         {
             var lineMatches = position.Y < line.Position.Y + line.Height;
             foreach (var glyph in line.Glyphs)
@@ -82,13 +80,13 @@ public class TextLayout
     public int GetCharacterIndexAbove(int index)
     {
         var lineIndex = 0;
-        foreach (var line in lines)
+        foreach (var line in Lines)
         {
             if (index < line.GlyphCount)
             {
                 if (lineIndex == 0) return 0;
 
-                var previousLine = lines[lineIndex - 1];
+                var previousLine = Lines[lineIndex - 1];
                 return previousLine.GetGlyph(Math.Min(index, previousLine.GlyphCount - 1)).Index;
             }
 
@@ -101,18 +99,18 @@ public class TextLayout
     public int GetCharacterIndexBelow(int index)
     {
         var lineIndex = 0;
-        foreach (var line in lines)
+        foreach (var line in Lines)
         {
             if (index < line.GlyphCount)
             {
-                var lastLineIndex = lines.Count - 1;
+                var lastLineIndex = Lines.Count - 1;
                 if (lineIndex == lastLineIndex)
                 {
-                    var lastLine = lines[lastLineIndex];
+                    var lastLine = Lines[lastLineIndex];
                     return lastLine.GetGlyph(lastLine.GlyphCount - 1).Index;
                 }
 
-                var nextLine = lines[lineIndex + 1];
+                var nextLine = Lines[lineIndex + 1];
                 return nextLine.GetGlyph(Math.Min(index, nextLine.GlyphCount - 1)).Index;
             }
 
@@ -124,7 +122,7 @@ public class TextLayout
     }
     public TextLayoutGlyph GetGlyph(int index)
     {
-        foreach (var line in lines)
+        foreach (var line in Lines)
         {
             if (index < line.GlyphCount) return line.GetGlyph(index);
             index -= line.GlyphCount;
@@ -134,7 +132,7 @@ public class TextLayout
     }
     TextLayoutGlyph getLastGlyph()
     {
-        var lastLine = lines[^1];
+        var lastLine = Lines[^1];
         return lastLine.GetGlyph(lastLine.GlyphCount - 1);
     }
 }

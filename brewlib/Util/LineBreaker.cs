@@ -2,16 +2,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 public static class LineBreaker
 {
     // A lazy implementation of http://unicode.org/reports/tr14/
     //
-    // Classes not implemented: 
+    // Classes not implemented:
     // CM SG ZWJ HY CB and everything after
 
-    static readonly int[] breakOpportunityAfter =
+    static readonly HashSet<int> breakOpportunityAfter =
     [
         0x200B, // ZERO WIDTH SPACE
         0x0020, // SPACE
@@ -121,7 +120,7 @@ public static class LineBreaker
         0x10A55 // KHAROSHTHI PUNCTUATION LOTUS
     ];
 
-    static readonly int[] breakOpportunityBefore =
+    static readonly HashSet<int> breakOpportunityBefore =
     [
         0x200B, // ZERO WIDTH SPACE
         0x0020, // SPACE
@@ -148,7 +147,7 @@ public static class LineBreaker
         0x1806 // MONGOLIAN TODO SOFT HYPHEN
     ];
 
-    static readonly int[] breakProhibitedAfter =
+    static readonly HashSet<int> breakProhibitedAfter =
     [
         0x2060, // WORD JOINER
         0xFEFF, // ZERO WIDTH NO-BREAK SPACE
@@ -163,7 +162,7 @@ public static class LineBreaker
         0x0F12 // TIBETAN MARK RGYA GRAM SHAD
     ];
 
-    static readonly int[] breakProhibitedBefore =
+    static readonly HashSet<int> breakProhibitedBefore =
     [
         0x2060, // WORD JOINER
         0xFEFF, // ZERO WIDTH NO-BREAK SPACE
@@ -178,7 +177,7 @@ public static class LineBreaker
         0x0F12 // TIBETAN MARK RGYA GRAM SHAD
     ];
 
-    static readonly int[] causesBreakAfter =
+    static readonly HashSet<int> causesBreakAfter =
     [
         0x000C, // FORM FEED
         0x000B, // LINE TABULATION
@@ -243,8 +242,8 @@ public static class LineBreaker
         var after = getBreakabilityAfter(text[index - 1]);
         var before = getBreakabilityBefore(text[index]);
 
-        if (after == Breakability.Prohibited || before == Breakability.Prohibited) return Breakability.Prohibited;
-        if (after == Breakability.Opportunity || before == Breakability.Opportunity) return Breakability.Opportunity;
+        if (after is Breakability.Prohibited || before is Breakability.Prohibited) return Breakability.Prohibited;
+        if (after is Breakability.Opportunity || before is Breakability.Opportunity) return Breakability.Opportunity;
 
         return Breakability.Allowed;
     }

@@ -27,16 +27,10 @@ public class ShaderBuilder
         GlFragDepth = new(Context, "gl_FragDepth", "float");
     }
 
-    public ShaderType AddStruct() => ProgramScope.AddStruct();
-
     public ShaderVariable AddUniform(string name, string shaderTypeName, int count = -1)
         => ProgramScope.AddUniform(Context, name, shaderTypeName, count);
 
     public ShaderVariable AddVarying(string shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
-
-    public ShaderVariable AddVertexVariable(string shaderTypeName) => VertexShaderScope.AddVariable(Context, shaderTypeName);
-
-    public ShaderVariable AddFragmentVariable(string shaderTypeName) => FragmentShaderScope.AddVariable(Context, shaderTypeName);
 
     public Shader Build(bool log = false)
     {
@@ -65,13 +59,8 @@ public class ShaderBuilder
         code.AppendLine(CultureInfo.InvariantCulture,
             $"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
-        var extensions = FragmentShader.RequiredExtensions.Union(VertexShader.RequiredExtensions);
-        foreach (var extensionName in extensions)
+        foreach (var extensionName in FragmentShader.RequiredExtensions.Union(VertexShader.RequiredExtensions))
             code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable");
-
-        code.AppendLine("#ifdef GL_ES");
-        code.AppendLine("    precision lowp float;");
-        code.AppendLine("#endif");
 
         ProgramScope.DeclareTypes(code);
         ProgramScope.DeclareUniforms(code);

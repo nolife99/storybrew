@@ -8,8 +8,8 @@ using Util;
 
 public sealed class TextFontAtlased(string name, float size) : TextFont
 {
+    readonly Dictionary<char, FontGlyph> glyphs = [];
     TextureMultiAtlas2d atlas;
-    Dictionary<char, FontGlyph> glyphs = [];
 
     public string Name => name;
     public float Size => size;

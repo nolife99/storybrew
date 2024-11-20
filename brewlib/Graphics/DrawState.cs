@@ -103,7 +103,6 @@ public static class DrawState
         }
 
         // glActiveTexture requires opengl 1.3
-        maxFpTextureUnits = HasCapabilities(1, 3) ? GL.GetInteger(GetPName.MaxTextureUnits) : 1;
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
         maxGeometryTextureImageUnits = HasCapabilities(3, 2, "GL_ARB_geometry_shader4") ?
@@ -111,11 +110,10 @@ public static class DrawState
             0;
 
         maxCombinedTextureImageUnits = GL.GetInteger(GetPName.MaxCombinedTextureImageUnits);
-        maxTextureCoords = GL.GetInteger(GetPName.MaxTextureCoords);
         MaxTextureSize = GL.GetInteger(GetPName.MaxTextureSize);
 
         Trace.WriteLine(
-            $"texture units available: fp:{maxFpTextureUnits} ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits} coords:{maxTextureCoords}");
+            $"texture units available: ps:{maxTextureImageUnits} vs:{maxVertexTextureImageUnits} gs:{maxGeometryTextureImageUnits} combined:{maxCombinedTextureImageUnits}");
 
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
@@ -171,8 +169,8 @@ public static class DrawState
     static int[] samplerTextureIds;
     static TexturingModes[] samplerTexturingModes;
 
-    static int activeTextureUnit, lastRecycledTextureUnit = -1, maxFpTextureUnits, maxTextureImageUnits,
-        maxVertexTextureImageUnits, maxGeometryTextureImageUnits, maxCombinedTextureImageUnits, maxTextureCoords;
+    static int activeTextureUnit, lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits,
+        maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
 
     public static int ActiveTextureUnit
     {
@@ -192,7 +190,7 @@ public static class DrawState
         if (previousMode == mode) return;
 
         if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
-        if (samplerIndex < maxFpTextureUnits)
+        if (samplerIndex < maxTextureImageUnits)
         {
             ActiveTextureUnit = samplerIndex;
             if (previousMode is not TexturingModes.None) SetCapability((EnableCap)ToTextureTarget(previousMode), false);

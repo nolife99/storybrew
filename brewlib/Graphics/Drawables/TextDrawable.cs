@@ -5,6 +5,7 @@ using System.Numerics;
 using Cameras;
 using Renderers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Text;
 using Util;
 
@@ -12,7 +13,7 @@ public sealed class TextDrawable : Drawable
 {
     readonly RenderStates RenderStates = new();
     BoxAlignment alignment = BoxAlignment.TopLeft;
-    public Color Color = Color.White;
+    public Rgba32 Color;
     float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
 
     TextFont font;

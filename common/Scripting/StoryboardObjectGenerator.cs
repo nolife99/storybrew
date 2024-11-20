@@ -126,13 +126,13 @@ public abstract class StoryboardObjectGenerator : Script
 
     internal readonly Dictionary<string, Image<Rgba32>> bitmaps = [];
 
-    /// <summary> Returns a <see cref="Bitmap"/> from the project's directory. </summary>
+    /// <summary> Returns a <see cref="Image"/> from the project's directory. </summary>
     /// <param name="path"> The image path, relative to the project's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
     public Image<Rgba32> GetProjectBitmap(string path, bool watch = true)
         => getBitmap(Path.Combine(context.ProjectPath, path), null, watch);
 
-    /// <summary> Returns a <see cref="Bitmap"/> from the mapset's directory. </summary>
+    /// <summary> Returns a <see cref="Image"/> from the mapset's directory. </summary>
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
     public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),

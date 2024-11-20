@@ -41,9 +41,9 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
         internalUnbind();
         bound = false;
     }
-    public unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false)
+    public void Render(PrimitiveType type, nint primitives, int count, int drawCount)
     {
-        GL.BufferData(BufferTarget.ArrayBuffer, count * primitiveSize, (nint)primitives, BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ArrayBuffer, count * primitiveSize, primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;
 
         if (indexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, 0);

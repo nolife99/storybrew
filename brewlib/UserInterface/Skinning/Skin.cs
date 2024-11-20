@@ -306,25 +306,25 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
             throw new InvalidDataException($"Incorrect vector2 format: {data}");
         },
-        [typeof(Color)] = (data, constants, _) =>
+        [typeof(Rgba32)] = (data, constants, _) =>
         {
             if (data.Type is TinyTokenType.String)
             {
                 var value = data.Value<string>();
-                if (value.StartsWith('#')) return Color.ParseHex(value);
+                if (value.StartsWith('#')) return Rgba32.ParseHex(value);
 
                 var colorField = typeof(Color).GetField(value);
-                if (colorField?.FieldType == typeof(Color)) return Unsafe.Unbox<Color>(colorField.GetValue(null));
+                if (colorField?.FieldType == typeof(Color)) return (Rgba32)Unsafe.Unbox<Color>(colorField.GetValue(null));
             }
 
             if (data is TinyArray tinyArray)
-                return (Color)(tinyArray.Count switch
+                return tinyArray.Count switch
                 {
                     3 => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
                         resolve<float>(tinyArray[2], constants)),
                     _ => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
                         resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
-                });
+                };
 
             throw new InvalidDataException($"Incorrect color format: {data}");
         },

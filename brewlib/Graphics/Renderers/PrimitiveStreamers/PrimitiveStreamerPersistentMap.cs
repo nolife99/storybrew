@@ -13,7 +13,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     nint bufferPointer;
     GpuCommandSync commandSync = new();
 
-    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false)
+    public override unsafe void Render(PrimitiveType type, nint primitives, int count, int drawCount)
     {
         var vertexDataSize = count * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize)
@@ -28,7 +28,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        NativeMemory.Copy(primitives, (byte*)bufferPointer + bufferOffset, (nuint)vertexDataSize);
+        NativeMemory.Copy((void*)primitives, (byte*)bufferPointer + bufferOffset, (nuint)vertexDataSize);
 
         if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * 2);
         else GL.DrawArrays(type, drawOffset, drawCount);
@@ -45,7 +45,9 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
 
-        var flags = (int)(BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
+        const int flags =
+            (int)(BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
+
         GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, (BufferStorageFlags)flags);
         bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, (BufferAccessMask)flags);
 
@@ -66,8 +68,8 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     }
     void expandVertexBuffer()
     {
-        // Prevent the vertex buffer from becoming too large (maxes at 8mb * grow factor)
-        if (IndexBufferId != -1 || MinRenderableVertexCount * VertexDeclaration.VertexSize > 8388608) return;
+        // Prevent the vertex buffer from becoming too large (maxes at 4mb * grow factor)
+        if (IndexBufferId != -1 || MinRenderableVertexCount * VertexDeclaration.VertexSize > 4194304) return;
 
         MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.75f);
         if (commandSync.WaitForAll()) ++BufferWaitCount;

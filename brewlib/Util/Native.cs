@@ -204,17 +204,10 @@ public static unsafe partial class Native
         => TResult.CreateChecked(SendMessageW(windowHandle, (uint)message, nuint.CreateChecked(wParam),
             nint.CreateChecked(lParam)));
 
-    public static void SetWindowIcon(nint iconHandle)
-    {
-        SendMessage<int, nint, int>(MainWindowHandle, Message.SetIcon, 0, iconHandle);
-        SendMessage<int, nint, int>(MainWindowHandle, Message.SetIcon, 1, iconHandle);
-    }
-
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
-    [LibraryImport("user32")] [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial void EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
+    [LibraryImport("user32")] private static partial void EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
     static Window* glfwPtr;

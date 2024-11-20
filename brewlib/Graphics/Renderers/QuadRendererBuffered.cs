@@ -3,7 +3,6 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Cameras;
 using OpenTK.Graphics.OpenGL;
@@ -23,15 +22,15 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     readonly int maxQuadsPerBatch, textureUniformLocation;
     readonly bool ownsShader;
 
+    readonly nint primitives;
+    readonly PrimitiveStreamer primitiveStreamer;
+    readonly Shader shader;
+
     Camera camera;
     int currentSamplerUnit, currentLargestBatch, quadsInBatch;
     Texture2d currentTexture;
 
     bool disposed, lastFlushWasBuffered, rendering;
-
-    void* primitives;
-    PrimitiveStreamer primitiveStreamer;
-    Shader shader;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
@@ -57,7 +56,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
             Math.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
                 primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad);
 
-        primitives = NativeMemory.Alloc((nuint)(maxQuadsPerBatch * Marshal.SizeOf<QuadPrimitive>()));
+        primitives = Marshal.AllocHGlobal(maxQuadsPerBatch * Marshal.SizeOf<QuadPrimitive>());
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
     }
 
@@ -127,7 +126,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
             }
         }
 
-        primitiveStreamer.Render(PrimitiveType.Quads, primitives, quadsInBatch, quadsInBatch * VertexPerQuad, canBuffer);
+        primitiveStreamer.Render(PrimitiveType.Quads, primitives, quadsInBatch, quadsInBatch * VertexPerQuad);
 
         currentLargestBatch += quadsInBatch;
         if (!canBuffer)
@@ -140,7 +139,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         ++FlushedBufferCount;
         lastFlushWasBuffered = canBuffer;
     }
-    public void Draw(ref QuadPrimitive quad, Texture2dRegion texture)
+    public void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
         if (currentTexture != texture.BindableTexture)
         {
@@ -149,7 +148,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         }
         else if (quadsInBatch == maxQuadsPerBatch) DrawState.FlushRenderer(true);
 
-        Unsafe.Write(Unsafe.Add<QuadPrimitive>(primitives, quadsInBatch), quad);
+        *((QuadPrimitive*)primitives + quadsInBatch) = quad;
 
         ++RenderedQuadCount;
         ++quadsInBatch;
@@ -191,7 +190,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        NativeMemory.Free(primitives);
+        Marshal.FreeHGlobal(primitives);
         if (!disposing) return;
 
         primitiveStreamer.Dispose();

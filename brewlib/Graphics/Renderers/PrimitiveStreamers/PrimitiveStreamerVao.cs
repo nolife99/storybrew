@@ -42,7 +42,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         GL.BindVertexArray(0);
         Bound = false;
     }
-    public abstract unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false);
+    public abstract void Render(PrimitiveType type, nint primitives, int count, int drawCount);
     public void Dispose()
     {
         Dispose(true);

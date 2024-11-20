@@ -15,6 +15,5 @@ public interface LineRenderer : Renderer, IDisposable
     int BufferWaitCount { get; }
     int LargestBatch { get; }
 
-    void Draw(Vector3 start, Vector3 end, Rgba32 color);
-    void Draw(Vector3 start, Vector3 end, Rgba32 startColor, Rgba32 endColor);
+    void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color);
 }

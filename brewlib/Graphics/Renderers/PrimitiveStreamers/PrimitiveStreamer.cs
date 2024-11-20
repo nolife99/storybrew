@@ -11,5 +11,5 @@ public interface PrimitiveStreamer : IDisposable
     void Bind(Shader shader);
     void Unbind();
 
-    unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false);
+    void Render(PrimitiveType type, nint primitives, int count, int drawCount);
 }

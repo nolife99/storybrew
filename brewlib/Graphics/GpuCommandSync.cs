@@ -125,13 +125,16 @@ public sealed class GpuCommandSync : IDisposable
     public void Dispose()
     {
         if (disposed) return;
-        foreach (var range in syncRanges)
-        {
-            syncRangePool.Return(range);
-            GC.SuppressFinalize(range);
-        }
+        dispose();
 
+        GC.SuppressFinalize(this);
         disposed = true;
+    }
+
+    ~GpuCommandSync() => dispose();
+    void dispose()
+    {
+        foreach (var range in syncRanges) syncRangePool.Return(range);
     }
 
     #endregion

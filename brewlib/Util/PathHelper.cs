@@ -1,7 +1,7 @@
 ﻿namespace BrewLib.Util;
 
 using System;
-using System.Collections.Generic;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -11,8 +11,7 @@ public static class PathHelper
 {
     const char StandardDirectorySeparator = '/';
 
-    static readonly HashSet<char> invalidChars =
-    [
+    static readonly SearchValues<char> invalidChars = SearchValues.Create([
         '"',
         '<',
         '>',
@@ -49,7 +48,7 @@ public static class PathHelper
         '\u001d',
         '\u001e',
         '\u001f'
-    ];
+    ]);
 
     public static void OpenExplorer(string path) => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
 
@@ -63,7 +62,9 @@ public static class PathHelper
     }
     public static string WithStandardSeparators(string path)
     {
-        var chars = new Span<char>(path.ToCharArray());
+        Span<char> chars = stackalloc char[path.Length];
+        path.CopyTo(chars);
+
         if (Path.DirectorySeparatorChar != StandardDirectorySeparator)
             chars.Replace(Path.DirectorySeparatorChar, StandardDirectorySeparator);
 
@@ -87,11 +88,11 @@ public static class PathHelper
         var _path = path.AsSpan().TrimEnd('/');
 
         return _path.Length >= _folder.Length + 1 && _path[_folder.Length] == '/' &&
-            _path.StartsWith(_folder, StringComparison.Ordinal);
+            _path.StartsWith(_folder, StringComparison.OrdinalIgnoreCase);
     }
     public static string GetRelativePath(string folder, string path) => Path.GetRelativePath(folder, path);
 
-    public static bool IsValidPath(string path) => path.All(c => !invalidChars.Contains(c));
+    public static bool IsValidPath(string path) => !MemoryExtensions.ContainsAny(path, invalidChars);
     public static bool IsValidFilename(string filename) => filename.All(character
         => !invalidChars.Contains(character) &&
         (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character)));

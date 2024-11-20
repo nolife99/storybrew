@@ -127,6 +127,7 @@ public sealed class FontGenerator
         {
             TextAlignment = TextAlignment.Center,
             HintingMode = HintingMode.Standard,
+            KerningMode = KerningMode.Standard,
             LineSpacing = foundMetrics ? metrics.VerticalMetrics.LineHeight * .001f : 1,
             Dpi = dpi
         };

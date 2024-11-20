@@ -17,7 +17,7 @@ public interface QuadRenderer : Renderer, IDisposable
     int BufferWaitCount { get; }
     int LargestBatch { get; }
 
-    void Draw(ref QuadPrimitive quad, Texture2dRegion texture);
+    void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]

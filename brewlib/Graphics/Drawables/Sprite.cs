@@ -5,13 +5,14 @@ using System.Numerics;
 using Cameras;
 using Renderers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 using Util;
 
 public class Sprite : Drawable
 {
     readonly RenderStates RenderStates = new();
-    public Color Color = Color.White;
+    public Rgba32 Color;
     public float Rotation;
     public ScaleMode ScaleMode = ScaleMode.None;
     public Texture2dRegion Texture;

@@ -7,9 +7,9 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
     ushort[] indexes = null)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes) where TPrimitive : unmanaged
 {
-    public override unsafe void Render(PrimitiveType type, void* primitives, int count, int drawCount, bool canBuffer = false)
+    public override void Render(PrimitiveType type, nint primitives, int count, int drawCount)
     {
-        GL.BufferData(BufferTarget.ArrayBuffer, count * PrimitiveSize, (nint)primitives, BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ArrayBuffer, count * PrimitiveSize, primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;
 
         if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, 0);

@@ -23,13 +23,13 @@ public unsafe class LineRendererBuffered : LineRenderer
     readonly int maxLinesPerBatch;
     readonly bool ownsShader;
 
+    readonly nint primitives;
+    readonly PrimitiveStreamer primitiveStreamer;
+    readonly Shader shader;
+
     Camera camera;
     bool disposed, lastFlushWasBuffered, rendering;
     int linesInBatch, currentLargestBatch;
-
-    void* primitives;
-    PrimitiveStreamer primitiveStreamer;
-    Shader shader;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
@@ -53,7 +53,7 @@ public unsafe class LineRendererBuffered : LineRenderer
             Math.Max(this.maxLinesPerBatch = maxLinesPerBatch,
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine);
 
-        primitives = NativeMemory.Alloc((nuint)(maxLinesPerBatch * Marshal.SizeOf<Int128>()));
+        primitives = Marshal.AllocHGlobal(maxLinesPerBatch * Marshal.SizeOf<Int128>());
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
     }
 
@@ -112,7 +112,7 @@ public unsafe class LineRendererBuffered : LineRenderer
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
         }
 
-        primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine, canBuffer);
+        primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine);
 
         currentLargestBatch += linesInBatch;
         if (!canBuffer)
@@ -126,16 +126,15 @@ public unsafe class LineRendererBuffered : LineRenderer
         lastFlushWasBuffered = canBuffer;
     }
 
-    public void Draw(Vector3 start, Vector3 end, Rgba32 color) => Draw(start, end, color, color);
-    public void Draw(Vector3 start, Vector3 end, Rgba32 startColor, Rgba32 endColor)
+    public void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color)
     {
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-        var ptr = (int*)Unsafe.Add<Int128>(primitives, linesInBatch);
+        var ptr = (int*)((Int128*)primitives + linesInBatch);
         Unsafe.Write(ptr, start);
-        Unsafe.Write(ptr + 3, startColor);
+        Unsafe.Write(ptr + 3, color);
         Unsafe.Write(ptr + 4, end);
-        Unsafe.Write(ptr + 7, endColor);
+        Unsafe.Write(ptr + 7, color);
 
         ++RenderedLineCount;
         ++linesInBatch;
@@ -172,7 +171,7 @@ public unsafe class LineRendererBuffered : LineRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        NativeMemory.Free(primitives);
+        Marshal.FreeHGlobal(primitives);
         if (!disposing) return;
 
         primitiveStreamer.Dispose();
