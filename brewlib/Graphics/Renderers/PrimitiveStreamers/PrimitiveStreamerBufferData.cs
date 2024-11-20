@@ -1,13 +1,14 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
+using System;
 using OpenTK.Graphics.OpenGL;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
-    ushort[] indexes = null)
+    ReadOnlySpan<ushort> indexes)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes) where TPrimitive : unmanaged
 {
-    public override void Render(PrimitiveType type, nint primitives, int count, int drawCount)
+    public override void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer)
     {
         GL.BufferData(BufferTarget.ArrayBuffer, count * PrimitiveSize, primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;

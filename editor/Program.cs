@@ -141,7 +141,7 @@ public static class Program
 #if DEBUG
         ContextFlags.Debug;
 #else
-            ContextFlags.Default;
+            ContextFlags.Debug;
 #endif
 
         if (debugContext is not ContextFlags.Debug) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
@@ -149,7 +149,7 @@ public static class Program
         NativeWindow window = new(new()
         {
             Flags = debugContext,
-            Profile = ContextProfile.Compatability,
+            Profile = ContextProfile.Core,
             CurrentMonitor = displayDevice.Handle,
             APIVersion = new(4, 6),
             Title = Name,

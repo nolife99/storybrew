@@ -13,7 +13,7 @@ using Textures;
 
 public unsafe class QuadRendererBuffered : QuadRenderer
 {
-    const int VertexPerQuad = 4;
+    const int VertexPerQuad = 6;
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
     static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
@@ -37,7 +37,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
     public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0) : this(
         PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, maxQuadsPerBatch, primitiveBufferSize) { }
 
-    QuadRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
+    QuadRendererBuffered(Func<VertexDeclaration, int, ReadOnlySpan<ushort>, PrimitiveStreamer> createPrimitiveStreamer,
         Shader shader,
         int maxQuadsPerBatch,
         int primitiveBufferSize)
@@ -52,9 +52,23 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
         textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
 
+        Span<ushort> indices = stackalloc ushort[maxQuadsPerBatch * VertexPerQuad * 3 / 2];
+        for (var i = 0; i < maxQuadsPerBatch * 3 / 2; ++i)
+        {
+            var triangleIndex = i * VertexPerQuad;
+            var quadIndex = i * 4;
+
+            indices[triangleIndex] = (ushort)(quadIndex + 2);
+            indices[triangleIndex + 1] = (ushort)quadIndex;
+            indices[triangleIndex + 2] = (ushort)(quadIndex + 3);
+            indices[triangleIndex + 3] = (ushort)(quadIndex + 2);
+            indices[triangleIndex + 4] = (ushort)(quadIndex + 1);
+            indices[triangleIndex + 5] = (ushort)quadIndex;
+        }
+
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration,
             Math.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
-                primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad);
+                primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad, indices);
 
         primitives = Marshal.AllocHGlobal(maxQuadsPerBatch * Marshal.SizeOf<QuadPrimitive>());
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
@@ -126,7 +140,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
             }
         }
 
-        primitiveStreamer.Render(PrimitiveType.Quads, primitives, quadsInBatch, quadsInBatch * VertexPerQuad);
+        primitiveStreamer.Render(PrimitiveType.Triangles, primitives, quadsInBatch, quadsInBatch * VertexPerQuad, canBuffer);
 
         currentLargestBatch += quadsInBatch;
         if (!canBuffer)

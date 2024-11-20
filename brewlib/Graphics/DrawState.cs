@@ -190,12 +190,7 @@ public static class DrawState
         if (previousMode == mode) return;
 
         if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
-        if (samplerIndex < maxTextureImageUnits)
-        {
-            ActiveTextureUnit = samplerIndex;
-            if (previousMode is not TexturingModes.None) SetCapability((EnableCap)ToTextureTarget(previousMode), false);
-            if (mode is not TexturingModes.None) SetCapability((EnableCap)ToTextureTarget(mode), true);
-        }
+        if (samplerIndex < maxTextureImageUnits) ActiveTextureUnit = samplerIndex;
 
         samplerTexturingModes[samplerIndex] = mode;
     }
@@ -375,8 +370,8 @@ public static class DrawState
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }
 
-    public static bool HasCapabilities(int major, int minor, params string[] extensions)
-        => glVer >= new Version(major, minor) || extensions.All(GLFW.ExtensionSupported);
+    public static bool HasCapabilities(int major, int minor, string extension = null)
+        => glVer >= new Version(major, minor) || extension is null || GLFW.ExtensionSupported(extension);
 
     public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
     {

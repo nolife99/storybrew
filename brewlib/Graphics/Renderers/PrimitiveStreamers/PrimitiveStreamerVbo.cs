@@ -13,7 +13,7 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
 
     int vertexBufferId = -1, indexBufferId = -1;
 
-    public PrimitiveStreamerVbo(VertexDeclaration vertexDeclaration, ushort[] indexes = null)
+    public PrimitiveStreamerVbo(VertexDeclaration vertexDeclaration, ReadOnlySpan<ushort> indexes)
     {
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
 
@@ -21,7 +21,7 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
         primitiveSize = Marshal.SizeOf<TPrimitive>();
 
         initializeVertexBuffer();
-        if (indexes is not null) initializeIndexBuffer(indexes);
+        if (!indexes.IsEmpty) initializeIndexBuffer(indexes);
     }
 
     public int DiscardedBufferCount { get; private set; }
@@ -41,7 +41,7 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
         internalUnbind();
         bound = false;
     }
-    public void Render(PrimitiveType type, nint primitives, int count, int drawCount)
+    public void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer)
     {
         GL.BufferData(BufferTarget.ArrayBuffer, count * primitiveSize, primitives, BufferUsageHint.StaticDraw);
         ++DiscardedBufferCount;
@@ -57,11 +57,12 @@ public sealed class PrimitiveStreamerVbo<TPrimitive> : PrimitiveStreamer where T
     }
 
     void initializeVertexBuffer() => vertexBufferId = GL.GenBuffer();
-    void initializeIndexBuffer(ushort[] indexes)
+    unsafe void initializeIndexBuffer(ReadOnlySpan<ushort> indexes)
     {
         indexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferId);
-        GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), indexes, BufferUsageHint.StaticDraw);
+        fixed (void* ptr = indexes)
+            GL.BufferData(BufferTarget.ElementArrayBuffer, indexes.Length * sizeof(ushort), (nint)ptr, BufferUsageHint.StaticDraw);
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }
     void internalBind(Shader shader)

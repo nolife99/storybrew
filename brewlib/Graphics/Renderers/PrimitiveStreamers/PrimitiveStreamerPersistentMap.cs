@@ -1,11 +1,13 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
-    ushort[] indexes = null)
+    ReadOnlySpan<ushort> indexes)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indexes), PrimitiveStreamer
     where TPrimitive : unmanaged
 {
@@ -13,12 +15,13 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     nint bufferPointer;
     GpuCommandSync commandSync = new();
 
-    public override unsafe void Render(PrimitiveType type, nint primitives, int count, int drawCount)
+    public override unsafe void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer)
     {
         var vertexDataSize = count * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize)
         {
             bufferOffset = 0;
+            Trace.WriteLine(drawOffset);
             drawOffset = 0;
         }
 
@@ -30,7 +33,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         NativeMemory.Copy((void*)primitives, (byte*)bufferPointer + bufferOffset, (nuint)vertexDataSize);
 
-        if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * 2);
+        if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));
         else GL.DrawArrays(type, drawOffset, drawCount);
 
         commandSync.LockRange(bufferOffset, vertexDataSize);

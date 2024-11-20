@@ -26,20 +26,16 @@ public class TextureOptions : IEquatable<TextureOptions>
     public bool Srgb, PreMultiply, GenerateMipmaps;
 
     // Parameters
-    public int TextureLodBias;
     public TextureMagFilter TextureMagFilter = TextureMagFilter.Linear;
     public TextureMinFilter TextureMinFilter = TextureMinFilter.Linear;
     public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge, TextureWrapT = TextureWrapMode.ClampToEdge;
 
     public bool Equals(TextureOptions other) => Srgb == other.Srgb && GenerateMipmaps == other.GenerateMipmaps &&
-        TextureLodBias == other.TextureLodBias && TextureMinFilter == other.TextureMinFilter &&
-        TextureMagFilter == other.TextureMagFilter && TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
+        TextureMinFilter == other.TextureMinFilter && TextureMagFilter == other.TextureMagFilter &&
+        TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
 
     public void ApplyParameters(TextureTarget target)
     {
-        if (TextureLodBias != 0)
-            GL.TexEnv(TextureEnvTarget.TextureFilterControl, TextureEnvParameter.TextureLodBias, TextureLodBias);
-
         GL.TexParameter(target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter);
         GL.TexParameter(target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter);
         GL.TexParameter(target, TextureParameterName.TextureWrapS, (int)TextureWrapS);
@@ -48,7 +44,7 @@ public class TextureOptions : IEquatable<TextureOptions>
 
     public override bool Equals(object obj) => Equals(obj as TextureOptions);
     public override int GetHashCode()
-        => HashCode.Combine(TextureLodBias, TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
+        => HashCode.Combine(TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
 
     public static string GetOptionsFilename(string textureFilename) => Path.Combine(Path.GetDirectoryName(textureFilename),
         Path.GetFileNameWithoutExtension(textureFilename) + "-opt.json");

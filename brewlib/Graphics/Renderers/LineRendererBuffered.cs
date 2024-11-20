@@ -36,7 +36,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0) : this(
         PrimitiveStreamerUtil<Int128>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
-    LineRendererBuffered(Func<VertexDeclaration, int, PrimitiveStreamer> createPrimitiveStreamer,
+    LineRendererBuffered(Func<VertexDeclaration, int, ReadOnlySpan<ushort>, PrimitiveStreamer> createPrimitiveStreamer,
         Shader shader,
         int maxLinesPerBatch,
         int primitiveBufferSize)
@@ -51,7 +51,7 @@ public unsafe class LineRendererBuffered : LineRenderer
 
         primitiveStreamer = createPrimitiveStreamer(VertexDeclaration,
             Math.Max(this.maxLinesPerBatch = maxLinesPerBatch,
-                primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine);
+                primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine, Array.Empty<ushort>());
 
         primitives = Marshal.AllocHGlobal(maxLinesPerBatch * Marshal.SizeOf<Int128>());
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
@@ -112,7 +112,7 @@ public unsafe class LineRendererBuffered : LineRenderer
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
         }
 
-        primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine);
+        primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine, canBuffer);
 
         currentLargestBatch += linesInBatch;
         if (!canBuffer)
