@@ -16,7 +16,10 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
             var pixels = 0f;
             foreach (var texture in textures.Values)
                 if (texture is not null)
-                    pixels += texture.Size.X * texture.Size.Y;
+                {
+                    var size = texture.Size;
+                    pixels += size.X * size.Y;
+                }
 
             return pixels / 1024 / 1024 * 4;
         }

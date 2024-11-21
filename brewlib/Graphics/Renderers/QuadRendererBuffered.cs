@@ -34,8 +34,8 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0) : this(
-        PrimitiveStreamerUtil<QuadPrimitive>.DefaultCreatePrimitiveStreamer, shader, maxQuadsPerBatch, primitiveBufferSize) { }
+    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 7168, int primitiveBufferSize = 0) : this(
+        PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>, shader, maxQuadsPerBatch, primitiveBufferSize) { }
 
     QuadRendererBuffered(Func<VertexDeclaration, int, ReadOnlySpan<ushort>, PrimitiveStreamer> createPrimitiveStreamer,
         Shader shader,
@@ -52,17 +52,21 @@ public unsafe class QuadRendererBuffered : QuadRenderer
 
         textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
 
-        Span<ushort> indices = stackalloc ushort[maxQuadsPerBatch * VertexPerQuad * 3 / 2];
-        for (var i = 0; i < maxQuadsPerBatch * 3 / 2; ++i)
+        const float iboFactor = 1.5f;
+        // Generate an index buffer to render 1 quad as 2 triangles.
+        // any factor below 1.5x is too small, causing GL to not draw anything.
+
+        Span<ushort> indices = stackalloc ushort[(int)(maxQuadsPerBatch * VertexPerQuad * iboFactor)];
+        for (var i = 0; i < maxQuadsPerBatch * iboFactor; ++i)
         {
             var triangleIndex = i * VertexPerQuad;
             var quadIndex = i * 4;
 
-            indices[triangleIndex] = (ushort)(quadIndex + 2);
-            indices[triangleIndex + 1] = (ushort)quadIndex;
-            indices[triangleIndex + 2] = (ushort)(quadIndex + 3);
+            indices[triangleIndex] = (ushort)quadIndex;
+            indices[triangleIndex + 1] = (ushort)(quadIndex + 1);
+            indices[triangleIndex + 2] = (ushort)(quadIndex + 2);
             indices[triangleIndex + 3] = (ushort)(quadIndex + 2);
-            indices[triangleIndex + 4] = (ushort)(quadIndex + 1);
+            indices[triangleIndex + 4] = (ushort)(quadIndex + 3);
             indices[triangleIndex + 5] = (ushort)quadIndex;
         }
 
@@ -140,7 +144,7 @@ public unsafe class QuadRendererBuffered : QuadRenderer
             }
         }
 
-        primitiveStreamer.Render(PrimitiveType.Triangles, primitives, quadsInBatch, quadsInBatch * VertexPerQuad, canBuffer);
+        primitiveStreamer.Render(PrimitiveType.Triangles, primitives, quadsInBatch, quadsInBatch * VertexPerQuad);
 
         currentLargestBatch += quadsInBatch;
         if (!canBuffer)

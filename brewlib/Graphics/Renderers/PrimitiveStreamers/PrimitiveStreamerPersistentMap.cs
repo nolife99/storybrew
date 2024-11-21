@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
@@ -14,7 +15,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     nint bufferPointer;
     GpuCommandSync commandSync = new();
 
-    public override unsafe void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer)
+    public override unsafe void Render(PrimitiveType type, nint primitives, int count, int drawCount)
     {
         var vertexDataSize = count * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize)
@@ -97,7 +98,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         ++DiscardedBufferCount;
     }
 
-    public new static bool HasCapabilities() => DrawState.HasCapabilities(4, 4, "GL_ARB_buffer_storage") &&
-        DrawState.HasCapabilities(3, 0, "GL_ARB_map_buffer_range") && DrawState.HasCapabilities(1, 5) &&
-        GpuCommandSync.HasCapabilities() && PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
+    public new static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
+        GLFW.ExtensionSupported("GL_ARB_map_buffer_range") && GpuCommandSync.HasCapabilities() &&
+        PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
 }

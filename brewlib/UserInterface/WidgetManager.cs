@@ -97,7 +97,9 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
         DisableGamepadEvents(widget);
 
-        foreach (var key in clickTargets.Keys.Where(key => clickTargets[key] == widget)) clickTargets.Remove(key);
+        foreach (var key in clickTargets.Keys)
+            if (clickTargets[key] == widget)
+                clickTargets.Remove(key);
     }
     public void Draw(DrawContext drawContext)
     {
@@ -328,16 +330,6 @@ public sealed class WidgetManager : InputHandler, IDisposable
             fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(true)), HoveredWidget, previousWidget);
     }
 
-    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify,
-        List<Widget> targets,
-        Widget relatedTarget = null,
-        bool bubbles = true)
-    {
-        foreach (var widgetEvent in targets.Select(t => fire(notify, t, relatedTarget, bubbles))
-            .Where(widgetEvent => widgetEvent.Handled)) return widgetEvent;
-
-        return new(relatedTarget);
-    }
     static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify,
         Widget target,
         Widget relatedTarget = null,

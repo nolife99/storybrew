@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Microsoft.Extensions.ObjectPool;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public sealed class GpuCommandSync : IDisposable
 {
@@ -72,7 +73,7 @@ public sealed class GpuCommandSync : IDisposable
         syncRanges.RemoveRange(0, index + 1);
     }
 
-    public static bool HasCapabilities() => DrawState.HasCapabilities(3, 2, "GL_ARB_sync");
+    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_sync");
 
     sealed class SyncRange : IResettable
     {

@@ -8,9 +8,9 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
     ReadOnlySpan<ushort> indices)
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : unmanaged
 {
-    public override void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer)
+    public override void Render(PrimitiveType type, nint primitives, int count, int drawCount)
     {
-        GL.BufferData(BufferTarget.ArrayBuffer, count * PrimitiveSize, primitives, BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ArrayBuffer, count * PrimitiveSize, primitives, BufferUsageHint.DynamicDraw);
         ++DiscardedBufferCount;
 
         if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, 0);
@@ -21,6 +21,4 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         base.internalBind(shader);
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
     }
-    public new static bool HasCapabilities()
-        => DrawState.HasCapabilities(1, 5) && PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
 }

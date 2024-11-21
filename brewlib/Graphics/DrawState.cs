@@ -23,6 +23,7 @@ public static class DrawState
     static Renderer renderer;
 
     static bool flushingRenderer;
+    public static bool UseTextureCompression { get; set; }
 
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
@@ -88,7 +89,7 @@ public static class DrawState
         }, 0);
 
         retrieveRendererInfo();
-        if (UseSrgb && HasCapabilities(3, 0, "GL_ARB_framebuffer_object"))
+        if (UseSrgb && GLFW.ExtensionSupported("GL_ARB_framebuffer_object"))
         {
             GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer, FramebufferAttachment.BackLeft,
                 FramebufferParameterName.FramebufferAttachmentColorEncoding, out var defaultFramebufferColorEncoding);
@@ -104,7 +105,7 @@ public static class DrawState
         // glActiveTexture requires opengl 1.3
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
-        maxGeometryTextureImageUnits = HasCapabilities(3, 2, "GL_ARB_geometry_shader4") ?
+        maxGeometryTextureImageUnits = GLFW.ExtensionSupported("GL_ARB_geometry_shader4") ?
             GL.GetInteger(GetPName.MaxGeometryTextureImageUnits) :
             0;
 
@@ -206,6 +207,7 @@ public static class DrawState
         GL.BindTexture(ToTextureTarget(mode), textureId);
         samplerTextureIds[samplerIndex] = textureId;
     }
+
     public static int BindTexture(BindableTexture texture)
     {
         var samplerUnit = -1;
@@ -362,15 +364,14 @@ public static class DrawState
         var rendererVendor = GL.GetString(StringName.Vendor);
         Trace.WriteLine($"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
-        if (!HasCapabilities(2, 0))
+        if (glVer < new Version(3, 3))
             throw new NotSupportedException(
-                $"This application requires at least OpenGL 2.0 (version {glVer} found)\n{rendererName} ({rendererVendor})");
+                $"This application requires at least OpenGL 3.3 (version {glVer} found)\n{rendererName} ({rendererVendor})");
 
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }
 
-    public static bool HasCapabilities(int major, int minor, string extension = null) => glVer >= new Version(major, minor) ||
-        extension is null || GLFW.ExtensionSupported(extension);
+    public static bool HasCapabilities(int major, int minor) => glVer >= new Version(major, minor);
 
     public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
     {

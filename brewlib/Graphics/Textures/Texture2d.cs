@@ -101,14 +101,16 @@ public sealed unsafe class Texture2d(int textureId, int width, int height, strin
 
         textureOptions ??= TextureOptions.Default;
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
+        var compress = DrawState.UseTextureCompression;
 
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
         fixed (void* ptr = bitmap.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(0))
-            GL.TexImage2D(TextureTarget.Texture2D, 0,
-                sRgb ? PixelInternalFormat.CompressedSrgbAlphaS3tcDxt5Ext : PixelInternalFormat.CompressedRgbaS3tcDxt5Ext, width,
-                height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (nint)ptr);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ?
+                    compress ? PixelInternalFormat.CompressedSrgbAlphaS3tcDxt5Ext : PixelInternalFormat.Srgb :
+                    compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba, width, height, 0,
+                PixelFormat.Rgba, PixelType.UnsignedByte, (nint)ptr);
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);

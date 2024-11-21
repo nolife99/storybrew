@@ -56,6 +56,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
             new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
 
         var size = window.ClientSize;
+        DrawState.UseTextureCompression = Program.Settings.TextureCompression;
         DrawState.Initialize(ResourceContainer, size.X, size.Y);
 
         drawContext = new();

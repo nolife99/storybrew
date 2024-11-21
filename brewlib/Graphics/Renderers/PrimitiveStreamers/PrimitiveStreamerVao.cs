@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
 {
@@ -44,7 +45,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         GL.BindVertexArray(0);
         Bound = false;
     }
-    public abstract void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer);
+    public abstract void Render(PrimitiveType type, nint primitives, int count, int drawCount);
     public void Dispose()
     {
         Dispose(true);
@@ -111,6 +112,5 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         }
     }
 
-    protected static bool HasCapabilities()
-        => DrawState.HasCapabilities(2, 0) && DrawState.HasCapabilities(3, 0, "GL_ARB_vertex_array_object");
+    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_vertex_array_object");
 }

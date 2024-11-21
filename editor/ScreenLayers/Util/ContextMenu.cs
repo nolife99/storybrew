@@ -77,9 +77,11 @@ public class ContextMenu<T> : UiScreenLayer
     void refreshOptions()
     {
         optionsLayout.ClearWidgets();
-        foreach (var option in options.Where(option => string.IsNullOrEmpty(searchTextbox.Value) ||
-            option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal)))
+        foreach (var option in options)
         {
+            if (!string.IsNullOrEmpty(searchTextbox.Value) &&
+                !option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal)) continue;
+
             Button button = new(WidgetManager) { StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre };
             optionsLayout.Add(button);
 

@@ -33,8 +33,8 @@ public unsafe class LineRendererBuffered : LineRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 4096, int primitiveBufferSize = 0) : this(
-        PrimitiveStreamerUtil<Int128>.DefaultCreatePrimitiveStreamer, shader, maxLinesPerBatch, primitiveBufferSize) { }
+    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 7168, int primitiveBufferSize = 0) : this(
+        PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<Int128>, shader, maxLinesPerBatch, primitiveBufferSize) { }
 
     LineRendererBuffered(Func<VertexDeclaration, int, ReadOnlySpan<ushort>, PrimitiveStreamer> createPrimitiveStreamer,
         Shader shader,
@@ -112,7 +112,7 @@ public unsafe class LineRendererBuffered : LineRenderer
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
         }
 
-        primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine, canBuffer);
+        primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine);
 
         currentLargestBatch += linesInBatch;
         if (!canBuffer)

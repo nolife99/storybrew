@@ -151,7 +151,7 @@ public static class Program
             Flags = debugContext,
             Profile = ContextProfile.Core,
             CurrentMonitor = displayDevice.Handle,
-            APIVersion = new(4, 6),
+            APIVersion = new(3, 3),
             Title = Name,
             StartVisible = false
         });

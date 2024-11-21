@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.Graphics;
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using OpenTK.Graphics.OpenGL;
 
 public class VertexDeclaration : IEnumerable<VertexAttribute>
@@ -25,7 +25,7 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
     public VertexAttribute this[int index] => vertexAttributes[index];
     public int AttributeCount => vertexAttributes.Length;
 
-    public VertexAttribute GetAttribute(AttributeUsage usage) => vertexAttributes.FirstOrDefault(a => a.Usage == usage);
+    public VertexAttribute GetAttribute(AttributeUsage usage) => Array.Find(vertexAttributes, a => a.Usage == usage);
 
     public void ActivateAttributes(Shader shader)
     {

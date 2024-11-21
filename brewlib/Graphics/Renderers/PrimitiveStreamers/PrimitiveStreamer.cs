@@ -11,5 +11,5 @@ public interface PrimitiveStreamer : IDisposable
     void Bind(Shader shader);
     void Unbind();
 
-    void Render(PrimitiveType type, nint primitives, int count, int drawCount, bool canBuffer);
+    void Render(PrimitiveType type, nint primitives, int count, int drawCount);
 }
