@@ -65,6 +65,7 @@ public sealed partial class Shader : IDisposable
     void initialize(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
         dispose();
+        GL.EnableVertexAttribArray(0);
 
         vertexShaderId = compileShader(ShaderType.VertexShader, vertexShaderCode.ToString());
         fragmentShaderId = compileShader(ShaderType.FragmentShader, fragmentShaderCode.ToString());

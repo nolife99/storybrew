@@ -472,7 +472,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
         {
-            Program.RunMainThread(() => proj.MainBeatmap = map);
+            Program.Schedule(() => proj.MainBeatmap = map);
             while (proj.EffectsStatus != EffectStatus.Ready)
             {
                 switch (proj.EffectsStatus)
@@ -646,7 +646,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         proj.StopEffectUpdates();
         Manager.AsyncLoading("Stopping effect updates", () =>
         {
-            proj.CancelEffectUpdates(true);
+            proj.CancelEffectUpdates(true).Wait();
             Program.Schedule(() => Manager.GetContext<Editor>().Restart());
         });
     });

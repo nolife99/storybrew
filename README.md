@@ -1,5 +1,5 @@
 # Changes
-* upgrade to .NET 8 and update dependencies
+* upgrade to .NET 9 and update dependencies
     - Significantly better performance
     - No support below Windows 10
 * code formatting and optimization

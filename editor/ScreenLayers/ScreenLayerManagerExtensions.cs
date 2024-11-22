@@ -23,7 +23,7 @@ public static class ScreenLayerManagerExtensions
             Description = description, ShowNewFolderButton = true, SelectedPath = initialValue
         };
 
-        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
             Program.Schedule(() => callback(dialog.SelectedPath));
     });
 
@@ -44,7 +44,7 @@ public static class ScreenLayerManagerExtensions
             InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
         };
 
-        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
             Program.Schedule(() => callback(dialog.FileName));
     });
 
@@ -65,7 +65,7 @@ public static class ScreenLayerManagerExtensions
             Filter = filter
         };
 
-        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) == DialogResult.OK)
+        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
             Program.Schedule(() => callback(dialog.FileName));
     });
 

@@ -2,7 +2,6 @@ namespace StorybrewCommon.Storyboarding.Util;
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Animations;
 using Commands;
@@ -185,8 +184,8 @@ public class CommandGenerator
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        bool moveX = finalPositions.All(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)),
-            moveY = finalPositions.All(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
+        bool moveX = finalPositions.keyframes.TrueForAll(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)),
+            moveY = finalPositions.keyframes.TrueForAll(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
         finalPositions.ForEachPair((s, e) =>
             {
@@ -205,11 +204,11 @@ public class CommandGenerator
             endState,
             loopable);
 
-        var vec = finalScales.Any(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) > 1);
+        var scalar = finalScales.keyframes.TrueForAll(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) < 1);
         finalScales.ForEachPair((s, e) =>
             {
-                if (vec) sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
-                else sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
+                if (scalar) sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
+                else sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
             }, Vector2.One, s => new(float.Round(s.X, ScaleDecimals), float.Round(s.Y, ScaleDecimals)), startState, endState,
             loopable);
 

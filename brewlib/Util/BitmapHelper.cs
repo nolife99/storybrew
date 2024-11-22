@@ -1,44 +1,38 @@
 ﻿namespace BrewLib.Util;
 
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 
 public static class BitmapHelper
 {
     public static bool IsFullyTransparent(Image<Rgba32> source)
     {
+        var buffer = source.Frames.RootFrame.PixelBuffer;
         for (var y = 0; y < source.Height; y++)
-        {
-            var row = source.DangerousGetPixelRowMemory(y).Span;
-            foreach (var pixel in row)
+            foreach (var pixel in buffer.DangerousGetRowSpan(y))
                 if (pixel.A != 0)
                     return false;
-        }
 
         return true;
     }
 
     public static Rectangle FindTransparencyBounds(Image<Rgba32> source)
     {
-        var size = source.Size;
-        int xMin = size.Width, yMin = size.Height, xMax = -1, yMax = -1, width = size.Width, height = size.Height;
+        int xMin = source.Width, yMin = source.Height, xMax = -1, yMax = -1, width = source.Width, height = source.Height;
 
-        source.ProcessPixelRows(src =>
+        var buffer = source.Frames.RootFrame.PixelBuffer;
+        for (var y = 0; y < height; ++y)
         {
-            for (var y = 0; y < height; ++y)
-            {
-                var srcData = src.GetRowSpan(y);
-                for (var x = 0; x < width; ++x)
-                    if (srcData[x].A != 0)
-                    {
-                        if (x < xMin) xMin = x;
-                        if (x > xMax) xMax = x;
-                        if (y < yMin) yMin = y;
-                        if (y > yMax) yMax = y;
-                    }
-            }
-        });
+            var srcData = buffer.DangerousGetRowSpan(y);
+            for (var x = 0; x < width; ++x)
+                if (srcData[x].A != 0)
+                {
+                    if (x < xMin) xMin = x;
+                    if (x > xMax) xMax = x;
+                    if (y < yMin) yMin = y;
+                    if (y > yMax) yMax = y;
+                }
+        }
 
         return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
     }

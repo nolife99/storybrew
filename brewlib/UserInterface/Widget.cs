@@ -361,9 +361,8 @@ public class Widget(WidgetManager manager) : IDisposable
             absolutePosition = manager.SnapToPixel(absolutePosition);
         }
 
-        if (includeChildren)
-            foreach (var child in children)
-                child.UpdateAnchoring(iteration);
+        if (!includeChildren) return;
+        foreach (var child in children) child.UpdateAnchoring(iteration);
     }
 
     #endregion

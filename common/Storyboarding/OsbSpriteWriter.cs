@@ -29,7 +29,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
         if (exportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 &&
             sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
         {
-            HashSet<IFragmentableCommand> commands = new(sprite.Commands.Select(c => (IFragmentableCommand)c));
+            var commands = sprite.Commands.Select(c => (IFragmentableCommand)c).ToHashSet();
             var fragmentationTimes = GetFragmentationTimes(commands);
 
             while (commands.Count > 0)

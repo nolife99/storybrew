@@ -59,7 +59,8 @@ public class SynchronousCompressor : ImageCompressor
             }
 
         if (lossyCompress.Count != 0)
-            using (Task lossyTask = new(async () =>
+        {
+            using Task lossyTask = new(async () =>
             {
                 UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
                 startInfo.FileName = GetUtility();
@@ -79,11 +80,11 @@ public class SynchronousCompressor : ImageCompressor
                     {
                         ensureStop();
                     }
-            }))
-            {
-                lossyTask.Start();
-                await lossyTask;
-            }
+            });
+
+            lossyTask.Start();
+            await lossyTask;
+        }
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {

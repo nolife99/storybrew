@@ -373,7 +373,9 @@ public abstract class StoryboardObjectGenerator : Script
     {
         if (context is not null) throw new InvalidOperationException();
 
-        foreach (var field in configurableFields.Select(configurableField => configurableField.Field))
+        foreach (var configurableField in configurableFields)
+        {
+            var field = configurableField.Field;
             try
             {
                 var value = config.GetValue(field.Name);
@@ -383,6 +385,7 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 Trace.TraceError($"Applying configuration for {field.Name}:\n{e}");
             }
+        }
     }
 
     struct ConfigurableField(FieldInfo field,

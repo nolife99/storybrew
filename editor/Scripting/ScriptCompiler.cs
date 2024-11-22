@@ -1,7 +1,7 @@
 ﻿namespace StorybrewEditor.Scripting;
 
+using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -34,8 +34,11 @@ public static class ScriptCompiler
             result = CSharpCompilation.Create(asmName, trees.Keys, referencedAssemblies.Select(asmPath =>
             {
                 using var stream = File.OpenRead(asmPath);
-                if (!Project.DefaultAssemblies.Contains(asmPath)) AssemblyLoadContext.Default.LoadFromStream(stream);
-                stream.Position = 0;
+                if (!Project.DefaultAssemblies.Contains(asmPath))
+                {
+                    AssemblyLoadContext.Default.LoadFromStream(stream);
+                    stream.Position = 0;
+                }
 
                 return MetadataReference.CreateFromStream(stream);
             }), new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release)).Emit(
@@ -52,15 +55,21 @@ public static class ScriptCompiler
         var error = StringHelper.StringBuilderPool.Get();
         error.AppendLine("Compilation error\n");
 
-        foreach (var (file, diagnostics) in result.Diagnostics
-            .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error).Reverse().GroupBy(k =>
+        foreach (var diagnostics in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
+            .GroupBy(k =>
             {
                 if (k.Location.SourceTree is null) return "";
                 return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
-            }).ToDictionary(k => k.Key, k => k))
+            }))
         {
-            error.AppendLine(CultureInfo.InvariantCulture, $"{Path.GetFileName(file)}:");
-            foreach (var diagnostic in diagnostics) error.AppendLine(CultureInfo.InvariantCulture, $"--{diagnostic}");
+            error.Append(Path.GetFileName(diagnostics.Key.AsSpan()));
+            error.AppendLine(":");
+
+            foreach (var diagnostic in diagnostics)
+            {
+                error.Append("--");
+                error.AppendLine(diagnostic.ToString());
+            }
         }
 
         var errorStr = error.ToString();

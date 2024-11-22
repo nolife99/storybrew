@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Data;
 using BrewLib.Graphics;
@@ -194,7 +195,7 @@ public sealed partial class Project : IDisposable
         refreshEffectsStatus();
     }
 
-    public void CancelEffectUpdates(bool stopThreads) => effectUpdateQueue.CancelQueuedActions(stopThreads);
+    public Task CancelEffectUpdates(bool stopThreads) => effectUpdateQueue.CancelQueuedActions(stopThreads);
 
     public void StopEffectUpdates()
     {
@@ -819,7 +820,7 @@ public sealed partial class Project : IDisposable
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         string osuPath = null, osbPath = null;
-        IEnumerable<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
+        List<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
 
         Program.RunMainThread(() =>
         {
@@ -834,9 +835,9 @@ public sealed partial class Project : IDisposable
         });
 
         var usesOverlayLayer = localLayers.Any(l => l.OsbLayer is OsbLayer.Overlay);
-        var sbLayer = localLayers.Where(l => !l.DiffSpecific);
+        var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
 
-        if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Any())
+        if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)
         {
             Trace.WriteLine($"Exporting diff specific events to {osuPath}");
             using SafeWriteStream stream = new(osuPath);
@@ -881,7 +882,7 @@ public sealed partial class Project : IDisposable
             stream.Commit();
         }
 
-        if (exportOsb && sbLayer.Any())
+        if (exportOsb && sbLayer.Count != 0)
         {
             Trace.WriteLine($"Exporting osb to {osbPath}");
             using StreamWriter writer = new(osbPath, false);

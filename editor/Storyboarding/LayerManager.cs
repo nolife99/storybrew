@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
@@ -15,7 +14,7 @@ public class LayerManager
     public int LayersCount => Layers.Count;
     public List<EditorStoryboardLayer> Layers { get; } = [];
 
-    public IEnumerable<EditorStoryboardLayer> FindLayers(Func<EditorStoryboardLayer, bool> predicate) => Layers.Where(predicate);
+    public List<EditorStoryboardLayer> FindLayers(Predicate<EditorStoryboardLayer> predicate) => Layers.FindAll(predicate);
 
     public event EventHandler OnLayersChanged;
 
@@ -89,7 +88,7 @@ public class LayerManager
 
     public void MoveToOsbLayer(EditorStoryboardLayer layer, OsbLayer osbLayer)
     {
-        var firstLayer = Layers.FirstOrDefault(l => l.OsbLayer == osbLayer);
+        var firstLayer = Layers.Find(l => l.OsbLayer == osbLayer);
         if (firstLayer is not null) MoveToLayer(layer, firstLayer);
         else layer.OsbLayer = osbLayer;
     }

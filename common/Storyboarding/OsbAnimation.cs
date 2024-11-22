@@ -1,6 +1,8 @@
 ﻿namespace StorybrewCommon.Storyboarding;
 
 using System;
+using System.Globalization;
+using CommunityToolkit.HighPerformance.Buffers;
 
 /// <summary> A type of <see cref="OsbSprite"/> that loops through given frames, or animates. </summary>
 public class OsbAnimation : OsbSprite
@@ -25,8 +27,23 @@ public class OsbAnimation : OsbSprite
     {
         var span = TexturePath.AsSpan();
         var dotIndex = span.LastIndexOf('.');
+        var frame = GetFrameAt(time);
+        var digits = frame == 0 ? 1 : (int)float.Floor(float.Log10(frame) + 1);
 
-        return dotIndex < 0 ? $"{span}{GetFrameAt(time)}" : $"{span[..dotIndex]}{GetFrameAt(time)}{span[dotIndex..]}";
+        Span<char> chars = stackalloc char[span.Length + digits];
+        if (dotIndex < 0)
+        {
+            span.CopyTo(chars);
+            frame.TryFormat(chars[span.Length..], out _, default, CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            span[..dotIndex].CopyTo(chars);
+            frame.TryFormat(chars[dotIndex..], out _, default, CultureInfo.InvariantCulture);
+            span[dotIndex..].CopyTo(chars[(dotIndex + digits)..]);
+        }
+
+        return StringPool.Shared.GetOrAdd(chars);
     }
 
     int GetFrameAt(float time)

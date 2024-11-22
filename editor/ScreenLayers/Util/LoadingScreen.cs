@@ -26,23 +26,36 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
                 exception = e;
             }
 
+            if (exception is null)
+            {
+                Program.Schedule(Exit);
+                return;
+            }
+
+            Trace.TraceError($"{title} failed ({action.Method.Name}): {exception}");
+
+            var sb = StringHelper.StringBuilderPool.Get();
+            sb.Append(exception.Message);
+            sb.Append(" (");
+            sb.Append(exception.GetType().Name);
+            sb.AppendLine(")");
+
+            var innerException = exception.InnerException;
+            while (innerException is not null)
+            {
+                sb.Append("Caused by: ");
+                sb.Append(innerException.Message);
+                sb.Append(" (");
+                sb.Append(innerException.GetType().Name);
+                sb.AppendLine(")");
+
+                innerException = innerException.InnerException;
+            }
+
             Program.Schedule(() =>
             {
-                if (exception is not null)
-                {
-                    Trace.TraceError($"{title} failed ({action.Method.Name}): {exception}");
-
-                    var exceptionMessage = $"{exception.Message} ({exception.GetType().Name})";
-                    var innerException = exception.InnerException;
-                    while (innerException is not null)
-                    {
-                        exceptionMessage += $"\nCaused by: {innerException.Message} ({innerException.GetType().Name})";
-                        innerException = innerException.InnerException;
-                    }
-
-                    Manager.ShowMessage($"{title} failed:\n\n{exceptionMessage}\n\nDetails:\n{exception.GetBaseException()}");
-                }
-
+                Manager.ShowMessage($"{title} failed:\n\n{sb}\n\nDetails:\n{exception.GetBaseException()}");
+                StringHelper.StringBuilderPool.Return(sb);
                 Exit();
             });
         });
@@ -57,7 +70,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
             Padding = new(16),
             FitChildren = true,
             Horizontal = true,
-            Children = [new Label(WidgetManager) { Text = $"{title}..." }]
+            Children = [new Label(WidgetManager) { Text = title + "..." }]
         });
     }
     public override void Resize(int width, int height)

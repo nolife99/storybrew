@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.UserInterface.Components;
 
 using System;
-using System.Linq;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -66,14 +65,10 @@ public class LayerList : Widget
             var ol = osbLayer;
             osbLayerLabel.HandleDrop = data =>
             {
-                if (data is EditorStoryboardLayer droppedLayer)
-                {
-                    var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Identifier == droppedLayer.Identifier);
-                    if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, ol);
-                    return true;
-                }
-
-                return false;
+                if (data is not EditorStoryboardLayer droppedLayer) return false;
+                var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
+                if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, ol);
+                return true;
             };
 
             buildLayers(osbLayer, true);
@@ -163,18 +158,12 @@ public class LayerList : Widget
             layerRoot.GetDragData = () => la;
             layerRoot.HandleDrop = data =>
             {
-                if (data is EditorStoryboardLayer droppedLayer)
-                {
-                    if (droppedLayer.Identifier != la.Identifier)
-                    {
-                        var dndLayer = layerManager.Layers.FirstOrDefault(l => l.Identifier == droppedLayer.Identifier);
-                        if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, la);
-                    }
+                if (data is not EditorStoryboardLayer droppedLayer) return false;
+                if (droppedLayer.Identifier == la.Identifier) return true;
+                var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
+                if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, la);
 
-                    return true;
-                }
-
-                return false;
+                return true;
             };
 
             Action<object, ChangedEventArgs> changedHandler;

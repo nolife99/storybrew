@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 public sealed class AsyncActionQueue<T> : IDisposable
 {
+    readonly List<ActionRunner> actionRunners;
     readonly bool allowDuplicates;
     readonly ActionQueueContext context;
-    List<ActionRunner> actionRunners;
 
     public AsyncActionQueue(string threadName, bool allowDuplicates = false, int runnerCount = 0)
     {
@@ -55,11 +55,13 @@ public sealed class AsyncActionQueue<T> : IDisposable
         }
     }
 
-    public void CancelQueuedActions(bool stopThreads)
+    public async Task CancelQueuedActions(bool stopThreads)
     {
         lock (context.Queue) context.Queue.Clear();
         if (!stopThreads) return;
-        foreach (var runner in actionRunners) runner?.Dispose();
+        foreach (var runner in actionRunners)
+            if (runner is not null)
+                await runner.DisposeAsync().ConfigureAwait(false);
     }
 
     sealed class ActionContainer(T target, string key, Action<T> action, bool runAlone)
@@ -96,12 +98,12 @@ public sealed class AsyncActionQueue<T> : IDisposable
         internal void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
     }
 
-    sealed class ActionRunner(ActionQueueContext context, string threadName) : IDisposable
+    sealed class ActionRunner(ActionQueueContext context, string threadName) : IAsyncDisposable
     {
         Task thread;
         CancellationTokenSource tokenSrc;
 
-        public async void Dispose()
+        public async ValueTask DisposeAsync()
         {
             if (thread is null) return;
 

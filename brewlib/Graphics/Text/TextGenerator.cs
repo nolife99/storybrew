@@ -15,6 +15,7 @@ using Util;
 
 public sealed class TextGenerator(ResourceContainer resourceContainer)
 {
+    static Configuration config;
     readonly FontFamily[] fallback = [SystemFonts.Get("Segoe UI Symbol", CultureInfo.InvariantCulture)];
     readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
 
@@ -32,7 +33,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
     {
         if (string.IsNullOrEmpty(text)) text = " ";
 
-        var dpi = 72f;
+        const float dpi = 72f;
         var font = getFont(fontName, 96 * fontSize / dpi, FontStyle.Regular);
         var foundMetrics = font.Family.TryGetMetrics(FontStyle.Regular, out var metrics);
 
@@ -45,14 +46,17 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
                     BoxAlignment.Right => HorizontalAlignment.Right,
                     _ => HorizontalAlignment.Center
                 },
-            VerticalAlignment = (alignment & BoxAlignment.Vertical) switch
-            {
-                BoxAlignment.Top => VerticalAlignment.Top,
-                BoxAlignment.Bottom => VerticalAlignment.Bottom,
-                _ => VerticalAlignment.Center
-            },
+            VerticalAlignment =
+                (alignment & BoxAlignment.Vertical) switch
+                {
+                    BoxAlignment.Top => VerticalAlignment.Top,
+                    BoxAlignment.Bottom => VerticalAlignment.Bottom,
+                    _ => VerticalAlignment.Center
+                },
             LineSpacing = foundMetrics ? Math.Max(metrics.VerticalMetrics.LineHeight * .001f, 1) : 1,
             Dpi = dpi,
+            HintingMode = HintingMode.Standard,
+            KerningMode = KerningMode.Standard,
             FallbackFontFamilies = fallback
         };
 
@@ -63,7 +67,13 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         textureSize = new(width, height);
         if (measureOnly) return null;
 
-        Image<Rgba32> bitmap = new(width, height);
+        if (config is null)
+        {
+            config = Configuration.Default.Clone();
+            config.PreferContiguousImageBuffers = true;
+        }
+
+        Image<Rgba32> bitmap = new(config, width, height);
         bitmap.Mutate(b =>
         {
             RichTextOptions drawOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };

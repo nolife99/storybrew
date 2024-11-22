@@ -4,10 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using BrewLib.Util;
 
 public sealed class MultiFileWatcher : IDisposable
 {
+    static readonly Lock fileLock = new();
     readonly Dictionary<string, FileSystemWatcher> folderWatchers = [], recursiveFolderWatchers = [];
     readonly ThrottledActionScheduler scheduler = new();
 
@@ -45,7 +47,7 @@ public sealed class MultiFileWatcher : IDisposable
         watchedFilenames.Add(filename);
         if (Directory.Exists(directoryPath))
         {
-            // The folder containing the file to watch exists, 
+            // The folder containing the file to watch exists,
             // only watch that folder
 
             if (!folderWatchers.TryGetValue(directoryPath, out var watcher))
@@ -70,7 +72,7 @@ public sealed class MultiFileWatcher : IDisposable
         }
         else
         {
-            // The folder containing the file to watch does not exist, 
+            // The folder containing the file to watch does not exist,
             // find a parent to watch subfolders from
 
             var parentDirectory = Directory.GetParent(directoryPath);
@@ -108,7 +110,7 @@ public sealed class MultiFileWatcher : IDisposable
         {
             if (disposed) return;
 
-            lock (watchedFilenames)
+            lock (fileLock)
                 if (!watchedFilenames.Contains(e.FullPath))
                     return;
 
