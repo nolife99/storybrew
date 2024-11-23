@@ -9,7 +9,7 @@ using SixLabors.ImageSharp;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for movement commands.</summary>
-[StructLayout(LayoutKind.Sequential)] public readonly struct CommandPosition : CommandValue, IEquatable<CommandPosition>,
+[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandPosition : CommandValue,
     IAdditionOperators<CommandPosition, CommandPosition, CommandPosition>,
     ISubtractionOperators<CommandPosition, CommandPosition, CommandPosition>,
     IMultiplyOperators<CommandPosition, CommandPosition, CommandPosition>,
@@ -43,9 +43,6 @@ using Vector2 = System.Numerics.Vector2;
     public bool Equals(CommandPosition other) => internalVec == other.internalVec;
 
     /// <inheritdoc/>
-    public override bool Equals(object obj) => obj is CommandPosition position && Equals(position);
-
-    /// <inheritdoc/>
     public override int GetHashCode() => internalVec.GetHashCode();
 
     ///<summary> Converts this instance to a .osb string. </summary>
@@ -65,9 +62,6 @@ using Vector2 = System.Numerics.Vector2;
     public static CommandPosition operator *(CommandDecimal left, CommandPosition right) => right.internalVec * left;
     public static CommandPosition operator /(CommandPosition left, CommandPosition right) => left.internalVec / right.internalVec;
     public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => left.internalVec / right;
-
-    public static bool operator ==(CommandPosition left, CommandPosition right) => left.Equals(right);
-    public static bool operator !=(CommandPosition left, CommandPosition right) => !left.Equals(right);
 
     public static implicit operator OpenTK.Mathematics.Vector2(CommandPosition position)
         => Unsafe.As<CommandPosition, OpenTK.Mathematics.Vector2>(ref position);

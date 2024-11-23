@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -59,28 +60,20 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         lock (context.Queue) context.Queue.Clear();
         if (!stopThreads) return;
-        foreach (var runner in actionRunners)
-            if (runner is not null)
-                await runner.DisposeAsync().ConfigureAwait(false);
+        await Task.WhenAll(actionRunners.Where(runner => runner is not null).Select(runner => runner.DisposeAsync().AsTask()));
     }
 
-    sealed class ActionContainer(T target, string key, Action<T> action, bool runAlone)
-    {
-        internal readonly Action<T> Action = action;
-        internal readonly bool MustRunAlone = runAlone;
-        internal readonly string UniqueKey = key;
-        internal T Target = target;
-    }
+    sealed record ActionContainer(T Target, string UniqueKey, Action<T> Action, bool MustRunAlone);
 
     sealed class ActionQueueContext
     {
-        internal readonly List<ActionContainer> Queue = [];
-        internal readonly HashSet<string> Running = [];
+        public readonly List<ActionContainer> Queue = [];
+        public readonly HashSet<string> Running = [];
 
         bool enabled;
-        internal bool RunningLoneTask;
+        public bool RunningLoneTask;
 
-        internal bool Enabled
+        public bool Enabled
         {
             get => enabled;
             set
@@ -88,14 +81,13 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 if (enabled == value) return;
                 enabled = value;
 
-                if (enabled && Queue.Count > 0)
-                    lock (Queue)
-                        Monitor.PulseAll(Queue);
+                if (!enabled || Queue.Count == 0) return;
+                lock (Queue) Monitor.PulseAll(Queue);
             }
         }
 
-        internal event Action<T, Exception> OnActionFailed;
-        internal void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
+        public event Action<T, Exception> OnActionFailed;
+        public void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
     }
 
     sealed class ActionRunner(ActionQueueContext context, string threadName) : IAsyncDisposable
@@ -112,7 +104,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             lock (context.Queue) Monitor.PulseAll(context.Queue);
 
-            if (!localThread.Wait(200))
+            if (!localThread.Wait(500))
             {
                 await tokenSrc.CancelAsync().ConfigureAwait(false);
                 try
@@ -121,7 +113,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 }
                 catch
                 {
-                    // ignored
+                    Trace.WriteLine($"Killed thread {threadName}");
                 }
             }
 
@@ -189,13 +181,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     {
                         task.Action(task.Target);
                     }
-                    catch (ThreadAbortException)
-                    {
-                        Trace.WriteLine($"Killed thread {threadName}");
-                    }
                     catch (Exception e)
                     {
-                        context.TriggerActionFailed(task.Target, e);
+                        if (e is not OperationCanceledException or ThreadAbortException)
+                            context.TriggerActionFailed(task.Target, e);
                     }
 
                     lock (context.Running)
@@ -218,7 +207,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     {
         if (disposed) return;
         context.Enabled = false;
-        CancelQueuedActions(true);
+        CancelQueuedActions(true).Wait();
 
         disposed = true;
     }

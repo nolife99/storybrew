@@ -24,8 +24,6 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     readonly List<StoryboardObject> storyboardObjects = [];
 
     float startTime, endTime;
-    public Effect Effect => effect;
-    public EditorStoryboardLayer Layer => layer;
     public override string Name => identifier;
 
     public override Vector2 Origin { get; set; }
@@ -47,7 +45,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     {
         var displayTime = project.DisplayTime * 1000;
         if (displayTime < StartTime || EndTime < displayTime) return;
-        if (Layer.Highlight || Effect.Highlight)
+        if (layer.Highlight || effect.Highlight)
             opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
         var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
@@ -162,7 +160,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             throw new InvalidOperationException($"Cannot add a named segment to an unnamed segment ({identifier})");
 
         if (identifier is not null && namedSegments.TryGetValue(identifier, out var segment)) return segment;
-        segment = new(Effect, Layer, identifier);
+        segment = new(effect, layer, identifier);
         storyboardObjects.Add(segment);
         displayableObjects.Add(segment);
 
@@ -190,7 +188,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     {
         foreach (var eventObject in eventObjects)
             if (fromTime <= eventObject.EventTime && eventObject.EventTime < toTime)
-                eventObject.TriggerEvent(Effect.Project, toTime);
+                eventObject.TriggerEvent(effect.Project, toTime);
 
         foreach (var s in segments) s.TriggerEvents(fromTime, toTime);
     }

@@ -207,7 +207,7 @@ public class EffectConfigUi : Widget
             Selectbox widget = new(Manager)
             {
                 Value = field.Value,
-                Options = [new() { Name = bool.TrueString, Value = true }, new() { Name = bool.FalseString, Value = false }],
+                Options = [new(bool.TrueString, true), new(bool.FalseString, false)],
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false

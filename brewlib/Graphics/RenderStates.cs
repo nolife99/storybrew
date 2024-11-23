@@ -19,7 +19,7 @@ public class RenderStates
     public static void ClearStateCache() => currentState = null;
 }
 
-public class BlendingFactorState
+public record BlendingFactorState
 {
     public static readonly BlendingFactorState Default = new();
 

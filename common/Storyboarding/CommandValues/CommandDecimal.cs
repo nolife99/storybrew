@@ -3,7 +3,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 using System.Runtime.InteropServices;
 
 ///<summary> Custom decimal handler for storyboarding. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly struct CommandDecimal : CommandValue
+[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandDecimal : CommandValue
 {
     readonly double value;
 
@@ -15,7 +15,6 @@ using System.Runtime.InteropServices;
     }
 
     public bool Equals(CommandDecimal other) => value.Equals(other.value);
-    public override bool Equals(object obj) => obj is CommandDecimal deci && Equals(deci);
 
     public override int GetHashCode() => value.GetHashCode();
     public override string ToString() => ToOsbString(ExportSettings.Default);
@@ -30,9 +29,6 @@ using System.Runtime.InteropServices;
 
     public static CommandDecimal operator -(CommandDecimal value) => -value.value;
     public static CommandDecimal operator +(CommandDecimal value) => value.value;
-
-    public static bool operator ==(CommandDecimal left, CommandDecimal right) => left.value.Equals(right.value);
-    public static bool operator !=(CommandDecimal left, CommandDecimal right) => !left.value.Equals(right.value);
 
     public static implicit operator CommandDecimal(double value) => new(value);
     public static implicit operator double(CommandDecimal obj) => obj.value;

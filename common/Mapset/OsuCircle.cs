@@ -5,7 +5,7 @@ using System.Globalization;
 /// <summary>
 ///     Represents an osu! hit circle.
 /// </summary>
-public class OsuCircle : OsuHitObject
+public record OsuCircle : OsuHitObject
 {
     ///<summary> Parses an osu! hit circle from the given strings. </summary>
     public static OsuCircle Parse(string[] values,

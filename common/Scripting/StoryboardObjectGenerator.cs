@@ -340,10 +340,7 @@ public abstract class StoryboardObjectGenerator : Script
                 for (var i = 0; i < enumValues.Length; ++i)
                 {
                     var value = enumValues.GetValue(i);
-                    allowedValues[i] = new()
-                    {
-                        Name = value.ToString(), Value = Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture)
-                    };
+                    allowedValues[i] = new(value.ToString(), Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture));
                 }
             }
 

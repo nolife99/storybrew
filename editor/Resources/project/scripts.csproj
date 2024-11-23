@@ -16,14 +16,17 @@
         <Reference Include="OpenTK.Mathematics">
             <HintPath>..\..\OpenTK.Mathematics.dll</HintPath>
         </Reference>
+        <Reference Include="OpenTK.Mathematics">
+            <HintPath>..\..\OpenTK.Mathematics.dll</HintPath>
+        </Reference>
+        <Reference Include="SixLabors.Fonts">
+            <HintPath>..\..\SixLabors.Fonts.dll</HintPath>
+        </Reference>
         <Reference Include="SixLabors.ImageSharp">
             <HintPath>..\..\SixLabors.ImageSharp.dll</HintPath>
         </Reference>
         <Reference Include="SixLabors.ImageSharp.Drawing">
             <HintPath>..\..\SixLabors.ImageSharp.Drawing.dll</HintPath>
-        </Reference>
-        <Reference Include="SixLabors.Fonts">
-            <HintPath>..\..\SixLabors.Fonts.dll</HintPath>
         </Reference>
         <Reference Include="BrewLib">
             <HintPath>..\..\BrewLib.dll</HintPath>

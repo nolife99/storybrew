@@ -21,44 +21,19 @@ public interface FontEffect
 
 /// <summary> Stores information about a font's appearance. </summary>
 /// <remarks> Creates a new <see cref="FontDescription"/> storing a descriptor for <see cref="FontGenerator"/>. </remarks>
-/// <param name="fontPath"> The path to the font file. </param>
-/// <param name="fontSize"> The relative size of the font. </param>
-/// <param name="color"> The coloring tint of the font. </param>
-/// <param name="padding"> Allocate extra space around the font when generating it. </param>
-/// <param name="fontStyle"> Format/style of the font. </param>
-/// <param name="trimTransparency"> Trim transparent space around the font. </param>
-/// <param name="effectsOnly"> Leave out the original font and keep the effects. </param>
-/// <param name="debug"> Draw a randomly colored background behind the font. </param>
-public class FontDescription(string fontPath,
-    int fontSize = 76,
-    Color color = default,
-    Vector2 padding = default,
-    FontStyle fontStyle = default,
-    bool trimTransparency = true,
-    bool effectsOnly = false,
-    bool debug = false)
-{
-    ///<summary> The path to the font file. </summary>
-    public string FontPath => fontPath;
-
-    ///<summary> The relative size of the font. </summary>
-    public int FontSize => fontSize;
-
-    ///<summary> The coloring tint of the font. </summary>
-    public Color Color => color;
-
-    ///<summary> How much extra space is allocated around the font when generating it. </summary>
-    public Vector2 Padding => padding;
-
-    ///<summary> The format/style of the font (for example: bold, italics, etc). </summary>
-    public FontStyle FontStyle => fontStyle;
-
-    /// <summary> Trim transparent space around the font. Should always be <see langword="true"/>. </summary>
-    public bool TrimTransparency => trimTransparency;
-
-    ///<summary> Leave out the original font and keep the effects. </summary>
-    public bool EffectsOnly => effectsOnly;
-
-    ///<summary> Draw a randomly colored background behind the font. </summary>
-    public bool Debug => debug;
-}
+/// <param name="FontPath"> The path to the font file. </param>
+/// <param name="FontSize"> The relative size of the font. </param>
+/// <param name="Color"> The coloring tint of the font. </param>
+/// <param name="Padding"> Allocate extra space around the font when generating it. </param>
+/// <param name="FontStyle"> Format/style of the font. </param>
+/// <param name="TrimTransparency"> Trim transparent space around the font. </param>
+/// <param name="EffectsOnly"> Leave out the original font and keep the effects. </param>
+/// <param name="Debug"> Draw a randomly colored background behind the font. </param>
+public record FontDescription(string FontPath,
+    int FontSize = 76,
+    Color Color = default,
+    Vector2 Padding = default,
+    FontStyle FontStyle = default,
+    bool TrimTransparency = true,
+    bool EffectsOnly = false,
+    bool Debug = false);

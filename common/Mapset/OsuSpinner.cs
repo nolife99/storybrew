@@ -5,7 +5,7 @@ using System.Globalization;
 /// <summary>
 ///     Represents an osu! spinner.
 /// </summary>
-public class OsuSpinner : OsuHitObject
+public record OsuSpinner : OsuHitObject
 {
     int endTime;
 

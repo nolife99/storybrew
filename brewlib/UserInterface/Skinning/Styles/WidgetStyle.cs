@@ -2,7 +2,7 @@
 
 using Graphics.Drawables;
 
-public class WidgetStyle
+public record WidgetStyle
 {
     public Drawable Background, Foreground;
 }

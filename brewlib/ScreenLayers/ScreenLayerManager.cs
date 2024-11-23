@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using Graphics;
 using Input;
@@ -32,14 +33,11 @@ public sealed class ScreenLayerManager : IDisposable
     public InputHandler InputHandler => inputDispatcher;
     public T GetContext<T>() where T : class => Unsafe.As<T>(context);
 
-    public event Action<ScreenLayer> LayerAdded;
-
     public void Add(ScreenLayer layer)
     {
         layer.Manager = this;
         layers.Add(layer);
 
-        LayerAdded?.Invoke(layer);
         layer.Load();
 
         var size = window.ClientSize;

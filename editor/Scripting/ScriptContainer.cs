@@ -62,7 +62,7 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         {
             var newReferencedAssemblies = value as List<string> ?? value.ToList();
             if (newReferencedAssemblies.Count == referencedAssemblies.Count &&
-                newReferencedAssemblies.All(referencedAssemblies.Contains)) return;
+                newReferencedAssemblies.TrueForAll(referencedAssemblies.Contains)) return;
 
             referencedAssemblies = newReferencedAssemblies;
             ReloadScript();
@@ -105,7 +105,9 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
             }
             catch (Exception e)
             {
-                throw CreateScriptLoadingException(e);
+                var details = "";
+                if (e is TypeLoadException) details = "Make sure the script's class name is the same as the file name.\n";
+                throw new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");
             }
         }
 
@@ -129,23 +131,15 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         if (targetVersion > initialTargetVersion) OnScriptChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    protected ScriptLoadingException CreateScriptLoadingException(Exception e)
-    {
-        var details = "";
-        if (e is TypeLoadException) details = "Make sure the script's class name is the same as the file name.\n";
-        return new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");
-    }
-
     #region IDisposable Support
 
     bool disposed;
-    protected virtual void Dispose(bool disposing)
+    public void Dispose()
     {
         if (disposed) return;
         appDomain?.Unload();
         disposed = true;
     }
-    public void Dispose() => Dispose(true);
 
     #endregion
 }

@@ -3,11 +3,8 @@
 using System.Numerics;
 using Textures;
 
-public class FontGlyph(Texture2dRegion texture, int width, int height)
+public record FontGlyph(Texture2dRegion Texture, int Width, int Height)
 {
-    public Texture2dRegion Texture => texture;
-    public bool IsEmpty => texture is null;
-    public int Width => width;
-    public int Height => height;
-    public Vector2 Size => new(width, height);
+    public bool IsEmpty => Texture is null;
+    public Vector2 Size => new(Width, Height);
 }

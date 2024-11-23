@@ -51,7 +51,8 @@ public class TinyArray : TinyToken, IList<TinyToken>
         return false;
     }
 
-    public void CopyTo(TinyToken[] array, int arrayIndex) => Array.Copy(tokens, 0, array, arrayIndex, Count);
+    public void CopyTo(TinyToken[] array, int arrayIndex)
+        => Array.Copy(tokens, 0, array, arrayIndex, Count);
 
     public int IndexOf(TinyToken item)
     {

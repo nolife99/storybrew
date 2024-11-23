@@ -8,11 +8,8 @@ using SixLabors.ImageSharp.Processing;
 /// <summary> A font background effect. </summary>
 /// <remarks> Creates a new <see cref="FontBackground"/> descriptor with information about a font background. </remarks>
 /// <param name="color"> The coloring tint of the glow. </param>
-public class FontBackground(Color color = default) : FontEffect
+public record FontBackground(Color color = default) : FontEffect
 {
-    ///<summary> The coloring tint of the glow. </summary>
-    public Color Color => color;
-
     /// <inheritdoc/>
     public bool Overlay => false;
 
@@ -20,5 +17,5 @@ public class FontBackground(Color color = default) : FontEffect
     public SizeF Measure => default;
 
     /// <inheritdoc/>
-    public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y) => bitmap.Clear(Color);
+    public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y) => bitmap.Clear(color);
 }

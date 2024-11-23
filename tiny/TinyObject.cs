@@ -18,7 +18,7 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
         get => keyToIndexMap.TryGetValue(key, out var index) ? items[index].Value : null;
         set
         {
-            if (keyToIndexMap.TryGetValue(key, out var index)) items[index] = new KeyValuePair<string, TinyToken>(key, value);
+            if (keyToIndexMap.TryGetValue(key, out var index)) items[index] = new(key, value);
             else Add(key, value);
         }
     }

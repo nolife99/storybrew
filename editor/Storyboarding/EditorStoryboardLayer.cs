@@ -101,7 +101,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
 
     public event Action<object, ChangedEventArgs> OnChanged;
 
-    protected void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(() => OnChanged,
+    void RaiseChanged(string propertyName) => EventHelper.InvokeStrict(OnChanged,
         d => ((Action<object, ChangedEventArgs>)d)(this, new(propertyName)));
 
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)

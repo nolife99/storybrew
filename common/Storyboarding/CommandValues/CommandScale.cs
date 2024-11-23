@@ -9,7 +9,7 @@ using SixLabors.ImageSharp;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for scale commands. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly struct CommandScale : CommandValue, IEquatable<CommandScale>,
+[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandScale : CommandValue,
     IAdditionOperators<CommandScale, CommandScale, CommandScale>, ISubtractionOperators<CommandScale, CommandScale, CommandScale>,
     IMultiplyOperators<CommandScale, CommandScale, CommandScale>, IDivisionOperators<CommandScale, CommandScale, CommandScale>,
     IUnaryNegationOperators<CommandScale, CommandScale>
@@ -38,9 +38,6 @@ using Vector2 = System.Numerics.Vector2;
     public bool Equals(CommandScale other) => internalVec == other.internalVec;
 
     /// <inheritdoc/>
-    public override bool Equals(object obj) => obj is CommandScale scale && Equals(scale);
-
-    /// <inheritdoc/>
     public override int GetHashCode() => internalVec.GetHashCode();
 
     ///<summary> Converts this instance to a .osb string. </summary>
@@ -58,9 +55,6 @@ using Vector2 = System.Numerics.Vector2;
     public static CommandScale operator *(CommandScale left, CommandDecimal right) => left.internalVec * right;
     public static CommandScale operator /(CommandScale left, CommandScale right) => left.internalVec / right.internalVec;
     public static CommandScale operator /(CommandScale left, CommandDecimal right) => left.internalVec / right;
-
-    public static bool operator ==(CommandScale left, CommandScale right) => left.Equals(right);
-    public static bool operator !=(CommandScale left, CommandScale right) => !left.Equals(right);
 
     public static implicit operator CommandScale(OpenTK.Mathematics.Vector2 vector)
         => Unsafe.As<OpenTK.Mathematics.Vector2, CommandScale>(ref vector);

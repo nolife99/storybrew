@@ -1,10 +1,13 @@
 ﻿namespace BrewLib.ScreenLayers;
 
 using System;
+using System.Diagnostics;
+using System.Runtime;
 using Graphics;
 using Input;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Util;
 
 public abstract class ScreenLayer : InputAdapter, IDisposable
 {
@@ -106,15 +109,18 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
         return true;
     }
 
-    public void Exit() => Exit(false);
-    public void Exit(bool skipTransition)
+    public void Exit()
     {
         if (IsExiting) return;
         IsExiting = true;
 
         OnExit();
 
-        if (skipTransition || TransitionOutDuration == 0) Manager.Remove(this);
+        if (TransitionOutDuration == 0) Manager.Remove(this);
+
+        GCSettings.LatencyMode = GCLatencyMode.Batch;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+        GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
     }
 
     bool updateTransition(float delta, float duration, int direction)

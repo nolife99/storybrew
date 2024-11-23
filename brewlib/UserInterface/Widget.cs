@@ -502,8 +502,8 @@ public class Widget(WidgetManager manager) : IDisposable
         return evt.Handled;
     }
 
-    protected static void Raise<T>(WidgetEventHandler<T> handler, WidgetEvent evt, T e)
-        => EventHelper.InvokeStrict(() => handler, d => ((WidgetEventHandler<T>)d)(evt, e));
+    static void Raise<T>(WidgetEventHandler<T> handler, WidgetEvent evt, T e)
+        => EventHelper.InvokeStrict(handler, d => ((WidgetEventHandler<T>)d)(evt, e));
 
     public event EventHandler OnDisposed;
 

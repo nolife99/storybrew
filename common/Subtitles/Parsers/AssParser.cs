@@ -8,7 +8,7 @@ using BrewLib.Util;
 using Util;
 
 ///<summary> Parsing methods for .ass subtitle files. </summary>
-public class AssParser : SubtitleParser
+public record AssParser : SubtitleParser
 {
     /// <inheritdoc/>
     public SubtitleSet Parse(string path)

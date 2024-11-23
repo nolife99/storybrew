@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime;
 using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -52,7 +53,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
                 innerException = innerException.InnerException;
             }
 
-            Program.Schedule(() =>
+            Program.RunMainThread(() =>
             {
                 Manager.ShowMessage($"{title} failed:\n\n{sb}\n\nDetails:\n{exception.GetBaseException()}");
                 StringHelper.StringBuilderPool.Return(sb);
@@ -78,5 +79,4 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
         base.Resize(width, height);
         mainLayout.Pack(1024);
     }
-    public override void Close() { }
 }

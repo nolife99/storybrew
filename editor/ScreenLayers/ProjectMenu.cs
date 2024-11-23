@@ -463,7 +463,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         });
     }
 
-    void saveProject() => Manager.AsyncLoading("Saving", () => Program.RunMainThread(() => proj.Save()));
+    void saveProject() => Manager.AsyncLoading("Saving", proj.Save);
     void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
     void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
     {
@@ -472,7 +472,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
         {
-            Program.Schedule(() => proj.MainBeatmap = map);
+            Program.RunMainThread(() => proj.MainBeatmap = map);
             while (proj.EffectsStatus != EffectStatus.Ready)
             {
                 switch (proj.EffectsStatus)
@@ -590,7 +590,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (proj.DisplayDebugWarning && frameGpuMemory < 32)
             warnings.AppendLine(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory");
         else if (frameGpuMemory >= 32)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Mem");
+            warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Memory");
 
         var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
         if (proj.DisplayDebugWarning && totalGpuMemory < 256)
@@ -660,10 +660,6 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 Program.Schedule(action);
             }), action, true);
         else action();
-
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        GCSettings.LatencyMode = GCLatencyMode.Batch;
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
     }
 
     void refreshAudio()

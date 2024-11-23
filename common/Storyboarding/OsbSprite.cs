@@ -923,7 +923,7 @@ public enum OsbOrigin
     BottomRight
 }
 
-/// <summary> Apply an easing to a command. Contains enumeration values unlike .osb syntax. </summary>
+/// <summary> Apply an easing to a command. </summary>
 /// <remarks> Visit <see href="http://easings.net/"/> for more information. </remarks>
 public enum OsbEasing
 {
@@ -957,10 +957,10 @@ public enum ParameterType
     ///<exception cref="InvalidOperationException"> Do not pass this value to any parameter. </exception>
     None,
 
-    ///<summary> Reflects the sprite across its center X-axis. </summary>
+    ///<summary> Reflects the sprite across its center horizontally. </summary>
     FlipHorizontal,
 
-    ///<summary> Reflects the sprite across its center Y-axis. </summary>
+    ///<summary> Reflects the sprite across its center vertically. </summary>
     FlipVertical,
 
     ///<summary> Applies additive blending to the sprite. </summary>

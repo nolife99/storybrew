@@ -2,7 +2,7 @@
 
 using BrewLib.UserInterface.Skinning.Styles;
 
-public class SelectboxStyle : WidgetStyle
+public record SelectboxStyle : WidgetStyle
 {
     public string ButtonStyle;
 }

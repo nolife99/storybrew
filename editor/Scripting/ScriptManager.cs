@@ -132,8 +132,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {
-        var change = e.ChangeType.ToString().ToLowerInvariant();
-        Trace.WriteLine($"Watched script file {change}: {e.FullPath}");
+        Trace.WriteLine($"Watched script file {e.ChangeType}: {e.FullPath}");
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)
@@ -146,8 +145,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
     void libraryWatcher_Changed(object sender, FileSystemEventArgs e)
     {
-        var change = e.ChangeType.ToString().ToLowerInvariant();
-        Trace.WriteLine($"Watched library file {change}: {e.FullPath}");
+        Trace.WriteLine($"Watched library file {e.ChangeType}: {e.FullPath}");
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)

@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -69,6 +70,9 @@ public static class Program
 
     static void startEditor()
     {
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+
         schedulingEnabled = true;
         Settings = new();
 
@@ -190,7 +194,7 @@ public static class Program
             var focused = window.IsFocused;
             var fixedUpdates = 0;
 
-            window.ProcessEvents(double.MaxValue);
+            GLFW.PollEvents();
             AudioManager.Update();
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates < 2)

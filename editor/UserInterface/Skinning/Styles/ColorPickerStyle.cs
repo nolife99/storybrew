@@ -2,4 +2,4 @@
 
 using BrewLib.UserInterface.Skinning.Styles;
 
-public class ColorPickerStyle : WidgetStyle { }
+public record ColorPickerStyle : WidgetStyle;

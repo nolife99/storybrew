@@ -8,7 +8,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices), PrimitiveStreamer
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
     where TPrimitive : unmanaged
 {
     int bufferOffset, drawOffset, vertexBufferSize;
@@ -60,12 +60,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
         GL.UnmapBuffer(BufferTarget.ArrayBuffer);
 
-        if (disposing)
-        {
-            commandSync.Dispose();
-            commandSync = null;
-        }
-
+        if (disposing) commandSync.Dispose();
         base.Dispose(disposing);
     }
     void expandVertexBuffer()

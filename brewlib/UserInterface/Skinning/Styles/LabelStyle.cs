@@ -3,7 +3,7 @@
 using SixLabors.ImageSharp.PixelFormats;
 using Util;
 
-public class LabelStyle : WidgetStyle
+public record LabelStyle : WidgetStyle
 {
     public Rgba32 Color;
     public string FontName;

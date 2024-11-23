@@ -118,7 +118,7 @@ public class ScriptedEffect : Effect
             context.Dispose();
         }
 
-        changeStatus(EffectStatus.Ready, null, context.Log);
+        changeStatus(EffectStatus.Ready, log: context.Log);
         Program.Schedule(() =>
         {
             if (Disposed)
@@ -140,7 +140,7 @@ public class ScriptedEffect : Effect
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
 
-    void changeStatus(EffectStatus status, string message = null, string log = null) => Program.Schedule(() =>
+    void changeStatus(EffectStatus status, string message = null, string log = null)
     {
         var duration = statusStopwatch.ElapsedMilliseconds;
         if (duration > 0)
@@ -160,22 +160,27 @@ public class ScriptedEffect : Effect
 
         if (!string.IsNullOrWhiteSpace(log))
         {
-            if (statusMessageBuilder.Length > 0) statusMessageBuilder.Append("\n\n");
-            statusMessageBuilder.Append(CultureInfo.InvariantCulture, $"Log:\n\n{log}");
+            if (statusMessageBuilder.Length > 0)
+            {
+                statusMessageBuilder.AppendLine();
+                statusMessageBuilder.AppendLine();
+            }
+            statusMessageBuilder.AppendLine("Log:");
+            statusMessageBuilder.AppendLine();
+            statusMessageBuilder.Append(log);
         }
 
-        statusMessage = statusMessageBuilder.TrimEnd().ToString();
+        statusMessage = statusMessageBuilder.ToString();
 
         StringHelper.StringBuilderPool.Return(statusMessageBuilder);
 
-        RaiseChanged();
-
+        Program.Schedule(RaiseChanged);
         statusStopwatch.Restart();
-    });
+    }
 
     string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?
-        $"File not found while {status.ToString().ToLowerInvariant()}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}" :
-        $"Uncaught error during {status.ToString().ToLowerInvariant()}:\n{e}";
+        $"File not found while {status}. Verify this path is valid:\n{exception.FileName}\n\nDetails:\n{e}" :
+        $"Uncaught error during {status}:\n{e}";
 
     #region IDisposable Support
 

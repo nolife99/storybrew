@@ -10,7 +10,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using Vector3 = System.Numerics.Vector3;
 
 ///<summary> Base struct for coloring commands. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly struct CommandColor : CommandValue, IEquatable<CommandColor>
+[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandColor : CommandValue
 {
     /// <summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
     public static readonly CommandColor Black = new(0, 0, 0);
@@ -50,9 +50,6 @@ using Vector3 = System.Numerics.Vector3;
     /// <summary> Returns whether this instance and <paramref name="other"/> are equal to each other. </summary>
     public bool Equals(CommandColor other) => internalVec == other.internalVec;
 
-    /// <summary> Returns whether this instance and <paramref name="obj"/> are equal to each other. </summary>
-    public override bool Equals(object obj) => obj is CommandColor color && Equals(color);
-
     /// <summary> Returns a 32-bit integer hash that represents this instance's color information, with 8 bits per channel. </summary>
     /// <remarks> Some color information could be lost. </remarks>
     public override int GetHashCode() => 0 | B << 16 | G << 8 | R;
@@ -62,10 +59,6 @@ using Vector3 = System.Numerics.Vector3;
 
     ///<summary> Converts this instance into a .osb formatted string, formatted as "R,G,B". </summary>
     public string ToOsbString(ExportSettings exportSettings) => $"{R},{G},{B}";
-
-    /// <summary> Returns a <see cref="CommandColor"/> structure that represents the hash code's color information. </summary>
-    /// <remarks> Some color information could be lost. </remarks>
-    public static CommandColor FromHashCode(int code) => FromRgb(code & 0xFF, code >> 8 & 0xFF, code >> 16 & 0xFF);
 
     /// <summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
     public static CommandColor FromRgb(int r, int g, int b) => new Vector3(r / 255f, g / 255f, b / 255f);
@@ -109,9 +102,6 @@ using Vector3 = System.Numerics.Vector3;
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
     public static implicit operator Vector3(CommandColor obj) => Unsafe.As<CommandColor, Vector3>(ref obj);
     public static implicit operator CommandColor(Vector3 obj) => Unsafe.As<Vector3, CommandColor>(ref obj);
-
-    public static bool operator ==(CommandColor left, CommandColor right) => left.Equals(right);
-    public static bool operator !=(CommandColor left, CommandColor right) => !left.Equals(right);
 
     public static CommandColor operator +(CommandColor left, CommandColor right) => left.internalVec + right.internalVec;
     public static CommandColor operator -(CommandColor left, CommandColor right) => left.internalVec - right.internalVec;

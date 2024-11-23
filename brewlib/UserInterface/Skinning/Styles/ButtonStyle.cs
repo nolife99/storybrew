@@ -3,7 +3,7 @@
 using System.Numerics;
 using Util;
 
-public class ButtonStyle : WidgetStyle
+public record ButtonStyle : WidgetStyle
 {
     public Vector2 LabelOffset;
     public string LabelStyle;

@@ -9,24 +9,18 @@ using SixLabors.ImageSharp.Processing;
 /// <remarks> Creates a new <see cref="FontShadow"/> descriptor with information about a drop shadow effect. </remarks>
 /// <param name="thickness"> The thickness of the shadow. </param>
 /// <param name="color"> The color tinting of the shadow. </param>
-public class FontShadow(int thickness = 1, Color color = default) : FontEffect
+public record FontShadow(int thickness = 1, Color color = default) : FontEffect
 {
-    ///<summary> The thickness of the shadow. </summary>
-    public int Thickness => thickness;
-
-    ///<summary> The color tinting of the shadow. </summary>
-    public Color Color => color;
-
     /// <inheritdoc/>
     public bool Overlay => false;
 
     /// <inheritdoc/>
-    public SizeF Measure => new(Thickness * 2, Thickness * 2);
+    public SizeF Measure => new(thickness * 2, thickness * 2);
 
     /// <inheritdoc/>
     public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y)
     {
-        if (Thickness < 1) return;
-        bitmap.Fill(FontGenerator.options, Color, path.Translate(thickness, thickness));
+        if (thickness < 1) return;
+        bitmap.Fill(FontGenerator.options, color, path.Translate(thickness, thickness));
     }
 }

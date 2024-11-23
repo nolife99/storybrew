@@ -6,7 +6,7 @@ using SixLabors.ImageSharp;
 using Storyboarding.CommandValues;
 
 ///<summary> Represents a hit object in osu!. </summary>
-public class OsuHitObject
+public record OsuHitObject
 {
     ///<summary> Represents the playfield size in osu!. </summary>
     public static readonly SizeF PlayfieldSize = new(512, 384), StoryboardSize = new(640, 480);
@@ -29,25 +29,25 @@ public class OsuHitObject
         new(new((StoryboardSize.Width - WidescreenStoryboardSize.Width) / 2, 0), WidescreenStoryboardSize);
 
     ///<summary> Represents the combo color of this hit object. </summary>
-    public CommandColor Color = CommandColor.White;
+    public CommandColor Color { get; set; } = CommandColor.White;
 
     ///<summary> Represents the combo color index of this hit object. </summary>
-    public int ColorIndex;
+    public int ColorIndex { get; set; }
 
     ///<summary> Represents the combo number of this hit object. </summary>
-    public int ComboIndex = 1;
+    public int ComboIndex { get; set; } = 1;
 
     ///<summary> Represents the information flags of this hit object. </summary>
-    public HitObjectFlag Flags;
+    public HitObjectFlag Flags { get; set; }
 
     ///<summary> Represents the hit object's position in osu!. </summary>
-    public CommandPosition PlayfieldPosition;
+    public CommandPosition PlayfieldPosition { get; protected init; }
 
     ///<summary> Represents the stack number of this hit object. </summary>
-    public int StackIndex;
+    public int StackIndex { get; set; }
 
     ///<summary> Represents this hit object's stacking offset in osu!. </summary>
-    public CommandPosition StackOffset;
+    public CommandPosition StackOffset { get; set; }
 
     ///<summary> Represents this hit object's storyboard position in osu!. </summary>
     public CommandPosition Position => PlayfieldPosition + PlayfieldToStoryboardOffset;
@@ -59,28 +59,28 @@ public class OsuHitObject
     public CommandPosition EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;
 
     ///<summary> Represents the start time of this hit object. </summary>
-    public float StartTime { get; internal set; }
+    public float StartTime { get; protected init; }
 
     ///<summary> Represents the end time of this hit object. </summary>
     public virtual float EndTime => StartTime;
 
     ///<summary> Represents the hitsound additions of this hit object. </summary>
-    public HitSoundAddition Additions { get; internal set; }
+    public HitSoundAddition Additions { get; protected init; }
 
     ///<summary> Represents the sample sets of this hit object. </summary>
-    public SampleSet SampleSet { get; internal set; }
+    public SampleSet SampleSet { get; protected init; }
 
     ///<summary> Represents the additional sample sets of this hit object. </summary>
-    public SampleSet AdditionsSampleSet { get; internal set; }
+    public SampleSet AdditionsSampleSet { get; protected init; }
 
     ///<summary> Represents the custom sample set index of this hit object. </summary>
-    public int CustomSampleSet { get; internal set; }
+    public int CustomSampleSet { get; protected init; }
 
     ///<summary> Represents the volume of this hit object. </summary>
-    public float Volume { get; internal set; }
+    public float Volume { get; protected init; }
 
     ///<summary> Represents the sample path of this hit object. </summary>
-    public string SamplePath { get; internal set; }
+    public string SamplePath { get; protected init; }
 
     ///<returns> Whether or not this hit object is a new combo. </returns>
     public bool NewCombo => (Flags & HitObjectFlag.NewCombo) > 0;

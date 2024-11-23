@@ -105,7 +105,7 @@ public sealed class MultiFileWatcher : IDisposable
 
     void watcher_Changed(object sender, FileSystemEventArgs e)
     {
-        Trace.WriteLine($"File {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
+        Trace.WriteLine($"File {e.ChangeType}: {e.FullPath}");
         scheduler.Schedule(e.FullPath, _ =>
         {
             if (disposed) return;
@@ -114,7 +114,7 @@ public sealed class MultiFileWatcher : IDisposable
                 if (!watchedFilenames.Contains(e.FullPath))
                     return;
 
-            Trace.WriteLine($"Watched file {e.ChangeType.ToString().ToLowerInvariant()}: {e.FullPath}");
+            Trace.WriteLine($"Watched file {e.ChangeType}: {e.FullPath}");
             OnFileChanged?.Invoke(sender, e);
         });
     }

@@ -21,7 +21,7 @@ public interface QuadRenderer : Renderer, IDisposable
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public struct QuadPrimitive
+public record struct QuadPrimitive
 {
     public float x1, y1, u1, v1;
     public Rgba32 color1;

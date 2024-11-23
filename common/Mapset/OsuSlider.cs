@@ -9,7 +9,7 @@ using Storyboarding.CommandValues;
 /// <summary>
 ///     Represents an osu! slider.
 /// </summary>
-public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoints) : OsuHitObject
+public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHitObject
 {
     Curve curve;
 
@@ -43,7 +43,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     /// <summary>
     ///     Gets an enumeration of control points that make up the slider's curve.
     /// </summary>
-    public IEnumerable<OsuSliderControlPoint> ControlPoints => controlPoints;
+    public IEnumerable<Vector2> ControlPoints => controlPoints;
 
     /// <summary>
     ///     Gets the number of control points in this slider.
@@ -131,8 +131,8 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
 
             case SliderCurveType.Perfect:
                 if (controlPoints.Length > 2) goto case SliderCurveType.Bezier;
-                if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0].PlayfieldPosition,
-                    controlPoints[1].PlayfieldPosition)) goto case SliderCurveType.Linear;
+                if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0],
+                    controlPoints[1])) goto case SliderCurveType.Linear;
 
                 curve = generateCircleCurve();
                 break;
@@ -145,7 +145,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     }
 
     CircleCurve generateCircleCurve()
-        => new(PlayfieldPosition, controlPoints[0].PlayfieldPosition, controlPoints[1].PlayfieldPosition);
+        => new(PlayfieldPosition, controlPoints[0], controlPoints[1]);
 
     CompositeCurve generateBezierCurve()
     {
@@ -159,14 +159,14 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
 
         foreach (var controlPoint in controlPoints)
         {
-            if (controlPoint.PlayfieldPosition == previousPosition)
+            if (controlPoint == previousPosition)
             {
                 if (curvePoints.Count > 1) curves.Add(new(curvePoints, precision));
                 curvePoints = [];
             }
 
-            curvePoints.Add(controlPoint.PlayfieldPosition);
-            previousPosition = controlPoint.PlayfieldPosition;
+            curvePoints.Add(controlPoint);
+            previousPosition = controlPoint;
         }
 
         if (curvePoints.Count > 1) curves.Add(new(curvePoints, precision));
@@ -177,7 +177,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
     {
         var curvePoints = new Vector2[controlPoints.Length + 1];
         curvePoints[0] = PlayfieldPosition;
-        for (var i = 0; i < ControlPointCount; ++i) curvePoints[i + 1] = controlPoints[i].PlayfieldPosition;
+        for (var i = 0; i < ControlPointCount; ++i) curvePoints[i + 1] = controlPoints[i];
         return new(curvePoints, (int)(Length / 2));
     }
 
@@ -188,8 +188,8 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         var previousPoint = PlayfieldPosition;
         for (var i = 0; i < controlPoints.Length; ++i)
         {
-            curves[i] = new([previousPoint, controlPoints[i].PlayfieldPosition], 0);
-            previousPoint = controlPoints[i].PlayfieldPosition;
+            curves[i] = new([previousPoint, controlPoints[i]], 0);
+            previousPoint = controlPoints[i];
         }
 
         return new(curves);
@@ -223,7 +223,7 @@ public class OsuSlider(OsuSliderNode[] nodes, OsuSliderControlPoint[] controlPoi
         };
 
         var sliderControlPointCount = sliderValues.Length - 1;
-        var sliderControlPoints = new OsuSliderControlPoint[sliderControlPointCount];
+        var sliderControlPoints = new Vector2[sliderControlPointCount];
 
         for (var i = 0; i < sliderControlPointCount; i++)
         {
@@ -382,30 +382,6 @@ public class OsuSliderNode
     ///     The volume of this node.
     /// </summary>
     public float Volume { get; set; }
-}
-
-/// <summary>
-///     Represents a control point in an osu! slider.
-/// </summary>
-public class OsuSliderControlPoint
-{
-    /// <summary>
-    ///     Initializes a new instance of the <see cref="OsuSliderControlPoint"/> class.
-    /// </summary>
-    /// <param name="position"> The playfield position of this control point. </param>
-    OsuSliderControlPoint(Vector2 position) => PlayfieldPosition = position;
-
-    /// <summary>
-    ///     The playfield position of this control point.
-    /// </summary>
-    public Vector2 PlayfieldPosition { get; }
-
-    /// <summary>
-    ///     Performs an implicit conversion from <see cref="Vector2"/> to <see cref="OsuSliderControlPoint"/>.
-    /// </summary>
-    /// <param name="position"> The playfield position of this control point. </param>
-    /// <returns> The result of the conversion. </returns>
-    public static implicit operator OsuSliderControlPoint(Vector2 position) => new(position);
 }
 
 /// <summary>

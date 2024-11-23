@@ -1,3 +1,3 @@
 ﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
-public class StackLayoutStyle : WidgetStyle { }
+public record StackLayoutStyle : WidgetStyle;

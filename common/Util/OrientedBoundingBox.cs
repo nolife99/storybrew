@@ -6,7 +6,7 @@ using System.Numerics;
 using SixLabors.ImageSharp;
 
 #pragma warning disable CS1591
-public readonly struct OrientedBoundingBox : IDisposable
+public readonly record struct OrientedBoundingBox : IDisposable
 {
     readonly Vector2[] corners = ArrayPool<Vector2>.Shared.Rent(4), axis = ArrayPool<Vector2>.Shared.Rent(2);
     readonly float[] origins = ArrayPool<float>.Shared.Rent(4);

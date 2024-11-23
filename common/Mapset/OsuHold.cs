@@ -5,7 +5,7 @@ using System.Globalization;
 /// <summary>
 ///     Represents an osu!mania hold note.
 /// </summary>
-public class OsuHold : OsuHitObject
+public record OsuHold : OsuHitObject
 {
     int endTime;
 

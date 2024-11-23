@@ -1,9 +1,10 @@
 namespace StorybrewScripts;
 
 using System;
-using System.Drawing;
 using System.IO;
 using System.Numerics;
+using SixLabors.Fonts;
+using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Subtitles;
@@ -29,12 +30,12 @@ internal class Lyrics : StoryboardObjectGenerator
 
     [Configurable] public FontStyle FontStyle = FontStyle.Regular;
     [Configurable] public bool GlowAdditive = true;
-    [Configurable] public Color GlowColor = Color.FromArgb(100, 255, 255, 255);
+    [Configurable] public Rgba32 GlowColor = new(255, 255, 255, 100);
 
     [Group("Glow"), Configurable] public int GlowRadius = 0;
 
     [Configurable] public OsbOrigin Origin = OsbOrigin.Centre;
-    [Configurable] public Color OutlineColor = Color.FromArgb(200, 50, 50, 50);
+    [Configurable] public Rgba32 OutlineColor = new(50, 50, 50, 200);
 
     [Group("Outline"), Configurable] public int OutlineThickness = 3;
 
@@ -45,7 +46,7 @@ internal class Lyrics : StoryboardObjectGenerator
 
     [Group("Misc"), Configurable] public bool PerCharacter = true;
 
-    [Configurable] public Color ShadowColor = Color.FromArgb(100, 0, 0, 0);
+    [Configurable] public Rgba32 ShadowColor = new(0, 0, 0, 100);
 
     [Group("Shadow"), Configurable] public int ShadowThickness = 0;
 

@@ -2,7 +2,7 @@
 
 using Graphics.Drawables;
 
-public class ProgressBarStyle : WidgetStyle
+public record ProgressBarStyle : WidgetStyle
 {
     public Drawable Bar;
     public int Height;

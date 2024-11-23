@@ -3,7 +3,4 @@
 using System.Collections.Generic;
 
 #pragma warning disable CS1591
-public readonly struct SubtitleSet(IEnumerable<SubtitleLine> lines)
-{
-    public IEnumerable<SubtitleLine> Lines => lines;
-}
+public readonly record struct SubtitleSet(IEnumerable<SubtitleLine> Lines);

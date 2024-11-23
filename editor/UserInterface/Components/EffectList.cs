@@ -185,20 +185,19 @@ public class EffectList : Widget
         };
 
         updateStatusButton(statusButton, effect);
-        var ef = effect;
 
         EventHandler changedHandler;
         effect.OnChanged += changedHandler = (_, _) =>
         {
-            nameLabel.Text = ef.Name;
-            detailsLabel.Text = getEffectDetails(ef);
-            updateStatusButton(statusButton, ef);
+            nameLabel.Text = effect.Name;
+            detailsLabel.Text = getEffectDetails(effect);
+            updateStatusButton(statusButton, effect);
         };
 
         effectWidget.OnHovered += (_, e) =>
         {
-            ef.Highlight = e.Hovered;
-            OnEffectPreselect?.Invoke(e.Hovered ? ef : null);
+            effect.Highlight = e.Hovered;
+            OnEffectPreselect?.Invoke(e.Hovered ? effect : null);
         };
 
         var handledClick = false;
@@ -211,38 +210,38 @@ public class EffectList : Widget
         effectWidget.OnClickUp += (evt, _) =>
         {
             if (handledClick && (evt.RelatedTarget == effectWidget || evt.RelatedTarget.HasAncestor(effectWidget)))
-                OnEffectSelected?.Invoke(ef);
+                OnEffectSelected?.Invoke(effect);
 
             handledClick = false;
         };
 
         effectWidget.OnDisposed += (_, _) =>
         {
-            ef.Highlight = false;
-            ef.OnChanged -= changedHandler;
+            effect.Highlight = false;
+            effect.OnChanged -= changedHandler;
         };
 
-        statusButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowMessage($"Status: {ef.Status}\n\n{ef.StatusMessage}");
-        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name", $"Pick a new name for {ef.Name}",
-            ef.Name, newName =>
+        statusButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowMessage($"Status: {effect.Status}\n\n{effect.StatusMessage}");
+        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name", $"Pick a new name for {effect.Name}",
+            effect.Name, newName =>
             {
-                ef.Name = newName;
+                effect.Name = newName;
                 refreshEffects();
             });
 
-        editButton.OnClick += (_, _) => openEffectEditor(ef);
+        editButton.OnClick += (_, _) => openEffectEditor(effect);
         configButton.OnClick += (_, _) =>
         {
-            if (!effectConfigUi.Displayed || effectConfigUi.Effect != ef)
+            if (!effectConfigUi.Displayed || effectConfigUi.Effect != effect)
             {
-                effectConfigUi.Effect = ef;
+                effectConfigUi.Effect = effect;
                 effectConfigUi.Displayed = true;
             }
             else effectConfigUi.Displayed = false;
         };
 
         removeButton.OnClick += (_, _)
-            => Manager.ScreenLayerManager.ShowMessage($"Remove {ef.Name}?", () => project.Remove(ef), true);
+            => Manager.ScreenLayerManager.ShowMessage($"Remove {effect.Name}?", () => project.Remove(effect), true);
 
         return effectWidget;
     }
@@ -373,7 +372,7 @@ public class EffectList : Widget
             () => NetHelper.OpenUrl("https://code.visualstudio.com/"), true);
     }
 
-    static string getEffectDetails(Effect effect) => effect.EstimatedSize > 40960 ?
+    static string getEffectDetails(Effect effect) => effect.EstimatedSize > 30720 ?
         $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})" :
         $"using {effect.BaseName}";
 }

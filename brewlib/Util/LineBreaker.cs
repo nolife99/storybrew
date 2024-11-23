@@ -194,8 +194,7 @@ public static class LineBreaker
 
         for (; endIndex < text.Length; ++endIndex)
         {
-            var character = text[endIndex];
-            var characterWidth = measure(character);
+            var characterWidth = measure(text[endIndex]);
 
             if (maxWidth > 0 && endIndex > startIndex && lineWidth + characterWidth > maxWidth)
             {

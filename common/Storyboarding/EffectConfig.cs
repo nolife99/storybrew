@@ -17,7 +17,8 @@ public class EffectConfig
     public IEnumerable<ConfigField> SortedFields
         => new SortedSet<ConfigField>(fields.Values, Comparer<ConfigField>.Create((a, b) => a.Order - b.Order));
 
-    public string[] FieldNames => fields.Keys.ToArray();
+    public IEnumerable<string> FieldNames => fields.Keys;
+
     public void UpdateField(string name,
         string displayName,
         string description,

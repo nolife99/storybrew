@@ -4,7 +4,7 @@ using System;
 using System.Globalization;
 
 ///<summary> Represents a control point in an osu! beatmap. </summary>
-public class ControlPoint : IComparable<ControlPoint>
+public record ControlPoint : IComparable<ControlPoint>
 {
     ///<summary> A control point with default values. </summary>
     public static readonly ControlPoint Default = new();
@@ -12,28 +12,28 @@ public class ControlPoint : IComparable<ControlPoint>
     float beatDurationSV = 500;
 
     ///<summary> The offset, or time, of this control point. </summary>
-    public float Offset { get; init; }
+    public float Offset { get; private init; }
 
     ///<summary> Beats per measure, or bar, of this control point. </summary>
-    public int BeatPerMeasure { get; init; } = 4;
+    public int BeatPerMeasure { get; private init; } = 4;
 
     ///<summary> The default sample set of this control point. </summary>
-    public SampleSet SampleSet { get; init; } = SampleSet.Normal;
+    public SampleSet SampleSet { get; private init; } = SampleSet.Normal;
 
     ///<summary> The custom sample set index of this control point. </summary>
-    public int CustomSampleSet { get; init; }
+    public int CustomSampleSet { get; private init; }
 
     ///<summary> The object volume of this control point. </summary>
-    public float Volume { get; init; } = 100;
+    public float Volume { get; private init; }
 
     ///<summary> Whether this control point is inherited (is green line). </summary>
-    public bool IsInherited { get; init; }
+    public bool IsInherited { get; private init; }
 
     ///<summary> Whether this control point has kiai enabled. </summary>
-    public bool IsKiai { get; init; }
+    public bool IsKiai { get; private init; }
 
     ///<summary> Whether this control point has "Omit first bar line" enabled. </summary>
-    public bool OmitFirstBarLine { get; init; }
+    public bool OmitFirstBarLine { get; private init; }
 
     ///<returns> The duration of a beat based on the BPM measure of the control point. </returns>
     public float BeatDuration => IsInherited ?

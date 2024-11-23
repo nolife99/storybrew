@@ -17,7 +17,10 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
+using CommunityToolkit.HighPerformance;
+using CommunityToolkit.HighPerformance.Buffers;
 using Mapset;
+using Microsoft.Extensions.ObjectPool;
 using OpenTK.Mathematics;
 using Scripting;
 using SixLabors.Fonts;
@@ -424,14 +427,16 @@ public sealed partial class Project : IDisposable
         "..", "..", "..", "packs", "{0}", RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
         string.Concat("net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
-    public static readonly ICollection<string> DefaultAssemblies =
+    public static readonly IReadOnlyList<string> DefaultAssemblies =
     [
         typeof(Font).Assembly.Location,
         typeof(IPathCollection).Assembly.Location,
         typeof(Rgb).Assembly.Location,
         typeof(MathHelper).Assembly.Location,
         typeof(Script).Assembly.Location,
-        typeof(Camera).Assembly.Location,
+        typeof(Misc).Assembly.Location,
+        typeof(Ref<>).Assembly.Location,
+        typeof(ObjectPool).Assembly.Location,
         .. Directory.EnumerateFiles(
             string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"), "*.dll"),
         .. Directory.EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
@@ -578,7 +583,7 @@ public sealed partial class Project : IDisposable
                 var allowedValueCount = r.ReadInt32();
                 var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : Array.Empty<NamedValue>();
                 for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
-                    allowedValues[allowedValueIndex] = new() { Name = r.ReadString(), Value = ObjectSerializer.Read(r) };
+                    allowedValues[allowedValueIndex] = new(r.ReadString(), ObjectSerializer.Read(r));
 
                 effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue,
                     allowedValues, null);
@@ -756,10 +761,7 @@ public sealed partial class Project : IDisposable
 
                 effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++,
                     fieldValue?.GetType(), fieldValue,
-                    fieldRoot.Value<TinyObject>("AllowedValues")?.Select(p => new NamedValue
-                    {
-                        Name = p.Key, Value = ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>())
-                    }).ToArray(), fieldRoot.Value<string>("BeginsGroup"));
+                    fieldRoot.Value<TinyObject>("AllowedValues")?.Select(p => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()))).ToArray(), fieldRoot.Value<string>("BeginsGroup"));
             }
 
             var layersRoot = effectRoot.Value<TinyObject>("Layers");
@@ -834,7 +836,7 @@ public sealed partial class Project : IDisposable
             diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
         });
 
-        var usesOverlayLayer = localLayers.Any(l => l.OsbLayer is OsbLayer.Overlay);
+        var usesOverlayLayer = localLayers.Find(l => l.OsbLayer is OsbLayer.Overlay) is not null;
         var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
 
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)
@@ -925,13 +927,6 @@ public sealed partial class Project : IDisposable
         scriptManager.Dispose();
         TextureContainer.Dispose();
         AudioContainer.Dispose();
-
-        effectUpdateQueue = null;
-        assetWatcher = null;
-        MapsetManager = null;
-        scriptManager = null;
-        TextureContainer = null;
-        AudioContainer = null;
 
         Disposed = true;
     }

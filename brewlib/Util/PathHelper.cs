@@ -93,7 +93,13 @@ public static class PathHelper
     public static string GetRelativePath(string folder, string path) => Path.GetRelativePath(folder, path);
 
     public static bool IsValidPath(string path) => !MemoryExtensions.ContainsAny(path, invalidChars);
-    public static bool IsValidFilename(string filename) => filename.All(character
-        => !invalidChars.Contains(character) &&
-        (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character)));
+    public static bool IsValidFilename(string filename)
+    {
+        foreach (var character in filename.AsSpan())
+            if (invalidChars.Contains(character) ||
+                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) ||
+                    char.IsDigit(character))) return false;
+
+        return true;
+    }
 }

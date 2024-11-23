@@ -7,7 +7,7 @@ using System.Text;
 using BrewLib.Util;
 
 ///<summary> Parsing methods for .sbv subtitle files. </summary>
-public class SbvParser : SubtitleParser
+public record SbvParser : SubtitleParser
 {
     /// <inheritdoc/>
     public SubtitleSet Parse(string path)
@@ -17,19 +17,13 @@ public class SbvParser : SubtitleParser
     }
 
     /// <inheritdoc/>
-    public SubtitleSet Parse(Stream stream)
-    {
-        List<SubtitleLine> lines = [];
-        lines.AddRange(from block in parseBlocks(stream)
-            select block.Split('\n') into blockLines
-            let timestamps = blockLines[0].Split(',')
-            let startTime = SubtitleParser.ParseTimestamp(timestamps[0])
-            let endTime = SubtitleParser.ParseTimestamp(timestamps[1])
-            let text = string.Join('\n', blockLines, 1, blockLines.Length - 1)
-            select new SubtitleLine(startTime, endTime, text));
-
-        return new(lines);
-    }
+    public SubtitleSet Parse(Stream stream) => new(from block in parseBlocks(stream)
+        select block.Split('\n') into blockLines
+        let timestamps = blockLines[0].Split(',')
+        let startTime = SubtitleParser.ParseTimestamp(timestamps[0])
+        let endTime = SubtitleParser.ParseTimestamp(timestamps[1])
+        let text = string.Join('\n', blockLines, 1, blockLines.Length - 1)
+        select new SubtitleLine(startTime, endTime, text));
 
     static IEnumerable<string> parseBlocks(Stream stream)
     {

@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -13,6 +14,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 
 public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
@@ -53,7 +55,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
             frameStats.OverlappedCommands |= sprite.HasOverlappedCommands;
         }
 
-        var fade = sprite.OpacityAt(time);
+        var fade = (float)sprite.OpacityAt(time);
         if (fade < .00001f) return;
 
         var scale = (Vector2)sprite.ScaleAt(time);
@@ -86,9 +88,9 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
 
         if (texture is null) return;
 
-        var additive = sprite.AdditiveAt(time);
-        var position = sprite.PositionAt(time);
-        var rotation = sprite.RotationAt(time);
+        var additive = (bool)sprite.AdditiveAt(time);
+        var position = (Vector2)sprite.PositionAt(time);
+        var rotation = (float)sprite.RotationAt(time);
 
         if (sprite.FlipHAt(time)) scale.X = -scale.X;
         if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
