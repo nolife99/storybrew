@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.UserInterface.Skinning;
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -283,14 +284,15 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         if (fieldType.IsEnum) return (data, _, _) => Enum.Parse(fieldType, data.Value<string>());
         while (fieldType != typeof(object))
         {
-            if (fieldParsers.TryGetValue(fieldType, out var parser)) return parser;
+            var parser = fieldParsers.GetValueRefOrNullRef(fieldType);
+            if (parser is not null) return parser;
             fieldType = fieldType.BaseType;
         }
 
         return null;
     }
 
-    static readonly Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new()
+    static readonly FrozenDictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
     {
         [typeof(string)] = (data, _, _) => data.Value<string>(),
         [typeof(float)] = (data, _, _) => data.Value<float>(),
@@ -343,7 +345,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
             throw new InvalidDataException($"Incorrect four side format: {data}");
         }
-    };
+    }.ToFrozenDictionary();
 
     #endregion
 }

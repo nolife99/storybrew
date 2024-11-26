@@ -1,9 +1,11 @@
 ﻿namespace StorybrewCommon.Util;
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp.PixelFormats;
@@ -13,7 +15,7 @@ using Color4 = OpenTK.Mathematics.Color4;
 #pragma warning disable CS1591
 public abstract class ObjectSerializer
 {
-    static readonly HashSet<ObjectSerializer> serializers =
+    static readonly FrozenSet<ObjectSerializer> serializers =
     [
         new SimpleObjectSerializer<int>(r => r.ReadInt32(), (w, v) => w.Write(Unsafe.Unbox<int>(v)),
             v => int.Parse(v, CultureInfo.InvariantCulture), v => Unsafe.Unbox<int>(v).ToString(CultureInfo.InvariantCulture)),
@@ -34,8 +36,8 @@ public abstract class ObjectSerializer
         }, v =>
         {
             var split = v.Split(',');
-            return new CommandScale(float.Parse(split[0], CultureInfo.InvariantCulture),
-                float.Parse(split[1], CultureInfo.InvariantCulture));
+            return new CommandScale(double.Parse(split[0], CultureInfo.InvariantCulture),
+                double.Parse(split[1], CultureInfo.InvariantCulture));
         }, v =>
         {
             var vector = Unsafe.Unbox<CommandScale>(v);
@@ -49,8 +51,8 @@ public abstract class ObjectSerializer
         }, v =>
         {
             var split = v.Split(',');
-            return new CommandPosition(float.Parse(split[0], CultureInfo.InvariantCulture),
-                float.Parse(split[1], CultureInfo.InvariantCulture));
+            return new CommandPosition(double.Parse(split[0], CultureInfo.InvariantCulture),
+                double.Parse(split[1], CultureInfo.InvariantCulture));
         }, v =>
         {
             var vector = Unsafe.Unbox<CommandPosition>(v);
@@ -145,9 +147,9 @@ public abstract class ObjectSerializer
         new SimpleObjectSerializer<Rgba32>(r => new Rgba32(r.ReadUInt32()), (w, v) => w.Write(((Rgba32)v).PackedValue), v =>
         {
             var split = v.Split(',');
-            return new Rgba32(float.Parse(split[0], CultureInfo.InvariantCulture),
-                float.Parse(split[1], CultureInfo.InvariantCulture), float.Parse(split[2], CultureInfo.InvariantCulture),
-                float.Parse(split[3], CultureInfo.InvariantCulture));
+            return new Rgba32(byte.Parse(split[0], CultureInfo.InvariantCulture),
+                byte.Parse(split[1], CultureInfo.InvariantCulture), byte.Parse(split[2], CultureInfo.InvariantCulture),
+                byte.Parse(split[3], CultureInfo.InvariantCulture));
         }, v =>
         {
             var color = Unsafe.Unbox<Rgba32>(v);
@@ -200,13 +202,7 @@ public abstract class ObjectSerializer
         return serializer.ToString(value);
     }
     static ObjectSerializer GetSerializer(string typeName)
-    {
-        foreach (var serializer in serializers)
-            if (serializer.CanSerialize(typeName))
-                return serializer;
-
-        return null;
-    }
+        => serializers.FirstOrDefault(serializer => serializer.CanSerialize(typeName));
 }
 
 public class SimpleObjectSerializer<T>(Func<BinaryReader, object> read,

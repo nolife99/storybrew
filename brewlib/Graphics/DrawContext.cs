@@ -11,7 +11,7 @@ public sealed class DrawContext : IDisposable
     readonly Dictionary<Type, object> references = [];
     FrozenDictionary<Type, object> frozenReferences;
 
-    public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences[typeof(T)]);
+    public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(typeof(T)));
 
     public void Register<T>(T obj, bool dispose = false) where T : class
     {

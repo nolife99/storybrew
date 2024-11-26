@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Util;
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 
 public static class LineBreaker
@@ -10,7 +11,7 @@ public static class LineBreaker
     // Classes not implemented:
     // CM SG ZWJ HY CB and everything after
 
-    static readonly HashSet<int> breakOpportunityAfter =
+    static readonly FrozenSet<int> breakOpportunityAfter =
     [
         0x200B, // ZERO WIDTH SPACE
         0x0020, // SPACE
@@ -118,9 +119,7 @@ public static class LineBreaker
         0x10A53, // KHAROSHTHI PUNCTUATION CRESCENT BAR
         0x10A54, // KHAROSHTHI PUNCTUATION MANGALAM
         0x10A55 // KHAROSHTHI PUNCTUATION LOTUS
-    ];
-
-    static readonly HashSet<int> breakOpportunityBefore =
+    ], breakOpportunityBefore =
     [
         0x200B, // ZERO WIDTH SPACE
         0x0020, // SPACE
@@ -145,9 +144,7 @@ public static class LineBreaker
         0xA874, // PHAGS-PA SINGLE HEAD MARK
         0xA875, // PHAGS-PA DOUBLE HEAD MARK
         0x1806 // MONGOLIAN TODO SOFT HYPHEN
-    ];
-
-    static readonly HashSet<int> breakProhibitedAfter =
+    ], breakProhibitedAfter =
     [
         0x2060, // WORD JOINER
         0xFEFF, // ZERO WIDTH NO-BREAK SPACE
@@ -160,9 +157,7 @@ public static class LineBreaker
         0x0F08, // TIBETAN MARK SBRUL SHAD
         0x0F0C, // TIBETAN MARK DELIMITER TSHEG BSTAR
         0x0F12 // TIBETAN MARK RGYA GRAM SHAD
-    ];
-
-    static readonly HashSet<int> breakProhibitedBefore =
+    ], breakProhibitedBefore =
     [
         0x2060, // WORD JOINER
         0xFEFF, // ZERO WIDTH NO-BREAK SPACE
@@ -175,9 +170,7 @@ public static class LineBreaker
         0x0F08, // TIBETAN MARK SBRUL SHAD
         0x0F0C, // TIBETAN MARK DELIMITER TSHEG BSTAR
         0x0F12 // TIBETAN MARK RGYA GRAM SHAD
-    ];
-
-    static readonly HashSet<int> causesBreakAfter =
+    ], causesBreakAfter =
     [
         0x000C, // FORM FEED
         0x000B, // LINE TABULATION
