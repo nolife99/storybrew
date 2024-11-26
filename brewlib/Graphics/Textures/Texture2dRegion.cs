@@ -23,6 +23,8 @@ public class Texture2dRegion : IDisposable
         (float)bounds.Top / BindableTexture.Height, (float)bounds.Right / BindableTexture.Width,
         (float)bounds.Bottom / BindableTexture.Height);
 
+    public Vector2 UvOrigin => new((float)bounds.Left / BindableTexture.Width, (float)bounds.Top / BindableTexture.Height);
+
     public Vector2 UvRatio => new(1f / BindableTexture.Width, 1f / BindableTexture.Height);
     public Texture2d BindableTexture { get; }
 

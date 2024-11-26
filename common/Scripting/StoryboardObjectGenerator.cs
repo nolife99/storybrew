@@ -143,20 +143,13 @@ public abstract class StoryboardObjectGenerator : Script
         path = Path.GetFullPath(path);
         if (bitmaps.TryGetValue(path, out var bitmap)) return bitmap;
 
-        using var stream = Misc.WithRetries(() => File.OpenRead(path));
+        using var stream = File.OpenRead(path);
         if (alternatePath is not null && !File.Exists(path))
         {
             alternatePath = Path.GetFullPath(alternatePath);
             if (watch) context.AddDependency(alternatePath);
 
-            try
-            {
-                bitmaps[path] = bitmap = Image.Load<Rgba32>(stream);
-            }
-            catch (FileNotFoundException e)
-            {
-                throw new FileNotFoundException(path, e);
-            }
+            bitmaps[path] = bitmap = Image.Load<Rgba32>(stream);
         }
         else
         {
@@ -179,7 +172,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         path = Path.GetFullPath(path);
         if (watch) context.AddDependency(path);
-        return Misc.WithRetries(() => File.OpenRead(path));
+        return File.OpenRead(path);
     }
 
     #endregion

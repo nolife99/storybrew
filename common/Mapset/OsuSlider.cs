@@ -131,8 +131,8 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
 
             case SliderCurveType.Perfect:
                 if (controlPoints.Length > 2) goto case SliderCurveType.Bezier;
-                if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0],
-                    controlPoints[1])) goto case SliderCurveType.Linear;
+                if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0], controlPoints[1]))
+                    goto case SliderCurveType.Linear;
 
                 curve = generateCircleCurve();
                 break;
@@ -144,8 +144,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         playfieldTipPosition = curve.PositionAtDistance(Length);
     }
 
-    CircleCurve generateCircleCurve()
-        => new(PlayfieldPosition, controlPoints[0], controlPoints[1]);
+    CircleCurve generateCircleCurve() => new(PlayfieldPosition, controlPoints[0], controlPoints[1]);
 
     CompositeCurve generateBezierCurve()
     {

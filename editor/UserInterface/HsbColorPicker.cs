@@ -18,9 +18,9 @@ public class HsbColorPicker : Widget, Field
     readonly Textbox htmlTextbox;
     readonly Slider hueSlider, saturationSlider, brightnessSlider, alphaSlider;
     readonly LinearLayout layout;
-    Sprite previewSprite;
+    readonly Sprite previewSprite;
 
-    Rgba32 value;
+    Rgba64 value;
 
     public HsbColorPicker(WidgetManager manager) : base(manager)
     {
@@ -33,14 +33,14 @@ public class HsbColorPicker : Widget, Field
             Children =
             [
                 new Label(manager) { StyleName = "small", Text = "Hue" },
-                hueSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 0 },
+                hueSlider = new(manager) { StyleName = "small", Value = 0 },
                 new Label(manager) { StyleName = "small", Text = "Saturation" },
-                saturationSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = .7f },
+                saturationSlider = new(manager) { StyleName = "small", Value = .7f },
                 new Label(manager) { StyleName = "small", Text = "Brightness" },
-                brightnessSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 1 },
+                brightnessSlider = new(manager) { StyleName = "small", Value = 1 },
                 new Label(manager) { StyleName = "small", Text = "Alpha" },
-                alphaSlider = new(manager) { StyleName = "small", MinValue = 0, MaxValue = 1, Value = 1 },
-                htmlTextbox = new(manager) { EnterCommits = true }
+                alphaSlider = new(manager) { StyleName = "small", Value = 1 },
+                htmlTextbox = new(manager)
             ]
         });
 
@@ -66,11 +66,12 @@ public class HsbColorPicker : Widget, Field
 
     public Rgba32 Value
     {
-        get => value;
+        get => new(value.ToVector4());
         set
         {
-            if (this.value == value) return;
-            this.value = value;
+            Rgba64 upscaledValue = new(value.ToVector4());
+            if (this.value == upscaledValue) return;
+            this.value = upscaledValue;
 
             updateWidgets();
             OnValueChanged?.Invoke(this, EventArgs.Empty);
@@ -83,22 +84,24 @@ public class HsbColorPicker : Widget, Field
 
     public event EventHandler OnValueChanged, OnValueCommited;
 
-    void slider_OnValueChanged(object sender, EventArgs e) => Value = ColorExtensions.FromHsb(new(hueSlider.Value % 1,
-        saturationSlider.Value, brightnessSlider.Value, alphaSlider.Value));
+    void slider_OnValueChanged(object sender, EventArgs e)
+    {
+        var value = ColorExtensions.FromHsb(new(hueSlider.Value % 1, saturationSlider.Value, brightnessSlider.Value,
+            alphaSlider.Value));
+
+        if (this.value == value) return;
+        this.value = value;
+
+        updateWidgets();
+        OnValueChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     void slider_OnValueCommited(object sender, EventArgs e) => OnValueCommited?.Invoke(this, EventArgs.Empty);
 
     void htmlTextbox_OnValueCommited(object sender, EventArgs e)
     {
-        var htmlColor = htmlTextbox.Value.Trim();
-        if (!htmlColor.StartsWith('#')) htmlColor = '#' + htmlColor;
-
-        Rgba32 color;
-        try
-        {
-            color = Rgba32.ParseHex(htmlColor);
-        }
-        catch
+        var success = Rgba32.TryParseHex(htmlTextbox.Value, out var color);
+        if (!success)
         {
             updateWidgets();
             return;
@@ -144,8 +147,9 @@ public class HsbColorPicker : Widget, Field
         alphaSlider.SetValueSilent(hsba.W);
         alphaSlider.Tooltip = $"{hsba.W:.%}";
 
-        previewSprite.Color = value;
-        htmlTextbox.SetValueSilent(previewSprite.Color.ToHex());
+        Rgba32 bit32 = new(value.ToVector4());
+        previewSprite.Color = bit32;
+        htmlTextbox.SetValueSilent($"#{bit32.R:X2}{bit32.G:X2}{bit32.B:X2}");
     }
 
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
@@ -160,7 +164,6 @@ public class HsbColorPicker : Widget, Field
     protected override void Dispose(bool disposing)
     {
         if (disposing) previewSprite.Dispose();
-        previewSprite = null;
         base.Dispose(disposing);
     }
 

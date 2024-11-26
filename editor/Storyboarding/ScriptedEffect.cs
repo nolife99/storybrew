@@ -2,7 +2,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using BrewLib.Util;
 using Scripting;
@@ -160,13 +159,8 @@ public class ScriptedEffect : Effect
 
         if (!string.IsNullOrWhiteSpace(log))
         {
-            if (statusMessageBuilder.Length > 0)
-            {
-                statusMessageBuilder.AppendLine();
-                statusMessageBuilder.AppendLine();
-            }
-            statusMessageBuilder.AppendLine("Log:");
-            statusMessageBuilder.AppendLine();
+            if (statusMessageBuilder.Length > 0) statusMessageBuilder.Append(" \n \n");
+            statusMessageBuilder.Append("Log:\n \n");
             statusMessageBuilder.Append(log);
         }
 

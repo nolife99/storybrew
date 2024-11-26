@@ -81,7 +81,7 @@ public sealed class GpuCommandSync : IDisposable
         public nint Fence;
         public int Index, Length;
 
-        bool IResettable.TryReset()
+        public bool TryReset()
         {
             GL.DeleteSync(Fence);
             Fence = 0;

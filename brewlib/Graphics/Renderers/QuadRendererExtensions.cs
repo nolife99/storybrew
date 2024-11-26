@@ -1,5 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
+using System.Numerics;
 using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 
@@ -32,79 +33,54 @@ public static class QuadRendererExtensions
         float textureX1,
         float textureY1)
     {
-        var width = textureX1 - textureX0;
-        var height = textureY1 - textureY0;
+        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY, fx2 = width - originX,
+            fy2 = height - originY;
 
-        var fx = -originX;
-        var fy = -originY;
-        var fx2 = width - originX;
-        var fy2 = height - originY;
-
-        var flipX = false;
-        var flipY = false;
+        bool flipX = false, flipY = false;
 
         if (scaleX != 1 || scaleY != 1)
         {
             flipX = scaleX < 0;
             flipY = scaleY < 0;
 
-            var absScaleX = flipX ? -scaleX : scaleX;
-            var absScaleY = flipY ? -scaleY : scaleY;
-
+            float absScaleX = flipX ? -scaleX : scaleX, absScaleY = flipY ? -scaleY : scaleY;
             fx *= absScaleX;
             fy *= absScaleY;
             fx2 *= absScaleX;
             fy2 *= absScaleY;
         }
 
-        var p1x = fx;
-        var p1y = fy;
-        var p2x = fx;
-        var p2y = fy2;
-        var p3x = fx2;
-        var p3y = fy2;
-        var p4x = fx2;
-        var p4y = fy;
-
         float x1, y1, x2, y2, x3, y3, x4, y4;
         if (rotation != 0)
         {
             var (sin, cos) = float.SinCos(rotation);
-            x1 = cos * p1x - sin * p1y;
-            y1 = sin * p1x + cos * p1y;
-            x2 = cos * p2x - sin * p2y;
-            y2 = sin * p2x + cos * p2y;
-            x3 = cos * p3x - sin * p3y;
-            y3 = sin * p3x + cos * p3y;
-            x4 = x1 + (x3 - x2);
-            y4 = y3 - (y2 - y1);
+            x1 = cos * fx - sin * fy;
+            y1 = sin * fx + cos * fy;
+            x2 = cos * fx - sin * fy2;
+            y2 = sin * fx + cos * fy2;
+            x3 = cos * fx2 - sin * fy2;
+            y3 = sin * fx2 + cos * fy2;
+            x4 = x1 + x3 - x2;
+            y4 = y3 - y2 + y1;
         }
         else
         {
-            x1 = p1x;
-            y1 = p1y;
-            x2 = p2x;
-            y2 = p2y;
-            x3 = p3x;
-            y3 = p3y;
-            x4 = p4x;
-            y4 = p4y;
+            x1 = fx;
+            y1 = fy;
+            x2 = fx;
+            y2 = fy2;
+            x3 = fx2;
+            y3 = fy2;
+            x4 = fx2;
+            y4 = fy;
         }
 
-        QuadPrimitive primitive = new()
-        {
-            x1 = x1 + x, y1 = y1 + y, x2 = x2 + x, y2 = y2 + y, x3 = x3 + x, y3 = y3 + y, x4 = x4 + x, y4 = y4 + y
-        };
+        Vector2 textureUvOrigin = texture.UvOrigin, textureUvRatio = texture.UvRatio;
+        float textureU0 = textureUvOrigin.X + textureX0 * textureUvRatio.X,
+            textureV0 = textureUvOrigin.Y + textureY0 * textureUvRatio.Y,
+            textureU1 = textureUvOrigin.X + textureX1 * textureUvRatio.X,
+            textureV1 = textureUvOrigin.Y + textureY1 * textureUvRatio.Y, u0, v0, u1, v1;
 
-        var textureUvBounds = texture.UvBounds;
-        var textureUvRatio = texture.UvRatio;
-
-        var textureU0 = textureUvBounds.Left + textureX0 * textureUvRatio.X;
-        var textureV0 = textureUvBounds.Top + textureY0 * textureUvRatio.Y;
-        var textureU1 = textureUvBounds.Left + textureX1 * textureUvRatio.X;
-        var textureV1 = textureUvBounds.Top + textureY1 * textureUvRatio.Y;
-
-        float u0, v0, u1, v1;
         if (flipX)
         {
             u0 = textureU1;
@@ -127,16 +103,30 @@ public static class QuadRendererExtensions
             v1 = textureV1;
         }
 
-        primitive.u1 = u0;
-        primitive.v1 = v0;
-        primitive.u2 = u0;
-        primitive.v2 = v1;
-        primitive.u3 = u1;
-        primitive.v3 = v1;
-        primitive.u4 = u1;
-        primitive.v4 = v0;
+        QuadPrimitive primitive = new()
+        {
+            x1 = x1 + x,
+            y1 = y1 + y,
+            x2 = x2 + x,
+            y2 = y2 + y,
+            x3 = x3 + x,
+            y3 = y3 + y,
+            x4 = x4 + x,
+            y4 = y4 + y,
+            u1 = u0,
+            u2 = u0,
+            u3 = u1,
+            u4 = u1,
+            v1 = v0,
+            v2 = v1,
+            v3 = v1,
+            v4 = v0,
+            color1 = color,
+            color2 = color,
+            color3 = color,
+            color4 = color
+        };
 
-        primitive.color1 = primitive.color2 = primitive.color3 = primitive.color4 = color;
         renderer.Draw(ref primitive, texture);
     }
 }

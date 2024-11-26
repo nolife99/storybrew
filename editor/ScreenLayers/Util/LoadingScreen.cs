@@ -2,8 +2,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime;
-using System.Threading.Tasks;
+using System.Threading;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 
@@ -15,51 +14,54 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
 
     public override void Load()
     {
-        Task.Run(() =>
+        Thread thread = new(() =>
         {
-            Exception exception = null;
+            Exception ex = null;
             try
             {
                 action();
             }
             catch (Exception e)
             {
-                exception = e;
+                ex = e;
             }
 
-            if (exception is null)
+            if (ex is null)
             {
                 Program.Schedule(Exit);
                 return;
             }
 
-            Trace.TraceError($"{title} failed ({action.Method.Name}): {exception}");
+            Trace.TraceError($"{title} failed ({action.Method.Name}): {ex}");
 
             var sb = StringHelper.StringBuilderPool.Get();
-            sb.Append(exception.Message);
+            sb.Append(ex.Message);
             sb.Append(" (");
-            sb.Append(exception.GetType().Name);
-            sb.AppendLine(")");
+            sb.Append(ex.GetType().Name);
+            sb.Append(")\n");
 
-            var innerException = exception.InnerException;
-            while (innerException is not null)
+            var innerEx = ex.InnerException;
+            while (innerEx is not null)
             {
                 sb.Append("Caused by: ");
-                sb.Append(innerException.Message);
+                sb.Append(innerEx.Message);
                 sb.Append(" (");
-                sb.Append(innerException.GetType().Name);
-                sb.AppendLine(")");
+                sb.Append(innerEx.GetType().Name);
+                sb.Append(")\n ");
 
-                innerException = innerException.InnerException;
+                innerEx = innerEx.InnerException;
             }
 
-            Program.RunMainThread(() =>
+            Program.Schedule(() =>
             {
-                Manager.ShowMessage($"{title} failed:\n\n{sb}\n\nDetails:\n{exception.GetBaseException()}");
+                Manager.ShowMessage($"{title} failed:\n \n{sb}\n \nDetails:\n{ex.GetBaseException()}");
                 StringHelper.StringBuilderPool.Return(sb);
                 Exit();
             });
         });
+
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.UnsafeStart();
 
         base.Load();
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)

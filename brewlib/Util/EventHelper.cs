@@ -14,7 +14,7 @@ public static class EventHelper
         foreach (var t in invocationList)
         {
             if (first) first = false;
-            else if (!eventDelegate.GetInvocationList().Contains(t)) continue;
+            else if (!invocationList.Contains(t)) continue;
 
             raise(t);
         }

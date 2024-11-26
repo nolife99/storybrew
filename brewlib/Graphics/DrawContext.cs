@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -8,14 +9,16 @@ public sealed class DrawContext : IDisposable
 {
     readonly List<IDisposable> disposables = [];
     readonly Dictionary<Type, object> references = [];
+    FrozenDictionary<Type, object> frozenReferences;
 
-    public T Get<T>() where T : class => Unsafe.As<T>(references[typeof(T)]);
+    public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences[typeof(T)]);
 
     public void Register<T>(T obj, bool dispose = false) where T : class
     {
         references[typeof(T)] = obj;
         if (dispose && obj is IDisposable disposable) disposables.Add(disposable);
     }
+    public void Register() => frozenReferences = references.ToFrozenDictionary();
 
     #region IDisposable Support
 

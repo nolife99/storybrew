@@ -12,7 +12,7 @@ public static class ColorExtensions
     }
     public static Rgba32 WithOpacity(this Rgba32 color, float opacity) => color with { A = (byte)(color.A * opacity) };
 
-    public static Rgba32 FromHsb(Vector4 hsba)
+    public static Rgba64 FromHsb(Vector4 hsba)
     {
         float hue = hsba.X * 360, saturation = hsba.Y, brightness = hsba.Z;
         var c = brightness * saturation;
@@ -61,10 +61,10 @@ public static class ColorExtensions
         }
 
         var m = brightness - c;
-        return new(r + m, g + m, b + m, hsba.W);
+        return new(new Vector4(r + m, g + m, b + m, hsba.W));
     }
 
-    public static Vector4 ToHsb(Rgba32 rgb)
+    public static Vector4 ToHsb(Rgba64 rgb)
     {
         var vec = rgb.ToVector4();
 

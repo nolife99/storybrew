@@ -37,18 +37,14 @@ public class IntegratedCompressor : ImageCompressor
                     RedirectStandardError = true
                 });
 
-            try
+            using (var errorStream = localProc.StandardError)
             {
-                using var errorStream = localProc.StandardError;
                 var error = errorStream.ReadToEnd();
-
                 if (!string.IsNullOrEmpty(error) && localProc.ExitCode != 0)
                     Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
             }
-            finally
-            {
-                localProc.WaitForExit();
-            }
+
+            localProc.WaitForExit();
         }));
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
@@ -92,9 +88,9 @@ public class IntegratedCompressor : ImageCompressor
     protected override void Dispose(bool disposing)
     {
         if (disposed) return;
-        Task.WhenAll(tasks).Wait();
+        using (var all = Task.WhenAll(tasks)) all.Wait();
 
         base.Dispose(disposing);
-        foreach (var clean in toCleanup) PathHelper.SafeDelete(clean);
+        foreach (var clean in toCleanup) File.Delete(clean);
     }
 }

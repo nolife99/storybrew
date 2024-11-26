@@ -51,7 +51,8 @@ public static class Updater
         var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
         Trace.WriteLine($"\nUpdate complete, starting {processPath}");
-        Process.Start(new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder });
+        Process.Start(new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder })
+            .Dispose();
     }
 
     public static void NotifyEditorRun()

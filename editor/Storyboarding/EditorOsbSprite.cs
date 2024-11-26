@@ -3,7 +3,6 @@
 using System;
 using System.IO;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
@@ -14,7 +13,6 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 
 public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess

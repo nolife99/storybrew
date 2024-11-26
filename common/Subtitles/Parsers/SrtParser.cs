@@ -12,7 +12,7 @@ public record SrtParser : SubtitleParser
     /// <inheritdoc/>
     public SubtitleSet Parse(string path)
     {
-        using var stream = Misc.WithRetries(() => File.OpenRead(path));
+        using var stream = File.OpenRead(path);
         return Parse(stream);
     }
 
@@ -20,10 +20,9 @@ public record SrtParser : SubtitleParser
     public SubtitleSet Parse(Stream stream) => new(from block in parseBlocks(stream)
         select block.Split('\n') into blockLines
         let timestamps = blockLines[1].Split("-->")
-        let startTime = SubtitleParser.ParseTimestamp(timestamps[0].Replace(',', '.'))
-        let endTime = SubtitleParser.ParseTimestamp(timestamps[1].Replace(',', '.'))
-        let text = string.Join("\n", blockLines, 2, blockLines.Length - 2)
-        select new SubtitleLine(startTime, endTime, text));
+        select new SubtitleLine(SubtitleParser.ParseTimestamp(timestamps[0].Replace(',', '.')),
+            SubtitleParser.ParseTimestamp(timestamps[1].Replace(',', '.')),
+            string.Join("\n", blockLines, 2, blockLines.Length - 2)));
 
     static IEnumerable<string> parseBlocks(Stream stream)
     {

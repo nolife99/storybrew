@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text.RegularExpressions;
 using StorybrewCommon.Util;
 
@@ -18,7 +17,6 @@ public class EffectConfig
         => new SortedSet<ConfigField>(fields.Values, Comparer<ConfigField>.Create((a, b) => a.Order - b.Order));
 
     public IEnumerable<string> FieldNames => fields.Keys;
-
     public void UpdateField(string name,
         string displayName,
         string description,

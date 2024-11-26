@@ -55,17 +55,7 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
         if (disposing) disposed = true;
     }
 
-    protected readonly struct Argument
-    {
-        internal readonly string path;
-        internal readonly LosslessInputSettings lossless;
-        internal readonly LossyInputSettings lossy;
-
-        internal Argument(string path, LosslessInputSettings lossless = null, LossyInputSettings lossy = null)
-        {
-            this.path = path;
-            this.lossless = lossless;
-            this.lossy = lossy;
-        }
-    }
+    protected readonly record struct Argument(string path,
+        LosslessInputSettings lossless = null,
+        LossyInputSettings lossy = null);
 }

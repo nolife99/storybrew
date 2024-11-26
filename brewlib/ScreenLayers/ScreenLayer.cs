@@ -1,13 +1,11 @@
 ﻿namespace BrewLib.ScreenLayers;
 
 using System;
-using System.Diagnostics;
 using System.Runtime;
 using Graphics;
 using Input;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Util;
 
 public abstract class ScreenLayer : InputAdapter, IDisposable
 {

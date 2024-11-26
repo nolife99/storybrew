@@ -1,7 +1,5 @@
 ﻿namespace StorybrewCommon.Scripting;
 
-using System;
-
 ///<summary> Defines a script to execute. </summary>
 public abstract class Script
 {

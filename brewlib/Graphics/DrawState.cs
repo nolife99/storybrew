@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -208,38 +209,67 @@ public static class DrawState
         samplerTextureIds[samplerIndex] = textureId;
     }
 
-    public static int BindTexture(BindableTexture texture)
+    public static int BindTexture(BindableTexture texture, bool activate = false)
     {
-        var samplerUnit = -1;
+        var texArr = ArrayPool<BindableTexture>.Shared.Rent(1);
+        texArr[0] = texture;
+
+        var samplerUnit = BindTextures(texArr.AsSpan()[..1]);
+        ArrayPool<BindableTexture>.Shared.Return(texArr);
+
+        if (activate) ActiveTextureUnit = samplerUnit;
+        return samplerUnit;
+    }
+
+    static int BindTextures(ReadOnlySpan<BindableTexture> textures)
+    {
+        Span<int> samplerIndexes = stackalloc int[textures.Length];
         var samplerCount = samplerTextureIds.Length;
 
-        var textureId = texture.TextureId;
-
-        for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex)
-            if (samplerTextureIds[samplerIndex] == textureId)
-            {
-                samplerUnit = samplerIndex;
-                break;
-            }
-
-        if (samplerUnit != -1) return samplerUnit;
-
-        var first = true;
-        var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
-
-        for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex;
-            samplerIndex = (samplerIndex + 1) % samplerCount)
+        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; textureIndex++)
         {
-            first = false;
-            if (samplerUnit == samplerIndex) continue;
+            var textureId = textures[textureIndex].TextureId;
 
-            BindTexture(textureId, samplerIndex);
-            samplerUnit = samplerIndex;
-            lastRecycledTextureUnit = samplerIndex;
-            break;
+            samplerIndexes[textureIndex] = -1;
+            for (var samplerIndex = 0; samplerIndex < samplerCount; samplerIndex++)
+                if (samplerTextureIds[samplerIndex] == textureId)
+                {
+                    samplerIndexes[textureIndex] = samplerIndex;
+                    break;
+                }
         }
 
-        return samplerUnit;
+        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; textureIndex++)
+        {
+            if (samplerIndexes[textureIndex] != -1) continue;
+
+            var texture = textures[textureIndex];
+            var textureId = texture.TextureId;
+
+            var first = true;
+            var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
+            for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex;
+                samplerIndex = (samplerIndex + 1) % samplerCount)
+            {
+                first = false;
+
+                var isFreeSamplerUnit = true;
+                foreach (var usedIndex in samplerIndexes)
+                {
+                    if (usedIndex != samplerIndex) continue;
+                    isFreeSamplerUnit = false;
+                    break;
+                }
+
+                if (!isFreeSamplerUnit) continue;
+                BindTexture(textureId, samplerIndex);
+                samplerIndexes[textureIndex] = samplerIndex;
+                lastRecycledTextureUnit = samplerIndex;
+                break;
+            }
+        }
+
+        return samplerIndexes[0];
     }
 
     public static void UnbindTexture(int textureId)

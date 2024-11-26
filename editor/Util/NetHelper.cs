@@ -11,7 +11,7 @@ public static class NetHelper
     internal static HttpClient Client;
 
     public static void OpenUrl(string url)
-        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true });
+        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true }).Dispose();
 
     public static async void Request(string url, Action<string, Exception> action)
     {

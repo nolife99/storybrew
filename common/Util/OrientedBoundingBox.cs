@@ -10,7 +10,6 @@ public readonly record struct OrientedBoundingBox : IDisposable
 {
     readonly Vector2[] corners = ArrayPool<Vector2>.Shared.Rent(4), axis = ArrayPool<Vector2>.Shared.Rent(2);
     readonly float[] origins = ArrayPool<float>.Shared.Rent(4);
-
     public OrientedBoundingBox(Vector2 position, Vector2 origin, float width, float height, float angle)
     {
         var (sin, cos) = float.SinCos(angle);
@@ -34,7 +33,12 @@ public readonly record struct OrientedBoundingBox : IDisposable
             origins[a] = Vector2.Dot(corners[0], axis[a]);
         }
     }
-
+    public void Dispose()
+    {
+        ArrayPool<Vector2>.Shared.Return(corners);
+        ArrayPool<Vector2>.Shared.Return(axis);
+        ArrayPool<float>.Shared.Return(origins);
+    }
     public RectangleF GetAABB()
     {
         float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
@@ -48,14 +52,12 @@ public readonly record struct OrientedBoundingBox : IDisposable
 
         return RectangleF.FromLTRB(minX, minY, maxX, maxY);
     }
-
     bool Intersects(ref readonly OrientedBoundingBox other) => intersects1Way(in other) && other.intersects1Way(in this);
     public bool Intersects(ref readonly RectangleF other)
     {
         using OrientedBoundingBox otherBox = new(new(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0);
         return Intersects(in otherBox);
     }
-
     bool intersects1Way(ref readonly OrientedBoundingBox other)
     {
         for (var a = 0; a < 2; ++a)
@@ -77,12 +79,5 @@ public readonly record struct OrientedBoundingBox : IDisposable
         }
 
         return true;
-    }
-
-    public void Dispose()
-    {
-        ArrayPool<Vector2>.Shared.Return(corners);
-        ArrayPool<Vector2>.Shared.Return(axis);
-        ArrayPool<float>.Shared.Return(origins);
     }
 }

@@ -6,7 +6,7 @@ using System.Linq;
 
 public static class TinyTokenExtensions
 {
-    public static IEnumerable<T> Values<T>(this TinyToken token, object key = null) 
+    public static IEnumerable<T> Values<T>(this TinyToken token, object key = null)
         => token.Value<TinyArray>(key).Select(t => t.Value<T>());
 
     public static T Value<T>(this TinyToken token, object key1, object key2) => token.Value<TinyToken>(key1).Value<T>(key2);

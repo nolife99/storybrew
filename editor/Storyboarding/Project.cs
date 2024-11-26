@@ -18,7 +18,6 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using CommunityToolkit.HighPerformance;
-using CommunityToolkit.HighPerformance.Buffers;
 using Mapset;
 using Microsoft.Extensions.ObjectPool;
 using OpenTK.Mathematics;
@@ -79,7 +78,7 @@ public sealed partial class Project : IDisposable
         var compiledScriptsPath = Path.GetFullPath("cache/scripts");
         if (Directory.Exists(compiledScriptsPath))
             foreach (var script in Directory.EnumerateFiles(compiledScriptsPath))
-                PathHelper.SafeDelete(script);
+                File.Delete(script);
         else Directory.CreateDirectory(compiledScriptsPath);
 
         initializeAssetWatcher();
@@ -244,7 +243,7 @@ public sealed partial class Project : IDisposable
         var count = 1;
         string name;
         do name = $"{baseName} {count++}";
-        while (effects.Find(e => e.Name == name) is not null);
+        while (effects.Exists(e => e.Name == name));
 
         return name;
     }
@@ -761,7 +760,9 @@ public sealed partial class Project : IDisposable
 
                 effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++,
                     fieldValue?.GetType(), fieldValue,
-                    fieldRoot.Value<TinyObject>("AllowedValues")?.Select(p => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()))).ToArray(), fieldRoot.Value<string>("BeginsGroup"));
+                    fieldRoot.Value<TinyObject>("AllowedValues")?.Select(p
+                        => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()))).ToArray(),
+                    fieldRoot.Value<string>("BeginsGroup"));
             }
 
             var layersRoot = effectRoot.Value<TinyObject>("Layers");
@@ -836,7 +837,7 @@ public sealed partial class Project : IDisposable
             diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
         });
 
-        var usesOverlayLayer = localLayers.Find(l => l.OsbLayer is OsbLayer.Overlay) is not null;
+        var usesOverlayLayer = localLayers.Exists(l => l.OsbLayer is OsbLayer.Overlay);
         var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
 
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)

@@ -1,16 +1,23 @@
 ﻿namespace BrewLib.Util;
 
+using System;
+using System.Text;
 using System.Windows;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 
-public static class ClipboardHelper
+public static unsafe class ClipboardHelper
 {
-    public static void SetText(string text, TextDataFormat format = TextDataFormat.Text)
-        => Misc.WithRetries(() => Clipboard.SetText(text, format), 500, false);
+    static int LastWriteSize;
 
-    public static string GetText(TextDataFormat format = TextDataFormat.Text)
-        => Misc.WithRetries(() => Clipboard.GetText(format), 500, false);
+    public static void SetText(ReadOnlySpan<char> text)
+    {
+        Span<byte> bytes = stackalloc byte[Encoding.UTF8.GetByteCount(text)];
+        Encoding.UTF8.GetBytes(text, bytes);
 
-    public static void SetData(string format, object data) => Misc.WithRetries(() => Clipboard.SetData(format, data), 500, false);
+        fixed (byte* ptr = bytes) GLFW.SetClipboardStringRaw(Native.GLFWPtr, ptr);
+    }
+    public static string GetText() => GLFW.GetClipboardString(Native.GLFWPtr);
 
-    public static object GetData(string format) => Misc.WithRetries(() => Clipboard.GetData(format), 500, false);
+    public static void SetData(string format, object data) => Clipboard.SetData(format, data);
+    public static object GetData(string format) => Clipboard.GetData(format);
 }

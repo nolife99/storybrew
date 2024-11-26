@@ -166,7 +166,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     {
         Trace.WriteLine("Updating solution files");
 
-        using (var slnStream = Misc.WithRetries(() => File.Create(Path.Combine(ScriptsPath, "storyboard.sln"))))
+        using (var slnStream = File.Create(Path.Combine(ScriptsPath, "storyboard.sln")))
         using (var resourceStream =
             resourceContainer.GetStream("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative))
             resourceStream.CopyTo(slnStream);
@@ -196,7 +196,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
                 referencedAssembliesGroup.AppendChild(compileNode);
             }
 
-            using var csProjPath = Misc.WithRetries(() => File.Create(Path.Combine(ScriptsPath, "scripts.csproj")));
+            using var csProjPath = File.Create(Path.Combine(ScriptsPath, "scripts.csproj"));
             document.Save(csProjPath);
         }
         catch (Exception e)

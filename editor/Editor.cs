@@ -3,7 +3,6 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Runtime;
 using System.Windows.Forms;
 using BrewLib.Data;
 using BrewLib.Graphics;
@@ -65,6 +64,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
         drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, null, 1024, 1024), true);
         drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
+        drawContext.Register();
 
         try
         {

@@ -8,12 +8,11 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
-    where TPrimitive : unmanaged
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : unmanaged
 {
+    readonly GpuCommandSync commandSync = new();
     int bufferOffset, drawOffset, vertexBufferSize;
     nint bufferPointer;
-    GpuCommandSync commandSync = new();
 
     public override unsafe void Render(PrimitiveType type, nint primitives, int count, int drawCount)
     {
@@ -47,11 +46,12 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
 
-        const int flags =
-            (int)(BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit);
+        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0,
+            BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
 
-        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, (BufferStorageFlags)flags);
-        bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize, (BufferAccessMask)flags);
+        bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize,
+            BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit |
+            BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapInvalidateBufferBit);
 
         GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
     }

@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime;
 using System.Threading;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -555,51 +554,50 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         var activeSprites = stats.SpriteCount;
         if (proj.DisplayDebugWarning && activeSprites < 1500)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites");
-        else if (activeSprites >= 1500) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {activeSprites:n0} Sprites");
+            warnings.Append(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites\n");
+        else if (activeSprites >= 1500) warnings.Append(CultureInfo.InvariantCulture, $"⚠ {activeSprites:n0} Sprites\n");
 
         var batches = proj.FrameStats.Batches;
-        if (proj.DisplayDebugWarning && batches < 500) warnings.AppendLine(CultureInfo.InvariantCulture, $"{batches:0} Batches");
-        else if (batches >= 500) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {batches:0} Batches");
+        if (proj.DisplayDebugWarning && batches < 500) warnings.Append(CultureInfo.InvariantCulture, $"{batches:0} Batches\n");
+        else if (batches >= 500) warnings.Append(CultureInfo.InvariantCulture, $"⚠ {batches:0} Batches\n");
 
         var commands = stats.CommandCount;
         if (proj.DisplayDebugWarning && commands < 15000)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"{commands:n0} Commands");
-        else if (commands >= 15000) warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {commands:n0} Commands");
+            warnings.Append(CultureInfo.InvariantCulture, $"{commands:n0} Commands\n");
+        else if (commands >= 15000) warnings.Append(CultureInfo.InvariantCulture, $"⚠ {commands:n0} Commands\n");
 
         float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands,
             unusedRatio = unusedCommands / Math.Max(1, commands);
 
         if (unusedCommands >= 5000 && unusedRatio > .5f || unusedCommands >= 10000 && unusedRatio > .2f ||
             unusedCommands >= 15000)
-            warnings.AppendLine(CultureInfo.InvariantCulture,
-                $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
+            warnings.Append(CultureInfo.InvariantCulture,
+                $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
         else if (proj.DisplayDebugWarning)
-            warnings.AppendLine(CultureInfo.InvariantCulture,
-                $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites");
+            warnings.Append(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
 
         var sbLoad = (float)stats.ScreenFill;
         switch (sbLoad)
         {
             case > 0 and < 5 when proj.DisplayDebugWarning:
-                warnings.AppendLine(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill"); break;
-            case >= 5: warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f2}x Screen Fill"); break;
+                warnings.Append(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill\n"); break;
+            case >= 5: warnings.Append(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f2}x Screen Fill\n"); break;
         }
 
         var frameGpuMemory = stats.GpuMemoryFrameMb;
         if (proj.DisplayDebugWarning && frameGpuMemory < 32)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory");
+            warnings.Append(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory\n");
         else if (frameGpuMemory >= 32)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Memory");
+            warnings.Append(CultureInfo.InvariantCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Memory\n");
 
         var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
         if (proj.DisplayDebugWarning && totalGpuMemory < 256)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory");
+            warnings.Append(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory\n");
         else if (totalGpuMemory >= 256)
-            warnings.AppendLine(CultureInfo.InvariantCulture, $"⚠ {totalGpuMemory:0.0}MB Total Texture Memory");
+            warnings.Append(CultureInfo.InvariantCulture, $"⚠ {totalGpuMemory:0.0}MB Total Texture Memory\n");
 
-        if (stats.OverlappedCommands) warnings.AppendLine("⚠ Overlapped Commands");
-        if (stats.IncompatibleCommands) warnings.AppendLine("⚠ Incompatible Commands");
+        if (stats.OverlappedCommands) warnings.Append("⚠ Overlapped Commands\n");
+        if (stats.IncompatibleCommands) warnings.Append("⚠ Incompatible Commands");
 
         var str = warnings.TrimEnd().ToString();
         StringHelper.StringBuilderPool.Return(warnings);

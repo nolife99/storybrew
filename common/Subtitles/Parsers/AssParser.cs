@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using BrewLib.Util;
 using Util;
 
 ///<summary> Parsing methods for .ass subtitle files. </summary>
@@ -13,7 +12,7 @@ public record AssParser : SubtitleParser
     /// <inheritdoc/>
     public SubtitleSet Parse(string path)
     {
-        using var stream = Misc.WithRetries(() => File.OpenRead(path));
+        using var stream = File.OpenRead(path);
         return Parse(stream);
     }
 

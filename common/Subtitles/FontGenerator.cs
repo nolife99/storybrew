@@ -241,7 +241,7 @@ public sealed class FontGenerator
         }
 
         var path = Path.Combine(assetDirectory, texturePath);
-        using (var stream = Misc.WithRetries(() => File.Create(path)))
+        using (var stream = File.Create(path))
         {
             if (validBounds) realText.Mutate(b => b.Crop(bounds));
             realText.SaveAsPng(stream);

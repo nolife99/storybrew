@@ -210,13 +210,13 @@ public static unsafe partial class Native
     [LibraryImport("user32")] private static partial void EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
 
     static nint handle;
-    static Window* glfwPtr;
+    public static Window* GLFWPtr { get; private set; }
 
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
     public static void InitializeHandle(string windowTitle, Window* glfwWindow)
     {
-        glfwPtr = glfwWindow;
+        GLFWPtr = glfwWindow;
 
         var cont = true;
         using var currentProcess = Process.GetCurrentProcess();
@@ -232,7 +232,7 @@ public static unsafe partial class Native
                     var buf = stackalloc char[length];
                     SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buf);
 
-                    if (new ReadOnlySpan<char>(buf, length).Equals(windowTitle, StringComparison.Ordinal))
+                    if (new ReadOnlySpan<char>(buf, length).SequenceEqual(windowTitle))
                     {
                         handle = hWnd;
                         cont = false;
@@ -254,7 +254,7 @@ public static unsafe partial class Native
 
         frame.CopyPixels(default, (nint)bytes, bytesLength, frame.PixelWidth * 4);
         Image icon = new(frame.PixelWidth, frame.PixelHeight, bytes);
-        GLFW.SetWindowIconRaw(glfwPtr, 1, &icon);
+        GLFW.SetWindowIconRaw(GLFWPtr, 1, &icon);
     }
 
     #endregion

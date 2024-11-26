@@ -53,7 +53,7 @@ public abstract class TinyToken
     {
         if (value is TinyToken token) return token;
 
-        if (TinyValue.FindValueType(value) != TinyTokenType.Invalid) return new TinyValue(value);
+        if (TinyValue.FindValueType(value) is not TinyTokenType.Invalid) return new TinyValue(value);
         switch (value)
         {
             case IDictionary dictionary:

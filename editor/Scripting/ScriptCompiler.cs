@@ -53,7 +53,7 @@ public static class ScriptCompiler
         }
 
         var error = StringHelper.StringBuilderPool.Get();
-        error.AppendLine("Compilation error\n");
+        error.Append("Compilation error\n \n");
 
         foreach (var diagnostics in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
             .GroupBy(k =>
@@ -63,7 +63,7 @@ public static class ScriptCompiler
             }))
         {
             error.Append(Path.GetFileName(diagnostics.Key.AsSpan()));
-            error.AppendLine(":");
+            error.Append(":\n");
 
             foreach (var diagnostic in diagnostics)
             {

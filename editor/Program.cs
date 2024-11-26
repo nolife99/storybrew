@@ -186,11 +186,9 @@ public static class Program
     static void runMainLoop(NativeWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
     {
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
-        var watch = Stopwatch.StartNew();
-
         while (window.Exists && !window.IsExiting)
         {
-            var cur = watch.ElapsedMilliseconds;
+            var cur = (float)(GLFW.GetTime() * 1000);
             var focused = window.IsFocused;
             var fixedUpdates = 0;
 
@@ -217,7 +215,7 @@ public static class Program
             while (scheduledActions.TryDequeue(out var action))
                 try
                 {
-                    action.Invoke();
+                    action();
                 }
                 catch (Exception e)
                 {
@@ -226,7 +224,7 @@ public static class Program
 
             window.VSync = focused ? VSyncMode.Off : VSyncMode.On;
 
-            var active = watch.ElapsedMilliseconds - cur;
+            var active = (float)(GLFW.GetTime() * 1000) - cur;
             var sleepTime = (int)((focused ? targetFrame : fixedRateUpdate) - active);
             if (sleepTime > 0) Thread.Sleep(sleepTime);
 
@@ -318,7 +316,7 @@ public static class Program
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
 
-        using PeriodicTimer timer = new(TimeSpan.FromSeconds(10));
+        using PeriodicTimer timer = new(TimeSpan.FromSeconds(5));
         while (await timer.WaitForNextTickAsync().ConfigureAwait(false)) Trace.Flush();
     }
 
@@ -356,7 +354,7 @@ public static class Program
     }
 
     public static void Report(string type, Exception e) => NetHelper.BlockingPost(
-        "http://a-damnae.rhcloud.com/storybrew/report.php",
+        "https://a-damnae.rhcloud.com/storybrew/report.php",
         new()
         {
             { "reporttype", type },

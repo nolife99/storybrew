@@ -2,7 +2,6 @@
 
 using System;
 using System.Numerics;
-using System.Windows;
 using Graphics;
 using Graphics.Drawables;
 using SixLabors.ImageSharp;
@@ -75,16 +74,16 @@ public class Textbox : Widget, Field
 
                 case Keys.C:
                     if (inputManager.ControlOnly)
-                        ClipboardHelper.SetText(
-                            selectionStart != cursorPosition ? Value.Substring(SelectionLeft, SelectionLength) : Value,
-                            TextDataFormat.UnicodeText);
+                        ClipboardHelper.SetText(selectionStart != cursorPosition ?
+                            Value.AsSpan().Slice(SelectionLeft, SelectionLength) :
+                            Value);
 
                     break;
 
                 case Keys.V:
                     if (inputManager.ControlOnly)
                     {
-                        var clipboardText = ClipboardHelper.GetText(TextDataFormat.UnicodeText);
+                        var clipboardText = ClipboardHelper.GetText();
                         if (clipboardText is not null)
                         {
                             if (!AcceptMultiline) clipboardText = clipboardText.Replace("\n", "");
@@ -98,8 +97,7 @@ public class Textbox : Widget, Field
                     if (inputManager.ControlOnly)
                     {
                         if (selectionStart == cursorPosition) SelectAll();
-
-                        ClipboardHelper.SetText(Value.Substring(SelectionLeft, SelectionLength), TextDataFormat.UnicodeText);
+                        ClipboardHelper.SetText(Value.AsSpan().Slice(SelectionLeft, SelectionLength));
                         ReplaceSelection("");
                     }
 

@@ -188,26 +188,20 @@ public sealed class WidgetManager : InputHandler, IDisposable
     public void RefreshAnchors()
     {
         if (!needsAnchorUpdate || refreshingAnchors) return;
-        try
+        refreshingAnchors = true;
+        var iterationBefore = anchoringIteration;
+
+        rootContainer.PreLayout();
+        while (needsAnchorUpdate)
         {
-            refreshingAnchors = true;
-            var iterationBefore = anchoringIteration;
+            needsAnchorUpdate = false;
+            if (anchoringIteration - iterationBefore > 8) break;
 
-            rootContainer.PreLayout();
-            while (needsAnchorUpdate)
-            {
-                needsAnchorUpdate = false;
-                if (anchoringIteration - iterationBefore > 8) break;
-
-                rootContainer.UpdateAnchoring(++anchoringIteration);
-            }
-
-            RefreshHover();
+            rootContainer.UpdateAnchoring(++anchoringIteration);
         }
-        finally
-        {
-            refreshingAnchors = false;
-        }
+
+        RefreshHover();
+        refreshingAnchors = false;
     }
 
     public float PixelSize => 1 / ((camera as CameraOrtho)?.HeightScaling ?? 1);

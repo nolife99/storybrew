@@ -1,13 +1,11 @@
 ﻿namespace StorybrewScripts;
 
 using System;
-using System.Drawing;
-using OpenTK.Mathematics;
+using System.Numerics;
+using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Quaternion = System.Numerics.Quaternion;
-using Vector2 = System.Numerics.Vector2;
 
 internal class Tetris : StoryboardObjectGenerator
 {
@@ -16,7 +14,7 @@ internal class Tetris : StoryboardObjectGenerator
     [Configurable] public int Blocks = 1;
     Cell[,] cells;
     [Configurable] public float CellSize = 20;
-    [Configurable] public Color Color = Color.White;
+    [Configurable] public Rgba32 Color = new(Vector3.One);
     [Configurable] public bool Dumb = false;
     [Configurable] public int EndTime = 0;
     [Configurable] public int GridHeight = 20;
@@ -139,7 +137,7 @@ internal class Tetris : StoryboardObjectGenerator
         return anyCombo;
     }
 
-    void fillCell(float startTime, float endTime, int dropX, int dropY, Color color)
+    void fillCell(float startTime, float endTime, int dropX, int dropY, Rgba32 color)
     {
         var shadow = GetLayer("Shadows").CreateSprite(SpritePath, OsbOrigin.TopCentre);
         var sprite = GetLayer("Blocks").CreateSprite(SpritePath, OsbOrigin.TopCentre);
@@ -150,12 +148,12 @@ internal class Tetris : StoryboardObjectGenerator
         Vector2 targetPosition = new(dropX * CellSize, dropY * CellSize);
         var startPosition = targetPosition with { Y = targetPosition.Y - CellSize * GridHeight };
 
-        sprite.Rotate(startTime, MathHelper.DegreesToRadians(Rotation));
+        sprite.Rotate(startTime, float.DegreesToRadians(Rotation));
         sprite.Scale(startTime, SpriteScale);
         sprite.Color(startTime, color);
         sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
 
-        shadow.Rotate(startTime, MathHelper.DegreesToRadians(Rotation));
+        shadow.Rotate(startTime, float.DegreesToRadians(Rotation));
         shadow.Scale(startTime, SpriteScale);
         shadow.Color(startTime, 0, 0, 0);
         shadow.Fade(startTime, .5f);
@@ -197,7 +195,7 @@ internal class Tetris : StoryboardObjectGenerator
 
     Vector2 transform(Vector2 position)
         => Vector2.Transform(new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize),
-            Quaternion.CreateFromYawPitchRoll(0, MathHelper.DegreesToRadians(Rotation), 0));
+            Quaternion.CreateFromYawPitchRoll(0, float.DegreesToRadians(Rotation), 0));
 
     void shuffle(int[] array)
     {

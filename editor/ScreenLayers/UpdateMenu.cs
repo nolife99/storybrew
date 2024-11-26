@@ -82,7 +82,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 actionLabel.Text = "Updating";
 
                 var localPath = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
-                Process process = new()
+                using Process process = new()
                 {
                     StartInfo = new(executablePath, $"update \"{localPath}\" {Program.Version}")
                     {

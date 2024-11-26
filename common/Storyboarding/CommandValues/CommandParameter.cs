@@ -10,7 +10,6 @@ public readonly record struct CommandParameter : CommandValue
 
     public readonly ParameterType Type;
     CommandParameter(ParameterType type) => Type = type;
-
     public string ToOsbString(ExportSettings exportSettings) => Type switch
     {
         ParameterType.FlipHorizontal => "H",
@@ -18,7 +17,6 @@ public readonly record struct CommandParameter : CommandValue
         ParameterType.AdditiveBlending => "A",
         _ => throw new InvalidOperationException("Parameter command cannot be None.")
     };
-
     public override string ToString() => ToOsbString(ExportSettings.Default);
     public static implicit operator bool(CommandParameter obj) => obj.Type is not ParameterType.None;
 }

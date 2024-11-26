@@ -56,11 +56,12 @@ public sealed class AsyncActionQueue<T> : IDisposable
         }
     }
 
-    public async Task CancelQueuedActions(bool stopThreads)
+    public Task CancelQueuedActions(bool stopThreads)
     {
         lock (context.Queue) context.Queue.Clear();
-        if (!stopThreads) return;
-        await Task.WhenAll(actionRunners.Where(runner => runner is not null).Select(runner => runner.DisposeAsync().AsTask()));
+        return stopThreads ?
+            Task.WhenAll(actionRunners.Where(runner => runner is not null).Select(runner => runner.DisposeAsync().AsTask())) :
+            Task.CompletedTask;
     }
 
     sealed record ActionContainer(T Target, string UniqueKey, Action<T> Action, bool MustRunAlone);
@@ -111,7 +112,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 {
                     await localThread.ConfigureAwait(false);
                 }
-                catch
+                catch (OperationCanceledException)
                 {
                     Trace.WriteLine($"Killed thread {threadName}");
                 }
@@ -183,8 +184,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     }
                     catch (Exception e)
                     {
-                        if (e is not OperationCanceledException or ThreadAbortException)
-                            context.TriggerActionFailed(task.Target, e);
+                        if (e is not ThreadAbortException) context.TriggerActionFailed(task.Target, e);
                     }
 
                     lock (context.Running)

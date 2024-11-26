@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using Graphics;
 using Graphics.Drawables;
@@ -241,7 +242,7 @@ public class Widget(WidgetManager manager) : IDisposable
         if (Parent is null) return false;
         return Parent == widget || Parent.HasAncestor(widget);
     }
-    public bool HasDescendant(Widget widget) => children.Find(c => c == widget || c.HasDescendant(widget)) is not null;
+    public bool HasDescendant(Widget widget) => children.Exists(c => c == widget || c.HasDescendant(widget));
 
     public IEnumerable<Widget> GetAncestors()
     {
@@ -486,17 +487,20 @@ public class Widget(WidgetManager manager) : IDisposable
     protected static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
     {
         if (handler is null) return evt.Handled;
-        foreach (var handlerDelegate in handler.GetInvocationList())
+        var invocationList = handler.GetInvocationList();
+
+        foreach (var handlerDelegate in invocationList)
             try
             {
-                if (!Array.Exists(handler.GetInvocationList(), h => h == handlerDelegate)) continue;
-                if (!((HandleableWidgetEventHandler<T>)handlerDelegate)(evt, e)) continue;
+                if (!invocationList.Contains(handlerDelegate) ||
+                    !((HandleableWidgetEventHandler<T>)handlerDelegate)(evt, e)) continue;
+
                 evt.Handled = true;
                 break;
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                Trace.TraceError($"Event handler '{handler.Method}' for '{handler.Target}':\n{exception}");
+                Trace.TraceError($"Event handler '{handler.Method}' for '{handler.Target}':\n{ex}");
             }
 
         return evt.Handled;

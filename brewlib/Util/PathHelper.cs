@@ -4,7 +4,6 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 public static class PathHelper
@@ -50,7 +49,8 @@ public static class PathHelper
         '\u001f'
     ]);
 
-    public static void OpenExplorer(string path) => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+    public static void OpenExplorer(string path)
+        => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }).Dispose();
 
     public static void SafeDelete(string path)
     {
@@ -97,8 +97,8 @@ public static class PathHelper
     {
         foreach (var character in filename.AsSpan())
             if (invalidChars.Contains(character) ||
-                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) ||
-                    char.IsDigit(character))) return false;
+                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character)))
+                return false;
 
         return true;
     }

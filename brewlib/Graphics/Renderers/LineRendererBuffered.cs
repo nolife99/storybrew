@@ -23,7 +23,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     readonly int maxLinesPerBatch;
     readonly bool ownsShader;
 
-    readonly nint primitives;
+    readonly Int128* primitives;
     readonly PrimitiveStreamer primitiveStreamer;
     readonly Shader shader;
 
@@ -53,7 +53,7 @@ public unsafe class LineRendererBuffered : LineRenderer
             Math.Max(this.maxLinesPerBatch = maxLinesPerBatch,
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine, Array.Empty<ushort>());
 
-        primitives = Marshal.AllocHGlobal(maxLinesPerBatch * Marshal.SizeOf<Int128>());
+        primitives = (Int128*)NativeMemory.Alloc((nuint)(maxLinesPerBatch * Marshal.SizeOf<Int128>()));
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
     }
 
@@ -112,7 +112,7 @@ public unsafe class LineRendererBuffered : LineRenderer
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, &combinedMatrix.M11);
         }
 
-        primitiveStreamer.Render(PrimitiveType.Lines, primitives, linesInBatch, linesInBatch * VertexPerLine);
+        primitiveStreamer.Render(PrimitiveType.Lines, (nint)primitives, linesInBatch, linesInBatch * VertexPerLine);
 
         currentLargestBatch += linesInBatch;
         if (!canBuffer)
@@ -130,7 +130,7 @@ public unsafe class LineRendererBuffered : LineRenderer
     {
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-        var ptr = (int*)((Int128*)primitives + linesInBatch);
+        var ptr = (int*)(primitives + linesInBatch);
         Unsafe.Write(ptr, start);
         Unsafe.Write(ptr + 3, color);
         Unsafe.Write(ptr + 4, end);
@@ -171,7 +171,7 @@ public unsafe class LineRendererBuffered : LineRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        Marshal.FreeHGlobal(primitives);
+        NativeMemory.Free(primitives);
         if (!disposing) return;
 
         primitiveStreamer.Dispose();

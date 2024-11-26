@@ -427,16 +427,17 @@ public class EffectConfigUi : Widget
 
     void copyConfiguration()
     {
-        using MemoryStream stream = new();
-        using BinaryWriter writer = new(stream);
-        writer.Write(effect.Config.FieldCount);
+        using MemoryStream memory = new();
+        using BinaryWriter writer = new(memory);
 
+        writer.Write(effect.Config.FieldCount);
         foreach (var field in effect.Config.Fields)
         {
             writer.Write(field.Name);
             ObjectSerializer.Write(writer, field.Value);
-            ClipboardHelper.SetData(effectConfigFormat, stream);
         }
+
+        ClipboardHelper.SetData(effectConfigFormat, memory);
     }
 
     void pasteConfiguration()
@@ -444,7 +445,7 @@ public class EffectConfigUi : Widget
         var changed = false;
         try
         {
-            using var stream = (Stream)ClipboardHelper.GetData(effectConfigFormat);
+            using var stream = Unsafe.As<Stream>(ClipboardHelper.GetData(effectConfigFormat));
             using BinaryReader reader = new(stream);
 
             var fieldCount = reader.ReadInt32();
@@ -454,14 +455,12 @@ public class EffectConfigUi : Widget
                 var value = ObjectSerializer.Read(reader);
                 try
                 {
-                    var field = effect.Config.Fields.First(f => f.Name == name);
-                    if (field.Value.Equals(value)) continue;
-
+                    if (effect.Config.Fields.First(f => f.Name == name).Value.Equals(value)) continue;
                     changed |= effect.Config.SetValue(name, value);
                 }
                 catch (Exception ex)
                 {
-                    Trace.WriteLine($"Cannot paste '{name}': {ex}");
+                    Trace.TraceError($"Paste '{name}': {ex}");
                 }
             }
         }

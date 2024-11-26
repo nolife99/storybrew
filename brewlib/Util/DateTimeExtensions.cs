@@ -1,12 +1,13 @@
 ﻿namespace BrewLib.Util;
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Globalization;
 
 public static class DateTimeExtensions
 {
-    static readonly Dictionary<long, string> thresholds = new()
+    static readonly FrozenDictionary<long, string> thresholds = new Dictionary<long, string>
     {
         [60] = "{0} seconds ago",
         [120] = "a minute ago",
@@ -19,7 +20,7 @@ public static class DateTimeExtensions
         [31536000] = "{0} months ago",
         [63072000] = "a year ago",
         [long.MaxValue] = "{0} years ago"
-    };
+    }.ToFrozenDictionary();
 
     public static string ToTimeAgo(this DateTimeOffset date)
     {

@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using StorybrewCommon.Scripting;
 
-public class ScriptContainer<TScript> : IDisposable where TScript : Script
+public sealed class ScriptContainer<TScript> : IDisposable where TScript : Script
 {
     static int nextId;
     public readonly int Id = nextId++;
@@ -81,30 +81,25 @@ public class ScriptContainer<TScript> : IDisposable where TScript : Script
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
+            AssemblyLoadContext scriptDomain = new(Name + Id, true);
+
             try
             {
-                AssemblyLoadContext scriptDomain = new(Name + Id, true);
-                try
-                {
-                    scriptType = ScriptCompiler
-                        .Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, referencedAssemblies)
-                        .GetType(ScriptTypeName, true);
+                scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, referencedAssemblies)
+                    .GetType(ScriptTypeName, true);
 
-                    appDomain?.Unload();
-                    appDomain = scriptDomain;
-                }
-                catch
-                {
-                    scriptDomain.Unload();
-                    throw;
-                }
+                appDomain?.Unload();
+                appDomain = scriptDomain;
             }
             catch (ScriptCompilationException)
             {
+                scriptDomain.Unload();
                 throw;
             }
             catch (Exception e)
             {
+                scriptDomain.Unload();
+
                 var details = "";
                 if (e is TypeLoadException) details = "Make sure the script's class name is the same as the file name.\n";
                 throw new ScriptLoadingException($"{ScriptTypeName} failed to load.\n{details}\n{e}");

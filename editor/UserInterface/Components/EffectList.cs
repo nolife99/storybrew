@@ -221,9 +221,11 @@ public class EffectList : Widget
             effect.OnChanged -= changedHandler;
         };
 
-        statusButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowMessage($"Status: {effect.Status}\n\n{effect.StatusMessage}");
-        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name", $"Pick a new name for {effect.Name}",
-            effect.Name, newName =>
+        statusButton.OnClick += (_, _)
+            => Manager.ScreenLayerManager.ShowMessage($"Status: {effect.Status}\n\n{effect.StatusMessage}");
+
+        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name",
+            $"Pick a new name for {effect.Name}", effect.Name, newName =>
             {
                 effect.Name = newName;
                 refreshEffects();
@@ -358,7 +360,7 @@ public class EffectList : Widget
                 {
                     UseShellExecute = true,
                     WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
-                });
+                }).Dispose();
 
                 return;
             }
