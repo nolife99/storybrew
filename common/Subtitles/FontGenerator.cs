@@ -215,7 +215,7 @@ public sealed class FontGenerator
 
         if (description.TrimTransparency)
         {
-            var foundTrim = cache.Keys.FirstOrDefault(s => s.AsSpan().Trim().Equals(trimmedText, StringComparison.Ordinal));
+            var foundTrim = cache.Keys.FirstOrDefault(s => s.AsSpan().Trim().SequenceEqual(trimmedText));
             if (foundTrim is not null)
             {
                 trimExist = true;

@@ -2,7 +2,7 @@
 
 using System;
 
-public sealed record ActionDisposable(Action action) : IDisposable
+public readonly record struct ActionDisposable(Action action) : IDisposable
 {
     public void Dispose() => action();
 }

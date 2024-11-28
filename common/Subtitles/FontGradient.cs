@@ -24,7 +24,6 @@ public record FontGradient(PointF offset = default,
 
     /// <inheritdoc/>
     public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y) => bitmap.Fill(FontGenerator.options,
-        new LinearGradientBrush(new PointF(x + offset.X, y + offset.Y),
-            new(x + offset.X + size.Width, y + offset.Y + size.Height), wrapMode, new ColorStop(0, color),
-            new ColorStop(1, color.WithAlpha(0))), path);
+        new LinearGradientBrush(new(x + offset.X, y + offset.Y), new(x + offset.X + size.Width, y + offset.Y + size.Height),
+            wrapMode, new(0, color), new(1, color.WithAlpha(0))), path);
 }

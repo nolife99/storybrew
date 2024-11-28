@@ -2,6 +2,8 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Data;
 using ManagedBass;
 using ManagedBass.Fx;
@@ -10,7 +12,7 @@ public class AudioStream : AudioChannel
 {
     int stream, decodeStream;
 
-    internal unsafe AudioStream(AudioManager manager, string path, ResourceContainer resourceContainer) : base(manager)
+    internal AudioStream(AudioManager manager, string path, ResourceContainer resourceContainer) : base(manager)
     {
         var flags = BassFlags.Decode | BassFlags.Prescan;
 
@@ -22,7 +24,9 @@ public class AudioStream : AudioChannel
                 decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags,
                     new()
                     {
-                        Read = (buffer, _, _) => resourceStream.Read(new(buffer.ToPointer(), (int)resourceStream.Length)),
+                        Read = (buffer, _, _)
+                            => resourceStream.Read(MemoryMarshal.CreateSpan(
+                                ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), buffer), (int)resourceStream.Length)),
                         Length = _ => resourceStream.Length,
                         Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
                         Close = _ => resourceStream.Dispose()

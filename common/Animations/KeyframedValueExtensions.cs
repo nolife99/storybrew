@@ -19,7 +19,7 @@ public static class KeyframedValueExtensions
         var startTime = 0f;
         var lastKeyframeTime = 0f;
 
-        foreach (var keyframe in keyframes)
+        foreach (var keyframe in keyframes.keyframes)
             if (keyframe.Value != active)
             {
                 if (keyframe.Value)

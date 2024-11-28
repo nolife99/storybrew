@@ -157,7 +157,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     protected virtual WidgetStyle Style => Manager.Skin.GetStyle<WidgetStyle>(StyleName);
 
-    public void RefreshStyle()
+    protected void RefreshStyle()
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -170,7 +170,7 @@ public class Widget(WidgetManager manager) : IDisposable
         Foreground = style.Foreground;
     }
 
-    public string BuildStyleName(params string[] modifiers) => buildStyleName(StyleName, modifiers);
+    protected string BuildStyleName(params string[] modifiers) => buildStyleName(StyleName, modifiers);
     static string buildStyleName(string baseName, string[] modifiers)
     {
         if (modifiers.Length == 0) return baseName;
@@ -199,10 +199,10 @@ public class Widget(WidgetManager manager) : IDisposable
 
     readonly List<Widget> children = [];
 
-    public IEnumerable<Widget> Children
+    public IReadOnlyList<Widget> Children
     {
         get => children;
-        set
+        init
         {
             ClearWidgets();
             foreach (var widget in value) Add(widget);
@@ -243,11 +243,6 @@ public class Widget(WidgetManager manager) : IDisposable
         return Parent == widget || Parent.HasAncestor(widget);
     }
     public bool HasDescendant(Widget widget) => children.Exists(c => c == widget || c.HasDescendant(widget));
-
-    public IEnumerable<Widget> GetAncestors()
-    {
-        for (var ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent) yield return ancestor;
-    }
 
     #endregion
 

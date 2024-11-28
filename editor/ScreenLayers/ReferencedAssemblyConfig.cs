@@ -11,7 +11,9 @@ using Storyboarding;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
-    readonly HashSet<string> selectedAssemblies = project.ImportedAssemblies.ToHashSet();
+    readonly HashSet<string> selectedAssemblies =
+        project.ImportedAssemblies as HashSet<string> ?? project.ImportedAssemblies.ToHashSet();
+
     LinearLayout layout, assembliesLayout;
     Button okButton, cancelButton;
 

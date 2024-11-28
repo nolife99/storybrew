@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
-public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where TPrimitive : unmanaged
+public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : unmanaged
 {
     bool Bound;
     protected Shader CurrentShader;
@@ -45,7 +45,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
         GL.BindVertexArray(0);
         Bound = false;
     }
-    public abstract void Render(PrimitiveType type, nint primitives, int count, int drawCount);
+    public abstract void Render(PrimitiveType type, ReadOnlySpan<TPrimitive> primitives, int vertices);
     public void Dispose()
     {
         Dispose(true);
@@ -53,13 +53,12 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer where
     }
 
     protected virtual void initializeVertexBuffer() => VertexBufferId = GL.GenBuffer();
-    unsafe void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
+    void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         IndexBufferId = GL.GenBuffer();
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
-        fixed (void* ptr = indices)
-            GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(ushort), (nint)ptr,
-                BufferUsageHint.StaticDraw);
+        GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices),
+            BufferUsageHint.StaticDraw);
 
         GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
     }

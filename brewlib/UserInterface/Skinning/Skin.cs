@@ -20,17 +20,12 @@ using Util;
 
 public sealed class Skin(TextureContainer textureContainer) : IDisposable
 {
+    readonly Dictionary<string, Drawable> drawables = [];
     readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = [];
     readonly TextureContainer TextureContainer = textureContainer;
-
-    Dictionary<string, Drawable> drawables = [];
     public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
 
-    public Drawable GetDrawable(string name)
-    {
-        if (drawables.TryGetValue(name, out var drawable)) return drawable;
-        return NullDrawable.Instance;
-    }
+    public Drawable GetDrawable(string name) => drawables.TryGetValue(name, out var drawable) ? drawable : NullDrawable.Instance;
 
     public T GetStyle<T>(string name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
     WidgetStyle GetStyle(Type type, string name)
@@ -292,60 +287,61 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         return null;
     }
 
-    static readonly FrozenDictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers = new Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
-    {
-        [typeof(string)] = (data, _, _) => data.Value<string>(),
-        [typeof(float)] = (data, _, _) => data.Value<float>(),
-        [typeof(double)] = (data, _, _) => data.Value<double>(),
-        [typeof(int)] = (data, _, _) => data.Value<int>(),
-        [typeof(bool)] = (data, _, _) => data.Value<bool>(),
-        [typeof(Texture2dRegion)] = (data, _, skin) => skin.TextureContainer.Get(data.Value<string>()),
-        [typeof(Drawable)] = (data, constants, skin) => skin.loadDrawable(data.Value<TinyToken>(), constants),
-        [typeof(Vector2)] = (data, constants, _) =>
+    static readonly FrozenDictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers =
+        new Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
         {
-            if (data is TinyArray tinyArray)
-                return new Vector2(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants));
-
-            throw new InvalidDataException($"Incorrect vector2 format: {data}");
-        },
-        [typeof(Rgba32)] = (data, constants, _) =>
-        {
-            if (data.Type is TinyTokenType.String)
+            [typeof(string)] = (data, _, _) => data.Value<string>(),
+            [typeof(float)] = (data, _, _) => data.Value<float>(),
+            [typeof(double)] = (data, _, _) => data.Value<double>(),
+            [typeof(int)] = (data, _, _) => data.Value<int>(),
+            [typeof(bool)] = (data, _, _) => data.Value<bool>(),
+            [typeof(Texture2dRegion)] = (data, _, skin) => skin.TextureContainer.Get(data.Value<string>()),
+            [typeof(Drawable)] = (data, constants, skin) => skin.loadDrawable(data.Value<TinyToken>(), constants),
+            [typeof(Vector2)] = (data, constants, _) =>
             {
-                var value = data.Value<string>();
-                if (value.StartsWith('#')) return Rgba32.ParseHex(value);
+                if (data is TinyArray tinyArray)
+                    return new Vector2(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants));
 
-                var colorField = typeof(Color).GetField(value);
-                if (colorField?.FieldType == typeof(Color)) return (Rgba32)Unsafe.Unbox<Color>(colorField.GetValue(null));
+                throw new InvalidDataException($"Incorrect vector2 format: {data}");
+            },
+            [typeof(Rgba32)] = (data, constants, _) =>
+            {
+                if (data.Type is TinyTokenType.String)
+                {
+                    var value = data.Value<string>();
+                    if (value.StartsWith('#')) return Rgba32.ParseHex(value);
+
+                    var colorField = typeof(Color).GetField(value);
+                    if (colorField?.FieldType == typeof(Color)) return (Rgba32)Unsafe.Unbox<Color>(colorField.GetValue(null));
+                }
+
+                if (data is TinyArray tinyArray)
+                    return tinyArray.Count switch
+                    {
+                        3 => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
+                            resolve<float>(tinyArray[2], constants)),
+                        _ => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
+                            resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
+                    };
+
+                throw new InvalidDataException($"Incorrect color format: {data}");
+            },
+            [typeof(FourSide)] = (data, constants, _) =>
+            {
+                if (data is TinyArray tinyArray)
+                    return tinyArray.Count switch
+                    {
+                        1 => new FourSide(resolve<float>(tinyArray[0], constants)),
+                        2 => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants)),
+                        3 => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
+                            resolve<float>(tinyArray[2], constants)),
+                        _ => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
+                            resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
+                    };
+
+                throw new InvalidDataException($"Incorrect four side format: {data}");
             }
-
-            if (data is TinyArray tinyArray)
-                return tinyArray.Count switch
-                {
-                    3 => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
-                        resolve<float>(tinyArray[2], constants)),
-                    _ => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
-                        resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
-                };
-
-            throw new InvalidDataException($"Incorrect color format: {data}");
-        },
-        [typeof(FourSide)] = (data, constants, _) =>
-        {
-            if (data is TinyArray tinyArray)
-                return tinyArray.Count switch
-                {
-                    1 => new FourSide(resolve<float>(tinyArray[0], constants)),
-                    2 => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants)),
-                    3 => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
-                        resolve<float>(tinyArray[2], constants)),
-                    _ => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
-                        resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
-                };
-
-            throw new InvalidDataException($"Incorrect four side format: {data}");
-        }
-    }.ToFrozenDictionary();
+        }.ToFrozenDictionary();
 
     #endregion
 }

@@ -181,7 +181,7 @@ public class StartMenu : UiScreenLayer
                     updateButton.Displayed = false;
                 }
 
-                bottomLayout.Pack(600);
+                Program.RunMainThread(() => bottomLayout.Pack(600));
             }
             catch (Exception ex)
             {
@@ -198,6 +198,6 @@ public class StartMenu : UiScreenLayer
         updateButton.Text = "See latest release";
         updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
         updateButton.Disabled = false;
-        bottomLayout.Pack(600);
+        Program.RunMainThread(() => bottomLayout.Pack(600));
     }
 }

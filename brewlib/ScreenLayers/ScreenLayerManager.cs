@@ -102,11 +102,7 @@ public sealed class ScreenLayerManager : IDisposable
                 }
             }
 
-            if (isFixedRateUpdate)
-            {
-                layer.FixedUpdate();
-                layer.MinTween = 0;
-            }
+            if (isFixedRateUpdate) layer.FixedUpdate();
 
             layer.Update(top, covered);
 
@@ -127,16 +123,11 @@ public sealed class ScreenLayerManager : IDisposable
         }
     }
 
-    public void Draw(DrawContext drawContext, float tween)
+    public void Draw(DrawContext drawContext)
     {
         foreach (var layer in layers)
             if (layer.CurrentState is not ScreenLayer.State.Hidden)
-            {
-                var layerTween = Math.Max(layer.MinTween, tween);
-                layer.MinTween = layerTween;
-
-                layer.Draw(drawContext, layerTween);
-            }
+                layer.Draw(drawContext);
     }
 
     void changeFocus(ScreenLayer layer)

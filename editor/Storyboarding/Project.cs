@@ -83,7 +83,7 @@ public sealed partial class Project : IDisposable
 
         initializeAssetWatcher();
         scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, scriptsLibraryPath,
-            compiledScriptsPath, ReferencedAssemblies);
+            ReferencedAssemblies);
 
         effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
 
@@ -189,7 +189,7 @@ public sealed partial class Project : IDisposable
 
     bool allowEffectUpdates = true;
 
-    AsyncActionQueue<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
+    readonly AsyncActionQueue<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
 
     public void QueueEffectUpdate(Effect effect)
     {
@@ -423,8 +423,8 @@ public sealed partial class Project : IDisposable
     #region Assemblies
 
     static readonly CompositeFormat runtimePath = CompositeFormat.Parse(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(),
-        "..", "..", "..", "packs", "{0}", RuntimeEnvironment.GetSystemVersion().TrimStart('v'), "ref",
-        string.Concat("net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
+        "../../../packs/{0}", RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
+        string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
     public static readonly IReadOnlyList<string> DefaultAssemblies =
     [
@@ -498,9 +498,7 @@ public sealed partial class Project : IDisposable
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        using var file = File.Create(path);
-        using DeflateStream dfl = new(file, CompressionLevel.SmallestSize);
-        using BinaryWriter w = new(dfl, Encoding);
+        using BinaryWriter w = new(new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false), Encoding, false);
 
         w.Write(Version);
 
@@ -552,9 +550,7 @@ public sealed partial class Project : IDisposable
 
     void loadBinary(string path)
     {
-        using var file = File.OpenRead(path);
-        using DeflateStream dfl = new(file, CompressionMode.Decompress);
-        using BinaryReader r = new(dfl, Encoding);
+        using BinaryReader r = new(new DeflateStream(File.OpenRead(path), CompressionMode.Decompress, false), Encoding, false);
 
         var version = r.ReadInt32();
         if (version > Version)
@@ -603,10 +599,10 @@ public sealed partial class Project : IDisposable
         }
 
         var assemblyCount = r.ReadInt32();
-        var importedAssemblies = new string[assemblyCount];
-        for (var i = 0; i < assemblyCount; ++i) importedAssemblies[i] = r.ReadString();
+        HashSet<string> imported = new(assemblyCount);
+        for (var i = 0; i < assemblyCount; ++i) imported.Add(r.ReadString());
 
-        ImportedAssemblies = importedAssemblies;
+        ImportedAssemblies = imported;
     }
 
     void saveText(string path)

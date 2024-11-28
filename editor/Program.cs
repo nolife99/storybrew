@@ -88,7 +88,7 @@ public static class Program
             using Editor editor = new(window);
             window.Resize += _ =>
             {
-                editor.Draw(1);
+                editor.Draw();
                 window.Context.SwapBuffers();
             };
 
@@ -96,6 +96,33 @@ public static class Program
             {
                 NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
                 editor.Initialize();
+
+                var workArea = displayDevice.WorkArea;
+                var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
+                var dpiScale = displayDevice.VerticalScale;
+
+                float windowWidth = 1360 * dpiScale, windowHeight = windowWidth / ratio;
+                if (windowHeight >= workArea.Max.Y)
+                {
+                    windowWidth = 1024 * dpiScale;
+                    windowHeight = windowWidth / ratio;
+
+                    if (windowWidth >= workArea.Max.X)
+                    {
+                        windowWidth = 896 * dpiScale;
+                        windowHeight = windowWidth / ratio;
+                    }
+                }
+
+                window.CenterWindow(new((int)windowWidth, (int)windowHeight));
+                Trace.WriteLine($"Window dpi scale: {dpiScale}");
+
+                var location = window.Location;
+                if (location.X < 0 || location.Y < 0)
+                {
+                    window.ClientRectangle = workArea;
+                    window.WindowState = WindowState.Maximized;
+                }
 
                 using (AudioManager = createAudioManager())
                     runMainLoop(window, editor,
@@ -122,30 +149,13 @@ public static class Program
         throw new InvalidOperationException("Failed to find a display device");
     }
 
-    static unsafe NativeWindow createWindow(MonitorInfo displayDevice)
+    static NativeWindow createWindow(MonitorInfo displayDevice)
     {
-        var workArea = displayDevice.WorkArea;
-        var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
-        var dpiScale = displayDevice.VerticalScale;
-
-        float windowWidth = 1360 * dpiScale, windowHeight = windowWidth / ratio;
-        if (windowHeight >= workArea.Max.Y)
-        {
-            windowWidth = 1024 * dpiScale;
-            windowHeight = windowWidth / ratio;
-
-            if (windowWidth >= workArea.Max.X)
-            {
-                windowWidth = 896 * dpiScale;
-                windowHeight = windowWidth / ratio;
-            }
-        }
-
         const ContextFlags debugContext =
 #if DEBUG
             ContextFlags.Debug;
 #else
-            ContextFlags.Debug;
+            ContextFlags.ForwardCompatible;
 #endif
 
         if (debugContext is not ContextFlags.Debug) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
@@ -160,16 +170,8 @@ public static class Program
             StartVisible = false
         });
 
-        Native.InitializeHandle(Name, window.WindowPtr);
+        Native.InitializeHandle(Name, window);
         Native.SetWindowIcon(typeof(Editor), "icon.ico");
-
-        window.CenterWindow(new((int)windowWidth, (int)windowHeight));
-        Trace.WriteLine($"Window dpi scale: {dpiScale}");
-
-        if (window.Location is { X: >= 0, Y: >= 0 }) return window;
-
-        window.ClientRectangle = workArea;
-        window.WindowState = WindowState.Maximized;
 
         return window;
     }
@@ -186,13 +188,13 @@ public static class Program
     static void runMainLoop(NativeWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
     {
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
-        while (window.Exists && !window.IsExiting)
+        while (!window.IsExiting)
         {
             var cur = (float)(GLFW.GetTime() * 1000);
             var focused = window.IsFocused;
             var fixedUpdates = 0;
 
-            GLFW.PollEvents();
+            window.ProcessEvents(double.MaxValue);
             AudioManager.Update();
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates < 2)
@@ -208,7 +210,7 @@ public static class Program
 
             if (!window.Exists || window.IsExiting) return;
 
-            editor.Draw(Math.Min((cur - fixedRate) / fixedRateUpdate, 1));
+            editor.Draw();
             window.Context.SwapBuffers();
 
             if (!window.IsVisible) window.IsVisible = true;

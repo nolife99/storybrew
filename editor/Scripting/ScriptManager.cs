@@ -18,7 +18,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     readonly FileSystemWatcher libraryWatcher;
     readonly ResourceContainer resourceContainer;
     readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
-    readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath, compiledScriptsPath;
+    readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath;
 
     readonly FileSystemWatcher scriptWatcher;
 
@@ -32,7 +32,6 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         string scriptsSourcePath,
         string commonScriptsPath,
         string scriptsLibraryPath,
-        string compiledScriptsPath,
         IEnumerable<string> referencedAssemblies)
     {
         this.resourceContainer = resourceContainer;
@@ -40,7 +39,6 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         ScriptsPath = scriptsSourcePath;
         this.commonScriptsPath = commonScriptsPath;
         this.scriptsLibraryPath = scriptsLibraryPath;
-        this.compiledScriptsPath = compiledScriptsPath;
 
         ReferencedAssemblies = referencedAssemblies;
 
@@ -81,7 +79,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         set
         {
             referencedAssemblies = value as List<string> ?? value.ToList();
-            foreach (var scriptContainer in scriptContainers) scriptContainer.Value.ReferencedAssemblies = referencedAssemblies;
+            foreach (var container in scriptContainers.Values) container.ReferencedAssemblies = referencedAssemblies;
             updateSolutionFiles();
         }
     }

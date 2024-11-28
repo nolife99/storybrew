@@ -18,7 +18,6 @@
         <Company>storybrew</Company>
         <Copyright>Copyright © Damnae 2016</Copyright>
         <AnalysisLevel>latest-recommended</AnalysisLevel>
-        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
         <EnableNETAnalyzers>True</EnableNETAnalyzers>
         <UseWindowsForms>True</UseWindowsForms>

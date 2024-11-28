@@ -2,9 +2,9 @@
 
 using System;
 using System.Diagnostics;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
+using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public static unsafe partial class Native
@@ -185,25 +185,6 @@ public static unsafe partial class Native
 
     [LibraryImport("user32")] private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
 
-    /// <summary> Sends the specified message to a window or windows. </summary>
-    /// <remarks>
-    ///     Help: <see href="https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-sendmessage"/>
-    /// </remarks>
-    /// <typeparam name="TWide"> The type of the first parameter, which is platform-dependent. </typeparam>
-    /// <typeparam name="TLong"> The type of the second parameter, which is platform-dependent. </typeparam>
-    /// <typeparam name="TResult"> The return type, which is platform-dependent. </typeparam>
-    /// <param name="windowHandle"> The window to send the message to. </param>
-    /// <param name="message"> The type of message to send. </param>
-    /// <param name="wParam"> The first value to wrap within the message. </param>
-    /// <param name="lParam"> The second value to wrap within the message. </param>
-    /// <returns> The result from the call procedure. </returns>
-    /// <exception cref="NotSupportedException"> Type can't be casted to or from <see cref="nint"/>. </exception>
-    /// <exception cref="OverflowException"> Type can't be represented as <see cref="nint"/>. </exception>
-    public static TResult SendMessage<TWide, TLong, TResult>(nint windowHandle, Message message, TWide wParam, TLong lParam)
-        where TWide : INumberBase<TWide> where TLong : INumberBase<TLong> where TResult : INumberBase<TResult>
-        => TResult.CreateChecked(SendMessageW(windowHandle, (uint)message, nuint.CreateChecked(wParam),
-            nint.CreateChecked(lParam)));
-
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
 
@@ -214,9 +195,9 @@ public static unsafe partial class Native
 
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static void InitializeHandle(string windowTitle, Window* glfwWindow)
+    public static void InitializeHandle(string windowTitle, NativeWindow glfwWindow)
     {
-        GLFWPtr = glfwWindow;
+        GLFWPtr = glfwWindow.WindowPtr;
 
         var cont = true;
         using var currentProcess = Process.GetCurrentProcess();
@@ -226,19 +207,15 @@ public static unsafe partial class Native
             using (var thread = threads[i])
                 EnumThreadWindows(thread.Id, (hWnd, _) =>
                 {
-                    var length = SendMessage<int, int, int>(hWnd, Message.GetTextLength, 0, 0);
+                    var length = (int)SendMessageW(hWnd, (uint)Message.GetTextLength, 0, 0);
                     if (length <= 0) return cont;
 
                     var buf = stackalloc char[length];
-                    SendMessage<int, nint, int>(hWnd, Message.GetText, length + 1, (nint)buf);
+                    SendMessageW(hWnd, (uint)Message.GetText, (nuint)length + 1, (nint)buf);
 
-                    if (new ReadOnlySpan<char>(buf, length).SequenceEqual(windowTitle))
-                    {
-                        handle = hWnd;
-                        cont = false;
-                    }
-
-                    return cont;
+                    if (!new ReadOnlySpan<char>(buf, length).SequenceEqual(windowTitle)) return cont;
+                    handle = hWnd;
+                    return cont = false;
                 }, 0);
     }
 

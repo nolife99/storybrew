@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using BrewLib.Util;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Scripting;
 using StorybrewCommon.Scripting;
 using Util;
@@ -11,8 +12,6 @@ using Util;
 public class ScriptedEffect : Effect
 {
     readonly ScriptContainer<StoryboardObjectGenerator> scriptContainer;
-
-    readonly Stopwatch statusStopwatch = new();
 
     bool beatmapDependent = true;
     string configScriptIdentifier;
@@ -23,11 +22,13 @@ public class ScriptedEffect : Effect
     EffectStatus status = EffectStatus.Initializing;
     string statusMessage;
 
+    double statusStopwatch;
+
     public ScriptedEffect(Project project,
         ScriptContainer<StoryboardObjectGenerator> scriptContainer,
         bool multithreaded = false) : base(project)
     {
-        statusStopwatch.Start();
+        statusStopwatch = GLFW.GetTime();
 
         this.scriptContainer = scriptContainer;
         scriptContainer.OnScriptChanged += scriptContainer_OnScriptChanged;
@@ -141,7 +142,7 @@ public class ScriptedEffect : Effect
 
     void changeStatus(EffectStatus status, string message = null, string log = null)
     {
-        var duration = statusStopwatch.ElapsedMilliseconds;
+        var duration = GLFW.GetTime() - statusStopwatch;
         if (duration > 0)
             switch (this.status)
             {
@@ -149,7 +150,7 @@ public class ScriptedEffect : Effect
                 case EffectStatus.CompilationFailed:
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: break;
-                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration}ms"); break;
+                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration * 1000:f0}ms"); break;
             }
 
         this.status = status;
@@ -169,7 +170,7 @@ public class ScriptedEffect : Effect
         StringHelper.StringBuilderPool.Return(statusMessageBuilder);
 
         Program.Schedule(RaiseChanged);
-        statusStopwatch.Restart();
+        statusStopwatch = GLFW.GetTime();
     }
 
     string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?

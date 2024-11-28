@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.RegularExpressions;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -427,8 +428,8 @@ public class EffectConfigUi : Widget
 
     void copyConfiguration()
     {
-        using MemoryStream memory = new();
-        using BinaryWriter writer = new(memory);
+        MemoryStream memory = new();
+        using BinaryWriter writer = new(memory, Encoding.UTF8, true);
 
         writer.Write(effect.Config.FieldCount);
         foreach (var field in effect.Config.Fields)
@@ -437,7 +438,7 @@ public class EffectConfigUi : Widget
             ObjectSerializer.Write(writer, field.Value);
         }
 
-        ClipboardHelper.SetData(effectConfigFormat, memory);
+        ClipboardHelper.SetData(memory);
     }
 
     void pasteConfiguration()
@@ -445,8 +446,7 @@ public class EffectConfigUi : Widget
         var changed = false;
         try
         {
-            using var stream = Unsafe.As<Stream>(ClipboardHelper.GetData(effectConfigFormat));
-            using BinaryReader reader = new(stream);
+            using BinaryReader reader = new(Unsafe.As<Stream>(ClipboardHelper.GetData()), Encoding.UTF8, true);
 
             var fieldCount = reader.ReadInt32();
             for (var i = 0; i < fieldCount; ++i)

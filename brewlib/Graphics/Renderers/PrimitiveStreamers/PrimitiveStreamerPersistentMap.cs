@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -11,12 +12,12 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : unmanaged
 {
     readonly GpuCommandSync commandSync = new();
+    nint bufferAddr;
     int bufferOffset, drawOffset, vertexBufferSize;
-    nint bufferPointer;
 
-    public override unsafe void Render(PrimitiveType type, nint primitives, int count, int drawCount)
+    public override void Render(PrimitiveType type, ReadOnlySpan<TPrimitive> primitives, int vertices)
     {
-        var vertexDataSize = count * PrimitiveSize;
+        var vertexDataSize = primitives.Length * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize)
         {
             bufferOffset = 0;
@@ -29,8 +30,10 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             expandVertexBuffer();
         }
 
-        NativeMemory.Copy((void*)primitives, (byte*)bufferPointer + bufferOffset, (nuint)vertexDataSize);
+        primitives.CopyTo(MemoryMarshal.CreateSpan(
+            ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), bufferAddr + bufferOffset), primitives.Length));
 
+        var drawCount = primitives.Length * vertices;
         if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));
         else GL.DrawArrays(type, drawOffset, drawCount);
 
@@ -49,7 +52,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0,
             BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
 
-        bufferPointer = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize,
+        bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize,
             BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit |
             BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapInvalidateBufferBit);
 

@@ -3,25 +3,24 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using CommunityToolkit.HighPerformance.Buffers;
+using System.Runtime.InteropServices;
 using Data;
 using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 
-public sealed unsafe class Texture2d(int textureId, int width, int height, string description)
+public sealed class Texture2d(int textureId, int width, int height, string description)
     : Texture2dRegion(null, new(0, 0, width, height)), BindableTexture
 {
     static DecoderOptions decoderOptions;
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
-    public void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions)
-    {
-        fixed (void* ptr = bitmap.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(0))
-            GL.TextureSubImage2D(textureId, 0, x, y, bitmap.Width, bitmap.Height, PixelFormat.Rgba, PixelType.UnsignedByte,
-                (nint)ptr);
-    }
+    public void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions) => GL.TextureSubImage2D(textureId, 0, x,
+        y, bitmap.Width, bitmap.Height, PixelFormat.Rgba, PixelType.UnsignedByte,
+        ref MemoryMarshal.GetReference(bitmap.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(0)));
+
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
         if (decoderOptions is null)
@@ -71,26 +70,18 @@ public sealed unsafe class Texture2d(int textureId, int width, int height, strin
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
         var textureId = GL.GenTexture();
-        using (var spanOwner = SpanOwner<Rgba32>.Allocate(width * height))
-            try
-            {
-                var arr = spanOwner.Span;
-                DrawState.BindTexture(textureId);
+        using (var spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height))
+        {
+            var arr = spanOwner.Memory.Span;
+            arr.Fill(color);
 
-                arr.Fill(color);
-                fixed (void* ptr = arr)
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.Srgb : PixelInternalFormat.Rgba, width,
-                        height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, (nint)ptr);
+            DrawState.BindTexture(textureId);
+            GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.Srgb : PixelInternalFormat.Rgba, width, height,
+                0, PixelFormat.Rgba, PixelType.UnsignedByte, ref MemoryMarshal.GetReference(arr));
+        }
 
-                if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-                textureOptions.ApplyParameters(TextureTarget.Texture2D);
-            }
-            catch
-            {
-                DrawState.UnbindTexture(textureId);
-                GL.DeleteTexture(textureId);
-                throw;
-            }
+        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
         return new(textureId, width, height, description);
     }
@@ -106,11 +97,11 @@ public sealed unsafe class Texture2d(int textureId, int width, int height, strin
         var textureId = GL.GenTexture();
         DrawState.BindTexture(textureId);
 
-        fixed (void* ptr = bitmap.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(0))
-            GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ?
-                    compress ? PixelInternalFormat.CompressedSrgbAlphaS3tcDxt5Ext : PixelInternalFormat.Srgb :
-                    compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba, width, height, 0,
-                PixelFormat.Rgba, PixelType.UnsignedByte, (nint)ptr);
+        GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ?
+                compress ? PixelInternalFormat.CompressedSrgbAlphaS3tcDxt5Ext : PixelInternalFormat.Srgb :
+                compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba, width, height, 0,
+            PixelFormat.Rgba, PixelType.UnsignedByte,
+            ref MemoryMarshal.GetReference(bitmap.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(0)));
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);

@@ -157,10 +157,7 @@ public class Object3d
         bool loopable) { }
 }
 #pragma warning disable CS1591
-public readonly struct Object3dState(Matrix4x4 worldTransform, CommandColor color, float opacity)
+public readonly record struct Object3dState(Matrix4x4 WorldTransform, CommandColor Color, float Opacity)
 {
     public static readonly Object3dState InitialState = new(Matrix4x4.Identity, CommandColor.White, 1);
-    public Matrix4x4 WorldTransform => worldTransform;
-    public CommandColor Color => color;
-    public float Opacity => opacity;
 }

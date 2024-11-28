@@ -172,9 +172,5 @@ public sealed partial class Shader : IDisposable
     [GeneratedRegex(@"^ERROR: (\d+):(\d+): ", RegexOptions.IgnoreCase, "en-US")]
     private static partial Regex ErrRegex();
 
-    readonly struct Property<TType>(int size, TType type, int location)
-    {
-        public readonly int Location = location;
-        public override string ToString() => $"{size}@{Location} {type}x{size}";
-    }
+    readonly record struct Property<TType>(int Size, TType Type, int Location);
 }

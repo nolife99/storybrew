@@ -1,13 +1,15 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
+using System.Buffers;
 using ManagedBass;
+using SixLabors.ImageSharp.Memory;
 
 public class FftStream : IDisposable
 {
     public readonly float Duration, Frequency;
+    readonly int stream;
     ChannelInfo info;
-    int stream;
 
     public FftStream(string path)
     {
@@ -18,7 +20,7 @@ public class FftStream : IDisposable
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out Frequency);
     }
 
-    public float[] GetFft(float time, bool splitChannels = false)
+    public unsafe IMemoryOwner<float> GetFft(float time, bool splitChannels = false)
     {
         Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 
@@ -31,8 +33,11 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        var data = GC.AllocateUninitializedArray<float>(size);
-        if (Bass.ChannelGetData(stream, data, (int)flags) == -1) throw new BassException(Bass.LastError);
+        var data = MemoryAllocator.Default.Allocate<float>(size);
+        fixed (void* pinned = data.Memory.Span)
+            if (Bass.ChannelGetData(stream, (nint)pinned, (int)flags) == -1)
+                throw new BassException(Bass.LastError);
+
         return data;
     }
 

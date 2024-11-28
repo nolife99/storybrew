@@ -43,9 +43,9 @@ public class UiScreenLayer : ScreenLayer
         WidgetManager.Opacity = opacity * TransitionProgress;
     }
 
-    public override void Draw(DrawContext drawContext, double tween)
+    public override void Draw(DrawContext drawContext)
     {
-        base.Draw(drawContext, tween);
+        base.Draw(drawContext);
         WidgetManager.Draw(drawContext);
     }
 

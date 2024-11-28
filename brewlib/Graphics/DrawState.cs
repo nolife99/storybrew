@@ -119,7 +119,7 @@ public static class DrawState
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
         samplerTextureIds = new int[maxTextureImageUnits];
-        samplerTexturingModes = new TexturingModes[maxTextureImageUnits];
+        samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
 
         WhitePixel = Texture2d.Create(Color.White, "whitepixel");
         NormalPixel = Texture2d.Create(new(127, 127, 255), "normalpixel");
@@ -168,7 +168,7 @@ public static class DrawState
     public static Texture2d NormalPixel { get; private set; }
 
     static int[] samplerTextureIds;
-    static TexturingModes[] samplerTexturingModes;
+    static TextureTarget[] samplerTexturingModes;
 
     static int activeTextureUnit, lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits,
         maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
@@ -185,27 +185,25 @@ public static class DrawState
         }
     }
 
-    public static void SetTexturingMode(int samplerIndex, TexturingModes mode)
+    public static void SetTexturingMode(int samplerIndex, TextureTarget mode)
     {
         var previousMode = samplerTexturingModes[samplerIndex];
         if (previousMode == mode) return;
 
         if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
-        if (samplerIndex < maxTextureImageUnits) ActiveTextureUnit = samplerIndex;
+        ActiveTextureUnit = samplerIndex;
 
         samplerTexturingModes[samplerIndex] = mode;
     }
 
-    public static void BindTexture(int textureId, int samplerIndex = 0, TexturingModes mode = TexturingModes.Texturing2d)
+    public static void BindTexture(int textureId, int samplerIndex = 0, TextureTarget mode = TextureTarget.Texture2D)
     {
-        if (textureId == 0) throw new ArgumentException("Use UnbindTexture instead");
-
         SetTexturingMode(samplerIndex, mode);
         ActiveTextureUnit = samplerIndex;
 
         if (samplerTextureIds[samplerIndex] == textureId) return;
 
-        GL.BindTexture(ToTextureTarget(mode), textureId);
+        GL.BindTexture(mode, textureId);
         samplerTextureIds[samplerIndex] = textureId;
     }
 
@@ -226,12 +224,12 @@ public static class DrawState
         Span<int> samplerIndexes = stackalloc int[textures.Length];
         var samplerCount = samplerTextureIds.Length;
 
-        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; textureIndex++)
+        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
         {
             var textureId = textures[textureIndex].TextureId;
 
             samplerIndexes[textureIndex] = -1;
-            for (var samplerIndex = 0; samplerIndex < samplerCount; samplerIndex++)
+            for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex)
                 if (samplerTextureIds[samplerIndex] == textureId)
                 {
                     samplerIndexes[textureIndex] = samplerIndex;
@@ -239,7 +237,7 @@ public static class DrawState
                 }
         }
 
-        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; textureIndex++)
+        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
         {
             if (samplerIndexes[textureIndex] != -1) continue;
 
@@ -278,7 +276,7 @@ public static class DrawState
             if (samplerTextureIds[i] == textureId)
             {
                 ActiveTextureUnit = i;
-                GL.BindTexture(ToTextureTarget(samplerTexturingModes[i]), 0);
+                GL.BindTexture(samplerTexturingModes[i], 0);
                 samplerTextureIds[i] = 0;
             }
     }
@@ -367,7 +365,8 @@ public static class DrawState
     static readonly Dictionary<EnableCap, bool> capabilityCache = [];
     internal static void SetCapability(EnableCap capability, bool enable)
     {
-        if (capabilityCache.TryGetValue(capability, out var isEnabled) && isEnabled == enable) return;
+        ref var enableRef = ref CollectionsMarshal.GetValueRefOrNullRef(capabilityCache, capability);
+        if (!Unsafe.IsNullRef(ref enableRef) && enableRef == enable) return;
 
         if (enable) GL.Enable(capability);
         else GL.Disable(capability);
@@ -401,15 +400,6 @@ public static class DrawState
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }
 
-    public static bool HasCapabilities(int major, int minor) => glVer >= new Version(major, minor);
-
-    public static TextureTarget ToTextureTarget(TexturingModes mode) => mode switch
-    {
-        TexturingModes.Texturing2d => TextureTarget.Texture2D,
-        TexturingModes.Texturing3d => TextureTarget.Texture3D,
-        _ => throw new InvalidOperationException("Not texture target matches the texturing mode " + mode)
-    };
-
     #endregion
 }
 
@@ -418,9 +408,4 @@ public enum BlendingMode
     Off, AlphaBlend, Color,
     Additive, BlendAdd, Premultiply,
     Premultiplied
-}
-
-public enum TexturingModes
-{
-    None, Texturing2d, Texturing3d
 }

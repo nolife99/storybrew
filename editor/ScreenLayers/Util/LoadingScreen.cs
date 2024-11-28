@@ -2,7 +2,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Threading;
+using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 
@@ -14,7 +14,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
 
     public override void Load()
     {
-        Thread thread = new(() =>
+        Task.Run(() =>
         {
             Exception ex = null;
             try
@@ -59,9 +59,6 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
                 Exit();
             });
         });
-
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.UnsafeStart();
 
         base.Load();
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)

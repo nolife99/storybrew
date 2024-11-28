@@ -20,7 +20,6 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     public State CurrentState = State.Hidden;
 
     bool hasStarted;
-    public float MinTween;
 
     protected float TransitionInDuration = .25f, TransitionOutDuration = .25f, TransitionProgress;
     public ScreenLayerManager Manager { get; set; }
@@ -89,7 +88,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     }
 
     public virtual void FixedUpdate() { }
-    public virtual void Draw(DrawContext drawContext, double tween) { }
+    public virtual void Draw(DrawContext drawContext) { }
 
     public virtual void OnStart() { }
     public virtual void OnTransitionIn() { }

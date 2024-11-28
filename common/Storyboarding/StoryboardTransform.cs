@@ -3,7 +3,6 @@
 using System;
 using System.Numerics;
 using Microsoft.Extensions.ObjectPool;
-using StorybrewCommon.Util;
 
 /// <summary>
 ///     A transform that applies to a storyboard element.
@@ -11,14 +10,15 @@ using StorybrewCommon.Util;
 public class StoryboardTransform : IResettable, IDisposable
 {
     static readonly ObjectPool<StoryboardTransform> pool = ObjectPool.Create<StoryboardTransform>();
-    Affine2 transform;
+    Matrix3x2 transform;
     float transformScale, transformAngle;
 
+    /// <inheritdoc/>
     public void Dispose() => pool.Return(this);
 
     bool IResettable.TryReset()
     {
-        transform = Affine2.Identity;
+        transform = Matrix3x2.Identity;
         transformScale = transformAngle = 0;
         return true;
     }
@@ -38,18 +38,35 @@ public class StoryboardTransform : IResettable, IDisposable
         float scale)
     {
         var instance = pool.Get();
-        var transform = instance.transform = parent?.transform ?? Affine2.Identity;
+        var transform = parent?.transform ?? Matrix3x2.Identity;
 
-        if (position != Vector2.Zero) transform.Translate(position.X, position.Y);
-        if (rotation != 0) transform.Rotate(rotation);
-        if (scale != 1) transform.Scale(scale, scale);
-        if (origin != Vector2.Zero) transform.Translate(-origin.X, -origin.Y);
+        if (position != Vector2.Zero)
+        {
+            var posMatrix = Matrix3x2.CreateTranslation(position);
+            transform = Matrix3x2.Multiply(transform, posMatrix);
+        }
 
+        if (rotation != 0)
+        {
+            var rotMatrix = Matrix3x2.CreateRotation(rotation);
+            transform = Matrix3x2.Multiply(transform, rotMatrix);
+        }
+
+        if (scale != 1)
+        {
+            var scaleMatrix = Matrix3x2.CreateScale(scale, scale);
+            transform = Matrix3x2.Multiply(transform, scaleMatrix);
+        }
+
+        if (origin != Vector2.Zero)
+        {
+            var originMatrix = Matrix3x2.CreateTranslation(-origin.X, -origin.Y);
+            transform = Matrix3x2.Multiply(transform, originMatrix);
+        }
+
+        instance.transform = transform;
         instance.transformScale = (parent?.transformScale ?? 1) * scale;
-
-        // https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix/13165#13165
         instance.transformAngle = float.Atan2(-transform.M21, transform.M11);
-        // OR float.Atan2(-transform.M22, transform.M12);
 
         return instance;
     }
@@ -59,28 +76,29 @@ public class StoryboardTransform : IResettable, IDisposable
     /// </summary>
     /// <param name="value">The position to apply the transform to.</param>
     /// <returns>The transformed position.</returns>
-    public Vector2 ApplyToPosition(Vector2 value) => transform.Transform(value);
+    public Vector2 ApplyToPosition(Vector2 value) => Vector2.Transform(value, transform);
 
     /// <summary>
     ///     Applies the transform to a position, separating the X and Y transformations.
     /// </summary>
     /// <param name="value">The position to apply the transform to.</param>
     /// <returns>The transformed position.</returns>
-    public Vector2 ApplyToPositionXY(Vector2 value) => transform.TransformSeparate(value);
+    public Vector2 ApplyToPositionXY(Vector2 value) => new(Vector2.Transform(value with { Y = 0 }, transform).X,
+        Vector2.Transform(value with { X = 0 }, transform).Y);
 
     /// <summary>
     ///     Applies the transform to a position's X component.
     /// </summary>
     /// <param name="value">The position's X component to apply the transform to.</param>
     /// <returns>The transformed position's X component.</returns>
-    public float ApplyToPositionX(float value) => transform.TransformX(value);
+    public float ApplyToPositionX(float value) => Vector2.Transform(new(value, 0), transform).X;
 
     /// <summary>
     ///     Applies the transform to a position's Y component.
     /// </summary>
     /// <param name="value">The position's Y component to apply the transform to.</param>
     /// <returns>The transformed position's Y component.</returns>
-    public float ApplyToPositionY(float value) => transform.TransformY(value);
+    public float ApplyToPositionY(float value) => Vector2.Transform(new(0, value), transform).Y;
 
     /// <summary>
     ///     Applies the transform to a rotation.

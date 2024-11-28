@@ -17,7 +17,7 @@ public class TextLayout
         foreach (var textLine in LineBreaker.Split(text, float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
         {
             TextLayoutLine line = new(this, height, alignment, Lines.Count == 0);
-            foreach (var c in textLine) line.Add(font.GetGlyph(c), glyphIndex++);
+            foreach (var c in textLine.Span) line.Add(font.GetGlyph(c), glyphIndex++);
 
             Lines.Add(line);
             width = Math.Max(width, line.Width);
@@ -45,8 +45,9 @@ public class TextLayout
             var bottomRight = Vector2.Zero;
             var hasBounds = false;
 
-            foreach (var layoutGlyph in line.Glyphs)
+            for (; index < line.Glyphs.Count; ++index)
             {
+                var layoutGlyph = line.Glyphs[index];
                 if (!hasBounds && startIndex <= index)
                 {
                     topLeft = layoutGlyph.Position;
@@ -54,7 +55,6 @@ public class TextLayout
                 }
 
                 if (index < endIndex) bottomRight = layoutGlyph.Position + layoutGlyph.Glyph.Size;
-                ++index;
             }
 
             if (hasBounds) action(RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y));
@@ -66,10 +66,10 @@ public class TextLayout
         foreach (var line in Lines)
         {
             var lineMatches = position.Y < line.Position.Y + line.Height;
-            foreach (var glyph in line.Glyphs)
+            for (; index < line.Glyphs.Count; ++index)
             {
+                var glyph = line.Glyphs[index];
                 if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * .5f) return index;
-                ++index;
             }
 
             if (lineMatches) return index - 1;
@@ -79,9 +79,9 @@ public class TextLayout
     }
     public int GetCharacterIndexAbove(int index)
     {
-        var lineIndex = 0;
-        foreach (var line in Lines)
+        for (var lineIndex = 0; lineIndex < Lines.Count; ++lineIndex)
         {
+            var line = Lines[lineIndex];
             if (index < line.GlyphCount)
             {
                 if (lineIndex == 0) return 0;
@@ -91,16 +91,15 @@ public class TextLayout
             }
 
             index -= line.GlyphCount;
-            ++lineIndex;
         }
 
         return getLastGlyph().Index;
     }
     public int GetCharacterIndexBelow(int index)
     {
-        var lineIndex = 0;
-        foreach (var line in Lines)
+        for (var lineIndex = 0; lineIndex < Lines.Count; ++lineIndex)
         {
+            var line = Lines[lineIndex];
             if (index < line.GlyphCount)
             {
                 var lastLineIndex = Lines.Count - 1;
@@ -115,7 +114,6 @@ public class TextLayout
             }
 
             index -= line.GlyphCount;
-            ++lineIndex;
         }
 
         return getLastGlyph().Index;
@@ -139,6 +137,8 @@ public class TextLayout
 
 public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph)
 {
+    bool advance = advanceOnEmptyGlyph;
+
     public List<TextLayoutGlyph> Glyphs { get; } = [];
     public int GlyphCount => Glyphs.Count;
 
@@ -150,27 +150,24 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
 
     public void Add(FontGlyph glyph, int glyphIndex)
     {
-        if (!glyph.IsEmpty) advanceOnEmptyGlyph = true;
+        if (!glyph.IsEmpty) advance = true;
 
         Glyphs.Add(new(this, glyph, glyphIndex, Width));
-        if (advanceOnEmptyGlyph) Width += glyph.Width;
+        if (advance) Width += glyph.Width;
         Height = Math.Max(Height, glyph.Height);
     }
 
     public TextLayoutGlyph GetGlyph(int index) => Glyphs[index];
 }
 
-public class TextLayoutGlyph(TextLayoutLine line, FontGlyph glyph, int index, float x)
+public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, int Index, float X)
 {
-    public FontGlyph Glyph => glyph;
-    public int Index => index;
-
     public Vector2 Position
     {
         get
         {
-            var linePosition = line.Position;
-            return linePosition with { X = linePosition.X + x };
+            var linePosition = Line.Position;
+            return linePosition with { X = linePosition.X + X };
         }
     }
 }

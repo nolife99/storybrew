@@ -4,7 +4,7 @@ using System;
 using System.Numerics;
 using Skinning.Styles;
 
-public class StackLayout(WidgetManager manager) : Widget(manager)
+public sealed class StackLayout(WidgetManager manager) : Widget(manager)
 {
     bool fitChildren, invalidSizes = true;
     Vector2 minSize, preferredSize;
@@ -48,8 +48,9 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
     protected override void Layout()
     {
         base.Layout();
-        foreach (var child in Children)
+        for (var i = 0; i < Children.Count; ++i)
         {
+            var child = Children[i];
             if (child.AnchorTarget is not null) continue;
             if (child.AnchorFrom != child.AnchorTo) continue;
 
@@ -63,10 +64,9 @@ public class StackLayout(WidgetManager manager) : Widget(manager)
             var childHeight = fitChildren ? Math.Max(minSize.Y, Size.Y) : Math.Max(minSize.Y, Math.Min(preferredSize.Y, Size.Y));
             if (maxSize.Y > 0 && childHeight > maxSize.Y) childHeight = maxSize.Y;
 
-            PlaceChildren(child, Vector2.Zero, new(childWidth, childHeight));
+            child.Size = new(childWidth, childHeight);
         }
     }
-    protected virtual void PlaceChildren(Widget widget, Vector2 offset, Vector2 size) => widget.Size = size;
 
     void measureChildren()
     {

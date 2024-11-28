@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,14 +14,14 @@ public class TextureOptions : IEquatable<TextureOptions>
 {
     public static readonly TextureOptions Default = new();
 
-    static readonly Dictionary<Type, Func<TinyToken, object>> fieldParsers = new()
+    static readonly FrozenDictionary<Type, Func<TinyToken, object>> fieldParsers = new Dictionary<Type, Func<TinyToken, object>>
     {
         [typeof(string)] = data => data.Value<string>(),
         [typeof(float)] = data => data.Value<float>(),
         [typeof(double)] = data => data.Value<double>(),
         [typeof(int)] = data => data.Value<int>(),
         [typeof(bool)] = data => data.Value<bool>()
-    };
+    }.ToFrozenDictionary();
 
     // Settings
     public bool Srgb, PreMultiply, GenerateMipmaps;

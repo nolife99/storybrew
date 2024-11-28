@@ -14,6 +14,7 @@ using BrewLib.Graphics.Compression;
 using BrewLib.Util;
 using Mapset;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using Subtitles;
@@ -103,7 +104,7 @@ public abstract class StoryboardObjectGenerator : Script
         {
             this.context = context;
             rnd = new(RandomSeed);
-            Compressor = new IntegratedCompressor();
+            disposables.Add(Compressor = new IntegratedCompressor());
             instance.Value = this;
 
             Generate();
@@ -114,8 +115,7 @@ public abstract class StoryboardObjectGenerator : Script
             instance.Value = null;
             this.context = null;
 
-            bitmaps.Dispose();
-            Compressor.Dispose();
+            foreach (var disposable in disposables) disposable.Dispose();
         }
     }
 
@@ -125,6 +125,7 @@ public abstract class StoryboardObjectGenerator : Script
     #region File loading
 
     internal readonly Dictionary<string, Image<Rgba32>> bitmaps = [];
+    readonly List<IDisposable> disposables = [];
 
     /// <summary> Returns a <see cref="Image"/> from the project's directory. </summary>
     /// <param name="path"> The image path, relative to the project's folder. </param>
@@ -149,12 +150,12 @@ public abstract class StoryboardObjectGenerator : Script
             alternatePath = Path.GetFullPath(alternatePath);
             if (watch) context.AddDependency(alternatePath);
 
-            bitmaps[path] = bitmap = Image.Load<Rgba32>(stream);
+            disposables.Add(bitmaps[path] = bitmap = Image.Load<Rgba32>(stream));
         }
         else
         {
             if (watch) context.AddDependency(path);
-            bitmaps[path] = bitmap = Image.Load<Rgba32>(stream);
+            disposables.Add(bitmaps[path] = bitmap = Image.Load<Rgba32>(stream));
         }
 
         return bitmap;
@@ -217,14 +218,16 @@ public abstract class StoryboardObjectGenerator : Script
     public float AudioDuration => context.AudioDuration;
 
     /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with default magnitudes. </summary>
-    public float[] GetFft(float time, string path = null, bool splitChannels = false)
+    public Span<float> GetFft(float time, string path = null, bool splitChannels = false)
     {
         if (path is not null) AddDependency(path);
-        return context.GetFft(time, path, splitChannels);
+        var fft = context.GetFft(time, path, splitChannels);
+        disposables.Add(fft);
+        return fft.Memory.Span;
     }
 
     /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
-    public float[] GetFft(float time,
+    public Span<float> GetFft(float time,
         int magnitudes,
         string path = null,
         OsbEasing easing = OsbEasing.None,
@@ -237,7 +240,10 @@ public abstract class StoryboardObjectGenerator : Script
             (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
             fft.Length;
 
-        var resultFft = GC.AllocateUninitializedArray<float>(magnitudes);
+        var resultFft = MemoryAllocator.Default.Allocate<float>(magnitudes);
+        disposables.Add(resultFft);
+
+        var resultSpan = resultFft.Memory.Span;
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)
@@ -248,11 +254,11 @@ public abstract class StoryboardObjectGenerator : Script
             var value = 0f;
             for (var v = baseIndex; v < index; ++v) value = Math.Max(value, fft[index]);
 
-            resultFft[i] = value;
+            resultSpan[i] = value;
             baseIndex = index;
         }
 
-        return resultFft;
+        return resultSpan;
     }
 
     #endregion
@@ -378,19 +384,12 @@ public abstract class StoryboardObjectGenerator : Script
         }
     }
 
-    struct ConfigurableField(FieldInfo field,
-        ConfigurableAttribute attribute,
-        object initialValue,
-        string beginsGroup,
-        string description,
-        int order)
-    {
-        internal readonly FieldInfo Field = field;
-        internal readonly ConfigurableAttribute Attribute = attribute;
-        internal readonly object InitialValue = initialValue;
-        internal readonly string BeginsGroup = beginsGroup, Description = description;
-        internal readonly int Order = order;
-    }
+    record struct ConfigurableField(FieldInfo Field,
+        ConfigurableAttribute Attribute,
+        object InitialValue,
+        string BeginsGroup,
+        string Description,
+        int Order);
 
     #endregion
 }

@@ -1,7 +1,10 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
+using System;
 using System.IO;
 using BrewLib.Audio;
+using BrewLib.Util;
+using CommunityToolkit.HighPerformance.Buffers;
 using StorybrewCommon.Storyboarding;
 
 public class EditorOsbSample : OsbSample, EventObject
@@ -12,14 +15,22 @@ public class EditorOsbSample : OsbSample, EventObject
     {
         if (EventTime + 1 < currentTime) return;
 
+        Span<char> span = stackalloc char[project.MapsetPath.Length + AudioPath.Length + 1];
+        Path.TryJoin(project.MapsetPath, AudioPath, span, out _);
+        PathHelper.WithStandardSeparatorsUnsafe(span);
+        var fullPath = StringPool.Shared.GetOrAdd(span);
+
         AudioSample sample;
-        var fullPath = Path.Combine(project.MapsetPath, AudioPath);
         try
         {
             sample = project.AudioContainer.Get(fullPath);
             if (sample is null)
             {
-                fullPath = Path.Combine(project.ProjectAssetFolderPath, AudioPath);
+                Span<char> span2 = stackalloc char[project.ProjectAssetFolderPath.Length + AudioPath.Length + 1];
+                Path.TryJoin(project.ProjectAssetFolderPath, AudioPath, span2, out _);
+                PathHelper.WithStandardSeparatorsUnsafe(span2);
+
+                fullPath = StringPool.Shared.GetOrAdd(span2);
                 sample = project.AudioContainer.Get(fullPath);
             }
         }

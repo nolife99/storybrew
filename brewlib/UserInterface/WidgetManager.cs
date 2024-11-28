@@ -329,15 +329,13 @@ public sealed class WidgetManager : InputHandler, IDisposable
         Widget relatedTarget = null,
         bool bubbles = true)
     {
-        ObjectDisposedException.ThrowIf(target.IsDisposed, nameof(target));
+        ObjectDisposedException.ThrowIf(target.IsDisposed, target);
 
-        WidgetEvent widgetEvent = new(relatedTarget);
-        var ancestors = bubbles ? target.GetAncestors() : null;
-
-        widgetEvent.Listener = target;
+        WidgetEvent widgetEvent = new(relatedTarget) { Listener = target };
         if (notify(target, widgetEvent)) return widgetEvent;
 
-        foreach (var ancestor in ancestors)
+        if (!bubbles) return widgetEvent;
+        for (var ancestor = target.Parent; ancestor is not null; ancestor = ancestor.Parent)
         {
             widgetEvent.Listener = ancestor;
             if (notify(ancestor, widgetEvent)) return widgetEvent;

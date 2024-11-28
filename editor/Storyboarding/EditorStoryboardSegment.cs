@@ -48,7 +48,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         if (layer.Highlight || effect.Highlight)
             opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
-        var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
+        using var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
         foreach (var o in displayableObjects) o.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);
     }
 
@@ -198,7 +198,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         OsbLayer osbLayer,
         StoryboardTransform transform)
     {
-        var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
+        using var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
         foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, localTransform);
     }
 

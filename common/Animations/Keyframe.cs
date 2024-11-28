@@ -11,17 +11,10 @@ using System.Collections.Generic;
 ///     This structure is used in conjunction with <see cref="KeyframedValue{TValue}"/> to represent values that change
 ///     over time.
 /// </remarks>
-public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, IComparer<Keyframe<TValue>>
+public readonly record struct Keyframe<TValue> : IComparer<Keyframe<TValue>>
 {
-    /// <summary>
-    ///     Gets the time of the keyframe.
-    /// </summary>
-    public readonly float Time;
-
-    /// <summary>
-    ///     Gets the value of the keyframe.
-    /// </summary>
-    public readonly TValue Value;
+    internal static readonly Comparer<Keyframe<TValue>> Comparer =
+        Comparer<Keyframe<TValue>>.Create((x, y) => Math.Sign(x.Time - y.Time));
 
     /// <summary>
     ///     Gets the easing function to apply to this keyframe.
@@ -31,8 +24,18 @@ public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, ICompare
     /// </remarks>
     public readonly Func<float, float> Ease;
 
+    /// <summary>
+    ///     Gets the time of the keyframe.
+    /// </summary>
+    public readonly float Time;
+
     /// <summary> Reserved for <see cref="Storyboarding.Util.CommandGenerator"/>. </summary>
     internal readonly bool Until;
+
+    /// <summary>
+    ///     Gets the value of the keyframe.
+    /// </summary>
+    public readonly TValue Value;
 
     /// <summary>
     ///     Creates a new <see cref="Keyframe{TValue}"/> with the given time and optional value and easing function.
@@ -50,8 +53,7 @@ public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, ICompare
         Until = until;
     }
 
-    internal static readonly Comparer<Keyframe<TValue>> Comparer =
-        Comparer<Keyframe<TValue>>.Create((x, y) => Math.Sign(x.Time - y.Time));
+    int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Comparer.Compare(x, y);
 
     /// <summary>
     ///     Creates a new <see cref="Keyframe{TValue}"/> with the same value and easing function as this one,
@@ -68,11 +70,6 @@ public readonly struct Keyframe<TValue> : IEquatable<Keyframe<TValue>>, ICompare
     /// <param name="value"> The value of the new keyframe. </param>
     /// <returns> The new <see cref="Keyframe{TValue}"/>. </returns>
     public Keyframe<TValue> WithValue(TValue value) => new(Time, value, Ease);
-
-    /// <inheritdoc/>
-    public bool Equals(Keyframe<TValue> other) => Time == other.Time && Value.Equals(other.Value);
-
-    int IComparer<Keyframe<TValue>>.Compare(Keyframe<TValue> x, Keyframe<TValue> y) => Comparer.Compare(x, y);
 
     /// <inheritdoc/>
     public override string ToString() => $"{Time:0.000}s {typeof(TValue)}:{Value}";

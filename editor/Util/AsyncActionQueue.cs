@@ -21,7 +21,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
         if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
 
-        actionRunners = [];
+        actionRunners = new(runnerCount);
         for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new(context, $"{threadName} #{i + 1}"));
     }
 
@@ -162,17 +162,19 @@ public sealed class AsyncActionQueue<T> : IDisposable
                                 continue;
                             }
 
-                            task = context.Queue.Find(t
+                            var index = context.Queue.FindIndex(t
                                 => !context.Running.Contains(t.UniqueKey) && !t.MustRunAlone ||
                                 t.MustRunAlone && context.Running.Count == 0);
 
-                            if (task is null)
+                            if (index < 0)
                             {
                                 mustSleep = true;
                                 continue;
                             }
 
-                            context.Queue.Remove(task);
+                            task = context.Queue[index];
+                            context.Queue.RemoveAt(index);
+
                             context.Running.Add(task.UniqueKey);
                             if (task.MustRunAlone) context.RunningLoneTask = true;
                         }

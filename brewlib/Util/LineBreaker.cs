@@ -180,41 +180,40 @@ public static class LineBreaker
         0x0085 // NEXT LINE
     ];
 
-    public static List<string> Split(string text, float maxWidth, Func<char, int> measure)
+    public static IEnumerable<ReadOnlyMemory<char>> Split(string textRaw, float maxWidth, Func<char, int> measure)
     {
-        List<string> lines = [];
         int startIndex = 0, endIndex = 0, lineWidth = 0;
 
+        var text = textRaw.AsMemory();
         for (; endIndex < text.Length; ++endIndex)
         {
-            var characterWidth = measure(text[endIndex]);
+            var characterWidth = measure(textRaw[endIndex]);
 
             if (maxWidth > 0 && endIndex > startIndex && lineWidth + characterWidth > maxWidth)
             {
-                endIndex = findBreakIndex(text, startIndex, endIndex);
-                completeLine();
+                endIndex = findBreakIndex(textRaw, startIndex, endIndex);
+
+                yield return text.Slice(startIndex, endIndex - startIndex + 1);
+                startIndex = endIndex + 1;
+                endIndex = startIndex;
+                lineWidth = 0;
             }
 
             lineWidth += characterWidth;
 
-            if (!mustBreakAfter(text, endIndex)) continue;
-            completeLine();
-            --endIndex;
-        }
+            if (!mustBreakAfter(textRaw, endIndex)) continue;
 
-        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) lines.Add("");
-
-        return lines;
-
-        void completeLine()
-        {
-            lines.Add(text.Substring(startIndex, endIndex - startIndex + 1));
+            yield return text.Slice(startIndex, endIndex - startIndex + 1);
             startIndex = endIndex + 1;
             endIndex = startIndex;
             lineWidth = 0;
+
+            --endIndex;
         }
+
+        if (text.Length > 0 && mustBreakAfter(textRaw, text.Length - 1, true)) yield return ReadOnlyMemory<char>.Empty;
     }
-    static int findBreakIndex(string text, int startIndex, int endIndex)
+    static int findBreakIndex(ReadOnlySpan<char> text, int startIndex, int endIndex)
     {
         var firstAllowed = -1;
         for (var index = endIndex; index > startIndex; index--)
@@ -227,7 +226,7 @@ public static class LineBreaker
         if (firstAllowed != -1) return firstAllowed;
         return endIndex - 1;
     }
-    static Breakability getBreakability(string text, int index)
+    static Breakability getBreakability(ReadOnlySpan<char> text, int index)
     {
         if (index == 0) return Breakability.Prohibited;
 
@@ -256,7 +255,7 @@ public static class LineBreaker
 
         return Breakability.Allowed;
     }
-    static bool mustBreakAfter(string text, int index, bool ignoreLastCharacter = false)
+    static bool mustBreakAfter(ReadOnlySpan<char> text, int index, bool ignoreLastCharacter = false)
     {
         if (!ignoreLastCharacter && index == text.Length - 1) return true;
 

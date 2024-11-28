@@ -10,7 +10,7 @@ using System.Numerics;
 /// </summary>
 /// <typeparam name="TValue"> The type of values of the keyframes. </typeparam>
 /// <remarks>
-///     See the <see cref="Keyframe{TValue}"/> struct for more information about keyframes.
+///     See <see cref="Keyframe{TValue}"/> for more information about keyframes.
 /// </remarks>
 public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 {
@@ -124,7 +124,11 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     /// <returns> The keyframed value. </returns>
     public KeyframedValue<TValue> AddRange(IEnumerable<Keyframe<TValue>> collection)
     {
-        foreach (var keyframe in collection) Add(keyframe);
+        if (collection is ICollection<Keyframe<TValue>> list) keyframes.EnsureCapacity(keyframes.Count + list.Count);
+        foreach (var keyframe in collection)
+            if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
+            else keyframes.Insert(indexFor(keyframe, false), keyframe);
+
         return this;
     }
 
@@ -141,7 +145,6 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     public void TransferKeyframes(KeyframedValue<TValue> to, bool clear = true)
     {
         if (Count == 0) return;
-        to.keyframes.EnsureCapacity(to.Count + keyframes.Count);
         to.AddRange(keyframes);
         if (clear) Clear();
     }
@@ -198,9 +201,9 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         bool hasPair = false, forceNextFlat = loopable;
         Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;
 
-        foreach (var t in keyframes)
+        for (var i = 0; i < keyframes.Count; ++i)
         {
-            var endKeyframe = editKeyframe(t, edit);
+            var endKeyframe = editKeyframe(keyframes[i], edit);
             if (previous.HasValue)
             {
                 var startKeyframe = previous.Value;
@@ -265,7 +268,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             }
         }
 
-        if (!hasPair || !explicitEndTime.HasValue || !(previousPairEnd.Value.Time < endTime)) return;
+        if (!hasPair || !explicitEndTime.HasValue || previousPairEnd.Value.Time > endTime) return;
 
         var endPair = previousPairEnd.Value.WithTime(endTime);
         pair(loopable ? previousPairEnd.Value : endPair, endPair);

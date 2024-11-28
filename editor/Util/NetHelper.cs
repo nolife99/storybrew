@@ -19,7 +19,7 @@ public static class NetHelper
         {
             Trace.WriteLine($"Requesting {url}");
 
-            var result = await Client.GetStringAsync(url);
+            var result = await Client.GetStringAsync(url).ConfigureAwait(false);
             action.Invoke(result, null);
         }
         catch (Exception e)
@@ -38,7 +38,7 @@ public static class NetHelper
             using var response = await Client.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
 
-            var responseContent = await response.Content.ReadAsStringAsync();
+            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             action?.Invoke(responseContent, null);
         }
         catch (Exception e)

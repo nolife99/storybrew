@@ -128,11 +128,11 @@ public sealed class Editor(NativeWindow window) : IDisposable
         screenLayerManager.Update(IsFixedRateUpdate);
     }
 
-    public void Draw(float tween)
+    public void Draw()
     {
         GL.Clear(ClearBufferMask.ColorBufferBit);
 
-        screenLayerManager.Draw(drawContext, tween);
+        screenLayerManager.Draw(drawContext);
         overlay.Draw(drawContext);
         DrawState.CompleteFrame();
     }
