@@ -35,7 +35,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
     {
         if (Bound || shader is null) return;
 
-        internalBind(shader);
+        if (CurrentShader != shader) setupVertexArray(shader);
+        else GL.BindVertexArray(VertexArrayId);
+
         Bound = true;
     }
     public void Unbind()
@@ -52,27 +54,19 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void initializeVertexBuffer() => VertexBufferId = GL.GenBuffer();
+    protected virtual void initializeVertexBuffer() => GL.CreateBuffers(1, out VertexBufferId);
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
-        IndexBufferId = GL.GenBuffer();
-        GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
-        GL.BufferData(BufferTarget.ElementArrayBuffer, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices),
+        GL.CreateBuffers(1, out IndexBufferId);
+        GL.NamedBufferData(IndexBufferId, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices),
             BufferUsageHint.StaticDraw);
-
-        GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-    }
-    protected virtual void internalBind(Shader shader)
-    {
-        if (CurrentShader != shader) setupVertexArray(shader);
-        else GL.BindVertexArray(VertexArrayId);
     }
 
     void setupVertexArray(Shader shader)
     {
         var initial = CurrentShader is null;
 
-        if (initial) VertexArrayId = GL.GenVertexArray();
+        if (initial) GL.CreateVertexArrays(1, out VertexArrayId);
         GL.BindVertexArray(VertexArrayId);
 
         // Vertex

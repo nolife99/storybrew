@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Xml;
 using BrewLib.Data;
 using BrewLib.Util;
@@ -90,7 +91,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     public ScriptContainer<TScript> Get(string scriptName)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
+        ref var scriptContainer = ref CollectionsMarshal.GetValueRefOrAddDefault(scriptContainers, scriptName, out var exists);
+        if (exists) return scriptContainer;
 
         var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
         var sourcePath = Path.Combine(ScriptsPath, $"{scriptName}.cs");
@@ -105,10 +107,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             }
         }
 
-        scriptContainers[scriptName] = scriptContainer = new ScriptContainer<TScript>(scriptTypeName, sourcePath,
-            scriptsLibraryPath, referencedAssemblies);
-
-        return scriptContainer;
+        return scriptContainer =
+            new ScriptContainer<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
     }
 
     public IEnumerable<string> GetScriptNames()

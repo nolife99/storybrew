@@ -22,9 +22,8 @@ public class QuadRendererBuffered : QuadRenderer
 
     readonly int maxQuadsPerBatch, textureUniformLocation;
     readonly bool ownsShader;
-    readonly Memory<QuadPrimitive> primitiveArray;
 
-    readonly IMemoryOwner<QuadPrimitive> primitives;
+    readonly MemoryManager<QuadPrimitive> primitives;
     readonly PrimitiveStreamer<QuadPrimitive> primitiveStreamer;
     readonly Shader shader;
 
@@ -36,14 +35,7 @@ public class QuadRendererBuffered : QuadRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 7168, int primitiveBufferSize = 0) : this(
-        PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>, shader, maxQuadsPerBatch, primitiveBufferSize) { }
-
-    QuadRendererBuffered(
-        Func<VertexDeclaration, int, ReadOnlySpan<ushort>, PrimitiveStreamer<QuadPrimitive>> createPrimitiveStreamer,
-        Shader shader,
-        int maxQuadsPerBatch,
-        int primitiveBufferSize)
+    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 7168, int primitiveBufferSize = 0)
     {
         if (shader is null)
         {
@@ -71,17 +63,13 @@ public class QuadRendererBuffered : QuadRenderer
             indices[triangleIndex + 4] = (ushort)(quadIndex + 3);
         }
 
-        primitiveStreamer = createPrimitiveStreamer(VertexDeclaration,
+        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
             Math.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
                 primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad, indices);
 
-        primitives = MemoryAllocator.Default.Allocate<QuadPrimitive>(maxQuadsPerBatch);
-        primitiveArray = primitives.Memory;
-
+        primitives = (MemoryManager<QuadPrimitive>)MemoryAllocator.Default.Allocate<QuadPrimitive>(maxQuadsPerBatch);
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
     }
-
-    public Shader Shader => ownsShader ? null : shader;
 
     public Matrix4x4 TransformMatrix
     {
@@ -141,7 +129,7 @@ public class QuadRendererBuffered : QuadRenderer
             }
         }
 
-        primitiveStreamer.Render(PrimitiveType.Triangles, primitiveArray[..quadsInBatch].Span, VertexPerQuad);
+        primitiveStreamer.Render(PrimitiveType.Triangles, primitives.GetSpan()[..quadsInBatch], VertexPerQuad);
 
         quadsInBatch = 0;
         lastFlushWasBuffered = canBuffer;
@@ -155,7 +143,7 @@ public class QuadRendererBuffered : QuadRenderer
         }
         else if (quadsInBatch == maxQuadsPerBatch) DrawState.FlushRenderer(true);
 
-        primitiveArray.Span[quadsInBatch] = quad;
+        primitives.GetSpan()[quadsInBatch] = quad;
         ++quadsInBatch;
     }
     public void Dispose()
@@ -195,7 +183,7 @@ public class QuadRendererBuffered : QuadRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        primitives.Dispose();
+        ((IDisposable)primitives).Dispose();
         if (!disposing) return;
 
         primitiveStreamer.Dispose();

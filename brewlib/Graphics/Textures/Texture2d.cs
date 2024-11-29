@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -25,7 +26,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     {
         if (decoderOptions is null)
         {
-            decoderOptions = new() { Configuration = Configuration.Default.Clone(), MaxFrames = 1 };
+            decoderOptions = new() { Configuration = Configuration.Default.Clone() };
             decoderOptions.Configuration.PreferContiguousImageBuffers = true;
         }
 
@@ -70,9 +71,9 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
         var textureId = GL.GenTexture();
-        using (var spanOwner = MemoryAllocator.Default.Allocate<Rgba32>(width * height))
+        using (var spanOwner = (MemoryManager<Rgba32>)MemoryAllocator.Default.Allocate<Rgba32>(width * height))
         {
-            var arr = spanOwner.Memory.Span;
+            var arr = spanOwner.GetSpan();
             arr.Fill(color);
 
             DrawState.BindTexture(textureId);

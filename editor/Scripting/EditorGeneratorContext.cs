@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Audio;
 using BrewLib.Util;
@@ -74,13 +75,14 @@ public sealed class EditorGeneratorContext(Effect effect,
     {
         path = Path.GetFullPath(path);
 
-        if (!fftAudioStreams.TryGetValue(path, out var audioStream)) fftAudioStreams[path] = audioStream = new(path);
+        ref var audioStream = ref CollectionsMarshal.GetValueRefOrAddDefault(fftAudioStreams, path, out var exists);
+        if (!exists) audioStream = new(path);
         return audioStream;
     }
 
     public override float AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;
 
-    public override IMemoryOwner<float> GetFft(float time, string path = null, bool splitChannels = false)
+    public override MemoryManager<float> GetFft(float time, string path = null, bool splitChannels = false)
         => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001f, splitChannels);
     public override float GetFftFrequency(string path = null) => getFftStream(path ?? effect.Project.AudioPath).Frequency;
 

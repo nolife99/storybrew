@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Data;
 using Util;
 
@@ -20,17 +21,17 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     public Texture2dRegion Get(string filename)
     {
         PathHelper.WithStandardSeparatorsUnsafe(filename);
-        if (textures.TryGetValue(filename, out var texture)) return texture;
+        ref var texture = ref CollectionsMarshal.GetValueRefOrAddDefault(textures, filename, out var exists);
+        if (exists) return texture;
 
         var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
-        if (!atlases.TryGetValue(options, out var atlas))
-            atlases[options] = atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding);
+        ref var atlas = ref CollectionsMarshal.GetValueRefOrAddDefault(atlases, options, out exists);
+        if (!exists) atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding);
 
-        using (var bitmap = Texture2d.LoadBitmap(filename, resourceContainer))
-            if (bitmap is not null)
-                texture = atlas.AddRegion(bitmap, filename);
+        using var bitmap = Texture2d.LoadBitmap(filename, resourceContainer);
+        if (bitmap is not null) texture = atlas.AddRegion(bitmap, filename);
 
-        return textures[filename] = texture;
+        return texture;
     }
 
     #region IDisposable Support

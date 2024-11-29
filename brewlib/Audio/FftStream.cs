@@ -20,7 +20,7 @@ public class FftStream : IDisposable
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out Frequency);
     }
 
-    public unsafe IMemoryOwner<float> GetFft(float time, bool splitChannels = false)
+    public unsafe MemoryManager<float> GetFft(float time, bool splitChannels = false)
     {
         Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 
@@ -33,8 +33,8 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        var data = MemoryAllocator.Default.Allocate<float>(size);
-        fixed (void* pinned = data.Memory.Span)
+        var data = (MemoryManager<float>)MemoryAllocator.Default.Allocate<float>(size);
+        fixed (void* pinned = data.GetSpan())
             if (Bass.ChannelGetData(stream, (nint)pinned, (int)flags) == -1)
                 throw new BassException(Bass.LastError);
 

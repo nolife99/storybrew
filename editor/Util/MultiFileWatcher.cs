@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using BrewLib.Util;
 
@@ -50,9 +51,10 @@ public sealed class MultiFileWatcher : IDisposable
             // The folder containing the file to watch exists,
             // only watch that folder
 
-            if (!folderWatchers.TryGetValue(directoryPath, out var watcher))
+            ref var watcher = ref CollectionsMarshal.GetValueRefOrAddDefault(folderWatchers, directoryPath, out var exists);
+            if (!exists)
             {
-                folderWatchers[directoryPath] = watcher = new()
+                watcher = new()
                 {
                     Path = directoryPath,
                     IncludeSubdirectories = false,
@@ -83,8 +85,11 @@ public sealed class MultiFileWatcher : IDisposable
             {
                 var parentDirectoryPath = parentDirectory.ToString();
 
-                if (recursiveFolderWatchers.TryGetValue(parentDirectoryPath, out var watcher)) return;
-                recursiveFolderWatchers[parentDirectoryPath] = watcher = new()
+                ref var watcher =
+                    ref CollectionsMarshal.GetValueRefOrAddDefault(recursiveFolderWatchers, parentDirectoryPath, out var exists);
+
+                if (exists) return;
+                watcher = new()
                 {
                     Path = parentDirectoryPath,
                     IncludeSubdirectories = true,

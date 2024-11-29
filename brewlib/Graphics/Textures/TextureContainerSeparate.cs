@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Data;
 using Util;
@@ -29,11 +28,9 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
 
     public Texture2dRegion Get(string filename)
     {
-        ref var texture = ref CollectionsMarshal.GetValueRefOrNullRef(textures, filename);
-        if (Unsafe.IsNullRef(ref texture))
-            return textures[filename] = Texture2d.Load(filename, resourceContainer, textureOptions);
-
-        return texture;
+        ref var texture = ref CollectionsMarshal.GetValueRefOrAddDefault(textures, filename, out var exists);
+        if (exists) return texture;
+        return texture = Texture2d.Load(filename, resourceContainer, textureOptions);
     }
 
     #region IDisposable Support

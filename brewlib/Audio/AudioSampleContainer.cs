@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Data;
 using Util;
 
@@ -12,7 +13,9 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
     public AudioSample Get(string filename)
     {
         PathHelper.WithStandardSeparatorsUnsafe(filename);
-        if (!samples.TryGetValue(filename, out var sample)) samples[filename] = sample = manager.LoadSample(filename, container);
+
+        ref var sample = ref CollectionsMarshal.GetValueRefOrAddDefault(samples, filename, out var exists);
+        if (!exists) sample = manager.LoadSample(filename, container);
 
         return sample;
     }

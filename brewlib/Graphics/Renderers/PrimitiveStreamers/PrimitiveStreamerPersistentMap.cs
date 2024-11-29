@@ -47,21 +47,16 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         base.initializeVertexBuffer();
         vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
-        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-
-        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0,
+        GL.NamedBufferStorage(VertexBufferId, vertexBufferSize, 0,
             BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit | BufferStorageFlags.MapCoherentBit);
 
-        bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer, 0, vertexBufferSize,
+        bufferAddr = GL.MapNamedBufferRange(VertexBufferId, 0, vertexBufferSize,
             BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit |
             BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapInvalidateBufferBit);
-
-        GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
     }
     protected override void Dispose(bool disposing)
     {
-        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-        GL.UnmapBuffer(BufferTarget.ArrayBuffer);
+        GL.UnmapNamedBuffer(VertexBufferId);
 
         if (disposing) commandSync.Dispose();
         base.Dispose(disposing);
@@ -78,9 +73,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         // Rebuild the VBO
 
-        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-        GL.UnmapBuffer(BufferTarget.ArrayBuffer);
-        GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+        GL.UnmapNamedBuffer(VertexBufferId);
         GL.DeleteBuffer(VertexBufferId);
 
         initializeVertexBuffer();

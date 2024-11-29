@@ -779,7 +779,7 @@ public sealed partial class Project : IDisposable
 
         if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
 
-        var layersOrder = indexRoot.Values<string>("Layers").Distinct();
+        var layersOrder = indexRoot.Values<string>("Layers").Distinct().ToArray();
         foreach (var layerGuid in layersOrder)
             if (layerInserters.TryGetValue(layerGuid, out var insertLayer))
                 insertLayer();

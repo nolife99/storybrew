@@ -1,6 +1,7 @@
 ﻿namespace StorybrewCommon.Scripting;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -240,10 +241,10 @@ public abstract class StoryboardObjectGenerator : Script
             (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
             fft.Length;
 
-        var resultFft = MemoryAllocator.Default.Allocate<float>(magnitudes);
+        var resultFft = (MemoryManager<float>)MemoryAllocator.Default.Allocate<float>(magnitudes);
         disposables.Add(resultFft);
 
-        var resultSpan = resultFft.Memory.Span;
+        var resultSpan = resultFft.GetSpan();
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)
