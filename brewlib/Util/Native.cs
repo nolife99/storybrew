@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Util;
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 using OpenTK.Windowing.Desktop;
@@ -185,38 +184,15 @@ public static unsafe partial class Native
 
     [LibraryImport("user32")] private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    delegate bool EnumThreadWndProc(nint hWnd, nint lParam);
-
-    [LibraryImport("user32")] private static partial void EnumThreadWindows(int dwThreadId, EnumThreadWndProc lpfn, nint lParam);
-
     static nint handle;
     public static Window* GLFWPtr { get; private set; }
 
     public static nint MainWindowHandle => handle != 0 ? handle : throw new InvalidOperationException("hWnd isn't initialized");
 
-    public static void InitializeHandle(string windowTitle, NativeWindow glfwWindow)
+    public static void InitializeHandle(NativeWindow glfwWindow)
     {
         GLFWPtr = glfwWindow.WindowPtr;
-
-        var cont = true;
-        using var currentProcess = Process.GetCurrentProcess();
-        var threads = currentProcess.Threads;
-
-        for (var i = 0; i < threads.Count && cont; ++i)
-            using (var thread = threads[i])
-                EnumThreadWindows(thread.Id, (hWnd, _) =>
-                {
-                    var length = (int)SendMessageW(hWnd, (uint)Message.GetTextLength, 0, 0);
-                    if (length <= 0) return cont;
-
-                    var buf = stackalloc char[length];
-                    SendMessageW(hWnd, (uint)Message.GetText, (nuint)length + 1, (nint)buf);
-
-                    if (!new ReadOnlySpan<char>(buf, length).SequenceEqual(windowTitle)) return cont;
-                    handle = hWnd;
-                    return cont = false;
-                }, 0);
+        handle = GLFW.GetWin32Window(GLFWPtr);
     }
 
     public static void SetWindowIcon(Type type, string iconPath)

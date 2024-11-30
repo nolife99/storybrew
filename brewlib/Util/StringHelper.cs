@@ -5,14 +5,13 @@ using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.Extensions.ObjectPool;
 
 public static class StringHelper
 {
     static readonly string[] sizeOrders = ["b", "kb", "mb", "gb", "tb"];
     static readonly string utf8Bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
 
-    public static readonly ObjectPool<StringBuilder> StringBuilderPool = ObjectPool.Create(new StringBuilderPooledObjectPolicy());
+    public static readonly Pool<StringBuilder> StringBuilderPool = new(obj => obj.Clear());
 
     public static string ToByteSize(float byteCount, string format = "{0:0.##} {1}")
     {
@@ -33,22 +32,22 @@ public static class StringHelper
     {
         data = MD5.HashData(data);
 
-        var chars = StringBuilderPool.Get();
+        var chars = StringBuilderPool.Retrieve();
         foreach (var t in data) chars.Append(t.ToString("x2", CultureInfo.InvariantCulture));
 
         var str = chars.ToString();
-        StringBuilderPool.Return(chars);
+        StringBuilderPool.Release(chars);
         return str;
     }
     public static string GetFileMd5(string path)
     {
         var data = GetFileMd5Bytes(path);
 
-        var chars = StringBuilderPool.Get();
+        var chars = StringBuilderPool.Retrieve();
         foreach (var t in data) chars.Append(t.ToString("x2", CultureInfo.InvariantCulture));
 
         var str = chars.ToString();
-        StringBuilderPool.Return(chars);
+        StringBuilderPool.Release(chars);
         return str;
     }
     public static byte[] GetFileMd5Bytes(string path)

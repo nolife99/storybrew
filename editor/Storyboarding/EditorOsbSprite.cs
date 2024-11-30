@@ -116,8 +116,9 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
                     var intersectionArea =
                         size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
 
-                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
-                        OsuHitObject.WidescreenStoryboardArea;
+                    if (!float.IsNaN(intersectionArea))
+                        frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
+                            OsuHitObject.WidescreenStoryboardArea;
                 }
 
             if (frameStats.LastTexture != fullPath)
@@ -139,6 +140,6 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
             bounds.Left + bounds.Width * .5f + (position.X - 320) * boundsScaling, bounds.Top + position.Y * boundsScaling,
             origin.X, origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation,
             ((Rgba32)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor)
-            .WithOpacity(opacity * fade));
+            .WithOpacity(opacity * fade), 0, 0, texture.Width, texture.Height);
     }
 }

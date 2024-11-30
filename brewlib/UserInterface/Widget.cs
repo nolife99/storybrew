@@ -175,7 +175,7 @@ public class Widget(WidgetManager manager) : IDisposable
     {
         if (modifiers.Length == 0) return baseName;
 
-        var sb = StringHelper.StringBuilderPool.Get();
+        var sb = StringHelper.StringBuilderPool.Retrieve();
         sb.Append(baseName);
 
         foreach (var modifier in modifiers)
@@ -187,7 +187,7 @@ public class Widget(WidgetManager manager) : IDisposable
         }
 
         var str = sb.ToString();
-        StringHelper.StringBuilderPool.Return(sb);
+        StringHelper.StringBuilderPool.Release(sb);
         return str;
     }
 

@@ -116,7 +116,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
         return segment;
     }
 
-    int getSegmentEndTime(HashSet<int> fragmentationTimes, ICollection<IFragmentableCommand> commands)
+    int getSegmentEndTime(HashSet<int> fragmentationTimes, HashSet<IFragmentableCommand> commands)
     {
         var startTime = fragmentationTimes.Min();
         int endTime;

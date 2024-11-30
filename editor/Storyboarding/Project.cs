@@ -19,7 +19,6 @@ using BrewLib.Graphics.Textures;
 using BrewLib.Util;
 using CommunityToolkit.HighPerformance;
 using Mapset;
-using Microsoft.Extensions.ObjectPool;
 using OpenTK.Mathematics;
 using Scripting;
 using SixLabors.Fonts;
@@ -46,10 +45,10 @@ public sealed partial class Project : IDisposable
 
     public readonly ExportSettings ExportSettings = new();
     public readonly LayerManager LayerManager = new();
+    readonly ScriptManager<StoryboardObjectGenerator> scriptManager;
     public readonly string ScriptsPath;
 
     internal bool DisplayDebugWarning, ShowHitObjects;
-    ScriptManager<StoryboardObjectGenerator> scriptManager;
 
     Project(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
     {
@@ -149,7 +148,17 @@ public sealed partial class Project : IDisposable
     public TextureContainer TextureContainer;
     public AudioSampleContainer AudioContainer;
 
-    public FrameStats FrameStats = new();
+    public FrameStats FrameStats = frameStatsPool.Retrieve();
+
+    static readonly Pool<FrameStats> frameStatsPool = new(obj =>
+    {
+        obj.LoadedPaths.Clear();
+        obj.GpuPixelsFrame = 0;
+        obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
+        obj.LastTexture = null;
+        obj.ScreenFill = 0;
+        obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
+    });
 
     public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
@@ -157,9 +166,12 @@ public sealed partial class Project : IDisposable
     {
         effectUpdateQueue.Enabled = allowEffectUpdates && MapsetPathIsValid;
 
-        FrameStats newFrameStats = updateFrameStats ? new() : null;
+        var newFrameStats = updateFrameStats ? frameStatsPool.Retrieve() : null;
         LayerManager.Draw(drawContext, camera, bounds, opacity, newFrameStats);
-        FrameStats = newFrameStats ?? FrameStats;
+
+        if (newFrameStats is null) return;
+        frameStatsPool.Release(FrameStats);
+        FrameStats = newFrameStats;
     }
 
     void reloadTextures()
@@ -189,7 +201,7 @@ public sealed partial class Project : IDisposable
 
     bool allowEffectUpdates = true;
 
-    readonly AsyncActionQueue<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
+    readonly AsyncActionsProcessor<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
 
     public void QueueEffectUpdate(Effect effect)
     {
@@ -435,7 +447,6 @@ public sealed partial class Project : IDisposable
         typeof(Script).Assembly.Location,
         typeof(Misc).Assembly.Location,
         typeof(Ref<>).Assembly.Location,
-        typeof(ObjectPool).Assembly.Location,
         .. Directory.EnumerateFiles(
             string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"), "*.dll"),
         .. Directory.EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),

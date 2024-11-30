@@ -154,7 +154,7 @@ public class Triangle3d : Node3d, HasOsbSprites
                 if (gen1.EndState is not null) gen1.EndState.Opacity = 0;
             }
 
-            var state = CommandGenerator.statePool.Get();
+            var state = CommandGenerator.statePool.Retrieve();
             state.Time = time;
             state.Position = position;
             state.Scale = scale0;
@@ -165,7 +165,7 @@ public class Triangle3d : Node3d, HasOsbSprites
 
             gen0.Add(state);
 
-            var state1 = CommandGenerator.statePool.Get();
+            var state1 = CommandGenerator.statePool.Retrieve();
             state1.Time = time;
             state1.Position = position;
             state1.Scale = scale1;

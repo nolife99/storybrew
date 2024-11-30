@@ -59,7 +59,7 @@ public abstract class Command<TValue>(string identifier,
 
         var str = ToOsbString(exportSettings, transform);
         writer.WriteLine(str);
-        StringHelper.StringBuilderPool.Return(str);
+        StringHelper.StringBuilderPool.Release(str);
     }
     public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
     public virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
@@ -79,7 +79,7 @@ public abstract class Command<TValue>(string identifier,
         var startValueString = tranformedStartValue.ToOsbString(exportSettings);
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
-        var result = StringHelper.StringBuilderPool.Get();
+        var result = StringHelper.StringBuilderPool.Retrieve();
         if (startTimeString == endTimeString) endTimeString = "";
 
         result.AppendJoin(',', identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString, endTimeString,
@@ -94,7 +94,7 @@ public abstract class Command<TValue>(string identifier,
     {
         var str = ToOsbString(ExportSettings.Default, null);
         var result = str.ToString();
-        StringHelper.StringBuilderPool.Return(str);
+        StringHelper.StringBuilderPool.Release(str);
         return result;
     }
 }

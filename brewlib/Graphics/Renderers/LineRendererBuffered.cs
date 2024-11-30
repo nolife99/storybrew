@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -11,7 +10,6 @@ using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
 using Shaders.Snippets;
-using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 
 public class LineRendererBuffered : LineRenderer
@@ -25,7 +23,6 @@ public class LineRendererBuffered : LineRenderer
     readonly int maxLinesPerBatch;
     readonly bool ownsShader;
 
-    readonly MemoryManager<Int128> primitives;
     readonly PrimitiveStreamer<Int128> primitiveStreamer;
     readonly Shader shader;
 
@@ -50,7 +47,6 @@ public class LineRendererBuffered : LineRenderer
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
 
-        primitives = (MemoryManager<Int128>)MemoryAllocator.Default.Allocate<Int128>(maxLinesPerBatch);
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
     }
 
@@ -101,7 +97,7 @@ public class LineRendererBuffered : LineRenderer
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, ref combinedMatrix.M11);
         }
 
-        primitiveStreamer.Render(PrimitiveType.Lines, primitives.GetSpan()[..linesInBatch], VertexPerLine);
+        primitiveStreamer.Render(PrimitiveType.Lines, linesInBatch, VertexPerLine);
 
         linesInBatch = 0;
         lastFlushWasBuffered = canBuffer;
@@ -111,7 +107,7 @@ public class LineRendererBuffered : LineRenderer
     {
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-        ref var ptr = ref Unsafe.As<Int128, byte>(ref primitives.GetSpan()[linesInBatch]);
+        ref var ptr = ref Unsafe.As<Int128, byte>(ref primitiveStreamer.PrimitiveAt(linesInBatch));
         Unsafe.WriteUnaligned(ref ptr, start);
         Unsafe.WriteUnaligned(ref ptr = ref Unsafe.AddByteOffset(ref ptr, Marshal.SizeOf(start)), color);
         Unsafe.WriteUnaligned(ref ptr = ref Unsafe.AddByteOffset(ref ptr, Marshal.SizeOf(color)), end);
@@ -151,7 +147,6 @@ public class LineRendererBuffered : LineRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        ((IDisposable)primitives).Dispose();
         if (!disposing) return;
 
         primitiveStreamer.Dispose();

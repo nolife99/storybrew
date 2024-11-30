@@ -8,13 +8,13 @@ using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 
-public sealed class AsyncActionQueue<T> : IDisposable
+public sealed class AsyncActionsProcessor<T> : IDisposable
 {
     readonly List<ActionRunner> actionRunners;
     readonly bool allowDuplicates;
     readonly ActionQueueContext context;
 
-    public AsyncActionQueue(string threadName, bool allowDuplicates = false, int runnerCount = 0)
+    public AsyncActionsProcessor(string threadName, bool allowDuplicates = false, int runnerCount = 0)
     {
         this.allowDuplicates = allowDuplicates;
         context = new();
@@ -195,7 +195,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         if (task.MustRunAlone) context.RunningLoneTask = false;
                     }
                 }
-            }, tokenSrc.Token), tokenSrc.Token);
+            }, tokenSrc.Token));
 #pragma warning restore SYSLIB0046
 
             Trace.WriteLine($"Started thread {threadName} ({thread.Id})");

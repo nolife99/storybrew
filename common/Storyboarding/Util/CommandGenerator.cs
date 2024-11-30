@@ -4,15 +4,26 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Animations;
+using BrewLib.Util;
 using Commands;
 using CommandValues;
-using Microsoft.Extensions.ObjectPool;
 using Scripting;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
-    internal static readonly ObjectPool<State> statePool = ObjectPool.Create<State>();
+    internal static readonly Pool<State> statePool = new(obj =>
+    {
+        obj.Additive = false;
+        obj.Color = CommandColor.White;
+        obj.FlipH = false;
+        obj.FlipV = false;
+        obj.Opacity = 0;
+        obj.Position = new(320, 240);
+        obj.Rotation = 0;
+        obj.Scale = CommandScale.One;
+        obj.Time = 0;
+    });
 
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
@@ -138,12 +149,12 @@ public class CommandGenerator
                     break;
             }
 
-            if (previousState is not null) statePool.Return(previousState);
+            if (previousState is not null) statePool.Release(previousState);
             previousState = state;
             wasVisible = isVisible;
         }
 
-        statePool.Return(previousState);
+        statePool.Release(previousState);
 
         if (wasVisible) commitKeyframes(imageSize);
         if (everVisible)
@@ -285,7 +296,7 @@ public class CommandGenerator
 }
 
 /// <summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
-public class State : IComparer<State>, IResettable
+public record State : IComparer<State>
 {
     ///<summary> Represents the additive toggle condition of this state. </summary>
     public bool Additive { get; set; }
@@ -315,20 +326,6 @@ public class State : IComparer<State>, IResettable
     public float Time { get; set; }
 
     int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
-
-    bool IResettable.TryReset()
-    {
-        Additive = false;
-        Color = CommandColor.White;
-        FlipH = false;
-        FlipV = false;
-        Opacity = 0;
-        Position = new(320, 240);
-        Rotation = 0;
-        Scale = CommandScale.One;
-        Time = 0;
-        return true;
-    }
 
     /// <summary>
     ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions

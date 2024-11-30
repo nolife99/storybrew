@@ -1,13 +1,13 @@
 ﻿namespace StorybrewEditor.Scripting;
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Audio;
 using BrewLib.Util;
+using CommunityToolkit.HighPerformance.Buffers;
 using Mapset;
 using Storyboarding;
 using StorybrewCommon.Mapset;
@@ -82,7 +82,7 @@ public sealed class EditorGeneratorContext(Effect effect,
 
     public override float AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;
 
-    public override MemoryManager<float> GetFft(float time, string path = null, bool splitChannels = false)
+    public override MemoryOwner<float> GetFft(float time, string path = null, bool splitChannels = false)
         => getFftStream(path ?? effect.Project.AudioPath).GetFft(time * .001f, splitChannels);
     public override float GetFftFrequency(string path = null) => getFftStream(path ?? effect.Project.AudioPath).Frequency;
 

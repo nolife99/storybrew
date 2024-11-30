@@ -549,7 +549,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     string buildWarningMessage()
     {
-        var warnings = StringHelper.StringBuilderPool.Get();
+        var warnings = StringHelper.StringBuilderPool.Retrieve();
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
@@ -576,7 +576,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         else if (proj.DisplayDebugWarning)
             warnings.Append(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
 
-        var sbLoad = (float)stats.ScreenFill;
+        var sbLoad = stats.ScreenFill;
         switch (sbLoad)
         {
             case > 0 and < 5 when proj.DisplayDebugWarning:
@@ -600,7 +600,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (stats.IncompatibleCommands) warnings.Append("⚠ Incompatible Commands");
 
         var str = warnings.TrimEnd().ToString();
-        StringHelper.StringBuilderPool.Return(warnings);
+        StringHelper.StringBuilderPool.Release(warnings);
         return str;
     }
 

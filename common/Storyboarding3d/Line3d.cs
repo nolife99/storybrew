@@ -70,7 +70,7 @@ public class Line3d : Node3d, HasOsbSprites
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
-        var state = CommandGenerator.statePool.Get();
+        var state = CommandGenerator.statePool.Retrieve();
 
         state.Time = time;
         state.Position = sprite.Origin switch

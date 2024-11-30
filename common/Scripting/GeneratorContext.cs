@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Scripting;
 
-using System.Buffers;
 using System.Collections.Generic;
+using CommunityToolkit.HighPerformance.Buffers;
 using Mapset;
 using Storyboarding;
 
@@ -76,7 +76,7 @@ public abstract class GeneratorContext
     /// <param name="splitChannels">
     ///     A value indicating whether to split the channels of the audio file.
     /// </param>
-    public abstract MemoryManager<float> GetFft(float time, string path = null, bool splitChannels = false);
+    public abstract MemoryOwner<float> GetFft(float time, string path = null, bool splitChannels = false);
 
     /// <summary>
     ///     Gets the frequency of the Fast Fourier Transform for the given audio file.

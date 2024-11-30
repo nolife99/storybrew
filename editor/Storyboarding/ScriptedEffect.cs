@@ -155,7 +155,7 @@ public class ScriptedEffect : Effect
 
         this.status = status;
 
-        var statusMessageBuilder = StringHelper.StringBuilderPool.Get();
+        var statusMessageBuilder = StringHelper.StringBuilderPool.Retrieve();
         if (message is not null) statusMessageBuilder.Append(message);
 
         if (!string.IsNullOrWhiteSpace(log))
@@ -167,7 +167,7 @@ public class ScriptedEffect : Effect
 
         statusMessage = statusMessageBuilder.ToString();
 
-        StringHelper.StringBuilderPool.Return(statusMessageBuilder);
+        StringHelper.StringBuilderPool.Release(statusMessageBuilder);
 
         Program.Schedule(RaiseChanged);
         statusStopwatch = GLFW.GetTime();

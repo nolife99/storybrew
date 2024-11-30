@@ -13,9 +13,7 @@ public sealed class AudioManager : IDisposable
     public AudioManager(nint handle)
     {
         Bass.Init(Win: handle);
-        Bass.PlaybackBufferLength = 100;
-        Bass.NetBufferLength = 500;
-        Bass.UpdatePeriod = 10;
+        Bass.UpdatePeriod = 0;
     }
 
     public float Volume
@@ -39,6 +37,8 @@ public sealed class AudioManager : IDisposable
             channel.Dispose();
             --i;
         }
+
+        Bass.Update(50);
     }
 
     public AudioStream LoadStream(string path, ResourceContainer resourceContainer = null)

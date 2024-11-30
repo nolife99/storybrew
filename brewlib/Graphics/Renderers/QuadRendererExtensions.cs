@@ -15,18 +15,6 @@ public static class QuadRendererExtensions
         float scaleX,
         float scaleY,
         float rotation,
-        Rgba32 color) => renderer.Draw(texture, x, y, originX, originY, scaleX, scaleY, rotation, color, 0, 0, texture.Width,
-        texture.Height);
-
-    public static void Draw(this QuadRenderer renderer,
-        Texture2dRegion texture,
-        float x,
-        float y,
-        float originX,
-        float originY,
-        float scaleX,
-        float scaleY,
-        float rotation,
         Rgba32 color,
         float textureX0,
         float textureY0,

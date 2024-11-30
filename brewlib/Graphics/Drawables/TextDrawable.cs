@@ -127,8 +127,9 @@ public sealed class TextDrawable : Drawable
             if (y > clipRegion.Bottom) break;
             if (y + glyph.Height * inverseScaling < clipRegion.Top) continue;
 
-            renderer.Draw(glyph.Texture, bounds.Left + position.X * inverseScaling, y, 0, 0, inverseScaling, inverseScaling, 0,
-                color);
+            var texture = glyph.Texture;
+            renderer.Draw(texture, bounds.Left + position.X * inverseScaling, y, 0, 0, inverseScaling, inverseScaling, 0, color,
+                0, 0, texture.Width, texture.Height);
         }
     }
 

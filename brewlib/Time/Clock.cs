@@ -1,13 +1,16 @@
 ﻿namespace BrewLib.Time;
 
-using OpenTK.Windowing.GraphicsLibraryFramework;
+using System;
+using System.Diagnostics;
 
 public class Clock : TimeSource
 {
-    bool playing;
-    float timeFactor = 1, timeOrigin, pausedTime;
+    readonly Stopwatch stopwatch = new();
 
-    public float Current => timeOrigin + (playing ? (float)GLFW.GetTime() : pausedTime) * timeFactor;
+    bool playing;
+    float timeFactor = 1, timeOrigin;
+
+    public float Current => timeOrigin + stopwatch.ElapsedTicks / (float)TimeSpan.TicksPerSecond * timeFactor;
 
     public float TimeFactor
     {
@@ -16,7 +19,7 @@ public class Clock : TimeSource
         {
             if (timeFactor == value) return;
 
-            var elapsed = playing ? (float)GLFW.GetTime() : pausedTime;
+            var elapsed = stopwatch.ElapsedTicks / (float)TimeSpan.TicksPerSecond;
             var previousTime = timeOrigin + elapsed * timeFactor;
             timeFactor = value;
             timeOrigin = previousTime - elapsed * timeFactor;
@@ -31,14 +34,14 @@ public class Clock : TimeSource
             if (playing == value) return;
             playing = value;
 
-            if (playing) Seek(Current);
-            else pausedTime = (float)GLFW.GetTime();
+            if (playing) stopwatch.Start();
+            else stopwatch.Stop();
         }
     }
 
     public bool Seek(float time)
     {
-        timeOrigin = time - (playing ? (float)GLFW.GetTime() : pausedTime) * timeFactor;
+        timeOrigin = time - stopwatch.ElapsedTicks / (float)TimeSpan.TicksPerSecond * timeFactor;
         return true;
     }
 }

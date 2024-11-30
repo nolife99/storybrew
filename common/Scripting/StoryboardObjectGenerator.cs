@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Scripting;
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -13,9 +12,9 @@ using System.Threading;
 using Animations;
 using BrewLib.Graphics.Compression;
 using BrewLib.Util;
+using CommunityToolkit.HighPerformance.Buffers;
 using Mapset;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using Subtitles;
@@ -224,7 +223,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (path is not null) AddDependency(path);
         var fft = context.GetFft(time, path, splitChannels);
         disposables.Add(fft);
-        return fft.Memory.Span;
+        return fft.Span;
     }
 
     /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
@@ -241,10 +240,10 @@ public abstract class StoryboardObjectGenerator : Script
             (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
             fft.Length;
 
-        var resultFft = (MemoryManager<float>)MemoryAllocator.Default.Allocate<float>(magnitudes);
+        var resultFft = MemoryOwner<float>.Allocate(magnitudes);
         disposables.Add(resultFft);
 
-        var resultSpan = resultFft.GetSpan();
+        var resultSpan = resultFft.Span;
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)

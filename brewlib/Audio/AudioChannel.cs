@@ -17,7 +17,7 @@ public class AudioChannel : IDisposable
         Temporary = temporary;
     }
 
-    protected int Channel
+    public int Channel
     {
         get => channel;
         set

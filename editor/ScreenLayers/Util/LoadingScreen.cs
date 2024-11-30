@@ -34,7 +34,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
 
             Trace.TraceError($"{title} failed ({action.Method.Name}): {ex}");
 
-            var sb = StringHelper.StringBuilderPool.Get();
+            var sb = StringHelper.StringBuilderPool.Retrieve();
             sb.Append(ex.Message);
             sb.Append(" (");
             sb.Append(ex.GetType().Name);
@@ -55,7 +55,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
             Program.Schedule(() =>
             {
                 Manager.ShowMessage($"{title} failed:\n \n{sb}\n \nDetails:\n{ex.GetBaseException()}");
-                StringHelper.StringBuilderPool.Return(sb);
+                StringHelper.StringBuilderPool.Release(sb);
                 Exit();
             });
         });

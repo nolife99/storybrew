@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using Cameras;
@@ -9,7 +8,6 @@ using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
 using Shaders.Snippets;
-using SixLabors.ImageSharp.Memory;
 using Textures;
 
 public class QuadRendererBuffered : QuadRenderer
@@ -23,7 +21,6 @@ public class QuadRendererBuffered : QuadRenderer
     readonly int maxQuadsPerBatch, textureUniformLocation;
     readonly bool ownsShader;
 
-    readonly MemoryManager<QuadPrimitive> primitives;
     readonly PrimitiveStreamer<QuadPrimitive> primitiveStreamer;
     readonly Shader shader;
 
@@ -67,7 +64,6 @@ public class QuadRendererBuffered : QuadRenderer
             Math.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
                 primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad, indices);
 
-        primitives = (MemoryManager<QuadPrimitive>)MemoryAllocator.Default.Allocate<QuadPrimitive>(maxQuadsPerBatch);
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
     }
 
@@ -129,7 +125,7 @@ public class QuadRendererBuffered : QuadRenderer
             }
         }
 
-        primitiveStreamer.Render(PrimitiveType.Triangles, primitives.GetSpan()[..quadsInBatch], VertexPerQuad);
+        primitiveStreamer.Render(PrimitiveType.Triangles, quadsInBatch, VertexPerQuad);
 
         quadsInBatch = 0;
         lastFlushWasBuffered = canBuffer;
@@ -143,7 +139,7 @@ public class QuadRendererBuffered : QuadRenderer
         }
         else if (quadsInBatch == maxQuadsPerBatch) DrawState.FlushRenderer(true);
 
-        primitives.GetSpan()[quadsInBatch] = quad;
+        primitiveStreamer.PrimitiveAt(quadsInBatch) = quad;
         ++quadsInBatch;
     }
     public void Dispose()
@@ -183,7 +179,6 @@ public class QuadRendererBuffered : QuadRenderer
         if (disposed) return;
         if (rendering) EndRendering();
 
-        ((IDisposable)primitives).Dispose();
         if (!disposing) return;
 
         primitiveStreamer.Dispose();

@@ -2,26 +2,24 @@
 
 using System;
 using System.Numerics;
-using Microsoft.Extensions.ObjectPool;
+using BrewLib.Util;
 
 /// <summary>
 ///     A transform that applies to a storyboard element.
 /// </summary>
-public class StoryboardTransform : IResettable, IDisposable
+public class StoryboardTransform : IDisposable
 {
-    static readonly ObjectPool<StoryboardTransform> pool = ObjectPool.Create<StoryboardTransform>();
+    static readonly Pool<StoryboardTransform> pool = new(obj =>
+    {
+        obj.transform = Matrix3x2.Identity;
+        obj.transformScale = obj.transformAngle = 0;
+    });
+
     Matrix3x2 transform;
     float transformScale, transformAngle;
 
     /// <inheritdoc/>
-    public void Dispose() => pool.Return(this);
-
-    bool IResettable.TryReset()
-    {
-        transform = Matrix3x2.Identity;
-        transformScale = transformAngle = 0;
-        return true;
-    }
+    public void Dispose() => pool.Release(this);
 
     /// <summary>
     ///     Initializes a new <see cref="StoryboardTransform"/> instance.
@@ -37,32 +35,13 @@ public class StoryboardTransform : IResettable, IDisposable
         float rotation,
         float scale)
     {
-        var instance = pool.Get();
+        var instance = pool.Retrieve();
         var transform = parent?.transform ?? Matrix3x2.Identity;
 
-        if (position != Vector2.Zero)
-        {
-            var posMatrix = Matrix3x2.CreateTranslation(position);
-            transform = Matrix3x2.Multiply(transform, posMatrix);
-        }
-
-        if (rotation != 0)
-        {
-            var rotMatrix = Matrix3x2.CreateRotation(rotation);
-            transform = Matrix3x2.Multiply(transform, rotMatrix);
-        }
-
-        if (scale != 1)
-        {
-            var scaleMatrix = Matrix3x2.CreateScale(scale, scale);
-            transform = Matrix3x2.Multiply(transform, scaleMatrix);
-        }
-
-        if (origin != Vector2.Zero)
-        {
-            var originMatrix = Matrix3x2.CreateTranslation(-origin.X, -origin.Y);
-            transform = Matrix3x2.Multiply(transform, originMatrix);
-        }
+        if (position != Vector2.Zero) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateTranslation(position));
+        if (rotation != 0) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateRotation(rotation));
+        if (scale != 1) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateScale(scale, scale));
+        if (origin != Vector2.Zero) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateTranslation(-origin.X, -origin.Y));
 
         instance.transform = transform;
         instance.transformScale = (parent?.transformScale ?? 1) * scale;

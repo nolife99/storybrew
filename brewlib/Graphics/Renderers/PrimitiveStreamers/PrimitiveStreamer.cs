@@ -5,11 +5,10 @@ using OpenTK.Graphics.OpenGL;
 
 public interface PrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : unmanaged
 {
-    int DiscardedBufferCount { get; }
-    int BufferWaitCount { get; }
+    ref TPrimitive PrimitiveAt(int index);
 
     void Bind(Shader shader);
     void Unbind();
 
-    void Render(PrimitiveType type, ReadOnlySpan<TPrimitive> primitives, int vertices);
+    void Render(PrimitiveType type, int primitiveCount, int vertices);
 }

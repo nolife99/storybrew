@@ -55,7 +55,7 @@ public class ShaderBuilder
 
     ReadOnlySpan<char> buildCommon()
     {
-        var code = StringHelper.StringBuilderPool.Get();
+        var code = StringHelper.StringBuilderPool.Retrieve();
         code.AppendLine(CultureInfo.InvariantCulture,
             $"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
@@ -67,7 +67,7 @@ public class ShaderBuilder
         ProgramScope.DeclareVaryings(code, Context);
 
         var codeString = code.ToString();
-        StringHelper.StringBuilderPool.Return(code);
+        StringHelper.StringBuilderPool.Release(code);
         return codeString;
     }
     StringBuilder buildVertexShader()

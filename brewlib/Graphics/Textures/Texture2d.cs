@@ -1,15 +1,14 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using CommunityToolkit.HighPerformance.Buffers;
 using Data;
 using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
@@ -71,9 +70,9 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
         var textureId = GL.GenTexture();
-        using (var spanOwner = (MemoryManager<Rgba32>)MemoryAllocator.Default.Allocate<Rgba32>(width * height))
+        using (var spanOwner = SpanOwner<Rgba32>.Allocate(width * height))
         {
-            var arr = spanOwner.GetSpan();
+            var arr = spanOwner.Span;
             arr.Fill(color);
 
             DrawState.BindTexture(textureId);

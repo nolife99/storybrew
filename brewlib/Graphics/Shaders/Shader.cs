@@ -139,7 +139,7 @@ public sealed partial class Shader : IDisposable
         var errorRegex = ErrRegex();
         var splitCode = code.Replace("\r\n", "\n").Split('\n');
 
-        var sb = StringHelper.StringBuilderPool.Get();
+        var sb = StringHelper.StringBuilderPool.Retrieve();
         foreach (var line in log.Split('\n'))
         {
             sb.AppendLine(line);
@@ -163,7 +163,7 @@ public sealed partial class Shader : IDisposable
         }
 
         var sbCode = sb.ToString();
-        StringHelper.StringBuilderPool.Return(sb);
+        StringHelper.StringBuilderPool.Release(sb);
         return sbCode;
     }
 

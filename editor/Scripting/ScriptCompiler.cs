@@ -52,7 +52,7 @@ public static class ScriptCompiler
             }
         }
 
-        var error = StringHelper.StringBuilderPool.Get();
+        var error = StringHelper.StringBuilderPool.Retrieve();
         error.Append("Compilation error\n \n");
 
         foreach (var diagnostics in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
@@ -73,7 +73,7 @@ public static class ScriptCompiler
         }
 
         var errorStr = error.ToString();
-        StringHelper.StringBuilderPool.Return(error);
+        StringHelper.StringBuilderPool.Release(error);
         throw new ScriptCompilationException(errorStr);
     }
 }

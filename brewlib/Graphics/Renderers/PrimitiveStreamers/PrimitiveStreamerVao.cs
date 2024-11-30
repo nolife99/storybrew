@@ -28,8 +28,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
         if (!indices.IsEmpty) initializeIndexBuffer(indices);
     }
 
-    public int DiscardedBufferCount { get; protected set; }
-    public int BufferWaitCount { get; protected set; }
+    public abstract ref TPrimitive PrimitiveAt(int index);
 
     public void Bind(Shader shader)
     {
@@ -47,7 +46,8 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
         GL.BindVertexArray(0);
         Bound = false;
     }
-    public abstract void Render(PrimitiveType type, ReadOnlySpan<TPrimitive> primitives, int vertices);
+
+    public abstract void Render(PrimitiveType type, int primitiveCount, int vertices);
     public void Dispose()
     {
         Dispose(true);
@@ -58,7 +58,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         GL.CreateBuffers(1, out IndexBufferId);
-        GL.NamedBufferData(IndexBufferId, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices),
+        GL.NamedBufferData(IndexBufferId, indices.Length * Marshal.SizeOf<ushort>(), ref MemoryMarshal.GetReference(indices),
             BufferUsageHint.StaticDraw);
     }
 
