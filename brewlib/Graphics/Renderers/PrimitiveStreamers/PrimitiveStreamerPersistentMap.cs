@@ -2,33 +2,34 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Util;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : unmanaged
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : struct
 {
-    nint bufferAddr;
+    nint bufferAddr, primitives;
     int bufferOffset, drawOffset, vertexBufferSize;
 
     public override ref TPrimitive PrimitiveAt(int index) => ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(),
-        bufferAddr + bufferOffset + index * PrimitiveSize);
+        primitives + index * PrimitiveSize);
 
     public override void Render(PrimitiveType type, int primitiveCount, int vertices)
     {
         var vertexDataSize = primitiveCount * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize)
         {
-            var dropped = MemoryMarshal.CreateSpan(ref PrimitiveAt(0), vertexDataSize);
             bufferOffset = 0;
-            dropped.CopyTo(MemoryMarshal.CreateSpan(ref PrimitiveAt(0), vertexBufferSize));
             drawOffset = 0;
         }
 
         if (GpuCommandSync.WaitForRange(bufferOffset, vertexDataSize)) expandVertexBuffer();
+
+        Unsafe.CopyBlock(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), bufferAddr + bufferOffset),
+            ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), primitives), (uint)vertexDataSize);
 
         var drawCount = primitiveCount * vertices;
         if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));
@@ -50,10 +51,13 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         bufferAddr = GL.MapNamedBufferRange(VertexBufferId, 0, vertexBufferSize,
             BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapCoherentBit |
             BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapInvalidateBufferBit);
+
+        primitives = Native.AllocateMemory(vertexBufferSize);
     }
     protected override void Dispose(bool disposing)
     {
         GL.UnmapNamedBuffer(VertexBufferId);
+        Native.FreeMemory(primitives);
 
         GpuCommandSync.DeleteFences();
         base.Dispose(disposing);

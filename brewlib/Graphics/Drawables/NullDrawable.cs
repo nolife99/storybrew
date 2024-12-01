@@ -4,7 +4,7 @@ using System.Numerics;
 using Cameras;
 using SixLabors.ImageSharp;
 
-public class NullDrawable : Drawable
+public sealed class NullDrawable : Drawable
 {
     public static readonly Drawable Instance = new NullDrawable();
 

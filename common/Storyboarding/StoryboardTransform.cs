@@ -7,13 +7,13 @@ using BrewLib.Util;
 /// <summary>
 ///     A transform that applies to a storyboard element.
 /// </summary>
-public class StoryboardTransform : IDisposable
+public sealed class StoryboardTransform : IDisposable
 {
     static readonly Pool<StoryboardTransform> pool = new(obj =>
     {
         obj.transform = Matrix3x2.Identity;
         obj.transformScale = obj.transformAngle = 0;
-    });
+    }, true);
 
     Matrix3x2 transform;
     float transformScale, transformAngle;

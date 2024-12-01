@@ -14,7 +14,7 @@ public static class GpuCommandSync
         GL.DeleteSync(obj.Fence);
         obj.Fence = 0;
         obj.Expired = false;
-    });
+    }, true);
 
     static readonly List<SyncRange> syncRanges = [];
 

@@ -240,12 +240,10 @@ public sealed class FontGenerator
             return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
         }
 
+        if (validBounds) realText.Mutate(b => b.Crop(bounds));
+
         var path = Path.Combine(assetDirectory, texturePath);
-        using (var stream = File.Create(path))
-        {
-            if (validBounds) realText.Mutate(b => b.Crop(bounds));
-            realText.SaveAsPng(stream);
-        }
+        using (var stream = File.Create(path)) realText.SaveAsPng(stream);
 
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
         if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) ||

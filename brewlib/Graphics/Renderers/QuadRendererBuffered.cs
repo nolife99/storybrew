@@ -114,7 +114,7 @@ public class QuadRendererBuffered : QuadRenderer
         // When the previous flush was bufferable, draw state should stay the same.
         if (!lastFlushWasBuffered)
         {
-            var combinedMatrix = transformMatrix * camera.ProjectionView;
+            var combinedMatrix = Matrix4x4.Multiply(transformMatrix, camera.ProjectionView);
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, ref combinedMatrix.M11);
 
             var samplerUnit = DrawState.BindTexture(currentTexture);

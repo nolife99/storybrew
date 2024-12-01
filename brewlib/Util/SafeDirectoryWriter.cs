@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-public class SafeDirectoryWriter : IDisposable
+public sealed class SafeDirectoryWriter : IDisposable
 {
     readonly HashSet<string> paths = [];
     readonly string targetDirectory, tempDirectory, backupDirectory;

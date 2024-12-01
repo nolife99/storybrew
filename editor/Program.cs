@@ -5,7 +5,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -30,7 +29,7 @@ public static class Program
     public static AudioManager AudioManager { get; set; }
     public static Settings Settings { get; set; }
 
-    [STAThread] static void Main(string[] args)
+    static void Main(string[] args)
     {
         if (args.Length != 0 && handleArguments(args)) return;
         mainThreadId = Environment.CurrentManagedThreadId;
@@ -57,7 +56,6 @@ public static class Program
             case "worker":
                 if (args.Length < 2) return false;
                 setupLogging(null, $"worker-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.log");
-                schedulingEnabled = true;
                 return true;
         }
 
@@ -70,12 +68,7 @@ public static class Program
 
     static void startEditor()
     {
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
-
-        schedulingEnabled = true;
         Settings = new();
-
         Updater.NotifyEditorRun();
 
         var displayDevice = findDisplayDevice();
@@ -86,7 +79,7 @@ public static class Program
             Trace.WriteLine(Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture));
 
             using Editor editor = new(window);
-            window.Resize += _ =>
+            window.Refresh += () =>
             {
                 editor.Draw();
                 window.Context.SwapBuffers();
@@ -153,7 +146,7 @@ public static class Program
     {
         const ContextFlags debugContext =
 #if DEBUG
-            ContextFlags.Debug;
+            ContextFlags.Debug | ContextFlags.ForwardCompatible;
 #else
             ContextFlags.ForwardCompatible;
 #endif
@@ -191,7 +184,6 @@ public static class Program
         while (!window.IsExiting)
         {
             var cur = GLFW.GetTime();
-            var focused = window.IsFocused;
             var fixedUpdates = 0;
 
             window.NewInputFrame();
@@ -199,24 +191,19 @@ public static class Program
 
             AudioManager.Update();
 
-            while (cur - fixedRate >= fixedRateUpdate && fixedUpdates < 2)
+            while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
             {
                 fixedRate += fixedRateUpdate;
-                ++fixedUpdates;
-
                 editor.Update((float)fixedRate);
             }
-
-            if (focused && fixedUpdates == 0 && fixedRate < cur && cur < fixedRate + fixedRateUpdate)
-                editor.Update((float)cur, false);
 
             if (!window.Exists || window.IsExiting) return;
 
             editor.Draw();
             window.Context.SwapBuffers();
 
-            if (!window.IsVisible) window.IsVisible = true;
-            while (scheduledActions.TryDequeue(out var action))
+            window.IsVisible = true;
+            while (scheduledActions.TryTake(out var action))
                 try
                 {
                     action();
@@ -227,12 +214,12 @@ public static class Program
                 }
 
             var active = GLFW.GetTime() - cur;
-            var sleepTime = (focused ? targetFrame : fixedRateUpdate) - active;
+            var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
             if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
 
             var frameTime = cur - prev;
             prev = cur;
-            if (lastStat + .15 > cur) continue;
+            if (lastStat + .1 > cur) continue;
 
             av = (frameTime + av) * .5;
             avActive = (active + avActive) * .5;
@@ -249,15 +236,10 @@ public static class Program
 
     #region Scheduling
 
-    static bool schedulingEnabled;
-    static readonly ConcurrentQueue<Action> scheduledActions = new();
+    static readonly ConcurrentBag<Action> scheduledActions = [];
 
-    public static void Schedule(Action action)
-    {
-        if (schedulingEnabled) scheduledActions.Enqueue(action);
-        else throw new InvalidOperationException("Scheduling isn't enabled!");
-    }
-    public static void Schedule(Action action, int delay) => Task.Delay(delay).ContinueWith(_ => Schedule(action));
+    public static void Schedule(Action action) => scheduledActions.Add(action);
+    public static void Schedule(Action action, int delay) => Task.Delay(delay).ContinueWith(_ => scheduledActions.Add(action));
 
     public static void RunMainThread(Action action)
     {
@@ -318,11 +300,11 @@ public static class Program
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
 
-        Task.Run(() =>
+        Task.Run(async () =>
         {
             while (true)
             {
-                Thread.Sleep(5000);
+                await Task.Delay(5000).ConfigureAwait(false);
                 Trace.Flush();
             }
         });

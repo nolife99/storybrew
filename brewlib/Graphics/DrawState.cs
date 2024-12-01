@@ -156,7 +156,7 @@ public static class DrawState
 
     public static T Prepare<T>(T renderer, Camera camera, RenderStates renderStates) where T : Renderer
     {
-        Renderer = Unsafe.As<T, Renderer>(ref renderer);
+        Renderer = renderer;
         renderer.Camera = camera;
         renderStates?.Apply();
         return renderer;
@@ -323,7 +323,7 @@ public static class DrawState
         }
     }
 
-    public static IDisposable Clip(Rectangle? newRegion)
+    static IDisposable Clip(Rectangle? newRegion)
     {
         var previousClipRegion = clipRegion;
         ClipRegion = clipRegion.HasValue && newRegion.HasValue ?
@@ -393,9 +393,9 @@ public static class DrawState
         var rendererVendor = GL.GetString(StringName.Vendor);
         Trace.WriteLine($"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
-        if (glVer < new Version(3, 3))
+        if (glVer < new Version(4, 5))
             throw new NotSupportedException(
-                $"This application requires at least OpenGL 3.3 (version {glVer} found)\n{rendererName} ({rendererVendor})");
+                $"This application requires at least OpenGL 4.5 (version {glVer} found)\n{rendererName} ({rendererVendor})");
 
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }

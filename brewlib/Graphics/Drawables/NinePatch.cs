@@ -8,13 +8,13 @@ using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 using Util;
 
-public class NinePatch : Drawable
+public sealed class NinePatch : Drawable
 {
     public FourSide Borders, Outset;
     public bool BordersOnly;
     public Rgba32 Color;
     public Texture2dRegion Texture;
-    public RenderStates RenderStates { get; private set; } = new();
+    public RenderStates RenderStates { get; } = new();
 
     public Vector2 PreferredSize => MinSize;
 
@@ -67,10 +67,5 @@ public class NinePatch : Drawable
         renderer.Draw(Texture, x2, y2, 0, 0, 1, 1, 0, color, Borders.Right, Borders.Bottom, Texture.Width, Texture.Height);
     }
 
-    #region IDisposable Support
-
-    public void Dispose() => Dispose(true);
-    protected virtual void Dispose(bool disposing) { }
-
-    #endregion
+    public void Dispose() => Texture.Dispose();
 }

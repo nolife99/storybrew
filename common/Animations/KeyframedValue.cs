@@ -201,9 +201,9 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         bool hasPair = false, forceNextFlat = loopable;
         Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;
 
-        for (var i = 0; i < keyframes.Count; ++i)
+        foreach (var t in keyframes)
         {
-            var endKeyframe = editKeyframe(keyframes[i], edit);
+            var endKeyframe = editKeyframe(t, edit);
             if (previous.HasValue)
             {
                 var startKeyframe = previous.Value;

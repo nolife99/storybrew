@@ -9,44 +9,35 @@ using SixLabors.ImageSharp;
 #pragma warning disable CS1591
 public abstract class Camera
 {
-    public static SizeF Resolution = new(1366, 768);
-    public static float ResolutionScale = OsuHitObject.WidescreenStoryboardSize.Height / Resolution.Height;
-    public static float AspectRatio = Resolution.Width / Resolution.Height;
+    public static readonly SizeF Resolution = new(1366, 768);
+    public static readonly float ResolutionScale = OsuHitObject.WidescreenStoryboardSize.Height / Resolution.Height;
+    public static readonly float AspectRatio = Resolution.Width / Resolution.Height;
 
     public abstract CameraState StateAt(float time);
 }
 
-public class CameraState(Matrix4x4 viewProjection,
-    float aspectRatio,
-    float focusDistance,
-    float resolutionScale,
-    float nearClip,
-    float nearFade,
-    float farFade,
-    float farClip)
+public record CameraState(Matrix4x4 ViewProjection,
+    float AspectRatio,
+    float FocusDistance,
+    float ResolutionScale,
+    float NearClip,
+    float NearFade,
+    float FarFade,
+    float FarClip)
 {
-    public float AspectRatio => aspectRatio;
-    public float FocusDistance => focusDistance;
-    public float ResolutionScale => resolutionScale;
-    public float NearClip => nearClip;
-    public float NearFade => nearFade;
-    public float FarFade => farFade;
-    public float FarClip => farClip;
-    public Matrix4x4 ViewProjection => viewProjection;
-
     public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
     {
-        var transformedPoint = Vector4.Transform(new Vector4(point, 1), transform);
-        var screenPosition = (new Vector2(transformedPoint.X, transformedPoint.Y) / Math.Abs(transformedPoint.W) + Vector2.One) /
-            2 * new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
+        var transformed = Vector4.Transform(new Vector4(point, 1), transform);
+        var screenPosition = (new Vector2(transformed.X, transformed.Y) / Math.Abs(transformed.W) + Vector2.One) / 2 *
+            new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
 
         return new(screenPosition.X - (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2,
-            screenPosition.Y, transformedPoint.Z / transformedPoint.W, transformedPoint.W);
+            screenPosition.Y, transformed.Z / transformed.W, transformed.W);
     }
     public float OpacityAt(float distance)
     {
-        if (distance < NearFade) return Math.Max(0, Math.Min((distance - NearClip) / (NearFade - NearClip), 1));
-        if (distance > FarFade) return Math.Max(0, Math.Min((FarClip - distance) / (FarClip - FarFade), 1));
+        if (distance < NearFade) return Math.Clamp((distance - NearClip) / (NearFade - NearClip), 0, 1);
+        if (distance > FarFade) return Math.Clamp((FarClip - distance) / (FarClip - FarFade), 0, 1);
         return 1;
     }
 }
@@ -96,23 +87,20 @@ public class PerspectiveCamera : Camera
 
         float fovY;
         if (HorizontalFov.Count > 0)
-        {
-            var fovX = float.DegreesToRadians(HorizontalFov.ValueAt(time));
-            fovY = 2 * float.Atan(float.Tan(fovX / 2) / aspectRatio);
-        }
+            fovY = 2 * float.Atan(float.Tan(float.DegreesToRadians(HorizontalFov.ValueAt(time)) * .5f) / aspectRatio);
         else
             fovY = VerticalFov.Count > 0 ?
                 float.DegreesToRadians(VerticalFov.ValueAt(time)) :
-                2 * float.Atan(Resolution.Height / 2 / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
+                2 * float.Atan(Resolution.Height * .5f / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
 
-        var focusDistance = Resolution.Height / 2 / float.Tan(fovY / 2);
-        var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance / 2, 1);
+        var focusDistance = Resolution.Height * .5f / float.Tan(fovY * .5f);
+        var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance * .5f, 1);
         var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5f;
 
         var view = Matrix4x4.CreateLookAt(cameraPosition, targetPosition, Up.ValueAt(time) * (1 / Up.ValueAt(time).Length()));
         var projection = Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip);
 
-        return new(view * projection, aspectRatio, focusDistance, ResolutionScale, nearClip,
+        return new(Matrix4x4.Multiply(view, projection), aspectRatio, focusDistance, ResolutionScale, nearClip,
             NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip, FarFade.Count > 0 ? FarFade.ValueAt(time) : farClip, farClip);
     }
 }

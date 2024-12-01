@@ -93,7 +93,7 @@ public class LineRendererBuffered : LineRenderer
         if (linesInBatch == 0) return;
         if (!lastFlushWasBuffered)
         {
-            var combinedMatrix = transformMatrix * camera.ProjectionView;
+            var combinedMatrix = Matrix4x4.Multiply(transformMatrix, camera.ProjectionView);
             GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, ref combinedMatrix.M11);
         }
 

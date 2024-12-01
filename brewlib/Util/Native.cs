@@ -1,10 +1,15 @@
 ﻿namespace BrewLib.Util;
 
 using System;
+using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
+using Image = OpenTK.Windowing.GraphicsLibraryFramework.Image;
 
 public static unsafe partial class Native
 {
@@ -180,6 +185,16 @@ public static unsafe partial class Native
         SetText = 0x000C
     }
 
+    public static nint AllocateMemory(int cb) => (nint)NativeMemory.Alloc((nuint)cb);
+    public static void FreeMemory(nint addr) => NativeMemory.Free((void*)addr);
+
+    class UnmanagedMemoryAllocator : MemoryAllocator
+    {
+        protected override int GetBufferCapacityInBytes() => int.MaxValue;
+        public override IMemoryOwner<T> Allocate<T>(int length, AllocationOptions options = AllocationOptions.None)
+            => new UnmanagedBuffer<T>(length, options);
+    }
+
     #region Win32
 
     [LibraryImport("user32")] private static partial nint SendMessageW(nint hWnd, uint msg, nuint wParam, nint lParam);
@@ -191,6 +206,8 @@ public static unsafe partial class Native
 
     public static void InitializeHandle(NativeWindow glfwWindow)
     {
+        Configuration.Default.MemoryAllocator = new UnmanagedMemoryAllocator();
+
         GLFWPtr = glfwWindow.WindowPtr;
         handle = GLFW.GetWin32Window(GLFWPtr);
     }
@@ -199,7 +216,7 @@ public static unsafe partial class Native
     {
         IconBitmapDecoder decoder;
         using (var iconResource = type.Assembly.GetManifestResourceStream(type, iconPath))
-            decoder = new(iconResource, BitmapCreateOptions.None, BitmapCacheOption.Default);
+            decoder = new(iconResource, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
 
         var frame = decoder.Frames[0];
         var bytesLength = frame.PixelWidth * frame.PixelHeight * 4;
@@ -211,4 +228,19 @@ public static unsafe partial class Native
     }
 
     #endregion
+}
+
+public unsafe class UnmanagedBuffer<T>(int length, AllocationOptions options = AllocationOptions.None)
+    : MemoryManager<T> where T : struct
+{
+    readonly void* ptr = options is AllocationOptions.None ?
+        NativeMemory.Alloc((nuint)length, (nuint)Marshal.SizeOf<T>()) :
+        NativeMemory.AllocZeroed((nuint)length, (nuint)Marshal.SizeOf<T>());
+
+    public nint Address => (nint)ptr;
+
+    protected override void Dispose(bool disposing) => NativeMemory.Free(ptr);
+    public override Span<T> GetSpan() => new(ptr, length);
+    public override MemoryHandle Pin(int elementIndex = 0) => new(Unsafe.Add<T>(ptr, elementIndex));
+    public override void Unpin() { }
 }

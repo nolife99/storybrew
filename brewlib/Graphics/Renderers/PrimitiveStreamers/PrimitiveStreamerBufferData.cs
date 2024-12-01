@@ -2,15 +2,15 @@
 
 using System;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
+using Util;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : unmanaged
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : struct
 {
-    readonly nint primitives = Marshal.AllocHGlobal(minRenderableVertexCount * Marshal.SizeOf<TPrimitive>());
+    nint primitives;
 
     public override ref TPrimitive PrimitiveAt(int index)
         => ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives + index * PrimitiveSize);
@@ -23,10 +23,15 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, 0);
         else GL.DrawArrays(type, 0, drawCount);
     }
+    protected override void initializeVertexBuffer()
+    {
+        base.initializeVertexBuffer();
+        primitives = Native.AllocateMemory(MinRenderableVertexCount * VertexDeclaration.VertexSize);
+    }
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
         if (!disposing) return;
-        Marshal.FreeHGlobal(primitives);
+        Native.FreeMemory(primitives);
     }
 }

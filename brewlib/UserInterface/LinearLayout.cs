@@ -278,13 +278,11 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         preferredSize = new(width + paddingH, height + paddingV);
     }
 
-    class LayoutItem
+    sealed record LayoutItem
     {
         public float Length;
         public Vector2 PreferredSize, MinSize, MaxSize;
         public bool Scalable;
         public Widget Widget;
-
-        public override string ToString() => $"{Widget} Scalable:{Scalable} Length:{Length} PreferredSize:{PreferredSize}";
     }
 }

@@ -793,7 +793,7 @@ public class OsbSprite : StoryboardObject
 
     #region Display
 
-    KeyValuePair<Func<ICommand, bool>, IAnimatedValueBuilder>[] displayValueBuilders;
+    (Func<ICommand, bool>, IAnimatedValueBuilder)[] displayValueBuilders;
     readonly AnimatedValue<CommandPosition> moveTimeline = new();
 
     readonly AnimatedValue<CommandDecimal> moveXTimeline = new(), moveYTimeline = new(), scaleTimeline = new(1),
@@ -843,42 +843,42 @@ public class OsbSprite : StoryboardObject
 
     void initializeDisplayValueBuilders() => displayValueBuilders =
     [
-        new(c => c is MoveCommand, new AnimatedValueBuilder<CommandPosition>(moveTimeline)),
-        new(c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(moveXTimeline)),
-        new(c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(moveYTimeline)),
-        new(c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(scaleTimeline)),
-        new(c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(scaleVecTimeline)),
-        new(c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(rotateTimeline)),
-        new(c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(fadeTimeline)),
-        new(c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(colorTimeline)),
-        new(c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending },
+        (c => c is MoveCommand, new AnimatedValueBuilder<CommandPosition>(moveTimeline)),
+        (c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(moveXTimeline)),
+        (c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(moveYTimeline)),
+        (c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(scaleTimeline)),
+        (c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(scaleVecTimeline)),
+        (c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(rotateTimeline)),
+        (c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(fadeTimeline)),
+        (c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(colorTimeline)),
+        (c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending },
             new AnimatedValueBuilder<CommandParameter>(additiveTimeline)),
-        new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal },
+        (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal },
             new AnimatedValueBuilder<CommandParameter>(flipHTimeline)),
-        new(c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical },
+        (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical },
             new AnimatedValueBuilder<CommandParameter>(flipVTimeline))
     ];
 
     void addDisplayCommand(ICommand command)
     {
         foreach (var builders in displayValueBuilders)
-            if (builders.Key(command))
-                builders.Value.Add(command);
+            if (builders.Item1(command))
+                builders.Item2.Add(command);
     }
 
     void startDisplayLoop(LoopCommand loopCommand)
     {
-        foreach (var builders in displayValueBuilders) builders.Value.StartDisplayLoop(loopCommand);
+        foreach (var builders in displayValueBuilders) builders.Item2.StartDisplayLoop(loopCommand);
     }
 
     void startDisplayTrigger(TriggerCommand triggerCommand)
     {
-        foreach (var builders in displayValueBuilders) builders.Value.StartDisplayTrigger(triggerCommand);
+        foreach (var builders in displayValueBuilders) builders.Item2.StartDisplayTrigger(triggerCommand);
     }
 
     void endDisplayComposites()
     {
-        foreach (var builders in displayValueBuilders) builders.Value.EndDisplayComposite();
+        foreach (var builders in displayValueBuilders) builders.Item2.EndDisplayComposite();
     }
 
     #endregion

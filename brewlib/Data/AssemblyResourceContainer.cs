@@ -54,7 +54,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
             if (stream is null) return null;
 
             buffer = GC.AllocateUninitializedArray<byte>((int)stream.Length);
-            stream.Read(buffer, 0, buffer.Length);
+            stream.ReadExactly(buffer);
         }
 
         return buffer;

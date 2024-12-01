@@ -267,7 +267,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     static string getStyleFlags(string styleName)
     {
         var index = styleName.LastIndexOf(' ');
-        return index == -1 ? null : styleName.Substring(index + 1, styleName.Length - index - 1);
+        return index == -1 ? null : styleName[(index + 1)..];
     }
     static string getImplicitParentStyleName(string styleName)
     {

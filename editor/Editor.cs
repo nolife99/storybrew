@@ -137,7 +137,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
         DrawState.CompleteFrame();
     }
 
-    void window_Closing(CancelEventArgs e) => e.Cancel = screenLayerManager.Close();
+    void window_Closing(CancelEventArgs e) => screenLayerManager.Close();
 
     void resizeToWindow(ResizeEventArgs e)
     {

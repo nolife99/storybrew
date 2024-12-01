@@ -169,8 +169,8 @@ public class CommandGenerator
     void commitKeyframes(Vector2 imageSize)
     {
         fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f * 100, 0, 100));
-        if (Math.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
-        if (Math.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
+        if (float.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
+        if (float.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalFades);
 
         positions.Simplify2dKeyframes(PositionTolerance, s => s);
@@ -181,7 +181,7 @@ public class CommandGenerator
         finalScales.Until(scales.StartTime);
         scales.TransferKeyframes(finalScales);
 
-        rotations.Simplify1dKeyframes(RotationTolerance, r => 180 / float.Pi * r);
+        rotations.Simplify1dKeyframes(RotationTolerance, float.RadiansToDegrees);
         finalRotations.Until(rotations.StartTime);
         rotations.TransferKeyframes(finalRotations);
 
@@ -345,7 +345,7 @@ public record State : IComparer<State>
             scale.X <= 0 || scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
-            new Vector2(noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
+            new(noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
                 noGen ? Position.Y : float.Round(Position.Y, generator.PositionDecimals)), imageSize * scale,
             noGen ? Rotation : float.Round(Rotation, generator.RotationDecimals), origin);
     }

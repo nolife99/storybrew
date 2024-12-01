@@ -12,7 +12,6 @@ using System.Threading;
 using Animations;
 using BrewLib.Graphics.Compression;
 using BrewLib.Util;
-using CommunityToolkit.HighPerformance.Buffers;
 using Mapset;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -26,25 +25,17 @@ public abstract class StoryboardObjectGenerator : Script
 {
     static readonly AsyncLocal<StoryboardObjectGenerator> instance = new();
 
-    readonly List<ConfigurableField> configurableFields;
+    readonly ConfigurableField[] configurableFields;
     GeneratorContext context;
 
     ///<summary>Reserved</summary>
-    protected StoryboardObjectGenerator()
+    protected StoryboardObjectGenerator() => configurableFields = GetType().GetFields().Select(field =>
     {
-        var fields = GetType().GetFields();
-        configurableFields = new(fields.Length);
-
-        for (int i = 0, order = 0; i < fields.Length; ++i)
-        {
-            var field = fields[i];
-            var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-            if (configurable is not null)
-                configurableFields.Add(new(field, configurable, field.GetValue(this),
-                    field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
-                    field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order++));
-        }
-    }
+        var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
+        return configurable is null ? null : new { Field = field, Configurable = configurable };
+    }).Where(item => item is not null).Select((item, order) => new ConfigurableField(item.Field, item.Configurable,
+        item.Field.GetValue(this), item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
+        item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order)).ToArray();
 
     ///<summary> Gets the currently executing script. </summary>
     public static StoryboardObjectGenerator Current => instance.Value;
@@ -223,7 +214,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (path is not null) AddDependency(path);
         var fft = context.GetFft(time, path, splitChannels);
         disposables.Add(fft);
-        return fft.Span;
+        return fft.GetSpan();
     }
 
     /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
@@ -240,10 +231,10 @@ public abstract class StoryboardObjectGenerator : Script
             (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
             fft.Length;
 
-        var resultFft = MemoryOwner<float>.Allocate(magnitudes);
+        UnmanagedBuffer<float> resultFft = new(magnitudes);
         disposables.Add(resultFft);
 
-        var resultSpan = resultFft.Span;
+        var resultSpan = resultFft.GetSpan();
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)
@@ -324,9 +315,8 @@ public abstract class StoryboardObjectGenerator : Script
         if (context is not null) throw new InvalidOperationException();
 
         var remainingFieldNames = config.FieldNames.ToList();
-        foreach (var configurableField in configurableFields)
+        foreach (var (field, configurableAttribute, o, beginsGroup, description, order) in configurableFields)
         {
-            var field = configurableField.Field;
             NamedValue[] allowedValues = null;
 
             var fieldType = field.FieldType;
@@ -345,10 +335,10 @@ public abstract class StoryboardObjectGenerator : Script
 
             try
             {
-                var displayName = configurableField.Attribute.DisplayName;
-                var initialValue = Convert.ChangeType(configurableField.InitialValue, fieldType, CultureInfo.InvariantCulture);
-                config.UpdateField(field.Name, displayName, configurableField.Description, configurableField.Order, fieldType,
-                    initialValue, allowedValues, configurableField.BeginsGroup);
+                var displayName = configurableAttribute.DisplayName;
+                var initialValue = Convert.ChangeType(o, fieldType, CultureInfo.InvariantCulture);
+                config.UpdateField(field.Name, displayName, description, order, fieldType, initialValue, allowedValues,
+                    beginsGroup);
 
                 var value = config.GetValue(field.Name);
                 field.SetValue(this, value);

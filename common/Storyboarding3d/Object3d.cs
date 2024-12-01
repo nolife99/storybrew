@@ -74,7 +74,7 @@ public class Object3d
     /// </summary>
     public void GenerateTreeStates(float time, CameraState camState, Object3dState parentState)
     {
-        Object3dState state = new(WorldTransformAt(time) * parentState.WorldTransform,
+        Object3dState state = new(Matrix4x4.Multiply(WorldTransformAt(time), parentState.WorldTransform),
             Coloring.ValueAt(time) * (InheritsColor ? parentState.Color : CommandColor.White),
             Opacity.ValueAt(time) * (InheritsOpacity ? parentState.Opacity : 1));
 

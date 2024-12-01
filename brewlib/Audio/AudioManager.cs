@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Data;
 using ManagedBass;
 
@@ -12,8 +13,27 @@ public sealed class AudioManager : IDisposable
 
     public AudioManager(nint handle)
     {
-        Bass.Init(Win: handle);
-        Bass.UpdatePeriod = 0;
+        Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
+        if (Bass.Init(Win: handle)) return;
+
+        Trace.WriteLine($"Failed to initialize audio with default device: {Bass.LastError}");
+
+        var initialized = false;
+        for (var i = 0; i < Bass.DeviceCount; i++)
+        {
+            var device = Bass.GetDeviceInfo(i);
+            if (device.Driver == null || device.IsDefault) continue;
+
+            if (Bass.Init(i, Win: handle))
+            {
+                initialized = true;
+                break;
+            }
+
+            Trace.WriteLine($"Failed to initialize audio with device {i}: {Bass.LastError}");
+        }
+
+        if (!initialized) throw new BassException(Bass.LastError);
     }
 
     public float Volume
@@ -33,12 +53,10 @@ public sealed class AudioManager : IDisposable
         for (var i = 0; i < audioChannels.Count; ++i)
         {
             var channel = audioChannels[i];
-            if (channel is null || !channel.Temporary || !channel.Completed) continue;
+            if (!channel.Temporary || !channel.Completed) continue;
             channel.Dispose();
             --i;
         }
-
-        Bass.Update(50);
     }
 
     public AudioStream LoadStream(string path, ResourceContainer resourceContainer = null)

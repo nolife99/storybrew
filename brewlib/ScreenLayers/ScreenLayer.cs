@@ -115,9 +115,11 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
         if (TransitionOutDuration == 0) Manager.Remove(this);
 
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
         GCSettings.LatencyMode = GCLatencyMode.Batch;
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-        GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.Default;
+        GCSettings.LatencyMode = GCLatencyMode.Interactive;
     }
 
     bool updateTransition(float delta, float duration, int direction)

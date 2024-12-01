@@ -479,7 +479,7 @@ public class Widget(WidgetManager manager) : IDisposable
         return false;
     }
 
-    protected static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
+    static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
     {
         if (handler is null) return evt.Handled;
         var invocationList = handler.GetInvocationList();

@@ -46,7 +46,7 @@ public static class StreamReaderExtensions
         if (separatorIndex == -1) throw new InvalidDataException($"{line} is not a key/value");
 
         var key = line[..separatorIndex].Trim();
-        var value = line.Slice(separatorIndex + 1, line.Length - 1 - separatorIndex).Trim();
+        var value = line[(separatorIndex + 1)..].Trim();
 
         action(key.ToString(), value.ToString());
     });

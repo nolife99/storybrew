@@ -62,7 +62,7 @@ public class Sprite3d : Node3d, HasOsbSprites
     /// <inheritdoc/>
     public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
     {
-        var wvp = object3dState.WorldTransform * cameraState.ViewProjection;
+        var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
         var screenPosition = CameraState.ToScreen(wvp, Vector3.Zero);
 
         var angle = 0f;

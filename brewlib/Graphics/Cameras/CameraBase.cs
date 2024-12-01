@@ -201,7 +201,7 @@ public abstract class CameraBase : Camera
         Recalculate(out view, out projection, out internalViewport, out extendedViewport);
         needsUpdate = false;
 
-        projectionView = view * projection;
+        projectionView = Matrix4x4.Multiply(view, projection);
         Matrix4x4.Invert(projectionView, out invertedProjectionView);
     }
 

@@ -1,10 +1,9 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using CommunityToolkit.HighPerformance.Buffers;
+using System.Buffers;
 using ManagedBass;
+using Util;
 
 public class FftStream : IDisposable
 {
@@ -21,7 +20,7 @@ public class FftStream : IDisposable
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out Frequency);
     }
 
-    public MemoryOwner<float> GetFft(float time, bool splitChannels = false)
+    public MemoryManager<float> GetFft(float time, bool splitChannels = false)
     {
         Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 
@@ -34,9 +33,8 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        var data = MemoryOwner<float>.Allocate(size);
-        if (Bass.ChannelGetData(stream, Unsafe.ByteOffset(ref Unsafe.NullRef<float>(), ref MemoryMarshal.GetReference(data.Span)),
-            (int)flags) == -1) throw new BassException(Bass.LastError);
+        UnmanagedBuffer<float> data = new(size);
+        if (Bass.ChannelGetData(stream, data.Address, (int)flags) == -1) throw new BassException(Bass.LastError);
 
         return data;
     }

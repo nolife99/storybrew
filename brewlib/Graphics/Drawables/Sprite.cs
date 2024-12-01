@@ -9,7 +9,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 using Util;
 
-public class Sprite : Drawable
+public sealed class Sprite : Drawable
 {
     readonly RenderStates RenderStates = new();
     public Rgba32 Color;
@@ -79,8 +79,7 @@ public class Sprite : Drawable
 
     #region IDisposable Support
 
-    public void Dispose() => Dispose(true);
-    protected virtual void Dispose(bool disposing) { }
+    public void Dispose() { }
 
     #endregion
 }

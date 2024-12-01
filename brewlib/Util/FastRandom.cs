@@ -8,9 +8,7 @@ public class FastRandom
     const double UNIT_INT = 1 / (int.MaxValue + 1d), UNIT_UINT = 1 / (uint.MaxValue + 1d);
     const uint Y = 842502087, Z = 3579807591, W = 273326509;
 
-    uint bitBuffer, bitMask = 1;
-
-    uint x, y, z, w;
+    uint bitBuffer, bitMask = 1, x, y, z, w;
 
     /// <summary> Creates an instance of the <see cref="FastRandom"/> class using a time-dependent seed value. </summary>
     public FastRandom() => Reinitialise(Environment.TickCount);
@@ -81,7 +79,7 @@ public class FastRandom
         return UNIT_INT * (int)(0x7FFFFFFF & (w = w ^ w >> 19 ^ t ^ t >> 8));
     }
 
-    /// <inheritdoc cref="Random.NextBytes"/>
+    /// <inheritdoc cref="Random.NextBytes(byte[])"/>
     public void NextBytes(byte[] buffer)
     {
         uint x = this.x, y = this.y, z = this.z, w = this.w, t;
@@ -127,7 +125,7 @@ public class FastRandom
         this.w = w;
     }
 
-    /// <inheritdoc cref="Random.NextBytes"/>
+    /// <inheritdoc cref="Random.NextBytes(byte[])"/>
     public byte[] NextBytes(int length)
     {
         var buffer = GC.AllocateUninitializedArray<byte>(length);

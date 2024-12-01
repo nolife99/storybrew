@@ -8,7 +8,7 @@ using SixLabors.ImageSharp;
 
 public sealed class CompositeDrawable : Drawable
 {
-    public List<Drawable> Drawables { get; private set; } = [];
+    public List<Drawable> Drawables { get; } = [];
 
     public Vector2 MinSize
     {
