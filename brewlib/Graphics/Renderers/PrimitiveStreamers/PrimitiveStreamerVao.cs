@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -58,8 +59,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         GL.CreateBuffers(1, out IndexBufferId);
-        GL.NamedBufferData(IndexBufferId, indices.Length * Marshal.SizeOf<ushort>(), ref MemoryMarshal.GetReference(indices),
-            BufferUsageHint.StaticDraw);
+        GL.NamedBufferStorage(IndexBufferId, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices), BufferStorageFlags.None);
     }
 
     void setupVertexArray(Shader shader)

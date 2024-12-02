@@ -107,8 +107,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             }
         }
 
-        return scriptContainer =
-            new ScriptContainer<TScript>(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
+        return scriptContainer = new(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
     }
 
     public IEnumerable<string> GetScriptNames()

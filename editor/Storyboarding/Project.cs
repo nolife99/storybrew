@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -438,7 +439,7 @@ public sealed partial class Project : IDisposable
         "../../../packs/{0}", RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
         string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
-    public static readonly IReadOnlyList<string> DefaultAssemblies =
+    public static readonly FrozenSet<string> DefaultAssemblies =
     [
         typeof(Font).Assembly.Location,
         typeof(IPathCollection).Assembly.Location,

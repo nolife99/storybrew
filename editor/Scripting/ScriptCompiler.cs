@@ -25,7 +25,7 @@ public static class ScriptCompiler
         {
             using var sourceStream = File.OpenRead(src);
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-            trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Latest))] = (src, sourceText);
+            trees[SyntaxFactory.ParseSyntaxTree(sourceText)] = (src, sourceText);
         }
 
         EmitResult result;

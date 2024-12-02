@@ -16,8 +16,7 @@ public class TextLayout
 
         foreach (var textLine in LineBreaker.Split(text, float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
         {
-            TextLayoutLine line = new(this, height, alignment, Lines.Count == 0);
-            line.Glyphs.Capacity = textLine.Length + 1;
+            TextLayoutLine line = new(this, height, alignment, Lines.Count == 0) { Glyphs = { Capacity = textLine.Length + 1 } };
             foreach (var c in textLine.Span) line.Add(font.GetGlyph(c), glyphIndex++);
 
             Lines.Add(line);

@@ -3,10 +3,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance.Buffers;
 using Data;
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL4;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
@@ -25,8 +26,9 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     {
         if (decoderOptions is null)
         {
-            decoderOptions = new() { Configuration = Configuration.Default.Clone() };
+            decoderOptions = new() { Configuration = Configuration.Default.Clone(), SkipMetadata = true };
             decoderOptions.Configuration.PreferContiguousImageBuffers = true;
+            decoderOptions.Configuration.StreamProcessingBufferSize = 16384;
         }
 
         if (File.Exists(filename))
@@ -69,19 +71,19 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
-        var textureId = GL.GenTexture();
+        GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
+        GL.TextureStorage2D(textureId, 1, sRgb ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8, width, height);
+
         using (var spanOwner = SpanOwner<Rgba32>.Allocate(width * height))
         {
             var arr = spanOwner.Span;
             arr.Fill(color);
 
-            DrawState.BindTexture(textureId);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ? PixelInternalFormat.Srgb : PixelInternalFormat.Rgba, width, height,
-                0, PixelFormat.Rgba, PixelType.UnsignedByte, ref MemoryMarshal.GetReference(arr));
+            GL.TextureSubImage2D(textureId, 0, 0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, ref MemoryMarshal.GetReference(arr));
         }
 
-        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        textureOptions.ApplyParameters(TextureTarget.Texture2D);
+        if (textureOptions.GenerateMipmaps) GL.GenerateTextureMipmap(textureId);
+        textureOptions.ApplyParameters(textureId);
 
         return new(textureId, width, height, description);
     }
@@ -94,17 +96,15 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
         var compress = DrawState.UseTextureCompression;
 
-        var textureId = GL.GenTexture();
-        DrawState.BindTexture(textureId);
+        GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
+        GL.TextureStorage2D(textureId, 1, Unsafe.BitCast<PixelInternalFormat, SizedInternalFormat>(sRgb ?
+            compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb :
+            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba), width, height);
 
-        GL.TexImage2D(TextureTarget.Texture2D, 0, sRgb ?
-                compress ? PixelInternalFormat.CompressedSrgbAlphaS3tcDxt5Ext : PixelInternalFormat.Srgb :
-                compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba, width, height, 0,
-            PixelFormat.Rgba, PixelType.UnsignedByte,
-            ref MemoryMarshal.GetReference(bitmap.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(0)));
+        GL.TextureSubImage2D(textureId, 0, 0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, ref MemoryMarshal.GetReference(bitmap.Frames.RootFrame.PixelBuffer.DangerousGetRowSpan(0)));
 
-        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
-        textureOptions.ApplyParameters(TextureTarget.Texture2D);
+        if (textureOptions.GenerateMipmaps) GL.GenerateTextureMipmap(textureId);
+        textureOptions.ApplyParameters(textureId);
 
         return new(textureId, width, height, description);
     }

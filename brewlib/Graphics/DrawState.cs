@@ -185,7 +185,7 @@ public static class DrawState
         }
     }
 
-    public static void SetTexturingMode(int samplerIndex, TextureTarget mode)
+    static void SetTexturingMode(int samplerIndex, TextureTarget mode)
     {
         var previousMode = samplerTexturingModes[samplerIndex];
         if (previousMode == mode) return;
@@ -196,7 +196,7 @@ public static class DrawState
         samplerTexturingModes[samplerIndex] = mode;
     }
 
-    public static void BindTexture(int textureId, int samplerIndex = 0, TextureTarget mode = TextureTarget.Texture2D)
+    static void BindTexture(int textureId, int samplerIndex = 0, TextureTarget mode = TextureTarget.Texture2D)
     {
         SetTexturingMode(samplerIndex, mode);
         ActiveTextureUnit = samplerIndex;
@@ -209,24 +209,24 @@ public static class DrawState
 
     public static int BindTexture(BindableTexture texture, bool activate = false)
     {
-        var texArr = ArrayPool<BindableTexture>.Shared.Rent(1);
-        texArr[0] = texture;
+        var texArr = ArrayPool<int>.Shared.Rent(1);
+        texArr[0] = texture.TextureId;
 
         var samplerUnit = BindTextures(texArr.AsSpan()[..1]);
-        ArrayPool<BindableTexture>.Shared.Return(texArr);
+        ArrayPool<int>.Shared.Return(texArr);
 
         if (activate) ActiveTextureUnit = samplerUnit;
         return samplerUnit;
     }
 
-    static int BindTextures(ReadOnlySpan<BindableTexture> textures)
+    static int BindTextures(ReadOnlySpan<int> textures)
     {
         Span<int> samplerIndexes = stackalloc int[textures.Length];
         var samplerCount = samplerTextureIds.Length;
 
         for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
         {
-            var textureId = textures[textureIndex].TextureId;
+            var textureId = textures[textureIndex];
 
             samplerIndexes[textureIndex] = -1;
             for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex)
@@ -240,9 +240,6 @@ public static class DrawState
         for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
         {
             if (samplerIndexes[textureIndex] != -1) continue;
-
-            var texture = textures[textureIndex];
-            var textureId = texture.TextureId;
 
             var first = true;
             var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
@@ -260,7 +257,7 @@ public static class DrawState
                 }
 
                 if (!isFreeSamplerUnit) continue;
-                BindTexture(textureId, samplerIndex);
+                BindTexture(textures[textureIndex], samplerIndex);
                 samplerIndexes[textureIndex] = samplerIndex;
                 lastRecycledTextureUnit = samplerIndex;
                 break;

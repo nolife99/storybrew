@@ -59,13 +59,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\brewlib\brewlib.csproj"/>
         <ProjectReference Include="..\common\common.csproj"/>
         <ProjectReference Include="..\tiny\tiny.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
     </ItemGroup>
 
 </Project>

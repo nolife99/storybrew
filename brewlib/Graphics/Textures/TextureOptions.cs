@@ -35,12 +35,12 @@ public class TextureOptions : IEquatable<TextureOptions>
         TextureMinFilter == other.TextureMinFilter && TextureMagFilter == other.TextureMagFilter &&
         TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
 
-    public void ApplyParameters(TextureTarget target)
+    public void ApplyParameters(int textureId)
     {
-        GL.TexParameter(target, TextureParameterName.TextureMinFilter, (int)TextureMinFilter);
-        GL.TexParameter(target, TextureParameterName.TextureMagFilter, (int)TextureMagFilter);
-        GL.TexParameter(target, TextureParameterName.TextureWrapS, (int)TextureWrapS);
-        GL.TexParameter(target, TextureParameterName.TextureWrapT, (int)TextureWrapT);
+        GL.TextureParameter(textureId, TextureParameterName.TextureMinFilter, (int)TextureMinFilter);
+        GL.TextureParameter(textureId, TextureParameterName.TextureMagFilter, (int)TextureMagFilter);
+        GL.TextureParameter(textureId, TextureParameterName.TextureWrapS, (int)TextureWrapS);
+        GL.TextureParameter(textureId, TextureParameterName.TextureWrapT, (int)TextureWrapT);
     }
 
     public override bool Equals(object obj) => Equals(obj as TextureOptions);

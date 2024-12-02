@@ -114,7 +114,7 @@ public static class GpuCommandSync
                         if (!canBlock) return true;
                         blocked = true;
                         waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
-                        timeout = long.MaxValue;
+                        timeout = 1000000000L;
                         break;
 
                     case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");

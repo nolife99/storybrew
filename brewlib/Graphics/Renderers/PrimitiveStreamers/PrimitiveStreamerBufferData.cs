@@ -17,21 +17,24 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
 
     public override void Render(PrimitiveType type, int primitiveCount, int vertices)
     {
-        GL.NamedBufferData(VertexBufferId, primitiveCount * PrimitiveSize, primitives, BufferUsageHint.StreamDraw);
+        var vertexDataSize = primitiveCount * PrimitiveSize;
+        GL.NamedBufferSubData(VertexBufferId, 0, vertexDataSize, primitives);
 
-        var drawCount = primitiveCount * vertices;
-        if (IndexBufferId != -1) GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, 0);
-        else GL.DrawArrays(type, 0, drawCount);
+        if (IndexBufferId != -1) GL.DrawElements(type, primitiveCount * vertices, DrawElementsType.UnsignedShort, 0);
+        else GL.DrawArrays(type, 0, primitiveCount * vertices);
+
+        GL.InvalidateBufferSubData(VertexBufferId, 0, vertexDataSize);
     }
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
         primitives = Native.AllocateMemory(MinRenderableVertexCount * VertexDeclaration.VertexSize);
+
+        GL.NamedBufferStorage(VertexBufferId, MinRenderableVertexCount * VertexDeclaration.VertexSize, 0, BufferStorageFlags.MapWriteBit | BufferStorageFlags.DynamicStorageBit);
     }
     protected override void Dispose(bool disposing)
     {
-        base.Dispose(disposing);
-        if (!disposing) return;
         Native.FreeMemory(primitives);
+        base.Dispose(disposing);
     }
 }
