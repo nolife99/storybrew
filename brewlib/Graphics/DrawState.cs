@@ -1,11 +1,9 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Cameras;
 using Data;
@@ -50,44 +48,45 @@ public static class DrawState
 
     public static void Initialize(ResourceContainer resourceContainer, int width, int height)
     {
-        GL.DebugMessageCallback((source, type, _, severity, _, message, _) =>
-        {
-            var str = Marshal.PtrToStringAnsi(message);
-            Trace.WriteLine("Debug message: " + str);
-
-            switch (source)
+        if (GLFW.ExtensionSupported("GL_KHR_debug"))
+            GL.DebugMessageCallback((source, type, _, severity, _, message, _) =>
             {
-                case DebugSource.DebugSourceApi: Trace.WriteLine("Source: API"); break;
-                case DebugSource.DebugSourceWindowSystem: Trace.WriteLine("Source: Window System"); break;
-                case DebugSource.DebugSourceShaderCompiler: Trace.WriteLine("Source: Shader Compiler"); break;
-                case DebugSource.DebugSourceThirdParty: Trace.WriteLine("Source: Third Party"); break;
-                case DebugSource.DebugSourceApplication: Trace.WriteLine("Source: Application"); break;
-                case DebugSource.DebugSourceOther: Trace.WriteLine("Source: Other"); break;
-            }
+                var str = Marshal.PtrToStringAnsi(message);
+                Trace.WriteLine("Debug message: " + str);
 
-            switch (type)
-            {
-                case DebugType.DebugTypeError: Trace.WriteLine("Type: Error"); break;
-                case DebugType.DebugTypeDeprecatedBehavior: Trace.WriteLine("Type: Deprecated Behaviour"); break;
-                case DebugType.DebugTypeUndefinedBehavior: Trace.WriteLine("Type: Undefined Behaviour"); break;
-                case DebugType.DebugTypePortability: Trace.WriteLine("Type: Portability"); break;
-                case DebugType.DebugTypePerformance: Trace.WriteLine("Type: Performance"); break;
-                case DebugType.DebugTypeMarker: Trace.WriteLine("Type: Marker"); break;
-                case DebugType.DebugTypePushGroup: Trace.WriteLine("Type: Push Group"); break;
-                case DebugType.DebugTypePopGroup: Trace.WriteLine("Type: Pop Group"); break;
-                case DebugType.DebugTypeOther: Trace.WriteLine("Type: Other"); break;
-            }
+                switch (source)
+                {
+                    case DebugSource.DebugSourceApi: Trace.WriteLine("Source: API"); break;
+                    case DebugSource.DebugSourceWindowSystem: Trace.WriteLine("Source: Window System"); break;
+                    case DebugSource.DebugSourceShaderCompiler: Trace.WriteLine("Source: Shader Compiler"); break;
+                    case DebugSource.DebugSourceThirdParty: Trace.WriteLine("Source: Third Party"); break;
+                    case DebugSource.DebugSourceApplication: Trace.WriteLine("Source: Application"); break;
+                    case DebugSource.DebugSourceOther: Trace.WriteLine("Source: Other"); break;
+                }
 
-            switch (severity)
-            {
-                case DebugSeverity.DebugSeverityHigh: Trace.WriteLine("Severity: high"); break;
-                case DebugSeverity.DebugSeverityMedium: Trace.WriteLine("Severity: medium"); break;
-                case DebugSeverity.DebugSeverityLow: Trace.WriteLine("Severity: low"); break;
-                case DebugSeverity.DebugSeverityNotification: Trace.WriteLine("Severity: notification"); break;
-            }
+                switch (type)
+                {
+                    case DebugType.DebugTypeError: Trace.WriteLine("Type: Error"); break;
+                    case DebugType.DebugTypeDeprecatedBehavior: Trace.WriteLine("Type: Deprecated Behaviour"); break;
+                    case DebugType.DebugTypeUndefinedBehavior: Trace.WriteLine("Type: Undefined Behaviour"); break;
+                    case DebugType.DebugTypePortability: Trace.WriteLine("Type: Portability"); break;
+                    case DebugType.DebugTypePerformance: Trace.WriteLine("Type: Performance"); break;
+                    case DebugType.DebugTypeMarker: Trace.WriteLine("Type: Marker"); break;
+                    case DebugType.DebugTypePushGroup: Trace.WriteLine("Type: Push Group"); break;
+                    case DebugType.DebugTypePopGroup: Trace.WriteLine("Type: Pop Group"); break;
+                    case DebugType.DebugTypeOther: Trace.WriteLine("Type: Other"); break;
+                }
 
-            if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
-        }, 0);
+                switch (severity)
+                {
+                    case DebugSeverity.DebugSeverityHigh: Trace.WriteLine("Severity: high"); break;
+                    case DebugSeverity.DebugSeverityMedium: Trace.WriteLine("Severity: medium"); break;
+                    case DebugSeverity.DebugSeverityLow: Trace.WriteLine("Severity: low"); break;
+                    case DebugSeverity.DebugSeverityNotification: Trace.WriteLine("Severity: notification"); break;
+                }
+
+                if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
+            }, 0);
 
         retrieveRendererInfo();
         if (UseSrgb && GLFW.ExtensionSupported("GL_ARB_framebuffer_object"))
@@ -170,76 +169,52 @@ public static class DrawState
     static int[] samplerTextureIds;
     static TextureTarget[] samplerTexturingModes;
 
-    static int activeTextureUnit, lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits,
-        maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
-
-    public static int ActiveTextureUnit
-    {
-        get => activeTextureUnit;
-        set
-        {
-            if (activeTextureUnit == value) return;
-
-            GL.ActiveTexture(TextureUnit.Texture0 + value);
-            activeTextureUnit = value;
-        }
-    }
+    static int lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits,
+        maxCombinedTextureImageUnits;
 
     static void SetTexturingMode(int samplerIndex, TextureTarget mode)
     {
-        var previousMode = samplerTexturingModes[samplerIndex];
+        ref var previousMode = ref samplerTexturingModes[samplerIndex];
         if (previousMode == mode) return;
 
         if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
-        ActiveTextureUnit = samplerIndex;
-
-        samplerTexturingModes[samplerIndex] = mode;
+        previousMode = mode;
     }
 
-    static void BindTexture(int textureId, int samplerIndex = 0, TextureTarget mode = TextureTarget.Texture2D)
+    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode = TextureTarget.Texture2D)
     {
         SetTexturingMode(samplerIndex, mode);
-        ActiveTextureUnit = samplerIndex;
 
-        if (samplerTextureIds[samplerIndex] == textureId) return;
+        ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
+        if (samplerTextureId == textureId) return;
 
-        GL.BindTexture(mode, textureId);
-        samplerTextureIds[samplerIndex] = textureId;
+        GL.BindTextureUnit(samplerIndex, textureId);
+        samplerTextureId = textureId;
     }
 
-    public static int BindTexture(BindableTexture texture, bool activate = false)
-    {
-        var texArr = ArrayPool<int>.Shared.Rent(1);
-        texArr[0] = texture.TextureId;
-
-        var samplerUnit = BindTextures(texArr.AsSpan()[..1]);
-        ArrayPool<int>.Shared.Return(texArr);
-
-        if (activate) ActiveTextureUnit = samplerUnit;
-        return samplerUnit;
-    }
+    public static int BindTexture(int textureId) => BindTextures([textureId]);
 
     static int BindTextures(ReadOnlySpan<int> textures)
     {
         Span<int> samplerIndexes = stackalloc int[textures.Length];
         var samplerCount = samplerTextureIds.Length;
 
-        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
+        for (var i = 0; i < textures.Length; ++i)
         {
-            var textureId = textures[textureIndex];
+            var textureId = textures[i];
 
-            samplerIndexes[textureIndex] = -1;
-            for (var samplerIndex = 0; samplerIndex < samplerCount; ++samplerIndex)
-                if (samplerTextureIds[samplerIndex] == textureId)
+            samplerIndexes[i] = -1;
+            for (var j = 0; j < samplerCount; ++j)
+                if (samplerTextureIds[j] == textureId)
                 {
-                    samplerIndexes[textureIndex] = samplerIndex;
+                    samplerIndexes[i] = j;
                     break;
                 }
         }
 
-        for (int textureIndex = 0, textureCount = textures.Length; textureIndex < textureCount; ++textureIndex)
+        for (var i = 0; i < textures.Length; ++i)
         {
-            if (samplerIndexes[textureIndex] != -1) continue;
+            if (samplerIndexes[i] != -1) continue;
 
             var first = true;
             var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
@@ -257,8 +232,8 @@ public static class DrawState
                 }
 
                 if (!isFreeSamplerUnit) continue;
-                BindTexture(textures[textureIndex], samplerIndex);
-                samplerIndexes[textureIndex] = samplerIndex;
+                BindTexture(textures[i], samplerIndex);
+                samplerIndexes[i] = samplerIndex;
                 lastRecycledTextureUnit = samplerIndex;
                 break;
             }
@@ -272,8 +247,7 @@ public static class DrawState
         for (var i = 0; i < samplerTextureIds.Length; ++i)
             if (samplerTextureIds[i] == textureId)
             {
-                ActiveTextureUnit = i;
-                GL.BindTexture(samplerTexturingModes[i], 0);
+                GL.BindTextureUnit(i, 0);
                 samplerTextureIds[i] = 0;
             }
     }
@@ -304,7 +278,7 @@ public static class DrawState
     public static Rectangle? ClipRegion
     {
         get => clipRegion;
-        private set
+        set
         {
             if (clipRegion == value) return;
 
@@ -312,11 +286,10 @@ public static class DrawState
             clipRegion = value;
 
             SetCapability(EnableCap.ScissorTest, clipRegion.HasValue);
-            if (clipRegion.HasValue)
-            {
-                var actualClipRegion = Rectangle.Intersect(clipRegion.Value, viewport);
-                GL.Scissor(actualClipRegion.X, actualClipRegion.Y, actualClipRegion.Width, actualClipRegion.Height);
-            }
+            if (!clipRegion.HasValue) return;
+
+            var actualClipRegion = Rectangle.Intersect(clipRegion.Value, viewport);
+            GL.Scissor(actualClipRegion.X, actualClipRegion.Y, actualClipRegion.Width, actualClipRegion.Height);
         }
     }
 
@@ -362,13 +335,13 @@ public static class DrawState
     static readonly Dictionary<EnableCap, bool> capabilityCache = [];
     internal static void SetCapability(EnableCap capability, bool enable)
     {
-        ref var enableRef = ref CollectionsMarshal.GetValueRefOrNullRef(capabilityCache, capability);
-        if (!Unsafe.IsNullRef(ref enableRef) && enableRef == enable) return;
+        ref var enableRef = ref CollectionsMarshal.GetValueRefOrAddDefault(capabilityCache, capability, out var exists);
+        if (!exists && enableRef == enable) return;
 
         if (enable) GL.Enable(capability);
         else GL.Disable(capability);
 
-        capabilityCache[capability] = enable;
+        enableRef = enable;
     }
 
     #endregion
@@ -390,9 +363,12 @@ public static class DrawState
         var rendererVendor = GL.GetString(StringName.Vendor);
         Trace.WriteLine($"Renderer: {rendererName} | Vendor: {rendererVendor}");
 
-        if (glVer < new Version(4, 5))
+        if (glVer < new Version(3, 3))
             throw new NotSupportedException(
-                $"This application requires at least OpenGL 4.5 (version {glVer} found)\n{rendererName} ({rendererVendor})");
+                $"This application requires at least OpenGL 3.3 (version {glVer} found)\n{rendererName} ({rendererVendor})");
+
+        if (!GLFW.ExtensionSupported("GL_ARB_direct_state_access"))
+            throw new NotSupportedException("This application requires the OpenGL extension 'ARB_direct_state_access'");
 
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }

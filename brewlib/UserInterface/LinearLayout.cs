@@ -109,7 +109,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         var totalSpace = horizontal ? innerSize.X : innerSize.Y;
         var usedSpace = 0f;
 
-        List<LayoutItem> items = [];
+        List<LayoutItem> items = new(Children.Count);
         foreach (var child in Children)
         {
             if (child.AnchorTarget is not null) continue;

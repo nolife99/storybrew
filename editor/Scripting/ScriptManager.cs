@@ -110,22 +110,9 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         return scriptContainer = new(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
     }
 
-    public IEnumerable<string> GetScriptNames()
-    {
-        HashSet<string> projectScriptNames = [];
-        foreach (var scriptPath in Directory.EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
-        {
-            var name = Path.GetFileNameWithoutExtension(scriptPath);
-            projectScriptNames.Add(name);
-            yield return name;
-        }
-
-        foreach (var scriptPath in Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly))
-        {
-            var name = Path.GetFileNameWithoutExtension(scriptPath);
-            if (!projectScriptNames.Contains(name)) yield return name;
-        }
-    }
+    public IEnumerable<string> GetScriptNames() => Directory.EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
+        .Select(Path.GetFileNameWithoutExtension).Union(Directory
+            .EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly).Select(Path.GetFileNameWithoutExtension));
 
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {

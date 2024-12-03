@@ -25,8 +25,7 @@ public class QuadRendererBuffered : QuadRenderer
     readonly Shader shader;
 
     Camera camera;
-    int currentSamplerUnit, quadsInBatch;
-    Texture2d currentTexture;
+    int currentSamplerUnit, quadsInBatch, currentTexture;
 
     bool disposed, lastFlushWasBuffered, rendering;
 
@@ -103,7 +102,7 @@ public class QuadRendererBuffered : QuadRenderer
         primitiveStreamer.Unbind();
         shader.End();
 
-        currentTexture = null;
+        currentTexture = 0;
         rendering = false;
     }
 
@@ -132,10 +131,11 @@ public class QuadRendererBuffered : QuadRenderer
     }
     public void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
-        if (currentTexture != texture.BindableTexture)
+        var textureId = texture.BindableTexture.TextureId;
+        if (currentTexture != textureId)
         {
             DrawState.FlushRenderer();
-            currentTexture = texture.BindableTexture;
+            currentTexture = textureId;
         }
         else if (quadsInBatch == maxQuadsPerBatch) DrawState.FlushRenderer(true);
 

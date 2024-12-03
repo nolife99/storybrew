@@ -64,9 +64,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     ///<summary> The amount of keyframes in the set. </summary>
     public int Count => keyframes.Count;
 
-    ///<inheritdoc/>
-    public IEnumerator<Keyframe<TValue>> GetEnumerator() => keyframes.GetEnumerator();
-
+    IEnumerator<Keyframe<TValue>> IEnumerable<Keyframe<TValue>>.GetEnumerator() => keyframes.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => keyframes.GetEnumerator();
 
     /// <summary>

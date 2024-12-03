@@ -20,6 +20,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
 
     public readonly InputManager InputManager;
     public readonly Widget Root;
+    readonly StackLayout rootContainer;
     public readonly ScreenLayerManager ScreenLayerManager;
     public readonly Skin Skin;
 
@@ -28,7 +29,6 @@ public sealed class WidgetManager : InputHandler, IDisposable
     public Widget HoveredWidget;
     Widget keyboardFocus;
     Vector2 mousePosition;
-    StackLayout rootContainer;
 
     public WidgetManager(ScreenLayerManager screenLayerManager, InputManager inputManager, Skin skin)
     {

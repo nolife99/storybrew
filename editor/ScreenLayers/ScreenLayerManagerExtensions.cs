@@ -23,7 +23,7 @@ public static class ScreenLayerManagerExtensions
         };
 
         if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-            Program.Schedule(() => callback(dialog.SelectedPath));
+            Program.RunMainThread(() => callback(dialog.SelectedPath));
     });
 
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
@@ -44,7 +44,7 @@ public static class ScreenLayerManagerExtensions
         };
 
         if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-            Program.Schedule(() => callback(dialog.FileName));
+            Program.RunMainThread(() => callback(dialog.FileName));
     });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
@@ -65,7 +65,7 @@ public static class ScreenLayerManagerExtensions
         };
 
         if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-            Program.Schedule(() => callback(dialog.FileName));
+            Program.RunMainThread(() => callback(dialog.FileName));
     });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Action action)

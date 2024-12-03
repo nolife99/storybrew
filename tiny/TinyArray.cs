@@ -1,6 +1,7 @@
 ﻿namespace Tiny;
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -11,7 +12,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
     public TinyArray()
     {
         const int InitialCapacity = 4;
-        tokens = new TinyToken[InitialCapacity];
+        tokens = ArrayPool<TinyToken>.Shared.Rent(InitialCapacity);
         Count = 0;
     }
 
@@ -106,8 +107,10 @@ public class TinyArray : TinyToken, IList<TinyToken>
     {
         if (tokens.Length >= capacity) return;
 
-        var newTokens = new TinyToken[Math.Max(capacity, tokens.Length * 2)];
+        var newTokens = ArrayPool<TinyToken>.Shared.Rent(Math.Max(capacity, tokens.Length * 2));
         Array.Copy(tokens, newTokens, Count);
+
+        ArrayPool<TinyToken>.Shared.Return(tokens);
         tokens = newTokens;
     }
 }

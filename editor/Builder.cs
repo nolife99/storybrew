@@ -39,7 +39,9 @@ public static class Builder
             foreach (var path in Directory.EnumerateFiles(scriptsDirectory, "*.cs", SearchOption.TopDirectoryOnly))
                 addFile(archive, path, scriptsDirectory, "scripts");
 
-            addFile(archive, "glfw3.dll", Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native"));
+            var nativeDllDir = Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native");
+            foreach (var path in Directory.EnumerateFiles(nativeDllDir, "*.dll", SearchOption.TopDirectoryOnly))
+                addFile(archive, Path.GetFileName(path), nativeDllDir);
         }
         catch (Exception e)
         {

@@ -48,9 +48,8 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
     protected override void Layout()
     {
         base.Layout();
-        for (var i = 0; i < Children.Count; ++i)
+        foreach (var child in Children)
         {
-            var child = Children[i];
             if (child.AnchorTarget is not null) continue;
             if (child.AnchorFrom != child.AnchorTo) continue;
 

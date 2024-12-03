@@ -14,10 +14,10 @@ public class TextLayout
         var width = 0f;
         var height = 0f;
 
-        foreach (var textLine in LineBreaker.Split(text, float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
+        foreach (var (start, length) in LineBreaker.Split(text, float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
         {
-            TextLayoutLine line = new(this, height, alignment, Lines.Count == 0) { Glyphs = { Capacity = textLine.Length + 1 } };
-            foreach (var c in textLine.Span) line.Add(font.GetGlyph(c), glyphIndex++);
+            TextLayoutLine line = new(this, height, alignment, Lines.Count == 0) { Glyphs = { Capacity = start + 1 } };
+            foreach (var c in text.AsSpan(start, length)) line.Add(font.GetGlyph(c), glyphIndex++);
 
             Lines.Add(line);
             width = Math.Max(width, line.Width);

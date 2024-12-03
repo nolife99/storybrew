@@ -90,7 +90,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         drawOffset = 0;
     }
 
-    public new static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
-        GLFW.ExtensionSupported("GL_ARB_map_buffer_range") && GpuCommandSync.HasCapabilities() &&
-        PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
+    public new static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_map_buffer_range") &&
+        GpuCommandSync.HasCapabilities() && PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
 }

@@ -12,7 +12,7 @@ public class VertexAttribute
 
     public string Name;
     public bool Normalized;
-    public VertexAttribPointerType Type = VertexAttribPointerType.Float;
+    public VertexAttribType Type = VertexAttribType.Float;
     public AttributeUsage Usage = AttributeUsage.Undefined;
 
     public string ShaderTypeName => ComponentCount == 1 ? "float" : $"vec{ComponentCount}";
@@ -45,7 +45,7 @@ public class VertexAttribute
             Name = ColorAttributeName,
             ComponentCount = 4,
             ComponentSize = 1,
-            Type = VertexAttribPointerType.UnsignedByte,
+            Type = VertexAttribType.UnsignedByte,
             Normalized = true,
             Usage = AttributeUsage.Color
         } :

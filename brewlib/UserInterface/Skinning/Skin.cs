@@ -28,24 +28,25 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     public Drawable GetDrawable(string name) => drawables.TryGetValue(name, out var drawable) ? drawable : NullDrawable.Instance;
 
     public T GetStyle<T>(string name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
-    WidgetStyle GetStyle(Type type, string name)
+    WidgetStyle GetStyle(Type type, ReadOnlySpan<char> name)
     {
         while (true)
         {
-            name ??= "default";
+            if (name.IsEmpty) name = "default";
             if (!stylesPerType.TryGetValue(type, out var styles)) return null;
 
             var n = name;
-            while (n is not null)
+            var altLookup = styles.GetAlternateLookup<ReadOnlySpan<char>>();
+            while (!n.IsEmpty)
             {
-                if (styles.TryGetValue(n, out var style)) return style;
+                if (altLookup.TryGetValue(n, out var style)) return style;
                 n = getImplicitParentStyleName(n);
             }
 
-            if (getBaseStyleName(name) == "default") return null;
+            if (getBaseStyleName(name) is "default") return null;
 
             var flags = getStyleFlags(name);
-            name = flags is not null ? $"default {flags}" : "default";
+            name = !flags.IsEmpty ? $"default {flags}" : "default";
         }
     }
 
@@ -171,10 +172,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
                         var parentStyle = defaultStyle;
                         var implicitParentStyleName = getImplicitParentStyleName(styleName);
-                        if (implicitParentStyleName is not null)
+                        if (!implicitParentStyleName.IsEmpty)
                         {
-                            if (!styles.TryGetValue(implicitParentStyleName, out parentStyle) &&
-                                styleTypeObject.Value<TinyToken>(implicitParentStyleName) is not null)
+                            var altLookup = styles.GetAlternateLookup<ReadOnlySpan<char>>();
+                            if (!altLookup.TryGetValue(implicitParentStyleName, out parentStyle) &&
+                                styleTypeObject.Value<TinyToken>(implicitParentStyleName.ToString()) is not null)
                                 throw new InvalidDataException(
                                     $"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
 
@@ -259,20 +261,20 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     }
     static T resolve<T>(TinyToken data, TinyObject constants) => resolveConstants(data, constants).Value<T>();
 
-    static string getBaseStyleName(string styleName)
+    static ReadOnlySpan<char> getBaseStyleName(ReadOnlySpan<char> styleName)
     {
         var index = styleName.IndexOf(' ');
         return index == -1 ? styleName : styleName[..index];
     }
-    static string getStyleFlags(string styleName)
+    static ReadOnlySpan<char> getStyleFlags(ReadOnlySpan<char> styleName)
     {
         var index = styleName.LastIndexOf(' ');
-        return index == -1 ? null : styleName[(index + 1)..];
+        return index == -1 ? ReadOnlySpan<char>.Empty : styleName[(index + 1)..];
     }
-    static string getImplicitParentStyleName(string styleName)
+    static ReadOnlySpan<char> getImplicitParentStyleName(ReadOnlySpan<char> styleName)
     {
         var index = styleName.LastIndexOf(' ');
-        return index == -1 ? null : styleName[..index];
+        return index == -1 ? ReadOnlySpan<char>.Empty : styleName[..index];
     }
     static Func<TinyToken, TinyObject, Skin, object> getFieldParser(Type fieldType)
     {

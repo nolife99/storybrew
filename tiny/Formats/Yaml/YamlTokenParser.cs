@@ -11,7 +11,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
     {
         TinyToken result = null;
 
-        ParseContext<YamlTokenType> context = new(tokens, new AnyParser(r => result = r));
+        using ParseContext<YamlTokenType> context = new(tokens, new AnyParser(r => result = r));
         while (context.CurrentToken is not null)
         {
             switch (context.CurrentToken.Type)
@@ -29,8 +29,6 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
 
             context.Parser.Parse(context);
         }
-
-        context.End();
 
         return result;
     }

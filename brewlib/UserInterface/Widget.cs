@@ -199,7 +199,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     readonly List<Widget> children = [];
 
-    public IReadOnlyList<Widget> Children
+    public ICollection<Widget> Children
     {
         get => children;
         init

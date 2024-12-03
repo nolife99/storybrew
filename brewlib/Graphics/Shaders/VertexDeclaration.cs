@@ -22,28 +22,30 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
         }
     }
 
-    public VertexAttribute this[int index] => vertexAttributes[index];
     public int AttributeCount => vertexAttributes.Length;
 
     public VertexAttribute GetAttribute(AttributeUsage usage) => Array.Find(vertexAttributes, a => a.Usage == usage);
 
-    public void ActivateAttributes(Shader shader)
+    public void ActivateAttributes(Shader shader, int vao)
     {
         foreach (var attribute in vertexAttributes)
         {
             var attributeLocation = shader.GetAttributeLocation(attribute.Name);
             if (attributeLocation < 0) continue;
-            GL.EnableVertexAttribArray(attributeLocation);
-            GL.VertexAttribPointer(attributeLocation, attribute.ComponentCount, attribute.Type, attribute.Normalized, VertexSize,
+
+            GL.EnableVertexArrayAttrib(vao, attributeLocation);
+            GL.VertexArrayAttribFormat(vao, attributeLocation, attribute.ComponentCount, attribute.Type, attribute.Normalized,
                 attribute.Offset);
+
+            GL.VertexArrayAttribBinding(vao, attributeLocation, 0);
         }
     }
-    public void DeactivateAttributes(Shader shader)
+    public void DeactivateAttributes(Shader shader, int vao)
     {
         foreach (var attribute in vertexAttributes)
         {
             var attributeLocation = shader.GetAttributeLocation(attribute.Name);
-            if (attributeLocation >= 0) GL.DisableVertexAttribArray(attributeLocation);
+            if (attributeLocation >= 0) GL.DisableVertexArrayAttrib(vao, attributeLocation);
         }
     }
 

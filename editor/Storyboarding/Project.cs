@@ -51,6 +51,8 @@ public sealed partial class Project : IDisposable
 
     internal bool DisplayDebugWarning, ShowHitObjects;
 
+    string projectFolderPath, projectAssetFolderPath;
+
     Project(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
     {
         this.projectPath = projectPath;
@@ -95,9 +97,8 @@ public sealed partial class Project : IDisposable
                     QueueEffectUpdate(effect);
         };
     }
-
-    public string ProjectFolderPath => Path.GetDirectoryName(projectPath);
-    public string ProjectAssetFolderPath => Path.Combine(ProjectFolderPath, "assetlibrary");
+    public string ProjectFolderPath => projectFolderPath ??= Path.GetDirectoryName(projectPath);
+    public string ProjectAssetFolderPath => projectAssetFolderPath ??= Path.Combine(ProjectFolderPath, "assetlibrary");
 
     public string AudioPath
     {
@@ -119,7 +120,7 @@ public sealed partial class Project : IDisposable
         }
     }
 
-    string OsbPath
+    public string OsbPath
     {
         get
         {
@@ -202,7 +203,7 @@ public sealed partial class Project : IDisposable
 
     bool allowEffectUpdates = true;
 
-    readonly AsyncActionsProcessor<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
+    readonly AsyncActionQueue<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
 
     public void QueueEffectUpdate(Effect effect)
     {
@@ -273,7 +274,7 @@ public sealed partial class Project : IDisposable
     void refreshEffectsStatus()
     {
         var previousStatus = EffectsStatus;
-        var isUpdating = effectUpdateQueue?.TaskCount > 0;
+        var isUpdating = effectUpdateQueue?.TaskCount != 0;
         var hasError = false;
 
         foreach (var effect in effects)
@@ -389,8 +390,7 @@ public sealed partial class Project : IDisposable
 
     void mapsetManager_OnFileChanged(object sender, FileSystemEventArgs e)
     {
-        var extension = Path.GetExtension(e.Name);
-        switch (extension)
+        switch (Path.GetExtension(e.Name))
         {
             case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
             case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
@@ -423,8 +423,7 @@ public sealed partial class Project : IDisposable
     {
         if (Disposed) return;
 
-        var extension = Path.GetExtension(e.Name);
-        switch (extension)
+        switch (Path.GetExtension(e.Name))
         {
             case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
             case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
@@ -448,10 +447,10 @@ public sealed partial class Project : IDisposable
         typeof(Script).Assembly.Location,
         typeof(Misc).Assembly.Location,
         typeof(Ref<>).Assembly.Location,
-        .. Directory.EnumerateFiles(
-            string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"), "*.dll"),
-        .. Directory.EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
-            "*.dll")
+        .. Directory
+            .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
+                "*.dll").Concat(Directory.EnumerateFiles(
+                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"), "*.dll"))
     ];
 
     HashSet<string> importedAssemblies = [];
@@ -463,12 +462,12 @@ public sealed partial class Project : IDisposable
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
 
-            importedAssemblies = value as HashSet<string> ?? [..value];
+            importedAssemblies = value as HashSet<string> ?? value.ToHashSet();
             scriptManager.ReferencedAssemblies = ReferencedAssemblies;
         }
     }
 
-    IEnumerable<string> ReferencedAssemblies => DefaultAssemblies.Union(importedAssemblies);
+    public IEnumerable<string> ReferencedAssemblies => DefaultAssemblies.Union(importedAssemblies);
 
     #endregion
 

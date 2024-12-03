@@ -119,23 +119,20 @@ public class ScriptedEffect : Effect
         }
 
         changeStatus(EffectStatus.Ready, log: context.Log);
-        Program.Schedule(() =>
+        if (Disposed)
         {
-            if (Disposed)
-            {
-                newDependencyWatcher.Dispose();
-                return;
-            }
+            newDependencyWatcher.Dispose();
+            return;
+        }
 
-            multithreaded = context.Multithreaded;
-            beatmapDependent = context.BeatmapDependent;
-            dependencyWatcher?.Dispose();
-            dependencyWatcher = newDependencyWatcher;
+        multithreaded = context.Multithreaded;
+        beatmapDependent = context.BeatmapDependent;
+        dependencyWatcher?.Dispose();
+        dependencyWatcher = newDependencyWatcher;
 
-            if (Project.Disposed) return;
+        if (Project.Disposed) return;
 
-            UpdateLayers(context.EditorLayers);
-        });
+        Program.Schedule(() => UpdateLayers(context.EditorLayers));
     }
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();

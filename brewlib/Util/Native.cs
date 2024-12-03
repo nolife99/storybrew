@@ -188,7 +188,7 @@ public static unsafe partial class Native
     public static nint AllocateMemory(int cb) => (nint)NativeMemory.Alloc((nuint)cb);
     public static void FreeMemory(nint addr) => NativeMemory.Free((void*)addr);
 
-    class UnmanagedMemoryAllocator : MemoryAllocator
+    sealed class UnmanagedMemoryAllocator : MemoryAllocator
     {
         protected override int GetBufferCapacityInBytes() => int.MaxValue;
         public override IMemoryOwner<T> Allocate<T>(int length, AllocationOptions options = AllocationOptions.None)
@@ -230,7 +230,7 @@ public static unsafe partial class Native
     #endregion
 }
 
-public unsafe class UnmanagedBuffer<T>(int length, AllocationOptions options = AllocationOptions.None)
+public sealed unsafe class UnmanagedBuffer<T>(int length, AllocationOptions options = AllocationOptions.None)
     : MemoryManager<T> where T : struct
 {
     readonly void* ptr = options is AllocationOptions.None ?
@@ -238,6 +238,7 @@ public unsafe class UnmanagedBuffer<T>(int length, AllocationOptions options = A
         NativeMemory.AllocZeroed((nuint)length, (nuint)Marshal.SizeOf<T>());
 
     public nint Address => (nint)ptr;
+    public ref T this[int index] => ref Unsafe.AsRef<T>(Unsafe.Add<T>(ptr, index));
 
     protected override void Dispose(bool disposing) => NativeMemory.Free(ptr);
     public override Span<T> GetSpan() => new(ptr, length);

@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -157,7 +158,6 @@ public static class Program
         {
             Flags = debugContext,
             Profile = ContextProfile.Core,
-            APIVersion = new(4, 6),
             CurrentMonitor = displayDevice.Handle,
             Title = Name,
             StartVisible = false
@@ -300,14 +300,8 @@ public static class Program
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
 
-        Task.Run(async () =>
-        {
-            while (true)
-            {
-                await Task.Delay(5000).ConfigureAwait(false);
-                Trace.Flush();
-            }
-        });
+        Timer timer = new(s => Unsafe.As<TraceListener>(s).Flush(), listener, 5000, 1000);
+        domain.ProcessExit += (_, _) => timer.Dispose();
     }
 
     static void logError(Exception e, string filename, bool show)

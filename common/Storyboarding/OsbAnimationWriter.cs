@@ -25,8 +25,8 @@ public class OsbAnimationWriter(OsbAnimation animation,
     readonly OsbAnimation animation = animation;
 
     string getLastFramePath() => Path.Combine(Path.GetDirectoryName(animation.TexturePath),
-        string.Concat(Path.GetFileNameWithoutExtension(animation.TexturePath), animation.FrameCount - 1,
-            Path.GetExtension(animation.TexturePath)));
+        string.Concat(Path.GetFileNameWithoutExtension(animation.TexturePath),
+            (animation.FrameCount - 1).ToString(exportSettings.NumberFormat), Path.GetExtension(animation.TexturePath)));
 
 #pragma warning disable CS1591
     protected override OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)

@@ -180,7 +180,7 @@ public static class LineBreaker
         0x0085 // NEXT LINE
     ];
 
-    public static IEnumerable<ReadOnlyMemory<char>> Split(string textRaw, float maxWidth, Func<char, int> measure)
+    public static IEnumerable<(int Start, int Length)> Split(string textRaw, float maxWidth, Func<char, int> measure)
     {
         int startIndex = 0, endIndex = 0, lineWidth = 0;
 
@@ -193,7 +193,7 @@ public static class LineBreaker
             {
                 endIndex = findBreakIndex(textRaw, startIndex, endIndex);
 
-                yield return text.Slice(startIndex, endIndex - startIndex + 1);
+                yield return (startIndex, endIndex - startIndex + 1);
                 startIndex = endIndex + 1;
                 endIndex = startIndex;
                 lineWidth = 0;
@@ -203,7 +203,7 @@ public static class LineBreaker
 
             if (!mustBreakAfter(textRaw, endIndex)) continue;
 
-            yield return text.Slice(startIndex, endIndex - startIndex + 1);
+            yield return (startIndex, endIndex - startIndex + 1);
             startIndex = endIndex + 1;
             endIndex = startIndex;
             lineWidth = 0;
@@ -211,7 +211,7 @@ public static class LineBreaker
             --endIndex;
         }
 
-        if (text.Length > 0 && mustBreakAfter(textRaw, text.Length - 1, true)) yield return ReadOnlyMemory<char>.Empty;
+        if (text.Length > 0 && mustBreakAfter(textRaw, text.Length - 1, true)) yield return (0, 0);
     }
     static int findBreakIndex(ReadOnlySpan<char> text, int startIndex, int endIndex)
     {

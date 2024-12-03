@@ -20,7 +20,7 @@ public static class ListExtensions
         list[to] = item;
     }
 
-    public static void Dispose<TKey, TValue>(this IDictionary<TKey, TValue> disposable) where TValue : IDisposable
+    public static void Dispose<TKey, TValue>(this Dictionary<TKey, TValue> disposable) where TValue : IDisposable
     {
         foreach (var reference in disposable.Values) reference?.Dispose();
     }

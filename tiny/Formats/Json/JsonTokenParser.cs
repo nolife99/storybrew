@@ -11,9 +11,8 @@ public class JsonTokenParser : TokenParser<JsonTokenType>
     {
         TinyToken result = null;
 
-        var context = new ParseContext<JsonTokenType>(tokens, new AnyParser(r => result = r));
+        using ParseContext<JsonTokenType> context = new(tokens, new AnyParser(r => result = r));
         while (context.CurrentToken is not null) context.Parser.Parse(context);
-        context.End();
 
         return result;
     }

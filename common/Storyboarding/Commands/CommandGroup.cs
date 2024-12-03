@@ -8,7 +8,7 @@ using System.IO;
 public abstract class CommandGroup : ICommand
 {
     protected readonly HashSet<ICommand> commands = [];
-    public IEnumerable<ICommand> Commands => commands;
+    public IReadOnlyCollection<ICommand> Commands => commands;
 
     public float CommandsStartTime
     {

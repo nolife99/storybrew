@@ -55,8 +55,6 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
                 },
             LineSpacing = foundMetrics ? Math.Max(metrics.VerticalMetrics.LineHeight * .001f, 1) : 1,
             Dpi = dpi,
-            HintingMode = HintingMode.Standard,
-            KerningMode = KerningMode.Standard,
             FallbackFontFamilies = fallback
         };
 

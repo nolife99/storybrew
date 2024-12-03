@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -36,7 +35,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
         if (Bound || shader is null) return;
 
         if (CurrentShader != shader) setupVertexArray(shader);
-        else GL.BindVertexArray(VertexArrayId);
+        GL.BindVertexArray(VertexArrayId);
 
         Bound = true;
     }
@@ -59,26 +58,21 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         GL.CreateBuffers(1, out IndexBufferId);
-        GL.NamedBufferStorage(IndexBufferId, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices), BufferStorageFlags.None);
+        GL.NamedBufferStorage(IndexBufferId, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices),
+            BufferStorageFlags.None);
     }
 
     void setupVertexArray(Shader shader)
     {
         var initial = CurrentShader is null;
-
         if (initial) GL.CreateVertexArrays(1, out VertexArrayId);
-        GL.BindVertexArray(VertexArrayId);
 
-        // Vertex
+        GL.VertexArrayVertexBuffer(VertexArrayId, 0, VertexBufferId, 0, VertexDeclaration.VertexSize);
+        if (!initial) VertexDeclaration.DeactivateAttributes(CurrentShader, VertexArrayId);
+        VertexDeclaration.ActivateAttributes(shader, VertexArrayId);
 
-        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-        if (!initial) VertexDeclaration.DeactivateAttributes(CurrentShader);
-        VertexDeclaration.ActivateAttributes(shader);
-        GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+        if (initial && IndexBufferId != -1) GL.VertexArrayElementBuffer(VertexArrayId, IndexBufferId);
 
-        // Index
-
-        if (initial && IndexBufferId != -1) GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
         CurrentShader = shader;
     }
 
@@ -86,24 +80,12 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
     protected virtual void Dispose(bool disposing)
     {
         Unbind();
-        if (VertexArrayId != -1)
-        {
-            GL.BindVertexArray(0);
-            GL.DeleteVertexArray(VertexArrayId);
-        }
 
-        if (VertexBufferId != -1)
-        {
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.DeleteBuffer(VertexBufferId);
-        }
-
-        if (IndexBufferId != -1)
-        {
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
-            GL.DeleteBuffer(IndexBufferId);
-        }
+        if (VertexArrayId != -1) GL.DeleteVertexArray(VertexArrayId);
+        if (VertexBufferId != -1) GL.DeleteBuffer(VertexBufferId);
+        if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
     }
 
-    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_vertex_array_object");
+    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_vertex_array_object") &&
+        GLFW.ExtensionSupported("GL_ARB_buffer_storage");
 }
