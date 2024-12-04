@@ -19,7 +19,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
     readonly FontFamily[] fallback = [SystemFonts.Get("Segoe UI Symbol", CultureInfo.InvariantCulture)];
     readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
 
-    readonly Dictionary<string, FontCollection> fontCollections = [];
+    readonly FontCollection fontCollection = new();
     readonly Dictionary<string, FontFamily> fontFamilies = [];
     readonly Dictionary<int, Font> fonts = [];
 
@@ -90,11 +90,8 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         {
             using (var stream = resourceContainer.GetStream(name, ResourceSource.Embedded))
                 if (stream is not null)
-                {
-                    if (!fontCollections.TryGetValue(name, out var collection)) fontCollections[name] = collection = new();
                     Trace.WriteLine(
-                        $"Loaded font {(fontFamily = collection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
-                }
+                        $"Loaded font {(fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
 
             fontFamilies[name] = fontFamily;
         }

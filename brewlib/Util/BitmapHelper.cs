@@ -8,7 +8,7 @@ public static class BitmapHelper
     public static bool IsFullyTransparent(Image<Rgba32> source)
     {
         var buffer = source.Frames.RootFrame.PixelBuffer;
-        for (var y = 0; y < source.Height; y++)
+        for (var y = 0; y < source.Height; ++y)
             foreach (var pixel in buffer.DangerousGetRowSpan(y))
                 if (pixel.A != 0)
                     return false;

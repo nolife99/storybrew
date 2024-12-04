@@ -143,10 +143,12 @@ public class Widget(WidgetManager manager) : IDisposable
     protected virtual void DrawChildren(DrawContext drawContext, float actualOpacity)
     {
         if (children.Count == 0) return;
-        using (ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : null)
-            foreach (var child in children)
-                if (child.Displayed)
-                    child.Draw(drawContext, actualOpacity);
+        var clip = ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : null;
+        foreach (var child in children)
+            if (child.Displayed)
+                child.Draw(drawContext, actualOpacity);
+
+        clip?.Invoke();
     }
     protected virtual void DrawForeground(DrawContext drawContext, float actualOpacity)
         => foreground?.Draw(drawContext, manager.Camera, Bounds, actualOpacity);

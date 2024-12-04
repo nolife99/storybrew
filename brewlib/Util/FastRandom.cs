@@ -79,8 +79,8 @@ public class FastRandom
         return UNIT_INT * (int)(0x7FFFFFFF & (w = w ^ w >> 19 ^ t ^ t >> 8));
     }
 
-    /// <inheritdoc cref="Random.NextBytes(byte[])"/>
-    public void NextBytes(byte[] buffer)
+    /// <inheritdoc cref="Random.NextBytes(Span{byte})"/>
+    public void NextBytes(Span<byte> buffer)
     {
         uint x = this.x, y = this.y, z = this.z, w = this.w, t;
         var i = 0;

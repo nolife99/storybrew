@@ -4,14 +4,13 @@ using System;
 using System.Numerics;
 using Animations;
 using Mapset;
-using SixLabors.ImageSharp;
 
 #pragma warning disable CS1591
 public abstract class Camera
 {
-    public static readonly SizeF Resolution = new(1366, 768);
-    public static readonly float ResolutionScale = OsuHitObject.WidescreenStoryboardSize.Height / Resolution.Height;
-    public static readonly float AspectRatio = Resolution.Width / Resolution.Height;
+    public static readonly Vector2 Resolution = new(1366, 768);
+    public static readonly float ResolutionScale = OsuHitObject.WidescreenStoryboardSize.Height / Resolution.Y;
+    public static readonly float AspectRatio = Resolution.X / Resolution.Y;
 
     public abstract CameraState StateAt(float time);
 }
@@ -91,9 +90,9 @@ public class PerspectiveCamera : Camera
         else
             fovY = VerticalFov.Count > 0 ?
                 float.DegreesToRadians(VerticalFov.ValueAt(time)) :
-                2 * float.Atan(Resolution.Height * .5f / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
+                2 * float.Atan(Resolution.Y * .5f / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
 
-        var focusDistance = Resolution.Height * .5f / float.Tan(fovY * .5f);
+        var focusDistance = Resolution.Y * .5f / float.Tan(fovY * .5f);
         var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance * .5f, 1);
         var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5f;
 

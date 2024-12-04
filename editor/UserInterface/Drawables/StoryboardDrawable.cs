@@ -21,8 +21,11 @@ public sealed class StoryboardDrawable(Project project) : Drawable
     {
         project.DisplayTime = Time;
         if (Clip)
-            using (DrawState.Clip(bounds, camera))
-                project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
+        {
+            var clip = DrawState.Clip(bounds, camera);
+            project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
+            clip();
+        }
         else
         {
             project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);

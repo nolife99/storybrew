@@ -89,6 +89,8 @@ public sealed class FontGenerator
     readonly string assetDirectory;
 
     readonly Dictionary<string, FontTexture> cache = [];
+
+    readonly FastRandom debugRandom;
     readonly FontDescription description;
     readonly FontEffect[] effects;
 
@@ -131,6 +133,8 @@ public sealed class FontGenerator
             LineSpacing = foundMetrics ? metrics.VerticalMetrics.LineHeight * .001f : 1,
             Dpi = dpi
         };
+
+        if (description.Debug) debugRandom = new();
     }
 
     /// <summary> The directory to the font textures. </summary>
@@ -146,10 +150,6 @@ public sealed class FontGenerator
 
     FontTexture generateTexture(string text)
     {
-        var measuredSize = TextMeasurer.MeasureAdvance(text, format);
-        var baseWidth = (int)float.Ceiling(measuredSize.Width);
-        var baseHeight = (int)float.Ceiling(measuredSize.Height);
-
         float effectsWidth = 0, effectsHeight = 0;
         foreach (var t in effects)
         {
@@ -160,8 +160,9 @@ public sealed class FontGenerator
 
         var padding = description.Padding;
 
-        var width = (int)float.Ceiling(baseWidth + effectsWidth + padding.X * 2);
-        var height = (int)float.Ceiling(baseHeight + effectsHeight + padding.Y * 2);
+        var measuredSize = TextMeasurer.MeasureAdvance(text, format);
+        var width = (int)float.Ceiling(measuredSize.Width + effectsWidth + padding.X * 2);
+        var height = (int)float.Ceiling(measuredSize.Height + effectsHeight + padding.Y * 2);
 
         var paddingX = padding.X + effectsWidth / 2;
         var paddingY = padding.Y + effectsHeight / 2;
@@ -169,6 +170,9 @@ public sealed class FontGenerator
 
         var offsetX = -paddingX;
         var offsetY = -paddingY;
+
+        var baseWidth = (int)float.Ceiling(measuredSize.Width);
+        var baseHeight = (int)float.Ceiling(measuredSize.Height);
 
         if (string.IsNullOrWhiteSpace(text) || width == 0 || height == 0)
             return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height, null);
@@ -180,8 +184,9 @@ public sealed class FontGenerator
         {
             if (description.Debug)
             {
-                FastRandom r = new(cache.Count);
-                b.Clear(new Rgb24((byte)r.Next(100, 255), (byte)r.Next(100, 255), (byte)r.Next(100, 255)));
+                debugRandom.Reinitialise(cache.Count);
+                b.Clear(new Rgb24((byte)debugRandom.Next(100, 255), (byte)debugRandom.Next(100, 255),
+                    (byte)debugRandom.Next(100, 255)));
             }
 
             foreach (var t in effects)

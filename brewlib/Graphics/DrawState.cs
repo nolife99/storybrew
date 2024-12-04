@@ -13,7 +13,6 @@ using Renderers;
 using SixLabors.ImageSharp;
 using Text;
 using Textures;
-using Util;
 
 public static class DrawState
 {
@@ -48,8 +47,8 @@ public static class DrawState
 
     public static void Initialize(ResourceContainer resourceContainer, int width, int height)
     {
-        if (GLFW.ExtensionSupported("GL_KHR_debug"))
-            GL.DebugMessageCallback((source, type, _, severity, _, message, _) =>
+        if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
+            GL.Arb.DebugMessageCallback((source, type, _, severity, _, message, _) =>
             {
                 var str = Marshal.PtrToStringAnsi(message);
                 Trace.WriteLine("Debug message: " + str);
@@ -293,16 +292,16 @@ public static class DrawState
         }
     }
 
-    static IDisposable Clip(Rectangle? newRegion)
+    static Action Clip(Rectangle? newRegion)
     {
         var previousClipRegion = clipRegion;
         ClipRegion = clipRegion.HasValue && newRegion.HasValue ?
             Rectangle.Intersect(clipRegion.Value, newRegion.Value) :
             newRegion;
 
-        return new ActionDisposable(() => ClipRegion = previousClipRegion);
+        return () => ClipRegion = previousClipRegion;
     }
-    public static IDisposable Clip(RectangleF bounds, Camera camera)
+    public static Action Clip(RectangleF bounds, Camera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
         return Clip(new((int)float.Round(screenBounds.Left),

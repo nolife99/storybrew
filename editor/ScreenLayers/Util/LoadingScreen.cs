@@ -2,7 +2,7 @@
 
 using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
+using System.Threading;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 
@@ -14,7 +14,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
 
     public override void Load()
     {
-        Task.Run(() =>
+        ThreadPool.UnsafeQueueUserWorkItem(_ =>
         {
             Exception ex = null;
             try
@@ -58,7 +58,7 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
                 StringHelper.StringBuilderPool.Release(sb);
                 Exit();
             });
-        });
+        }, null);
 
         base.Load();
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)

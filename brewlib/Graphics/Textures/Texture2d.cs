@@ -28,7 +28,6 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         {
             decoderOptions = new() { Configuration = Configuration.Default.Clone(), SkipMetadata = true };
             decoderOptions.Configuration.PreferContiguousImageBuffers = true;
-            decoderOptions.Configuration.StreamProcessingBufferSize = 16384;
         }
 
         if (File.Exists(filename))
