@@ -16,7 +16,20 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
     readonly Dictionary<string, Texture2dRegion> textures = [];
 
-    public float UncompressedMemoryUseMb => textures.Values.Sum(texture => texture.Size.X * texture.Size.Y) / 1024 / 1024;
+    public float UncompressedMemoryUseMb
+    {
+        get
+        {
+            var sum = 0f;
+            foreach (var texture in textures.Values)
+            {
+                var size = texture.Size;
+                sum += size.X * size.Y;
+            }
+            
+            return sum / 1024 / 1024;
+        }
+    }
 
     public Texture2dRegion Get(string filename)
     {

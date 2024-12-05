@@ -140,7 +140,7 @@ public static class Updater
         if (readOnly && File.Exists(destinationFilename))
         {
             var attributes = File.GetAttributes(destinationFilename);
-            if (!attributes.HasFlag(FileAttributes.ReadOnly))
+            if ((attributes & FileAttributes.ReadOnly) == 0)
             {
                 // Don't update files that became readonly when coming from a version that didn't have them
                 if (fromVersion < readOnlyVersion) return;

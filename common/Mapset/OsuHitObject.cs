@@ -116,19 +116,19 @@ public record OsuHitObject
         var customSampleSet = controlPoint.CustomSampleSet;
         var volume = controlPoint.Volume;
 
-        if (flags.HasFlag(HitObjectFlag.Circle))
+        if ((flags & HitObjectFlag.Circle) != 0)
             return OsuCircle.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
                 volume);
 
-        if (flags.HasFlag(HitObjectFlag.Slider))
+        if ((flags & HitObjectFlag.Slider) != 0)
             return OsuSlider.Parse(beatmap, values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet,
                 additionsSampleSet, customSampleSet, volume);
 
-        if (flags.HasFlag(HitObjectFlag.Hold))
+        if ((flags & HitObjectFlag.Hold) != 0)
             return OsuHold.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
                 volume);
 
-        if (flags.HasFlag(HitObjectFlag.Spinner))
+        if ((flags & HitObjectFlag.Spinner) != 0)
             return OsuSpinner.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
                 volume);
 

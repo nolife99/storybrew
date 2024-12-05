@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Animations;
-using BrewLib.Util;
 using Commands;
 using CommandValues;
 using Scripting;
@@ -12,19 +11,6 @@ using Scripting;
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
-    internal static readonly Pool<State> statePool = new(obj =>
-    {
-        obj.Additive = false;
-        obj.Color = CommandColor.White;
-        obj.FlipH = false;
-        obj.FlipV = false;
-        obj.Opacity = 0;
-        obj.Position = new(320, 240);
-        obj.Rotation = 0;
-        obj.Scale = CommandScale.One;
-        obj.Time = 0;
-    });
-
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
 
@@ -149,12 +135,9 @@ public class CommandGenerator
                     break;
             }
 
-            if (previousState is not null) statePool.Release(previousState);
             previousState = state;
             wasVisible = isVisible;
         }
-
-        statePool.Release(previousState);
 
         if (wasVisible) commitKeyframes(imageSize);
         if (everVisible)

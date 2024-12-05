@@ -81,11 +81,7 @@ public class TextureOptions : IEquatable<TextureOptions>
                 if (fieldData is not null)
                 {
                     var parser = getFieldParser(fieldType);
-                    if (parser is not null)
-                    {
-                        var value = parser.Invoke(fieldData);
-                        field.SetValue(obj, value);
-                    }
+                    if (parser is not null) field.SetValue(obj, parser(fieldData));
                     else Trace.TraceWarning($"No parser for {fieldType}");
                 }
             }

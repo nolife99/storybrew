@@ -7,7 +7,6 @@ using Util;
 public interface ResourceContainer
 {
     Stream GetStream(string path, ResourceSource sources);
-    byte[] GetBytes(string path, ResourceSource sources);
     string GetString(string path, ResourceSource sources);
 
     SafeWriteStream GetWriteStream(string path);

@@ -1,0 +1,6 @@
+﻿{
+  "configProperties": {
+    "System.Runtime.TieredCompilation.QuickJit": false,
+    "System.Threading.ThreadPool.UseWindowsThreadPool": true
+  }
+}

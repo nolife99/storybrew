@@ -9,18 +9,19 @@ using Util;
 
 public static class GpuCommandSync
 {
-    static readonly Pool<SyncRange> syncRangePool = new(obj =>
+    static readonly Lazy<Pool<SyncRange>> syncRangePool = new(() => new(obj =>
     {
         GL.DeleteSync(obj.Fence);
         obj.Fence = 0;
         obj.Expired = false;
-    }, true);
+    }, true), true);
 
     static readonly List<SyncRange> syncRanges = [];
 
     public static void DeleteFences()
     {
-        foreach (var range in syncRanges) syncRangePool.Release(range);
+        foreach (var range in syncRanges) syncRangePool.Value.Release(range);
+        syncRangePool.Value.Dispose();
     }
     public static bool WaitForAll()
     {
@@ -28,7 +29,7 @@ public static class GpuCommandSync
 
         var blocked = syncRanges[^1].Wait(true);
 
-        foreach (var range in syncRanges) syncRangePool.Release(range);
+        foreach (var range in syncRanges) syncRangePool.Value.Release(range);
         syncRanges.Clear();
 
         return blocked;
@@ -49,7 +50,7 @@ public static class GpuCommandSync
     }
     public static void LockRange(int index, int length)
     {
-        var item = syncRangePool.Retrieve();
+        var item = syncRangePool.Value.Retrieve();
 
         item.Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
         item.Index = index;
@@ -79,7 +80,7 @@ public static class GpuCommandSync
 
     static void clearToIndex(int index)
     {
-        for (var i = 0; i <= index; ++i) syncRangePool.Release(syncRanges[i]);
+        for (var i = 0; i <= index; ++i) syncRangePool.Value.Release(syncRanges[i]);
         syncRanges.RemoveRange(0, index + 1);
     }
 

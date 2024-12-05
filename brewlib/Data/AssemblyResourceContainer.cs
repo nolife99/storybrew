@@ -1,9 +1,12 @@
 ﻿namespace BrewLib.Data;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using Util;
 
@@ -11,6 +14,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
     : ResourceContainer
 {
     readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
+    static readonly Dictionary<string, ZipArchive> archives = [];
 
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
@@ -21,7 +25,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
 
         if (Path.IsPathRooted(path))
         {
-            if (sources.HasFlag(ResourceSource.Absolute))
+            if ((sources & ResourceSource.Absolute) != 0)
             {
                 if (File.Exists(path)) return File.OpenRead(path);
             }
@@ -29,16 +33,35 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
         }
         else
         {
-            if (sources.HasFlag(ResourceSource.Relative))
+            if ((sources & ResourceSource.Relative) != 0)
             {
                 var combinedPath = basePath is not null ? Path.Combine(basePath, path) : path;
                 if (File.Exists(combinedPath)) return File.OpenRead(combinedPath);
             }
 
-            if (sources.HasFlag(ResourceSource.Embedded))
+            if ((sources & ResourceSource.Embedded) != 0)
             {
-                var stream = assembly.GetManifestResourceStream($"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
-                if (stream is not null) return stream;
+                var stream = assembly.GetManifestResourceStream($"{baseNamespace}.zip");
+                if (stream is not null)
+                {
+                    using ZipArchive archive = new(stream, ZipArchiveMode.Read, false);
+
+                    var entry = archive.GetEntry(path);
+                    if (entry is not null)
+                    {
+                        using var entryStream = entry.Open();
+                        MemoryStream bytes = new();
+                        entryStream.CopyTo(bytes);
+
+                        bytes.Position = 0;
+                        return bytes;
+                    }
+                }
+                else
+                {
+                    stream = assembly.GetManifestResourceStream($"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
+                    if (stream is not null) return stream;
+                }
             }
         }
 
@@ -46,24 +69,13 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
         return null;
     }
 
-    public byte[] GetBytes(string path, ResourceSource sources = ResourceSource.Embedded)
-    {
-        byte[] buffer;
-        using (var stream = GetStream(path, sources))
-        {
-            if (stream is null) return null;
-
-            buffer = GC.AllocateUninitializedArray<byte>((int)stream.Length);
-            stream.ReadExactly(buffer);
-        }
-
-        return buffer;
-    }
-
     public string GetString(string path, ResourceSource sources = ResourceSource.Embedded)
     {
-        var bytes = GetBytes(path, sources);
-        return bytes is not null ? Encoding.UTF8.GetString(bytes).StripUtf8Bom() : null;
+        var resource = GetStream(path, sources);
+        if (resource is null) return null;
+
+        using StreamReader stream = new(resource, Encoding.UTF8, leaveOpen: false);
+        return stream.ReadToEnd().StripUtf8Bom();
     }
 
     public SafeWriteStream GetWriteStream(string path)

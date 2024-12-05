@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 public static class PathHelper
@@ -50,7 +51,7 @@ public static class PathHelper
     ]);
 
     public static void OpenExplorer(string path)
-        => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }).Dispose();
+        => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
 
     public static void SafeDelete(string path)
     {
@@ -71,6 +72,8 @@ public static class PathHelper
         chars.Replace('\\', StandardDirectorySeparator);
         return chars.ToString();
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void WithStandardSeparatorsUnsafe(ReadOnlySpan<char> path)
     {
         var chars = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(path), path.Length);

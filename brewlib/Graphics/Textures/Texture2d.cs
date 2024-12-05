@@ -7,15 +7,19 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Data;
 using OpenTK.Graphics.OpenGL4;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using Util;
+using Image = SixLabors.ImageSharp.Image;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
     : Texture2dRegion(null, new(0, 0, width, height)), BindableTexture
 {
-    static DecoderOptions decoderOptions;
+    public static readonly DecoderOptions ContiguousBufferDecoderOptions = loadDecoderOptions();
+    static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
+
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
     public void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions) => GL.TextureSubImage2D(textureId, 0, x,
@@ -24,19 +28,13 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
-        if (decoderOptions is null)
-        {
-            decoderOptions = new() { Configuration = Configuration.Default.Clone(), SkipMetadata = true };
-            decoderOptions.Configuration.PreferContiguousImageBuffers = true;
-        }
-
         if (File.Exists(filename))
             using (var stream = File.OpenRead(filename))
-                return Image.Load<Rgba32>(decoderOptions, stream);
+                return Image.Load<Rgba32>(ContiguousBufferDecoderOptions, stream);
 
         using (var stream = resourceContainer?.GetStream(filename, ResourceSource.Embedded))
             if (stream is not null)
-                return Image.Load<Rgba32>(decoderOptions, stream);
+                return Image.Load<Rgba32>(ContiguousBufferDecoderOptions, stream);
 
         Trace.TraceWarning($"Texture not found: {filename}");
         return null;
@@ -73,8 +71,10 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
         GL.TextureStorage2D(textureId, 1, sRgb ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8, width, height);
 
-        using (UnmanagedBuffer<Rgba32> spanOwner = new(width * height))
+        if (useGlClearTex) GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
+        else
         {
+            using UnmanagedBuffer<Rgba32> spanOwner = new(width * height);
             spanOwner.GetSpan().Fill(color);
 
             GL.TextureSubImage2D(textureId, 0, 0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, spanOwner.Address);
@@ -106,6 +106,14 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         textureOptions.ApplyParameters(textureId);
 
         return new(textureId, width, height, description);
+    }
+
+    static DecoderOptions loadDecoderOptions()
+    {
+        DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone(), SkipMetadata = true };
+        decoderOptions.Configuration.PreferContiguousImageBuffers = true;
+
+        return decoderOptions;
     }
 
     #region IDisposable Support

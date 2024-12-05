@@ -152,7 +152,7 @@ public static class Program
             ContextFlags.ForwardCompatible;
 #endif
 
-        if (!debugContext.HasFlag(ContextFlags.Debug)) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
+        if ((debugContext & ContextFlags.Debug) == 0) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
 
         NativeWindow window = new(new()
         {

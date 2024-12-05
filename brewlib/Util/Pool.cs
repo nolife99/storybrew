@@ -4,7 +4,7 @@ using System;
 using System.Buffers;
 using System.Threading;
 
-public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = false) where T : class, new()
+public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = false) : IDisposable where T : class, new()
 {
     readonly Lock _lock = new();
 
@@ -88,5 +88,10 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
         _array = newarray;
         _head = 0;
         _tail = _size == capacity ? 0 : _size;
+    }
+    public void Dispose()
+    {
+        ArrayPool<T>.Shared.Return(_array);
+        _array = [];
     }
 }

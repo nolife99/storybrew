@@ -33,23 +33,7 @@
 
     <ItemGroup>
         <EmbeddedResource Include="icon.ico"/>
-        <EmbeddedResource Include="Resources\Asap-Light.ttf"/>
-        <EmbeddedResource Include="Resources\Asap-Regular.ttf"/>
-        <EmbeddedResource Include="Resources\MaterialIcons.otf"/>
-        <EmbeddedResource Include="Resources\ui-rounded-borders-opt.json"/>
-        <EmbeddedResource Include="Resources\ui-line-opt.json"/>
-        <EmbeddedResource Include="Resources\ui-stripes-opt.json"/>
-        <EmbeddedResource Include="Resources\skin_styles.json"/>
-        <EmbeddedResource Include="Resources\skin_drawables_debug.json"/>
-        <EmbeddedResource Include="Resources\skin_drawables.json"/>
-        <EmbeddedResource Include="Resources\skin_constants.json"/>
-        <EmbeddedResource Include="Resources\skin.json"/>
-        <EmbeddedResource Include="Resources\scripttemplate.csx"/>
-        <EmbeddedResource Include="Resources\project\scripts.csproj" SubType="Designer"/>
-        <EmbeddedResource Include="Resources\project\storyboard.sln"/>
-        <EmbeddedResource Include="Resources\ui-line.png"/>
-        <EmbeddedResource Include="Resources\ui-stripes.png"/>
-        <EmbeddedResource Include="Resources\ui-rounded-borders.png"/>
+        <EmbeddedResource Include="Resources.zip"/>
     </ItemGroup>
 
     <ItemGroup>
@@ -65,7 +49,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0"/>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0"/>
     </ItemGroup>
 
 </Project>

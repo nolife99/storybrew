@@ -11,11 +11,11 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using Textures;
 using Util;
 
 public sealed class TextGenerator(ResourceContainer resourceContainer)
 {
-    static Configuration config;
     readonly FontFamily[] fallback = [SystemFonts.Get("Segoe UI Symbol", CultureInfo.InvariantCulture)];
     readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
 
@@ -65,13 +65,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         textureSize = new(width, height);
         if (measureOnly) return null;
 
-        if (config is null)
-        {
-            config = Configuration.Default.Clone();
-            config.PreferContiguousImageBuffers = true;
-        }
-
-        Image<Rgba32> bitmap = new(config, width, height);
+        Image<Rgba32> bitmap = new(Texture2d.ContiguousBufferDecoderOptions.Configuration, width, height);
         bitmap.Mutate(b =>
         {
             RichTextOptions drawOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };

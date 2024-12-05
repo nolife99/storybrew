@@ -70,27 +70,25 @@ public class Line3d : Node3d, HasOsbSprites
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
-        var state = CommandGenerator.statePool.Retrieve();
-
-        state.Time = time;
-        state.Position = sprite.Origin switch
+        gen.Add(new()
         {
-            OsbOrigin.TopCentre => new(startVector.X + delta.X / 2, startVector.Y),
-            OsbOrigin.Centre => new Vector2(startVector.X, startVector.Y) + delta / 2,
-            OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
-            OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
-            OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
-            OsbOrigin.BottomRight => new(endVector.X, endVector.Y),
-            _ => new(startVector.X, startVector.Y)
-        };
-
-        state.Scale = new(delta.Length() / spriteBitmap.X, Thickness.ValueAt(time));
-        state.Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, float.Atan2(delta.Y, delta.X), 1);
-        state.Color = object3dState.Color;
-        state.Opacity = opacity;
-        state.Additive = Additive;
-
-        gen.Add(state);
+            Time = time,
+            Position = sprite.Origin switch
+            {
+                OsbOrigin.TopCentre => new(startVector.X + delta.X / 2, startVector.Y),
+                OsbOrigin.Centre => new Vector2(startVector.X, startVector.Y) + delta / 2,
+                OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
+                OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
+                OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
+                OsbOrigin.BottomRight => new(endVector.X, endVector.Y),
+                _ => new(startVector.X, startVector.Y)
+            },
+            Scale = new(delta.Length() / spriteBitmap.X, Thickness.ValueAt(time)),
+            Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, float.Atan2(delta.Y, delta.X), 1),
+            Color = object3dState.Color,
+            Opacity = opacity,
+            Additive = Additive
+        });
     }
 
     /// <inheritdoc/>

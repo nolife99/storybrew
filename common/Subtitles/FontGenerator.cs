@@ -94,8 +94,6 @@ public sealed class FontGenerator
     readonly FontDescription description;
     readonly FontEffect[] effects;
 
-    readonly float emSize;
-
     readonly TextOptions format;
     readonly SolidBrush textBrush;
 
@@ -119,7 +117,7 @@ public sealed class FontGenerator
         }
 
         const float dpi = 72f;
-        emSize = 96f * description.FontSize / dpi;
+        var emSize = 96 * description.FontSize / dpi;
         var font = family == default ?
             SystemFonts.CreateFont(fontPath, emSize, description.FontStyle) :
             new(family, emSize, description.FontStyle);
@@ -200,8 +198,8 @@ public sealed class FontGenerator
 
             if (!description.Debug) return;
 
-            b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + baseHeight)).DrawLine(Color.Red, 1,
-                new(x - baseWidth * .5f, paddingY), new(x + baseWidth * .5f, paddingY));
+            b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + measuredSize.Height)).DrawLine(Color.Red, 1,
+                new(x - measuredSize.Width * .5f, paddingY), new(x + measuredSize.Width * .5f, paddingY));
         });
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;

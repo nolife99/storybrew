@@ -87,7 +87,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
     }
     protected virtual HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
     {
-        HashSet<int> fragTimes = new(Enumerable.Range((int)sprite.StartTime, (int)(sprite.EndTime - sprite.StartTime) + 1));
+        HashSet<int> fragTimes = [..Enumerable.Range((int)sprite.StartTime, (int)(sprite.EndTime - sprite.StartTime) + 1)];
         foreach (var command in fragCommands) fragTimes.ExceptWith(command.GetNonFragmentableTimes());
         return fragTimes;
     }

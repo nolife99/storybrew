@@ -81,7 +81,11 @@ public class IntegratedCompressor : ImageCompressor
 
         var utility = GetUtility();
         if (!File.Exists(utility))
-            File.WriteAllBytes(GetUtility(), container.GetBytes(utilName, ResourceSource.Embedded | ResourceSource.Relative));
+        {
+            using var source = container.GetStream(utilName, ResourceSource.Embedded | ResourceSource.Relative);
+            using var dest = File.Create(GetUtility());
+            source.CopyTo(dest);
+        }
 
         toCleanup.Add(utility);
     }

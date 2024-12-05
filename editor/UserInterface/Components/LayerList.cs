@@ -154,14 +154,13 @@ public class LayerList : Widget
                 ]
             });
 
-            var la = layer;
-            layerRoot.GetDragData = () => la;
+            layerRoot.GetDragData = () => layer;
             layerRoot.HandleDrop = data =>
             {
                 if (data is not EditorStoryboardLayer droppedLayer) return false;
-                if (droppedLayer.Identifier == la.Identifier) return true;
+                if (droppedLayer.Identifier == layer.Identifier) return true;
                 var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
-                if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, la);
+                if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, layer);
 
                 return true;
             };
@@ -171,20 +170,20 @@ public class LayerList : Widget
 
             layer.OnChanged += changedHandler = (_, _) =>
             {
-                nameLabel.Text = la.Identifier;
-                diffSpecificButton.Icon = la.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy;
+                nameLabel.Text = layer.Identifier;
+                diffSpecificButton.Icon = layer.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy;
                 diffSpecificButton.Tooltip =
-                    la.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)";
+                    layer.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)";
 
-                showHideButton.Icon = la.Visible ? IconFont.Visibility : IconFont.VisibilityOff;
-                showHideButton.Checked = la.Visible;
+                showHideButton.Icon = layer.Visible ? IconFont.Visibility : IconFont.VisibilityOff;
+                showHideButton.Checked = layer.Visible;
             };
 
-            effect.OnChanged += effectChangedHandler = (_, _) => detailsLabel.Text = getLayerDetails(la, effect);
+            effect.OnChanged += effectChangedHandler = (_, _) => detailsLabel.Text = getLayerDetails(layer, effect);
             layerRoot.OnHovered += (_, e) =>
             {
-                la.Highlight = e.Hovered;
-                OnLayerPreselect?.Invoke(e.Hovered ? la : null);
+                layer.Highlight = e.Hovered;
+                OnLayerPreselect?.Invoke(e.Hovered ? layer : null);
             };
 
             var handledClick = false;
@@ -197,20 +196,20 @@ public class LayerList : Widget
             layerRoot.OnClickUp += (evt, _) =>
             {
                 if (handledClick && (evt.RelatedTarget == layerRoot || evt.RelatedTarget.HasAncestor(layerRoot)))
-                    OnLayerSelected?.Invoke(la);
+                    OnLayerSelected?.Invoke(layer);
 
                 handledClick = false;
             };
 
             layerRoot.OnDisposed += (_, _) =>
             {
-                la.Highlight = false;
-                la.OnChanged -= changedHandler;
+                layer.Highlight = false;
+                layer.OnChanged -= changedHandler;
                 effect.OnChanged -= effectChangedHandler;
             };
 
-            diffSpecificButton.OnClick += (_, _) => la.DiffSpecific = !la.DiffSpecific;
-            showHideButton.OnValueChanged += (_, _) => la.Visible = showHideButton.Checked;
+            diffSpecificButton.OnClick += (_, _) => layer.DiffSpecific = !layer.DiffSpecific;
+            showHideButton.OnValueChanged += (_, _) => layer.Visible = showHideButton.Checked;
             ++index;
         }
     }

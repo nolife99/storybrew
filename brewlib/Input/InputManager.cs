@@ -85,9 +85,9 @@ public sealed class InputManager : IDisposable
 
     void updateModifierState(KeyboardKeyEventArgs e)
     {
-        Control = e.Modifiers.HasFlag(KeyModifiers.Control);
-        Shift = e.Modifiers.HasFlag(KeyModifiers.Shift);
-        Alt = e.Modifiers.HasFlag(KeyModifiers.Alt);
+        Control = (e.Modifiers & KeyModifiers.Control) != 0;
+        Shift = (e.Modifiers & KeyModifiers.Shift) != 0;
+        Alt = (e.Modifiers & KeyModifiers.Alt) != 0;
     }
 
     void window_KeyDown(KeyboardKeyEventArgs e)

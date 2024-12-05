@@ -154,28 +154,28 @@ public class Triangle3d : Node3d, HasOsbSprites
                 if (gen1.EndState is not null) gen1.EndState.Opacity = 0;
             }
 
-            var state = CommandGenerator.statePool.Retrieve();
-            state.Time = time;
-            state.Position = position;
-            state.Scale = scale0;
-            state.Rotation = rotation;
-            state.Color = object3dState.Color;
-            state.Opacity = switchedEdge ? 0 : opacity;
-            state.Additive = Additive;
+            gen0.Add(new()
+            {
+                Time = time,
+                Position = position,
+                Scale = scale0,
+                Rotation = rotation,
+                Color = object3dState.Color,
+                Opacity = switchedEdge ? 0 : opacity,
+                Additive = Additive
+            });
 
-            gen0.Add(state);
-
-            var state1 = CommandGenerator.statePool.Retrieve();
-            state1.Time = time;
-            state1.Position = position;
-            state1.Scale = scale1;
-            state1.Rotation = rotation;
-            state1.Color = object3dState.Color;
-            state1.Opacity = switchedEdge ? 0 : opacity;
-            state1.Additive = Additive;
-            state1.FlipH = true;
-
-            gen1.Add(state1);
+            gen1.Add(new()
+            {
+                Time = time,
+                Position = position,
+                Scale = scale1,
+                Rotation = rotation,
+                Color = object3dState.Color,
+                Opacity = switchedEdge ? 0 : opacity,
+                Additive = Additive,
+                FlipH = true
+            });
 
             break;
         }

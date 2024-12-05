@@ -34,12 +34,10 @@
         <PackageReference Include="OpenTK.Windowing.Common" Version="4.9.1"/>
         <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.1"/>
         <PackageReference Include="OpenTK.Windowing.GraphicsLibraryFramework" Version="4.9.1"/>
-        <PackageReference Include="SixLabors.Fonts" Version="2.0.6"/>
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6"/>
-        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.4"/>
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\sixlabors\ImageSharp.Drawing\ImageSharp.Drawing.csproj"/>
         <ProjectReference Include="..\tiny\tiny.csproj"/>
     </ItemGroup>
 

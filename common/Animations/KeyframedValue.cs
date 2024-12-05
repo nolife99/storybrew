@@ -12,32 +12,10 @@ using System.Numerics;
 /// <remarks>
 ///     See <see cref="Keyframe{TValue}"/> for more information about keyframes.
 /// </remarks>
-public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
+public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpolate = null, TValue defaultValue = default)
+    : IEnumerable<Keyframe<TValue>>
 {
-    readonly TValue _defaultValue;
-    readonly delegate*<TValue, TValue, float, TValue> _interpolate;
     internal List<Keyframe<TValue>> keyframes = [];
-
-    /// <summary>
-    ///     Initializes a <see cref="KeyframedValue{TValue}"/> instance.
-    /// </summary>
-    /// <param name="interpolate">
-    ///     A function that takes two values of type <typeparamref name="TValue"/> and a float, and returns an
-    ///     interpolated value of type <typeparamref name="TValue"/>. If the passed function is null, the
-    ///     <see cref="ValueAt(float)"/> method will throw an exception.
-    ///     <seealso cref="InterpolatingFunctions"/>
-    /// </param>
-    /// <param name="defaultValue">
-    ///     The default value of this keyframed value. This value is used when the set of keyframes is empty.
-    /// </param>
-    public KeyframedValue(Func<TValue, TValue, float, TValue> interpolate = null, TValue defaultValue = default)
-    {
-        _defaultValue = defaultValue;
-
-        var method = interpolate?.Method;
-        if (method is null || interpolate.Target is not null || !method.IsStatic) _interpolate = null;
-        else _interpolate = (delegate*<TValue, TValue, float, TValue>)method.MethodHandle.GetFunctionPointer();
-    }
 
     ///<summary> Returns the time of the first keyframe. </summary>
     public float StartTime => keyframes.Count == 0 ? int.MaxValue : keyframes[0].Time;
@@ -46,10 +24,10 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     public float EndTime => keyframes.Count == 0 ? int.MinValue : keyframes[^1].Time;
 
     ///<summary> Gets the value of the first keyframe. </summary>
-    public TValue StartValue => keyframes.Count == 0 ? _defaultValue : keyframes[0].Value;
+    public TValue StartValue => keyframes.Count == 0 ? defaultValue : keyframes[0].Value;
 
     ///<summary> Gets the value of the last keyframe. </summary>
-    public TValue EndValue => keyframes.Count == 0 ? _defaultValue : keyframes[^1].Value;
+    public TValue EndValue => keyframes.Count == 0 ? defaultValue : keyframes[^1].Value;
 
     /// <summary>
     ///     Gets or sets the keyframe at the specified index.
@@ -156,7 +134,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     {
         switch (keyframes.Count)
         {
-            case 0: return _defaultValue;
+            case 0: return defaultValue;
             case 1: return keyframes[0].Value;
         }
 
@@ -164,7 +142,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         if (i == 0) return keyframes[0].Value;
         if (i == keyframes.Count) return keyframes[^1].Value;
 
-        if (_interpolate is null)
+        if (interpolate is null)
             throw new InvalidOperationException("Cannot interpolate keyframes without an interpolation function");
 
         var from = keyframes[i - 1];
@@ -172,7 +150,7 @@ public unsafe class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
         return from.Time == to.Time ?
             to.Value :
-            _interpolate(from.Value, to.Value, to.Ease((time - from.Time) / (to.Time - from.Time)));
+            interpolate(from.Value, to.Value, to.Ease((time - from.Time) / (to.Time - from.Time)));
     }
 
     /// <summary>
