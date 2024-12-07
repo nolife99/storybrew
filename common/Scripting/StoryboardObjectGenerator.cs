@@ -26,16 +26,27 @@ public abstract class StoryboardObjectGenerator : Script
     static readonly AsyncLocal<StoryboardObjectGenerator> instance = new();
 
     readonly ConfigurableField[] configurableFields;
+    readonly Lazy<ImageCompressor> imageCompressor;
     GeneratorContext context;
 
     ///<summary>Reserved</summary>
-    protected StoryboardObjectGenerator() => configurableFields = GetType().GetFields().Select(field =>
+    protected StoryboardObjectGenerator()
     {
-        var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-        return configurable is null ? null : new { Field = field, Configurable = configurable };
-    }).Where(item => item is not null).Select((item, order) => new ConfigurableField(item.Field, item.Configurable,
-        item.Field.GetValue(this), item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
-        item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order)).ToArray();
+        imageCompressor = new(() =>
+        {
+            IntegratedCompressor compressor = new();
+            disposables.Add(compressor);
+            return compressor;
+        });
+
+        configurableFields = GetType().GetFields().Select(field =>
+        {
+            var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
+            return configurable is null ? null : new { Field = field, Configurable = configurable };
+        }).Where(item => item is not null).Select((item, order) => new ConfigurableField(item.Field, item.Configurable,
+            item.Field.GetValue(this), item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
+            item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order)).ToArray();
+    }
 
     ///<summary> Gets the currently executing script. </summary>
     public static StoryboardObjectGenerator Current => instance.Value;
@@ -47,7 +58,7 @@ public abstract class StoryboardObjectGenerator : Script
     protected bool Multithreaded { get; set; }
 
     ///<summary> Gets the texture and image compressor for this script. </summary>
-    public ImageCompressor Compressor { get; private set; }
+    public ImageCompressor Compressor => imageCompressor.Value;
 
     ///<summary> Gets the currently selected beatmap. </summary>
     public Beatmap Beatmap => context.Beatmap;
@@ -95,7 +106,6 @@ public abstract class StoryboardObjectGenerator : Script
         {
             this.context = context;
             rnd = new(RandomSeed);
-            disposables.Add(Compressor = new IntegratedCompressor());
             instance.Value = this;
 
             Generate();
@@ -164,7 +174,10 @@ public abstract class StoryboardObjectGenerator : Script
     {
         path = Path.GetFullPath(path);
         if (watch) context.AddDependency(path);
-        return File.OpenRead(path);
+
+        var stream = File.OpenRead(path);
+        disposables.Add(stream);
+        return stream;
     }
 
     #endregion

@@ -34,7 +34,7 @@ public record AssParser : SubtitleParser
                                     var arguments = value.Split(',');
                                     var startTime = SubtitleParser.ParseTimestamp(arguments[1]);
                                     var endTime = SubtitleParser.ParseTimestamp(arguments[2]);
-                                    var text = string.Join("\n", string.Join(",", arguments.Skip(9)).Split("\\N"));
+                                    var text = string.Join('\n', string.Join(',', arguments.Skip(9)).Split("\\N"));
                                     lines.Add(new(startTime, endTime, text));
                                     break;
                             }

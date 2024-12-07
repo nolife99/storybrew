@@ -8,7 +8,6 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using CommunityToolkit.HighPerformance.Buffers;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
@@ -62,7 +61,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         Span<char> span = stackalloc char[project.MapsetPath.Length + texturePath.Length + 1];
         Path.TryJoin(project.MapsetPath, texturePath, span, out _);
         PathHelper.WithStandardSeparatorsUnsafe(span);
-        var fullPath = StringPool.Shared.GetOrAdd(span);
+        var fullPath = StringPool.GetOrAdd(span);
 
         Texture2dRegion texture;
         try
@@ -74,7 +73,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
                 Path.TryJoin(project.ProjectAssetFolderPath, texturePath, span2, out _);
                 PathHelper.WithStandardSeparatorsUnsafe(span2);
 
-                fullPath = StringPool.Shared.GetOrAdd(span2);
+                fullPath = StringPool.GetOrAdd(span2);
                 texture = project.TextureContainer.Get(fullPath);
             }
         }

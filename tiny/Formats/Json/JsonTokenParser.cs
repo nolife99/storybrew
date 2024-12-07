@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-public class JsonTokenParser : TokenParser<JsonTokenType>
+public partial class JsonTokenParser : TokenParser<JsonTokenType>
 {
     public TinyToken Parse(IEnumerable<Token<JsonTokenType>> tokens)
     {
@@ -107,12 +107,8 @@ public class JsonTokenParser : TokenParser<JsonTokenType>
         public override void End() { }
     }
 
-    class ValueParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
+    partial class ValueParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)
     {
-        static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            boolRegex = new($"^{bool.TrueString}|{bool.FalseString}$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
         public override void Parse(ParseContext<JsonTokenType> context)
         {
             switch (context.CurrentToken.Type)
@@ -120,9 +116,9 @@ public class JsonTokenParser : TokenParser<JsonTokenType>
                 case JsonTokenType.Word:
                 {
                     var value = context.CurrentToken.Value;
-                    if (floatRegex.Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if (integerRegex.Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
-                    else if (boolRegex.Match(value).Success)
+                    if (floatRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Float));
+                    else if (integerRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
+                    else if (boolRegex().Match(value).Success)
                         Callback(new TinyValue(value.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)));
                     else Callback(new TinyValue(value));
 
@@ -147,6 +143,15 @@ public class JsonTokenParser : TokenParser<JsonTokenType>
         }
 
         public override void End() { }
+
+        [GeneratedRegex("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+        private static partial Regex floatRegex();
+
+        [GeneratedRegex("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+        private static partial Regex integerRegex();
+
+        [GeneratedRegex("^True|False$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+        private static partial Regex boolRegex();
     }
 
     class AnyParser(Action<TinyToken> callback) : Parser<JsonTokenType>(callback, 0)

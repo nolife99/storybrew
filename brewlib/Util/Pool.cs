@@ -10,6 +10,11 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
 
     T[] _array = [];
     int _head, _size, _tail;
+    public void Dispose()
+    {
+        ArrayPool<T>.Shared.Return(_array);
+        _array = [];
+    }
 
     public T Retrieve()
     {
@@ -88,10 +93,5 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
         _array = newarray;
         _head = 0;
         _tail = _size == capacity ? 0 : _size;
-    }
-    public void Dispose()
-    {
-        ArrayPool<T>.Shared.Return(_array);
-        _array = [];
     }
 }

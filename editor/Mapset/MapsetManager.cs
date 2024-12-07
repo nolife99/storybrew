@@ -25,7 +25,7 @@ public sealed class MapsetManager : IDisposable
         initializeMapsetWatcher();
     }
 
-    public IEnumerable<EditorBeatmap> Beatmaps => beatmaps;
+    public IReadOnlyList<EditorBeatmap> Beatmaps => beatmaps;
     public int BeatmapCount => beatmaps.Count;
     public void Dispose() => Dispose(true);
 

@@ -12,8 +12,6 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
 
     public AudioSample Get(string filename)
     {
-        PathHelper.WithStandardSeparatorsUnsafe(filename);
-
         ref var sample = ref CollectionsMarshal.GetValueRefOrAddDefault(samples, filename, out var exists);
         if (!exists) sample = manager.LoadSample(filename, container);
 

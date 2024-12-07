@@ -31,10 +31,7 @@ public class IntegratedCompressor : ImageCompressor
             using var localProc = Process.Start(
                 new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
                 {
-                    WindowStyle = ProcessWindowStyle.Hidden,
-                    CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(UtilityPath),
-                    RedirectStandardError = true
+                    CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
                 });
 
             using (var errorStream = localProc.StandardError)
@@ -82,8 +79,8 @@ public class IntegratedCompressor : ImageCompressor
         var utility = GetUtility();
         if (!File.Exists(utility))
         {
-            using var source = container.GetStream(utilName, ResourceSource.Embedded | ResourceSource.Relative);
-            using var dest = File.Create(GetUtility());
+            using var source = container.GetStream(utilName, ResourceSource.Embedded);
+            using var dest = File.Create(utility);
             source.CopyTo(dest);
         }
 

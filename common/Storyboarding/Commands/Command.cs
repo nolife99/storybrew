@@ -24,9 +24,8 @@ public abstract class Command<TValue>(string identifier,
     public abstract IFragmentableCommand GetFragment(float startTime, float endTime);
     public IEnumerable<int> GetNonFragmentableTimes()
     {
-        if (!IsFragmentable)
-            for (var i = 0; i < EndTime - StartTime - 1; ++i)
-                yield return (int)(StartTime + 1 + i);
+        if (IsFragmentable) yield break;
+        for (var i = 0; i < EndTime - StartTime - 1; ++i) yield return (int)(StartTime + 1 + i);
     }
     public void Offset(float offset)
     {

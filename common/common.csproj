@@ -20,13 +20,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="SauceControl.InheritDoc" Version="2.0.2">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\brewlib\brewlib.csproj"/>
         <ProjectReference Include="..\tiny\tiny.csproj"/>
     </ItemGroup>

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using SixLabors.ImageSharp;
 using Util;
@@ -18,6 +19,7 @@ public class TextLayout
         {
             TextLayoutLine line = new(this, height, alignment, Lines.Count == 0) { Glyphs = { Capacity = length + 1 } };
             foreach (var c in text.AsSpan(start, length)) line.Add(font.GetGlyph(c), glyphIndex++);
+            Trace.WriteLine(text);
 
             Lines.Add(line);
             width = Math.Max(width, line.Width);
@@ -45,9 +47,8 @@ public class TextLayout
             var bottomRight = Vector2.Zero;
             var hasBounds = false;
 
-            for (; index < line.Glyphs.Count; ++index)
+            foreach (var layoutGlyph in line.Glyphs)
             {
-                var layoutGlyph = line.Glyphs[index];
                 if (!hasBounds && startIndex <= index)
                 {
                     topLeft = layoutGlyph.Position;
@@ -55,6 +56,7 @@ public class TextLayout
                 }
 
                 if (index < endIndex) bottomRight = layoutGlyph.Position + layoutGlyph.Glyph.Size;
+                ++index;
             }
 
             if (hasBounds) action(RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y));
@@ -66,10 +68,10 @@ public class TextLayout
         foreach (var line in Lines)
         {
             var lineMatches = position.Y < line.Position.Y + line.Height;
-            for (; index < line.Glyphs.Count; ++index)
+            foreach (var glyph in line.Glyphs)
             {
-                var glyph = line.Glyphs[index];
                 if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * .5f) return index;
+                ++index;
             }
 
             if (lineMatches) return index - 1;

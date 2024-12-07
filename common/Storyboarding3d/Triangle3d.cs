@@ -41,10 +41,24 @@ public class Triangle3d : Node3d, HasOsbSprites
     public bool UseDistanceFade = true;
 
     /// <inheritdoc/>
-    public IEnumerable<OsbSprite> Sprites => [sprite0, sprite1];
+    public IEnumerable<OsbSprite> Sprites
+    {
+        get
+        {
+            yield return sprite0;
+            yield return sprite1;
+        }
+    }
 
     /// <inheritdoc/>
-    public IEnumerable<CommandGenerator> CommandGenerators => [gen0, gen1];
+    public IEnumerable<CommandGenerator> CommandGenerators
+    {
+        get
+        {
+            yield return gen0;
+            yield return gen1;
+        }
+    }
 
     /// <inheritdoc/>
     public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;

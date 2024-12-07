@@ -39,10 +39,10 @@ public class Line3d : Node3d, HasOsbSprites
     public bool UseDistanceFade = true;
 
     /// <inheritdoc/>
-    public IEnumerable<OsbSprite> Sprites => [sprite];
+    public IEnumerable<OsbSprite> Sprites { get { yield return sprite; } }
 
     /// <inheritdoc/>
-    public IEnumerable<CommandGenerator> CommandGenerators => [gen];
+    public IEnumerable<CommandGenerator> CommandGenerators { get { yield return gen; } }
 
     /// <inheritdoc/>
     public void ConfigureGenerators(Action<CommandGenerator> action) => action(gen);
@@ -147,7 +147,17 @@ public class Line3dEx : Node3d, HasOsbSprites
     }
 
     /// <inheritdoc/>
-    public IEnumerable<CommandGenerator> CommandGenerators => [genBody, genTopEdge, genBottomEdge, genStartCap, genEndCap];
+    public IEnumerable<CommandGenerator> CommandGenerators
+    {
+        get
+        {
+            yield return genBody;
+            yield return genTopEdge;
+            yield return genBottomEdge;
+            yield return genStartCap;
+            yield return genEndCap;
+        }
+    }
 
     /// <inheritdoc/>
     public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;

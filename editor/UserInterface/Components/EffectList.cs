@@ -15,7 +15,7 @@ using ScreenLayers;
 using Storyboarding;
 using Util;
 
-public class EffectList : Widget
+public partial class EffectList : Widget
 {
     readonly EffectConfigUi effectConfigUi;
     readonly LinearLayout layout, effectsLayout;
@@ -283,14 +283,15 @@ public class EffectList : Widget
     {
         var resourceContainer = Manager.ScreenLayerManager.GetContext<Editor>().ResourceContainer;
 
-        name = Regex.Replace(name, @"([A-Z])", " $1");
-        name = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(name);
-        name = Regex.Replace(name, @"[^0-9a-zA-Z]", "");
-        name = Regex.Replace(name, @"^[\d-]*", "");
+        name = ZeroOrMoreDigitsPrefixRegex()
+            .Replace(
+                NotLetterNorNumberRegex()
+                    .Replace(CultureInfo.InvariantCulture.TextInfo.ToTitleCase(AlphabetRegex().Replace(name, " $1")), ""), "");
+
         if (name.Length == 0) name = "EffectScript";
 
         var path = Path.Combine(project.ScriptsPath, $"{name}.cs");
-        var script = resourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded | ResourceSource.Relative);
+        var script = resourceContainer.GetString("scripttemplate.csx", ResourceSource.Embedded);
         script = script.Replace("%CLASSNAME%", name);
 
         if (File.Exists(path))
@@ -312,15 +313,7 @@ public class EffectList : Widget
         while (solutionFolder != root)
         {
             if (solutionFolder == editorPath) break;
-
-            var isSolution = false;
-            foreach (var file in Directory.EnumerateFiles(solutionFolder, "*.sln"))
-            {
-                isSolution = true;
-                break;
-            }
-
-            if (isSolution) break;
+            if (Directory.EnumerateFiles(solutionFolder, "*.sln").Any()) break;
 
             solutionFolder = Directory.GetParent(solutionFolder).FullName;
         }
@@ -360,7 +353,7 @@ public class EffectList : Widget
                 {
                     UseShellExecute = true,
                     WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
-                }).Dispose();
+                })?.Dispose();
 
                 return;
             }
@@ -377,4 +370,10 @@ public class EffectList : Widget
     static string getEffectDetails(Effect effect) => effect.EstimatedSize > 30720 ?
         $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})" :
         $"using {effect.BaseName}";
+
+    [GeneratedRegex(@"([A-Z])")] private static partial Regex AlphabetRegex();
+
+    [GeneratedRegex(@"[^0-9a-zA-Z]")] private static partial Regex NotLetterNorNumberRegex();
+
+    [GeneratedRegex(@"^[\d-]*")] private static partial Regex ZeroOrMoreDigitsPrefixRegex();
 }

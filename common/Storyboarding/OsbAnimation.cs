@@ -2,7 +2,7 @@
 
 using System;
 using System.Globalization;
-using CommunityToolkit.HighPerformance.Buffers;
+using BrewLib.Util;
 
 /// <summary> A type of <see cref="OsbSprite"/> that loops through given frames, or animates. </summary>
 public class OsbAnimation : OsbSprite
@@ -43,7 +43,7 @@ public class OsbAnimation : OsbSprite
             span[dotIndex..].CopyTo(chars[(dotIndex + digits)..]);
         }
 
-        return StringPool.Shared.GetOrAdd(chars);
+        return StringPool.GetOrAdd(chars);
     }
 
     int GetFrameAt(float time)

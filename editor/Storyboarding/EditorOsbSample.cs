@@ -4,7 +4,6 @@ using System;
 using System.IO;
 using BrewLib.Audio;
 using BrewLib.Util;
-using CommunityToolkit.HighPerformance.Buffers;
 using StorybrewCommon.Storyboarding;
 
 public class EditorOsbSample : OsbSample, EventObject
@@ -18,7 +17,7 @@ public class EditorOsbSample : OsbSample, EventObject
         Span<char> span = stackalloc char[project.MapsetPath.Length + AudioPath.Length + 1];
         Path.TryJoin(project.MapsetPath, AudioPath, span, out _);
         PathHelper.WithStandardSeparatorsUnsafe(span);
-        var fullPath = StringPool.Shared.GetOrAdd(span);
+        var fullPath = StringPool.GetOrAdd(span);
 
         AudioSample sample;
         try
@@ -30,7 +29,7 @@ public class EditorOsbSample : OsbSample, EventObject
                 Path.TryJoin(project.ProjectAssetFolderPath, AudioPath, span2, out _);
                 PathHelper.WithStandardSeparatorsUnsafe(span2);
 
-                fullPath = StringPool.Shared.GetOrAdd(span2);
+                fullPath = StringPool.GetOrAdd(span2);
                 sample = project.AudioContainer.Get(fullPath);
             }
         }

@@ -6,15 +6,14 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using Util;
 
 public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null)
     : ResourceContainer
 {
-    readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
     static readonly Dictionary<string, ZipArchive> archives = [];
+    readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
 
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";

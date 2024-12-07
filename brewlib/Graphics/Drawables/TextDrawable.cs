@@ -143,7 +143,7 @@ public sealed class TextDrawable : Drawable
         var glyph = layoutGlyph.Glyph;
         var position = layoutGlyph.Position * inverseScaling;
 
-        return new(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
+        return RectangleF.FromLTRB(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
     }
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {

@@ -55,7 +55,7 @@ public class Label(WidgetManager manager) : Widget(manager)
             else if ((alignment & BoxAlignment.Top) == 0) position.Y += size.Y * .5f - textSize.Y * .5f;
 
             position = Manager.SnapToPixel(position);
-            return new(position.X, position.Y, textSize.X, textSize.Y);
+            return RectangleF.FromLTRB(position.X, position.Y, textSize.X, textSize.Y);
         }
     }
 

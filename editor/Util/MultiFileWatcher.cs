@@ -26,7 +26,6 @@ public sealed class MultiFileWatcher : IDisposable
         folderWatchers.Dispose();
         recursiveFolderWatchers.Dispose();
 
-        watchedFilenames.Clear();
         watchedFilenames = null;
 
         OnFileChanged = null;

@@ -172,8 +172,9 @@ public class LayerList : Widget
             {
                 nameLabel.Text = layer.Identifier;
                 diffSpecificButton.Icon = layer.DiffSpecific ? IconFont.InsertDriveFile : IconFont.FileCopy;
-                diffSpecificButton.Tooltip =
-                    layer.DiffSpecific ? "Difficulty specific\n(exports to .osu)" : "Entire mapset\n(exports to .osb)";
+                diffSpecificButton.Tooltip = layer.DiffSpecific ?
+                    "Difficulty specific\n(exports to .osu)" :
+                    "Entire mapset\n(exports to .osb)";
 
                 showHideButton.Icon = layer.Visible ? IconFont.Visibility : IconFont.VisibilityOff;
                 showHideButton.Checked = layer.Visible;

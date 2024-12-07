@@ -107,10 +107,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             if (!localThread.Wait(500))
             {
-                await tokenSrc.CancelAsync().ConfigureAwait(false);
+                await tokenSrc.CancelAsync();
                 try
                 {
-                    await localThread.ConfigureAwait(false);
+                    await localThread;
                 }
                 catch (OperationCanceledException)
                 {

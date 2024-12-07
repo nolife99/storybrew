@@ -136,7 +136,7 @@ public class SynchronousCompressor : ImageCompressor
         var utility = GetUtility();
         if (!File.Exists(utility))
         {
-            using var src = container.GetStream(utilName, ResourceSource.Embedded | ResourceSource.Relative);
+            using var src = container.GetStream(utilName, ResourceSource.Embedded);
             using FileStream file = new(utility, FileMode.Create, FileAccess.Write, FileShare.Read);
             src.CopyTo(file);
         }

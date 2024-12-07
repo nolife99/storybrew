@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -143,6 +144,7 @@ public static class Program
         throw new InvalidOperationException("Failed to find a display device");
     }
 
+    [SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalse")]
     static NativeWindow createWindow(MonitorInfo displayDevice)
     {
         const ContextFlags debugContext =
@@ -160,7 +162,9 @@ public static class Program
             Profile = ContextProfile.Core,
             CurrentMonitor = displayDevice.Handle,
             Title = Name,
-            StartVisible = false
+            StartVisible = false,
+            DepthBits = 0,
+            StencilBits = 0
         });
 
         Native.InitializeHandle(window);

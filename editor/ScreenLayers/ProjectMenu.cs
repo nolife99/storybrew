@@ -483,7 +483,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                         })\nCheck its log for the actual error.");
                 }
 
-                Thread.Sleep(200);
+                Thread.Yield();
             }
 
             proj.ExportToOsb(first);

@@ -3,19 +3,17 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 using StorybrewCommon.Util;
 
 #pragma warning disable CS1591
-public class EffectConfig
+public partial class EffectConfig
 {
     readonly Dictionary<string, ConfigField> fields = [];
     public int FieldCount => fields.Count;
     public IEnumerable<ConfigField> Fields => fields.Values;
-
-    public IEnumerable<ConfigField> SortedFields
-        => new SortedSet<ConfigField>(fields.Values, Comparer<ConfigField>.Create((a, b) => a.Order - b.Order));
-
+    public IEnumerable<ConfigField> SortedFields => fields.Values.OrderBy(field => field.Order);
     public IEnumerable<string> FieldNames => fields.Keys;
     public void UpdateField(string name,
         string displayName,
@@ -29,8 +27,8 @@ public class EffectConfig
         if (fieldType is null) return;
         if (string.IsNullOrWhiteSpace(displayName))
         {
-            displayName = Regex.Replace(name, @"(\P{Ll})(\P{Ll}\p{Ll})", "$1 $2");
-            displayName = Regex.Replace(displayName, @"(\p{Ll})(\P{Ll})", "$1 $2");
+            displayName = Regex1().Replace(name, "$1 $2");
+            displayName = Regex2().Replace(displayName, "$1 $2");
         }
 
         var value = fields.TryGetValue(name, out var field) ?
@@ -83,6 +81,9 @@ public class EffectConfig
             return defaultValue;
         }
     }
+    [GeneratedRegex(@"(\P{Ll})(\P{Ll}\p{Ll})")]
+    private static partial Regex Regex1();
+    [GeneratedRegex(@"(\p{Ll})(\P{Ll})")] private static partial Regex Regex2();
 
     public struct ConfigField
     {

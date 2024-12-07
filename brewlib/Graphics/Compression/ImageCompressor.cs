@@ -2,9 +2,9 @@
 
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using Data;
-using Util;
 
 public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 {
@@ -15,12 +15,11 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 
     protected string utilName;
 
-    public string UtilityPath { get; protected set; } =
-        utilityPath ?? Path.GetDirectoryName(typeof(ImageCompressor).Assembly.Location) + "/cache/scripts";
+    public string UtilityPath { get; protected set; } = utilityPath ?? Path.GetTempPath();
 
     public string UtilityName
     {
-        get => StringHelper.GetMd5(utilName + Environment.CurrentManagedThreadId);
+        get => HashCode.Combine(utilName, Environment.CurrentManagedThreadId).ToString(CultureInfo.InvariantCulture);
         protected set => utilName = value;
     }
 

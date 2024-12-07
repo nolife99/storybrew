@@ -157,8 +157,8 @@ public class ScriptedEffect : Effect
 
         if (!string.IsNullOrWhiteSpace(log))
         {
-            if (statusMessageBuilder.Length > 0) statusMessageBuilder.Append(" \n \n");
-            statusMessageBuilder.Append("Log:\n \n");
+            if (statusMessageBuilder.Length > 0) statusMessageBuilder.Append("\n\n");
+            statusMessageBuilder.Append("Log:\n\n");
             statusMessageBuilder.Append(log);
         }
 

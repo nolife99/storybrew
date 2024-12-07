@@ -151,16 +151,14 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         Trace.WriteLine("Updating solution files");
 
         using (var slnStream = File.Create(Path.Combine(ScriptsPath, "storyboard.sln")))
-        using (var resourceStream =
-            resourceContainer.GetStream("project/storyboard.sln", ResourceSource.Embedded | ResourceSource.Relative))
+        using (var resourceStream = resourceContainer.GetStream("project/storyboard.sln", ResourceSource.Embedded))
             resourceStream.CopyTo(slnStream);
 
         XmlDocument document = new() { PreserveWhitespace = false };
         try
         {
-            using (var stream =
-                resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded | ResourceSource.Relative))
-            using (XmlTextReader sr = new(stream) { DtdProcessing = DtdProcessing.Prohibit, XmlResolver = null })
+            using (var stream = resourceContainer.GetStream("project/scripts.csproj", ResourceSource.Embedded))
+            using (XmlTextReader sr = new(stream))
                 document.Load(sr);
 
             var xmlns = document.DocumentElement.GetAttribute("xmlns");

@@ -18,7 +18,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     : Texture2dRegion(null, new(0, 0, width, height)), BindableTexture
 {
     public static readonly DecoderOptions ContiguousBufferDecoderOptions = loadDecoderOptions();
-    static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
+    static readonly Lazy<bool> useGlClearTex = new(() => GLFW.ExtensionSupported("GL_ARB_clear_texture"), false);
 
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
@@ -71,7 +71,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
         GL.TextureStorage2D(textureId, 1, sRgb ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8, width, height);
 
-        if (useGlClearTex) GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
+        if (useGlClearTex.Value) GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
         else
         {
             using UnmanagedBuffer<Rgba32> spanOwner = new(width * height);

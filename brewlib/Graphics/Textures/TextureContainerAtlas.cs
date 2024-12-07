@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using Data;
 using Util;
@@ -26,7 +25,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
                 var size = texture.Size;
                 sum += size.X * size.Y;
             }
-            
+
             return sum / 1024 / 1024;
         }
     }

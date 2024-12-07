@@ -18,7 +18,6 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
 using BrewLib.Util;
-using CommunityToolkit.HighPerformance;
 using Mapset;
 using OpenTK.Mathematics;
 using Scripting;
@@ -76,12 +75,6 @@ public sealed partial class Project : IDisposable
 
         Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
         }");
-
-        var compiledScriptsPath = Path.GetFullPath("cache/scripts");
-        if (Directory.Exists(compiledScriptsPath))
-            foreach (var script in Directory.EnumerateFiles(compiledScriptsPath))
-                File.Delete(script);
-        else Directory.CreateDirectory(compiledScriptsPath);
 
         initializeAssetWatcher();
         scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, scriptsLibraryPath,
@@ -446,7 +439,6 @@ public sealed partial class Project : IDisposable
         typeof(MathHelper).Assembly.Location,
         typeof(Script).Assembly.Location,
         typeof(Misc).Assembly.Location,
-        typeof(Ref<>).Assembly.Location,
         .. Directory
             .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
                 "*.dll").Concat(Directory.EnumerateFiles(

@@ -45,10 +45,10 @@ public class Sprite3d : Node3d, HasOsbSprites
     public bool UseDistanceFade = true;
 
     /// <inheritdoc/>
-    public IEnumerable<OsbSprite> Sprites => [sprite];
+    public IEnumerable<OsbSprite> Sprites { get { yield return sprite; } }
 
     /// <inheritdoc/>
-    public IEnumerable<CommandGenerator> CommandGenerators => [gen];
+    public IEnumerable<CommandGenerator> CommandGenerators { get { yield return gen; } }
 
     /// <inheritdoc/>
     public void DoTreeSprite(Action<OsbSprite> action) => finalize = action;

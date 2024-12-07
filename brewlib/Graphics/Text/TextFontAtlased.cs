@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Textures;
 using Util;
 
@@ -17,7 +18,8 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
 
     public FontGlyph GetGlyph(char c)
     {
-        if (!glyphs.TryGetValue(c, out var glyph)) glyphs[c] = glyph = generateGlyph(c);
+        ref var glyph = ref CollectionsMarshal.GetValueRefOrAddDefault(glyphs, c, out var exists);
+        if (!exists) glyph = generateGlyph(c);
         return glyph;
     }
 
@@ -26,7 +28,8 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
         Vector2 measuredSize;
         if (char.IsWhiteSpace(c))
         {
-            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, BoxAlignment.Centre, out measuredSize, true);
+            var prepended = c == '\n' ? "\u200b\n" : c.ToString();
+            DrawState.TextGenerator.CreateBitmap(prepended, name, size, default, BoxAlignment.Centre, out measuredSize, true);
 
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }

@@ -182,21 +182,19 @@ public class CommandGenerator
             moveY = finalPositions.keyframes.TrueForAll(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
 
         finalPositions.ForEachPair((s, e) =>
+        {
+            if (moveX && !moveY)
             {
-                if (moveX && !moveY)
-                {
-                    sprite.MoveX(s.Time, e.Time, s.Value.X, e.Value.X);
-                    sprite.InitialPosition = new(0, s.Value.Y);
-                }
-                else if (moveY && !moveX)
-                {
-                    sprite.MoveY(s.Time, e.Time, s.Value.Y, e.Value.Y);
-                    sprite.InitialPosition = new(s.Value.X, 0);
-                }
-                else sprite.Move(s.Time, e.Time, s.Value, e.Value);
-            }, new(320, 240), p => new(float.Round(p.X, PositionDecimals), float.Round(p.Y, PositionDecimals)), startState,
-            endState,
-            loopable);
+                sprite.MoveX(s.Time, e.Time, s.Value.X, e.Value.X);
+                sprite.InitialPosition = new(0, s.Value.Y);
+            }
+            else if (moveY && !moveX)
+            {
+                sprite.MoveY(s.Time, e.Time, s.Value.Y, e.Value.Y);
+                sprite.InitialPosition = new(s.Value.X, 0);
+            }
+            else sprite.Move(s.Time, e.Time, s.Value, e.Value);
+        }, new(320, 240), p => new(checkPos(p.X), checkPos(p.Y)), startState, endState, loopable);
 
         var scalar = finalScales.keyframes.TrueForAll(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) < 1);
         finalScales.ForEachPair((s, e) =>

@@ -80,8 +80,9 @@ public class NewProjectMenu : UiScreenLayer
     }
     void createProject() => Manager.AsyncLoading("Creating project", () =>
     {
-        var resourceContainer = Manager.GetContext<Editor>().ResourceContainer;
-        var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true, resourceContainer);
+        var project = Project.Create(projectNameTextbox.Value, mapsetPathSelector.Value, true,
+            Manager.GetContext<Editor>().ResourceContainer);
+
         Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
     });
 

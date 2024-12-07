@@ -3,6 +3,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -56,6 +57,7 @@ public static class StringHelper
         return MD5.HashData(stream);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static StringBuilder TrimEnd(this StringBuilder sb)
     {
         var i = sb.Length - 1;

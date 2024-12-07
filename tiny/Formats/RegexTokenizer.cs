@@ -30,7 +30,7 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
         foreach (var byStartGroup in definitions.SelectMany((d, i) => d.FindMatches(content, i)).GroupBy(m => m.StartIndex)
             .OrderBy(g => g.Key))
         {
-            var bestMatch = byStartGroup.OrderBy(m => m.Priority).First();
+            var bestMatch = byStartGroup.OrderBy(m => m.Priority).FirstOrDefault();
             if (previousMatch is not null && bestMatch.StartIndex < previousMatch.EndIndex) continue;
 
             yield return new(bestMatch.Type, bestMatch.Value) { CharNumber = bestMatch.StartIndex };
