@@ -160,7 +160,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         {
             if (controlPoint == previousPosition)
             {
-                if (curvePoints.Count > 1) curves.Add(new(curvePoints, precision));
+                if (curvePoints.Count > 1) curves.Add(new(curvePoints));
                 curvePoints = [];
             }
 
@@ -168,7 +168,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             previousPosition = controlPoint;
         }
 
-        if (curvePoints.Count > 1) curves.Add(new(curvePoints, precision));
+        if (curvePoints.Count > 1) curves.Add(new(curvePoints));
         return new(curves);
     }
 
@@ -177,7 +177,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         var curvePoints = new Vector2[controlPoints.Length + 1];
         curvePoints[0] = PlayfieldPosition;
         for (var i = 0; i < ControlPointCount; ++i) curvePoints[i + 1] = controlPoints[i];
-        return new(curvePoints, (int)(Length / 2));
+        return new(curvePoints);
     }
 
     CompositeCurve generateLinearCurve()
@@ -187,7 +187,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         var previousPoint = PlayfieldPosition;
         for (var i = 0; i < controlPoints.Length; ++i)
         {
-            curves[i] = new([previousPoint, controlPoints[i]], 0);
+            curves[i] = new([previousPoint, controlPoints[i]]);
             previousPoint = controlPoints[i];
         }
 

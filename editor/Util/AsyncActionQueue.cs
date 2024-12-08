@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -136,11 +137,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 {
                     if (mustSleep)
                     {
-                        Thread.Sleep(200);
+                        Thread.Yield();
                         mustSleep = false;
                     }
 
-                    ActionContainer task;
+                    ActionContainer task = null;
                     lock (context.Queue)
                     {
                         while (!context.Enabled || context.Queue.Count == 0)
@@ -162,9 +163,18 @@ public sealed class AsyncActionQueue<T> : IDisposable
                                 continue;
                             }
 
-                            var index = context.Queue.FindIndex(t
-                                => !context.Running.Contains(t.UniqueKey) && !t.MustRunAlone ||
-                                t.MustRunAlone && context.Running.Count == 0);
+                            var index = -1;
+                            var queueSpan = CollectionsMarshal.AsSpan(context.Queue);
+
+                            for (var i = 0; i < queueSpan.Length; ++i)
+                            {
+                                task = queueSpan[i];
+                                if ((context.Running.Contains(task.UniqueKey) || task.MustRunAlone) &&
+                                    (!task.MustRunAlone || context.Running.Count != 0)) continue;
+
+                                index = i;
+                                break;
+                            }
 
                             if (index < 0)
                             {
@@ -172,9 +182,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                                 continue;
                             }
 
-                            task = context.Queue[index];
                             context.Queue.RemoveAt(index);
-
                             context.Running.Add(task.UniqueKey);
                             if (task.MustRunAlone) context.RunningLoneTask = true;
                         }

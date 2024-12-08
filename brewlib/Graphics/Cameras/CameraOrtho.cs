@@ -8,11 +8,8 @@ public class CameraOrtho : CameraBase
     readonly bool yDown;
     int virtualHeight, virtualWidth;
 
-    public CameraOrtho(bool yDown = true) : this(0, 0, yDown) { }
-    CameraOrtho(int virtualWidth, int virtualHeight, bool yDown = true)
+    public CameraOrtho(bool yDown = true)
     {
-        this.virtualWidth = virtualWidth;
-        this.virtualHeight = virtualHeight;
         this.yDown = yDown;
 
         Up = new(0, yDown ? -1 : 1, 0);

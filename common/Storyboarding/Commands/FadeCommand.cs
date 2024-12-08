@@ -3,7 +3,7 @@
 using CommandValues;
 
 #pragma warning disable CS1591
-public class FadeCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+public record FadeCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
     : Command<CommandDecimal>("F", easing, startTime, endTime, startValue, endValue)
 {
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;

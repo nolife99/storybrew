@@ -31,6 +31,8 @@ public abstract class BaseCurve : Curve
         }
     }
 
+    // TODO: Rewrite below so it's more efficient (e.g. don't cache pts and just calculate on demand)
+
     /// <inheritdoc/>
     public Vector2 PositionAtDistance(float distance)
     {

@@ -4,13 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 /// <summary>
 ///     Represents a bézier curve defined by a set of control points.
 /// </summary>
-public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
+public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
 {
-    [ThreadStatic] static Vector2[] intermediatePoints;
+    const float BEZIER_TOLERANCE = .25f;
+
     readonly Vector2[] points = points as Vector2[] ?? points.ToArray();
 
     /// <inheritdoc/>
@@ -22,37 +24,134 @@ public class BezierCurve(IEnumerable<Vector2> points, int precision) : BaseCurve
     /// <inheritdoc/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
-        var accuracy = points.Length > 2 ? precision : 0;
+        var linearSegments = BSplineToPiecewiseLinear(points, points.Length - 1);
 
-        var distance = 0f;
-        var previousPosition = points[0];
-
-        for (var i = 1f; i <= accuracy; ++i)
+        length = 0;
+        for (var i = 0; i < linearSegments.Length - 1; ++i)
         {
-            var delta = i / (accuracy + 1);
-            ref var nextPosition = ref positionAtDelta(delta);
+            var cur = linearSegments[i];
+            var next = linearSegments[i + 1];
+            var dist = Vector2.Distance(cur, next);
 
-            distance += (nextPosition - previousPosition).Length();
-            distancePosition.Add((distance, nextPosition));
-
-            previousPosition = nextPosition;
+            distancePosition.Add((length, cur));
+            length += dist;
         }
-
-        distance += (points[^1] - previousPosition).Length();
-        length = distance;
     }
 
-    ref Vector2 positionAtDelta(float delta)
+    // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
+    static ReadOnlySpan<Vector2> BSplineToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, int degree)
     {
-        var count = points.Length;
+        List<Vector2> output = [];
+        var pointCount = controlPoints.Length - 1;
 
-        if (intermediatePoints is null || intermediatePoints.Length < count) intermediatePoints = new Vector2[count];
+        var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
+        Stack<Vector2[]> freeBuffers = new();
 
-        for (var i = 0; i < count; ++i) intermediatePoints[i] = points[i];
-        for (var i = 1; i < count; ++i)
-        for (var j = 0; j < count - i; ++j)
-            intermediatePoints[j] = intermediatePoints[j] * (1 - delta) + intermediatePoints[j + 1] * delta;
+        var subdivisionBuffer1 = new Vector2[degree + 1];
+        var subdivisionBuffer2 = new Vector2[degree * 2 + 1];
 
-        return ref intermediatePoints[0];
+        while (toFlatten.Count > 0)
+        {
+            var parent = toFlatten.Pop();
+
+            if (bezierIsFlatEnough(parent))
+            {
+                bezierApproximate(parent, output, subdivisionBuffer1, subdivisionBuffer2, degree + 1);
+
+                freeBuffers.Push(parent);
+                continue;
+            }
+
+            var rightChild = freeBuffers.Count > 0 ? freeBuffers.Pop() : new Vector2[degree + 1];
+            bezierSubdivide(parent, subdivisionBuffer2, rightChild, subdivisionBuffer1, degree + 1);
+
+            for (var i = 0; i < degree + 1; ++i) parent[i] = subdivisionBuffer2[i];
+
+            toFlatten.Push(rightChild);
+            toFlatten.Push(parent);
+        }
+
+        output.Add(controlPoints[pointCount]);
+        return CollectionsMarshal.AsSpan(output);
+    }
+    static Stack<Vector2[]> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
+    {
+        Stack<Vector2[]> result = new();
+        degree = Math.Min(degree, controlPoints.Length - 1);
+
+        var pointCount = controlPoints.Length - 1;
+        var points = controlPoints.ToArray();
+
+        if (degree == pointCount) result.Push(points);
+        else
+        {
+            for (var i = 0; i < pointCount - degree; i++)
+            {
+                var subBezier = new Vector2[degree + 1];
+                subBezier[0] = points[i];
+
+                for (var j = 0; j < degree - 1; j++)
+                {
+                    subBezier[j + 1] = points[i + 1];
+
+                    for (var k = 1; k < degree - j; k++)
+                    {
+                        var l = Math.Min(k, pointCount - degree - i);
+                        points[i + k] = (l * points[i + k] + points[i + k + 1]) / (l + 1);
+                    }
+                }
+
+                subBezier[degree] = points[i + 1];
+                result.Push(subBezier);
+            }
+
+            result.Push(points[(pointCount - degree)..]);
+
+            result = new(result);
+        }
+
+        return result;
+    }
+
+    static bool bezierIsFlatEnough(Vector2[] controlPoints)
+    {
+        for (var i = 1; i < controlPoints.Length - 1; i++)
+            if ((controlPoints[i - 1] - 2 * controlPoints[i] + controlPoints[i + 1]).LengthSquared() >
+                BEZIER_TOLERANCE * BEZIER_TOLERANCE * 4) return false;
+
+        return true;
+    }
+
+    static void bezierSubdivide(Vector2[] controlPoints, Vector2[] l, Vector2[] r, Vector2[] subdivisionBuffer, int count)
+    {
+        var midpoints = subdivisionBuffer;
+
+        for (var i = 0; i < count; ++i) subdivisionBuffer[i] = controlPoints[i];
+        for (var i = 0; i < count; i++)
+        {
+            l[i] = midpoints[0];
+            r[count - i - 1] = midpoints[count - i - 1];
+
+            for (var j = 0; j < count - i - 1; j++) midpoints[j] = (midpoints[j] + midpoints[j + 1]) / 2;
+        }
+    }
+
+    static void bezierApproximate(Vector2[] controlPoints,
+        List<Vector2> output,
+        Vector2[] subdivisionBuffer1,
+        Vector2[] subdivisionBuffer2,
+        int count)
+    {
+        bezierSubdivide(controlPoints, subdivisionBuffer2, subdivisionBuffer1, subdivisionBuffer1, count);
+
+        for (var i = 0; i < count - 1; ++i) subdivisionBuffer2[count + i] = subdivisionBuffer1[i + 1];
+
+        output.Add(controlPoints[0]);
+
+        for (var i = 1; i < count - 1; ++i)
+        {
+            var index = 2 * i;
+            output.Add(.25f * (subdivisionBuffer2[index - 1] + 2 * subdivisionBuffer2[index] + subdivisionBuffer2[index + 1]));
+        }
     }
 }

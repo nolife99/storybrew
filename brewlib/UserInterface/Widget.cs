@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Graphics;
 using Graphics.Drawables;
 using OpenTK.Windowing.Common;
@@ -143,12 +144,12 @@ public class Widget(WidgetManager manager) : IDisposable
     protected virtual void DrawChildren(DrawContext drawContext, float actualOpacity)
     {
         if (children.Count == 0) return;
-        var clip = ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : null;
+        var clip = ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : default;
         foreach (var child in children)
             if (child.Displayed)
                 child.Draw(drawContext, actualOpacity);
 
-        clip?.Invoke();
+        if (ClipChildren) DrawState.ClipRegion = clip;
     }
     protected virtual void DrawForeground(DrawContext drawContext, float actualOpacity)
         => foreground?.Draw(drawContext, manager.Camera, Bounds, actualOpacity);
@@ -201,9 +202,9 @@ public class Widget(WidgetManager manager) : IDisposable
 
     readonly List<Widget> children = [];
 
-    public ICollection<Widget> Children
+    public ReadOnlySpan<Widget> Children
     {
-        get => children;
+        get => CollectionsMarshal.AsSpan(children);
         init
         {
             ClearWidgets();

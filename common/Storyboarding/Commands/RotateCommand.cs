@@ -3,7 +3,7 @@
 using CommandValues;
 
 #pragma warning disable CS1591
-public class RotateCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+public record RotateCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
     : Command<CommandDecimal>("R", easing, startTime, endTime, startValue, endValue)
 {
     public override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)

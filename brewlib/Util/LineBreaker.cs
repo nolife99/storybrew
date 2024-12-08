@@ -180,78 +180,67 @@ public static class LineBreaker
         0x0085 // NEXT LINE
     ];
 
-    public static IEnumerable<(int Start, int Length)> Split(string textRaw, float maxWidth, Func<char, int> measure)
+    public static IEnumerable<(int Start, int Length)> Split(string text, float maxWidth, Func<char, int> measure)
     {
-        int startIndex = 0, endIndex = 0, lineWidth = 0;
-
-        var text = textRaw.AsMemory();
-        for (; endIndex < text.Length; ++endIndex)
+        for (int i = 0, startIndex = 0, lineWidth = 0; i < text.Length; ++i)
         {
-            var characterWidth = measure(textRaw[endIndex]);
+            var characterWidth = measure(text[i]);
 
-            if (maxWidth > 0 && endIndex > startIndex && lineWidth + characterWidth > maxWidth)
+            if (maxWidth > 0 && i > startIndex && lineWidth + characterWidth > maxWidth)
             {
-                endIndex = findBreakIndex(textRaw, startIndex, endIndex);
+                i = findBreakIndex(text, startIndex, i);
 
-                yield return (startIndex, endIndex - startIndex + 1);
-                startIndex = endIndex + 1;
-                endIndex = startIndex;
+                yield return (startIndex, i - startIndex + 1);
+                startIndex = i + 1;
+                i = startIndex;
                 lineWidth = 0;
             }
 
             lineWidth += characterWidth;
 
-            if (!mustBreakAfter(textRaw, endIndex)) continue;
+            if (!mustBreakAfter(text, i)) continue;
 
-            yield return (startIndex, endIndex - startIndex + 1);
-            startIndex = endIndex + 1;
-            endIndex = startIndex;
+            yield return (startIndex, i - startIndex + 1);
+            startIndex = i + 1;
+            i = startIndex;
             lineWidth = 0;
 
-            --endIndex;
+            --i;
         }
 
-        if (text.Length > 0 && mustBreakAfter(textRaw, text.Length - 1, true)) yield return (0, 0);
+        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true))
+            yield return (0, 0);
     }
     static int findBreakIndex(ReadOnlySpan<char> text, int startIndex, int endIndex)
     {
         var firstAllowed = -1;
-        for (var index = endIndex; index > startIndex; index--)
-            switch (getBreakability(text, index))
-            {
-                case Breakability.Opportunity: return index - 1;
-                case Breakability.Allowed when firstAllowed == -1: firstAllowed = index - 1; break;
-            }
+        for (var i = endIndex; i > startIndex; --i)
+        {
+            if (i == 0) continue;
+
+            var after = getBreakabilityAfter(text[i - 1]);
+            var before = getBreakabilityBefore(text[i]);
+
+            if (after is Breakability.Prohibited || before is Breakability.Prohibited) continue;
+
+            if (after is Breakability.Opportunity || before is Breakability.Opportunity) return i - 1;
+            if (firstAllowed == -1) firstAllowed = i - 1;
+        }
 
         if (firstAllowed != -1) return firstAllowed;
         return endIndex - 1;
     }
-    static Breakability getBreakability(ReadOnlySpan<char> text, int index)
-    {
-        if (index == 0) return Breakability.Prohibited;
-
-        var after = getBreakabilityAfter(text[index - 1]);
-        var before = getBreakabilityBefore(text[index]);
-
-        if (after is Breakability.Prohibited || before is Breakability.Prohibited) return Breakability.Prohibited;
-        if (after is Breakability.Opportunity || before is Breakability.Opportunity) return Breakability.Opportunity;
-
-        return Breakability.Allowed;
-    }
     static Breakability getBreakabilityAfter(char c)
     {
-        if (breakOpportunityAfter.Contains(c)) return Breakability.Opportunity;
-        if (c >= 0x2E0E && c <= 0x2E15) return Breakability.Opportunity;
-        if (breakProhibitedAfter.Contains(c)) return Breakability.Prohibited;
-        if (c >= 0x035C && c <= 0x0362) return Breakability.Prohibited;
+        if (breakOpportunityAfter.Contains(c) || c >= 0x2E0E && c <= 0x2E15) return Breakability.Opportunity;
+        if (breakProhibitedAfter.Contains(c) || c >= 0x035C && c <= 0x0362) return Breakability.Prohibited;
 
         return Breakability.Allowed;
     }
     static Breakability getBreakabilityBefore(char c)
     {
         if (breakOpportunityBefore.Contains(c)) return Breakability.Opportunity;
-        if (breakProhibitedBefore.Contains(c)) return Breakability.Prohibited;
-        if (c >= 0x035C && c <= 0x0362) return Breakability.Prohibited;
+        if (breakProhibitedBefore.Contains(c) || c >= 0x035C && c <= 0x0362) return Breakability.Prohibited;
 
         return Breakability.Allowed;
     }

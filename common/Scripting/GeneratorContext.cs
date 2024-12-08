@@ -12,37 +12,37 @@ using Storyboarding;
 public abstract class GeneratorContext
 {
     /// <summary>
-    ///     Gets the path of the project.
+    ///     The file path of the project.
     /// </summary>
     public abstract string ProjectPath { get; }
 
     /// <summary>
-    ///     Gets the path of the assets folder for the project.
+    ///     The file path of the assets folder for the project.
     /// </summary>
     public abstract string ProjectAssetPath { get; }
 
     /// <summary>
-    ///     Gets the path of the mapset.
+    ///     The file path of the mapset.
     /// </summary>
     public abstract string MapsetPath { get; }
 
     /// <summary>
-    ///     Gets the beatmap being processed.
+    ///     The beatmap currently being processed.
     /// </summary>
     public abstract Beatmap Beatmap { get; }
 
     /// <summary>
-    ///     Gets all beatmaps in the mapset.
+    ///     All beatmaps in the mapset.
     /// </summary>
     public abstract IEnumerable<Beatmap> Beatmaps { get; }
 
     /// <summary>
-    ///     Gets the duration of the audio.
+    ///     The duration of the audio.
     /// </summary>
     public abstract float AudioDuration { get; }
 
     /// <summary>
-    ///     Gets or sets a value indicating whether the context is multithreaded.
+    ///     Indicates whether the context is multithreaded.
     /// </summary>
     public abstract bool Multithreaded { get; set; }
 

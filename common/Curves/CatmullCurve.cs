@@ -1,13 +1,17 @@
 ﻿namespace StorybrewCommon.Curves;
 
+using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 /// <summary>
 ///     Represents a Catmull-Rom curve defined by a set of control points.
 /// </summary>
-public class CatmullCurve(Vector2[] points, int precision) : BaseCurve
+public class CatmullCurve(Vector2[] points) : BaseCurve
 {
+    const int catmull_detail = 50;
+
     /// <inheritdoc/>
     public override Vector2 StartPosition => points[0];
 
@@ -17,30 +21,51 @@ public class CatmullCurve(Vector2[] points, int precision) : BaseCurve
     /// <summary/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
-        var accuracy = points.Length > 2 ? precision : 0;
+        var linearSegments = CatmullToPiecewiseLinear(points);
 
-        var distance = 0f;
-        var linePrecision = accuracy / points.Length;
-        var previousPosition = points[0];
-
-        for (var lineIndex = 0; lineIndex < points.Length - 1; ++lineIndex)
-        for (var i = 1f; i <= linePrecision; ++i)
+        length = 0;
+        for (var i = 0; i < linearSegments.Length - 1; ++i)
         {
-            var nextPosition = positionAtDelta(lineIndex > 0 ? points[lineIndex - 1] : points[lineIndex], points[lineIndex],
-                points[lineIndex + 1], lineIndex < points.Length - 2 ? points[lineIndex + 2] : points[lineIndex + 1],
-                i / (linePrecision + 1));
+            var cur = linearSegments[i];
+            var next = linearSegments[i + 1];
+            var dist = Vector2.Distance(cur, next);
 
-            distance += (nextPosition - previousPosition).Length();
-            distancePosition.Add((distance, nextPosition));
-
-            previousPosition = nextPosition;
+            distancePosition.Add((length, cur));
+            length += dist;
         }
-
-        distance += (points[^1] - previousPosition).Length();
-        length = distance;
     }
 
-    static Vector2 positionAtDelta(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4, float delta)
-        => ((-p1 + 3 * p2 - 3 * p3 + p4) * delta * delta * delta + (2 * p1 - 5 * p2 + 4 * p3 - p4) * delta * delta +
-            (-p1 + p3) * delta + 2 * p2) / 2;
+    // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
+    static ReadOnlySpan<Vector2> CatmullToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
+    {
+        List<Vector2> result = new((controlPoints.Length - 1) * catmull_detail * 2);
+
+        for (var i = 0; i < controlPoints.Length - 1; i++)
+        {
+            var v1 = i > 0 ? controlPoints[i - 1] : controlPoints[i];
+            var v2 = controlPoints[i];
+            var v3 = i < controlPoints.Length - 1 ? controlPoints[i + 1] : v2 + v2 - v1;
+            var v4 = i < controlPoints.Length - 2 ? controlPoints[i + 2] : v3 + v3 - v2;
+
+            for (var c = 0; c < catmull_detail; c++)
+            {
+                result.Add(catmullFindPoint(ref v1, ref v2, ref v3, ref v4, (float)c / catmull_detail));
+                result.Add(catmullFindPoint(ref v1, ref v2, ref v3, ref v4, (float)(c + 1) / catmull_detail));
+            }
+        }
+
+        return CollectionsMarshal.AsSpan(result);
+    }
+
+    static Vector2 catmullFindPoint(ref Vector2 vec1, ref Vector2 vec2, ref Vector2 vec3, ref Vector2 vec4, float t)
+    {
+        var t2 = t * t;
+        var t3 = t * t2;
+
+        Vector2 result;
+        result.X = .5f * (2 * vec2.X + (-vec1.X + vec3.X) * t + (2 * vec1.X - 5 * vec2.X + 4 * vec3.X - vec4.X) * t2 + (-vec1.X + 3f * vec2.X - 3f * vec3.X + vec4.X) * t3);
+        result.Y = .5f * (2 * vec2.Y + (-vec1.Y + vec3.Y) * t + (2 * vec1.Y - 5 * vec2.Y + 4 * vec3.Y - vec4.Y) * t2 + (-vec1.Y + 3f * vec2.Y - 3f * vec3.Y + vec4.Y) * t3);
+
+        return result;
+    }
 }

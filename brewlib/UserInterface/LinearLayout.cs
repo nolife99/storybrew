@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Skinning.Styles;
 using Util;
 
@@ -105,18 +106,23 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
     {
         base.Layout();
 
+        // Calculate the inner size excluding padding
         var innerSize = new Vector2(Size.X - padding.Horizontal, Size.Y - padding.Vertical);
         var totalSpace = horizontal ? innerSize.X : innerSize.Y;
         var usedSpace = 0f;
 
-        List<LayoutItem> items = new(Children.Count);
+        // Create a list to hold layout items
+        List<LayoutItem> items = new(Children.Length);
         foreach (var child in Children)
         {
+            // Ignore anchored children
             if (child.AnchorTarget is not null) continue;
 
+            // Determine the preferred size and length in the layout direction
             var preferredSize = child.PreferredSize;
             var length = horizontal ? preferredSize.X : preferredSize.Y;
 
+            // Add the child to the layout items list
             items.Add(new()
             {
                 Widget = child,
@@ -130,9 +136,11 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             usedSpace += length;
         }
 
+        // Calculate total spacing between items
         var totalSpacing = spacing * (items.Count - 1);
         usedSpace += totalSpacing;
 
+        // Adjust item lengths to fit within the available space
         var scalableItems = items.Count;
         while (scalableItems > 0 && Math.Abs(totalSpace - usedSpace) > .001f)
         {
@@ -143,8 +151,9 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             usedSpace = totalSpacing;
             scalableItems = 0;
 
-            foreach (var item in items)
+            foreach (ref var item in CollectionsMarshal.AsSpan(items))
             {
+                // Adjust item length if scalable
                 if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
                 if (item.Scalable)
                 {
@@ -183,6 +192,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             }
         }
 
+        // Position each child based on calculated lengths and spacing
         var distance = horizontal ? padding.Left : padding.Top;
         foreach (var item in items)
         {
@@ -192,23 +202,27 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 
             if (horizontal)
             {
+                // Determine breadth for horizontal layout
                 var childBreadth = fitChildren ?
                     Math.Max(minSize.Y, innerSize.Y) :
                     Math.Max(minSize.Y, Math.Min(item.PreferredSize.Y, innerSize.Y));
 
                 if (maxSize.Y > 0 && childBreadth > maxSize.Y) childBreadth = maxSize.Y;
 
+                // Place child in horizontal layout
                 var anchor = child.AnchorFrom & BoxAlignment.Vertical | BoxAlignment.Left;
                 PlaceChildren(child, new(distance, padding.GetVerticalOffset(anchor)), new(item.Length, childBreadth), anchor);
             }
             else
             {
+                // Determine breadth for vertical layout
                 var childBreadth = fitChildren ?
                     Math.Max(minSize.X, innerSize.X) :
                     Math.Max(minSize.X, Math.Min(item.PreferredSize.X, innerSize.X));
 
                 if (maxSize.X > 0 && childBreadth > maxSize.X) childBreadth = maxSize.X;
 
+                // Place child in vertical layout
                 var anchor = child.AnchorFrom & BoxAlignment.Horizontal | BoxAlignment.Top;
                 PlaceChildren(child, new(padding.GetHorizontalOffset(anchor), distance), new(childBreadth, item.Length), anchor);
             }
@@ -278,7 +292,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         preferredSize = new(width + paddingH, height + paddingV);
     }
 
-    sealed record LayoutItem
+    struct LayoutItem
     {
         public float Length;
         public Vector2 PreferredSize, MinSize, MaxSize;

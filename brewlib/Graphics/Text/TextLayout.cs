@@ -19,14 +19,13 @@ public class TextLayout
         {
             TextLayoutLine line = new(this, height, alignment, Lines.Count == 0) { Glyphs = { Capacity = length + 1 } };
             foreach (var c in text.AsSpan(start, length)) line.Add(font.GetGlyph(c), glyphIndex++);
-            Trace.WriteLine(text);
 
             Lines.Add(line);
             width = Math.Max(width, line.Width);
             height += line.Height;
         }
 
-        if (Lines.Count == 0) Lines.Add(new(this, 0, alignment, true));
+        if (Lines.Count == 0) Lines.Add(new(this, 0, alignment, true) { Glyphs = { Capacity = 1 } });
         var lastLine = Lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
         lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);

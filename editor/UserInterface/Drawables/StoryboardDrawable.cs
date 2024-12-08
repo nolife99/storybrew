@@ -24,7 +24,7 @@ public sealed class StoryboardDrawable(Project project) : Drawable
         {
             var clip = DrawState.Clip(bounds, camera);
             project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
-            clip();
+            DrawState.ClipRegion = clip;
         }
         else
         {

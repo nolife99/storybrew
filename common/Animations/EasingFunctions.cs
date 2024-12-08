@@ -192,10 +192,8 @@ public static class EasingFunctions
     /// <summary> Converts an <see cref="OsbEasing"/> to one of the corresponding <see cref="EasingFunctions"/>. </summary>
     public static Func<float, float> ToEasingFunction(OsbEasing easing) => easing switch
     {
-        OsbEasing.In => In,
-        OsbEasing.Out => Out,
-        OsbEasing.InQuad => QuadIn,
-        OsbEasing.OutQuad => QuadOut,
+        OsbEasing.In or OsbEasing.InQuad => QuadIn,
+        OsbEasing.Out or OsbEasing.OutQuad => QuadOut,
         OsbEasing.InOutQuad => QuadInOut,
         OsbEasing.InCubic => CubicIn,
         OsbEasing.OutCubic => CubicOut,

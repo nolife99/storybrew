@@ -3,7 +3,7 @@
 using CommandValues;
 
 #pragma warning disable CS1591
-public class MoveCommand(OsbEasing easing, float startTime, float endTime, CommandPosition startValue, CommandPosition endValue)
+public record MoveCommand(OsbEasing easing, float startTime, float endTime, CommandPosition startValue, CommandPosition endValue)
     : Command<CommandPosition>("M", easing, startTime, endTime, startValue, endValue)
 {
     public override CommandPosition GetTransformedStartValue(StoryboardTransform transform)
@@ -18,7 +18,7 @@ public class MoveCommand(OsbEasing easing, float startTime, float endTime, Comma
         this;
 }
 
-public class MoveXCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+public record MoveXCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
     : Command<CommandDecimal>("MX", easing, startTime, endTime, startValue, endValue)
 {
     public override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
@@ -32,7 +32,7 @@ public class MoveXCommand(OsbEasing easing, float startTime, float endTime, Comm
         this;
 }
 
-public class MoveYCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+public record MoveYCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
     : Command<CommandDecimal>("MY", easing, startTime, endTime, startValue, endValue)
 {
     public override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)

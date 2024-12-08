@@ -3,7 +3,7 @@
 using CommandValues;
 
 #pragma warning disable CS1591
-public class ParameterCommand(float startTime, float endTime, CommandParameter value)
+public record ParameterCommand(float startTime, float endTime, CommandParameter value)
     : Command<CommandParameter>("P", 0, startTime, endTime, value, value)
 {
     protected override bool MaintainValue => StartTime == EndTime;

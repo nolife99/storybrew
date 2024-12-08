@@ -144,7 +144,6 @@ public static class Program
         throw new InvalidOperationException("Failed to find a display device");
     }
 
-    [SuppressMessage("ReSharper", "ConditionIsAlwaysTrueOrFalse")]
     static NativeWindow createWindow(MonitorInfo displayDevice)
     {
         const ContextFlags debugContext =

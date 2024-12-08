@@ -27,8 +27,8 @@ public partial class EffectConfig
         if (fieldType is null) return;
         if (string.IsNullOrWhiteSpace(displayName))
         {
-            displayName = Regex1().Replace(name, "$1 $2");
-            displayName = Regex2().Replace(displayName, "$1 $2");
+            displayName = UpperCaseAfterUpperCase().Replace(name, "$1 $2");
+            displayName = LowerUpperTransition().Replace(displayName, "$1 $2");
         }
 
         var value = fields.TryGetValue(name, out var field) ?
@@ -37,8 +37,8 @@ public partial class EffectConfig
 
         var isAllowed = allowedValues is null;
         if (!isAllowed)
-            for (var i = 0; i < allowedValues.Length; ++i)
-                if (value.Equals(allowedValues[i].Value))
+            foreach (var t in allowedValues)
+                if (value.Equals(t.Value))
                 {
                     isAllowed = true;
                     break;
@@ -81,9 +81,9 @@ public partial class EffectConfig
             return defaultValue;
         }
     }
-    [GeneratedRegex(@"(\P{Ll})(\P{Ll}\p{Ll})")]
-    private static partial Regex Regex1();
-    [GeneratedRegex(@"(\p{Ll})(\P{Ll})")] private static partial Regex Regex2();
+
+    [GeneratedRegex(@"(\P{Ll})(\P{Ll}\p{Ll})")] private static partial Regex UpperCaseAfterUpperCase();
+    [GeneratedRegex(@"(\p{Ll})(\P{Ll})")] private static partial Regex LowerUpperTransition();
 
     public struct ConfigField
     {

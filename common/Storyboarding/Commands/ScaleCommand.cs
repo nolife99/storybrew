@@ -4,7 +4,7 @@ using System;
 using CommandValues;
 
 #pragma warning disable CS1591
-public class ScaleCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+public record ScaleCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
     : Command<CommandDecimal>("S", easing, startTime, endTime, startValue, endValue)
 {
     public override CommandDecimal GetTransformedStartValue(StoryboardTransform transform) => transform.ApplyToScale(StartValue);
@@ -19,7 +19,7 @@ public class ScaleCommand(OsbEasing easing, float startTime, float endTime, Comm
             this;
 }
 
-public class VScaleCommand(OsbEasing easing, float startTime, float endTime, CommandScale startValue, CommandScale endValue)
+public record VScaleCommand(OsbEasing easing, float startTime, float endTime, CommandScale startValue, CommandScale endValue)
     : Command<CommandScale>("V", easing, startTime, endTime, startValue, endValue)
 {
     public override CommandScale GetTransformedStartValue(StoryboardTransform transform) => transform.ApplyToScale(StartValue);

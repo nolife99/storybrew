@@ -292,16 +292,16 @@ public static class DrawState
         }
     }
 
-    static Action Clip(Rectangle? newRegion)
+    static Rectangle? Clip(Rectangle? newRegion)
     {
         var previousClipRegion = clipRegion;
         ClipRegion = clipRegion.HasValue && newRegion.HasValue ?
             Rectangle.Intersect(clipRegion.Value, newRegion.Value) :
             newRegion;
 
-        return () => ClipRegion = previousClipRegion;
+        return previousClipRegion;
     }
-    public static Action Clip(RectangleF bounds, Camera camera)
+    public static Rectangle? Clip(RectangleF bounds, Camera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
         return Clip(new((int)float.Round(screenBounds.Left),
