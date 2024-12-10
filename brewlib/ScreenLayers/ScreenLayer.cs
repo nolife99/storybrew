@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.ScreenLayers;
 
 using System;
-using System.Runtime;
 using Graphics;
 using Input;
 using OpenTK.Windowing.Common;
@@ -114,12 +113,6 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
         OnExit();
 
         if (TransitionOutDuration == 0) Manager.Remove(this);
-
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-        GCSettings.LatencyMode = GCLatencyMode.Batch;
-        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.Default;
-        GCSettings.LatencyMode = GCLatencyMode.Interactive;
     }
 
     bool updateTransition(float delta, float duration, int direction)

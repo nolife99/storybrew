@@ -68,9 +68,9 @@ public sealed class StringPool
         var hashcode = string.GetHashCode(span);
         var bucketIndex = hashcode & Shared.numberOfMaps - 1;
 
-        ref var map = ref DangerousGetReferenceAt(Shared.maps.AsSpan(), bucketIndex);
+        ref var map = ref DangerousGetReferenceAt(Shared.maps, ref bucketIndex);
 
-        lock (map.SyncRoot) return map.GetOrAdd(span, hashcode);
+        lock (map.SyncRoot) return map.GetOrAdd(span, ref hashcode);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -86,9 +86,9 @@ public sealed class StringPool
         var hashcode = string.GetHashCode(span);
         var bucketIndex = hashcode & Shared.numberOfMaps - 1;
 
-        ref var map = ref DangerousGetReferenceAt(Shared.maps.AsSpan(), bucketIndex);
+        ref var map = ref DangerousGetReferenceAt(Shared.maps, ref bucketIndex);
 
-        lock (map.SyncRoot) return map.TryGet(span, hashcode, out value);
+        lock (map.SyncRoot) return map.TryGet(span, ref hashcode, out value);
     }
 
     public void Reset()
@@ -99,7 +99,8 @@ public sealed class StringPool
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static ref T DangerousGetReferenceAt<T>(Span<T> span, int i) => ref Unsafe.Add(ref MemoryMarshal.GetReference(span), i);
+    static ref T DangerousGetReferenceAt<T>(T[] span, ref int i)
+        => ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(span), i);
 
     record struct FixedSizePriorityMap
     {
@@ -122,23 +123,23 @@ public sealed class StringPool
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string GetOrAdd(ReadOnlySpan<char> span, int hashcode)
+        public string GetOrAdd(ReadOnlySpan<char> span, ref int hashcode)
         {
-            ref var result = ref TryGet(span, hashcode);
+            ref var result = ref TryGet(span, ref hashcode);
 
             if (!Unsafe.IsNullRef(ref result)) return result;
 
             var value = span.ToString();
 
-            Insert(value, hashcode);
+            Insert(value, ref hashcode);
 
             return value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGet(ReadOnlySpan<char> span, int hashcode, [NotNullWhen(true)] out string value)
+        public bool TryGet(ReadOnlySpan<char> span, ref int hashcode, [NotNullWhen(true)] out string value)
         {
-            ref var result = ref TryGet(span, hashcode);
+            ref var result = ref TryGet(span, ref hashcode);
 
             if (!Unsafe.IsNullRef(ref result))
             {
@@ -161,15 +162,15 @@ public sealed class StringPool
             timestamp = 0;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        ref string TryGet(ReadOnlySpan<char> span, int hashcode)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        ref string TryGet(ReadOnlySpan<char> span, ref int hashcode)
         {
             ref var mapEntriesRef = ref MemoryMarshal.GetArrayDataReference(mapEntries);
             ref var entry = ref Unsafe.NullRef<MapEntry>();
             var length = buckets.Length;
             var bucketIndex = hashcode & length - 1;
 
-            for (var i = DangerousGetReferenceAt(buckets.AsSpan(), bucketIndex) - 1; i < length; i = entry.NextIndex)
+            for (var i = DangerousGetReferenceAt(buckets, ref bucketIndex) - 1; i < length; i = entry.NextIndex)
             {
                 entry = ref Unsafe.Add(ref mapEntriesRef, i);
 
@@ -182,8 +183,8 @@ public sealed class StringPool
             return ref Unsafe.NullRef<string>();
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        void Insert(string value, int hashcode)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        void Insert(string value, ref int hashcode)
         {
             ref var bucketsRef = ref MemoryMarshal.GetArrayDataReference(buckets);
             ref var mapEntriesRef = ref MemoryMarshal.GetArrayDataReference(mapEntries);
@@ -196,7 +197,7 @@ public sealed class StringPool
                 heapIndex = 0;
 
                 ref var removedEntry = ref Unsafe.Add(ref mapEntriesRef, entryIndex);
-                Remove(removedEntry.HashCode, entryIndex);
+                Remove(ref removedEntry.HashCode, ref entryIndex);
             }
             else
             {
@@ -222,12 +223,12 @@ public sealed class StringPool
             UpdateTimestamp(ref targetMapEntry.HeapIndex);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        void Remove(int hashcode, int mapIndex)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        void Remove(ref int hashcode, ref int mapIndex)
         {
             ref var mapEntriesRef = ref MemoryMarshal.GetArrayDataReference(mapEntries);
             var bucketIndex = hashcode & buckets.Length - 1;
-            var entryIndex = DangerousGetReferenceAt(buckets.AsSpan(), bucketIndex) - 1;
+            var entryIndex = DangerousGetReferenceAt(buckets, ref bucketIndex) - 1;
             var lastIndex = -1;
 
             while (true)
@@ -242,7 +243,7 @@ public sealed class StringPool
 
                         lastEntry.NextIndex = candidate.NextIndex;
                     }
-                    else DangerousGetReferenceAt(buckets.AsSpan(), bucketIndex) = candidate.NextIndex + 1;
+                    else DangerousGetReferenceAt(buckets, ref bucketIndex) = candidate.NextIndex + 1;
 
                     --count;
 
@@ -254,7 +255,7 @@ public sealed class StringPool
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         void UpdateTimestamp(ref int heapIndex)
         {
             var currentIndex = heapIndex;
@@ -318,25 +319,15 @@ public sealed class StringPool
 
             Fallback:
 
-            UpdateAllTimestamps();
-
+            for (var i = 0; i < count; i++) Unsafe.Add(ref heapEntriesRef, i).Timestamp = (uint)i;
             t = (uint)(c - 1);
 
             goto Downheap;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        void UpdateAllTimestamps()
-        {
-            ref var heapEntriesRef = ref MemoryMarshal.GetArrayDataReference(heapEntries);
-            for (var i = 0; i < count; i++) Unsafe.Add(ref heapEntriesRef, i).Timestamp = (uint)i;
-        }
-
         record struct MapEntry
         {
-            public int HashCode;
-            public int HeapIndex;
-            public int NextIndex;
+            public int HashCode, HeapIndex, NextIndex;
             public string Value;
         }
 

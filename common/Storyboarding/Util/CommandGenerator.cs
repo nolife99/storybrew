@@ -151,7 +151,7 @@ public class CommandGenerator
 
     void commitKeyframes(Vector2 imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f * 100, 0, 100));
+        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f, 0, 1) * 100);
         if (float.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
         if (float.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalFades);

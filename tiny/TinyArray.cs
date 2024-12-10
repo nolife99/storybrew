@@ -66,8 +66,8 @@ public class TinyArray : TinyToken, IList<TinyToken>
     public void Insert(int index, TinyToken item)
     {
         if (Count == tokens.Length) EnsureCapacity(Count * 2);
+        tokens.AsSpan(index, Count - index).CopyTo(tokens.AsSpan(index + 1));
 
-        Array.Copy(tokens, index, tokens, index + 1, Count - index);
         tokens[index] = item;
         ++Count;
     }
@@ -83,7 +83,7 @@ public class TinyArray : TinyToken, IList<TinyToken>
 
     public void RemoveAt(int index)
     {
-        Array.Copy(tokens, index + 1, tokens, index, Count - index - 1);
+        tokens.AsSpan(index + 1, Count - index - 1).CopyTo(tokens.AsSpan(index));
         --Count;
     }
 

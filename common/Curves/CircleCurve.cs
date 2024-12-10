@@ -21,17 +21,16 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
     /// <summary/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
-        var linearSegments = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint]);
+        using var linearSegmentsBuf = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint]);
+        var linearSegments = linearSegmentsBuf.GetSpan();
 
         length = 0;
         for (var i = 0; i < linearSegments.Length - 1; ++i)
         {
             var cur = linearSegments[i];
-            var next = linearSegments[i + 1];
-            var dist = Vector2.Distance(cur, next);
 
             distancePosition.Add((length, cur));
-            length += dist;
+            length += Vector2.Distance(cur, linearSegments[i + 1]);
         }
     }
 
@@ -41,23 +40,26 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             endPoint.X * (startPoint.Y - midPoint.Y)) != 0;
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static ReadOnlySpan<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
+    static UnmanagedBuffer<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
     {
         CircularArcProperties pr = new(controlPoints);
-        var amountPoints = 2 * pr.Radius <= circular_arc_tolerance ? 2 : Math.Max(2, (int)MathF.Ceiling(pr.ThetaRange / (2 * MathF.Acos(1 - circular_arc_tolerance / pr.Radius))));
+        var amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
+            2 :
+            Math.Max(2, (int)MathF.Ceiling(pr.ThetaRange / (2 * MathF.Acos(1 - circular_arc_tolerance / pr.Radius))));
 
-        var output = new Vector2[amountPoints];
+        UnmanagedBuffer<Vector2> output = new(amountPoints);
+        var outputSpan = output.GetSpan();
 
         for (var i = 0; i < amountPoints; ++i)
         {
             var fract = i / (amountPoints - 1f);
             var (sin, cos) = MathF.SinCos(pr.ThetaStart + pr.Direction * fract * pr.ThetaRange);
-            var o = new Vector2(cos, sin) * pr.Radius;
-            output[i] = pr.Centre + o;
+            outputSpan[i] = pr.Centre + new Vector2(cos, sin) * pr.Radius;
         }
 
         return output;
     }
+
     readonly struct CircularArcProperties
     {
         public readonly float ThetaStart;
@@ -77,8 +79,7 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             var bSq = b.LengthSquared();
             var cSq = c.LengthSquared();
 
-            Centre = new Vector2(
-                aSq * (b - c).Y + bSq * (c - a).Y + cSq * (a - b).Y,
+            Centre = new Vector2(aSq * (b - c).Y + bSq * (c - a).Y + cSq * (a - b).Y,
                 aSq * (c - b).X + bSq * (a - c).X + cSq * (b - a).X) / d;
 
             var dA = a - Centre;
@@ -89,8 +90,7 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             ThetaStart = MathF.Atan2(dA.Y, dA.X);
             var thetaEnd = MathF.Atan2(dC.Y, dC.X);
 
-            while (thetaEnd < ThetaStart)
-                thetaEnd += MathF.Tau;
+            while (thetaEnd < ThetaStart) thetaEnd += MathF.Tau;
 
             Direction = 1;
             ThetaRange = thetaEnd - ThetaStart;

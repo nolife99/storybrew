@@ -2,8 +2,8 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
-using Util;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
@@ -28,14 +28,14 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         base.initializeVertexBuffer();
 
         var vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
-        primitives = Native.AllocateMemory(vertexBufferSize);
+        primitives = Marshal.AllocHGlobal(vertexBufferSize);
 
         GL.NamedBufferStorage(VertexBufferId, vertexBufferSize, 0,
             BufferStorageFlags.MapWriteBit | BufferStorageFlags.DynamicStorageBit);
     }
     protected override void Dispose(bool disposing)
     {
-        Native.FreeMemory(primitives);
+        Marshal.FreeHGlobal(primitives);
         base.Dispose(disposing);
     }
 }

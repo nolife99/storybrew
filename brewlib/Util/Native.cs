@@ -13,9 +13,6 @@ using Image = OpenTK.Windowing.GraphicsLibraryFramework.Image;
 
 public static unsafe class Native
 {
-    public static nint AllocateMemory(int cb) => (nint)NativeMemory.Alloc((nuint)cb);
-    public static void FreeMemory(nint addr) => NativeMemory.Free((void*)addr);
-
     sealed class UnmanagedMemoryAllocator : MemoryAllocator
     {
         protected override int GetBufferCapacityInBytes() => int.MaxValue;
@@ -63,8 +60,8 @@ public sealed unsafe class UnmanagedBuffer<T>(int length, AllocationOptions opti
     : MemoryManager<T> where T : struct
 {
     readonly void* ptr = options is AllocationOptions.None ?
-        NativeMemory.Alloc((nuint)length, (nuint)Marshal.SizeOf<T>()) :
-        NativeMemory.AllocZeroed((nuint)length, (nuint)Marshal.SizeOf<T>());
+        NativeMemory.Alloc((nuint)(length * Marshal.SizeOf<T>())) :
+        NativeMemory.AllocZeroed((nuint)(length * Marshal.SizeOf<T>()));
 
     public nint Address => (nint)ptr;
 

@@ -10,6 +10,7 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
 
     T[] _array = [];
     int _head, _size, _tail;
+
     public void Dispose()
     {
         ArrayPool<T>.Shared.Return(_array);
@@ -80,11 +81,11 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
         var newarray = ArrayPool<T>.Shared.Rent(capacity);
         if (_size > 0)
         {
-            if (_head < _tail) Array.Copy(_array, _head, newarray, 0, _size);
+            if (_head < _tail) _array.AsSpan(_head, _size).CopyTo(newarray);
             else
             {
-                Array.Copy(_array, _head, newarray, 0, _array.Length - _head);
-                Array.Copy(_array, 0, newarray, _array.Length - _head, _tail);
+                _array.AsSpan(_head, _array.Length - _head).CopyTo(newarray);
+                _array.AsSpan(0, _tail).CopyTo(newarray.AsSpan(_array.Length - _head));
             }
 
             ArrayPool<T>.Shared.Return(_array);

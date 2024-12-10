@@ -49,7 +49,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
                     if (entry is not null)
                     {
                         using var entryStream = entry.Open();
-                        MemoryStream bytes = new();
+                        SafeUnmanagedMemoryStream bytes = new();
                         entryStream.CopyTo(bytes);
 
                         bytes.Position = 0;

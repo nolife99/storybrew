@@ -29,7 +29,7 @@ public static class ScriptCompiler
         }
 
         EmitResult result;
-        using (MemoryStream assemblyStream = new())
+        using (SafeUnmanagedMemoryStream assemblyStream = new())
         {
             result = CSharpCompilation.Create(asmName, trees.Keys, referencedAssemblies.Select(asmPath =>
             {

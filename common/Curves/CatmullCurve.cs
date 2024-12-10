@@ -27,11 +27,9 @@ public class CatmullCurve(Vector2[] points) : BaseCurve
         for (var i = 0; i < linearSegments.Length - 1; ++i)
         {
             var cur = linearSegments[i];
-            var next = linearSegments[i + 1];
-            var dist = Vector2.Distance(cur, next);
 
             distancePosition.Add((length, cur));
-            length += dist;
+            length += Vector2.Distance(cur, linearSegments[i + 1]);
         }
     }
 
@@ -63,8 +61,11 @@ public class CatmullCurve(Vector2[] points) : BaseCurve
         var t3 = t * t2;
 
         Vector2 result;
-        result.X = .5f * (2 * vec2.X + (-vec1.X + vec3.X) * t + (2 * vec1.X - 5 * vec2.X + 4 * vec3.X - vec4.X) * t2 + (-vec1.X + 3f * vec2.X - 3f * vec3.X + vec4.X) * t3);
-        result.Y = .5f * (2 * vec2.Y + (-vec1.Y + vec3.Y) * t + (2 * vec1.Y - 5 * vec2.Y + 4 * vec3.Y - vec4.Y) * t2 + (-vec1.Y + 3f * vec2.Y - 3f * vec3.Y + vec4.Y) * t3);
+        result.X = .5f * (2 * vec2.X + (-vec1.X + vec3.X) * t + (2 * vec1.X - 5 * vec2.X + 4 * vec3.X - vec4.X) * t2 +
+            (-vec1.X + 3f * vec2.X - 3f * vec3.X + vec4.X) * t3);
+
+        result.Y = .5f * (2 * vec2.Y + (-vec1.Y + vec3.Y) * t + (2 * vec1.Y - 5 * vec2.Y + 4 * vec3.Y - vec4.Y) * t2 +
+            (-vec1.Y + 3f * vec2.Y - 3f * vec3.Y + vec4.Y) * t3);
 
         return result;
     }

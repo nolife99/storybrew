@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime;
 using System.Threading;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -645,7 +646,17 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         Manager.AsyncLoading("Stopping effect updates", () =>
         {
             proj.CancelEffectUpdates(true).Wait();
-            Program.Schedule(() => Manager.GetContext<Editor>().Restart());
+            Program.RunMainThread(() => Manager.GetContext<Editor>().Restart());
+
+            Thread.Sleep(1000);
+
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+            GCSettings.LatencyMode = GCLatencyMode.Batch;
+
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
+
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.Default;
+            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
         });
     });
 

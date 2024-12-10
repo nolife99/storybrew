@@ -2,9 +2,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Util;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
@@ -54,12 +54,12 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             BufferAccessMask.MapWriteBit | BufferAccessMask.MapPersistentBit | BufferAccessMask.MapFlushExplicitBit |
             BufferAccessMask.MapUnsynchronizedBit | BufferAccessMask.MapInvalidateBufferBit);
 
-        primitives = Native.AllocateMemory(vertexBufferSize);
+        primitives = Marshal.AllocHGlobal(vertexBufferSize);
     }
     protected override void Dispose(bool disposing)
     {
         GL.UnmapNamedBuffer(VertexBufferId);
-        Native.FreeMemory(primitives);
+        Marshal.FreeHGlobal(primitives);
 
         GpuCommandSync.DeleteFences();
         base.Dispose(disposing);

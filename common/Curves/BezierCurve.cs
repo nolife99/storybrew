@@ -30,11 +30,9 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         for (var i = 0; i < linearSegments.Length - 1; ++i)
         {
             var cur = linearSegments[i];
-            var next = linearSegments[i + 1];
-            var dist = Vector2.Distance(cur, next);
 
             distancePosition.Add((length, cur));
-            length += dist;
+            length += Vector2.Distance(cur, linearSegments[i + 1]);
         }
     }
 
@@ -65,7 +63,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
             var rightChild = freeBuffers.Count > 0 ? freeBuffers.Pop() : new Vector2[degree + 1];
             bezierSubdivide(parent, subdivisionBuffer2, rightChild, subdivisionBuffer1, degree + 1);
 
-            for (var i = 0; i < degree + 1; ++i) parent[i] = subdivisionBuffer2[i];
+            subdivisionBuffer2.AsSpan(0, degree + 1).CopyTo(parent);
 
             toFlatten.Push(rightChild);
             toFlatten.Push(parent);
@@ -117,29 +115,32 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
     {
         for (var i = 1; i < controlPoints.Length - 1; i++)
             if ((controlPoints[i - 1] - 2 * controlPoints[i] + controlPoints[i + 1]).LengthSquared() >
-                BEZIER_TOLERANCE * BEZIER_TOLERANCE * 4) return false;
+                BEZIER_TOLERANCE * BEZIER_TOLERANCE * 4)
+                return false;
 
         return true;
     }
 
-    static void bezierSubdivide(Vector2[] controlPoints, Vector2[] l, Vector2[] r, Vector2[] subdivisionBuffer, int count)
+    static void bezierSubdivide(ReadOnlySpan<Vector2> controlPoints,
+        Span<Vector2> l,
+        Span<Vector2> r,
+        Span<Vector2> subdivisionBuffer,
+        int count)
     {
-        var midpoints = subdivisionBuffer;
-
-        for (var i = 0; i < count; ++i) subdivisionBuffer[i] = controlPoints[i];
-        for (var i = 0; i < count; i++)
+        controlPoints[..count].CopyTo(subdivisionBuffer);
+        for (var i = 0; i < count; ++i)
         {
-            l[i] = midpoints[0];
-            r[count - i - 1] = midpoints[count - i - 1];
+            l[i] = subdivisionBuffer[0];
+            r[count - i - 1] = subdivisionBuffer[count - i - 1];
 
-            for (var j = 0; j < count - i - 1; j++) midpoints[j] = (midpoints[j] + midpoints[j + 1]) / 2;
+            for (var j = 0; j < count - i - 1; j++) subdivisionBuffer[j] = (subdivisionBuffer[j] + subdivisionBuffer[j + 1]) / 2;
         }
     }
 
-    static void bezierApproximate(Vector2[] controlPoints,
+    static void bezierApproximate(ReadOnlySpan<Vector2> controlPoints,
         List<Vector2> output,
-        Vector2[] subdivisionBuffer1,
-        Vector2[] subdivisionBuffer2,
+        Span<Vector2> subdivisionBuffer1,
+        Span<Vector2> subdivisionBuffer2,
         int count)
     {
         bezierSubdivide(controlPoints, subdivisionBuffer2, subdivisionBuffer1, subdivisionBuffer1, count);

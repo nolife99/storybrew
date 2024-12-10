@@ -208,8 +208,7 @@ public static class LineBreaker
             --i;
         }
 
-        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true))
-            yield return (0, 0);
+        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) yield return (0, 0);
     }
     static int findBreakIndex(ReadOnlySpan<char> text, int startIndex, int endIndex)
     {

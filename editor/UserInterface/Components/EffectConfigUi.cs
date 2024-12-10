@@ -428,7 +428,7 @@ public class EffectConfigUi : Widget
 
     void copyConfiguration()
     {
-        MemoryStream memory = new();
+        SafeUnmanagedMemoryStream memory = new();
         using BinaryWriter writer = new(memory, Encoding.UTF8, true);
 
         writer.Write(effect.Config.FieldCount);
