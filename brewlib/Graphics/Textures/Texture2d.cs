@@ -110,7 +110,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
     static DecoderOptions loadDecoderOptions()
     {
-        DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone(), SkipMetadata = true };
+        DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone() };
         decoderOptions.Configuration.PreferContiguousImageBuffers = true;
 
         return decoderOptions;

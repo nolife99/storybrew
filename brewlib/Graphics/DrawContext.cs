@@ -18,7 +18,11 @@ public sealed class DrawContext : IDisposable
         references[typeof(T)] = obj;
         if (dispose && obj is IDisposable disposable) disposables.Add(disposable);
     }
-    public void Freeze() => frozenReferences = references.ToFrozenDictionary();
+    public void Freeze()
+    {
+        disposables.TrimExcess();
+        frozenReferences = references.ToFrozenDictionary();
+    }
 
     #region IDisposable Support
 

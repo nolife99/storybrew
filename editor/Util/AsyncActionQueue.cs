@@ -183,7 +183,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             }
 
                             context.Queue.RemoveAt(index);
-                            context.Running.Add(task.UniqueKey);
+                            context.Running.Add(task!.UniqueKey);
                             if (task.MustRunAlone) context.RunningLoneTask = true;
                         }
                     }
@@ -194,7 +194,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     }
                     catch (Exception e)
                     {
-                        if (e is not ThreadAbortException) context.TriggerActionFailed(task.Target, e);
+                        if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
                     }
 
                     lock (context.Running)

@@ -113,7 +113,7 @@ public sealed class TextDrawable : Drawable
         var renderer = DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, RenderStates);
 
         var clipRegion = DrawState.GetClipRegion(camera) ??
-            new(new(camera.ExtendedViewport.Left + camera.Position.X, camera.ExtendedViewport.Top + camera.Position.Y),
+            new(new(camera.ExtendedViewport.X + camera.Position.X, camera.ExtendedViewport.Y + camera.Position.Y),
                 camera.ExtendedViewport.Size);
 
         foreach (var line in textLayout.Lines)
@@ -123,9 +123,9 @@ public sealed class TextDrawable : Drawable
             if (glyph.IsEmpty) continue;
 
             var position = layoutGlyph.Position;
-            var y = bounds.Top + position.Y * inverseScaling;
+            var y = bounds.Y + position.Y * inverseScaling;
             if (y > clipRegion.Bottom) break;
-            if (y + glyph.Height * inverseScaling < clipRegion.Top) continue;
+            if (y + glyph.Height * inverseScaling < clipRegion.Y) continue;
 
             var texture = glyph.Texture;
             renderer.Draw(texture, bounds.Left + position.X * inverseScaling, y, 0, 0, inverseScaling, inverseScaling, 0, color,
@@ -143,14 +143,14 @@ public sealed class TextDrawable : Drawable
         var glyph = layoutGlyph.Glyph;
         var position = layoutGlyph.Position * inverseScaling;
 
-        return RectangleF.FromLTRB(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
+        return new(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
     }
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         validate();
         var inverseScaling = 1 / scaling;
         textLayout.ForTextBounds(startIndex, endIndex,
-            bounds => action(RectangleF.FromLTRB(bounds.Left * inverseScaling, bounds.Top * inverseScaling,
+            bounds => action(RectangleF.FromLTRB(bounds.X * inverseScaling, bounds.Y * inverseScaling,
                 bounds.Right * inverseScaling, bounds.Bottom * inverseScaling)));
     }
     public int GetCharacterIndexAt(Vector2 position)

@@ -64,7 +64,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
             }
         }
 
-        Trace.TraceWarning($"Not found: {path} ({sources})", "Resources");
+        Trace.TraceWarning($"Not found: {path} ({sources})");
         return null;
     }
 

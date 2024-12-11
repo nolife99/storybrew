@@ -143,7 +143,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
     {
         var rootBounds = rootContainer.Bounds;
         var targetBounds = tooltip.AnchorTarget.Bounds;
-        var topSpace = targetBounds.Top - rootBounds.Top;
+        var topSpace = targetBounds.Y - rootBounds.Y;
 
         tooltip.Offset = Vector2.Zero;
         tooltip.AnchorFrom = BoxAlignment.Bottom;
@@ -153,7 +153,7 @@ public sealed class WidgetManager : InputHandler, IDisposable
         // Only put it on the bottom if it doesn't fit on top
 
         var bounds = tooltip.Bounds;
-        if (bounds.Top < rootBounds.Top + 16)
+        if (bounds.Y < rootBounds.Y + 16)
         {
             var bottomSpace = rootBounds.Bottom - targetBounds.Bottom;
             if (bottomSpace > topSpace)

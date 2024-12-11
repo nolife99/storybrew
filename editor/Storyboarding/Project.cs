@@ -140,10 +140,10 @@ public sealed partial class Project : IDisposable
     ];
 
     public float DisplayTime, DimFactor;
-    public TextureContainer TextureContainer;
-    public AudioSampleContainer AudioContainer;
 
-    public FrameStats FrameStats = frameStatsPool.Retrieve();
+    public TextureContainer TextureContainer { get; private set; }
+    public AudioSampleContainer AudioContainer { get; private set; }
+    public FrameStats FrameStats { get; private set; } = frameStatsPool.Retrieve();
 
     static readonly Pool<FrameStats> frameStatsPool = new(obj =>
     {

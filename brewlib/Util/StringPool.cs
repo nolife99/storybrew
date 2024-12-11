@@ -174,7 +174,7 @@ public sealed class StringPool
             {
                 entry = ref Unsafe.Add(ref mapEntriesRef, i);
 
-                if (entry.HashCode != hashcode || !entry.Value.AsSpan().SequenceEqual(span)) continue;
+                if (entry.HashCode != hashcode || !span.SequenceEqual(entry.Value)) continue;
                 UpdateTimestamp(ref entry.HeapIndex);
 
                 return ref entry.Value;

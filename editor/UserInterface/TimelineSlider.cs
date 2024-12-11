@@ -62,7 +62,7 @@ public class TimelineSlider : Slider
     {
         base.DrawBackground(drawContext, actualOpacity);
 
-        Vector2 offset = new(Bounds.Left, Bounds.Top);
+        Vector2 offset = Bounds.Location;
         var lineBottomY = project.ShowHitObjects ? Bounds.Height * .7f : Bounds.Height * .6f;
         var hitObjectsY = Bounds.Height * .6f;
         var pixelSize = Manager.PixelSize;

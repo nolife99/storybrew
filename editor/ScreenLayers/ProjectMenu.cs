@@ -440,7 +440,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var bounds = storyboardContainer.Bounds;
         var scale = OsuHitObject.StoryboardSize.Height / bounds.Height;
 
-        storyboardPosition = (WidgetManager.MousePosition - new Vector2(bounds.Left, bounds.Top)) * scale;
+        storyboardPosition = (WidgetManager.MousePosition - (Vector2)bounds.Location) * scale;
         storyboardPosition.X -= (bounds.Width * scale - OsuHitObject.StoryboardSize.Width) * .5f;
     }
 

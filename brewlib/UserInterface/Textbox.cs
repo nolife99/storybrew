@@ -11,12 +11,14 @@ using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;
 
 public class Textbox : Widget, Field
 {
+    readonly bool acceptMultiline;
+    readonly Sprite cursorLine;
     readonly Label label, content;
-    bool acceptMultiline, hasFocus, hovered, hasCommitPending;
-    Sprite cursorLine;
 
     int cursorPosition, selectionStart;
     public bool EnterCommits = true;
+
+    bool hasFocus, hovered, hasCommitPending;
 
     public Textbox(WidgetManager manager) : base(manager)
     {
@@ -75,7 +77,7 @@ public class Textbox : Widget, Field
                 case Keys.C:
                     if (inputManager.ControlOnly)
                         ClipboardHelper.SetText(selectionStart != cursorPosition ?
-                            Value.AsSpan().Slice(SelectionLeft, SelectionLength) :
+                            Value.AsSpan(SelectionLeft, SelectionLength) :
                             Value);
 
                     break;
@@ -97,7 +99,7 @@ public class Textbox : Widget, Field
                     if (inputManager.ControlOnly)
                     {
                         if (selectionStart == cursorPosition) SelectAll();
-                        ClipboardHelper.SetText(Value.AsSpan().Slice(SelectionLeft, SelectionLength));
+                        ClipboardHelper.SetText(Value.AsSpan(SelectionLeft, SelectionLength));
                         ReplaceSelection("");
                     }
 
@@ -278,8 +280,7 @@ public class Textbox : Widget, Field
                 selectionBounds => cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
 
         var bounds = content.GetCharacterBounds(cursorPosition);
-        Vector2 position = new(bounds.Left, bounds.Top + bounds.Height * .2f),
-            scale = new(Manager.PixelSize, bounds.Height * .6f);
+        Vector2 position = new(bounds.X, bounds.Y + bounds.Height * .2f), scale = new(Manager.PixelSize, bounds.Height * .8f);
 
         cursorLine.Draw(drawContext, Manager.Camera, new(position.X, position.Y, scale.X, scale.Y), actualOpacity);
     }

@@ -15,7 +15,6 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Util;
-using WindowState = OpenTK.Windowing.Common.WindowState;
 
 public static class Program
 {
@@ -89,34 +88,7 @@ public static class Program
             using (NetHelper.Client = new())
             {
                 NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
-                editor.Initialize();
-
-                var workArea = displayDevice.WorkArea;
-                var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
-                var dpiScale = displayDevice.VerticalScale;
-
-                float windowWidth = 1360 * dpiScale, windowHeight = windowWidth / ratio;
-                if (windowHeight >= workArea.Max.Y)
-                {
-                    windowWidth = 1024 * dpiScale;
-                    windowHeight = windowWidth / ratio;
-
-                    if (windowWidth >= workArea.Max.X)
-                    {
-                        windowWidth = 896 * dpiScale;
-                        windowHeight = windowWidth / ratio;
-                    }
-                }
-
-                window.CenterWindow(new((int)windowWidth, (int)windowHeight));
-                Trace.WriteLine($"Window dpi scale: {dpiScale}");
-
-                var location = window.Location;
-                if (location.X < 0 || location.Y < 0)
-                {
-                    window.ClientRectangle = workArea;
-                    window.WindowState = WindowState.Maximized;
-                }
+                editor.Initialize(displayDevice);
 
                 using (AudioManager = createAudioManager())
                     runMainLoop(window, editor,
@@ -245,31 +217,22 @@ public static class Program
 
     public static void RunMainThread(Action action)
     {
-        if (Environment.CurrentManagedThreadId == mainThreadId)
-        {
-            action();
-            return;
-        }
-
         Exception ex = null;
-        using (ManualResetEventSlim completed = new(false))
+        var completed = false;
+
+        Schedule(() =>
         {
-            Schedule(() =>
+            try
             {
-                try
-                {
-                    action();
-                }
-                catch (Exception e)
-                {
-                    ex = e;
-                }
-
-                completed.Set();
-            });
-
-            completed.Wait();
-        }
+                action();
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+            completed = true;
+        });
+        while (!completed) Thread.Yield();
 
         if (ex is not null) throw ex;
     }

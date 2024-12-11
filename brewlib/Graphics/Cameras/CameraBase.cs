@@ -167,7 +167,7 @@ public abstract class CameraBase : Camera
 
     public RectangleF FromScreen(RectangleF screenBox2)
     {
-        var topLeft = FromScreen(new Vector2(screenBox2.Left, screenBox2.Top));
+        var topLeft = FromScreen(screenBox2.Location);
         var bottomRight = FromScreen(new Vector2(screenBox2.Right, screenBox2.Bottom));
         return RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
     }
@@ -189,7 +189,7 @@ public abstract class CameraBase : Camera
 
     public RectangleF ToScreen(RectangleF worldBox2)
     {
-        var topLeft = ToScreen(new Vector2(worldBox2.Left, worldBox2.Top));
+        var topLeft = ToScreen(worldBox2.Location);
         var bottomRight = ToScreen(new Vector2(worldBox2.Right, worldBox2.Bottom));
         return RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y);
     }

@@ -3,8 +3,6 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Cameras;
 using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
@@ -23,7 +21,7 @@ public class LineRendererBuffered : LineRenderer
     readonly int maxLinesPerBatch;
     readonly bool ownsShader;
 
-    readonly PrimitiveStreamer<Int128> primitiveStreamer;
+    readonly PrimitiveStreamer<LinePrimitive> primitiveStreamer;
     readonly Shader shader;
 
     Camera camera;
@@ -32,7 +30,7 @@ public class LineRendererBuffered : LineRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 7168, int primitiveBufferSize = 0)
+    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 1024, int primitiveBufferSize = 0)
     {
         if (shader is null)
         {
@@ -42,7 +40,7 @@ public class LineRendererBuffered : LineRenderer
 
         this.shader = shader;
 
-        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<Int128>(VertexDeclaration,
+        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
             Math.Max(this.maxLinesPerBatch = maxLinesPerBatch,
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
@@ -107,11 +105,10 @@ public class LineRendererBuffered : LineRenderer
     {
         if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
 
-        ref var ptr = ref Unsafe.As<Int128, byte>(ref primitiveStreamer.PrimitiveAt(linesInBatch));
-        Unsafe.WriteUnaligned(ref ptr, start);
-        Unsafe.WriteUnaligned(ref ptr = ref Unsafe.AddByteOffset(ref ptr, Marshal.SizeOf(start)), color);
-        Unsafe.WriteUnaligned(ref ptr = ref Unsafe.AddByteOffset(ref ptr, Marshal.SizeOf(color)), end);
-        Unsafe.WriteUnaligned(ref ptr = ref Unsafe.AddByteOffset(ref ptr, Marshal.SizeOf(end)), color);
+        ref var ptr = ref primitiveStreamer.PrimitiveAt(linesInBatch);
+        ptr.from = start;
+        ptr.to = end;
+        ptr.color1 = ptr.color2 = color;
 
         ++linesInBatch;
     }

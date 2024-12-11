@@ -1,11 +1,12 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
-public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : struct
+public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : allows ref struct
 {
     bool Bound;
     protected Shader CurrentShader;
@@ -22,7 +23,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
 
         MinRenderableVertexCount = minRenderableVertexCount;
         VertexDeclaration = vertexDeclaration;
-        PrimitiveSize = Marshal.SizeOf<TPrimitive>();
+        PrimitiveSize = Unsafe.SizeOf<TPrimitive>();
 
         initializeVertexBuffer();
         if (!indices.IsEmpty) initializeIndexBuffer(indices);

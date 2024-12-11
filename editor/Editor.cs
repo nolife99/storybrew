@@ -18,6 +18,7 @@ using BrewLib.UserInterface.Skinning;
 using BrewLib.Util;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
 using ScreenLayers;
 using Label = BrewLib.UserInterface.Label;
 using NativeWindow = OpenTK.Windowing.Desktop.NativeWindow;
@@ -50,7 +51,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
         DrawState.Cleanup();
     }
 
-    public void Initialize(ScreenLayer initialLayer = null)
+    public void Initialize(MonitorInfo displayDevice)
     {
         ResourceContainer =
             new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
@@ -104,12 +105,37 @@ public sealed class Editor(NativeWindow window) : IDisposable
         inputDispatcher.Add(createOverlay(screenLayerManager));
         inputDispatcher.Add(screenLayerManager.InputHandler);
 
-        Restart(initialLayer);
-
         window.Resize += resizeToWindow;
         window.Closing += window_Closing;
 
-        resizeToWindow(new(size));
+        var workArea = displayDevice.WorkArea;
+        var ratio = displayDevice.HorizontalResolution / (float)displayDevice.VerticalResolution;
+        var dpiScale = displayDevice.VerticalScale;
+
+        float windowWidth = 1360 * dpiScale, windowHeight = windowWidth / ratio;
+        if (windowHeight >= workArea.Max.Y)
+        {
+            windowWidth = 1024 * dpiScale;
+            windowHeight = windowWidth / ratio;
+
+            if (windowWidth >= workArea.Max.X)
+            {
+                windowWidth = 896 * dpiScale;
+                windowHeight = windowWidth / ratio;
+            }
+        }
+
+        window.CenterWindow(new((int)windowWidth, (int)windowHeight));
+        Trace.WriteLine($"Window dpi scale: {dpiScale}");
+
+        var location = window.Location;
+        if (location.X < 0 || location.Y < 0)
+        {
+            window.ClientRectangle = workArea;
+            window.WindowState = WindowState.Maximized;
+        }
+
+        Restart();
     }
 
     public void Restart(ScreenLayer initialLayer = null, string message = null)
@@ -230,7 +256,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
         var bounds = altOverlayTop.Bounds;
 
         var showAltOverlayTop = InputManager.AltOnly ||
-            altOverlayTop.Displayed && bounds.Top < mousePosition.Y && mousePosition.Y < bounds.Bottom;
+            altOverlayTop.Displayed && bounds.Y < mousePosition.Y && mousePosition.Y < bounds.Bottom;
 
         var altOpacity = altOverlayTop.Opacity;
         var targetOpacity = showAltOverlayTop ? 1f : 0;

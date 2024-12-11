@@ -27,8 +27,8 @@ public sealed class NinePatch : Drawable
     {
         if (Texture is null) return;
 
-        var x0 = bounds.Left - Outset.Left;
-        var y0 = bounds.Top - Outset.Top;
+        var x0 = bounds.X - Outset.Left;
+        var y0 = bounds.Y - Outset.Top;
         var x1 = x0 + Borders.Left;
         var y1 = y0 + Borders.Top;
         var x2 = bounds.Right + Outset.Right - (Texture.Width - Borders.Right);

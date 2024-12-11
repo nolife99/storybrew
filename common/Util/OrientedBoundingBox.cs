@@ -55,7 +55,7 @@ public readonly record struct OrientedBoundingBox : IDisposable
     bool Intersects(ref readonly OrientedBoundingBox other) => intersects1Way(in other) && other.intersects1Way(in this);
     public bool Intersects(ref readonly RectangleF other)
     {
-        using OrientedBoundingBox otherBox = new(new(other.Left, other.Top), Vector2.Zero, other.Width, other.Height, 0);
+        using OrientedBoundingBox otherBox = new(other.Location, Vector2.Zero, other.Width, other.Height, 0);
         return Intersects(in otherBox);
     }
     bool intersects1Way(ref readonly OrientedBoundingBox other)

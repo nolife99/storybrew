@@ -4,7 +4,7 @@ using System;
 using System.Buffers;
 using System.Threading;
 
-public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = false) : IDisposable where T : class, new()
+public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = false) : IDisposable where T : new()
 {
     readonly Lock _lock = new();
 
@@ -51,12 +51,12 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
 
         if (_size == 0)
         {
-            result = null;
+            result = default;
             return false;
         }
 
         result = array[head];
-        array[head] = null;
+        array[head] = default;
         MoveNext(ref _head);
         _size--;
         return true;

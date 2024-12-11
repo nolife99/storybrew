@@ -304,8 +304,8 @@ public static class DrawState
     public static Rectangle? Clip(RectangleF bounds, Camera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
-        return Clip(new((int)float.Round(screenBounds.Left),
-            viewport.Height - (int)float.Round(screenBounds.Top + screenBounds.Height), (int)float.Round(screenBounds.Width),
+        return Clip(new((int)float.Round(screenBounds.X),
+            viewport.Height - (int)float.Round(screenBounds.Y + screenBounds.Height), (int)float.Round(screenBounds.Width),
             (int)float.Round(screenBounds.Height)));
     }
     public static RectangleF? GetClipRegion(Camera camera)
@@ -313,8 +313,8 @@ public static class DrawState
         if (!clipRegion.HasValue) return null;
 
         var bounds = camera.FromScreen(clipRegion.Value);
-        return RectangleF.FromLTRB(bounds.Left, camera.ExtendedViewport.Height - bounds.Bottom, bounds.Right,
-            camera.ExtendedViewport.Height - bounds.Top);
+        return RectangleF.FromLTRB(bounds.X, camera.ExtendedViewport.Height - bounds.Bottom, bounds.Right,
+            camera.ExtendedViewport.Height - bounds.Y);
     }
 
     static int programId;

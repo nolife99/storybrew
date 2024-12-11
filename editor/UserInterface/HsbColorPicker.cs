@@ -158,7 +158,7 @@ public class HsbColorPicker : Widget, Field
 
         var bounds = Bounds;
         previewSprite.Draw(drawContext, Manager.Camera,
-            RectangleF.FromLTRB(bounds.Left, bounds.Top, bounds.Right, bounds.Top + previewHeight), actualOpacity);
+            RectangleF.FromLTRB(bounds.X, bounds.Y, bounds.Right, bounds.Y + previewHeight), actualOpacity);
     }
 
     protected override void Dispose(bool disposing)
