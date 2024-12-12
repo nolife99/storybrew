@@ -151,26 +151,22 @@ public class CommandGenerator
 
     void commitKeyframes(Vector2 imageSize)
     {
-        fades.Simplify1dKeyframes(OpacityTolerance, f => Math.Clamp(f, 0, 1) * 100);
+        fades.Simplify1dKeyframes(OpacityTolerance, f => f * 100);
         if (float.Round(fades.StartValue, OpacityDecimals) > 0) fades.Add(fades.StartTime, 0, true);
         if (float.Round(fades.EndValue, OpacityDecimals) > 0) fades.Add(fades.EndTime, 0);
         fades.TransferKeyframes(finalFades);
 
         positions.Simplify2dKeyframes(PositionTolerance, s => s);
-        finalPositions.Until(positions.StartTime);
-        positions.TransferKeyframes(finalPositions);
+        positions.TransferKeyframes(finalPositions.Until(positions.StartTime));
 
         scales.Simplify2dKeyframes(ScaleTolerance, v => (Vector2)v * imageSize);
-        finalScales.Until(scales.StartTime);
-        scales.TransferKeyframes(finalScales);
+        scales.TransferKeyframes(finalScales.Until(scales.StartTime));
 
         rotations.Simplify1dKeyframes(RotationTolerance, float.RadiansToDegrees);
-        finalRotations.Until(rotations.StartTime);
-        rotations.TransferKeyframes(finalRotations);
+        rotations.TransferKeyframes(finalRotations.Until(rotations.StartTime));
 
         colors.Simplify3dKeyframes(ColorTolerance, c => new(c.R, c.G, c.B));
-        finalColors.Until(colors.StartTime);
-        colors.TransferKeyframes(finalColors);
+        colors.TransferKeyframes(finalColors.Until(colors.StartTime));
     }
 
     void convertToCommands(OsbSprite sprite, float? startTime, float? endTime, float timeOffset, Vector2 imageSize, bool loopable)

@@ -122,13 +122,12 @@ public sealed class FontGenerator
             SystemFonts.CreateFont(fontPath, emSize, description.FontStyle) :
             new(family, emSize, description.FontStyle);
 
-        var foundMetrics = font.Family.TryGetMetrics(desc.FontStyle, out var metrics);
         format = new(font)
         {
             TextAlignment = TextAlignment.Center,
             HintingMode = HintingMode.Standard,
             KerningMode = KerningMode.Standard,
-            LineSpacing = foundMetrics ? metrics.VerticalMetrics.LineHeight * .001f : 1,
+            LineSpacing = font.FontMetrics.VerticalMetrics.LineHeight * .001f,
             Dpi = dpi
         };
 
@@ -175,12 +174,12 @@ public sealed class FontGenerator
         if (string.IsNullOrWhiteSpace(text) || width == 0 || height == 0)
             return new(null, offsetX, offsetY, baseWidth, baseHeight, width, height, null);
 
-        var segments = TextBuilder.GenerateGlyphs(text, format).Translate(paddingX, paddingY);
+        var segments = TextBuilder.GenerateGlyphs(text, new(format) { Origin = new(paddingX, paddingY) });
 
         Image<Rgba32> realText = new(width, height);
         realText.Mutate(b =>
         {
-            if (description.Debug)
+            if (debugRandom is not null)
             {
                 debugRandom.Reinitialise(cache.Count);
                 b.Clear(new Rgb24((byte)debugRandom.Next(100, 255), (byte)debugRandom.Next(100, 255),

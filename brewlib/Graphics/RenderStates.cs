@@ -9,26 +9,25 @@ public class RenderStates
 
     public void Apply()
     {
-        if (currentState is not null && currentState.Equals(BlendingFactor)) return;
+        if (currentState.Equals(BlendingFactor)) return;
 
         DrawState.FlushRenderer();
 
         BlendingFactor.Apply();
         currentState = BlendingFactor;
     }
-    public static void ClearStateCache() => currentState = null;
+    public static void ClearStateCache() => currentState = BlendingFactorState.Default;
 }
 
-public record BlendingFactorState
+public readonly record struct BlendingFactorState
 {
-    public static readonly BlendingFactorState Default = new();
+    public static readonly BlendingFactorState Default = new(BlendingMode.AlphaBlend);
 
-    readonly BlendingFactorDest dest = BlendingFactorDest.OneMinusSrcAlpha, alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
+    readonly BlendingFactorDest dest, alphaDest;
 
     readonly bool enabled = true;
-    readonly BlendingFactorSrc src = BlendingFactorSrc.SrcAlpha, alphaSrc = BlendingFactorSrc.SrcAlpha;
+    readonly BlendingFactorSrc src, alphaSrc;
 
-    BlendingFactorState() { }
     public BlendingFactorState(BlendingMode mode)
     {
         switch (mode)

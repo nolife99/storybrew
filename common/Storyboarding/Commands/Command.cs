@@ -68,8 +68,10 @@ public abstract record Command<TValue>(string identifier,
         var startTimeString = (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);
         var endTimeString = (exportSettings.UseFloatForTime ? EndTime : (int)EndTime).ToString(exportSettings.NumberFormat);
 
-        var tranformedStartValue = transform is not null ? GetTransformedStartValue(transform) : StartValue;
-        var tranformedEndValue = transform is not null ? GetTransformedEndValue(transform) : EndValue;
+        var identity = !transform.IsIdentity;
+
+        var tranformedStartValue = identity ? GetTransformedStartValue(transform) : StartValue;
+        var tranformedEndValue = identity ? GetTransformedEndValue(transform) : EndValue;
         var startValueString = tranformedStartValue.ToOsbString(exportSettings);
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
@@ -86,7 +88,7 @@ public abstract record Command<TValue>(string identifier,
     }
     public override string ToString()
     {
-        var str = ToOsbString(ExportSettings.Default, null);
+        var str = ToOsbString(ExportSettings.Default, default);
         var result = str.ToString();
         StringHelper.StringBuilderPool.Release(str);
         return result;

@@ -1,25 +1,24 @@
 ﻿namespace StorybrewCommon.Storyboarding;
 
-using System;
 using System.Numerics;
-using BrewLib.Util;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 ///     A transform that applies to a storyboard element.
 /// </summary>
-public sealed class StoryboardTransform : IDisposable
+public readonly struct StoryboardTransform
 {
-    static readonly Pool<StoryboardTransform> pool = new(obj =>
-    {
-        obj.transform = Matrix3x2.Identity;
-        obj.transformScale = 0;
-    }, true);
+    /// <summary>
+    ///     The identity transform.
+    /// </summary>
+    public static readonly StoryboardTransform Identity = Unsafe.BitCast<Matrix3x2, StoryboardTransform>(Matrix3x2.Identity);
 
-    Matrix3x2 transform;
-    float transformScale;
+    readonly Matrix3x2 transform = Matrix3x2.Identity;
 
-    /// <inheritdoc/>
-    public void Dispose() => pool.Release(this);
+    /// <summary>
+    ///     Determines if the transform is the identity transform.
+    /// </summary>
+    public bool IsIdentity => transform.IsIdentity;
 
     /// <summary>
     ///     Initializes a new <see cref="StoryboardTransform"/> instance.
@@ -29,24 +28,16 @@ public sealed class StoryboardTransform : IDisposable
     /// <param name="position">The position of the element.</param>
     /// <param name="rotation">The rotation of the element in radians.</param>
     /// <param name="scale">The scale of the element.</param>
-    public static StoryboardTransform Get(StoryboardTransform parent,
-        Vector2 origin,
-        Vector2 position,
-        float rotation,
-        float scale)
+    public StoryboardTransform(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale)
     {
-        var instance = pool.Retrieve();
-        var transform = parent?.transform ?? Matrix3x2.Identity;
+        var transform = parent.transform;
 
         if (position != Vector2.Zero) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateTranslation(position));
         if (rotation != 0) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateRotation(rotation));
-        if (scale != 1) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateScale(scale, scale));
+        if (scale != 1) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateScale(scale));
         if (origin != Vector2.Zero) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateTranslation(-origin.X, -origin.Y));
 
-        instance.transform = transform;
-        instance.transformScale = (parent?.transformScale ?? 1) * scale;
-
-        return instance;
+        this.transform = transform;
     }
 
     /// <summary>
@@ -78,10 +69,11 @@ public sealed class StoryboardTransform : IDisposable
     /// <summary>
     ///     Applies the transform to a scale scalar.
     /// </summary>
-    public float ApplyToScale(float value) => value * transformScale;
+    public float ApplyToScale(float value) => value * float.Sqrt(transform.M11 * transform.M11 + transform.M12 * transform.M12);
 
     /// <summary>
     ///     Applies the transform to a scale vector.
     /// </summary>
-    public Vector2 ApplyToScale(Vector2 value) => value * transformScale;
+    public Vector2 ApplyToScale(Vector2 value)
+        => value * float.Sqrt(transform.M11 * transform.M11 + transform.M12 * transform.M12);
 }

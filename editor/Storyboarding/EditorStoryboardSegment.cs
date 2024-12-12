@@ -48,8 +48,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         if (layer.Highlight || effect.Highlight)
             opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
-        using var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
-        foreach (var o in displayableObjects) o.Draw(drawContext, camera, bounds, opacity, localTransform, project, frameStats);
+        foreach (var o in displayableObjects)
+            o.Draw(drawContext, camera, bounds, opacity, new(transform, Origin, Position, Rotation, Scale), project, frameStats);
     }
 
     public void PostProcess()
@@ -198,8 +198,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         OsbLayer osbLayer,
         StoryboardTransform transform)
     {
-        using var localTransform = StoryboardTransform.Get(transform, Origin, Position, Rotation, Scale);
-        foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, localTransform);
+        foreach (var sbo in storyboardObjects)
+            sbo.WriteOsb(writer, exportSettings, osbLayer, new(transform, Origin, Position, Rotation, Scale));
     }
 
     public int CalculateSize(OsbLayer osbLayer)
@@ -209,7 +209,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         using ByteCounterStream stream = new();
         using StreamWriter writer = new(stream, Project.Encoding);
 
-        foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, null);
+        foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
         return (int)stream.Length;
     }
 }

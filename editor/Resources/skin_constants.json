@@ -1,7 +1,7 @@
 ﻿{
   constants: {
-    mainFont: "Asap-Regular.ttf",
-    lightFont: "Asap-Light.ttf",
+    mainFont: "Asap-Regular.woff2",
+    lightFont: "Asap-Light.woff2",
     iconFont: "MaterialIcons.ttf",
     fontSizeLarge: 16,
     fontSizeNormal: 14,

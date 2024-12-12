@@ -65,7 +65,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
     {
         writer.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
 
-        var transformedInitialPosition = transform is null ? (Vector2)sprite.InitialPosition :
+        var transformedInitialPosition = transform.IsIdentity ? (Vector2)sprite.InitialPosition :
             sprite.HasMoveXYCommands ? transform.ApplyToPositionXY(sprite.InitialPosition) :
             transform.ApplyToPosition(sprite.InitialPosition);
 

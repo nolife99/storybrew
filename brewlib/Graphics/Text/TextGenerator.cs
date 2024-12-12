@@ -21,7 +21,6 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
     readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
 
     readonly FontCollection fontCollection = new();
-    readonly Dictionary<string, FontFamily> fontFamilies = [];
     readonly Dictionary<int, Font> fonts = [];
 
     public Image<Rgba32> CreateBitmap(string text,
@@ -34,11 +33,8 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
     {
         if (string.IsNullOrEmpty(text)) text = " ";
 
-        const float dpi = 72f;
-        var font = getFont(fontName, 96 * fontSize / dpi, FontStyle.Regular);
-        var foundMetrics = font.Family.TryGetMetrics(FontStyle.Regular, out var metrics);
-
-        RichTextOptions options = new(font)
+        var font = getFont(fontName, 96 * fontSize / 72, FontStyle.Regular);
+        TextOptions options = new(font)
         {
             HorizontalAlignment =
                 (alignment & BoxAlignment.Horizontal) switch
@@ -54,8 +50,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
                     BoxAlignment.Bottom => VerticalAlignment.Bottom,
                     _ => VerticalAlignment.Center
                 },
-            LineSpacing = foundMetrics ? Math.Max(metrics.VerticalMetrics.LineHeight * .001f, 1) : 1,
-            Dpi = dpi,
+            LineSpacing = Math.Clamp(font.FontMetrics.VerticalMetrics.LineHeight * .001f, 1, 1.5f),
             FallbackFontFamilies = fallback
         };
 
@@ -82,20 +77,18 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         var identifier = HashCode.Combine(name, emSize, style);
         if (fonts.TryGetValue(identifier, out var font)) return font;
 
-        if (!fontFamilies.TryGetValue(name, out var fontFamily))
+        if (!fontCollection.TryGet(name, out var fontFamily))
         {
-            using (var stream = resourceContainer.GetStream(name, ResourceSource.Embedded))
-                if (stream is not null)
-                    Trace.WriteLine(
-                        $"Loaded font {(fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
-
-            fontFamilies[name] = fontFamily;
+            using var stream = resourceContainer.GetStream(name, ResourceSource.Embedded);
+            if (stream is not null)
+                Trace.WriteLine(
+                    $"Loaded font {(fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
         }
 
         if (fontFamily != default) font = new(fontFamily, emSize, style);
         else
         {
-            font = SystemFonts.CreateFont(name, CultureInfo.InvariantCulture, emSize, style);
+            font = SystemFonts.CreateFont(name, emSize, style);
             Trace.WriteLine($"Using system font for {name}");
         }
 

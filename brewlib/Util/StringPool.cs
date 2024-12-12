@@ -162,7 +162,6 @@ public sealed class StringPool
             timestamp = 0;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         ref string TryGet(ReadOnlySpan<char> span, ref int hashcode)
         {
             ref var mapEntriesRef = ref MemoryMarshal.GetArrayDataReference(mapEntries);
@@ -183,7 +182,6 @@ public sealed class StringPool
             return ref Unsafe.NullRef<string>();
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         void Insert(string value, ref int hashcode)
         {
             ref var bucketsRef = ref MemoryMarshal.GetArrayDataReference(buckets);
@@ -223,7 +221,6 @@ public sealed class StringPool
             UpdateTimestamp(ref targetMapEntry.HeapIndex);
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         void Remove(ref int hashcode, ref int mapIndex)
         {
             ref var mapEntriesRef = ref MemoryMarshal.GetArrayDataReference(mapEntries);
@@ -255,7 +252,6 @@ public sealed class StringPool
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
         void UpdateTimestamp(ref int heapIndex)
         {
             var currentIndex = heapIndex;

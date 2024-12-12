@@ -40,14 +40,14 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             endPoint.X * (startPoint.Y - midPoint.Y)) != 0;
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static PooledManagedBuffer<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
+    static UnmanagedBuffer<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
     {
         CircularArcProperties pr = new(controlPoints);
         var amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
             2 :
             Math.Max(2, (int)MathF.Ceiling(pr.ThetaRange / (2 * MathF.Acos(1 - circular_arc_tolerance / pr.Radius))));
 
-        PooledManagedBuffer<Vector2> output = new(amountPoints);
+        UnmanagedBuffer<Vector2> output = new(amountPoints);
         var outputSpan = output.GetSpan();
 
         for (var i = 0; i < amountPoints; ++i)

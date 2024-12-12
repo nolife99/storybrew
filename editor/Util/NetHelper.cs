@@ -11,7 +11,7 @@ public static class NetHelper
     internal static HttpClient Client;
 
     public static void OpenUrl(string url)
-        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true }).Dispose();
+        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true })?.Dispose();
 
     public static async void Request(string url, Action<string, Exception> action)
     {
@@ -85,7 +85,7 @@ public static class NetHelper
             {
                 response.EnsureSuccessStatusCode();
 
-                using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+                await using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                 var bytesRead = 0L;
                 var isMoreToRead = true;
@@ -103,7 +103,7 @@ public static class NetHelper
 
                     if (progressFunc(progressPercentage)) continue;
                     isMoreToRead = false;
-                    completedAction(new HttpRequestException("Download cancelled"));
+                    completedAction?.Invoke(new HttpRequestException("Download cancelled"));
                 }
                 while (isMoreToRead);
             }

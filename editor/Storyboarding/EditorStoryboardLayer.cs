@@ -136,7 +136,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
-        if (Visible) segment.Draw(drawContext, camera, bounds, opacity, null, Effect.Project, frameStats);
+        if (Visible) segment.Draw(drawContext, camera, bounds, opacity, StoryboardTransform.Identity, Effect.Project, frameStats);
     }
 
     public void PostProcess()
@@ -152,7 +152,8 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         EstimatedSize = segment.CalculateSize(osbLayer);
     }
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings) => WriteOsb(writer, exportSettings, osbLayer, null);
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings)
+        => WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
 
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
         => segment.WriteOsb(writer, exportSettings, layer, transform);

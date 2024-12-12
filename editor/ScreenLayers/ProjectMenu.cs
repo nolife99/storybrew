@@ -5,7 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime;
+using System.Text;
 using System.Threading;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -23,6 +23,7 @@ using UserInterface.Drawables;
 
 public class ProjectMenu(Project proj) : UiScreenLayer
 {
+    static readonly StringBuilder warnings = new();
     AudioStream audio;
 
     int defaultDiv = 4;
@@ -547,10 +548,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (previewContainer.Visible)
             previewDrawable.Time = timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
     }
-
     string buildWarningMessage()
     {
-        var warnings = StringHelper.StringBuilderPool.Retrieve();
+        warnings.Length = 0;
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
@@ -601,7 +601,6 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (stats.IncompatibleCommands) warnings.Append("⚠ Incompatible Commands");
 
         var str = warnings.TrimEnd().ToString();
-        StringHelper.StringBuilderPool.Release(warnings);
         return str;
     }
 
@@ -649,14 +648,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Program.RunMainThread(() => Manager.GetContext<Editor>().Restart());
 
             Thread.Sleep(1000);
-
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            GCSettings.LatencyMode = GCLatencyMode.Batch;
-
-            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
-
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.Default;
-            GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
+            Program.ForceFullGC();
         });
     });
 

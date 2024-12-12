@@ -47,8 +47,8 @@ using Vector2 = System.Numerics.Vector2;
 
     ///<summary> Converts this instance to a .osb string. </summary>
     public string ToOsbString(ExportSettings exportSettings) => exportSettings.UseFloatForMove ?
-        $"{X.ToOsbString(exportSettings)},{Y.ToOsbString(exportSettings)}" :
-        $"{(int)Math.Round(X)},{(int)Math.Round(Y)}";
+        $"{internalVec.X.ToString(exportSettings.NumberFormat)},{internalVec.Y.ToString(exportSettings.NumberFormat)}" :
+        $"{(int)Math.Round(internalVec.X)},{(int)Math.Round(internalVec.Y)}";
 
     ///<summary> Converts this instance to a string. </summary>
     public override string ToString() => internalVec.ToString();

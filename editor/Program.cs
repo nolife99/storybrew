@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,15 +25,12 @@ public static class Program
     public static readonly Version Version = typeof(Editor).Assembly.GetName().Version;
     public static readonly string FullName = $"{Name} {Version} ({Repository})";
 
-    static int mainThreadId;
-
     public static AudioManager AudioManager { get; set; }
     public static Settings Settings { get; set; }
 
     static void Main(string[] args)
     {
         if (args.Length != 0 && handleArguments(args)) return;
-        mainThreadId = Environment.CurrentManagedThreadId;
 
         setupLogging();
         startEditor();
@@ -52,14 +50,15 @@ public static class Program
                 setupLogging(null, "build.log");
                 Builder.Build();
                 return true;
-
-            case "worker":
-                if (args.Length < 2) return false;
-                setupLogging(null, $"worker-{DateTimeOffset.UtcNow:yyyyMMddHHmmssfff}.log");
-                return true;
         }
 
         return false;
+    }
+
+    public static void ForceFullGC()
+    {
+        GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
     }
 
     #region Editor
@@ -230,8 +229,10 @@ public static class Program
             {
                 ex = e;
             }
+
             completed = true;
         });
+
         while (!completed) Thread.Yield();
 
         if (ex is not null) throw ex;
@@ -265,7 +266,7 @@ public static class Program
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
 
-        Timer timer = new(s => Unsafe.As<TraceListener>(s).Flush(), listener, 5000, 1000);
+        Timer timer = new(s => Unsafe.As<TraceListener>(s)!.Flush(), listener, 5000, 1000);
         domain.ProcessExit += (_, _) => timer.Dispose();
     }
 

@@ -93,7 +93,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
 
         var origin = GetOriginVector(sprite.Origin, texture.Size);
-        if (transform is not null)
+        if (!transform.IsIdentity)
         {
             position = sprite.HasMoveXYCommands ? transform.ApplyToPositionXY(position) : transform.ApplyToPosition(position);
 
