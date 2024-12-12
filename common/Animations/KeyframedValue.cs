@@ -109,7 +109,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     }
 
     ///<summary> Waits from at the end of the previous keyframe until the given time. </summary>
-    public KeyframedValue<TValue> Until(float time) => keyframes.Count == 0 ? null : Add(time, EndValue);
+    public KeyframedValue<TValue> Until(float time) => keyframes.Count == 0 ? this : Add(time, EndValue);
 
     internal KeyframedValue<TValue> DebugUntil(float time) => Add(new Keyframe<TValue>(time, EndValue, null, true));
 
