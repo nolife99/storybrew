@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using BrewLib.Util;
 using Curves;
 using Storyboarding.CommandValues;
 
@@ -149,9 +150,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     CompositeCurve generateBezierCurve()
     {
         List<BezierCurve> curves = [];
-
-        List<Vector2> curvePoints = [];
-        var precision = (int)(Length / 2);
+        using UnmanagedList<Vector2> curvePoints = [];
 
         var previousPosition = (Vector2)PlayfieldPosition;
         curvePoints.Add(previousPosition);
@@ -161,7 +160,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             if (controlPoint == previousPosition)
             {
                 if (curvePoints.Count > 1) curves.Add(new(curvePoints));
-                curvePoints = [];
+                curvePoints.Clear();
             }
 
             curvePoints.Add(controlPoint);

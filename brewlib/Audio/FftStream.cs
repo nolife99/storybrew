@@ -2,8 +2,10 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using ManagedBass;
-using Util;
+using Configuration = SixLabors.ImageSharp.Configuration;
 
 public class FftStream : IDisposable
 {
@@ -20,7 +22,7 @@ public class FftStream : IDisposable
         Bass.ChannelGetAttribute(stream, ChannelAttribute.Frequency, out Frequency);
     }
 
-    public MemoryManager<float> GetFft(float time, bool splitChannels = false)
+    public IMemoryOwner<float> GetFft(float time, bool splitChannels = false)
     {
         Bass.ChannelSetPosition(stream, Bass.ChannelSeconds2Bytes(stream, time));
 
@@ -33,8 +35,11 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        UnmanagedBuffer<float> data = new(size);
-        if (Bass.ChannelGetData(stream, data.Address, (int)flags) == -1) throw new BassException(Bass.LastError);
+        var data = Configuration.Default.MemoryAllocator.Allocate<float>(size);
+        if (Bass.ChannelGetData(stream,
+                Unsafe.ByteOffset(ref Unsafe.NullRef<float>(), ref MemoryMarshal.GetReference(data.Memory.Span)),
+                (int)flags) ==
+            -1) throw new BassException(Bass.LastError);
 
         return data;
     }

@@ -31,9 +31,12 @@ public class TextureOptions : IEquatable<TextureOptions>
     public TextureMinFilter TextureMinFilter = TextureMinFilter.Linear;
     public TextureWrapMode TextureWrapS = TextureWrapMode.ClampToEdge, TextureWrapT = TextureWrapMode.ClampToEdge;
 
-    public bool Equals(TextureOptions other) => Srgb == other.Srgb && GenerateMipmaps == other.GenerateMipmaps &&
-        TextureMinFilter == other.TextureMinFilter && TextureMagFilter == other.TextureMagFilter &&
-        TextureWrapS == other.TextureWrapS && TextureWrapT == other.TextureWrapT;
+    public bool Equals(TextureOptions other) => Srgb == other.Srgb &&
+        GenerateMipmaps == other.GenerateMipmaps &&
+        TextureMinFilter == other.TextureMinFilter &&
+        TextureMagFilter == other.TextureMagFilter &&
+        TextureWrapS == other.TextureWrapS &&
+        TextureWrapT == other.TextureWrapT;
 
     public void ApplyParameters(int textureId)
     {

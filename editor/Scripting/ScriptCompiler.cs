@@ -31,19 +31,23 @@ public static class ScriptCompiler
         EmitResult result;
         using (SafeUnmanagedMemoryStream assemblyStream = new())
         {
-            result = CSharpCompilation.Create(asmName, trees.Keys, referencedAssemblies.Select(asmPath =>
-            {
-                using var stream = File.OpenRead(asmPath);
-                if (!Project.DefaultAssemblies.Contains(asmPath))
-                {
-                    AssemblyLoadContext.Default.LoadFromStream(stream);
-                    stream.Position = 0;
-                }
+            result = CSharpCompilation.Create(asmName,
+                    trees.Keys,
+                    referencedAssemblies.Select(asmPath =>
+                    {
+                        using var stream = File.OpenRead(asmPath);
+                        if (!Project.DefaultAssemblies.Contains(asmPath))
+                        {
+                            AssemblyLoadContext.Default.LoadFromStream(stream);
+                            stream.Position = 0;
+                        }
 
-                return MetadataReference.CreateFromStream(stream);
-            }), new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release)).Emit(
-                assemblyStream, embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
-                options: new(debugInformationFormat: DebugInformationFormat.Embedded));
+                        return MetadataReference.CreateFromStream(stream);
+                    }),
+                    new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
+                .Emit(assemblyStream,
+                    embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
+                    options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
             if (result.Success)
             {

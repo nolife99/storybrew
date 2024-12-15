@@ -64,16 +64,36 @@ public sealed class Sprite : Drawable
             case ScaleMode.RepeatFit:
                 for (var y = bounds.Y; y < bounds.Bottom; y += Texture.Height * scale)
                 for (var x = bounds.X; x < bounds.Right; x += Texture.Width * scale)
-                    renderer.Draw(Texture, x, y, 0, 0, scale, scale, 0, color, 0, 0,
+                    renderer.Draw(Texture,
+                        x,
+                        y,
+                        0,
+                        0,
+                        scale,
+                        scale,
+                        0,
+                        color,
+                        0,
+                        0,
                         Math.Min((bounds.Right - x) / scale, Texture.Width),
                         Math.Min((bounds.Bottom - y) / scale, Texture.Height));
 
                 break;
 
             default:
-                renderer.Draw(Texture, (bounds.X + bounds.Right) * .5f, (bounds.Y + bounds.Bottom) * .5f,
-                    (textureX1 - textureX0) * .5f, (textureY1 - textureY0) * .5f, scale, scale, Rotation, color, textureX0,
-                    textureY0, textureX1, textureY1); break;
+                renderer.Draw(Texture,
+                    (bounds.X + bounds.Right) * .5f,
+                    (bounds.Y + bounds.Bottom) * .5f,
+                    (textureX1 - textureX0) * .5f,
+                    (textureY1 - textureY0) * .5f,
+                    scale,
+                    scale,
+                    Rotation,
+                    color,
+                    textureX0,
+                    textureY0,
+                    textureX1,
+                    textureY1); break;
         }
     }
 

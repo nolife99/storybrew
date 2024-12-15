@@ -78,7 +78,11 @@ public abstract record Command<TValue>(string identifier,
         var result = StringHelper.StringBuilderPool.Retrieve();
         if (startTimeString == endTimeString) endTimeString = "";
 
-        result.AppendJoin(',', identifier, ((int)Easing).ToString(exportSettings.NumberFormat), startTimeString, endTimeString,
+        result.AppendJoin(',',
+            identifier,
+            ((int)Easing).ToString(exportSettings.NumberFormat),
+            startTimeString,
+            endTimeString,
             startValueString);
 
         if (startValueString == endValueString) return result;

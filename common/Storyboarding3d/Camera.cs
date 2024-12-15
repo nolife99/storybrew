@@ -27,11 +27,14 @@ public record CameraState(Matrix4x4 ViewProjection,
     public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
     {
         var transformed = Vector4.Transform(new Vector4(point, 1), transform);
-        var screenPosition = (new Vector2(transformed.X, transformed.Y) / Math.Abs(transformed.W) + Vector2.One) / 2 *
+        var screenPosition = (new Vector2(transformed.X, transformed.Y) / Math.Abs(transformed.W) + Vector2.One) /
+            2 *
             new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
 
         return new(screenPosition.X - (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2,
-            screenPosition.Y, transformed.Z / transformed.W, transformed.W);
+            screenPosition.Y,
+            transformed.Z / transformed.W,
+            transformed.W);
     }
     public float OpacityAt(float distance)
     {
@@ -99,7 +102,13 @@ public class PerspectiveCamera : Camera
         var view = Matrix4x4.CreateLookAt(cameraPosition, targetPosition, Up.ValueAt(time) * (1 / Up.ValueAt(time).Length()));
         var projection = Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip);
 
-        return new(Matrix4x4.Multiply(view, projection), aspectRatio, focusDistance, ResolutionScale, nearClip,
-            NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip, FarFade.Count > 0 ? FarFade.ValueAt(time) : farClip, farClip);
+        return new(Matrix4x4.Multiply(view, projection),
+            aspectRatio,
+            focusDistance,
+            ResolutionScale,
+            nearClip,
+            NearFade.Count > 0 ? NearFade.ValueAt(time) : nearClip,
+            FarFade.Count > 0 ? FarFade.ValueAt(time) : farClip,
+            farClip);
     }
 }

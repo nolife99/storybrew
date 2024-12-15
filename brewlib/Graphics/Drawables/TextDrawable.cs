@@ -128,8 +128,19 @@ public sealed class TextDrawable : Drawable
             if (y + glyph.Height * inverseScaling < clipRegion.Y) continue;
 
             var texture = glyph.Texture;
-            renderer.Draw(texture, bounds.Left + position.X * inverseScaling, y, 0, 0, inverseScaling, inverseScaling, 0, color,
-                0, 0, texture.Width, texture.Height);
+            renderer.Draw(texture,
+                bounds.Left + position.X * inverseScaling,
+                y,
+                0,
+                0,
+                inverseScaling,
+                inverseScaling,
+                0,
+                color,
+                0,
+                0,
+                texture.Width,
+                texture.Height);
         }
     }
 
@@ -149,9 +160,12 @@ public sealed class TextDrawable : Drawable
     {
         validate();
         var inverseScaling = 1 / scaling;
-        textLayout.ForTextBounds(startIndex, endIndex,
-            bounds => action(RectangleF.FromLTRB(bounds.X * inverseScaling, bounds.Y * inverseScaling,
-                bounds.Right * inverseScaling, bounds.Bottom * inverseScaling)));
+        textLayout.ForTextBounds(startIndex,
+            endIndex,
+            bounds => action(RectangleF.FromLTRB(bounds.X * inverseScaling,
+                bounds.Y * inverseScaling,
+                bounds.Right * inverseScaling,
+                bounds.Bottom * inverseScaling)));
     }
     public int GetCharacterIndexAt(Vector2 position)
     {

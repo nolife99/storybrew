@@ -238,8 +238,10 @@ public class EffectConfigUi : Widget
             return widget;
         }
 
-        if (field.Type == typeof(Vector2) || field.Type == typeof(OpenTK.Mathematics.Vector2) ||
-            field.Type == typeof(CommandPosition) || field.Type == typeof(CommandScale)) return vector2Field(field);
+        if (field.Type == typeof(Vector2) ||
+            field.Type == typeof(OpenTK.Mathematics.Vector2) ||
+            field.Type == typeof(CommandPosition) ||
+            field.Type == typeof(CommandScale)) return vector2Field(field);
 
         if (field.Type == typeof(Vector3) || field.Type == typeof(OpenTK.Mathematics.Vector3))
         {
@@ -376,7 +378,7 @@ public class EffectConfigUi : Widget
             HsbColorPicker widget = new(Manager)
             {
                 Value = field.Type == typeof(Color4) ?
-                    new(Unsafe.BitCast<Color4, Vector4>(Unsafe.Unbox<Color4>(field.Value))) :
+                    new(Unsafe.As<Color4, Vector4>(ref Unsafe.Unbox<Color4>(field.Value))) :
                     Unsafe.Unbox<Rgba32>(field.Value),
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
@@ -389,7 +391,7 @@ public class EffectConfigUi : Widget
                 else setFieldValue(field, widget.Value);
 
                 widget.Value = field.Type == typeof(Color4) ?
-                    new(Unsafe.BitCast<Color4, Vector4>(Unsafe.Unbox<Color4>(effect.Config.GetValue(field.Name)))) :
+                    new(Unsafe.As<Color4, Vector4>(ref Unsafe.Unbox<Color4>(effect.Config.GetValue(field.Name)))) :
                     Unsafe.Unbox<Rgba32>(effect.Config.GetValue(field.Name));
             };
 

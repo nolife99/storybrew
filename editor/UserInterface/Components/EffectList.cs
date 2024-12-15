@@ -65,7 +65,8 @@ public partial class EffectList : Widget
         });
 
         addEffectButton.OnClick += (_, _)
-            => Manager.ScreenLayerManager.ShowContextMenu("Select an effect", name => project.AddScriptedEffect(name),
+            => Manager.ScreenLayerManager.ShowContextMenu("Select an effect",
+                name => project.AddScriptedEffect(name),
                 project.GetEffectNames());
 
         newScriptButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name));
@@ -225,7 +226,9 @@ public partial class EffectList : Widget
             => Manager.ScreenLayerManager.ShowMessage($"Status: {effect.Status}\n\n{effect.StatusMessage}");
 
         renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name",
-            $"Pick a new name for {effect.Name}", effect.Name, newName =>
+            $"Pick a new name for {effect.Name}",
+            effect.Name,
+            newName =>
             {
                 effect.Name = newName;
                 refreshEffects();
@@ -284,9 +287,9 @@ public partial class EffectList : Widget
         var resourceContainer = Manager.ScreenLayerManager.GetContext<Editor>().ResourceContainer;
 
         name = ZeroOrMoreDigitsPrefixRegex()
-            .Replace(
-                NotLetterNorNumberRegex()
-                    .Replace(CultureInfo.InvariantCulture.TextInfo.ToTitleCase(AlphabetRegex().Replace(name, " $1")), ""), "");
+            .Replace(NotLetterNorNumberRegex()
+                    .Replace(CultureInfo.InvariantCulture.TextInfo.ToTitleCase(AlphabetRegex().Replace(name, " $1")), ""),
+                "");
 
         if (name.Length == 0) name = "EffectScript";
 
@@ -322,14 +325,22 @@ public partial class EffectList : Widget
 
         List<string> paths =
         [
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code", "bin",
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "Microsoft VS Code",
+                "bin",
                 "code"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code", "bin",
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                "Microsoft VS Code",
+                "bin",
                 "code"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Microsoft VS Code Insiders",
-                "bin", "code-insiders"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Microsoft VS Code Insiders",
-                "bin", "code-insiders")
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                "Microsoft VS Code Insiders",
+                "bin",
+                "code-insiders"),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                "Microsoft VS Code Insiders",
+                "bin",
+                "code-insiders")
         ];
 
         foreach (var path in Environment.GetEnvironmentVariable("path").Split(';'))
@@ -350,10 +361,11 @@ public partial class EffectList : Widget
 
                 Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
                 Process.Start(new ProcessStartInfo(path, arguments)
-                {
-                    UseShellExecute = true,
-                    WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
-                })?.Dispose();
+                    {
+                        UseShellExecute = true,
+                        WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
+                    })
+                    ?.Dispose();
 
                 return;
             }
@@ -364,7 +376,8 @@ public partial class EffectList : Widget
 
         Manager.ScreenLayerManager.ShowMessage(
             "Visual Studio Code could not be found, do you want to install it?\n(You may have to restart after installing)",
-            () => NetHelper.OpenUrl("https://code.visualstudio.com/"), true);
+            () => NetHelper.OpenUrl("https://code.visualstudio.com/"),
+            true);
     }
 
     static string getEffectDetails(Effect effect) => effect.EstimatedSize > 30720 ?

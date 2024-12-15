@@ -26,8 +26,10 @@ public class OsbSpriteWriter(OsbSprite sprite,
 #pragma warning disable CS1591
     public void WriteOsb(StoryboardTransform transform)
     {
-        if (exportSettings.OptimiseSprites && sprite.CommandSplitThreshold > 0 &&
-            sprite.CommandCount > sprite.CommandSplitThreshold && IsFragmentable())
+        if (exportSettings.OptimiseSprites &&
+            sprite.CommandSplitThreshold > 0 &&
+            sprite.CommandCount > sprite.CommandSplitThreshold &&
+            IsFragmentable())
         {
             var commands = sprite.Commands.Select(c => (IFragmentableCommand)c).ToHashSet();
             var fragmentationTimes = GetFragmentationTimes(commands);
@@ -82,8 +84,14 @@ public class OsbSpriteWriter(OsbSprite sprite,
         // if there are commands with nondeterministic results (aka triggercommands) the sprite can't reliably be split
         if (sprite.Commands.Any(c => c is not IFragmentableCommand)) return false;
 
-        return !(move.HasOverlap || moveX.HasOverlap || moveY.HasOverlap || rotate.HasOverlap || scale.HasOverlap ||
-            scaleVec.HasOverlap || fade.HasOverlap || color.HasOverlap);
+        return !(move.HasOverlap ||
+            moveX.HasOverlap ||
+            moveY.HasOverlap ||
+            rotate.HasOverlap ||
+            scale.HasOverlap ||
+            scaleVec.HasOverlap ||
+            fade.HasOverlap ||
+            color.HasOverlap);
     }
     protected virtual HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
     {
@@ -212,10 +220,30 @@ public static class OsbWriterFactory
         OsbLayer layer)
     {
         if (sprite is OsbAnimation animation)
-            return new OsbAnimationWriter(animation, move, moveX, moveY, scale, scaleVec, rotate, fade, color, writer,
-                exportSettings, layer);
+            return new OsbAnimationWriter(animation,
+                move,
+                moveX,
+                moveY,
+                scale,
+                scaleVec,
+                rotate,
+                fade,
+                color,
+                writer,
+                exportSettings,
+                layer);
 
-        return new OsbSpriteWriter(sprite, move, moveX, moveY, scale, scaleVec, rotate, fade, color, writer, exportSettings,
+        return new OsbSpriteWriter(sprite,
+            move,
+            moveX,
+            moveY,
+            scale,
+            scaleVec,
+            rotate,
+            fade,
+            color,
+            writer,
+            exportSettings,
             layer);
     }
 }

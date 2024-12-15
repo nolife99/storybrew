@@ -77,7 +77,11 @@ public sealed partial class Project : IDisposable
         }");
 
         initializeAssetWatcher();
-        scriptManager = new(resourceContainer, "StorybrewScripts", ScriptsPath, CommonScriptsPath, scriptsLibraryPath,
+        scriptManager = new(resourceContainer,
+            "StorybrewScripts",
+            ScriptsPath,
+            CommonScriptsPath,
+            scriptsLibraryPath,
             ReferencedAssemblies);
 
         effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
@@ -196,7 +200,7 @@ public sealed partial class Project : IDisposable
 
     bool allowEffectUpdates = true;
 
-    readonly AsyncActionQueue<Effect> effectUpdateQueue = new("Effect Updates", false, Program.Settings.EffectThreads);
+    readonly AsyncActionQueue<Effect> effectUpdateQueue = new(false, Program.Settings.EffectThreads);
 
     public void QueueEffectUpdate(Effect effect)
     {
@@ -428,7 +432,8 @@ public sealed partial class Project : IDisposable
     #region Assemblies
 
     static readonly CompositeFormat runtimePath = CompositeFormat.Parse(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(),
-        "../../../packs/{0}", RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
+        "../../../packs/{0}",
+        RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
         string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
     public static readonly FrozenSet<string> DefaultAssemblies =
@@ -441,8 +446,10 @@ public sealed partial class Project : IDisposable
         typeof(Misc).Assembly.Location,
         .. Directory
             .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
-                "*.dll").Concat(Directory.EnumerateFiles(
-                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"), "*.dll"))
+                "*.dll")
+            .Concat(Directory.EnumerateFiles(
+                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
+                "*.dll"))
     ];
 
     HashSet<string> importedAssemblies = [];
@@ -583,8 +590,14 @@ public sealed partial class Project : IDisposable
                 for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
                     allowedValues[allowedValueIndex] = new(r.ReadString(), ObjectSerializer.Read(r));
 
-                effect.Config.UpdateField(fieldName, fieldDisplayName, null, fieldIndex, fieldValue?.GetType(), fieldValue,
-                    allowedValues, null);
+                effect.Config.UpdateField(fieldName,
+                    fieldDisplayName,
+                    null,
+                    fieldIndex,
+                    fieldValue?.GetType(),
+                    fieldValue,
+                    allowedValues,
+                    null);
             }
         }
 
@@ -757,10 +770,15 @@ public sealed partial class Project : IDisposable
                 var fieldTypeName = fieldRoot.Value<string>("Type");
                 var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldRoot.Value<string>("Value"));
 
-                effect.Config.UpdateField(fieldProperty.Key, fieldRoot.Value<string>("DisplayName"), null, fieldIndex++,
-                    fieldValue?.GetType(), fieldValue,
-                    fieldRoot.Value<TinyObject>("AllowedValues")?.Select(p
-                        => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>()))).ToArray(),
+                effect.Config.UpdateField(fieldProperty.Key,
+                    fieldRoot.Value<string>("DisplayName"),
+                    null,
+                    fieldIndex++,
+                    fieldValue?.GetType(),
+                    fieldValue,
+                    fieldRoot.Value<TinyObject>("AllowedValues")
+                        ?.Select(p => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>())))
+                        .ToArray(),
                     fieldRoot.Value<string>("BeginsGroup"));
             }
 

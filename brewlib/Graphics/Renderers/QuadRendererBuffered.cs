@@ -16,7 +16,8 @@ public class QuadRendererBuffered : QuadRenderer
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
     static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
-        VertexAttribute.CreateDiffuseCoord(), VertexAttribute.CreateColor(true));
+        VertexAttribute.CreateDiffuseCoord(),
+        VertexAttribute.CreateColor(true));
 
     readonly int maxQuadsPerBatch, textureUniformLocation;
     readonly bool ownsShader;
@@ -61,7 +62,9 @@ public class QuadRendererBuffered : QuadRenderer
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
             Math.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
-                primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad, indices);
+                primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) *
+            VertexPerQuad,
+            indices);
 
         Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
     }
@@ -161,7 +164,8 @@ public class QuadRendererBuffered : QuadRenderer
         var textureCoord = sb.AddVarying("vec2");
 
         sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
-            new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)), new Assign(sb.GlPosition,
+            new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
+            new Assign(sb.GlPosition,
                 () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                 }, 0, 1)"));
 

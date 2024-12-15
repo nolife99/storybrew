@@ -4,6 +4,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using BrewLib.Util;
 
 /// <summary>
 ///     A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.
@@ -170,20 +173,22 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         bool loopable = false)
     {
         if (keyframes.Count == 0) return;
+        var span = CollectionsMarshal.AsSpan(keyframes);
 
-        var startTime = explicitStartTime ?? keyframes[0].Time;
-        var endTime = explicitEndTime ?? keyframes[^1].Time;
+        var startTime = explicitStartTime ?? span[0].Time;
+        var endTime = explicitEndTime ?? span[^1].Time;
 
         bool hasPair = false, forceNextFlat = loopable;
         Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;
+        var comparer = EqualityComparer<TValue>.Default;
 
-        foreach (var t in keyframes)
+        foreach (ref var t in span)
         {
-            var endKeyframe = editKeyframe(t, edit);
+            var endKeyframe = editKeyframe(ref t, edit);
             if (previous.HasValue)
             {
                 var startKeyframe = previous.Value;
-                var isFlat = startKeyframe.Value.Equals(endKeyframe.Value);
+                var isFlat = comparer.Equals(startKeyframe.Value, endKeyframe.Value);
                 var isStep = !isFlat && startKeyframe.Time == endKeyframe.Time;
 
                 if (isStep) stepStart ??= startKeyframe;
@@ -234,8 +239,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
         if (!hasPair && keyframes.Count != 0)
         {
-            var first = editKeyframe(keyframes[0], edit).WithTime(startTime);
-            if (!first.Value.Equals(defaultValue))
+            var first = editKeyframe(ref span[0], edit).WithTime(startTime);
+            if (!comparer.Equals(first.Value, defaultValue))
             {
                 var last = loopable ? first.WithTime(endTime) : first;
                 pair(first, last);
@@ -250,7 +255,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         pair(loopable ? previousPairEnd.Value : endPair, endPair);
     }
 
-    static Keyframe<TValue> editKeyframe(Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit is not null ?
+    static Keyframe<TValue> editKeyframe(ref Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit is not null ?
         new(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) :
         keyframe;
 
@@ -280,6 +285,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         return i;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     int indexAt(float time, bool before) => indexFor(new(time), before);
 
     #region Manipulation
@@ -306,7 +312,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         });
 
     /// <summary>
-    ///     Flattens keyframes in the set, except for one that stays closest to the original path.
+    ///     Flattens keyframes in the set.
     /// </summary>
     /// <param name="tolerance">
     ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
@@ -330,7 +336,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         });
 
     /// <summary>
-    ///     Flattens keyframes in the set, except for one that stays closest to the original path.
+    ///     Flattens keyframes in the set.
     /// </summary>
     /// <param name="tolerance">
     ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
@@ -358,6 +364,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         if (tolerance <= .00001f)
         {
             List<Keyframe<TValue>> unionKeyframes = [];
+            var comparer = EqualityComparer<TValue>.Default;
+
             for (int i = 0, count = keyframes.Count; i < count; i++)
             {
                 var startKeyframe = keyframes[i];
@@ -366,7 +374,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
                 for (var j = i + 1; j < count; j++)
                 {
                     var endKeyframe = keyframes[j];
-                    if (!startKeyframe.Value.Equals(endKeyframe.Value))
+                    if (!comparer.Equals(startKeyframe.Value, endKeyframe.Value))
                     {
                         if (i < j - 1) unionKeyframes.Add(keyframes[j - 1]);
                         unionKeyframes.Add(endKeyframe);
@@ -386,8 +394,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         if (keyframes.Count < 3) return;
 
         var lastPoint = keyframes.Count - 1;
-        List<int> keep = [0, lastPoint];
-        getSimplifiedKeyframeIndices(ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
+        UnmanagedList<int> keep = [0, lastPoint];
+        getSimplifiedKeyframeIndices(keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
         if (keep.Count == keyframes.Count) return;
 
         List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
@@ -398,7 +406,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         keyframes = simplifiedKeyframes;
     }
 
-    void getSimplifiedKeyframeIndices(ref List<int> keep,
+    void getSimplifiedKeyframeIndices(UnmanagedList<int> keep,
         int first,
         int last,
         float epsilonSq,
@@ -421,8 +429,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             }
 
             if (maxDistSq < epsilonSq || indexFar <= 0) return;
-            getSimplifiedKeyframeIndices(ref keep, first, indexFar, epsilonSq, getDistance);
-            keep.Add(indexFar);
+            getSimplifiedKeyframeIndices(keep, first, indexFar, epsilonSq, getDistance);
+            keep.Add(ref indexFar);
             first = indexFar;
         }
     }

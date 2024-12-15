@@ -49,49 +49,52 @@ public static class DrawState
     {
         if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
             GL.Arb.DebugMessageCallback((source, type, _, severity, _, message, _) =>
-            {
-                var str = Marshal.PtrToStringAnsi(message);
-                Trace.WriteLine("Debug message: " + str);
-
-                switch (source)
                 {
-                    case DebugSource.DebugSourceApi: Trace.WriteLine("Source: API"); break;
-                    case DebugSource.DebugSourceWindowSystem: Trace.WriteLine("Source: Window System"); break;
-                    case DebugSource.DebugSourceShaderCompiler: Trace.WriteLine("Source: Shader Compiler"); break;
-                    case DebugSource.DebugSourceThirdParty: Trace.WriteLine("Source: Third Party"); break;
-                    case DebugSource.DebugSourceApplication: Trace.WriteLine("Source: Application"); break;
-                    case DebugSource.DebugSourceOther: Trace.WriteLine("Source: Other"); break;
-                }
+                    var str = Marshal.PtrToStringAnsi(message);
+                    Trace.WriteLine("Debug message: " + str);
 
-                switch (type)
-                {
-                    case DebugType.DebugTypeError: Trace.WriteLine("Type: Error"); break;
-                    case DebugType.DebugTypeDeprecatedBehavior: Trace.WriteLine("Type: Deprecated Behaviour"); break;
-                    case DebugType.DebugTypeUndefinedBehavior: Trace.WriteLine("Type: Undefined Behaviour"); break;
-                    case DebugType.DebugTypePortability: Trace.WriteLine("Type: Portability"); break;
-                    case DebugType.DebugTypePerformance: Trace.WriteLine("Type: Performance"); break;
-                    case DebugType.DebugTypeMarker: Trace.WriteLine("Type: Marker"); break;
-                    case DebugType.DebugTypePushGroup: Trace.WriteLine("Type: Push Group"); break;
-                    case DebugType.DebugTypePopGroup: Trace.WriteLine("Type: Pop Group"); break;
-                    case DebugType.DebugTypeOther: Trace.WriteLine("Type: Other"); break;
-                }
+                    switch (source)
+                    {
+                        case DebugSource.DebugSourceApi: Trace.WriteLine("Source: API"); break;
+                        case DebugSource.DebugSourceWindowSystem: Trace.WriteLine("Source: Window System"); break;
+                        case DebugSource.DebugSourceShaderCompiler: Trace.WriteLine("Source: Shader Compiler"); break;
+                        case DebugSource.DebugSourceThirdParty: Trace.WriteLine("Source: Third Party"); break;
+                        case DebugSource.DebugSourceApplication: Trace.WriteLine("Source: Application"); break;
+                        case DebugSource.DebugSourceOther: Trace.WriteLine("Source: Other"); break;
+                    }
 
-                switch (severity)
-                {
-                    case DebugSeverity.DebugSeverityHigh: Trace.WriteLine("Severity: high"); break;
-                    case DebugSeverity.DebugSeverityMedium: Trace.WriteLine("Severity: medium"); break;
-                    case DebugSeverity.DebugSeverityLow: Trace.WriteLine("Severity: low"); break;
-                    case DebugSeverity.DebugSeverityNotification: Trace.WriteLine("Severity: notification"); break;
-                }
+                    switch (type)
+                    {
+                        case DebugType.DebugTypeError: Trace.WriteLine("Type: Error"); break;
+                        case DebugType.DebugTypeDeprecatedBehavior: Trace.WriteLine("Type: Deprecated Behaviour"); break;
+                        case DebugType.DebugTypeUndefinedBehavior: Trace.WriteLine("Type: Undefined Behaviour"); break;
+                        case DebugType.DebugTypePortability: Trace.WriteLine("Type: Portability"); break;
+                        case DebugType.DebugTypePerformance: Trace.WriteLine("Type: Performance"); break;
+                        case DebugType.DebugTypeMarker: Trace.WriteLine("Type: Marker"); break;
+                        case DebugType.DebugTypePushGroup: Trace.WriteLine("Type: Push Group"); break;
+                        case DebugType.DebugTypePopGroup: Trace.WriteLine("Type: Pop Group"); break;
+                        case DebugType.DebugTypeOther: Trace.WriteLine("Type: Other"); break;
+                    }
 
-                if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
-            }, 0);
+                    switch (severity)
+                    {
+                        case DebugSeverity.DebugSeverityHigh: Trace.WriteLine("Severity: high"); break;
+                        case DebugSeverity.DebugSeverityMedium: Trace.WriteLine("Severity: medium"); break;
+                        case DebugSeverity.DebugSeverityLow: Trace.WriteLine("Severity: low"); break;
+                        case DebugSeverity.DebugSeverityNotification: Trace.WriteLine("Severity: notification"); break;
+                    }
+
+                    if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
+                },
+                0);
 
         retrieveRendererInfo();
         if (UseSrgb && GLFW.ExtensionSupported("GL_ARB_framebuffer_object"))
         {
-            GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer, FramebufferAttachment.BackLeft,
-                FramebufferParameterName.FramebufferAttachmentColorEncoding, out var defaultFramebufferColorEncoding);
+            GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer,
+                FramebufferAttachment.BackLeft,
+                FramebufferParameterName.FramebufferAttachmentColorEncoding,
+                out var defaultFramebufferColorEncoding);
 
             if (defaultFramebufferColorEncoding == 0x8C40)
             {
@@ -217,7 +220,8 @@ public static class DrawState
 
             var first = true;
             var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
-            for (var samplerIndex = samplerStartIndex; first || samplerIndex != samplerStartIndex;
+            for (var samplerIndex = samplerStartIndex;
+                first || samplerIndex != samplerStartIndex;
                 samplerIndex = (samplerIndex + 1) % samplerCount)
             {
                 first = false;
@@ -305,7 +309,8 @@ public static class DrawState
     {
         var screenBounds = camera.ToScreen(bounds);
         return Clip(new((int)float.Round(screenBounds.X),
-            viewport.Height - (int)float.Round(screenBounds.Y + screenBounds.Height), (int)float.Round(screenBounds.Width),
+            viewport.Height - (int)float.Round(screenBounds.Y + screenBounds.Height),
+            (int)float.Round(screenBounds.Width),
             (int)float.Round(screenBounds.Height)));
     }
     public static RectangleF? GetClipRegion(Camera camera)
@@ -313,7 +318,9 @@ public static class DrawState
         if (!clipRegion.HasValue) return null;
 
         var bounds = camera.FromScreen(clipRegion.Value);
-        return RectangleF.FromLTRB(bounds.X, camera.ExtendedViewport.Height - bounds.Bottom, bounds.Right,
+        return RectangleF.FromLTRB(bounds.X,
+            camera.ExtendedViewport.Height - bounds.Bottom,
+            bounds.Right,
             camera.ExtendedViewport.Height - bounds.Y);
     }
 
@@ -377,7 +384,11 @@ public static class DrawState
 
 public enum BlendingMode
 {
-    Off, AlphaBlend, Color,
-    Additive, BlendAdd, Premultiply,
+    Off,
+    AlphaBlend,
+    Color,
+    Additive,
+    BlendAdd,
+    Premultiply,
     Premultiplied
 }

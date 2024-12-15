@@ -135,7 +135,13 @@ public abstract class Effect : IDisposable
 
 public enum EffectStatus
 {
-    Initializing, Loading, Configuring,
-    Updating, ReloadPending, Ready,
-    CompilationFailed, LoadingFailed, ExecutionFailed
+    Initializing,
+    Loading,
+    Configuring,
+    Updating,
+    ReloadPending,
+    Ready,
+    CompilationFailed,
+    LoadingFailed,
+    ExecutionFailed
 }

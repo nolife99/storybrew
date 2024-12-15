@@ -6,10 +6,10 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public sealed class ClickBehavior : IDisposable
 {
+    readonly Widget widget;
     bool disabled, hovered, pressed;
 
     MouseButton pressedButton;
-    Widget widget;
 
     public ClickBehavior(Widget widget)
     {

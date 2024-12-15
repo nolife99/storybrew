@@ -86,7 +86,9 @@ public class HsbColorPicker : Widget, Field
 
     void slider_OnValueChanged(object sender, EventArgs e)
     {
-        var value = ColorExtensions.FromHsb(new(hueSlider.Value % 1, saturationSlider.Value, brightnessSlider.Value,
+        var value = ColorExtensions.FromHsb(new(hueSlider.Value % 1,
+            saturationSlider.Value,
+            brightnessSlider.Value,
             alphaSlider.Value));
 
         if (this.value == value) return;
@@ -157,8 +159,10 @@ public class HsbColorPicker : Widget, Field
         base.DrawBackground(drawContext, actualOpacity);
 
         var bounds = Bounds;
-        previewSprite.Draw(drawContext, Manager.Camera,
-            RectangleF.FromLTRB(bounds.X, bounds.Y, bounds.Right, bounds.Y + previewHeight), actualOpacity);
+        previewSprite.Draw(drawContext,
+            Manager.Camera,
+            RectangleF.FromLTRB(bounds.X, bounds.Y, bounds.Right, bounds.Y + previewHeight),
+            actualOpacity);
     }
 
     protected override void Dispose(bool disposing)

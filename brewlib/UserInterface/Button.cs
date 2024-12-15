@@ -70,7 +70,8 @@ public class Button : Widget, Field
     public bool Disabled { get => clickBehavior.Disabled; set => clickBehavior.Disabled = value; }
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(
-        clickBehavior.Disabled ? "disabled" : null, clickBehavior.Hovered ? "hover" : null,
+        clickBehavior.Disabled ? "disabled" : null,
+        clickBehavior.Hovered ? "hover" : null,
         clickBehavior.Pressed || isChecked ? "pressed" : null));
 
     public object FieldValue { get => Checked; set => Checked = Unsafe.Unbox<bool>(value); }

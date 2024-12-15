@@ -258,7 +258,8 @@ public sealed class WidgetManager : InputHandler, IDisposable
     void drawDragIndicator(DrawContext drawContext)
     {
         if (!IsDragging) return;
-        dragDrawable.Draw(drawContext, Camera,
+        dragDrawable.Draw(drawContext,
+            camera,
             new(mousePosition.X + dragOffset.X, mousePosition.Y + dragOffset.Y, dragSize.X, dragSize.Y));
     }
 

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Shaders;
 
 public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : allows ref struct
 {
@@ -59,7 +60,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrim
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         GL.CreateBuffers(1, out IndexBufferId);
-        GL.NamedBufferStorage(IndexBufferId, indices.Length * sizeof(ushort), ref MemoryMarshal.GetReference(indices),
+        GL.NamedBufferStorage(IndexBufferId,
+            indices.Length * sizeof(ushort),
+            ref MemoryMarshal.GetReference(indices),
             BufferStorageFlags.None);
     }
 

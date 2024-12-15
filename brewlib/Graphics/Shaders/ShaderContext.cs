@@ -107,8 +107,8 @@ public class ShaderContext
 
         if (expression is not null)
             Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
-                components is not null ? $"{result.Ref}.{components} = {expression()}" :
-                $"{result.Ref} = {expression()}", result);
+                    components is not null ? $"{result.Ref}.{components} = {expression()}" : $"{result.Ref} = {expression()}",
+                result);
 
         else if (declare) code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName} {result.Name};");
         else throw new ArgumentNullException(nameof(expression));

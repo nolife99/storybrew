@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Data;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -12,11 +11,12 @@ using Util;
 public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null)
     : ResourceContainer
 {
-    static readonly Dictionary<string, ZipArchive> archives = [];
     readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
 
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
+
+    ZipArchive archive;
 
     public Stream GetStream(string path, ResourceSource sources)
     {
@@ -43,7 +43,7 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
                 var stream = assembly.GetManifestResourceStream($"{baseNamespace}.zip");
                 if (stream is not null)
                 {
-                    using ZipArchive archive = new(stream, ZipArchiveMode.Read, false);
+                    archive ??= new(stream, ZipArchiveMode.Read, false);
 
                     var entry = archive.GetEntry(path);
                     if (entry is not null)

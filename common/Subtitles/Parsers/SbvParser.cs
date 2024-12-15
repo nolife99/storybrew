@@ -20,7 +20,8 @@ public record SbvParser : SubtitleParser
     public SubtitleSet Parse(Stream stream) => new(from block in parseBlocks(stream)
         select block.Split('\n') into blockLines
         let timestamps = blockLines[0].Split(',')
-        select new SubtitleLine(SubtitleParser.ParseTimestamp(timestamps[0]), SubtitleParser.ParseTimestamp(timestamps[1]),
+        select new SubtitleLine(SubtitleParser.ParseTimestamp(timestamps[0]),
+            SubtitleParser.ParseTimestamp(timestamps[1]),
             string.Join('\n', blockLines, 1, blockLines.Length - 1)));
 
     static IEnumerable<string> parseBlocks(Stream stream)

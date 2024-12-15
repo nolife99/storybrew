@@ -182,7 +182,8 @@ public sealed class FontGenerator
             if (debugRandom is not null)
             {
                 debugRandom.Reinitialise(cache.Count);
-                b.Clear(new Rgb24((byte)debugRandom.Next(100, 255), (byte)debugRandom.Next(100, 255),
+                b.Clear(new Rgb24((byte)debugRandom.Next(100, 255),
+                    (byte)debugRandom.Next(100, 255),
                     (byte)debugRandom.Next(100, 255)));
             }
 
@@ -197,8 +198,8 @@ public sealed class FontGenerator
 
             if (!description.Debug) return;
 
-            b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + measuredSize.Height)).DrawLine(Color.Red, 1,
-                new(x - measuredSize.Width * .5f, paddingY), new(x + measuredSize.Width * .5f, paddingY));
+            b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + measuredSize.Height))
+                .DrawLine(Color.Red, 1, new(x - measuredSize.Width * .5f, paddingY), new(x + measuredSize.Width * .5f, paddingY));
         });
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;

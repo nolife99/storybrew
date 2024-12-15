@@ -50,7 +50,10 @@ public class PathSelector : Widget
                     Manager.ScreenLayerManager.OpenFolderPicker(LabelText, textbox.Value, path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenFile:
-                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, textbox.Value, null, Filter,
+                    Manager.ScreenLayerManager.OpenFilePicker(LabelText,
+                        textbox.Value,
+                        null,
+                        Filter,
                         path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenDirectory:
@@ -58,7 +61,10 @@ public class PathSelector : Widget
                     break;
 
                 case PathSelectorMode.SaveFile:
-                    Manager.ScreenLayerManager.OpenSaveLocationPicker(LabelText, textbox.Value, SaveExtension, Filter,
+                    Manager.ScreenLayerManager.OpenSaveLocationPicker(LabelText,
+                        textbox.Value,
+                        SaveExtension,
+                        Filter,
                         path => textbox.Value = path); break;
             }
         };
@@ -95,6 +101,5 @@ public class PathSelector : Widget
 
 public enum PathSelectorMode
 {
-    Folder, OpenFile, OpenDirectory,
-    SaveFile
+    Folder, OpenFile, OpenDirectory, SaveFile
 }

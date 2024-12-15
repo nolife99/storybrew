@@ -53,8 +53,13 @@ public class ScriptedEffect : Effect
             if (!Disposed) Refresh();
         };
 
-        EditorGeneratorContext context = new(this, Project.ProjectFolderPath, Project.ProjectAssetFolderPath, Project.MapsetPath,
-            Project.MainBeatmap, Project.MapsetManager.Beatmaps, newDependencyWatcher);
+        EditorGeneratorContext context = new(this,
+            Project.ProjectFolderPath,
+            Project.ProjectAssetFolderPath,
+            Project.MapsetPath,
+            Project.MainBeatmap,
+            Project.MapsetManager.Beatmaps,
+            newDependencyWatcher);
 
         var success = false;
         try
@@ -93,7 +98,8 @@ public class ScriptedEffect : Effect
         {
             Trace.TraceWarning($"Script load failed for {BaseName}\n{e}");
             changeStatus(EffectStatus.LoadingFailed,
-                e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message, context.Log);
+                e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message,
+                context.Log);
 
             return;
         }

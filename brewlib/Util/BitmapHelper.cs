@@ -9,9 +9,14 @@ public static class BitmapHelper
     {
         var buffer = source.Frames.RootFrame.PixelBuffer;
         for (var y = 0; y < source.Height; ++y)
-            foreach (var pixel in buffer.DangerousGetRowSpan(y))
-                if (pixel.A != 0)
-                    return false;
+        {
+            var span = buffer.DangerousGetRowSpan(y);
+            for (var i = 0; i < span.Length; ++i)
+            {
+                ref var pixel = ref span[i];
+                if (pixel.A != 0) return false;
+            }
+        }
 
         return true;
     }

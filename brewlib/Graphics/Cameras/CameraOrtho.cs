@@ -66,7 +66,8 @@ public class CameraOrtho : CameraBase
 
         projection = Matrix4x4.Multiply(
             Matrix4x4.CreateTranslation(orthoViewport.X - extendedViewport.Width * .5f,
-                orthoViewport.Y - (yDown ? -extendedViewport.Height : extendedViewport.Height) * .5f, 0),
+                orthoViewport.Y - (yDown ? -extendedViewport.Height : extendedViewport.Height) * .5f,
+                0),
             Matrix4x4.CreateOrthographic(extendedViewport.Width, extendedViewport.Height, NearPlane, FarPlane));
 
         view = Matrix4x4.CreateLookAt(Position, Position + Forward, Up);

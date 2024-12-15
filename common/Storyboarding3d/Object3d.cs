@@ -128,12 +128,16 @@ public class Object3d
         int loopCount,
         Action<LoopCommand, OsbSprite> action = null,
         bool offsetCommands = true) => GenerateTreeCommands((commands, s) =>
-    {
-        var loop = s.StartLoopGroup(startTime, loopCount);
-        commands();
-        action?.Invoke(loop, s);
-        s.EndGroup();
-    }, startTime, endTime, offsetCommands ? -startTime : 0, true);
+        {
+            var loop = s.StartLoopGroup(startTime, loopCount);
+            commands();
+            action?.Invoke(loop, s);
+            s.EndGroup();
+        },
+        startTime,
+        endTime,
+        offsetCommands ? -startTime : 0,
+        true);
 
     /// <summary>
     ///     Generates a <see cref="Object3d"/>'s sprites in the given segment.

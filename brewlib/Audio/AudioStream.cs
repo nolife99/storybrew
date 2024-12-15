@@ -21,12 +21,14 @@ public class AudioStream : AudioChannel
         {
             var resourceStream = resourceContainer.GetStream(path, ResourceSource.Embedded);
             if (resourceStream is not null)
-                decodeStream = Bass.CreateStream(StreamSystem.NoBuffer, flags,
+                decodeStream = Bass.CreateStream(StreamSystem.NoBuffer,
+                    flags,
                     new()
                     {
                         Read = (buffer, _, _)
                             => resourceStream.Read(MemoryMarshal.CreateSpan(
-                                ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), buffer), (int)resourceStream.Length)),
+                                ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), buffer),
+                                (int)resourceStream.Length)),
                         Length = _ => resourceStream.Length,
                         Seek = (offset, _) => resourceStream.Seek(offset, SeekOrigin.Begin) == offset,
                         Close = _ => resourceStream.Dispose()

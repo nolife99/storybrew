@@ -82,9 +82,17 @@ public class OsbSprite : StoryboardObject
         scaleTimeline.HasCommands && scaleVecTimeline.HasCommands;
 
     /// <returns> True if the <see cref="OsbSprite"/> has overlapping commands, else returns false. </returns>
-    public bool HasOverlappedCommands => moveTimeline.HasOverlap || moveXTimeline.HasOverlap || moveYTimeline.HasOverlap ||
-        scaleTimeline.HasOverlap || scaleVecTimeline.HasOverlap || rotateTimeline.HasOverlap || fadeTimeline.HasOverlap ||
-        colorTimeline.HasOverlap || additiveTimeline.HasOverlap || flipHTimeline.HasOverlap || flipVTimeline.HasOverlap;
+    public bool HasOverlappedCommands => moveTimeline.HasOverlap ||
+        moveXTimeline.HasOverlap ||
+        moveYTimeline.HasOverlap ||
+        scaleTimeline.HasOverlap ||
+        scaleVecTimeline.HasOverlap ||
+        rotateTimeline.HasOverlap ||
+        fadeTimeline.HasOverlap ||
+        colorTimeline.HasOverlap ||
+        additiveTimeline.HasOverlap ||
+        flipHTimeline.HasOverlap ||
+        flipVTimeline.HasOverlap;
 
     public bool HasRotateCommands => rotateTimeline.HasCommands;
     public bool HasScalingCommands => scaleTimeline.HasCommands || scaleVecTimeline.HasCommands;
@@ -584,7 +592,10 @@ public class OsbSprite : StoryboardObject
         double startB,
         double endH,
         double endS,
-        double endB) => Color(easing, startTime, endTime, CommandColor.FromHsb(startH, startS, startB),
+        double endB) => Color(easing,
+        startTime,
+        endTime,
+        CommandColor.FromHsb(startH, startS, startB),
         CommandColor.FromHsb(endH, endS, endB));
 
     /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
@@ -721,35 +732,37 @@ public class OsbSprite : StoryboardObject
     /// <param name="command"> The command type to be run. </param>
     public void AddCommand(ICommand command)
     {
-        if (command is ColorCommand color) Color(color.Easing, color.StartTime, color.EndTime, color.StartValue, color.EndValue);
-        else if (command is FadeCommand fade) Fade(fade.Easing, fade.StartTime, fade.EndTime, fade.StartValue, fade.EndValue);
-        else if (command is ScaleCommand scale)
-            Scale(scale.Easing, scale.StartTime, scale.EndTime, scale.StartValue, scale.EndValue);
-        else if (command is VScaleCommand vScale)
-            ScaleVec(vScale.Easing, vScale.StartTime, vScale.EndTime, vScale.StartValue, vScale.EndValue);
-        else if (command is ParameterCommand param) Parameter(param.StartTime, param.EndTime, param.StartValue);
-        else if (command is MoveCommand move) Move(move.Easing, move.StartTime, move.EndTime, move.StartValue, move.EndValue);
-        else if (command is MoveXCommand moveX)
-            MoveX(moveX.Easing, moveX.StartTime, moveX.EndTime, moveX.StartValue, moveX.EndValue);
-        else if (command is MoveYCommand moveY)
-            MoveY(moveY.Easing, moveY.StartTime, moveY.EndTime, moveY.StartValue, moveY.EndValue);
-        else if (command is RotateCommand rotate)
-            Rotate(rotate.Easing, rotate.StartTime, rotate.EndTime, rotate.StartValue, rotate.EndValue);
-        else if (command is LoopCommand loop)
+        switch (command)
         {
-            StartLoopGroup(loop.StartTime, loop.LoopCount);
-            foreach (var cmd in loop.Commands) AddCommand(cmd);
-            EndGroup();
+            case ColorCommand color: Color(color.Easing, color.StartTime, color.EndTime, color.StartValue, color.EndValue); break;
+            case FadeCommand fade: Fade(fade.Easing, fade.StartTime, fade.EndTime, fade.StartValue, fade.EndValue); break;
+            case ScaleCommand scale: Scale(scale.Easing, scale.StartTime, scale.EndTime, scale.StartValue, scale.EndValue); break;
+            case VScaleCommand vScale:
+                ScaleVec(vScale.Easing, vScale.StartTime, vScale.EndTime, vScale.StartValue, vScale.EndValue); break;
+            case ParameterCommand param: Parameter(param.StartTime, param.EndTime, param.StartValue); break;
+            case MoveCommand move: Move(move.Easing, move.StartTime, move.EndTime, move.StartValue, move.EndValue); break;
+            case MoveXCommand moveX: MoveX(moveX.Easing, moveX.StartTime, moveX.EndTime, moveX.StartValue, moveX.EndValue); break;
+            case MoveYCommand moveY: MoveY(moveY.Easing, moveY.StartTime, moveY.EndTime, moveY.StartValue, moveY.EndValue); break;
+            case RotateCommand rotate:
+                Rotate(rotate.Easing, rotate.StartTime, rotate.EndTime, rotate.StartValue, rotate.EndValue); break;
+            case LoopCommand loop:
+            {
+                StartLoopGroup(loop.StartTime, loop.LoopCount);
+                foreach (var cmd in loop.Commands) AddCommand(cmd);
+                EndGroup();
+                break;
+            }
+            case TriggerCommand trigger:
+            {
+                StartTriggerGroup(trigger.TriggerName, trigger.StartTime, trigger.EndTime, trigger.Group);
+                foreach (var cmd in trigger.Commands) AddCommand(cmd);
+                EndGroup();
+                break;
+            }
+            default:
+                throw new NotSupportedException($"Failed to add command: No support for adding command of type {
+                    command.GetType().FullName}");
         }
-        else if (command is TriggerCommand trigger)
-        {
-            StartTriggerGroup(trigger.TriggerName, trigger.StartTime, trigger.EndTime, trigger.Group);
-            foreach (var cmd in trigger.Commands) AddCommand(cmd);
-            EndGroup();
-        }
-        else
-            throw new NotSupportedException($"Failed to add command: No support for adding command of type {
-                command.GetType().FullName}");
     }
 
     /// <returns> True if the sprite is active at <paramref name="time"/>, else returns false. </returns>
@@ -759,8 +772,19 @@ public class OsbSprite : StoryboardObject
     public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
     {
         if (commands.Count != 0)
-            OsbWriterFactory.CreateWriter(this, moveTimeline, moveXTimeline, moveYTimeline, scaleTimeline, scaleVecTimeline,
-                rotateTimeline, fadeTimeline, colorTimeline, writer, exportSettings, layer).WriteOsb(transform);
+            OsbWriterFactory.CreateWriter(this,
+                    moveTimeline,
+                    moveXTimeline,
+                    moveYTimeline,
+                    scaleTimeline,
+                    scaleVecTimeline,
+                    rotateTimeline,
+                    fadeTimeline,
+                    colorTimeline,
+                    writer,
+                    exportSettings,
+                    layer)
+                .WriteOsb(transform);
     }
 
     /// <summary> Returns whether the sprite is within widescreen storyboard bounds. </summary>
@@ -886,8 +910,7 @@ public class OsbSprite : StoryboardObject
 #pragma warning disable CS1591
 public enum OsbLayer
 {
-    Background, Fail, Pass,
-    Foreground, Overlay
+    Background, Fail, Pass, Foreground, Overlay
 }
 
 ///<summary> Enumeration values determining the origin of a sprite/image. </summary>
@@ -925,18 +948,41 @@ public enum OsbOrigin
 /// <remarks> Visit <see href="http://easings.net/"/> for more information. </remarks>
 public enum OsbEasing
 {
-    None, Out, In,
-    InQuad, OutQuad, InOutQuad,
-    InCubic, OutCubic, InOutCubic,
-    InQuart, OutQuart, InOutQuart,
-    InQuint, OutQuint, InOutQuint,
-    InSine, OutSine, InOutSine,
-    InExpo, OutExpo, InOutExpo,
-    InCirc, OutCirc, InOutCirc,
-    InElastic, OutElastic, OutElasticHalf,
-    OutElasticQuarter, InOutElastic, InBack,
-    OutBack, InOutBack, InBounce,
-    OutBounce, InOutBounce
+    None,
+    Out,
+    In,
+    InQuad,
+    OutQuad,
+    InOutQuad,
+    InCubic,
+    OutCubic,
+    InOutCubic,
+    InQuart,
+    OutQuart,
+    InOutQuart,
+    InQuint,
+    OutQuint,
+    InOutQuint,
+    InSine,
+    OutSine,
+    InOutSine,
+    InExpo,
+    OutExpo,
+    InOutExpo,
+    InCirc,
+    OutCirc,
+    InOutCirc,
+    InElastic,
+    OutElastic,
+    OutElasticHalf,
+    OutElasticQuarter,
+    InOutElastic,
+    InBack,
+    OutBack,
+    InOutBack,
+    InBounce,
+    OutBounce,
+    InOutBounce
 }
 
 ///<summary> Define the loop type for an animation. </summary>

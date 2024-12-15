@@ -32,7 +32,8 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
     }
     public IFragmentableCommand GetFragment(float startTime, float endTime)
     {
-        if (!IsFragmentable || (endTime - startTime) % CommandsDuration != 0 ||
+        if (!IsFragmentable ||
+            (endTime - startTime) % CommandsDuration != 0 ||
             (startTime - StartTime) % CommandsDuration != 0) return this;
 
         var loopCount = (int)float.Round((endTime - startTime) / CommandsDuration);

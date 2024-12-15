@@ -22,10 +22,7 @@ public sealed class SafeUnmanagedMemoryStream : Stream
 
     void ReallocateBuffer(int minimumRequired)
     {
-        currentBuffer = currentBuffer != 0 ?
-            Marshal.ReAllocHGlobal(currentBuffer, minimumRequired) :
-            Marshal.AllocHGlobal(minimumRequired);
-
+        currentBuffer = Native.ReallocateMemory(currentBuffer, minimumRequired);
         capacity = minimumRequired;
     }
 
@@ -44,7 +41,7 @@ public sealed class SafeUnmanagedMemoryStream : Stream
         base.Dispose(disposing);
         if (currentBuffer != 0)
         {
-            Marshal.FreeHGlobal(currentBuffer);
+            Native.FreeMemory(currentBuffer);
             currentBuffer = 0;
         }
 
@@ -60,7 +57,6 @@ public sealed class SafeUnmanagedMemoryStream : Stream
             case SeekOrigin.Begin: position = (int)offset; break;
             case SeekOrigin.End: position = length - (int)offset; break;
             case SeekOrigin.Current: position += (int)offset; break;
-            default: throw new ArgumentException("unknown SeekOrigin", nameof(origin));
         }
 
         if (position >= 0 && position <= length) return position;
@@ -79,7 +75,8 @@ public sealed class SafeUnmanagedMemoryStream : Stream
         if (readlen <= 0) return 0;
 
         Unsafe.CopyBlock(ref MemoryMarshal.GetReference(buffer),
-            ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), currentBuffer + position), (uint)readlen);
+            ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), currentBuffer + position),
+            (uint)readlen);
 
         position += readlen;
         return readlen;
@@ -95,7 +92,8 @@ public sealed class SafeUnmanagedMemoryStream : Stream
         if (currentBuffer == 0 || endOffset > capacity) ReallocateBuffer((int)BitOperations.RoundUpToPowerOf2((uint)endOffset));
 
         Unsafe.CopyBlock(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), currentBuffer + position),
-            ref MemoryMarshal.GetReference(buffer), (uint)count);
+            ref MemoryMarshal.GetReference(buffer),
+            (uint)count);
 
         if (endOffset > length) length = endOffset;
         position = endOffset;

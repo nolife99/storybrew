@@ -10,11 +10,13 @@ using Util;
 public static class GpuCommandSync
 {
     static readonly Lazy<Pool<SyncRange>> syncRangePool = new(() => new(obj =>
-    {
-        GL.DeleteSync(obj.Fence);
-        obj.Fence = 0;
-        obj.Expired = false;
-    }, true), true);
+            {
+                GL.DeleteSync(obj.Fence);
+                obj.Fence = 0;
+                obj.Expired = false;
+            },
+            true),
+        true);
 
     static readonly List<SyncRange> syncRanges = [];
 

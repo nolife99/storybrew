@@ -42,7 +42,8 @@ public class LineRendererBuffered : LineRenderer
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
             Math.Max(this.maxLinesPerBatch = maxLinesPerBatch,
-                primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine,
+                primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) *
+            VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
 
         Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
@@ -127,9 +128,10 @@ public class LineRendererBuffered : LineRenderer
         var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
         var color = sb.AddVarying("vec4");
 
-        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)), new Assign(
-            sb.GlPosition, () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
-            }, 1)"));
+        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
+            new Assign(sb.GlPosition,
+                () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
+                }, 1)"));
 
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref}"));
 

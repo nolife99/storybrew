@@ -59,8 +59,11 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             ]
         });
 
-        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "", project.ProjectFolderPath,
-            ".NET Assemblies (*.dll)|*.dll", path =>
+        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("",
+            "",
+            project.ProjectFolderPath,
+            ".NET Assemblies (*.dll)|*.dll",
+            path =>
             {
                 if (!isValidAssembly(path))
                 {
@@ -156,7 +159,8 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             editButton.OnClick += (_, _) => changeReferencedAssembly(ass);
             removeButton.OnClick += (_, _)
                 => WidgetManager.ScreenLayerManager.ShowMessage($"Remove {getAssemblyName(ass)}?",
-                    () => removeReferencedAssembly(ass), true);
+                    () => removeReferencedAssembly(ass),
+                    true);
         }
     }
 
@@ -220,8 +224,11 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         refreshAssemblies();
     }
 
-    void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker("", "",
-        Path.GetDirectoryName(assembly), ".NET Assemblies (*.dll)|*.dll", path =>
+    void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker("",
+        "",
+        Path.GetDirectoryName(assembly),
+        ".NET Assemblies (*.dll)|*.dll",
+        path =>
         {
             if (!isValidAssembly(path))
             {

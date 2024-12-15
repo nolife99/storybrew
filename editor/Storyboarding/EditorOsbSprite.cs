@@ -135,10 +135,20 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         }
 
         var boundsScaling = bounds.Height / 480;
-        DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates).Draw(texture,
-            bounds.X + bounds.Width * .5f + (position.X - 320) * boundsScaling, bounds.Y + position.Y * boundsScaling, origin.X,
-            origin.Y, scale.X * boundsScaling, scale.Y * boundsScaling, rotation,
-            ((Rgba32)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor)
-            .WithOpacity(opacity * fade), 0, 0, texture.Width, texture.Height);
+        DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
+            .Draw(texture,
+                bounds.X + bounds.Width * .5f + (position.X - 320) * boundsScaling,
+                bounds.Y + position.Y * boundsScaling,
+                origin.X,
+                origin.Y,
+                scale.X * boundsScaling,
+                scale.Y * boundsScaling,
+                rotation,
+                ((Rgba32)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor)
+                .WithOpacity(opacity * fade),
+                0,
+                0,
+                texture.Width,
+                texture.Height);
     }
 }

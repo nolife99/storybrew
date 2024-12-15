@@ -3,6 +3,7 @@ namespace StorybrewCommon.Storyboarding3d;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Animations;
 using Storyboarding;
 using Storyboarding.Util;
@@ -70,6 +71,7 @@ public class Line3d : Node3d, HasOsbSprites
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
+        var endStateRot = Unsafe.IsNullRef(ref gen.EndState) ? 0 : gen.EndState.Rotation;
         gen.Add(new()
         {
             Time = time,
@@ -84,7 +86,7 @@ public class Line3d : Node3d, HasOsbSprites
                 _ => new(startVector.X, startVector.Y)
             },
             Scale = new(delta.Length() / spriteBitmap.X, Thickness.ValueAt(time)),
-            Rotation = InterpolatingFunctions.FloatAngle(gen.EndState?.Rotation ?? 0, float.Atan2(delta.Y, delta.X), 1),
+            Rotation = InterpolatingFunctions.FloatAngle(endStateRot, float.Atan2(delta.Y, delta.X), 1),
             Color = object3dState.Color,
             Opacity = opacity,
             Additive = Additive
@@ -201,7 +203,9 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (delta.LengthSquared() == 0) return;
 
         var angle = float.Atan2(delta.Y, delta.X);
-        var rotation = InterpolatingFunctions.FloatAngle(genBody.EndState?.Rotation ?? 0, angle, 1);
+
+        var rotation =
+            InterpolatingFunctions.FloatAngle(Unsafe.IsNullRef(ref genBody.EndState) ? 0 : genBody.EndState.Rotation, angle, 1);
 
         var thickness = Thickness.ValueAt(time);
         var matrix = object3dState.WorldTransform;

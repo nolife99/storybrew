@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Graphics;
+﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
 using OpenTK.Graphics.OpenGL;
@@ -21,9 +21,14 @@ public class VertexAttribute
     public override bool Equals(object obj)
     {
         if (obj == this) return true;
-        return obj is VertexAttribute otherAttribute && Name == otherAttribute.Name && Type == otherAttribute.Type &&
-            ComponentSize == otherAttribute.ComponentSize && ComponentCount == otherAttribute.ComponentCount &&
-            Normalized == otherAttribute.Normalized && Offset == otherAttribute.Offset && Usage == otherAttribute.Usage;
+        return obj is VertexAttribute otherAttribute &&
+            Name == otherAttribute.Name &&
+            Type == otherAttribute.Type &&
+            ComponentSize == otherAttribute.ComponentSize &&
+            ComponentCount == otherAttribute.ComponentCount &&
+            Normalized == otherAttribute.Normalized &&
+            Offset == otherAttribute.Offset &&
+            Usage == otherAttribute.Usage;
     }
 
     public override int GetHashCode() => HashCode.Combine(Name, Type, ComponentSize, ComponentCount, Offset, Normalized, Usage);
@@ -54,6 +59,5 @@ public class VertexAttribute
 
 public enum AttributeUsage
 {
-    Undefined, Position, Color,
-    DiffuseMapCoord
+    Undefined, Position, Color, DiffuseMapCoord
 }

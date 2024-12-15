@@ -117,19 +117,54 @@ public record OsuHitObject
         var volume = controlPoint.Volume;
 
         if ((flags & HitObjectFlag.Circle) != 0)
-            return OsuCircle.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
+            return OsuCircle.Parse(values,
+                x,
+                y,
+                startTime,
+                flags,
+                additions,
+                sampleSet,
+                additionsSampleSet,
+                customSampleSet,
                 volume);
 
         if ((flags & HitObjectFlag.Slider) != 0)
-            return OsuSlider.Parse(beatmap, values, x, y, startTime, flags, additions, timingPoint, controlPoint, sampleSet,
-                additionsSampleSet, customSampleSet, volume);
+            return OsuSlider.Parse(beatmap,
+                values,
+                x,
+                y,
+                startTime,
+                flags,
+                additions,
+                timingPoint,
+                controlPoint,
+                sampleSet,
+                additionsSampleSet,
+                customSampleSet,
+                volume);
 
         if ((flags & HitObjectFlag.Hold) != 0)
-            return OsuHold.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
+            return OsuHold.Parse(values,
+                x,
+                y,
+                startTime,
+                flags,
+                additions,
+                sampleSet,
+                additionsSampleSet,
+                customSampleSet,
                 volume);
 
         if ((flags & HitObjectFlag.Spinner) != 0)
-            return OsuSpinner.Parse(values, x, y, startTime, flags, additions, sampleSet, additionsSampleSet, customSampleSet,
+            return OsuSpinner.Parse(values,
+                x,
+                y,
+                startTime,
+                flags,
+                additions,
+                sampleSet,
+                additionsSampleSet,
+                customSampleSet,
                 volume);
 
         throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line
@@ -141,21 +176,25 @@ public record OsuHitObject
 [Flags] public enum HitObjectFlag
 {
 #pragma warning disable CS1591
-    Circle = 1, Slider = 2, NewCombo = 4,
-    Spinner = 8, SkipColor1 = 16, SkipColor2 = 32,
-    SkipColor3 = 64, Hold = 128, Colors = SkipColor1 | SkipColor2 | SkipColor3
+    Circle = 1,
+    Slider = 2,
+    NewCombo = 4,
+    Spinner = 8,
+    SkipColor1 = 16,
+    SkipColor2 = 32,
+    SkipColor3 = 64,
+    Hold = 128,
+    Colors = SkipColor1 | SkipColor2 | SkipColor3
 }
 
 ///<summary> Represents hit sound sample additions. </summary>
 [Flags] public enum HitSoundAddition
 {
-    None = 0, Normal = 1, Whistle = 2,
-    Finish = 4, Clap = 8
+    None = 0, Normal = 1, Whistle = 2, Finish = 4, Clap = 8
 }
 
 ///<summary> Represents hit sound sample sets. </summary>
 public enum SampleSet
 {
-    None = 0, Normal = 1, Soft = 2,
-    Drum = 3
+    None = 0, Normal = 1, Soft = 2, Drum = 3
 }

@@ -3,6 +3,7 @@ namespace StorybrewCommon.Storyboarding3d;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Animations;
 using Storyboarding;
 using Storyboarding.Util;
@@ -115,8 +116,8 @@ public class Triangle3d : Node3d, HasOsbSprites
         var cross = (vector2.X - vector0.X) * (vector1.Y - vector0.Y) - (vector2.Y - vector0.Y) * (vector1.X - vector0.X);
         if (cross > 0)
         {
-            if (gen0.EndState is not null) gen0.EndState.Opacity = 0;
-            if (gen1.EndState is not null) gen1.EndState.Opacity = 0;
+            if (!Unsafe.IsNullRef(ref gen0.EndState)) gen0.EndState.Opacity = 0;
+            if (!Unsafe.IsNullRef(ref gen1.EndState)) gen1.EndState.Opacity = 0;
             return;
         }
 
@@ -134,8 +135,8 @@ public class Triangle3d : Node3d, HasOsbSprites
             {
                 if (FixedEdge >= 0)
                 {
-                    if (gen0.EndState is not null) gen0.EndState.Opacity = 0;
-                    if (gen1.EndState is not null) gen1.EndState.Opacity = 0;
+                    if (!Unsafe.IsNullRef(ref gen0.EndState)) gen0.EndState.Opacity = 0;
+                    if (!Unsafe.IsNullRef(ref gen1.EndState)) gen1.EndState.Opacity = 0;
                     break;
                 }
 
@@ -155,7 +156,8 @@ public class Triangle3d : Node3d, HasOsbSprites
                 scale1 = scale0 with { X = (new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.X };
 
             var angle = float.Atan2(delta.Y, delta.X);
-            var rotation = InterpolatingFunctions.FloatAngle(gen0.EndState?.Rotation ?? 0, angle, 1);
+            var rotation =
+                InterpolatingFunctions.FloatAngle(Unsafe.IsNullRef(ref gen0.EndState) ? 0 : gen0.EndState.Rotation, angle, 1);
 
             var opacity = vector0.W < 0 && vector1.W < 0 && vector2.W < 0 ? 0 : object3dState.Opacity;
             if (UseDistanceFade)
@@ -164,8 +166,8 @@ public class Triangle3d : Node3d, HasOsbSprites
 
             if (switchedEdge)
             {
-                if (gen0.EndState is not null) gen0.EndState.Opacity = 0;
-                if (gen1.EndState is not null) gen1.EndState.Opacity = 0;
+                if (!Unsafe.IsNullRef(ref gen0.EndState)) gen0.EndState.Opacity = 0;
+                if (!Unsafe.IsNullRef(ref gen1.EndState)) gen1.EndState.Opacity = 0;
             }
 
             gen0.Add(new()

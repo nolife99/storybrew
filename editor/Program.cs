@@ -90,7 +90,8 @@ public static class Program
                 editor.Initialize(displayDevice);
 
                 using (AudioManager = createAudioManager())
-                    runMainLoop(window, editor,
+                    runMainLoop(window,
+                        editor,
                         1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
                         1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
             }
@@ -287,10 +288,12 @@ public static class Program
                     w.WriteLine();
                 }
 
-                if (show && MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name
-                })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
-                    FullName, MessageBoxButton.OKCancel, MessageBoxImage.Error) is MessageBoxResult.OK)
-                    NetHelper.OpenUrl(DiscordUrl);
+                if (show &&
+                    MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name
+                    })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
+                        FullName,
+                        MessageBoxButton.OKCancel,
+                        MessageBoxImage.Error) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)
             {

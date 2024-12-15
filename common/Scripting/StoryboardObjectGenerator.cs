@@ -39,13 +39,21 @@ public abstract class StoryboardObjectGenerator : Script
             return compressor;
         });
 
-        configurableFields = GetType().GetFields().Select(field =>
-        {
-            var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-            return configurable is null ? null : new { Field = field, Configurable = configurable };
-        }).Where(item => item is not null).Select((item, order) => new ConfigurableField(item.Field, item.Configurable,
-            item.Field.GetValue(this), item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
-            item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(), order)).ToArray();
+        configurableFields = GetType()
+            .GetFields()
+            .Select(field =>
+            {
+                var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
+                return configurable is null ? null : new { Field = field, Configurable = configurable };
+            })
+            .Where(item => item is not null)
+            .Select((item, order) => new ConfigurableField(item.Field,
+                item.Configurable,
+                item.Field.GetValue(this),
+                item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
+                item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
+                order))
+            .ToArray();
     }
 
     ///<summary> Gets the currently executing script. </summary>
@@ -138,7 +146,8 @@ public abstract class StoryboardObjectGenerator : Script
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
     public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),
-        Path.Combine(context.ProjectAssetPath, path), watch);
+        Path.Combine(context.ProjectAssetPath, path),
+        watch);
 
     Image<Rgba32> getBitmap(string path, string alternatePath, bool watch)
     {
@@ -227,7 +236,7 @@ public abstract class StoryboardObjectGenerator : Script
         if (path is not null) AddDependency(path);
         var fft = context.GetFft(time, path, splitChannels);
         disposables.Add(fft);
-        return fft.GetSpan();
+        return fft.Memory.Span;
     }
 
     /// <summary> Gets the Fast Fourier Transform of the song at <paramref name="time"/>, with the given amount of magnitudes. </summary>
@@ -244,10 +253,10 @@ public abstract class StoryboardObjectGenerator : Script
             (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
             fft.Length;
 
-        UnmanagedBuffer<float> resultFft = new(magnitudes);
+        var resultFft = Configuration.Default.MemoryAllocator.Allocate<float>(magnitudes);
         disposables.Add(resultFft);
 
-        var resultSpan = resultFft.GetSpan();
+        var resultSpan = resultFft.Memory.Span;
 
         var baseIndex = 0;
         for (var i = 0; i < magnitudes; ++i)
@@ -350,7 +359,13 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 var displayName = configurableAttribute.DisplayName;
                 var initialValue = Convert.ChangeType(o, fieldType, CultureInfo.InvariantCulture);
-                config.UpdateField(field.Name, displayName, description, order, fieldType, initialValue, allowedValues,
+                config.UpdateField(field.Name,
+                    displayName,
+                    description,
+                    order,
+                    fieldType,
+                    initialValue,
+                    allowedValues,
                     beginsGroup);
 
                 var value = config.GetValue(field.Name);

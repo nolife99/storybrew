@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -23,7 +22,6 @@ using UserInterface.Drawables;
 
 public class ProjectMenu(Project proj) : UiScreenLayer
 {
-    static readonly StringBuilder warnings = new();
     AudioStream audio;
 
     int defaultDiv = 4;
@@ -279,10 +277,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             Size = new(256, 144)
         });
 
-        timeB.OnClick += (_, _) => Manager.ShowPrompt("Skip to...", value =>
-        {
-            if (float.TryParse(value, out var time)) timeline.Value = time * .001f;
-        });
+        timeB.OnClick += (_, _) => Manager.ShowPrompt("Skip to...",
+            value =>
+            {
+                if (float.TryParse(value, out var time)) timeline.Value = time * .001f;
+            });
 
         resizeTimeline();
         timeline.OnValueChanged += (_, _) => pendingSeek = timeline.Value;
@@ -292,7 +291,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         mapB.OnClick += (_, _) =>
         {
             if (proj.MapsetManager.BeatmapCount > 2)
-                Manager.ShowContextMenu("Select a beatmap", map => proj.SelectBeatmap(map.Id, map.Name),
+                Manager.ShowContextMenu("Select a beatmap",
+                    map => proj.SelectBeatmap(map.Id, map.Name),
                     proj.MapsetManager.Beatmaps);
             else proj.SwitchMainBeatmap();
         };
@@ -366,7 +366,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         if (!proj.MapsetPathIsValid)
             Manager.ShowMessage($"The mapset folder cannot be found.\n{proj.MapsetPath}\n\nPlease select a new one.",
-                changeMapsetFolder, true);
+                changeMapsetFolder,
+                true);
     }
 
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
@@ -420,7 +421,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 if (e.Control)
                 {
                     if (e.Shift)
-                        ClipboardHelper.SetText(TimeSpan.FromMilliseconds(timeSource.Current * 1000)
+                        ClipboardHelper.SetText(TimeSpan.FromSeconds(timeSource.Current)
                             .ToString(Program.Settings.TimeCopyFormat, CultureInfo.InvariantCulture));
                     else if (e.Alt) ClipboardHelper.SetText($"{storyboardPosition.X:###}, {storyboardPosition.Y:###}");
                     else ClipboardHelper.SetText((timeSource.Current * 1000).ToString("f0", CultureInfo.InvariantCulture));
@@ -457,43 +458,48 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var initialDirectory = Path.GetFullPath(proj.MapsetPath);
         if (!Directory.Exists(initialDirectory)) initialDirectory = OsuHelper.GetOsuSongFolder();
 
-        Manager.OpenFilePicker("Pick a new mapset location", "", initialDirectory, ".osu files (*.osu)|*.osu", newPath =>
-        {
-            if (!Directory.Exists(newPath) && File.Exists(newPath)) proj.MapsetPath = Path.GetDirectoryName(newPath);
-            else Manager.ShowMessage("Invalid mapset path.");
-        });
+        Manager.OpenFilePicker("Pick a new mapset location",
+            "",
+            initialDirectory,
+            ".osu files (*.osu)|*.osu",
+            newPath =>
+            {
+                if (!Directory.Exists(newPath) && File.Exists(newPath)) proj.MapsetPath = Path.GetDirectoryName(newPath);
+                else Manager.ShowMessage("Invalid mapset path.");
+            });
     }
 
     void saveProject() => Manager.AsyncLoading("Saving", proj.Save);
     void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
-    void exportProjectAll() => Manager.AsyncLoading("Exporting", () =>
-    {
-        var first = true;
-        var mainBeatmap = proj.MainBeatmap;
-
-        foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
+    void exportProjectAll() => Manager.AsyncLoading("Exporting",
+        () =>
         {
-            Program.RunMainThread(() => proj.MainBeatmap = map);
-            while (proj.EffectsStatus != EffectStatus.Ready)
+            var first = true;
+            var mainBeatmap = proj.MainBeatmap;
+
+            foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
             {
-                switch (proj.EffectsStatus)
+                Program.RunMainThread(() => proj.MainBeatmap = map);
+                while (proj.EffectsStatus != EffectStatus.Ready)
                 {
-                    case EffectStatus.CompilationFailed:
-                    case EffectStatus.ExecutionFailed:
-                    case EffectStatus.LoadingFailed:
-                        throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
-                        })\nCheck its log for the actual error.");
+                    switch (proj.EffectsStatus)
+                    {
+                        case EffectStatus.CompilationFailed:
+                        case EffectStatus.ExecutionFailed:
+                        case EffectStatus.LoadingFailed:
+                            throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
+                            })\nCheck its log for the actual error.");
+                    }
+
+                    Thread.Yield();
                 }
 
-                Thread.Yield();
+                proj.ExportToOsb(first);
+                first = false;
             }
 
-            proj.ExportToOsb(first);
-            first = false;
-        }
-
-        if (!proj.MainBeatmap.Equals(mainBeatmap)) Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
-    });
+            if (proj.MainBeatmap != mainBeatmap) Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
+        });
 
     public override void FixedUpdate()
     {
@@ -531,12 +537,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
             timeB.Text = Manager.GetContext<Editor>().InputManager.Alt ?
-                $"{storyboardPosition.X:000}, {storyboardPosition.Y:000}" :
-                $"{(time < 0 ? "-" : "")}{
-                    (int)Math.Abs(time / 60):00}:{(int)Math.Abs(time % 60):00}:{(int)Math.Abs(time * 1000) % 1000:000}";
+                $"{storyboardPosition.X:f0}, {storyboardPosition.Y:f0}" :
+                TimeSpan.FromSeconds(time).ToString(@"mm\:ss\.fff", CultureInfo.InvariantCulture);
 
             warningsLabel.Text = buildWarningMessage();
-            warningsLabel.Displayed = warningsLabel.Text.Length > 0;
+            warningsLabel.Displayed = warningsLabel.Text.Length != 0;
             warningsLabel.Pack(600);
             warningsLabel.Pack();
         }
@@ -550,57 +555,60 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     }
     string buildWarningMessage()
     {
-        warnings.Length = 0;
+        var warnings = StringHelper.StringBuilderPool.Retrieve();
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
         if (proj.DisplayDebugWarning && activeSprites < 1500)
             warnings.Append(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites\n");
-        else if (activeSprites >= 1500) warnings.Append(CultureInfo.InvariantCulture, $"⚠ {activeSprites:n0} Sprites\n");
+        else if (activeSprites >= 1500) warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {activeSprites:n0} Sprites\n");
 
         var batches = proj.FrameStats.Batches;
         if (proj.DisplayDebugWarning && batches < 500) warnings.Append(CultureInfo.InvariantCulture, $"{batches:0} Batches\n");
-        else if (batches >= 500) warnings.Append(CultureInfo.InvariantCulture, $"⚠ {batches:0} Batches\n");
+        else if (batches >= 500) warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {batches:0} Batches\n");
 
         var commands = stats.CommandCount;
         if (proj.DisplayDebugWarning && commands < 15000)
             warnings.Append(CultureInfo.InvariantCulture, $"{commands:n0} Commands\n");
-        else if (commands >= 15000) warnings.Append(CultureInfo.InvariantCulture, $"⚠ {commands:n0} Commands\n");
+        else if (commands >= 15000) warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {commands:n0} Commands\n");
 
         float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands,
             unusedRatio = unusedCommands / Math.Max(1, commands);
 
-        if (unusedCommands >= 5000 && unusedRatio > .5f || unusedCommands >= 10000 && unusedRatio > .2f ||
+        if (unusedCommands >= 5000 && unusedRatio > .5f ||
+            unusedCommands >= 10000 && unusedRatio > .2f ||
             unusedCommands >= 15000)
             warnings.Append(CultureInfo.InvariantCulture,
-                $"⚠ {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
+                $"\ue002 {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
         else if (proj.DisplayDebugWarning)
             warnings.Append(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
 
         var sbLoad = stats.ScreenFill;
         switch (sbLoad)
         {
-            case > 0 and < 5 when proj.DisplayDebugWarning:
+            case > 0 and < 5
+                when proj.DisplayDebugWarning:
                 warnings.Append(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill\n"); break;
-            case >= 5: warnings.Append(CultureInfo.InvariantCulture, $"⚠ {sbLoad:f2}x Screen Fill\n"); break;
+            case >= 5: warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {sbLoad:f2}x Screen Fill\n"); break;
         }
 
         var frameGpuMemory = stats.GpuMemoryFrameMb;
         if (proj.DisplayDebugWarning && frameGpuMemory < 32)
             warnings.Append(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory\n");
         else if (frameGpuMemory >= 32)
-            warnings.Append(CultureInfo.InvariantCulture, $"⚠ {frameGpuMemory:0.0}MB Frame Texture Memory\n");
+            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {frameGpuMemory:0.0}MB Frame Texture Memory\n");
 
         var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
         if (proj.DisplayDebugWarning && totalGpuMemory < 256)
             warnings.Append(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory\n");
         else if (totalGpuMemory >= 256)
-            warnings.Append(CultureInfo.InvariantCulture, $"⚠ {totalGpuMemory:0.0}MB Total Texture Memory\n");
+            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {totalGpuMemory:0.0}MB Total Texture Memory\n");
 
-        if (stats.OverlappedCommands) warnings.Append("⚠ Overlapped Commands\n");
-        if (stats.IncompatibleCommands) warnings.Append("⚠ Incompatible Commands");
+        if (stats.OverlappedCommands) warnings.Append("\ue002 Overlapped Commands\n");
+        if (stats.IncompatibleCommands) warnings.Append("\ue002 Incompatible Commands");
 
         var str = warnings.TrimEnd().ToString();
+        StringHelper.StringBuilderPool.Release(warnings);
         return str;
     }
 
@@ -642,24 +650,29 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     public override void Close() => withSavePrompt(() =>
     {
         proj.StopEffectUpdates();
-        Manager.AsyncLoading("Stopping effect updates", () =>
-        {
-            proj.CancelEffectUpdates(true).Wait();
-            Program.RunMainThread(() => Manager.GetContext<Editor>().Restart());
+        Manager.AsyncLoading("Stopping effect updates",
+            () =>
+            {
+                proj.CancelEffectUpdates(true).Wait();
+                Program.RunMainThread(() => Manager.GetContext<Editor>().Restart());
 
-            Thread.Sleep(1000);
-            Program.ForceFullGC();
-        });
+                Thread.Sleep(1000);
+                Program.ForceFullGC();
+            });
     });
 
     void withSavePrompt(Action action)
     {
         if (proj.Changed)
-            Manager.ShowMessage("Do you wish to save the project?", () => Manager.AsyncLoading("Saving", () =>
-            {
-                proj.Save();
-                Program.Schedule(action);
-            }), action, true);
+            Manager.ShowMessage("Do you wish to save the project?",
+                () => Manager.AsyncLoading("Saving",
+                    () =>
+                    {
+                        proj.Save();
+                        Program.Schedule(action);
+                    }),
+                action,
+                true);
         else action();
     }
 

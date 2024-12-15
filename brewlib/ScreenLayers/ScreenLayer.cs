@@ -10,8 +10,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 {
     public enum State
     {
-        Hidden, FadingIn, Active,
-        FadingOut
+        Hidden, FadingIn, Active, FadingOut
     }
 
     readonly InputDispatcher inputDispatcher = new(), innerInputDispatcher = new();

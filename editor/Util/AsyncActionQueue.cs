@@ -15,7 +15,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
     readonly bool allowDuplicates;
     readonly ActionQueueContext context;
 
-    public AsyncActionQueue(string threadName, bool allowDuplicates = false, int runnerCount = 0)
+    public AsyncActionQueue(bool allowDuplicates = false, int runnerCount = 0)
     {
         this.allowDuplicates = allowDuplicates;
         context = new();
@@ -23,7 +23,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
 
         actionRunners = new(runnerCount);
-        for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new(context, $"{threadName} #{i + 1}"));
+        for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new(context));
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
@@ -92,9 +92,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
         public void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
     }
 
-    sealed class ActionRunner(ActionQueueContext context, string threadName) : IAsyncDisposable
+    sealed class ActionRunner(ActionQueueContext context) : IAsyncDisposable
     {
         Task thread;
+        int threadId;
         CancellationTokenSource tokenSrc;
 
         public async ValueTask DisposeAsync()
@@ -115,7 +116,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 }
                 catch (OperationCanceledException)
                 {
-                    Trace.WriteLine($"Killed thread {threadName}");
+                    Trace.WriteLine($"Killed thread {threadId}");
                 }
             }
 
@@ -131,82 +132,85 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
 #pragma warning disable SYSLIB0046
             thread = Task.Factory.StartNew(() => ControlledExecution.Run(() =>
-            {
-                var mustSleep = false;
-                while (!tokenSrc.IsCancellationRequested)
-                {
-                    if (mustSleep)
                     {
-                        Thread.Yield();
-                        mustSleep = false;
-                    }
-
-                    ActionContainer task = null;
-                    lock (context.Queue)
-                    {
-                        while (!context.Enabled || context.Queue.Count == 0)
+                        var mustSleep = false;
+                        while (!tokenSrc.IsCancellationRequested)
                         {
-                            if (thread is null)
+                            if (mustSleep)
                             {
-                                Trace.WriteLine($"Exiting thread {threadName}");
-                                return;
+                                Thread.Yield();
+                                mustSleep = false;
                             }
 
-                            Monitor.Wait(context.Queue);
+                            ActionContainer task = null;
+                            lock (context.Queue)
+                            {
+                                while (!context.Enabled || context.Queue.Count == 0)
+                                {
+                                    if (thread is null)
+                                    {
+                                        Trace.WriteLine($"Exiting thread {threadId}");
+                                        return;
+                                    }
+
+                                    Monitor.Wait(context.Queue);
+                                }
+
+                                lock (context.Running)
+                                {
+                                    if (context.RunningLoneTask)
+                                    {
+                                        mustSleep = true;
+                                        continue;
+                                    }
+
+                                    var index = -1;
+                                    var queueSpan = CollectionsMarshal.AsSpan(context.Queue);
+
+                                    for (var i = 0; i < queueSpan.Length; ++i)
+                                    {
+                                        task = queueSpan[i];
+                                        if ((context.Running.Contains(task.UniqueKey) || task.MustRunAlone) &&
+                                            (!task.MustRunAlone || context.Running.Count != 0)) continue;
+
+                                        index = i;
+                                        break;
+                                    }
+
+                                    if (index < 0)
+                                    {
+                                        mustSleep = true;
+                                        continue;
+                                    }
+
+                                    context.Queue.RemoveAt(index);
+                                    context.Running.Add(task!.UniqueKey);
+                                    if (task.MustRunAlone) context.RunningLoneTask = true;
+                                }
+                            }
+
+                            try
+                            {
+                                task.Action(task.Target);
+                            }
+                            catch (Exception e)
+                            {
+                                if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
+                            }
+
+                            lock (context.Running)
+                            {
+                                context.Running.Remove(task.UniqueKey);
+                                if (task.MustRunAlone) context.RunningLoneTask = false;
+                            }
                         }
-
-                        lock (context.Running)
-                        {
-                            if (context.RunningLoneTask)
-                            {
-                                mustSleep = true;
-                                continue;
-                            }
-
-                            var index = -1;
-                            var queueSpan = CollectionsMarshal.AsSpan(context.Queue);
-
-                            for (var i = 0; i < queueSpan.Length; ++i)
-                            {
-                                task = queueSpan[i];
-                                if ((context.Running.Contains(task.UniqueKey) || task.MustRunAlone) &&
-                                    (!task.MustRunAlone || context.Running.Count != 0)) continue;
-
-                                index = i;
-                                break;
-                            }
-
-                            if (index < 0)
-                            {
-                                mustSleep = true;
-                                continue;
-                            }
-
-                            context.Queue.RemoveAt(index);
-                            context.Running.Add(task!.UniqueKey);
-                            if (task.MustRunAlone) context.RunningLoneTask = true;
-                        }
-                    }
-
-                    try
-                    {
-                        task.Action(task.Target);
-                    }
-                    catch (Exception e)
-                    {
-                        if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
-                    }
-
-                    lock (context.Running)
-                    {
-                        context.Running.Remove(task.UniqueKey);
-                        if (task.MustRunAlone) context.RunningLoneTask = false;
-                    }
-                }
-            }, tokenSrc.Token), TaskCreationOptions.LongRunning);
+                    },
+                    tokenSrc.Token),
+                TaskCreationOptions.LongRunning);
 #pragma warning restore SYSLIB0046
 
-            Trace.WriteLine($"Started thread {threadName} ({thread.Id})");
+            threadId = thread.Id;
+            Trace.WriteLine($"Started thread {threadId}");
         }
     }
 

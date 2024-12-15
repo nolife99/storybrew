@@ -1,9 +1,9 @@
 ﻿namespace StorybrewCommon.Curves;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
-using BrewLib.Util;
 
 /// <summary>
 ///     Represents a circular arc curve defined by three control points: a start point, a midpoint, and an end point.
@@ -21,40 +21,43 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
     /// <summary/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
-        using var linearSegmentsBuf = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint]);
-        var linearSegments = linearSegmentsBuf.GetSpan();
+        var linearSegments = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint], out var amountPoints);
 
         length = 0;
-        for (var i = 0; i < linearSegments.Length - 1; ++i)
+        for (var i = 0; i < amountPoints - 1; ++i)
         {
             var cur = linearSegments[i];
 
             distancePosition.Add((length, cur));
             length += Vector2.Distance(cur, linearSegments[i + 1]);
         }
+
+        ArrayPool<Vector2>.Shared.Return(linearSegments);
     }
 
     ///<summary> Returns whether or not the curve is a valid circle curve based on given control points. </summary>
     public static bool IsValid(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint) => startPoint != midPoint &&
-        midPoint != endPoint && 2 * (startPoint.X * (midPoint.Y - endPoint.Y) + midPoint.X * (endPoint.Y - startPoint.Y) +
-            endPoint.X * (startPoint.Y - midPoint.Y)) != 0;
+        midPoint != endPoint &&
+        2 *
+        (startPoint.X * (midPoint.Y - endPoint.Y) +
+            midPoint.X * (endPoint.Y - startPoint.Y) +
+            endPoint.X * (startPoint.Y - midPoint.Y)) !=
+        0;
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static UnmanagedBuffer<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
+    static Vector2[] CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, out int amountPoints)
     {
         CircularArcProperties pr = new(controlPoints);
-        var amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
+        amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
             2 :
             Math.Max(2, (int)MathF.Ceiling(pr.ThetaRange / (2 * MathF.Acos(1 - circular_arc_tolerance / pr.Radius))));
 
-        UnmanagedBuffer<Vector2> output = new(amountPoints);
-        var outputSpan = output.GetSpan();
-
+        var output = ArrayPool<Vector2>.Shared.Rent(amountPoints);
         for (var i = 0; i < amountPoints; ++i)
         {
             var fract = i / (amountPoints - 1f);
             var (sin, cos) = MathF.SinCos(pr.ThetaStart + pr.Direction * fract * pr.ThetaRange);
-            outputSpan[i] = pr.Centre + new Vector2(cos, sin) * pr.Radius;
+            output[i] = pr.Centre + new Vector2(cos, sin) * pr.Radius;
         }
 
         return output;
@@ -80,7 +83,8 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             var cSq = c.LengthSquared();
 
             Centre = new Vector2(aSq * (b - c).Y + bSq * (c - a).Y + cSq * (a - b).Y,
-                aSq * (c - b).X + bSq * (a - c).X + cSq * (b - a).X) / d;
+                    aSq * (c - b).X + bSq * (a - c).X + cSq * (b - a).X) /
+                d;
 
             var dA = a - Centre;
             var dC = c - Centre;

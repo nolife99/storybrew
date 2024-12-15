@@ -27,22 +27,23 @@ public class IntegratedCompressor : ImageCompressor
         ensureTool();
 
         tasks.Add(Task.Factory.StartNew(() =>
-        {
-            using var localProc = Process.Start(
-                new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
-                {
-                    CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
-                });
-
-            using (var errorStream = localProc.StandardError)
             {
-                var error = errorStream.ReadToEnd();
-                if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
-                    Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
-            }
+                using var localProc =
+                    Process.Start(new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+                    {
+                        CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
+                    });
 
-            localProc.WaitForExit();
-        }, TaskCreationOptions.AttachedToParent | TaskCreationOptions.LongRunning));
+                using (var errorStream = localProc.StandardError)
+                {
+                    var error = errorStream.ReadToEnd();
+                    if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
+                        Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
+                }
+
+                localProc.WaitForExit();
+            },
+            TaskCreationOptions.AttachedToParent | TaskCreationOptions.LongRunning));
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {

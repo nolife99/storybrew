@@ -34,80 +34,83 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
             ]
         });
 
-        NetHelper.Download(downloadUrl, Updater.UpdateArchivePath, progress =>
-        {
-            if (IsDisposed) return false;
-            progressBar.Value = progress;
-            return true;
-        }, exception =>
-        {
-            if (IsDisposed) return;
-            if (exception is not null)
+        NetHelper.Download(downloadUrl,
+            Updater.UpdateArchivePath,
+            progress =>
             {
-                Trace.TraceError($"Failed to download the new version.\n\n{exception}");
-                Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}",
-                    Updater.OpenLatestReleasePage);
-
-                Exit();
-                return;
-            }
-
-            try
+                if (IsDisposed) return false;
+                progressBar.Value = progress;
+                return true;
+            },
+            exception =>
             {
-                string executablePath = null;
-                using (var zip = ZipFile.OpenRead(Updater.UpdateArchivePath))
+                if (IsDisposed) return;
+                if (exception is not null)
                 {
-                    if (Directory.Exists(Updater.UpdateFolderPath)) Directory.Delete(Updater.UpdateFolderPath, true);
+                    Trace.TraceError($"Failed to download the new version.\n\n{exception}");
+                    Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}",
+                        Updater.OpenLatestReleasePage);
 
-                    foreach (var entry in zip.Entries)
-                    {
-                        if (entry.Name.Length == 0) continue;
-
-                        var entryPath = Path.GetFullPath(Path.Combine(Updater.UpdateFolderPath, entry.FullName));
-                        var entryFolder = Path.GetDirectoryName(entryPath);
-
-                        if (!Directory.Exists(entryFolder))
-                        {
-                            Trace.WriteLine($"Creating {entryFolder}");
-                            Directory.CreateDirectory(entryFolder);
-                        }
-
-                        Trace.WriteLine($"Extracting {entryPath}");
-                        entry.ExtractToFile(entryPath);
-
-                        if (Path.GetExtension(entryPath) == ".exe") executablePath = entryPath;
-                    }
+                    Exit();
+                    return;
                 }
 
-                actionLabel.Text = "Updating";
-
-                var localPath = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
-                using Process process = new()
+                try
                 {
-                    StartInfo = new(executablePath, $"update \"{localPath}\" {Program.Version}")
+                    string executablePath = null;
+                    using (var zip = ZipFile.OpenRead(Updater.UpdateArchivePath))
                     {
-                        UseShellExecute = true, WorkingDirectory = Updater.UpdateFolderPath
-                    }
-                };
+                        if (Directory.Exists(Updater.UpdateFolderPath)) Directory.Delete(Updater.UpdateFolderPath, true);
 
-                if (process.Start()) Manager.Exit();
-                else
+                        foreach (var entry in zip.Entries)
+                        {
+                            if (entry.Name.Length == 0) continue;
+
+                            var entryPath = Path.GetFullPath(Path.Combine(Updater.UpdateFolderPath, entry.FullName));
+                            var entryFolder = Path.GetDirectoryName(entryPath);
+
+                            if (!Directory.Exists(entryFolder))
+                            {
+                                Trace.WriteLine($"Creating {entryFolder}");
+                                Directory.CreateDirectory(entryFolder);
+                            }
+
+                            Trace.WriteLine($"Extracting {entryPath}");
+                            entry.ExtractToFile(entryPath);
+
+                            if (Path.GetExtension(entryPath) == ".exe") executablePath = entryPath;
+                        }
+                    }
+
+                    actionLabel.Text = "Updating";
+
+                    var localPath = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
+                    using Process process = new()
+                    {
+                        StartInfo = new(executablePath, $"update \"{localPath}\" {Program.Version}")
+                        {
+                            UseShellExecute = true, WorkingDirectory = Updater.UpdateFolderPath
+                        }
+                    };
+
+                    if (process.Start()) Manager.Exit();
+                    else
+                    {
+                        Manager.ShowMessage("Failed to start the update process, please update manually.",
+                            Updater.OpenLatestReleasePage);
+
+                        Exit();
+                    }
+                }
+                catch (Exception e)
                 {
-                    Manager.ShowMessage("Failed to start the update process, please update manually.",
+                    Trace.TraceError($"Failed to start the update process.\n\n{e}");
+                    Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}",
                         Updater.OpenLatestReleasePage);
 
                     Exit();
                 }
-            }
-            catch (Exception e)
-            {
-                Trace.TraceError($"Failed to start the update process.\n\n{e}");
-                Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}",
-                    Updater.OpenLatestReleasePage);
-
-                Exit();
-            }
-        });
+            });
     }
 
     public override void Resize(int width, int height)

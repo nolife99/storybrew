@@ -16,12 +16,13 @@ public sealed class TextFontManager : IDisposable
         if (references.TryGetValue(identifier, out var refCount)) references[identifier] = refCount + 1;
         else references[identifier] = 1;
 
-        return new TextFontProxy(font, () =>
-        {
-            if (--references[identifier] != 0) return;
-            fonts.Remove(identifier);
-            font.Dispose();
-        });
+        return new TextFontProxy(font,
+            () =>
+            {
+                if (--references[identifier] != 0) return;
+                fonts.Remove(identifier);
+                font.Dispose();
+            });
     }
 
     #region IDisposable Support

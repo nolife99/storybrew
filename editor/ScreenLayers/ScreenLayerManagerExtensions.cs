@@ -15,58 +15,61 @@ public static class ScreenLayerManagerExtensions
     public static void OpenFolderPicker(this ScreenLayerManager screenLayer,
         string description,
         string initialValue,
-        Action<string> callback) => screenLayer.AsyncLoading("Select a folder", () =>
-    {
-        using FolderBrowserDialog dialog = new()
+        Action<string> callback) => screenLayer.AsyncLoading("Select a folder",
+        () =>
         {
-            Description = description, ShowNewFolderButton = true, SelectedPath = initialValue
-        };
+            using FolderBrowserDialog dialog = new()
+            {
+                Description = description, ShowNewFolderButton = true, SelectedPath = initialValue
+            };
 
-        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-            Program.RunMainThread(() => callback(dialog.SelectedPath));
-    });
+            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
+                Program.RunMainThread(() => callback(dialog.SelectedPath));
+        });
 
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
         string description,
         string initialValue,
         string initialDirectory,
         string filter,
-        Action<string> callback) => screenLayer.AsyncLoading("Select a file", () =>
-    {
-        using OpenFileDialog dialog = new()
+        Action<string> callback) => screenLayer.AsyncLoading("Select a file",
+        () =>
         {
-            Title = description,
-            RestoreDirectory = true,
-            ShowHelp = false,
-            FileName = initialValue,
-            Filter = filter,
-            InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
-        };
+            using OpenFileDialog dialog = new()
+            {
+                Title = description,
+                RestoreDirectory = true,
+                ShowHelp = false,
+                FileName = initialValue,
+                Filter = filter,
+                InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
+            };
 
-        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-            Program.RunMainThread(() => callback(dialog.FileName));
-    });
+            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
+                Program.RunMainThread(() => callback(dialog.FileName));
+        });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
         string description,
         string initialValue,
         string extension,
         string filter,
-        Action<string> callback) => screenLayer.AsyncLoading("Select a location", () =>
-    {
-        using SaveFileDialog dialog = new()
+        Action<string> callback) => screenLayer.AsyncLoading("Select a location",
+        () =>
         {
-            Title = description,
-            RestoreDirectory = true,
-            FileName = initialValue,
-            OverwritePrompt = true,
-            DefaultExt = extension,
-            Filter = filter
-        };
+            using SaveFileDialog dialog = new()
+            {
+                Title = description,
+                RestoreDirectory = true,
+                FileName = initialValue,
+                OverwritePrompt = true,
+                DefaultExt = extension,
+                Filter = filter
+            };
 
-        if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-            Program.RunMainThread(() => callback(dialog.FileName));
-    });
+            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
+                Program.RunMainThread(() => callback(dialog.FileName));
+        });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Action action)
         => screenLayer.Add(new LoadingScreen(message, action));
@@ -100,18 +103,23 @@ public static class ScreenLayerManagerExtensions
     public static void ShowOpenProject(this ScreenLayerManager screenLayer)
     {
         if (!Directory.Exists(Project.ProjectsFolder)) Directory.CreateDirectory(Project.ProjectsFolder);
-        screenLayer.OpenFilePicker("", "", Project.ProjectsFolder, Project.FileFilter, projectPath =>
-        {
-            if (!PathHelper.FolderContainsPath(Project.ProjectsFolder, projectPath) ||
-                Path.GetRelativePath(Project.ProjectsFolder, projectPath).Contains('/'))
-                screenLayer.ShowMessage("Projects must be placed in a folder directly inside the 'projects' folder.");
+        screenLayer.OpenFilePicker("",
+            "",
+            Project.ProjectsFolder,
+            Project.FileFilter,
+            projectPath =>
+            {
+                if (!PathHelper.FolderContainsPath(Project.ProjectsFolder, projectPath) ||
+                    Path.GetRelativePath(Project.ProjectsFolder, projectPath).Contains('/'))
+                    screenLayer.ShowMessage("Projects must be placed in a folder directly inside the 'projects' folder.");
 
-            else
-                screenLayer.AsyncLoading("Loading project", () =>
-                {
-                    var project = Project.Load(projectPath, true, screenLayer.GetContext<Editor>().ResourceContainer);
-                    Program.Schedule(() => screenLayer.Set(new ProjectMenu(project)));
-                });
-        });
+                else
+                    screenLayer.AsyncLoading("Loading project",
+                        () =>
+                        {
+                            var project = Project.Load(projectPath, true, screenLayer.GetContext<Editor>().ResourceContainer);
+                            Program.Schedule(() => screenLayer.Set(new ProjectMenu(project)));
+                        });
+            });
     }
 }

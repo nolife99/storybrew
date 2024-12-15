@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL;
+using Shaders;
 
 public class VertexDeclaration : IEnumerable<VertexAttribute>
 {
@@ -34,7 +35,11 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
             if (attributeLocation < 0) continue;
 
             GL.EnableVertexArrayAttrib(vao, attributeLocation);
-            GL.VertexArrayAttribFormat(vao, attributeLocation, attribute.ComponentCount, attribute.Type, attribute.Normalized,
+            GL.VertexArrayAttribFormat(vao,
+                attributeLocation,
+                attribute.ComponentCount,
+                attribute.Type,
+                attribute.Normalized,
                 attribute.Offset);
 
             GL.VertexArrayAttribBinding(vao, attributeLocation, 0);
@@ -42,9 +47,9 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
     }
     public void DeactivateAttributes(Shader shader, int vao)
     {
-        foreach (var attribute in vertexAttributes)
+        for (var i = 0; i < vertexAttributes.Length; i++)
         {
-            var attributeLocation = shader.GetAttributeLocation(attribute.Name);
+            var attributeLocation = shader.GetAttributeLocation(vertexAttributes[i].Name);
             if (attributeLocation >= 0) GL.DisableVertexArrayAttrib(vao, attributeLocation);
         }
     }

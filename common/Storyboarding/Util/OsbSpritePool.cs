@@ -48,7 +48,11 @@ public class OsbSpritePool : IDisposable
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="attributes"> The actions to be applied to each sprite in the pool. </param>
     public OsbSpritePool(StoryboardSegment segment, string path, Action<OsbSprite, float, float> attributes = null) : this(
-        segment, path, OsbOrigin.Centre, default, attributes) { }
+        segment,
+        path,
+        OsbOrigin.Centre,
+        default,
+        attributes) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
@@ -64,22 +68,31 @@ public class OsbSpritePool : IDisposable
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="origin"> The origin point for the sprites within the pool. </param>
     /// <param name="additive"> Toggle the sprites' additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive) : this(segment, path, origin,
-        default, additive) { }
+    public OsbSpritePool(StoryboardSegment segment, string path, OsbOrigin origin, bool additive) : this(segment,
+        path,
+        origin,
+        default,
+        additive) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="position"> The initial position of the sprites in the pool. </param>
     /// <param name="additive"> Toggle the sprites' additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position, bool additive) : this(segment, path,
-        OsbOrigin.Centre, position, additive) { }
+    public OsbSpritePool(StoryboardSegment segment, string path, CommandPosition position, bool additive) : this(segment,
+        path,
+        OsbOrigin.Centre,
+        position,
+        additive) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
     /// <param name="path"> The image file path for the sprites in the pool. </param>
     /// <param name="additive"> Toggle the sprites' additive blending. </param>
-    public OsbSpritePool(StoryboardSegment segment, string path, bool additive) : this(segment, path, OsbOrigin.Centre, default,
+    public OsbSpritePool(StoryboardSegment segment, string path, bool additive) : this(segment,
+        path,
+        OsbOrigin.Centre,
+        default,
         additive) { }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
@@ -113,8 +126,9 @@ public class OsbSpritePool : IDisposable
         PooledSprite result = null;
         foreach (var pooledSprite in pooled)
             if ((MaxPoolDuration > 0 ?
-                pooledSprite.EndTime <= startTime && startTime < pooledSprite.StartTime + MaxPoolDuration :
-                pooledSprite.EndTime <= startTime) && (result is null || pooledSprite.StartTime < result.StartTime))
+                    pooledSprite.EndTime <= startTime && startTime < pooledSprite.StartTime + MaxPoolDuration :
+                    pooledSprite.EndTime <= startTime) &&
+                (result is null || pooledSprite.StartTime < result.StartTime))
                 result = pooledSprite;
 
         if (result is not null)
@@ -348,7 +362,15 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         CommandPosition position,
         Action<OsbSprite, float, float> attributes = null,
-        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, attributes,
+        int group = 0) => Get(startTime,
+        endTime,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        OsbOrigin.Centre,
+        position,
+        attributes,
         group);
 
     /// <summary> Gets an available animation from the pools. </summary>
@@ -367,7 +389,15 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         float frameDelay,
         OsbLoopType loopType,
         Action<OsbSprite, float, float> attributes = null,
-        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, attributes,
+        int group = 0) => Get(startTime,
+        endTime,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        OsbOrigin.Centre,
+        default,
+        attributes,
         group);
 
     /// <summary> Gets an available animation from the pools. </summary>
@@ -390,8 +420,16 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbOrigin origin,
         CommandPosition position,
         bool additive,
-        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, origin, position,
-        additive ? (pS, sT, _) => pS.Additive(sT) : null, group);
+        int group = 0) => Get(startTime,
+        endTime,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        origin,
+        position,
+        additive ? (pS, sT, _) => pS.Additive(sT) : null,
+        group);
 
     /// <summary> Gets an available animation from the pools. </summary>
     /// <param name="startTime"> The start time of the animation. </param>
@@ -431,7 +469,15 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         OsbLoopType loopType,
         CommandPosition position,
         bool additive,
-        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, position, additive,
+        int group = 0) => Get(startTime,
+        endTime,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        OsbOrigin.Centre,
+        position,
+        additive,
         group);
 
     /// <summary> Gets an available animation from the pools. </summary>
@@ -450,7 +496,15 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         float frameDelay,
         OsbLoopType loopType,
         bool additive,
-        int group = 0) => Get(startTime, endTime, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive,
+        int group = 0) => Get(startTime,
+        endTime,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        OsbOrigin.Centre,
+        default,
+        additive,
         group);
 
     OsbSpritePool getPool(string path,
@@ -550,8 +604,14 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
         float frameDelay,
         OsbLoopType loopType,
         OsbOrigin origin,
-        Action<OsbSprite, float, float> attributes = null) : this(segment, path, frameCount, frameDelay, loopType, origin,
-        default, attributes) { }
+        Action<OsbSprite, float, float> attributes = null) : this(segment,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        origin,
+        default,
+        attributes) { }
 
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
     /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
@@ -567,8 +627,14 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
         float frameDelay,
         OsbLoopType loopType,
         CommandPosition position,
-        Action<OsbSprite, float, float> attributes = null) : this(segment, path, frameCount, frameDelay, loopType,
-        OsbOrigin.Centre, position, attributes) { }
+        Action<OsbSprite, float, float> attributes = null) : this(segment,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        OsbOrigin.Centre,
+        position,
+        attributes) { }
 
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
     /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
@@ -582,8 +648,14 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
-        Action<OsbSprite, float, float> attributes = null) : this(segment, path, frameCount, frameDelay, loopType,
-        OsbOrigin.Centre, default, attributes) { }
+        Action<OsbSprite, float, float> attributes = null) : this(segment,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        OsbOrigin.Centre,
+        default,
+        attributes) { }
 
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>
     /// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
@@ -601,7 +673,13 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
         OsbLoopType loopType,
         OsbOrigin origin,
         CommandPosition position,
-        bool additive) : this(segment, path, frameCount, frameDelay, loopType, origin, position,
+        bool additive) : this(segment,
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        origin,
+        position,
         additive ? (pA, sT, _) => pA.Additive(sT) : null) { }
 
     /// <summary> Constructs a new <see cref="OsbAnimationPool"/>. </summary>

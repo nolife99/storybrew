@@ -63,8 +63,10 @@ internal class Lyrics : StoryboardObjectGenerator
 
     protected override void Generate()
     {
-        var font = LoadFont(SpritesPath, new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
-            new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor), new FontOutline(OutlineThickness, OutlineColor),
+        var font = LoadFont(SpritesPath,
+            new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
+            new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor),
+            new FontOutline(OutlineThickness, OutlineColor),
             new FontShadow(ShadowThickness, ShadowColor));
 
         var subtitles = LoadSubtitles(SubtitlesPath);

@@ -169,17 +169,18 @@ public class EditorBeatmap(string path) : Beatmap
 
                     case "Events":
                         reader.ParseSectionLines(line =>
-                        {
-                            if (line.StartsWith("//", StringComparison.Ordinal)) return;
-                            if (line.StartsWith(' ')) return;
-
-                            var values = line.Split(',');
-                            switch (values[0])
                             {
-                                case "0": beatmap.backgroundPath = removePathQuotes(values[2]); break;
-                                case "2": beatmap.breaks.Add(OsuBreak.Parse(line)); break;
-                            }
-                        }, false); break;
+                                if (line.StartsWith("//", StringComparison.Ordinal)) return;
+                                if (line.StartsWith(' ')) return;
+
+                                var values = line.Split(',');
+                                switch (values[0])
+                                {
+                                    case "0": beatmap.backgroundPath = removePathQuotes(values[2]); break;
+                                    case "2": beatmap.breaks.Add(OsuBreak.Parse(line)); break;
+                                }
+                            },
+                            false); break;
 
                     case "TimingPoints":
                     {
@@ -210,28 +211,30 @@ public class EditorBeatmap(string path) : Beatmap
                         var comboIndex = 0;
 
                         reader.ParseSectionLines(line =>
-                        {
-                            var hitobject = OsuHitObject.Parse(beatmap, line);
-
-                            if (hitobject.NewCombo || previousHitObject is null ||
-                                (previousHitObject.Flags & HitObjectFlag.Spinner) > 0)
                             {
-                                hitobject.Flags |= HitObjectFlag.NewCombo;
+                                var hitobject = OsuHitObject.Parse(beatmap, line);
 
-                                var colorIncrement = hitobject.ComboOffset;
-                                if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) ++colorIncrement;
-                                colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
-                                comboIndex = 1;
-                            }
-                            else ++comboIndex;
+                                if (hitobject.NewCombo ||
+                                    previousHitObject is null ||
+                                    (previousHitObject.Flags & HitObjectFlag.Spinner) > 0)
+                                {
+                                    hitobject.Flags |= HitObjectFlag.NewCombo;
 
-                            hitobject.ComboIndex = comboIndex;
-                            hitobject.ColorIndex = colorIndex;
-                            hitobject.Color = beatmap.comboColors[colorIndex];
+                                    var colorIncrement = hitobject.ComboOffset;
+                                    if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) ++colorIncrement;
+                                    colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
+                                    comboIndex = 1;
+                                }
+                                else ++comboIndex;
 
-                            beatmap.hitObjects.Add(hitobject);
-                            previousHitObject = hitobject;
-                        }, false);
+                                hitobject.ComboIndex = comboIndex;
+                                hitobject.ColorIndex = colorIndex;
+                                hitobject.Color = beatmap.comboColors[colorIndex];
+
+                                beatmap.hitObjects.Add(hitobject);
+                                previousHitObject = hitobject;
+                            },
+                            false);
 
                         break;
                     }
@@ -270,8 +273,8 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectN is OsuSpinner) continue;
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.EndTime) break;
 
-                        if (objectN is OsuSlider spanN && (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared <
-                            stackLenienceSquared)
+                        if (objectN is OsuSlider spanN &&
+                            (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
                         {
                             var offset = objectI.StackIndex - objectN.StackIndex + 1;
                             for (var j = n + 1; j <= i; ++j)
@@ -301,7 +304,8 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.StartTime) break;
 
                         if (!((((objectN as OsuSlider)?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) -
-                            objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)) continue;
+                                objectI.PlayfieldPosition).LengthSquared <
+                            stackLenienceSquared)) continue;
 
                         objectN.StackIndex = objectI.StackIndex + 1;
                         objectI = objectN;

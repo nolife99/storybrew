@@ -27,7 +27,8 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
     public IEnumerable<Token<TokenType>> Tokenize(string content)
     {
         Definition.Match previousMatch = null;
-        foreach (var byStartGroup in definitions.SelectMany((d, i) => d.FindMatches(content, i)).GroupBy(m => m.StartIndex)
+        foreach (var byStartGroup in definitions.SelectMany((d, i) => d.FindMatches(content, i))
+            .GroupBy(m => m.StartIndex)
             .OrderBy(g => g.Key))
         {
             var bestMatch = byStartGroup.OrderBy(m => m.Priority).FirstOrDefault();
@@ -45,14 +46,15 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
     {
         readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        public IEnumerable<Match> FindMatches(string input, int priority) => regex.Matches(input).Select(match => new Match
-        {
-            StartIndex = match.Index,
-            EndIndex = match.Index + match.Length,
-            Priority = priority,
-            Type = matchType,
-            Value = match.Groups.Count > captureGroup ? match.Groups[captureGroup].Value : match.Value
-        });
+        public IEnumerable<Match> FindMatches(string input, int priority) => regex.Matches(input)
+            .Select(match => new Match
+            {
+                StartIndex = match.Index,
+                EndIndex = match.Index + match.Length,
+                Priority = priority,
+                Type = matchType,
+                Value = match.Groups.Count > captureGroup ? match.Groups[captureGroup].Value : match.Value
+            });
 
         public override string ToString() => $"regex:{regex}, matchType:{matchType}, captureGroup:{captureGroup}";
 

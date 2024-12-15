@@ -2,7 +2,13 @@
 
 public enum JsonTokenType
 {
-    PropertyQuoted, WordQuoted, ObjectStart,
-    ObjectEnd, ArrayStart, ArrayEnd,
-    ValueSeparator, Property, Word
+    PropertyQuoted,
+    WordQuoted,
+    ObjectStart,
+    ObjectEnd,
+    ArrayStart,
+    ArrayEnd,
+    ValueSeparator,
+    Property,
+    Word
 }

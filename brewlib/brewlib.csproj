@@ -27,8 +27,9 @@
 
     <ItemGroup>
         <PackageReference Include="ManagedBass.Fx" Version="3.1.1"/>
-        <PackageReference Include="OpenTK.Graphics" Version="4.9.3" />
-        <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.3" />
+        <PackageReference Include="OpenTK.Graphics" Version="4.9.3"/>
+        <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.3"/>
+        <PackageReference Include="Varena" Version="1.2.0"/>
     </ItemGroup>
 
     <ItemGroup>

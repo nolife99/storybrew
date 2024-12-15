@@ -62,7 +62,9 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         var progress = (value - MinValue) / (MaxValue - MinValue);
         var minWidth = bar.MinSize.X;
 
-        bar.Draw(drawContext, Manager.Camera,
-            new(Bounds.X, Bounds.Y, minWidth + (Bounds.Width - minWidth) * progress, Bounds.Height), actualOpacity);
+        bar.Draw(drawContext,
+            Manager.Camera,
+            new(Bounds.X, Bounds.Y, minWidth + (Bounds.Width - minWidth) * progress, Bounds.Height),
+            actualOpacity);
     }
 }

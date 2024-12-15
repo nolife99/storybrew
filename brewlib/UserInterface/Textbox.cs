@@ -276,7 +276,8 @@ public class Textbox : Widget, Field
         if (!hasFocus) return;
 
         if (cursorPosition != selectionStart)
-            content.ForTextBounds(SelectionLeft, SelectionRight,
+            content.ForTextBounds(SelectionLeft,
+                SelectionRight,
                 selectionBounds => cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
 
         var bounds = content.GetCharacterBounds(cursorPosition);

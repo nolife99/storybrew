@@ -43,7 +43,8 @@ public class Settings
             reader.ParseKeyValueSection((key, value) =>
             {
                 var field = type.GetField(key);
-                if (field is null || !field.FieldType.IsGenericType ||
+                if (field is null ||
+                    !field.FieldType.IsGenericType ||
                     !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
 
                 try

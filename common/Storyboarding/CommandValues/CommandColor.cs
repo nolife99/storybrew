@@ -40,7 +40,11 @@ using Vector3 = System.Numerics.Vector3;
     /// <summary> Constructs a new <see cref="CommandColor"/> from red, green, and blue values from 0.0 to 1.0. </summary>
     public CommandColor(double r = 1, double g = 1, double b = 1)
     {
-        if (double.IsNaN(r) || double.IsInfinity(r) || double.IsNaN(g) || double.IsInfinity(g) || double.IsNaN(b) ||
+        if (double.IsNaN(r) ||
+            double.IsInfinity(r) ||
+            double.IsNaN(g) ||
+            double.IsInfinity(g) ||
+            double.IsNaN(b) ||
             double.IsInfinity(b)) throw new InvalidDataException($"Invalid command color {r},{g},{b}");
 
         internalVec = new((float)r, (float)g, (float)b);

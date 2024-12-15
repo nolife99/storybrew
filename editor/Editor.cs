@@ -76,7 +76,8 @@ public sealed class Editor(NativeWindow window) : IDisposable
                     drawableTypeName
                         => brewLibAssembly.GetType(
                             $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}",
-                            true, true),
+                            true,
+                            true),
                 ResolveWidgetType =
                     widgetTypeName
                         => Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
@@ -84,10 +85,12 @@ public sealed class Editor(NativeWindow window) : IDisposable
                 ResolveStyleType = styleTypeName
                     => Type.GetType(
                         $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}",
-                        false, true) ??
+                        false,
+                        true) ??
                     brewLibAssembly.GetType(
                         $"{nameof(BrewLib)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}",
-                        true, true)
+                        true,
+                        true)
             };
 
             Skin.Load("skin.json", ResourceContainer);

@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Graphics;
+﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
 using System.Collections.Generic;
@@ -67,15 +67,15 @@ public sealed partial class Shader : IDisposable
         dispose();
         GL.EnableVertexAttribArray(0);
 
-        vertexShaderId = compileShader(ShaderType.VertexShader, vertexShaderCode.ToString());
-        fragmentShaderId = compileShader(ShaderType.FragmentShader, fragmentShaderCode.ToString());
+        vertexShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode.ToString());
+        fragmentShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode.ToString());
 
         if (vertexShaderId == -1 || fragmentShaderId == -1) return;
 
         SortId = linkProgram();
         isInitialized = SortId != -1;
     }
-    int compileShader(ShaderType type, string code)
+    int compileShader(OpenTK.Graphics.OpenGL.ShaderType type, string code)
     {
         var id = GL.CreateShader(type);
         GL.ShaderSource(id, code);

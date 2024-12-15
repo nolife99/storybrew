@@ -5,9 +5,14 @@ using System.Globalization;
 
 public enum TinyTokenType
 {
-    Null, Boolean, Integer,
-    Float, String, Object,
-    Array, Invalid
+    Null,
+    Boolean,
+    Integer,
+    Float,
+    String,
+    Object,
+    Array,
+    Invalid
 }
 
 public class TinyValue : TinyToken

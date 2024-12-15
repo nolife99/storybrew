@@ -157,7 +157,10 @@ internal class Tetris : StoryboardObjectGenerator
         shadow.Scale(startTime, SpriteScale);
         shadow.Color(startTime, 0, 0, 0);
         shadow.Fade(startTime, .5f);
-        shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset,
+        shadow.Move(OsbEasing.In,
+            startTime,
+            endTime,
+            transform(startPosition) + ShadowOffset,
             transform(targetPosition) + ShadowOffset);
     }
 
@@ -189,7 +192,10 @@ internal class Tetris : StoryboardObjectGenerator
         var startPosition = targetPosition with { Y = dropY * CellSize };
 
         sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
-        shadow.Move(OsbEasing.In, startTime, endTime, transform(startPosition) + ShadowOffset,
+        shadow.Move(OsbEasing.In,
+            startTime,
+            endTime,
+            transform(startPosition) + ShadowOffset,
             transform(targetPosition) + ShadowOffset);
     }
 

@@ -2,6 +2,7 @@
 
 using System;
 using OpenTK.Graphics.OpenGL;
+using Shaders;
 
 public interface PrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : allows ref struct
 {

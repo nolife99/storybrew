@@ -63,7 +63,7 @@ public class Label(WidgetManager manager) : Widget(manager)
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) textDrawable?.Dispose();
+        if (disposing) textDrawable.Dispose();
         base.Dispose(disposing);
     }
 
@@ -83,8 +83,7 @@ public class Label(WidgetManager manager) : Widget(manager)
 
         var scalingChanged = false;
 
-        var camera = Manager.Camera as CameraOrtho;
-        var scaling = camera?.HeightScaling ?? 1;
+        var scaling = (Manager.Camera as CameraOrtho)?.HeightScaling ?? 1;
         if (scaling != 0 && textDrawable.Scaling != scaling)
         {
             textDrawable.Scaling = scaling;
@@ -106,20 +105,26 @@ public class Label(WidgetManager manager) : Widget(manager)
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
-        if (!string.IsNullOrWhiteSpace(Text)) textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
+        if (!string.IsNullOrWhiteSpace(textDrawable.Text))
+            textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
     }
     public RectangleF GetCharacterBounds(int index)
     {
         var position = AbsolutePosition;
         var bounds = textDrawable.GetCharacterBounds(index);
-        return RectangleF.FromLTRB(position.X + bounds.X, position.Y + bounds.Y, position.X + bounds.Right,
+        return RectangleF.FromLTRB(position.X + bounds.X,
+            position.Y + bounds.Y,
+            position.X + bounds.Right,
             position.Y + bounds.Bottom);
     }
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var position = AbsolutePosition;
-        textDrawable.ForTextBounds(startIndex, endIndex,
-            bounds => action(RectangleF.FromLTRB(position.X + bounds.X, position.Y + bounds.Y, position.X + bounds.Right,
+        textDrawable.ForTextBounds(startIndex,
+            endIndex,
+            bounds => action(RectangleF.FromLTRB(position.X + bounds.X,
+                position.Y + bounds.Y,
+                position.X + bounds.Right,
                 position.Y + bounds.Bottom)));
     }
 

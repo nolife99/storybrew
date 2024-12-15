@@ -320,10 +320,13 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 if (data is TinyArray tinyArray)
                     return tinyArray.Count switch
                     {
-                        3 => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
+                        3 => new Rgba32(resolve<float>(tinyArray[0], constants),
+                            resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants)),
-                        _ => new Rgba32(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
-                            resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
+                        _ => new Rgba32(resolve<float>(tinyArray[0], constants),
+                            resolve<float>(tinyArray[1], constants),
+                            resolve<float>(tinyArray[2], constants),
+                            resolve<float>(tinyArray[3], constants))
                     };
 
                 throw new InvalidDataException($"Incorrect color format: {data}");
@@ -335,10 +338,13 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     {
                         1 => new FourSide(resolve<float>(tinyArray[0], constants)),
                         2 => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants)),
-                        3 => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
+                        3 => new FourSide(resolve<float>(tinyArray[0], constants),
+                            resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants)),
-                        _ => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants),
-                            resolve<float>(tinyArray[2], constants), resolve<float>(tinyArray[3], constants))
+                        _ => new FourSide(resolve<float>(tinyArray[0], constants),
+                            resolve<float>(tinyArray[1], constants),
+                            resolve<float>(tinyArray[2], constants),
+                            resolve<float>(tinyArray[3], constants))
                     };
 
                 throw new InvalidDataException($"Incorrect four side format: {data}");

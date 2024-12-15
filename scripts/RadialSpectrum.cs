@@ -82,10 +82,12 @@ internal class RadialSpectrum : StoryboardObjectGenerator
 
             var hasMove = false;
             keyframes.ForEachPair((start, end) =>
-            {
-                hasMove = true;
-                bar.Move(start.Time, end.Time, start.Value, end.Value);
-            }, defaultPosition, s => new(MathF.Round(s.X, CommandDecimals), MathF.Round(s.Y, CommandDecimals)));
+                {
+                    hasMove = true;
+                    bar.Move(start.Time, end.Time, start.Value, end.Value);
+                },
+                defaultPosition,
+                s => new(MathF.Round(s.X, CommandDecimals), MathF.Round(s.Y, CommandDecimals)));
 
             if (!hasMove) bar.Move(EndTime, defaultPosition);
         }

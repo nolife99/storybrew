@@ -20,7 +20,8 @@ public class Texture2dRegion : IDisposable
     public int Height => bounds.Height;
 
     public RectangleF UvBounds => RectangleF.FromLTRB((float)bounds.Left / BindableTexture.Width,
-        (float)bounds.Top / BindableTexture.Height, (float)bounds.Right / BindableTexture.Width,
+        (float)bounds.Top / BindableTexture.Height,
+        (float)bounds.Right / BindableTexture.Width,
         (float)bounds.Bottom / BindableTexture.Height);
 
     public Vector2 UvOrigin => new((float)bounds.Left / BindableTexture.Width, (float)bounds.Top / BindableTexture.Height);
