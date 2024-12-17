@@ -6,11 +6,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Cameras;
-using Data;
+using IO;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Renderers;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Text;
 using Textures;
 
@@ -122,7 +123,7 @@ public static class DrawState
         samplerTextureIds = new int[maxTextureImageUnits];
         samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
 
-        WhitePixel = Texture2d.Create(Color.White, "whitepixel");
+        WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>(), "whitepixel");
         NormalPixel = Texture2d.Create(new(127, 127, 255), "normalpixel");
 
         TextGenerator = new(resourceContainer);

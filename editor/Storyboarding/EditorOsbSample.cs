@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using BrewLib.Audio;
+using BrewLib.Memory;
 using BrewLib.Util;
 using StorybrewCommon.Storyboarding;
 

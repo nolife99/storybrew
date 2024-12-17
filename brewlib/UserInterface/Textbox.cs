@@ -5,6 +5,7 @@ using System.Numerics;
 using Graphics;
 using Graphics.Drawables;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Skinning.Styles;
 using Util;
 using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;
@@ -24,7 +25,7 @@ public class Textbox : Widget, Field
     {
         DefaultSize = new(200, 0);
 
-        cursorLine = new() { Texture = DrawState.WhitePixel, ScaleMode = ScaleMode.Fill, Color = Color.White };
+        cursorLine = new() { Texture = DrawState.WhitePixel, ScaleMode = ScaleMode.Fill, Color = Color.White.ToPixel<Rgba32>() };
 
         Add(content = new(manager) { AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft });
 

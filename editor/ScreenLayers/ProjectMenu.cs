@@ -5,7 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Threading;
+using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Time;
 using BrewLib.UserInterface;
@@ -469,17 +469,17 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             });
     }
 
-    void saveProject() => Manager.AsyncLoading("Saving", proj.Save);
-    void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
+    void saveProject() => Manager.AsyncLoading("Saving", async () => await proj.Save());
+    void exportProject() => Manager.AsyncLoading("Exporting", async () => await proj.ExportToOsb());
     void exportProjectAll() => Manager.AsyncLoading("Exporting",
-        () =>
+        async () =>
         {
             var first = true;
             var mainBeatmap = proj.MainBeatmap;
 
             foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
             {
-                Program.RunMainThread(() => proj.MainBeatmap = map);
+                await Program.Schedule(() => proj.MainBeatmap = map);
                 while (proj.EffectsStatus != EffectStatus.Ready)
                 {
                     switch (proj.EffectsStatus)
@@ -491,14 +491,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                             })\nCheck its log for the actual error.");
                     }
 
-                    Thread.Yield();
+                    await Task.Yield();
                 }
 
-                proj.ExportToOsb(first);
+                await proj.ExportToOsb(first);
                 first = false;
             }
 
-            if (proj.MainBeatmap != mainBeatmap) Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
+            if (proj.MainBeatmap != mainBeatmap) await Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
         });
 
     public override void FixedUpdate()
@@ -651,12 +651,12 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     {
         proj.StopEffectUpdates();
         Manager.AsyncLoading("Stopping effect updates",
-            () =>
+            async () =>
             {
                 proj.CancelEffectUpdates(true).Wait();
-                Program.RunMainThread(() => Manager.GetContext<Editor>().Restart());
+                await Program.Schedule(() => Manager.GetContext<Editor>().Restart());
 
-                Thread.Sleep(1000);
+                await Task.Delay(1000);
                 Program.ForceFullGC();
             });
     });
@@ -666,10 +666,10 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (proj.Changed)
             Manager.ShowMessage("Do you wish to save the project?",
                 () => Manager.AsyncLoading("Saving",
-                    () =>
+                    async () =>
                     {
-                        proj.Save();
-                        Program.Schedule(action);
+                        await proj.Save();
+                        await Program.Schedule(action);
                     }),
                 action,
                 true);

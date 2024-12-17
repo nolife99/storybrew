@@ -5,7 +5,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using Data;
+using IO;
 using OpenTK.Graphics.OpenGL;
 using Tiny;
 using Tiny.Formats.Json;

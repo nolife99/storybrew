@@ -2,7 +2,7 @@
 
 using System;
 using System.Globalization;
-using BrewLib.Util;
+using BrewLib.Memory;
 
 /// <summary> A type of <see cref="OsbSprite"/> that loops through given frames, or animates. </summary>
 public class OsbAnimation : OsbSprite

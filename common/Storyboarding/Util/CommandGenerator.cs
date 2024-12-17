@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Animations;
-using BrewLib.Util;
+using BrewLib.Memory;
 using Commands;
 using CommandValues;
 using Scripting;

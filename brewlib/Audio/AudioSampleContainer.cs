@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Data;
+using IO;
 using Util;
 
 public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer container = null) : IDisposable

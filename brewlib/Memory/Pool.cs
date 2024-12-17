@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Util;
+﻿namespace BrewLib.Memory;
 
 using System;
 using System.Buffers;
@@ -41,7 +41,7 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
 
         _array[_tail] = item;
         MoveNext(ref _tail);
-        _size++;
+        ++_size;
     }
 
     bool TryDequeue(out T result)
@@ -58,7 +58,7 @@ public sealed class Pool<T>(Action<T> disposer = null, bool singleThreaded = fal
         result = array[head];
         array[head] = default;
         MoveNext(ref _head);
-        _size--;
+        --_size;
         return true;
     }
 

@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using Shaders;
 
 public static class PrimitiveStreamerUtil
 {

@@ -3,10 +3,11 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 
-public class LoadingScreen(string title, Action action) : UiScreenLayer
+public class LoadingScreen(string title, Func<Task> action) : UiScreenLayer
 {
     LinearLayout mainLayout;
 
@@ -14,12 +15,12 @@ public class LoadingScreen(string title, Action action) : UiScreenLayer
 
     public override void Load()
     {
-        ThreadPool.UnsafeQueueUserWorkItem(_ =>
+        ThreadPool.QueueUserWorkItem(_ =>
             {
                 Exception ex = null;
                 try
                 {
-                    action();
+                    action().Wait();
                 }
                 catch (Exception e)
                 {

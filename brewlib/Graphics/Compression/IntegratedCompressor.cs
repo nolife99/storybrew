@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
-using Data;
+using IO;
 using Util;
 
 public class IntegratedCompressor : ImageCompressor

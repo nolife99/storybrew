@@ -8,9 +8,9 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using Data;
 using Graphics.Drawables;
 using Graphics.Textures;
+using IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Styles;
@@ -314,7 +314,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     if (value.StartsWith('#')) return Rgba32.ParseHex(value);
 
                     var colorField = typeof(Color).GetField(value);
-                    if (colorField?.FieldType == typeof(Color)) return (Rgba32)Unsafe.Unbox<Color>(colorField.GetValue(null));
+                    if (colorField?.FieldType == typeof(Color))
+                        return Unsafe.Unbox<Color>(colorField.GetValue(null)).ToPixel<Rgba32>();
                 }
 
                 if (data is TinyArray tinyArray)

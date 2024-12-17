@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using BrewLib.IO;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using SixLabors.ImageSharp.PixelFormats;

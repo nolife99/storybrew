@@ -2,7 +2,7 @@
 
 using System;
 using System.Buffers;
-using Data;
+using IO;
 using ManagedBass;
 
 public class AudioSample : IDisposable

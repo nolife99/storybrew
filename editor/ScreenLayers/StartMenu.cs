@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -101,12 +102,12 @@ public class StartMenu : UiScreenLayer
 
     void checkLatestVersion() => NetHelper.Request(
         $"https://api.github.com/repos/{Program.Repository}/releases?per_page=10&page=1",
-        (r, e) =>
+        async (r, e) =>
         {
             if (IsDisposed) return;
             if (e is not null)
             {
-                handleLatestVersionException(e);
+                await handleLatestVersionException(e);
                 return;
             }
 
@@ -184,15 +185,15 @@ public class StartMenu : UiScreenLayer
                     updateButton.Displayed = false;
                 }
 
-                Program.RunMainThread(() => bottomLayout.Pack(600));
+                await Program.Schedule(() => bottomLayout.Pack(600));
             }
             catch (Exception ex)
             {
-                handleLatestVersionException(ex);
+                await handleLatestVersionException(ex);
             }
         });
 
-    void handleLatestVersionException(Exception exception)
+    async Task handleLatestVersionException(Exception exception)
     {
         Trace.TraceError($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message
@@ -201,6 +202,7 @@ public class StartMenu : UiScreenLayer
         updateButton.Text = "See latest release";
         updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
         updateButton.Disabled = false;
-        Program.RunMainThread(() => bottomLayout.Pack(600));
+
+        await Program.Schedule(() => bottomLayout.Pack(600));
     }
 }

@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Data;
+using IO;
 using Util;
 
 public sealed class TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)

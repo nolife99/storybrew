@@ -14,6 +14,8 @@ using SixLabors.ImageSharp.Processing.Processors.Convolution;
 /// <param name="color"> The coloring tint of the glow. </param>
 public record FontGlow(int radius = 6, float power = 0, Color color = default) : FontEffect
 {
+    readonly GaussianBlurProcessor blur = new(power >= 1 ? power : radius * .5f, Math.Min(radius, 24));
+
     /// <inheritdoc/>
     public bool Overlay => false;
 
@@ -25,7 +27,6 @@ public record FontGlow(int radius = 6, float power = 0, Color color = default) :
     {
         if (radius < 1) return;
 
-        bitmap.Fill(FontGenerator.options, color, path)
-            .ApplyProcessor(new GaussianBlurProcessor(power >= 1 ? power : radius * .5f, Math.Min(radius, 24)));
+        bitmap.Fill(FontGenerator.options, color, path).ApplyProcessor(blur);
     }
 }

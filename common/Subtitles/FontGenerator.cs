@@ -182,9 +182,9 @@ public sealed class FontGenerator
             if (debugRandom is not null)
             {
                 debugRandom.Reinitialise(cache.Count);
-                b.Clear(new Rgb24((byte)debugRandom.Next(100, 255),
+                b.Clear(Color.FromPixel(new Rgb24((byte)debugRandom.Next(100, 255),
                     (byte)debugRandom.Next(100, 255),
-                    (byte)debugRandom.Next(100, 255)));
+                    (byte)debugRandom.Next(100, 255))));
             }
 
             foreach (var t in effects)

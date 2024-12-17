@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
-using BrewLib.Util;
+using BrewLib.Memory;
 using Curves;
 using Storyboarding.CommandValues;
 

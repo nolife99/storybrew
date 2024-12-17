@@ -1,4 +1,4 @@
-﻿namespace StorybrewScripts;
+﻿namespace scripts;
 
 using System.Numerics;
 using StorybrewCommon.Animations;

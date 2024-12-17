@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using BrewLib.ScreenLayers;
 using BrewLib.Util;
@@ -16,7 +17,7 @@ public static class ScreenLayerManagerExtensions
         string description,
         string initialValue,
         Action<string> callback) => screenLayer.AsyncLoading("Select a folder",
-        () =>
+        async () =>
         {
             using FolderBrowserDialog dialog = new()
             {
@@ -24,7 +25,7 @@ public static class ScreenLayerManagerExtensions
             };
 
             if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-                Program.RunMainThread(() => callback(dialog.SelectedPath));
+                await Program.Schedule(() => callback(dialog.SelectedPath));
         });
 
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
@@ -33,7 +34,7 @@ public static class ScreenLayerManagerExtensions
         string initialDirectory,
         string filter,
         Action<string> callback) => screenLayer.AsyncLoading("Select a file",
-        () =>
+        async () =>
         {
             using OpenFileDialog dialog = new()
             {
@@ -46,7 +47,7 @@ public static class ScreenLayerManagerExtensions
             };
 
             if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-                Program.RunMainThread(() => callback(dialog.FileName));
+                await Program.Schedule(() => callback(dialog.FileName));
         });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
@@ -55,7 +56,7 @@ public static class ScreenLayerManagerExtensions
         string extension,
         string filter,
         Action<string> callback) => screenLayer.AsyncLoading("Select a location",
-        () =>
+        async () =>
         {
             using SaveFileDialog dialog = new()
             {
@@ -68,10 +69,10 @@ public static class ScreenLayerManagerExtensions
             };
 
             if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-                Program.RunMainThread(() => callback(dialog.FileName));
+                await Program.Schedule(() => callback(dialog.FileName));
         });
 
-    public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Action action)
+    public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Func<Task> action)
         => screenLayer.Add(new LoadingScreen(message, action));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action ok = null)
@@ -115,10 +116,10 @@ public static class ScreenLayerManagerExtensions
 
                 else
                     screenLayer.AsyncLoading("Loading project",
-                        () =>
+                        async () =>
                         {
                             var project = Project.Load(projectPath, true, screenLayer.GetContext<Editor>().ResourceContainer);
-                            Program.Schedule(() => screenLayer.Set(new ProjectMenu(project)));
+                            await Program.Schedule(() => screenLayer.Set(new ProjectMenu(project)));
                         });
             });
     }

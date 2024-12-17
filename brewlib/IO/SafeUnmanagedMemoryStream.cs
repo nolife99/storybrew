@@ -1,10 +1,11 @@
-﻿namespace BrewLib.Util;
+﻿namespace BrewLib.IO;
 
 using System;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Util;
 
 public sealed class SafeUnmanagedMemoryStream : Stream
 {

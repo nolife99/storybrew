@@ -23,9 +23,8 @@ public sealed class EditorGeneratorContext(Effect effect,
     IEnumerable<EditorBeatmap> beatmaps,
     MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {
-    public readonly List<EditorStoryboardLayer> EditorLayers = [];
-
     readonly StringBuilder log = new();
+    public List<EditorStoryboardLayer> EditorLayers { get; } = [];
     public override string ProjectPath => projectPath;
     public override string ProjectAssetPath => projectAssetPath;
 
@@ -51,7 +50,7 @@ public sealed class EditorGeneratorContext(Effect effect,
         }
     }
 
-    public bool BeatmapDependent { get; set; }
+    public bool BeatmapDependent { get; private set; }
     public override bool Multithreaded { get; set; }
     public string Log => log.ToString();
 
@@ -59,9 +58,13 @@ public sealed class EditorGeneratorContext(Effect effect,
 
     public override StoryboardLayer GetLayer(string name)
     {
-        var layer = EditorLayers.Find(l => l.Name == name);
-        if (layer is null) EditorLayers.Add(layer = new(name, effect));
-        return layer;
+        foreach (var layer in EditorLayers)
+            if (name == layer.Name)
+                return layer;
+
+        EditorStoryboardLayer newLayer = new(name, effect);
+        EditorLayers.Add(newLayer);
+        return newLayer;
     }
 
     public override void AddDependency(string path) => watcher.Watch(path);

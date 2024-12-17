@@ -79,14 +79,14 @@ public class NewProjectMenu : UiScreenLayer
         mainLayout.Pack(300);
     }
     void createProject() => Manager.AsyncLoading("Creating project",
-        () =>
+        async () =>
         {
-            var project = Project.Create(projectNameTextbox.Value,
+            var project = await Project.Create(projectNameTextbox.Value,
                 mapsetPathSelector.Value,
                 true,
                 Manager.GetContext<Editor>().ResourceContainer);
 
-            Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
+            await Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
         });
 
     void updateButtonsState() => startButton.Disabled = !updateFieldsValid();

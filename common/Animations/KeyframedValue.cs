@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using BrewLib.Util;
+using BrewLib.Memory;
 
 /// <summary>
 ///     A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.

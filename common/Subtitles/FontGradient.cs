@@ -16,6 +16,12 @@ public record FontGradient(PointF offset = default,
     Color color = default,
     GradientRepetitionMode wrapMode = GradientRepetitionMode.Reflect) : FontEffect
 {
+    readonly LinearGradientBrush brush = new(new(offset.X, offset.Y),
+        new(offset.X + size.Width, offset.Y + size.Height),
+        wrapMode,
+        new(0, color),
+        new(1, color.WithAlpha(0)));
+
     /// <inheritdoc/>
     public bool Overlay => true;
 
@@ -23,11 +29,6 @@ public record FontGradient(PointF offset = default,
     public SizeF Measure => default;
 
     /// <inheritdoc/>
-    public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y) => bitmap.Fill(FontGenerator.options,
-        new LinearGradientBrush(new(x + offset.X, y + offset.Y),
-            new(x + offset.X + size.Width, y + offset.Y + size.Height),
-            wrapMode,
-            new(0, color),
-            new(1, color.WithAlpha(0))),
-        path);
+    public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y)
+        => bitmap.Fill(FontGenerator.options, brush, path);
 }

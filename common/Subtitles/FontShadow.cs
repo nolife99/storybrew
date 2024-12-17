@@ -11,6 +11,8 @@ using SixLabors.ImageSharp.Processing;
 /// <param name="color"> The color tinting of the shadow. </param>
 public record FontShadow(int thickness = 1, Color color = default) : FontEffect
 {
+    readonly SolidBrush brush = new(color);
+
     /// <inheritdoc/>
     public bool Overlay => false;
 
@@ -21,6 +23,6 @@ public record FontShadow(int thickness = 1, Color color = default) : FontEffect
     public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y)
     {
         if (thickness < 1) return;
-        bitmap.Fill(FontGenerator.options, color, path.Translate(thickness, thickness));
+        bitmap.Fill(FontGenerator.options, brush, path.Translate(thickness, thickness));
     }
 }

@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
-using BrewLib.Data;
+using BrewLib.IO;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using ScreenLayers;

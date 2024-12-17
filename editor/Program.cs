@@ -177,14 +177,16 @@ public static class Program
             window.Context.SwapBuffers();
 
             window.IsVisible = true;
-            while (scheduledActions.TryTake(out var action))
+            while (scheduledActions.TryDequeue(out var action))
                 try
                 {
-                    action();
+                    action.Item1();
+                    action.Item2.SetResult();
                 }
                 catch (Exception e)
                 {
-                    Trace.TraceError($"Scheduled task {action.Method}:\n{e}");
+                    Trace.TraceError($"Scheduled task {action.Item1.Method}:\n{e}");
+                    action.Item2.SetException(e);
                 }
 
             var active = GLFW.GetTime() - cur;
@@ -210,33 +212,14 @@ public static class Program
 
     #region Scheduling
 
-    static readonly ConcurrentBag<Action> scheduledActions = [];
+    static readonly ConcurrentQueue<(Action, TaskCompletionSource)> scheduledActions = [];
 
-    public static void Schedule(Action action) => scheduledActions.Add(action);
-    public static void Schedule(Action action, int delay) => Task.Delay(delay).ContinueWith(_ => scheduledActions.Add(action));
-
-    public static void RunMainThread(Action action)
+    public static Task Schedule(Action action)
     {
-        Exception ex = null;
-        var completed = false;
+        TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        scheduledActions.Enqueue((action, tcs));
 
-        Schedule(() =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception e)
-            {
-                ex = e;
-            }
-
-            completed = true;
-        });
-
-        while (!completed) Thread.Yield();
-
-        if (ex is not null) throw ex;
+        return tcs.Task;
     }
 
     #endregion
@@ -280,8 +263,7 @@ public static class Program
 
             try
             {
-                var logPath = Path.Combine(Environment.CurrentDirectory, filename);
-                using (StreamWriter w = new(logPath, true))
+                using (StreamWriter w = new(Path.Combine(Environment.CurrentDirectory, filename), true))
                 {
                     w.Write(DateTimeOffset.Now + " - ");
                     w.WriteLine(e);

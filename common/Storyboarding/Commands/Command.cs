@@ -76,7 +76,7 @@ public abstract record Command<TValue>(string identifier,
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
         var result = StringHelper.StringBuilderPool.Retrieve();
-        if (startTimeString == endTimeString) endTimeString = "";
+        if (startTimeString.Equals(endTimeString, StringComparison.Ordinal)) endTimeString = "";
 
         result.AppendJoin(',',
             identifier,

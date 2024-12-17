@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Data;
+﻿namespace BrewLib.IO;
 
 using System;
 using System.Diagnostics;

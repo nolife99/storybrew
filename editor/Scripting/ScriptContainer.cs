@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -85,7 +86,11 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
             try
             {
-                scriptType = ScriptCompiler.Compile(scriptDomain, SourcePaths, Name + Environment.TickCount, referencedAssemblies)
+                scriptType = ScriptCompiler
+                    .Compile(scriptDomain,
+                        SourcePaths,
+                        Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture),
+                        referencedAssemblies)
                     .GetType(ScriptTypeName, true);
 
                 appDomain?.Unload();
@@ -107,7 +112,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         }
 
         var script = Unsafe.As<TScript>(Activator.CreateInstance(scriptType, true));
-        script.Identifier = scriptType.AssemblyQualifiedName + Environment.TickCount;
+        script.Identifier = scriptType.AssemblyQualifiedName + Environment.CurrentManagedThreadId;
         return script;
     }
 

@@ -63,8 +63,8 @@ public static class Updater
             firstRun();
         }
 
-        if (File.Exists(UpdateArchivePath)) Misc.WithRetries(() => File.Delete(UpdateArchivePath), canThrow: false);
-        if (Directory.Exists(UpdateFolderPath)) Misc.WithRetries(() => Directory.Delete(UpdateFolderPath, true), canThrow: false);
+        if (File.Exists(UpdateArchivePath)) File.Delete(UpdateArchivePath);
+        if (Directory.Exists(UpdateFolderPath)) Directory.Delete(UpdateFolderPath, true);
     }
 
     static void updateData(string destinationFolder, Version fromVersion)
@@ -79,7 +79,7 @@ public static class Updater
             if (File.Exists(dllPath))
             {
                 Trace.WriteLine($"Removing {dllPath}");
-                Misc.WithRetries(() => File.Delete(dllPath), canThrow: false);
+                File.Delete(dllPath);
             }
         }
 
@@ -89,7 +89,7 @@ public static class Updater
         if (!Directory.Exists(oldRoslynFolder)) return;
 
         Trace.WriteLine($"Removing {oldRoslynFolder}");
-        Misc.WithRetries(() => Directory.Delete(oldRoslynFolder, true), canThrow: false);
+        Directory.Delete(oldRoslynFolder, true);
     }
 
     static void firstRun()
@@ -102,7 +102,7 @@ public static class Updater
         {
             var newFilename = Path.ChangeExtension(exeFilename, ".exe");
             Trace.WriteLine($"Renaming {exeFilename} to {newFilename}");
-            Misc.WithRetries(() => File.Move(exeFilename, newFilename), canThrow: false);
+            File.Move(exeFilename, newFilename);
         }
 
         foreach (var scriptFilename in Directory.EnumerateFiles("scripts", "*.cs", SearchOption.TopDirectoryOnly))
@@ -153,7 +153,7 @@ public static class Updater
             else File.SetAttributes(destinationFilename, attributes & ~FileAttributes.ReadOnly);
         }
 
-        Misc.WithRetries(() => File.Copy(sourceFilename, destinationFilename, true), 5000);
+        File.Copy(sourceFilename, destinationFilename, true);
         if (readOnly) File.SetAttributes(destinationFilename, FileAttributes.ReadOnly);
     }
 

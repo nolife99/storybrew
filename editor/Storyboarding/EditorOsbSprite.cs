@@ -7,6 +7,7 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
+using BrewLib.Memory;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -144,7 +145,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
                 scale.X * boundsScaling,
                 scale.Y * boundsScaling,
                 rotation,
-                ((Rgba32)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black, project.DimFactor)
+                ((Rgba32)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black.ToPixel<Rgba32>(), project.DimFactor)
                 .WithOpacity(opacity * fade),
                 0,
                 0,

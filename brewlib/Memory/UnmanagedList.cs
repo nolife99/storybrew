@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Util;
+﻿namespace BrewLib.Memory;
 
 using System;
 using System.Buffers;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Util;
 
 public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList<T>, IList where T : struct
 {

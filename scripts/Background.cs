@@ -1,4 +1,4 @@
-﻿namespace StorybrewScripts;
+﻿namespace scripts;
 
 using System.Linq;
 using StorybrewCommon.Scripting;

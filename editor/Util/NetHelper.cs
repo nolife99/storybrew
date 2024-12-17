@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 public static class NetHelper
 {
@@ -13,7 +14,7 @@ public static class NetHelper
     public static void OpenUrl(string url)
         => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true })?.Dispose();
 
-    public static async void Request(string url, Action<string, Exception> action)
+    public static async void Request(string url, Func<string, Exception, Task> action)
     {
         try
         {

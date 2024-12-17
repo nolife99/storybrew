@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 public class ThrottledActionScheduler
 {
@@ -23,11 +24,11 @@ public class ThrottledActionScheduler
             if (!scheduled.Add(key))
                 return;
 
-        Program.Schedule(() =>
+        Task.Delay(Delay)
+            .ContinueWith(_ => Program.Schedule(() =>
             {
                 lock (_lock) scheduled.Remove(key);
                 if (!action(key)) Schedule(key, action);
-            },
-            Delay);
+            }));
     }
 }

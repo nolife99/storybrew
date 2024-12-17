@@ -68,18 +68,19 @@ public class ScriptedEffect : Effect
             var script = scriptContainer.CreateScript();
 
             changeStatus(EffectStatus.Configuring);
-            Program.RunMainThread(() =>
-            {
-                beatmapDependent = true;
-                if (script.Identifier != configScriptIdentifier)
+            Program.Schedule(() =>
                 {
-                    script.UpdateConfiguration(Config);
-                    configScriptIdentifier = script.Identifier;
+                    beatmapDependent = true;
+                    if (script.Identifier != configScriptIdentifier)
+                    {
+                        script.UpdateConfiguration(Config);
+                        configScriptIdentifier = script.Identifier;
 
-                    RaiseConfigFieldsChanged();
-                }
-                else script.ApplyConfiguration(Config);
-            });
+                        RaiseConfigFieldsChanged();
+                    }
+                    else script.ApplyConfiguration(Config);
+                })
+                .Wait();
 
             changeStatus(EffectStatus.Updating);
 
@@ -90,13 +91,11 @@ public class ScriptedEffect : Effect
         }
         catch (ScriptCompilationException e)
         {
-            Trace.TraceWarning($"Script compilation failed for {BaseName}\n{e.Message}");
             changeStatus(EffectStatus.CompilationFailed, e.Message, context.Log);
             return;
         }
         catch (ScriptLoadingException e)
         {
-            Trace.TraceWarning($"Script load failed for {BaseName}\n{e}");
             changeStatus(EffectStatus.LoadingFailed,
                 e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message,
                 context.Log);

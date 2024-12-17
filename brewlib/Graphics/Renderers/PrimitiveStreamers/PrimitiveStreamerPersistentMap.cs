@@ -4,6 +4,7 @@ using System;
 using System.Runtime.CompilerServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Shaders;
 using Util;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,

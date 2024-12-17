@@ -1,10 +1,9 @@
-﻿namespace BrewLib.Graphics;
+﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using OpenTK.Graphics.OpenGL;
-using Shaders;
 
 public class VertexDeclaration : IEnumerable<VertexAttribute>
 {

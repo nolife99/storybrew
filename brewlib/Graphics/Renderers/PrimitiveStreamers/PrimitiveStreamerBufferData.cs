@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using OpenTK.Graphics.OpenGL;
+using Shaders;
 using Util;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,

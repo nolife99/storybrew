@@ -1,4 +1,4 @@
-﻿namespace BrewLib.Util;
+﻿namespace BrewLib.IO;
 
 using System;
 using System.Collections.Generic;

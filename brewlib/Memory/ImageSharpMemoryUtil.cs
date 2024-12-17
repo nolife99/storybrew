@@ -1,14 +1,15 @@
-﻿namespace BrewLib.Util;
+﻿namespace BrewLib.Memory;
 
 using System;
 using System.Buffers;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SixLabors.ImageSharp.Memory;
+using Util;
 using Varena;
 
 internal sealed class UnmanagedMemoryAllocator : MemoryAllocator
@@ -32,9 +33,9 @@ internal sealed class UnmanagedMemoryAllocator : MemoryAllocator
 
     public override IMemoryOwner<T> Allocate<T>(int length, AllocationOptions options = AllocationOptions.None)
         => new SafeUnmanagedBuffer<T>(length, options);
-    //  => new UnmanagedBuffer<T>(CreateOrGetArena(length * Unsafe.SizeOf<T>()), length, options);
+    //  => new UnmanagedBuffer<T>(CreateOrGetArena(length * Unsafe.SizeOf<T>()), length);
 
-    RefCountedArenaBuffer ReserveArena(int size = 1 << 28) => RefCountedArenaBuffer.Allocate(manager.Value, size);
+    RefCountedArenaBuffer ReserveArena() => RefCountedArenaBuffer.Allocate(manager.Value);
 
     public override void ReleaseRetainedResources()
     {
@@ -42,7 +43,7 @@ internal sealed class UnmanagedMemoryAllocator : MemoryAllocator
     }
 }
 
-public sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct
+internal sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct
 {
     readonly nint addr;
     readonly int length;
@@ -66,33 +67,23 @@ public sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct
     public override void Unpin() { }
 }
 
-internal sealed class UnmanagedBuffer<T> : MemoryManager<T> where T : struct
+internal sealed class UnmanagedBuffer<T>(RefCountedArenaBuffer arena, int length) : MemoryManager<T> where T : struct
 {
-    readonly RefCountedArenaBuffer _arena;
-    readonly int _length;
-    readonly nint addr;
+    readonly nint addr = arena.AllocateRange(length * Unsafe.SizeOf<T>());
 
-    public UnmanagedBuffer(RefCountedArenaBuffer arena, int length, AllocationOptions options)
-    {
-        _arena = arena;
-        _length = length;
-        addr = arena.AllocateRange(length * Unsafe.SizeOf<T>());
-
-        if (options is AllocationOptions.Clean && arena.WasReset) GetSpan().Clear();
-    }
-
-    protected override void Dispose(bool disposing) => _arena.Release();
+    protected override void Dispose(bool disposing) => arena.Release();
     ~UnmanagedBuffer() => Dispose(false);
 
     public override Span<T> GetSpan()
-        => MemoryMarshal.CreateSpan(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), addr), _length);
+        => MemoryMarshal.CreateSpan(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), addr), length);
     public override unsafe MemoryHandle Pin(int elementIndex = 0) => new(Unsafe.Add<T>((void*)addr, elementIndex));
     public override void Unpin() { }
 }
 
 internal class RefCountedArenaBuffer : VirtualArena
 {
-    public static readonly List<RefCountedArenaBuffer> Pool = [];
+    const nuint DefaultArenaSize = 1 << 28;
+    public static readonly ConcurrentQueue<RefCountedArenaBuffer> Pool = [];
 
     static int arenasAllocated;
     readonly Lock allocLock = new();
@@ -102,27 +93,19 @@ internal class RefCountedArenaBuffer : VirtualArena
 
     RefCountedArenaBuffer(VirtualArenaManager manager, string name, VirtualMemoryRange range, uint commitPageSizeMultiplier) :
         base(manager, name, range, commitPageSizeMultiplier) { }
-    public bool WasReset { get; private set; }
 
-    public static RefCountedArenaBuffer Allocate(VirtualArenaManager manager, int size)
+    public static RefCountedArenaBuffer Allocate(VirtualArenaManager manager)
     {
-        var index = Pool.FindIndex(x => x.CapacityInBytes == (nuint)size);
-        if (index != -1)
-        {
-            var arena = Pool[index];
-            Pool.RemoveAt(index);
-            return arena;
-        }
+        if (Pool.TryDequeue(out var arena)) return arena;
 
         var commitPageSizeMultiplier = manager.DefaultCommitPageSizeMultiplier;
-        var capacityInBytes = (nuint)size;
-
-        capacityInBytes = VirtualMemoryHelper.AlignToUpper(capacityInBytes, manager.Handler.PageSize * commitPageSizeMultiplier);
+        var capacityInBytes =
+            VirtualMemoryHelper.AlignToUpper(DefaultArenaSize, manager.Handler.PageSize * commitPageSizeMultiplier);
 
         var range = manager.Handler.TryReserve(capacityInBytes);
         if (range.IsNull) throw new VirtualMemoryException($"Cannot reserve {capacityInBytes} bytes");
 
-        return new(manager, arenasAllocated++.ToString(CultureInfo.CurrentCulture), range, commitPageSizeMultiplier);
+        return new(manager, arenasAllocated++.ToString(CultureInfo.InvariantCulture), range, commitPageSizeMultiplier);
     }
 
     public unsafe nint AllocateRange(int count)
@@ -138,7 +121,7 @@ internal class RefCountedArenaBuffer : VirtualArena
         if (refCount == 0)
         {
             if (forceDispose) Dispose();
-            else Reset(VirtualArenaResetKind.KeepAllCommitted);
+            else Reset();
 
             return;
         }
@@ -156,7 +139,7 @@ internal class RefCountedArenaBuffer : VirtualArena
         if (refCount != 0 || !isDisposeRegistered) return;
 
         if (release) Dispose();
-        else Reset(VirtualArenaResetKind.KeepAllCommitted);
+        else Reset();
     }
 
     protected override void DisposeImpl()
@@ -168,10 +151,8 @@ internal class RefCountedArenaBuffer : VirtualArena
     protected override void ResetImpl()
     {
         Trace.WriteLine($"Reset arena {Name}");
-        WasReset = true;
-
         isDisposeRegistered = false;
 
-        Pool.Add(this);
+        Pool.Enqueue(this);
     }
 }

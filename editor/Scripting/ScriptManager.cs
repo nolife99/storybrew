@@ -8,7 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Xml;
-using BrewLib.Data;
+using BrewLib.IO;
 using BrewLib.Util;
 using Storyboarding;
 using StorybrewCommon.Scripting;

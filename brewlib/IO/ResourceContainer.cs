@@ -1,8 +1,7 @@
-﻿namespace BrewLib.Data;
+﻿namespace BrewLib.IO;
 
 using System;
 using System.IO;
-using Util;
 
 public interface ResourceContainer
 {

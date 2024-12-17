@@ -10,6 +10,8 @@ using SixLabors.ImageSharp.Processing;
 /// <param name="color"> The coloring tint of the glow. </param>
 public record FontBackground(Color color = default) : FontEffect
 {
+    readonly SolidBrush brush = new(color);
+
     /// <inheritdoc/>
     public bool Overlay => false;
 
@@ -17,5 +19,5 @@ public record FontBackground(Color color = default) : FontEffect
     public SizeF Measure => default;
 
     /// <inheritdoc/>
-    public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y) => bitmap.Clear(color);
+    public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y) => bitmap.Clear(brush);
 }

@@ -230,29 +230,38 @@ public class TimelineSlider : Slider
                 drawLine(drawContext,
                     offset with { X = timeToXTop(RepeatStart) - pixelSize },
                     lineSize,
-                    Color.White,
+                    Color.White.ToPixel<Rgba32>(),
                     actualOpacity);
 
-                drawLine(drawContext, offset with { X = x }, lineSize * .6f, Color.White, actualOpacity);
+                drawLine(drawContext, offset with { X = x }, lineSize * .6f, Color.White.ToPixel<Rgba32>(), actualOpacity);
 
                 drawLine(drawContext,
                     offset with { X = timeToXTop(RepeatEnd) + pixelSize },
                     lineSize,
-                    Color.White,
+                    Color.White.ToPixel<Rgba32>(),
                     actualOpacity);
             }
             else
             {
-                drawLine(drawContext, offset with { X = x - pixelSize }, lineSize, Color.White, actualOpacity);
+                drawLine(drawContext, offset with { X = x - pixelSize }, lineSize, Color.White.ToPixel<Rgba32>(), actualOpacity);
 
-                drawLine(drawContext, offset with { X = x + pixelSize }, lineSize, Color.White, actualOpacity);
+                drawLine(drawContext, offset with { X = x + pixelSize }, lineSize, Color.White.ToPixel<Rgba32>(), actualOpacity);
             }
 
             // Current time (bottom)
             var centerX = Bounds.Width * .5f;
             lineSize = new(pixelSize, Bounds.Height * .4f);
-            drawLine(drawContext, offset + new Vector2(centerX - pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
-            drawLine(drawContext, offset + new Vector2(centerX + pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
+            drawLine(drawContext,
+                offset + new Vector2(centerX - pixelSize, lineBottomY),
+                lineSize,
+                Color.White.ToPixel<Rgba32>(),
+                actualOpacity);
+
+            drawLine(drawContext,
+                offset + new Vector2(centerX + pixelSize, lineBottomY),
+                lineSize,
+                Color.White.ToPixel<Rgba32>(),
+                actualOpacity);
         }
     }
 

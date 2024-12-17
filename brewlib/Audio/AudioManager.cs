@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Data;
+using IO;
 using ManagedBass;
 
 public sealed class AudioManager : IDisposable
@@ -19,10 +19,10 @@ public sealed class AudioManager : IDisposable
         Trace.WriteLine($"Failed to initialize audio with default device: {Bass.LastError}");
 
         var initialized = false;
-        for (var i = 0; i < Bass.DeviceCount; i++)
+        for (var i = 0; i < Bass.DeviceCount; ++i)
         {
             var device = Bass.GetDeviceInfo(i);
-            if (device.Driver == null || device.IsDefault) continue;
+            if (device.Driver is null || device.IsDefault) continue;
 
             if (Bass.Init(i, Win: handle))
             {

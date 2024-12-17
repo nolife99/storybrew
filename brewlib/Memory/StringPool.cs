@@ -4,7 +4,7 @@
 
 // https://github.com/CommunityToolkit/dotnet/blob/main/src/CommunityToolkit.HighPerformance/Buffers/StringPool.cs
 
-namespace BrewLib.Util;
+namespace BrewLib.Memory;
 
 using System;
 using System.Diagnostics.CodeAnalysis;

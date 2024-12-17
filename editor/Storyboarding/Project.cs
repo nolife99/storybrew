@@ -13,18 +13,19 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using BrewLib.Audio;
-using BrewLib.Data;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Textures;
+using BrewLib.IO;
+using BrewLib.Memory;
 using BrewLib.Util;
 using Mapset;
 using OpenTK.Mathematics;
 using Scripting;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.Drawing;
+using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
@@ -150,14 +151,15 @@ public sealed partial class Project : IDisposable
     public FrameStats FrameStats { get; private set; } = frameStatsPool.Retrieve();
 
     static readonly Pool<FrameStats> frameStatsPool = new(obj =>
-    {
-        obj.LoadedPaths.Clear();
-        obj.GpuPixelsFrame = 0;
-        obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
-        obj.LastTexture = null;
-        obj.ScreenFill = 0;
-        obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
-    });
+        {
+            obj.LoadedPaths.Clear();
+            obj.GpuPixelsFrame = 0;
+            obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
+            obj.LastTexture = null;
+            obj.ScreenFill = 0;
+            obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
+        },
+        true);
 
     public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
@@ -204,7 +206,7 @@ public sealed partial class Project : IDisposable
 
     public void QueueEffectUpdate(Effect effect)
     {
-        effectUpdateQueue.Queue(effect, effect.Path, e => e.Update(), effect.Multithreaded);
+        effectUpdateQueue.Queue(effect, effect.Path.GetHashCode(), effect.Update, effect.Multithreaded);
         refreshEffectsStatus();
     }
 
@@ -229,9 +231,8 @@ public sealed partial class Project : IDisposable
         Changed = true;
 
         effect.OnChanged += effect_OnChanged;
-        refreshEffectsStatus();
-
         OnEffectsChanged?.Invoke(this, EventArgs.Empty);
+
         QueueEffectUpdate(effect);
         return effect;
     }
@@ -271,7 +272,7 @@ public sealed partial class Project : IDisposable
     void refreshEffectsStatus()
     {
         var previousStatus = EffectsStatus;
-        var isUpdating = effectUpdateQueue?.TaskCount != 0;
+        var isUpdating = effectUpdateQueue is not null && effectUpdateQueue.TaskCount != 0;
         var hasError = false;
 
         foreach (var effect in effects)
@@ -440,10 +441,10 @@ public sealed partial class Project : IDisposable
     [
         typeof(Font).Assembly.Location,
         typeof(IPathCollection).Assembly.Location,
-        typeof(Rgb).Assembly.Location,
+        typeof(Rgba32).Assembly.Location,
         typeof(MathHelper).Assembly.Location,
         typeof(Script).Assembly.Location,
-        typeof(Misc).Assembly.Location,
+        typeof(Pool<>).Assembly.Location,
         .. Directory
             .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
                 "*.dll")
@@ -488,11 +489,11 @@ public sealed partial class Project : IDisposable
         }
     }
 
-    public void Save()
+    public async Task Save()
     {
         var text = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
-        if (File.Exists(text)) saveText(text);
-        else saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
+        if (File.Exists(text)) await saveText(text);
+        else await saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
     }
 
     public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
@@ -504,11 +505,13 @@ public sealed partial class Project : IDisposable
         return project;
     }
 
-    void saveBinary(string path)
+    async Task saveBinary(string path)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        using BinaryWriter w = new(new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false), Encoding, false);
+        await using BinaryWriter w = new(new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false),
+            Encoding,
+            false);
 
         w.Write(Version);
 
@@ -621,18 +624,18 @@ public sealed partial class Project : IDisposable
         ImportedAssemblies = imported;
     }
 
-    void saveText(string path)
+    async Task saveText(string path)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         if (!File.Exists(path))
-            File.WriteAllText(path, "# This file is used to open the project\n# Project data is contained in /.sbrew");
+            await File.WriteAllTextAsync(path, "# This file is used to open the project\n# Project data is contained in /.sbrew");
 
         var projectDirectory = Path.GetDirectoryName(path);
 
         var gitIgnorePath = Path.Combine(projectDirectory, ".gitignore");
         if (!File.Exists(gitIgnorePath))
-            File.WriteAllText(gitIgnorePath, ".sbrew/user.yaml\n.sbrew.tmp\n.sbrew.bak\n.cache\n.vs");
+            await File.WriteAllTextAsync(gitIgnorePath, ".sbrew/user.yaml\n.sbrew.tmp\n.sbrew.bak\n.cache\n.vs");
 
         var targetDirectory = Path.Combine(projectDirectory, DataFolder);
         using SafeDirectoryWriter directoryWriter = new(targetDirectory);
@@ -808,7 +811,7 @@ public sealed partial class Project : IDisposable
         foreach (var key in layerInserters.Keys.Except(layersOrder)) layerInserters[key]();
     }
 
-    public static Project Create(string projectFolderName,
+    public static async Task<Project> Create(string projectFolderName,
         string mapsetPath,
         bool withCommonScripts,
         ResourceContainer resourceContainer)
@@ -830,19 +833,19 @@ public sealed partial class Project : IDisposable
                 MapsetPath = mapsetPath
             };
 
-        project.Save();
+        await project.Save();
 
         return project;
     }
 
-    public void ExportToOsb(bool exportOsb = true)
+    public async Task ExportToOsb(bool exportOsb = true)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         string osuPath = null, osbPath = null;
         List<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
 
-        Program.RunMainThread(() =>
+        await Program.Schedule(() =>
         {
             osuPath = MainBeatmap.Path;
             osbPath = OsbPath;
@@ -860,13 +863,13 @@ public sealed partial class Project : IDisposable
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)
         {
             Trace.WriteLine($"Exporting diff specific events to {osuPath}");
-            using SafeWriteStream stream = new(osuPath);
-            using StreamWriter writer = new(stream, Encoding);
+            await using SafeWriteStream stream = new(osuPath);
+            await using StreamWriter writer = new(stream, Encoding);
             using StreamReader reader = new(osuPath, Encoding);
             var inEvents = false;
             var inStoryboard = false;
 
-            while (reader.ReadLine() is { } line)
+            while (await reader.ReadLineAsync() is { } line)
             {
                 var trimmedLine = line.AsSpan().Trim();
                 if (!inEvents && trimmedLine == "[Events]") inEvents = true;
@@ -882,7 +885,7 @@ public sealed partial class Project : IDisposable
                             {
                                 if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
-                                writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
+                                await writer.WriteLineAsync($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
                                 foreach (var layer in diffSpecific)
                                     if (layer.OsbLayer == osbLayer && layer.Visible)
                                         layer.WriteOsb(writer, ExportSettings);
@@ -896,7 +899,7 @@ public sealed partial class Project : IDisposable
                     if (inStoryboard) continue;
                 }
 
-                writer.WriteLine(line);
+                await writer.WriteLineAsync(line);
             }
 
             stream.Commit();
@@ -905,21 +908,21 @@ public sealed partial class Project : IDisposable
         if (exportOsb && sbLayer.Count != 0)
         {
             Trace.WriteLine($"Exporting osb to {osbPath}");
-            using StreamWriter writer = new(osbPath, false);
-            writer.WriteLine("[Events]");
-            writer.WriteLine("//Background and Video events");
+            await using StreamWriter writer = new(osbPath, false);
+            await writer.WriteLineAsync("[Events]");
+            await writer.WriteLineAsync("//Background and Video events");
 
             foreach (var osbLayer in OsbLayers)
             {
                 if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
-                writer.WriteLine($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
+                await writer.WriteLineAsync($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
                 foreach (var layer in sbLayer)
                     if (layer.OsbLayer == osbLayer)
                         layer.WriteOsb(writer, ExportSettings);
             }
 
-            writer.WriteLine("//Storyboard Sound Samples");
+            await writer.WriteLineAsync("//Storyboard Sound Samples");
         }
     }
 
