@@ -460,7 +460,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         Manager.OpenFilePicker("",
             initialDirectory,
-            new() { { ".osu files", "osu" } },
+            [new(".osu files", "osu")],
             newPath =>
             {
                 if (!Directory.Exists(newPath) && File.Exists(newPath)) proj.MapsetPath = Path.GetDirectoryName(newPath);

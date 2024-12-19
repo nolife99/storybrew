@@ -16,7 +16,7 @@ public class PathSelector : Widget
     readonly LinearLayout layout;
     readonly Textbox textbox;
 
-    public Dictionary<string, string> Filter;
+    public IReadOnlyCollection<KeyValuePair<string, string>> Filter;
 
     public PathSelector(WidgetManager manager, PathSelectorMode mode) : base(manager)
     {

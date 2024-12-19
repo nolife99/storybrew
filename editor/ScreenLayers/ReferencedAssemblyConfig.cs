@@ -11,7 +11,7 @@ using Storyboarding;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
-    static readonly Dictionary<string, string> fileFilter = new() { { ".NET Assemblies", "dll" } };
+    static readonly KeyValuePair<string, string>[] fileFilter = [new(".NET Assemblies", "dll")];
 
     readonly HashSet<string> selectedAssemblies =
         project.ImportedAssemblies as HashSet<string> ?? project.ImportedAssemblies.ToHashSet();

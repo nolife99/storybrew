@@ -23,7 +23,7 @@ public static class ScreenLayerManagerExtensions
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
         string initialValue,
         string initialDirectory,
-        Dictionary<string, string> filter,
+        IReadOnlyCollection<KeyValuePair<string, string>> filter,
         Action<string> callback) => screenLayer.AsyncLoading("Select a file",
         async () =>
         {
@@ -34,7 +34,7 @@ public static class ScreenLayerManagerExtensions
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
         string initialValue,
         string extension,
-        Dictionary<string, string> filter,
+        IReadOnlyCollection<KeyValuePair<string, string>> filter,
         Action<string> callback) => screenLayer.AsyncLoading("Select a location",
         async () =>
         {

@@ -40,10 +40,8 @@ public sealed partial class Project : IDisposable
 
     public static readonly string ProjectsFolder = Path.GetFullPath("projects");
 
-    public static readonly Dictionary<string, string> FileFilter = new()
-    {
-        { "project files", string.Join(',', BinaryExtension.TrimStart('.'), TextExtension.TrimStart('.')) }
-    };
+    public static readonly IReadOnlyCollection<KeyValuePair<string, string>> FileFilter
+        = [new("project files", string.Join(',', BinaryExtension.TrimStart('.'), TextExtension.TrimStart('.')))];
 
     public static readonly Encoding Encoding = Encoding.ASCII;
     readonly string CommonScriptsPath, projectPath;

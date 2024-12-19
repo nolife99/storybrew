@@ -39,7 +39,7 @@ public static class Builder
                 addFile(archive, path, scriptsDirectory, "scripts");
 
             var nativeDllDir = Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native");
-            foreach (var path in Directory.EnumerateFiles(nativeDllDir, "*.dll", SearchOption.TopDirectoryOnly))
+            foreach (var path in Directory.EnumerateFiles(nativeDllDir, "*.*", SearchOption.TopDirectoryOnly))
                 addFile(archive, Path.GetFileName(path), nativeDllDir);
 
             PathHelper.OpenExplorer(appDirectory);
