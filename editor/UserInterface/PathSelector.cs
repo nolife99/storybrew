@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.UserInterface;
 
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.UserInterface.Skinning.Styles;
@@ -15,7 +16,7 @@ public class PathSelector : Widget
     readonly LinearLayout layout;
     readonly Textbox textbox;
 
-    public string Filter = "All files (*.*)|*.*";
+    public Dictionary<string, string> Filter;
 
     public PathSelector(WidgetManager manager, PathSelectorMode mode) : base(manager)
     {
@@ -47,22 +48,16 @@ public class PathSelector : Widget
             switch (mode)
             {
                 case PathSelectorMode.Folder:
-                    Manager.ScreenLayerManager.OpenFolderPicker(LabelText, textbox.Value, path => textbox.Value = path); break;
+                    Manager.ScreenLayerManager.OpenFolderPicker(textbox.Value, path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenFile:
-                    Manager.ScreenLayerManager.OpenFilePicker(LabelText,
-                        textbox.Value,
-                        null,
-                        Filter,
-                        path => textbox.Value = path); break;
+                    Manager.ScreenLayerManager.OpenFilePicker(textbox.Value, "", Filter, path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenDirectory:
-                    Manager.ScreenLayerManager.OpenFilePicker(LabelText, "", textbox.Value, Filter, path => textbox.Value = path);
-                    break;
+                    Manager.ScreenLayerManager.OpenFilePicker("", textbox.Value, Filter, path => textbox.Value = path); break;
 
                 case PathSelectorMode.SaveFile:
-                    Manager.ScreenLayerManager.OpenSaveLocationPicker(LabelText,
-                        textbox.Value,
+                    Manager.ScreenLayerManager.OpenSaveLocationPicker(textbox.Value,
                         SaveExtension,
                         Filter,
                         path => textbox.Value = path); break;

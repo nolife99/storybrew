@@ -1,4 +1,4 @@
-﻿namespace scripts;
+﻿namespace StorybrewScripts;
 
 using System;
 using System.Numerics;

@@ -6,7 +6,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Windows;
 using BrewLib.Util;
 
 public static class Builder
@@ -42,14 +41,13 @@ public static class Builder
             var nativeDllDir = Path.Combine("runtimes", RuntimeInformation.RuntimeIdentifier, "native");
             foreach (var path in Directory.EnumerateFiles(nativeDllDir, "*.dll", SearchOption.TopDirectoryOnly))
                 addFile(archive, Path.GetFileName(path), nativeDllDir);
+
+            PathHelper.OpenExplorer(appDirectory);
         }
         catch (Exception e)
         {
-            MessageBox.Show($"\nBuild failed:\n\n{e}", Program.FullName);
-            return;
+            Environment.FailFast("Build failed", e);
         }
-
-        PathHelper.OpenExplorer(appDirectory);
     }
 
     /* static void testUpdate(string archiveName)

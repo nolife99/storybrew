@@ -35,11 +35,15 @@ using Path = System.IO.Path;
 
 public sealed partial class Project : IDisposable
 {
-    const string BinaryExtension = ".sbp", TextExtension = ".yaml", DefaultBinaryFilename = "project" + BinaryExtension,
-        DefaultTextFilename = "project.sbrew" + TextExtension, DataFolder = ".sbrew";
+    const string BinaryExtension = ".sbp", TextExtension = ".sbrew.yaml", DefaultBinaryFilename = "project" + BinaryExtension,
+        DefaultTextFilename = "project" + TextExtension, DataFolder = ".sbrew";
 
-    public const string ProjectsFolder = "projects",
-        FileFilter = "project files|" + DefaultBinaryFilename + ";" + DefaultTextFilename;
+    public static readonly string ProjectsFolder = Path.GetFullPath("projects");
+
+    public static readonly Dictionary<string, string> FileFilter = new()
+    {
+        { "project files", string.Join(',', BinaryExtension.TrimStart('.'), TextExtension.TrimStart('.')) }
+    };
 
     public static readonly Encoding Encoding = Encoding.ASCII;
     readonly string CommonScriptsPath, projectPath;

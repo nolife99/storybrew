@@ -11,8 +11,7 @@ public static class PathHelper
 {
     const char StandardDirectorySeparator = '/';
 
-    static readonly SearchValues<char> invalidChars = SearchValues.Create([
-        '"',
+    static readonly SearchValues<char> invalidChars = SearchValues.Create('"',
         '<',
         '>',
         '|',
@@ -47,8 +46,7 @@ public static class PathHelper
         '\u001c',
         '\u001d',
         '\u001e',
-        '\u001f'
-    ]);
+        '\u001f');
 
     public static void OpenExplorer(string path)
         => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();

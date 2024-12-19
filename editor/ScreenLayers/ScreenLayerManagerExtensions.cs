@@ -4,72 +4,42 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 using BrewLib.ScreenLayers;
 using BrewLib.Util;
+using NfdExt;
 using Storyboarding;
 using Util;
-using MessageBox = Util.MessageBox;
 
 public static class ScreenLayerManagerExtensions
 {
-    public static void OpenFolderPicker(this ScreenLayerManager screenLayer,
-        string description,
-        string initialValue,
-        Action<string> callback) => screenLayer.AsyncLoading("Select a folder",
-        async () =>
-        {
-            using FolderBrowserDialog dialog = new()
+    public static void OpenFolderPicker(this ScreenLayerManager screenLayer, string initialValue, Action<string> callback)
+        => screenLayer.AsyncLoading("Select a folder",
+            async () =>
             {
-                Description = description, ShowNewFolderButton = true, SelectedPath = initialValue
-            };
-
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-                await Program.Schedule(() => callback(dialog.SelectedPath));
-        });
+                var selectedPath = NFD.PickFolder(initialValue);
+                if (!string.IsNullOrEmpty(selectedPath)) await Program.Schedule(() => callback(selectedPath));
+            });
 
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
-        string description,
         string initialValue,
         string initialDirectory,
-        string filter,
+        Dictionary<string, string> filter,
         Action<string> callback) => screenLayer.AsyncLoading("Select a file",
         async () =>
         {
-            using OpenFileDialog dialog = new()
-            {
-                Title = description,
-                RestoreDirectory = true,
-                ShowHelp = false,
-                FileName = initialValue,
-                Filter = filter,
-                InitialDirectory = initialDirectory is not null ? Path.GetFullPath(initialDirectory) : ""
-            };
-
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-                await Program.Schedule(() => callback(dialog.FileName));
+            var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
+            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(() => callback(fileName));
         });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
-        string description,
         string initialValue,
         string extension,
-        string filter,
+        Dictionary<string, string> filter,
         Action<string> callback) => screenLayer.AsyncLoading("Select a location",
         async () =>
         {
-            using SaveFileDialog dialog = new()
-            {
-                Title = description,
-                RestoreDirectory = true,
-                FileName = initialValue,
-                OverwritePrompt = true,
-                DefaultExt = extension,
-                Filter = filter
-            };
-
-            if (dialog.ShowDialog(screenLayer.GetContext<Editor>().FormsWindow) is DialogResult.OK)
-                await Program.Schedule(() => callback(dialog.FileName));
+            var fileName = NFD.SaveDialog(initialValue, extension, filter);
+            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(() => callback(fileName));
         });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Func<Task> action)
@@ -105,7 +75,6 @@ public static class ScreenLayerManagerExtensions
     {
         if (!Directory.Exists(Project.ProjectsFolder)) Directory.CreateDirectory(Project.ProjectsFolder);
         screenLayer.OpenFilePicker("",
-            "",
             Project.ProjectsFolder,
             Project.FileFilter,
             projectPath =>

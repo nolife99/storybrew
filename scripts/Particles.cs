@@ -1,13 +1,12 @@
-namespace scripts;
+namespace StorybrewScripts;
 
 using System;
-using System.Drawing;
 using System.Linq;
 using OpenTK.Mathematics;
+using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
-using Bitmap = System.Drawing.Bitmap;
 using Vector2 = System.Numerics.Vector2;
 
 internal class Particles : StoryboardObjectGenerator
@@ -123,9 +122,9 @@ internal class Particles : StoryboardObjectGenerator
         }
     }
 
-    bool isVisible(Bitmap bitmap, Vector2 startPosition, Vector2 endPosition, float rotation, float duration)
+    bool isVisible(Image bitmap, Vector2 startPosition, Vector2 endPosition, float rotation, float duration)
     {
-        SizeF spriteSize = new(bitmap.Width * Scale.X, bitmap.Height * Scale.Y);
+        Vector2 spriteSize = new(bitmap.Width * Scale.X, bitmap.Height * Scale.Y);
         for (var t = 0; t < duration; t += 200)
         {
             var position = Vector2.Lerp(startPosition, endPosition, t / duration);

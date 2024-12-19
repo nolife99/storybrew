@@ -9,7 +9,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
@@ -270,12 +269,7 @@ public static class Program
                     w.WriteLine();
                 }
 
-                if (show &&
-                    MessageBox.Show($"An error occured:\n\n{e.Message} ({e.GetType().Name
-                    })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
-                        FullName,
-                        MessageBoxButton.OKCancel,
-                        MessageBoxImage.Error) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
+                if (show) Environment.FailFast("Unhandled exception", e);
             }
             catch (Exception e2)
             {
@@ -287,16 +281,6 @@ public static class Program
             }
         }
     }
-
-    public static void Report(string type, Exception e) => NetHelper.BlockingPost(
-        "https://a-damnae.rhcloud.com/storybrew/report.php",
-        new()
-        {
-            { "reporttype", type },
-            { "source", Settings?.Id ?? "-" },
-            { "version", Version.ToString() },
-            { "content", e.ToString() }
-        });
 
     #endregion
 }

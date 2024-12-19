@@ -11,6 +11,8 @@ using Storyboarding;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
+    static readonly Dictionary<string, string> fileFilter = new() { { ".NET Assemblies", "dll" } };
+
     readonly HashSet<string> selectedAssemblies =
         project.ImportedAssemblies as HashSet<string> ?? project.ImportedAssemblies.ToHashSet();
 
@@ -60,9 +62,8 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         });
 
         addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("",
-            "",
             project.ProjectFolderPath,
-            ".NET Assemblies (*.dll)|*.dll",
+            fileFilter,
             path =>
             {
                 if (!isValidAssembly(path))
@@ -225,9 +226,8 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
     }
 
     void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker("",
-        "",
         Path.GetDirectoryName(assembly),
-        ".NET Assemblies (*.dll)|*.dll",
+        fileFilter,
         path =>
         {
             if (!isValidAssembly(path))

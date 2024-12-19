@@ -1,4 +1,4 @@
-namespace scripts;
+namespace StorybrewScripts;
 
 using System;
 using System.IO;
@@ -9,6 +9,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Subtitles;
 
 internal class Karaoke : StoryboardObjectGenerator
@@ -151,7 +152,7 @@ internal class Karaoke : StoryboardObjectGenerator
 
     static void applyKaraoke(OsbSprite sprite, float startTime, float endTime)
     {
-        sprite.Color(startTime - 100, startTime, new(.2f, .2f, .2f), Color.White);
-        sprite.Color(endTime - 100, endTime, Color.White, new(.6f, .6f, .6f));
+        sprite.Color(startTime - 100, startTime, new(.2f, .2f, .2f), CommandColor.White);
+        sprite.Color(endTime - 100, endTime, CommandColor.White, new(.6f, .6f, .6f));
     }
 }

@@ -458,10 +458,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var initialDirectory = Path.GetFullPath(proj.MapsetPath);
         if (!Directory.Exists(initialDirectory)) initialDirectory = OsuHelper.GetOsuSongFolder();
 
-        Manager.OpenFilePicker("Pick a new mapset location",
-            "",
+        Manager.OpenFilePicker("",
             initialDirectory,
-            ".osu files (*.osu)|*.osu",
+            new() { { ".osu files", "osu" } },
             newPath =>
             {
                 if (!Directory.Exists(newPath) && File.Exists(newPath)) proj.MapsetPath = Path.GetDirectoryName(newPath);

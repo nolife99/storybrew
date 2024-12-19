@@ -21,8 +21,6 @@
         <AnalysisLevel>latest-recommended</AnalysisLevel>
         <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
         <EnableNETAnalyzers>True</EnableNETAnalyzers>
-        <UseWindowsForms>True</UseWindowsForms>
-        <UseWpf>True</UseWpf>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -51,6 +49,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0"/>
+        <PackageReference Include="NfdExt" Version="1.2.1"/>
     </ItemGroup>
 
 </Project>

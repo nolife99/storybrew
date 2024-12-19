@@ -3,7 +3,6 @@
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Windows.Forms;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
@@ -20,13 +19,10 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using ScreenLayers;
-using Label = BrewLib.UserInterface.Label;
-using NativeWindow = OpenTK.Windowing.Desktop.NativeWindow;
 
 public sealed class Editor(NativeWindow window) : IDisposable
 {
     readonly FrameClock clock = new();
-    public readonly IWin32Window FormsWindow = new DialogParent();
 
     DrawContext drawContext;
     public InputManager InputManager;
@@ -181,11 +177,6 @@ public sealed class Editor(NativeWindow window) : IDisposable
         var virtualWidth = width * virtualHeight / height;
         overlayCamera.VirtualWidth = (int)virtualWidth;
         overlay.Size = new(virtualWidth, virtualHeight);
-    }
-
-    sealed class DialogParent : IWin32Window
-    {
-        public nint Handle => Native.MainWindowHandle;
     }
 
     #region Overlay

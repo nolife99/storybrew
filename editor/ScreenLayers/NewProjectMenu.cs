@@ -36,7 +36,7 @@ public class NewProjectMenu : UiScreenLayer
                     Value = OsuHelper.GetOsuSongFolder(),
                     LabelText = "Mapset Path",
                     AnchorFrom = BoxAlignment.Centre,
-                    Filter = ".osu files (*.osu)|*.osu"
+                    Filter = new() { { ".osu files", "osu" } }
                 },
                 new LinearLayout(WidgetManager)
                 {

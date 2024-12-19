@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Windows;
 using BrewLib.Util;
 using Util;
 
@@ -30,9 +29,7 @@ public static class Updater
         catch (Exception e)
         {
             Trace.TraceError($"Replacing files: {e}");
-            MessageBox.Show($"Update failed, please update manually.\n\n{e}", Program.FullName);
             OpenLatestReleasePage();
-            Program.Report("updatefail", e);
             return;
         }
 
@@ -43,15 +40,13 @@ public static class Updater
         catch (Exception e)
         {
             Trace.TraceError($"Updating data: {e}");
-            MessageBox.Show($"Failed to update data.\n\n{e}", Program.FullName);
-            Program.Report("updatefail", e);
         }
 
         var relativeProcessPath = PathHelper.GetRelativePath(sourceFolder, updaterPath);
         var processPath = Path.Combine(destinationFolder, relativeProcessPath);
 
         Trace.WriteLine($"\nUpdate complete, starting {processPath}");
-        Process.Start(new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder })
+        Process.Start(new ProcessStartInfo(processPath) { UseShellExecute = true, WorkingDirectory = destinationFolder })?
             .Dispose();
     }
 
