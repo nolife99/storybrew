@@ -107,7 +107,7 @@ public class AudioChannel : IDisposable
         get => pan;
         set
         {
-            value = Math.Clamp(value, -1, 1);
+            value = float.Clamp(value, -1, 1);
             if (pan == value) return;
 
             pan = value;
@@ -130,7 +130,7 @@ public class AudioChannel : IDisposable
     void updatePitch()
     {
         if (channel == 0 || frequency <= 0) return;
-        Bass.ChannelSetAttribute(channel, ChannelAttribute.Frequency, Math.Clamp(frequency * pitch, 100, 100000));
+        Bass.ChannelSetAttribute(channel, ChannelAttribute.Frequency, float.Clamp(frequency * pitch, 100, 100000));
     }
     void updatePan()
     {

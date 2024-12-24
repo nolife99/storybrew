@@ -15,13 +15,13 @@ using System.Threading;
 
 public sealed class StringPool
 {
-    static readonly StringPool Shared = new(2048);
+    static readonly StringPool Shared = new(4096);
     readonly FixedSizePriorityMap[] maps;
     readonly int numberOfMaps;
 
     StringPool(int minimumSize)
     {
-        minimumSize = Math.Max(minimumSize, 128);
+        minimumSize = int.Max(minimumSize, 128);
 
         FindFactors(minimumSize, 2, out var x2, out var y2);
         FindFactors(minimumSize, 3, out var x3, out var y3);

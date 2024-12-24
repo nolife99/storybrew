@@ -43,8 +43,6 @@ public class AudioStream : AudioChannel
 
         stream = BassFx.TempoCreate(decodeStream, BassFlags.Default);
         Bass.ChannelSetAttribute(stream, ChannelAttribute.TempoUseQuickAlgorithm, 1);
-        Bass.ChannelSetAttribute(stream, ChannelAttribute.TempoOverlapMilliseconds, 4);
-        Bass.ChannelSetAttribute(stream, ChannelAttribute.TempoSequenceMilliseconds, 30);
 
         Channel = stream;
     }

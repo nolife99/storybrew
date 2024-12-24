@@ -44,10 +44,10 @@ public readonly record struct OrientedBoundingBox : IDisposable
         float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
         foreach (var corner in corners)
         {
-            minX = Math.Min(minX, corner.X);
-            maxX = Math.Max(maxX, corner.X);
-            minY = Math.Min(minY, corner.Y);
-            maxY = Math.Max(maxY, corner.Y);
+            minX = float.Min(minX, corner.X);
+            maxX = float.Max(maxX, corner.X);
+            minY = float.Min(minY, corner.Y);
+            maxY = float.Max(maxY, corner.Y);
         }
 
         return RectangleF.FromLTRB(minX, minY, maxX, maxY);

@@ -85,7 +85,7 @@ public abstract record Command<TValue>(string identifier,
             endTimeString,
             startValueString);
 
-        if (startValueString == endValueString) return result;
+        if (startValueString.Equals(endValueString, StringComparison.Ordinal)) return result;
 
         result.Append(',');
         return result.Append(endValueString);

@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
-using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Cameras;
@@ -20,8 +19,8 @@ public sealed class CompositeDrawable : Drawable
             foreach (var drawable in Drawables)
             {
                 var minSize = drawable.MinSize;
-                minWidth = Math.Min(minWidth, minSize.X);
-                minHeight = Math.Min(minWidth, minSize.Y);
+                minWidth = float.Min(minWidth, minSize.X);
+                minHeight = float.Min(minWidth, minSize.Y);
             }
 
             return new(minWidth, minHeight);
@@ -38,8 +37,8 @@ public sealed class CompositeDrawable : Drawable
             foreach (var drawable in Drawables)
             {
                 var preferredSize = drawable.PreferredSize;
-                maxWidth = Math.Min(maxWidth, preferredSize.X);
-                maxHeight = Math.Min(maxHeight, preferredSize.Y);
+                maxWidth = float.Min(maxWidth, preferredSize.X);
+                maxHeight = float.Min(maxHeight, preferredSize.Y);
             }
 
             return new(maxWidth, maxHeight);

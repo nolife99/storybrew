@@ -52,7 +52,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
                     BoxAlignment.Bottom => VerticalAlignment.Bottom,
                     _ => VerticalAlignment.Center
                 },
-            LineSpacing = Math.Clamp(font.FontMetrics.VerticalMetrics.LineHeight * .001f, 1, 1.5f),
+            LineSpacing = float.Clamp(font.FontMetrics.VerticalMetrics.LineHeight * .001f, 1, 1.5f),
             FallbackFontFamilies = fallback ??= [getFamily("MaterialIcons.ttf")]
         };
 

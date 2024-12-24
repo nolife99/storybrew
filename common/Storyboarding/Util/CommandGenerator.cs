@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Animations;
 using BrewLib.Memory;
 using Commands;
@@ -112,7 +113,6 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        ensureCapacity();
         foreach (ref var state in states.GetSpan())
         {
             var time = state.Time + timeOffset;
@@ -179,8 +179,22 @@ public class CommandGenerator
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        bool moveX = finalPositions.keyframes.TrueForAll(k => checkPos(k.Value.Y) == checkPos(finalPositions.StartValue.Y)),
-            moveY = finalPositions.keyframes.TrueForAll(k => checkPos(k.Value.X) == checkPos(finalPositions.StartValue.X));
+        bool moveX = true, moveY = true;
+        var posSpan = CollectionsMarshal.AsSpan(finalPositions.keyframes);
+
+        foreach (ref var keyframe in posSpan)
+        {
+            if (checkPos(keyframe.Value.Y) == checkPos(finalPositions.StartValue.Y)) continue;
+            moveX = false;
+            break;
+        }
+
+        foreach (ref var keyframe in posSpan)
+        {
+            if (checkPos(keyframe.Value.X) == checkPos(finalPositions.StartValue.X)) continue;
+            moveY = false;
+            break;
+        }
 
         finalPositions.ForEachPair((s, e) =>
             {
@@ -202,7 +216,14 @@ public class CommandGenerator
             endState,
             loopable);
 
-        var scalar = finalScales.keyframes.TrueForAll(k => Math.Abs(checkScale(k.Value.X) - checkScale(k.Value.Y)) < 1);
+        var scalar = true;
+        foreach (var keyframe in CollectionsMarshal.AsSpan(finalScales.keyframes))
+        {
+            if (Math.Abs(checkScale(keyframe.Value.X) - checkScale(keyframe.Value.Y)) < 1) continue;
+            scalar = false;
+            break;
+        }
+
         finalScales.ForEachPair((s, e) =>
             {
                 if (scalar) sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
@@ -249,18 +270,6 @@ public class CommandGenerator
         float checkPos(float value) => float.Round(value, PositionDecimals);
     }
 
-    void ensureCapacity()
-    {
-        colors.keyframes.EnsureCapacity(states.Count);
-        flipH.keyframes.EnsureCapacity(states.Count);
-        flipV.keyframes.EnsureCapacity(states.Count);
-        additive.keyframes.EnsureCapacity(states.Count);
-        positions.keyframes.EnsureCapacity(states.Count);
-        rotations.keyframes.EnsureCapacity(states.Count);
-        fades.keyframes.EnsureCapacity(states.Count);
-        scales.keyframes.EnsureCapacity(states.Count);
-    }
-
     void addKeyframes(ref State state, float time)
     {
         positions.Add(time, state.Position);
@@ -275,7 +284,7 @@ public class CommandGenerator
 
     void clearKeyframes()
     {
-        positions.Clear();
+        /* positions.Clear();
         scales.Clear();
         rotations.Clear();
         colors.Clear();
@@ -287,7 +296,7 @@ public class CommandGenerator
         finalFades.Clear();
         flipH.Clear();
         flipV.Clear();
-        additive.Clear();
+        additive.Clear(); */
 
         ((IDisposable)states).Dispose();
         states = new();

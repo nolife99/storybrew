@@ -15,14 +15,13 @@ public static class GpuCommandSync
             obj.Fence = 0;
             obj.Expired = false;
         }),
-        true);
+        LazyThreadSafetyMode.None);
 
     static readonly List<SyncRange> syncRanges = [];
 
     public static void DeleteFences()
     {
         foreach (var range in syncRanges) syncRangePool.Value.Release(range);
-        syncRangePool.Value.Dispose();
     }
     public static bool WaitForAll()
     {
@@ -72,7 +71,7 @@ public static class GpuCommandSync
             else
             {
                 left = index + 1;
-                unblockedIndex = Math.Max(unblockedIndex, index);
+                unblockedIndex = int.Max(unblockedIndex, index);
             }
         }
 

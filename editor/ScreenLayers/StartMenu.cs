@@ -193,7 +193,7 @@ public class StartMenu : UiScreenLayer
             }
         });
 
-    async Task handleLatestVersionException(Exception exception)
+    Task handleLatestVersionException(Exception exception)
     {
         Trace.TraceError($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message
@@ -203,6 +203,6 @@ public class StartMenu : UiScreenLayer
         updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
         updateButton.Disabled = false;
 
-        await Program.Schedule(() => bottomLayout.Pack(600));
+        return Program.Schedule(() => bottomLayout.Pack(600));
     }
 }

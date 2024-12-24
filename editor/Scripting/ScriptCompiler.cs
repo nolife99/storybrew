@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -25,8 +26,8 @@ public static class ScriptCompiler
         foreach (var src in sourcePaths)
         {
             using var sourceStream = File.OpenRead(src);
-            var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-            trees[SyntaxFactory.ParseSyntaxTree(sourceText, new CSharpParseOptions(LanguageVersion.Preview))] = (src, sourceText);
+            var sourceText = SourceText.From(sourceStream);
+            trees[CSharpSyntaxTree.ParseText(sourceText, new(LanguageVersion.Preview))] = (src, sourceText);
         }
 
         EmitResult result;
@@ -39,8 +40,10 @@ public static class ScriptCompiler
                         using var stream = File.OpenRead(asmPath);
                         if (!Project.DefaultAssemblies.Contains(asmPath))
                         {
-                            AssemblyLoadContext.Default.LoadFromStream(stream);
+                            var assembly = context.LoadFromStream(stream);
                             stream.Position = 0;
+
+                            Trace.WriteLine($"Loaded user-provided assembly: {assembly.GetName().Name}");
                         }
 
                         return MetadataReference.CreateFromStream(stream);

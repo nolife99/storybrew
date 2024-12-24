@@ -25,7 +25,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         float opacity,
         StoryboardTransform transform,
         Project project,
-        FrameStats frameStats) => Draw(drawContext, camera, bounds, opacity, transform, project, frameStats, this);
+        FrameStats frameStats) => Draw(drawContext, camera, bounds, opacity, ref transform, project, frameStats, this);
 
     public void PostProcess()
     {
@@ -36,7 +36,7 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         Camera camera,
         RectangleF bounds,
         float opacity,
-        StoryboardTransform transform,
+        ref readonly StoryboardTransform transform,
         Project project,
         FrameStats frameStats,
         OsbSprite sprite)

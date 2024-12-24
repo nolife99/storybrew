@@ -2,50 +2,26 @@
 
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SixLabors.ImageSharp.Memory;
 using Util;
-using Varena;
 
 internal sealed class UnmanagedMemoryAllocator : MemoryAllocator
 {
-    readonly Lazy<VirtualArenaManager> manager = new();
-
-    RefCountedArenaBuffer currentArena;
-    RefCountedArenaBuffer CreateOrGetArena(int byteSize)
-    {
-        if (currentArena is null || currentArena.IsDisposed) currentArena = ReserveArena();
-        else if (currentArena.AvailableInBytes < (nuint)byteSize)
-        {
-            currentArena.RegisterForDispose(false);
-            currentArena = ReserveArena();
-        }
-
-        return currentArena;
-    }
+    readonly Lazy<ArrayPool<byte>> shared = new(ArrayPool<byte>.Create, LazyThreadSafetyMode.PublicationOnly);
 
     protected override int GetBufferCapacityInBytes() => int.MaxValue;
 
-    public override IMemoryOwner<T> Allocate<T>(int length, AllocationOptions options = AllocationOptions.None)
-        => new SafeUnmanagedBuffer<T>(length, options);
-    //  => new UnmanagedBuffer<T>(CreateOrGetArena(length * Unsafe.SizeOf<T>()), length);
-
-    RefCountedArenaBuffer ReserveArena() => RefCountedArenaBuffer.Allocate(manager.Value);
-
-    public override void ReleaseRetainedResources()
-    {
-        foreach (var arena in RefCountedArenaBuffer.Pool) arena.RegisterForDispose();
-    }
+    public override IMemoryOwner<T> Allocate<T>(int length, AllocationOptions options = AllocationOptions.None) =>
+        // if (length * Unsafe.SizeOf<T>() < 1 << 20) return new PooledManagedBuffer<T>(length, shared.Value, options);
+        new SafeUnmanagedBuffer<T>(length, options);
 }
 
-internal sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct
+public sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct
 {
-    readonly nint addr;
     readonly int length;
 
     public SafeUnmanagedBuffer(int length, AllocationOptions options = AllocationOptions.None)
@@ -53,106 +29,47 @@ internal sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct
         this.length = length;
 
         var byteCount = length * Unsafe.SizeOf<T>();
-        addr = Native.AllocateMemory(byteCount);
-
-        if (options is AllocationOptions.Clean)
-            Unsafe.InitBlock(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), addr), 0, (uint)byteCount);
+        Address = options is AllocationOptions.Clean ? Native.ZeroAllocateMemory(byteCount) : Native.AllocateMemory(byteCount);
     }
+    public nint Address { get; }
 
+    [SuppressMessage("Reliability", "CA2015")]
     ~SafeUnmanagedBuffer() => Dispose(false);
-    protected override void Dispose(bool disposing) => Native.FreeMemory(addr);
+
+    protected override void Dispose(bool disposing) => Native.FreeMemory(Address);
     public override Span<T> GetSpan()
-        => MemoryMarshal.CreateSpan(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), addr), length);
-    public override unsafe MemoryHandle Pin(int elementIndex = 0) => new(Unsafe.Add<T>((void*)addr, elementIndex));
+        => MemoryMarshal.CreateSpan(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), Address), length);
+    public override unsafe MemoryHandle Pin(int elementIndex = 0) => new(Unsafe.Add<T>((void*)Address, elementIndex));
     public override void Unpin() { }
 }
 
-internal sealed class UnmanagedBuffer<T>(RefCountedArenaBuffer arena, int length) : MemoryManager<T> where T : struct
+public sealed class PooledManagedBuffer<T> : MemoryManager<T> where T : struct
 {
-    readonly nint addr = arena.AllocateRange(length * Unsafe.SizeOf<T>());
+    readonly byte[] buffer;
+    readonly int length;
+    readonly ArrayPool<byte> pool;
 
-    protected override void Dispose(bool disposing) => arena.Release();
-    ~UnmanagedBuffer() => Dispose(false);
+    GCHandle pinHandle;
 
-    public override Span<T> GetSpan()
-        => MemoryMarshal.CreateSpan(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<T>(), addr), length);
-    public override unsafe MemoryHandle Pin(int elementIndex = 0) => new(Unsafe.Add<T>((void*)addr, elementIndex));
-    public override void Unpin() { }
-}
-
-internal class RefCountedArenaBuffer : VirtualArena
-{
-    const nuint DefaultArenaSize = 1 << 28;
-    public static readonly ConcurrentQueue<RefCountedArenaBuffer> Pool = [];
-
-    static int arenasAllocated;
-    readonly Lock allocLock = new();
-
-    bool isDisposeRegistered, release;
-    int refCount;
-
-    RefCountedArenaBuffer(VirtualArenaManager manager, string name, VirtualMemoryRange range, uint commitPageSizeMultiplier) :
-        base(manager, name, range, commitPageSizeMultiplier) { }
-
-    public static RefCountedArenaBuffer Allocate(VirtualArenaManager manager)
+    internal PooledManagedBuffer(int length, ArrayPool<byte> pool, AllocationOptions options = AllocationOptions.None)
     {
-        if (Pool.TryDequeue(out var arena)) return arena;
+        this.length = length;
+        this.pool = pool;
 
-        var commitPageSizeMultiplier = manager.DefaultCommitPageSizeMultiplier;
-        var capacityInBytes =
-            VirtualMemoryHelper.AlignToUpper(DefaultArenaSize, manager.Handler.PageSize * commitPageSizeMultiplier);
-
-        var range = manager.Handler.TryReserve(capacityInBytes);
-        if (range.IsNull) throw new VirtualMemoryException($"Cannot reserve {capacityInBytes} bytes");
-
-        return new(manager, arenasAllocated++.ToString(CultureInfo.InvariantCulture), range, commitPageSizeMultiplier);
+        buffer = pool.Rent(length * Unsafe.SizeOf<T>());
+        if (options is AllocationOptions.Clean)
+            Unsafe.InitBlock(ref MemoryMarshal.GetArrayDataReference(buffer), 0, (uint)(length * Unsafe.SizeOf<T>()));
     }
 
-    public unsafe nint AllocateRange(int count)
+    protected override void Dispose(bool disposing) => pool.Return(buffer);
+    public override Span<T> GetSpan() => MemoryMarshal.Cast<byte, T>(buffer)[..length];
+    public override unsafe MemoryHandle Pin(int elementIndex = 0)
     {
-        void* addr;
-        using (allocLock.EnterScope()) addr = UnsafeAllocate((nuint)count);
-        Interlocked.Increment(ref refCount);
-        return (nint)addr;
+        if (!pinHandle.IsAllocated) pinHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
+        return new(Unsafe.Add<T>((void*)pinHandle.AddrOfPinnedObject(), elementIndex), pinHandle, this);
     }
-
-    public void RegisterForDispose(bool forceDispose = true)
+    public override void Unpin()
     {
-        if (refCount == 0)
-        {
-            if (forceDispose) Dispose();
-            else Reset();
-
-            return;
-        }
-
-        Trace.WriteLine(
-            $"Registering arena {Name} for decommit: {StringHelper.ToByteSize(AllocatedBytes)} / {StringHelper.ToByteSize(CapacityInBytes)} allocated | {refCount} references");
-
-        isDisposeRegistered = true;
-        if (forceDispose) release = true;
-    }
-
-    public void Release()
-    {
-        Interlocked.Decrement(ref refCount);
-        if (refCount != 0 || !isDisposeRegistered) return;
-
-        if (release) Dispose();
-        else Reset();
-    }
-
-    protected override void DisposeImpl()
-    {
-        Trace.WriteLine($"Disposed arena {Name}");
-        release = false;
-    }
-
-    protected override void ResetImpl()
-    {
-        Trace.WriteLine($"Reset arena {Name}");
-        isDisposeRegistered = false;
-
-        Pool.Enqueue(this);
+        if (pinHandle.IsAllocated) pinHandle.Free();
     }
 }

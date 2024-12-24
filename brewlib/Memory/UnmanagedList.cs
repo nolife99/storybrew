@@ -89,6 +89,8 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
+    public EnumeratorRef GetEnumerator() => new(buf, Count);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(ref T item)
     {
@@ -388,7 +390,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         }
     }
 
-    readonly record struct Buffer(int Length)
+    internal readonly record struct Buffer(int Length)
     {
         public readonly nint Ptr = Native.AllocateMemory(Length * Unsafe.SizeOf<T>());
 
@@ -409,5 +411,35 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan(int start, int length) => MemoryMarshal.CreateSpan(ref this[start], length);
+    }
+
+    public ref struct EnumeratorRef
+    {
+        readonly Buffer _span;
+        readonly int _size;
+        int _index;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal EnumeratorRef(Buffer span, int count)
+        {
+            _span = span;
+            _size = count;
+            _index = -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext()
+        {
+            var index = _index + 1;
+            if (index >= _size) return false;
+            _index = index;
+            return true;
+        }
+
+        public ref T Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _span[_index];
+        }
     }
 }

@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
-using System;
 using System.Numerics;
 using Cameras;
 using Renderers;
@@ -54,7 +53,7 @@ public sealed class Sprite : Drawable
                 break;
 
             case ScaleMode.Fit:
-            case ScaleMode.RepeatFit: scale = Math.Min(scaleH, scaleV); break;
+            case ScaleMode.RepeatFit: scale = float.Min(scaleH, scaleV); break;
             default: scale = 1; break;
         }
 
@@ -75,8 +74,8 @@ public sealed class Sprite : Drawable
                         color,
                         0,
                         0,
-                        Math.Min((bounds.Right - x) / scale, Texture.Width),
-                        Math.Min((bounds.Bottom - y) / scale, Texture.Height));
+                        float.Min((bounds.Right - x) / scale, Texture.Width),
+                        float.Min((bounds.Bottom - y) / scale, Texture.Height));
 
                 break;
 

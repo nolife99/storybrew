@@ -101,8 +101,8 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     }
     public static Texture2d Load(Image<Rgba32> bitmap, string description, TextureOptions textureOptions = null)
     {
-        var width = Math.Min(DrawState.MaxTextureSize, bitmap.Width);
-        var height = Math.Min(DrawState.MaxTextureSize, bitmap.Height);
+        var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
+        var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
 
         textureOptions ??= TextureOptions.Default;
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;

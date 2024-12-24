@@ -40,16 +40,14 @@ public sealed partial class Project : IDisposable
 
     public static readonly string ProjectsFolder = Path.GetFullPath("projects");
 
-    public static readonly IReadOnlyCollection<KeyValuePair<string, string>> FileFilter
-        = [new("project files", string.Join(',', BinaryExtension.TrimStart('.'), TextExtension.TrimStart('.')))];
+    public static readonly IReadOnlyCollection<KeyValuePair<string, string>> FileFilter =
+    [
+        new("project files", string.Join(',', BinaryExtension.TrimStart('.'), TextExtension.TrimStart('.')))
+    ];
 
     public static readonly Encoding Encoding = Encoding.ASCII;
     readonly string CommonScriptsPath, projectPath;
-
-    public readonly ExportSettings ExportSettings = new();
-    public readonly LayerManager LayerManager = new();
     readonly ScriptManager<StoryboardObjectGenerator> scriptManager;
-    public readonly string ScriptsPath;
 
     internal bool DisplayDebugWarning, ShowHitObjects;
 
@@ -97,6 +95,10 @@ public sealed partial class Project : IDisposable
                     QueueEffectUpdate(effect);
         };
     }
+
+    public ExportSettings ExportSettings { get; } = new();
+    public LayerManager LayerManager { get; } = new();
+    public string ScriptsPath { get; }
     public string ProjectFolderPath => projectFolderPath ??= Path.GetDirectoryName(projectPath);
     public string ProjectAssetFolderPath => projectAssetFolderPath ??= Path.Combine(ProjectFolderPath, "assetlibrary");
 
@@ -146,22 +148,22 @@ public sealed partial class Project : IDisposable
         OsbLayer.Background, OsbLayer.Fail, OsbLayer.Pass, OsbLayer.Foreground, OsbLayer.Overlay
     ];
 
-    public float DisplayTime, DimFactor;
+    public float DisplayTime { get; internal set; }
+    public float DimFactor { get; internal set; }
 
     public TextureContainer TextureContainer { get; private set; }
     public AudioSampleContainer AudioContainer { get; private set; }
     public FrameStats FrameStats { get; private set; } = frameStatsPool.Retrieve();
 
     static readonly Pool<FrameStats> frameStatsPool = new(obj =>
-        {
-            obj.LoadedPaths.Clear();
-            obj.GpuPixelsFrame = 0;
-            obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
-            obj.LastTexture = null;
-            obj.ScreenFill = 0;
-            obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
-        },
-        true);
+    {
+        obj.LoadedPaths.Clear();
+        obj.GpuPixelsFrame = 0;
+        obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
+        obj.LastTexture = null;
+        obj.ScreenFill = 0;
+        obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
+    });
 
     public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
@@ -194,10 +196,10 @@ public sealed partial class Project : IDisposable
     #region Effects
 
     readonly List<Effect> effects = [];
-    public IEnumerable<Effect> Effects => effects;
+    public IReadOnlyCollection<Effect> Effects => effects;
     public event EventHandler OnEffectsChanged, OnEffectsStatusChanged, OnEffectsContentChanged;
 
-    public EffectStatus EffectsStatus = EffectStatus.Initializing;
+    public EffectStatus EffectsStatus { get; private set; } = EffectStatus.Initializing;
 
     public float StartTime => effects.Count > 0 ? effects.Min(e => e.StartTime) : 0;
     public float EndTime => effects.Count > 0 ? effects.Max(e => e.EndTime) : 0;
@@ -301,7 +303,7 @@ public sealed partial class Project : IDisposable
 
     #region Mapset
 
-    public bool MapsetPathIsValid;
+    public bool MapsetPathIsValid { get; private set; }
 
     string mapsetPath;
 
@@ -321,7 +323,7 @@ public sealed partial class Project : IDisposable
     }
 
     public event EventHandler OnMapsetPathChanged;
-    public MapsetManager MapsetManager;
+    public MapsetManager MapsetManager { get; private set; }
 
     EditorBeatmap mainBeatmap;
 
@@ -476,7 +478,7 @@ public sealed partial class Project : IDisposable
     #region Save / Load / Export
 
     const int Version = 9;
-    public bool Changed;
+    public bool Changed { get; private set; }
 
     bool ownsOsb;
 
@@ -491,11 +493,10 @@ public sealed partial class Project : IDisposable
         }
     }
 
-    public async Task Save()
+    public Task Save()
     {
         var text = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
-        if (File.Exists(text)) await saveText(text);
-        else await saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
+        return File.Exists(text) ? saveText(text) : saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
     }
 
     public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
@@ -820,8 +821,7 @@ public sealed partial class Project : IDisposable
     {
         if (!Directory.Exists(ProjectsFolder)) Directory.CreateDirectory(ProjectsFolder);
 
-        var hasInvalidCharacters = Path.GetInvalidFileNameChars().Any(projectFolderName.Contains);
-        if (hasInvalidCharacters || string.IsNullOrWhiteSpace(projectFolderName))
+        if (Path.GetInvalidFileNameChars().Any(projectFolderName.Contains) || string.IsNullOrWhiteSpace(projectFolderName))
             throw new InvalidOperationException($"'{projectFolderName}' isn't a valid project folder name");
 
         var projectFolderPath = Path.Combine(ProjectsFolder, projectFolderName);
@@ -874,7 +874,7 @@ public sealed partial class Project : IDisposable
             while (await reader.ReadLineAsync() is { } line)
             {
                 var trimmedLine = line.AsSpan().Trim();
-                if (!inEvents && trimmedLine == "[Events]") inEvents = true;
+                if (!inEvents && trimmedLine is "[Events]") inEvents = true;
                 else if (trimmedLine.Length == 0) inEvents = false;
 
                 if (inEvents)

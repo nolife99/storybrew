@@ -18,7 +18,7 @@ public readonly struct StoryboardTransform
     /// <summary>
     ///     Determines if the transform is the identity transform.
     /// </summary>
-    public bool IsIdentity => transform.IsIdentity;
+    public bool IsIdentity => transform == Matrix3x2.Identity;
 
     /// <summary>
     ///     Initializes a new <see cref="StoryboardTransform"/> instance.

@@ -1,7 +1,5 @@
 ﻿namespace BrewLib.Time;
 
-using System;
-
 public class TimeSourceExtender(TimeSource timeSource) : TimeSource
 {
     readonly Clock clock = new();
@@ -38,6 +36,6 @@ public class TimeSourceExtender(TimeSource timeSource) : TimeSource
     public void Update()
     {
         timeSource.Playing = clock.Playing && (timeSource.Playing || timeSource.Seek(clock.Current));
-        if (timeSource.Playing && Math.Abs(clock.Current - timeSource.Current) > .005f) clock.Seek(timeSource.Current);
+        if (timeSource.Playing && float.Abs(clock.Current - timeSource.Current) > .005f) clock.Seek(timeSource.Current);
     }
 }

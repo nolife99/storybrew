@@ -41,7 +41,7 @@ public class LineRendererBuffered : LineRenderer
         this.shader = shader;
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
-            Math.Max(this.maxLinesPerBatch = maxLinesPerBatch,
+            int.Max(this.maxLinesPerBatch = maxLinesPerBatch,
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) *
             VertexPerLine,
             ReadOnlySpan<ushort>.Empty);

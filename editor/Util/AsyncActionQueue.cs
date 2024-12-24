@@ -11,19 +11,19 @@ using System.Threading.Tasks;
 
 public sealed class AsyncActionQueue<T> : IDisposable
 {
-    readonly List<ActionRunner> actionRunners;
+    readonly ActionRunner[] actionRunners;
     readonly bool allowDuplicates;
     readonly ActionQueueContext context;
 
     public AsyncActionQueue(bool allowDuplicates = false, int runnerCount = 0)
     {
         this.allowDuplicates = allowDuplicates;
-        context = new();
 
         if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
+        context = new(runnerCount);
 
-        actionRunners = new(runnerCount);
-        for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new(context));
+        actionRunners = new ActionRunner[runnerCount];
+        for (var i = 0; i < runnerCount; ++i) actionRunners[i] = new(context);
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
@@ -67,10 +67,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     sealed record ActionContainer(T Target, int UniqueKey, Action Action, bool MustRunAlone);
 
-    sealed class ActionQueueContext
+    sealed class ActionQueueContext(int runnerCount)
     {
-        public readonly List<ActionContainer> Queue = [];
-        public readonly HashSet<int> Running = [];
+        public readonly List<ActionContainer> Queue = new(runnerCount);
+        public readonly HashSet<int> Running = new(runnerCount);
 
         bool enabled;
         public bool RunningLoneTask;
@@ -123,14 +123,14 @@ public sealed class AsyncActionQueue<T> : IDisposable
             tokenSrc?.Dispose();
             tokenSrc = new();
 
-            thread = Task.Factory.StartNew(async () =>
+            thread = Task.Run(() =>
             {
                 var mustSleep = false;
                 while (!tokenSrc.IsCancellationRequested)
                 {
                     if (mustSleep)
                     {
-                        await Task.Yield();
+                        Thread.Yield();
                         mustSleep = false;
                     }
 

@@ -21,11 +21,11 @@ public static class NetHelper
             Trace.WriteLine($"Requesting {url}");
 
             var result = await Client.GetStringAsync(url).ConfigureAwait(false);
-            action.Invoke(result, null);
+            await action.Invoke(result, null);
         }
         catch (Exception e)
         {
-            action.Invoke(null, e);
+            await action.Invoke(null, e);
         }
     }
 

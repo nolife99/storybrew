@@ -46,10 +46,10 @@ public static class ScreenLayerManagerExtensions
         => screenLayer.Add(new LoadingScreen(message, action));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action ok = null)
-        => screenLayer.Add(new MessageBox(message, ok));
+        => screenLayer.Add(new MessageBox(message, ok, null, false));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action ok, bool cancel)
-        => screenLayer.Add(new MessageBox(message, ok, cancel));
+        => screenLayer.Add(new MessageBox(message, ok, null, cancel));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action yes, Action no, bool cancel)
         => screenLayer.Add(new MessageBox(message, yes, no, cancel));
@@ -81,7 +81,7 @@ public static class ScreenLayerManagerExtensions
             {
                 if (!PathHelper.FolderContainsPath(Project.ProjectsFolder, projectPath) ||
                     Path.GetRelativePath(Project.ProjectsFolder, projectPath).Contains('/'))
-                    screenLayer.ShowMessage("Projects must be placed in a folder directly inside the 'projects' folder.");
+                    screenLayer.ShowMessage("Projects must be placed directly inside the 'projects' folder.");
 
                 else
                     screenLayer.AsyncLoading("Loading project",

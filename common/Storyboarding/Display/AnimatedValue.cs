@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Commands;
 using CommandValues;
 
@@ -23,13 +24,15 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     {
         if (command is not TriggerDecorator<TValue> triggerable)
         {
-            findCommandIndex(command.StartTime, out var index);
-            while (index < commands.Count)
-                if (commands[index].CompareTo(command) < 0) ++index;
+            var span = CollectionsMarshal.AsSpan(commands);
+            findCommandIndex(span, command.StartTime, out var index);
+
+            while (index < span.Length)
+                if (span[index].CompareTo(command) < 0) ++index;
                 else break;
 
-            HasOverlap |= index > 0 && Math.Round(command.StartTime) < Math.Round(commands[index - 1].EndTime) ||
-                index < commands.Count && Math.Round(commands[index].StartTime) < Math.Round(command.EndTime);
+            HasOverlap |= index > 0 && Math.Round(command.StartTime) < Math.Round(span[index - 1].EndTime) ||
+                index < span.Length && Math.Round(span[index].StartTime) < Math.Round(command.EndTime);
 
             commands.Insert(index, command);
         }
@@ -39,22 +42,24 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     {
         if (commands.Count == 0) return DefaultValue;
 
-        if (!findCommandIndex(time, out var index) && index > 0) --index;
-        if (!HasOverlap) return commands[index].ValueAtTime(time);
+        var span = CollectionsMarshal.AsSpan(commands);
+
+        if (!findCommandIndex(span, time, out var index) && index > 0) --index;
+        if (!HasOverlap) return span[index].ValueAtTime(time);
 
         for (var i = 0; i < index; ++i)
-            if (time < commands[i].EndTime)
+            if (time < span[i].EndTime)
             {
                 index = i;
                 break;
             }
 
-        return commands[index].ValueAtTime(time);
+        return span[index].ValueAtTime(time);
     }
-    bool findCommandIndex(float time, out int index)
+    static bool findCommandIndex(ReadOnlySpan<ITypedCommand<TValue>> commands, float time, out int index)
     {
         var left = 0;
-        var right = commands.Count - 1;
+        var right = commands.Length - 1;
 
         while (left <= right)
         {
@@ -75,7 +80,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
         commands.Remove(command);
         if (!command.Active) return;
 
-        findCommandIndex(command.StartTime, out var index);
+        findCommandIndex(CollectionsMarshal.AsSpan(commands), command.StartTime, out var index);
         commands.Insert(index, command);
     }
 }

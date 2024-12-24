@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using System.Buffers;
 using IO;
 using ManagedBass;
+using Memory;
 
 public class AudioSample : IDisposable
 {
@@ -23,11 +23,10 @@ public class AudioSample : IDisposable
         if (stream is null) throw new BassException(Bass.LastError);
 
         var len = (int)stream.Length;
-        var bytes = ArrayPool<byte>.Shared.Rent(len);
-        var read = stream.Read(bytes, 0, len);
+        using SafeUnmanagedBuffer<byte> bytes = new(len);
 
-        sample = Bass.SampleLoad(bytes, 0, read, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
-        ArrayPool<byte>.Shared.Return(bytes);
+        var read = stream.Read(bytes.GetSpan());
+        sample = Bass.SampleLoad(bytes.Address, 0, read, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
 
         if (sample != 0) return;
 

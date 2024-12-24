@@ -33,11 +33,12 @@ public abstract class StoryboardObjectGenerator : Script
     protected StoryboardObjectGenerator()
     {
         imageCompressor = new(() =>
-        {
-            IntegratedCompressor compressor = new();
-            disposables.Add(compressor);
-            return compressor;
-        });
+            {
+                IntegratedCompressor compressor = new();
+                disposables.Add(compressor);
+                return compressor;
+            },
+            LazyThreadSafetyMode.None);
 
         configurableFields = GetType()
             .GetFields()

@@ -14,7 +14,7 @@ public class EditorOsbAnimation : OsbAnimation, DisplayableObject, HasPostProces
         StoryboardTransform transform,
         Project project,
         FrameStats frameStats)
-        => EditorOsbSprite.Draw(drawContext, camera, bounds, opacity, transform, project, frameStats, this);
+        => EditorOsbSprite.Draw(drawContext, camera, bounds, opacity, ref transform, project, frameStats, this);
 
     public void PostProcess()
     {

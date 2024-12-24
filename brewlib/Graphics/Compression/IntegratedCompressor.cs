@@ -26,24 +26,23 @@ public class IntegratedCompressor : ImageCompressor
         var path = GetUtility();
         ensureTool();
 
-        tasks.Add(Task.Factory.StartNew(() =>
-            {
-                using var localProc =
-                    Process.Start(new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
-                    {
-                        CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
-                    });
-
-                using (var errorStream = localProc.StandardError)
+        tasks.Add(Task.Run(() =>
+        {
+            using var localProc =
+                Process.Start(new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
                 {
-                    var error = errorStream.ReadToEnd();
-                    if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
-                        Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
-                }
+                    CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
+                });
 
-                localProc.WaitForExit();
-            },
-            TaskCreationOptions.AttachedToParent | TaskCreationOptions.LongRunning));
+            using (var errorStream = localProc.StandardError)
+            {
+                var error = errorStream.ReadToEnd();
+                if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
+                    Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
+            }
+
+            localProc.WaitForExit();
+        }));
     }
     protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
     {
@@ -54,7 +53,7 @@ public class IntegratedCompressor : ImageCompressor
         {
             str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
             if (lossy is null) return str.ToString();
-            if (lossy.MinQuality >= 0 && lossy.MaxQuality is > 0 and <= 100)
+            if (lossy.MinQuality >= 0 && lossy.MaxQuality is >= 0 and <= 100)
                 str.Append(CultureInfo.InvariantCulture, $" --quality {lossy.MinQuality}-{lossy.MaxQuality} ");
 
             if (lossy.Speed is > 0 and <= 10) str.Append(CultureInfo.InvariantCulture, $" -s{lossy.Speed} ");

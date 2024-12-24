@@ -20,7 +20,7 @@ public class TextLayout
             foreach (var c in text.AsSpan(start, length)) line.Add(font.GetGlyph(c), glyphIndex++);
 
             Lines.Add(line);
-            width = Math.Max(width, line.Width);
+            width = float.Max(width, line.Width);
             height += line.Height;
         }
 
@@ -87,7 +87,7 @@ public class TextLayout
                 if (lineIndex == 0) return 0;
 
                 var previousLine = Lines[lineIndex - 1];
-                return previousLine.GetGlyph(Math.Min(index, previousLine.GlyphCount - 1)).Index;
+                return previousLine.GetGlyph(int.Min(index, previousLine.GlyphCount - 1)).Index;
             }
 
             index -= line.GlyphCount;
@@ -110,7 +110,7 @@ public class TextLayout
                 }
 
                 var nextLine = Lines[lineIndex + 1];
-                return nextLine.GetGlyph(Math.Min(index, nextLine.GlyphCount - 1)).Index;
+                return nextLine.GetGlyph(int.Min(index, nextLine.GlyphCount - 1)).Index;
             }
 
             index -= line.GlyphCount;
@@ -155,7 +155,7 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
 
         Glyphs.Add(new(this, glyph, glyphIndex, Width));
         if (advance) Width += glyph.Width;
-        Height = Math.Max(Height, glyph.Height);
+        Height = int.Max(Height, glyph.Height);
     }
 
     public TextLayoutGlyph GetGlyph(int index) => Glyphs[index];

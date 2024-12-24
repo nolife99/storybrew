@@ -26,13 +26,20 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.1.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="ErrorProne.NET.Structs" Version="0.1.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <PackageReference Include="ManagedBass.Fx" Version="3.1.1"/>
         <PackageReference Include="OpenTK.Graphics" Version="4.9.3"/>
         <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.3"/>
         <PackageReference Include="SixLabors.Fonts" Version="2.0.7"/>
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6"/>
         <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.4"/>
-        <PackageReference Include="Varena" Version="1.2.0"/>
     </ItemGroup>
 
     <ItemGroup>

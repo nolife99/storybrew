@@ -8,7 +8,7 @@ using CommandValues;
 using Display;
 
 /// <summary> Base class for writing and exporting an <see cref="OsbAnimation"/>. </summary>
-public class OsbAnimationWriter(OsbAnimation animation,
+public sealed class OsbAnimationWriter(OsbAnimation animation,
     AnimatedValue<CommandPosition> move,
     AnimatedValue<CommandDecimal> moveX,
     AnimatedValue<CommandDecimal> moveY,
@@ -32,53 +32,48 @@ public class OsbAnimationWriter(OsbAnimation animation,
     exportSettings,
     layer)
 {
-    readonly OsbAnimation animation = animation;
-
     string getLastFramePath() => Path.Combine(Path.GetDirectoryName(animation.TexturePath),
         string.Concat(Path.GetFileNameWithoutExtension(animation.TexturePath),
             (animation.FrameCount - 1).ToString(exportSettings.NumberFormat),
             Path.GetExtension(animation.TexturePath)));
 
-#pragma warning disable CS1591
     protected override OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
     {
-        if (this.animation.LoopType is OsbLoopType.LoopOnce && segment.Min(c => c.StartTime) >= this.animation.AnimationEndTime)
+        if (animation.LoopType is OsbLoopType.LoopOnce && segment.Min(c => c.StartTime) >= animation.AnimationEndTime)
         {
             OsbSprite sprite = new()
             {
-                InitialPosition = this.animation.InitialPosition,
-                Origin = this.animation.Origin,
-                TexturePath = getLastFramePath()
+                InitialPosition = animation.InitialPosition, Origin = animation.Origin, TexturePath = getLastFramePath()
             };
 
             foreach (var command in segment) sprite.AddCommand(command);
             return sprite;
         }
 
-        OsbAnimation animation = new()
+        OsbAnimation animation1 = new()
         {
-            TexturePath = this.animation.TexturePath,
-            InitialPosition = this.animation.InitialPosition,
-            Origin = this.animation.Origin,
-            FrameCount = this.animation.FrameCount,
-            FrameDelay = this.animation.FrameDelay,
-            LoopType = this.animation.LoopType
+            TexturePath = animation.TexturePath,
+            InitialPosition = animation.InitialPosition,
+            Origin = animation.Origin,
+            FrameCount = animation.FrameCount,
+            FrameDelay = animation.FrameDelay,
+            LoopType = animation.LoopType
         };
 
-        foreach (var command in segment) animation.AddCommand(command);
-        return animation;
+        foreach (var command in segment) animation1.AddCommand(command);
+        return animation1;
     }
 
-    protected override void WriteHeader(OsbSprite sprite, StoryboardTransform transform)
+    protected override void WriteHeader(OsbSprite sprite, ref readonly StoryboardTransform transform)
     {
         if (sprite is OsbAnimation animation)
         {
             var frameDelay = animation.FrameDelay;
             writer.Write("Animation");
-            WriteHeaderCommon(sprite, transform);
+            WriteHeaderCommon(sprite, in transform);
             writer.WriteLine($",{animation.FrameCount},{frameDelay.ToString(exportSettings.NumberFormat)},{animation.LoopType}");
         }
-        else base.WriteHeader(sprite, transform);
+        else base.WriteHeader(sprite, in transform);
     }
 
     protected override HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
@@ -97,5 +92,4 @@ public class OsbAnimationWriter(OsbAnimation animation,
         fragmentationTimes.RemoveWhere(t => nonFragmentableTimes.Contains(t) && t < tMax);
         return fragmentationTimes;
     }
-#pragma warning restore CS1591
 }

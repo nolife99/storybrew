@@ -51,6 +51,9 @@ public static unsafe class Native
     public static nint AllocateMemory(int cb) => (nint)NativeMemory.Alloc((nuint)cb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static nint ZeroAllocateMemory(int cb) => (nint)NativeMemory.AllocZeroed((nuint)cb);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static nint ReallocateMemory(nint ptr, int cb) => (nint)NativeMemory.Realloc((void*)ptr, (nuint)cb);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -57,7 +57,7 @@ public class ShaderBuilder
     {
         var code = StringHelper.StringBuilderPool.Retrieve();
         code.AppendLine(CultureInfo.InvariantCulture,
-            $"#version {Math.Max(MinVersion, Math.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
+            $"#version {int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
         foreach (var extensionName in FragmentShader.RequiredExtensions.Union(VertexShader.RequiredExtensions))
             code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable");

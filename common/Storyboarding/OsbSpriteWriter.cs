@@ -24,7 +24,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
     OsbLayer layer)
 {
 #pragma warning disable CS1591
-    public void WriteOsb(StoryboardTransform transform)
+    public void WriteOsb(ref readonly StoryboardTransform transform)
     {
         if (exportSettings.OptimiseSprites &&
             sprite.CommandSplitThreshold > 0 &&
@@ -37,10 +37,10 @@ public class OsbSpriteWriter(OsbSprite sprite,
             while (commands.Count > 0)
             {
                 var segment = getNextSegment(fragmentationTimes, commands);
-                writeOsbSprite(CreateSprite(segment), transform);
+                writeOsbSprite(CreateSprite(segment), in transform);
             }
         }
-        else writeOsbSprite(sprite, transform);
+        else writeOsbSprite(sprite, in transform);
     }
     protected virtual OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
     {
@@ -52,18 +52,18 @@ public class OsbSpriteWriter(OsbSprite sprite,
         foreach (var command in segment) spr.AddCommand(command);
         return spr;
     }
-    void writeOsbSprite(OsbSprite sprite, StoryboardTransform transform)
+    void writeOsbSprite(OsbSprite sprite, ref readonly StoryboardTransform transform)
     {
-        WriteHeader(sprite, transform);
+        WriteHeader(sprite, in transform);
         foreach (var command in sprite.Commands) command.WriteOsb(writer, exportSettings, transform, 1);
     }
-    protected virtual void WriteHeader(OsbSprite sprite, StoryboardTransform transform)
+    protected virtual void WriteHeader(OsbSprite sprite, ref readonly StoryboardTransform transform)
     {
         writer.Write("Sprite");
-        WriteHeaderCommon(sprite, transform);
+        WriteHeaderCommon(sprite, in transform);
         writer.WriteLine();
     }
-    protected void WriteHeaderCommon(OsbSprite sprite, StoryboardTransform transform)
+    protected void WriteHeaderCommon(OsbSprite sprite, ref readonly StoryboardTransform transform)
     {
         writer.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
 
@@ -233,17 +233,6 @@ public static class OsbWriterFactory
                 exportSettings,
                 layer);
 
-        return new OsbSpriteWriter(sprite,
-            move,
-            moveX,
-            moveY,
-            scale,
-            scaleVec,
-            rotate,
-            fade,
-            color,
-            writer,
-            exportSettings,
-            layer);
+        return new(sprite, move, moveX, moveY, scale, scaleVec, rotate, fade, color, writer, exportSettings, layer);
     }
 }

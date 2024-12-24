@@ -24,8 +24,8 @@ public static class Program
     public static readonly Version Version = typeof(Editor).Assembly.GetName().Version;
     public static readonly string FullName = $"{Name} {Version} ({Repository})";
 
-    public static AudioManager AudioManager { get; set; }
-    public static Settings Settings { get; set; }
+    public static AudioManager AudioManager { get; private set; }
+    public static Settings Settings { get; private set; }
 
     static void Main(string[] args)
     {
@@ -179,13 +179,13 @@ public static class Program
             while (scheduledActions.TryDequeue(out var action))
                 try
                 {
-                    action.Item1();
-                    action.Item2.SetResult();
+                    action.Action();
+                    action.Task.TrySetResult();
                 }
                 catch (Exception e)
                 {
-                    Trace.TraceError($"Scheduled task {action.Item1.Method}:\n{e}");
-                    action.Item2.SetException(e);
+                    Trace.TraceError($"Scheduled task {action.Action.Method}:\n{e}");
+                    action.Task.TrySetException(e);
                 }
 
             var active = GLFW.GetTime() - cur;
@@ -211,7 +211,7 @@ public static class Program
 
     #region Scheduling
 
-    static readonly ConcurrentQueue<(Action, TaskCompletionSource)> scheduledActions = [];
+    static readonly ConcurrentQueue<(Action Action, TaskCompletionSource Task)> scheduledActions = [];
 
     public static Task Schedule(Action action)
     {

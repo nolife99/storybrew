@@ -270,14 +270,16 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
-        var i = keyframes.BinarySearch(keyframe, Keyframe<TValue>.Comparer);
+        var span = CollectionsMarshal.AsSpan(keyframes);
+
+        var i = span.BinarySearch(keyframe, Keyframe<TValue>.Comparer);
         if (i >= 0)
         {
             if (before)
-                while (i > 0 && keyframes[i].Time >= keyframe.Time)
+                while (i > 0 && span[i].Time >= keyframe.Time)
                     --i;
             else
-                while (i < keyframes.Count && keyframes[i].Time <= keyframe.Time)
+                while (i < span.Length && span[i].Time <= keyframe.Time)
                     ++i;
         }
         else i = ~i;
@@ -361,22 +363,24 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
     void SimplifyKeyframes(float tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
     {
+        var span = CollectionsMarshal.AsSpan(keyframes);
+
         if (tolerance <= .00001f)
         {
             List<Keyframe<TValue>> unionKeyframes = [];
             var comparer = EqualityComparer<TValue>.Default;
 
-            for (int i = 0, count = keyframes.Count; i < count; i++)
+            for (int i = 0, count = span.Length; i < count; i++)
             {
-                var startKeyframe = keyframes[i];
+                var startKeyframe = span[i];
                 unionKeyframes.Add(startKeyframe);
 
                 for (var j = i + 1; j < count; j++)
                 {
-                    var endKeyframe = keyframes[j];
+                    var endKeyframe = span[j];
                     if (!comparer.Equals(startKeyframe.Value, endKeyframe.Value))
                     {
-                        if (i < j - 1) unionKeyframes.Add(keyframes[j - 1]);
+                        if (i < j - 1) unionKeyframes.Add(span[j - 1]);
                         unionKeyframes.Add(endKeyframe);
                         i = j;
                         break;
@@ -391,22 +395,23 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             return;
         }
 
-        if (keyframes.Count < 3) return;
+        if (span.Length < 3) return;
 
-        var lastPoint = keyframes.Count - 1;
-        UnmanagedList<int> keep = [0, lastPoint];
-        getSimplifiedKeyframeIndices(keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
-        if (keep.Count == keyframes.Count) return;
+        var lastPoint = span.Length - 1;
+        using UnmanagedList<int> keep = [0, lastPoint];
+        getSimplifiedKeyframeIndices(ref span, keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
+        if (keep.Count == span.Length) return;
 
         List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
         keep.Sort();
-        foreach (var t in keep) simplifiedKeyframes.Add(keyframes[t]);
+        foreach (ref var t in keep) simplifiedKeyframes.Add(span[t]);
 
         Clear(true);
         keyframes = simplifiedKeyframes;
     }
 
-    void getSimplifiedKeyframeIndices(UnmanagedList<int> keep,
+    static void getSimplifiedKeyframeIndices(ref Span<Keyframe<TValue>> span,
+        UnmanagedList<int> keep,
         int first,
         int last,
         float epsilonSq,
@@ -414,22 +419,22 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     {
         while (true)
         {
-            var start = keyframes[first];
-            var end = keyframes[last];
+            var start = span[first];
+            var end = span[last];
 
             var maxDistSq = 0f;
             var indexFar = 0;
 
             for (var i = first; i < last; ++i)
             {
-                var distanceSq = getDistance(start, keyframes[i], end);
+                var distanceSq = getDistance(start, span[i], end);
                 if (distanceSq < maxDistSq) continue;
                 maxDistSq = distanceSq;
                 indexFar = i;
             }
 
             if (maxDistSq < epsilonSq || indexFar <= 0) return;
-            getSimplifiedKeyframeIndices(keep, first, indexFar, epsilonSq, getDistance);
+            getSimplifiedKeyframeIndices(ref span, keep, first, indexFar, epsilonSq, getDistance);
             keep.Add(ref indexFar);
             first = indexFar;
         }

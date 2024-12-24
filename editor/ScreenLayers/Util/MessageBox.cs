@@ -10,9 +10,6 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
 {
     LinearLayout mainLayout, buttonsLayout;
 
-    public MessageBox(string message, Action okAction = null) : this(message, okAction, null, false) { }
-    public MessageBox(string message, Action okAction, bool cancelable) : this(message, okAction, null, cancelable) { }
-
     public override bool IsPopup => true;
 
     public override void Load()
@@ -36,7 +33,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             ]
         });
 
-        Button yesButton = new(WidgetManager) { Text = noAction is not null ? "Yes" : "Ok", AnchorFrom = BoxAlignment.Centre };
+        Button yesButton = new(WidgetManager) { Text = noAction is null ? "Ok" : "Yes", AnchorFrom = BoxAlignment.Centre };
 
         yesButton.OnClick += (_, _) =>
         {

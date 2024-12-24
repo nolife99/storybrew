@@ -30,7 +30,7 @@ public sealed class TextureAtlas2d(int width,
         Texture2dRegion region = new(texture, new(currentX, currentY, width, height));
 
         currentX += width + padding;
-        nextY = Math.Max(nextY, currentY + height + padding);
+        nextY = int.Max(nextY, currentY + height + padding);
 
         return region;
     }

@@ -468,8 +468,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             });
     }
 
-    void saveProject() => Manager.AsyncLoading("Saving", async () => await proj.Save());
-    void exportProject() => Manager.AsyncLoading("Exporting", async () => await proj.ExportToOsb());
+    void saveProject() => Manager.AsyncLoading("Saving", proj.Save);
+    void exportProject() => Manager.AsyncLoading("Exporting", () => proj.ExportToOsb());
     void exportProjectAll() => Manager.AsyncLoading("Exporting",
         async () =>
         {
@@ -652,7 +652,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         Manager.AsyncLoading("Stopping effect updates",
             async () =>
             {
-                proj.CancelEffectUpdates(true).Wait();
+                await proj.CancelEffectUpdates(true);
                 await Program.Schedule(() => Manager.GetContext<Editor>().Restart());
 
                 await Task.Delay(1000);

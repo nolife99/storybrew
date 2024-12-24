@@ -179,7 +179,7 @@ public abstract class CameraBase : Camera
 
         var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
         var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) /
-            Math.Abs(transformedPosition.W);
+            float.Abs(transformedPosition.W);
 
         return new Vector3((devicePosition.X + 1) * .5f * viewport.Width,
             (-devicePosition.Y + 1) * .5f * viewport.Height,

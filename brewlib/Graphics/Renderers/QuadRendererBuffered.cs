@@ -61,7 +61,7 @@ public class QuadRendererBuffered : QuadRenderer
         }
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
-            Math.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
+            int.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
                 primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) *
             VertexPerQuad,
             indices);

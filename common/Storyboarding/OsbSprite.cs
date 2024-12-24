@@ -784,7 +784,7 @@ public class OsbSprite : StoryboardObject
                     writer,
                     exportSettings,
                     layer)
-                .WriteOsb(transform);
+                .WriteOsb(ref transform);
     }
 
     /// <summary> Returns whether the sprite is within widescreen storyboard bounds. </summary>

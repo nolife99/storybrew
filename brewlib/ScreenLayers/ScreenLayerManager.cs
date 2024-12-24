@@ -40,7 +40,7 @@ public sealed class ScreenLayerManager : IDisposable
         layer.Load();
 
         var size = window.ClientSize;
-        layer.Resize(Math.Max(1, size.X), Math.Max(1, size.Y));
+        layer.Resize(int.Max(1, size.X), int.Max(1, size.Y));
     }
     public void Set(ScreenLayer layer)
     {

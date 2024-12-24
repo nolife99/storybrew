@@ -251,7 +251,7 @@ public sealed class FontGenerator
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
         if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) ||
             path.Contains(StoryboardObjectGenerator.Current.AssetPath))
-            StoryboardObjectGenerator.Current.Compressor.Compress(path, new(0, 75, 1));
+            StoryboardObjectGenerator.Current.Compressor.Compress(path, new(0, 80, 10));
 
         return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
     }
