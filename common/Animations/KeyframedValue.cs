@@ -187,20 +187,21 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             var endKeyframe = editKeyframe(ref t, edit);
             if (previous.HasValue)
             {
-                var startKeyframe = previous.Value;
+                ref readonly var startKeyframe = ref Nullable.GetValueRefOrDefaultRef(ref previous);
                 var isFlat = comparer.Equals(startKeyframe.Value, endKeyframe.Value);
                 var isStep = !isFlat && startKeyframe.Time == endKeyframe.Time;
 
                 if (isStep) stepStart ??= startKeyframe;
                 else if (stepStart.HasValue)
                 {
-                    if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time && !stepStart.Value.Until)
+                    ref readonly var stepStartValue = ref Nullable.GetValueRefOrDefaultRef(ref stepStart);
+                    if (!hasPair && explicitStartTime.HasValue && startTime < stepStartValue.Time && !stepStartValue.Until)
                     {
-                        var initialPair = stepStart.Value.WithTime(startTime);
-                        pair(initialPair, loopable ? stepStart.Value : initialPair);
+                        var initialPair = stepStartValue.WithTime(startTime);
+                        pair(initialPair, loopable ? stepStartValue : initialPair);
                     }
 
-                    if (!stepStart.Value.Until) pair(stepStart.Value, startKeyframe);
+                    if (!stepStartValue.Until) pair(stepStartValue, startKeyframe);
                     previousPairEnd = startKeyframe;
                     stepStart = null;
                     hasPair = true;
@@ -226,14 +227,16 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
         if (stepStart.HasValue)
         {
-            if (!hasPair && explicitStartTime.HasValue && startTime < stepStart.Value.Time)
+            ref readonly var stepStartValue = ref Nullable.GetValueRefOrDefaultRef(ref stepStart);
+            if (!hasPair && explicitStartTime.HasValue && startTime < stepStartValue.Time)
             {
-                var initialPair = stepStart.Value.WithTime(startTime);
+                var initialPair = stepStartValue.WithTime(startTime);
                 pair(initialPair, initialPair);
             }
 
-            pair(stepStart.Value, previous.Value);
-            previousPairEnd = previous.Value;
+            ref readonly var previousValue = ref Nullable.GetValueRefOrDefaultRef(ref previous);
+            pair(stepStartValue, previousValue);
+            previousPairEnd = previousValue;
             hasPair = true;
         }
 
@@ -249,10 +252,11 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             }
         }
 
-        if (!hasPair || !explicitEndTime.HasValue || previousPairEnd.Value.Time > endTime) return;
+        ref readonly var previousPairEndValue = ref Nullable.GetValueRefOrDefaultRef(ref previousPairEnd);
+        if (!hasPair || !explicitEndTime.HasValue || previousPairEndValue.Time > endTime) return;
 
-        var endPair = previousPairEnd.Value.WithTime(endTime);
-        pair(loopable ? previousPairEnd.Value : endPair, endPair);
+        var endPair = previousPairEndValue.WithTime(endTime);
+        pair(loopable ? previousPairEndValue : endPair, endPair);
     }
 
     static Keyframe<TValue> editKeyframe(ref Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit is not null ?

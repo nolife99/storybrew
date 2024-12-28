@@ -5,12 +5,13 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.PixelFormats;
 
-public interface LineRenderer : Renderer, IDisposable
+public interface ILineRenderer : Renderer, IDisposable
 {
     void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color);
 }
 
-[StructLayout(LayoutKind.Sequential)] public ref struct LinePrimitive
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
+public ref struct LinePrimitive
 {
     public Vector3 from;
     public Rgba32 color1;

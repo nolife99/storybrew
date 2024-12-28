@@ -4,7 +4,6 @@ using System.Numerics;
 using Cameras;
 using Renderers;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 using Util;
 
@@ -12,7 +11,7 @@ public sealed class NinePatch : Drawable
 {
     public FourSide Borders, Outset;
     public bool BordersOnly;
-    public Rgba32 Color;
+    public Color Color;
     public Texture2dRegion Texture;
     public RenderStates RenderStates { get; } = new();
 
@@ -38,7 +37,7 @@ public sealed class NinePatch : Drawable
         var verticalScale = (y2 - y1) / (Borders.Bottom - Borders.Top);
 
         var color = Color.WithOpacity(opacity);
-        var renderer = DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, RenderStates);
+        var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, RenderStates);
 
         // Center
         if (!BordersOnly && horizontalScale > 0 && verticalScale > 0)

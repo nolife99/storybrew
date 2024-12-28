@@ -1,5 +1,6 @@
 ﻿namespace Tiny.Formats;
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -39,7 +40,7 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
             previousMatch = bestMatch;
         }
 
-        if (endLineToken.HasValue) yield return new(endLineToken.Value);
+        if (endLineToken.HasValue) yield return new(Nullable.GetValueRefOrDefaultRef(in endLineToken));
     }
 
     public class Definition(TokenType matchType, string regexPattern, int captureGroup = 1)

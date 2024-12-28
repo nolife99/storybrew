@@ -8,16 +8,17 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using StorybrewCommon.Mapset;
 
 public class TimelineSlider : Slider
 {
-    static readonly Rgba32 tickBlue = new(50, 128, 255, 225), tickYellow = new(255, 255, 0, 225), tickRed = new(255, 0, 0, 225),
-        tickViolet = new(200, 0, 200, 225), tickWhite = new(255, 255, 255, 220), tickMagenta = new(144, 64, 144, 225),
-        tickGrey = new(160, 160, 160, 225), kiaiColor = new(255, 146, 18, 140), breakColor = new(255, 255, 255, 140),
-        bookmarkColor = new(58, 110, 170, 240), repeatColor = new(58, 110, 170, 80), highlightColor = new(255, 0, 0, 80);
+    static readonly Color tickBlue = Color.FromRgba(50, 128, 255, 225), tickYellow = Color.FromRgba(255, 255, 0, 225),
+        tickRed = Color.FromRgba(255, 0, 0, 225), tickViolet = Color.FromRgba(200, 0, 200, 225),
+        tickWhite = Color.FromRgba(255, 255, 255, 220), tickMagenta = Color.FromRgba(144, 64, 144, 225),
+        tickGrey = Color.FromRgba(160, 160, 160, 225), kiaiColor = Color.FromRgba(255, 146, 18, 140),
+        breakColor = Color.FromRgba(255, 255, 255, 140), bookmarkColor = Color.FromRgba(58, 110, 170, 240),
+        repeatColor = Color.FromRgba(58, 110, 170, 80), highlightColor = Color.FromRgba(255, 0, 0, 80);
 
     readonly Label beatmapLabel;
 
@@ -230,44 +231,36 @@ public class TimelineSlider : Slider
                 drawLine(drawContext,
                     offset with { X = timeToXTop(RepeatStart) - pixelSize },
                     lineSize,
-                    Color.White.ToPixel<Rgba32>(),
+                    Color.White,
                     actualOpacity);
 
-                drawLine(drawContext, offset with { X = x }, lineSize * .6f, Color.White.ToPixel<Rgba32>(), actualOpacity);
+                drawLine(drawContext, offset with { X = x }, lineSize * .6f, Color.White, actualOpacity);
 
                 drawLine(drawContext,
                     offset with { X = timeToXTop(RepeatEnd) + pixelSize },
                     lineSize,
-                    Color.White.ToPixel<Rgba32>(),
+                    Color.White,
                     actualOpacity);
             }
             else
             {
-                drawLine(drawContext, offset with { X = x - pixelSize }, lineSize, Color.White.ToPixel<Rgba32>(), actualOpacity);
+                drawLine(drawContext, offset with { X = x - pixelSize }, lineSize, Color.White, actualOpacity);
 
-                drawLine(drawContext, offset with { X = x + pixelSize }, lineSize, Color.White.ToPixel<Rgba32>(), actualOpacity);
+                drawLine(drawContext, offset with { X = x + pixelSize }, lineSize, Color.White, actualOpacity);
             }
 
             // Current time (bottom)
             var centerX = Bounds.Width * .5f;
             lineSize = new(pixelSize, Bounds.Height * .4f);
-            drawLine(drawContext,
-                offset + new Vector2(centerX - pixelSize, lineBottomY),
-                lineSize,
-                Color.White.ToPixel<Rgba32>(),
-                actualOpacity);
+            drawLine(drawContext, offset + new Vector2(centerX - pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
 
-            drawLine(drawContext,
-                offset + new Vector2(centerX + pixelSize, lineBottomY),
-                lineSize,
-                Color.White.ToPixel<Rgba32>(),
-                actualOpacity);
+            drawLine(drawContext, offset + new Vector2(centerX + pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
         }
     }
 
     float timeToXTop(float time) => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
 
-    void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Rgba32 color, float opacity)
+    void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Color color, float opacity)
     {
         line.Color = color;
         line.Draw(drawContext, Manager.Camera, new(position.X, position.Y, size.X, size.Y), opacity);

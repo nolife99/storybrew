@@ -18,7 +18,7 @@ using Util;
 public sealed class TextGenerator(ResourceContainer resourceContainer)
 {
     static readonly DrawingOptions drawOptions = new() { GraphicsOptions = new() { AntialiasSubpixelDepth = 2 } };
-    static readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromPixel(new Rgba32(0, 0, 0, 220)));
+    static readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
     readonly Dictionary<string, FontFamily> families = [];
 
     readonly FontCollection fontCollection = new();

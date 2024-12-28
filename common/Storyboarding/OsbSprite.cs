@@ -19,10 +19,6 @@ public class OsbSprite : StoryboardObject
 
     readonly HashSet<ICommand> commands = [];
 
-    /// <summary> If the sprite has more commands than this amount, they will be split between multiple sprites. </summary>
-    /// <remarks> Does not apply when the sprite has triggers. </remarks>
-    public int CommandSplitThreshold;
-
     float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue;
     CommandGroup currentCommandGroup;
 
@@ -39,6 +35,10 @@ public class OsbSprite : StoryboardObject
         initializeDisplayValueBuilders();
         InitialPosition = DefaultPosition;
     }
+
+    /// <summary> If the sprite has more commands than this amount, they will be split between multiple sprites. </summary>
+    /// <remarks> Does not apply when the sprite has triggers. </remarks>
+    public int CommandSplitThreshold { get; set; }
 
     ///<returns> True if the sprite is in a command group, else returns false. </returns>
     public bool InGroup => currentCommandGroup is not null;

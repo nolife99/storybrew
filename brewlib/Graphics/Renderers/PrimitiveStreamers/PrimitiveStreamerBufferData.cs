@@ -9,7 +9,8 @@ using Util;
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : allows ref struct
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
+    where TPrimitive : struct, allows ref struct
 {
     nint primitives;
 

@@ -6,7 +6,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IO;
-using OpenTK.Graphics.OpenGL4;
+using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;

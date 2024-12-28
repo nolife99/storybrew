@@ -4,7 +4,7 @@ using System;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
 
-public interface PrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : allows ref struct
+public interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive : struct, allows ref struct
 {
     ref TPrimitive PrimitiveAt(int index);
 

@@ -7,7 +7,7 @@ using BrewLib.Memory;
 using BrewLib.Util;
 using StorybrewCommon.Storyboarding;
 
-public class EditorOsbSample : OsbSample, EventObject
+public class EditorOsbSample : OsbSample, IEvent
 {
     public float EventTime => Time * .001f;
 

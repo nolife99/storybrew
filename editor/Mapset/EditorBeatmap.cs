@@ -6,19 +6,22 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
 
 public class EditorBeatmap(string path) : Beatmap
 {
-    static readonly Rgba32[] defaultComboColors = [new(255, 192, 0), new(0, 202, 0), new(18, 124, 255), new(242, 24, 57)];
+    static readonly Color[] defaultComboColors =
+    [
+        Color.FromRgb(255, 192, 0), Color.FromRgb(0, 202, 0), Color.FromRgb(18, 124, 255), Color.FromRgb(242, 24, 57)
+    ];
 
     readonly HashSet<int> bookmarks = [];
 
     readonly List<OsuBreak> breaks = [];
-    readonly List<Rgba32> comboColors = [..defaultComboColors];
+    readonly List<Color> comboColors = [..defaultComboColors];
     readonly List<OsuHitObject> hitObjects = [];
     public readonly string Path = path;
 
@@ -66,7 +69,7 @@ public class EditorBeatmap(string path) : Beatmap
         }
     }
 
-    public override IEnumerable<Rgba32> ComboColors => comboColors;
+    public override IEnumerable<Color> ComboColors => comboColors;
     public override string BackgroundPath => backgroundPath;
     public override IEnumerable<OsuBreak> Breaks => breaks;
 
@@ -196,7 +199,7 @@ public class EditorBeatmap(string path) : Beatmap
                             if (!key.StartsWith("Combo", StringComparison.Ordinal)) return;
 
                             var rgb = value.Split(',');
-                            beatmap.comboColors.Add(new(byte.Parse(rgb[0], CultureInfo.InvariantCulture),
+                            beatmap.comboColors.Add(Color.FromRgb(byte.Parse(rgb[0], CultureInfo.InvariantCulture),
                                 byte.Parse(rgb[1], CultureInfo.InvariantCulture),
                                 byte.Parse(rgb[2], CultureInfo.InvariantCulture)));
                         });

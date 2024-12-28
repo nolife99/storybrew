@@ -59,8 +59,8 @@ public sealed class Editor(NativeWindow window) : IDisposable
         drawContext = new();
         drawContext.Register(this);
         drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, null, 1024, 1024), true);
-        drawContext.Register<QuadRenderer>(new QuadRendererBuffered(), true);
-        drawContext.Register<LineRenderer>(new LineRendererBuffered(), true);
+        drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
+        drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
         drawContext.Freeze();
 
         try

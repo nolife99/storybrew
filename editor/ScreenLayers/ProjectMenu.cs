@@ -504,7 +504,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     {
         base.FixedUpdate();
         if (!pendingSeek.HasValue) return;
-        timeSource.Seek(pendingSeek.Value);
+        timeSource.Seek(Nullable.GetValueRefOrDefaultRef(ref pendingSeek));
         pendingSeek = null;
     }
 

@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.UserInterface.Skinning.Styles;
 
-using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
 using Util;
 
 public record LabelStyle : WidgetStyle
 {
-    public Rgba32 Color;
+    public Color Color;
     public string FontName;
     public float FontSize;
     public BoxAlignment TextAlignment;

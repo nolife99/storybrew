@@ -20,7 +20,7 @@ public class HsbColorPicker : Widget, Field
     readonly LinearLayout layout;
     readonly Sprite previewSprite;
 
-    Rgba64 value;
+    Color value;
 
     public HsbColorPicker(WidgetManager manager) : base(manager)
     {
@@ -66,10 +66,10 @@ public class HsbColorPicker : Widget, Field
 
     public Rgba32 Value
     {
-        get => new(value.ToVector4());
+        get => value.ToPixel<Rgba32>();
         set
         {
-            Rgba64 upscaledValue = new(value.ToVector4());
+            var upscaledValue = (Color)value;
             if (this.value == upscaledValue) return;
             this.value = upscaledValue;
 
@@ -149,7 +149,7 @@ public class HsbColorPicker : Widget, Field
         alphaSlider.SetValueSilent(hsba.W);
         alphaSlider.Tooltip = $"{hsba.W:.%}";
 
-        Rgba32 bit32 = new(value.ToVector4());
+        var bit32 = value.ToPixel<Rgba32>();
         previewSprite.Color = bit32;
         htmlTextbox.SetValueSilent($"#{bit32.R:X2}{bit32.G:X2}{bit32.B:X2}");
     }

@@ -10,12 +10,11 @@ using BrewLib.Graphics.Textures;
 using BrewLib.Memory;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
 
-public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
+public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
 {
     static readonly RenderStates AlphaBlendStates = new(), AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
@@ -136,16 +135,18 @@ public class EditorOsbSprite : OsbSprite, DisplayableObject, HasPostProcess
         }
 
         var boundsScaling = bounds.Height / 480;
-        DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
+        scale *= boundsScaling;
+
+        DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
             .Draw(texture,
                 bounds.X + bounds.Width * .5f + (position.X - 320) * boundsScaling,
                 bounds.Y + position.Y * boundsScaling,
                 origin.X,
                 origin.Y,
-                scale.X * boundsScaling,
-                scale.Y * boundsScaling,
+                scale.X,
+                scale.Y,
                 rotation,
-                ((Rgba32)sprite.ColorAt(time)).LerpColor(SixLabors.ImageSharp.Color.Black.ToPixel<Rgba32>(), project.DimFactor)
+                ((Color)sprite.ColorAt(time)).LerpColor(in SixLabors.ImageSharp.Color.Black, project.DimFactor)
                 .WithOpacity(opacity * fade),
                 0,
                 0,

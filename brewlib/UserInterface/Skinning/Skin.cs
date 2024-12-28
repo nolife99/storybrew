@@ -12,7 +12,6 @@ using Graphics.Drawables;
 using Graphics.Textures;
 using IO;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Styles;
 using Tiny;
 using Tiny.Formats.Json;
@@ -306,25 +305,25 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
                 throw new InvalidDataException($"Incorrect vector2 format: {data}");
             },
-            [typeof(Rgba32)] = (data, constants, _) =>
+            [typeof(Color)] = (data, constants, _) =>
             {
                 if (data.Type is TinyTokenType.String)
                 {
                     var value = data.Value<string>();
-                    if (value.StartsWith('#')) return Rgba32.ParseHex(value);
+                    if (value.StartsWith('#')) return Color.ParseHex(value);
 
                     var colorField = typeof(Color).GetField(value);
-                    if (colorField?.FieldType == typeof(Color))
-                        return Unsafe.Unbox<Color>(colorField.GetValue(null)).ToPixel<Rgba32>();
+                    if (colorField?.FieldType == typeof(Color)) return Unsafe.Unbox<Color>(colorField.GetValue(null));
                 }
 
                 if (data is TinyArray tinyArray)
                     return tinyArray.Count switch
                     {
-                        3 => new Rgba32(resolve<float>(tinyArray[0], constants),
+                        3 => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
-                            resolve<float>(tinyArray[2], constants)),
-                        _ => new Rgba32(resolve<float>(tinyArray[0], constants),
+                            resolve<float>(tinyArray[2], constants),
+                            1),
+                        _ => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants))

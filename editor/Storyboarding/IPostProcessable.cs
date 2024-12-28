@@ -1,6 +1,6 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
-public interface HasPostProcess
+public interface IPostProcessable
 {
     void PostProcess();
 }

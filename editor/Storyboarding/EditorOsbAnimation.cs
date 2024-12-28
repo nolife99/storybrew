@@ -5,7 +5,7 @@ using BrewLib.Graphics.Cameras;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 
-public class EditorOsbAnimation : OsbAnimation, DisplayableObject, HasPostProcess
+public class EditorOsbAnimation : OsbAnimation, IDisplayable, IPostProcessable
 {
     public void Draw(DrawContext drawContext,
         Camera camera,

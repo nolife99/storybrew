@@ -6,7 +6,6 @@ using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Drawables;
 using BrewLib.Graphics.Renderers;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 
 public sealed class StoryboardDrawable(Project project) : Drawable
@@ -30,8 +29,8 @@ public sealed class StoryboardDrawable(Project project) : Drawable
         else
         {
             project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
-            DrawState.Prepare(drawContext.Get<LineRenderer>(), camera, linesRenderStates)
-                .DrawSquare(new(bounds.Location, 0), new Vector3(bounds.Right, bounds.Bottom, 0), Color.Black.ToPixel<Rgba32>());
+            DrawState.Prepare(drawContext.Get<ILineRenderer>(), camera, linesRenderStates)
+                .DrawSquare(new(bounds.Location, 0), new Vector3(bounds.Right, bounds.Bottom, 0), Color.Black);
         }
     }
 

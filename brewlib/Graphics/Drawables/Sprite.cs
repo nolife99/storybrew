@@ -4,14 +4,13 @@ using System.Numerics;
 using Cameras;
 using Renderers;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 using Util;
 
 public sealed class Sprite : Drawable
 {
     readonly RenderStates RenderStates = new();
-    public Rgba32 Color;
+    public Color Color;
     public float Rotation;
     public ScaleMode ScaleMode = ScaleMode.None;
     public Texture2dRegion Texture;
@@ -23,7 +22,7 @@ public sealed class Sprite : Drawable
     {
         if (Texture is null) return;
 
-        var renderer = DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, RenderStates);
+        var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, RenderStates);
         var color = Color.WithOpacity(opacity);
 
         var textureX0 = 0f;

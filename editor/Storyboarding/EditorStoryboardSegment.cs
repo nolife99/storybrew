@@ -15,10 +15,10 @@ using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 
 public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer, string identifier = null)
-    : StoryboardSegment, DisplayableObject, HasPostProcess
+    : StoryboardSegment, IDisplayable, IPostProcessable
 {
-    readonly List<DisplayableObject> displayableObjects = [];
-    readonly List<EventObject> eventObjects = [];
+    readonly List<IDisplayable> displayableObjects = [];
+    readonly List<IEvent> eventObjects = [];
     readonly Dictionary<string, EditorStoryboardSegment> namedSegments = [];
     readonly List<EditorStoryboardSegment> segments = [];
     readonly List<StoryboardObject> storyboardObjects = [];
@@ -60,7 +60,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             displayableObjects.Reverse();
         }
 
-        foreach (var storyboardObject in storyboardObjects) (storyboardObject as HasPostProcess)?.PostProcess();
+        foreach (var storyboardObject in storyboardObjects) (storyboardObject as IPostProcessable)?.PostProcess();
 
         startTime = float.MaxValue;
         endTime = float.MinValue;
@@ -175,8 +175,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         storyboardObjects.Remove(storyboardObject);
         switch (storyboardObject)
         {
-            case DisplayableObject displayableObject: displayableObjects.Remove(displayableObject); break;
-            case EventObject eventObject: eventObjects.Remove(eventObject); break;
+            case IDisplayable displayableObject: displayableObjects.Remove(displayableObject); break;
+            case IEvent eventObject: eventObjects.Remove(eventObject); break;
         }
 
         if (storyboardObject is not EditorStoryboardSegment segment) return;

@@ -15,11 +15,11 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
     readonly InputDispatcher inputDispatcher = new(), innerInputDispatcher = new();
 
-    public State CurrentState = State.Hidden;
-
     bool hasStarted;
 
     protected float TransitionInDuration = .25f, TransitionOutDuration = .25f, TransitionProgress;
+
+    public State CurrentState { get; private set; } = State.Hidden;
     public ScreenLayerManager Manager { get; set; }
     public bool HasFocus { get; private set; }
 
@@ -140,7 +140,11 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
         if (disposing && HasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
         IsDisposed = true;
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

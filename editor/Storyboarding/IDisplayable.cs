@@ -5,7 +5,7 @@ using BrewLib.Graphics.Cameras;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 
-public interface DisplayableObject
+public interface IDisplayable
 {
     float StartTime { get; }
     float EndTime { get; }

@@ -7,7 +7,8 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
 
-public abstract class PrimitiveStreamerVao<TPrimitive> : PrimitiveStreamer<TPrimitive> where TPrimitive : allows ref struct
+public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
+    where TPrimitive : struct, allows ref struct
 {
     bool Bound;
     protected Shader CurrentShader;

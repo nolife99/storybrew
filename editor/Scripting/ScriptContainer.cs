@@ -72,12 +72,12 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
     public bool HasScript => scriptType is not null || currentVersion != targetVersion;
 
+    public void Dispose() => appDomain?.Unload();
+
     public event EventHandler OnScriptChanged;
 
     public TScript CreateScript()
     {
-        ObjectDisposedException.ThrowIf(disposed, this);
-
         var localTargetVersion = targetVersion;
         if (currentVersion < localTargetVersion)
         {
@@ -130,16 +130,4 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
         if (targetVersion > initialTargetVersion) OnScriptChanged?.Invoke(this, EventArgs.Empty);
     }
-
-    #region IDisposable Support
-
-    bool disposed;
-    public void Dispose()
-    {
-        if (disposed) return;
-        appDomain?.Unload();
-        disposed = true;
-    }
-
-    #endregion
 }

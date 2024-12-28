@@ -10,7 +10,7 @@ using Shaders;
 using Shaders.Snippets;
 using SixLabors.ImageSharp.PixelFormats;
 
-public class LineRendererBuffered : LineRenderer
+public class LineRendererBuffered : ILineRenderer
 {
     const int VertexPerLine = 2;
     const string CombinedMatrixUniformName = "u_combinedMatrix";
@@ -21,7 +21,7 @@ public class LineRendererBuffered : LineRenderer
     readonly int maxLinesPerBatch;
     readonly bool ownsShader;
 
-    readonly PrimitiveStreamer<LinePrimitive> primitiveStreamer;
+    readonly IPrimitiveStreamer<LinePrimitive> primitiveStreamer;
     readonly Shader shader;
 
     Camera camera;
@@ -46,7 +46,7 @@ public class LineRendererBuffered : LineRenderer
             VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
 
-        Trace.WriteLine($"Initialized {nameof(LineRenderer)} using {primitiveStreamer.GetType().Name}");
+        Trace.WriteLine($"Initialized {nameof(LineRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
 
     public Matrix4x4 TransformMatrix

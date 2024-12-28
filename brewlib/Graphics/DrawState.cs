@@ -292,7 +292,7 @@ public static class DrawState
             SetCapability(EnableCap.ScissorTest, clipRegion.HasValue);
             if (!clipRegion.HasValue) return;
 
-            var actualClipRegion = Rectangle.Intersect(clipRegion.Value, viewport);
+            var actualClipRegion = Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion), viewport);
             GL.Scissor(actualClipRegion.X, actualClipRegion.Y, actualClipRegion.Width, actualClipRegion.Height);
         }
     }
@@ -301,7 +301,8 @@ public static class DrawState
     {
         var previousClipRegion = clipRegion;
         ClipRegion = clipRegion.HasValue && newRegion.HasValue ?
-            Rectangle.Intersect(clipRegion.Value, newRegion.Value) :
+            Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion),
+                Nullable.GetValueRefOrDefaultRef(ref newRegion)) :
             newRegion;
 
         return previousClipRegion;
@@ -318,7 +319,7 @@ public static class DrawState
     {
         if (!clipRegion.HasValue) return null;
 
-        var bounds = camera.FromScreen(clipRegion.Value);
+        var bounds = camera.FromScreen(Nullable.GetValueRefOrDefaultRef(ref clipRegion));
         return RectangleF.FromLTRB(bounds.X,
             camera.ExtendedViewport.Height - bounds.Bottom,
             bounds.Right,

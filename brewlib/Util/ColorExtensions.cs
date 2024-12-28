@@ -1,18 +1,27 @@
 ﻿namespace BrewLib.Util;
 
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 public static class ColorExtensions
 {
-    public static Rgba32 LerpColor(this Rgba32 color, Rgba32 otherColor, float blend)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Color LerpColor(this Color color, ref readonly Color otherColor, float blend)
     {
-        var rgba = color.ToVector4();
-        return new(Vector4.Lerp(rgba, otherColor.ToVector4(), blend) with { Z = rgba.Z });
+        var rgba = (Vector4)color;
+        return new Rgba64(Vector4.Lerp(rgba, (Vector4)otherColor, blend) with { Z = rgba.Z });
     }
-    public static Rgba32 WithOpacity(this Rgba32 color, float opacity) => color with { A = (byte)(color.A * opacity) };
 
-    public static Rgba64 FromHsb(Vector4 hsba)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Color WithOpacity(this Color color, float opacity)
+    {
+        var rgba = (Vector4)color;
+        return new Rgba64(rgba with { W = rgba.W * opacity });
+    }
+
+    public static Color FromHsb(Vector4 hsba)
     {
         float hue = hsba.X * 360, saturation = hsba.Y, brightness = hsba.Z;
         var c = brightness * saturation;
@@ -61,12 +70,12 @@ public static class ColorExtensions
         }
 
         var m = brightness - c;
-        return new(new Vector4(r + m, g + m, b + m, hsba.W));
+        return new Rgba64(new Vector4(r + m, g + m, b + m, hsba.W));
     }
 
-    public static Vector4 ToHsb(Rgba64 rgb)
+    public static Vector4 ToHsb(Color rgb)
     {
-        var vec = rgb.ToVector4();
+        var vec = (Vector4)rgb;
 
         var max = float.Max(vec.X, float.Max(vec.Y, vec.Z));
         var min = float.Min(vec.X, float.Min(vec.Y, vec.Z));

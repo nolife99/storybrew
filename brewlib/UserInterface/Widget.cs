@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Graphics;
@@ -144,7 +143,7 @@ public class Widget(WidgetManager manager) : IDisposable
     protected virtual void DrawChildren(DrawContext drawContext, float actualOpacity)
     {
         if (children.Count == 0) return;
-        var clip = ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : default;
+        var clip = ClipChildren ? DrawState.Clip(Bounds, Manager.Camera) : null;
         foreach (var child in children)
             if (child.Displayed)
                 child.Draw(drawContext, actualOpacity);
@@ -372,7 +371,7 @@ public class Widget(WidgetManager manager) : IDisposable
     public virtual Vector2 MaxSize => Vector2.Zero;
     public virtual Vector2 PreferredSize => DefaultSize;
 
-    public Vector2 DefaultSize = Vector2.Zero;
+    public Vector2 DefaultSize { get; init; }
 
     bool canGrow = true;
 
@@ -442,14 +441,14 @@ public class Widget(WidgetManager manager) : IDisposable
     public event WidgetEventHandler<MouseButtonEventArgs> OnClickUp;
     public bool NotifyClickUp(WidgetEvent evt, MouseButtonEventArgs e)
     {
-        Raise(OnClickUp, evt, e);
+        OnClickUp?.Invoke(evt, e);
         return false;
     }
 
     public event WidgetEventHandler<MouseMoveEventArgs> OnClickMove;
     public bool NotifyClickMove(WidgetEvent evt, MouseMoveEventArgs e)
     {
-        Raise(OnClickMove, evt, e);
+        OnClickMove?.Invoke(evt, e);
         return false;
     }
 
@@ -471,28 +470,25 @@ public class Widget(WidgetManager manager) : IDisposable
         var related = evt.RelatedTarget;
         while (related is not null && related != this) related = related.Parent;
 
-        if (related != this) Raise(OnHovered, evt, e);
+        if (related != this) OnHovered?.Invoke(evt, e);
         return false;
     }
 
     public event WidgetEventHandler<WidgetFocusEventArgs> OnFocusChange;
     public bool NotifyFocusChange(WidgetEvent evt, WidgetFocusEventArgs e)
     {
-        Raise(OnFocusChange, evt, e);
+        OnFocusChange?.Invoke(evt, e);
         return false;
     }
 
     static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
     {
         if (handler is null) return evt.Handled;
-        var invocationList = handler.GetInvocationList();
 
-        foreach (var handlerDelegate in invocationList)
+        foreach (var handlerDelegate in Delegate.EnumerateInvocationList(handler))
             try
             {
-                if (!invocationList.Contains(handlerDelegate) ||
-                    !((HandleableWidgetEventHandler<T>)handlerDelegate)(evt, e)) continue;
-
+                if (!handlerDelegate(evt, e)) continue;
                 evt.Handled = true;
                 break;
             }
@@ -504,17 +500,14 @@ public class Widget(WidgetManager manager) : IDisposable
         return evt.Handled;
     }
 
-    static void Raise<T>(WidgetEventHandler<T> handler, WidgetEvent evt, T e)
-        => EventHelper.InvokeStrict(handler, d => ((WidgetEventHandler<T>)d)(evt, e));
-
     public event EventHandler OnDisposed;
 
     #endregion
 
     #region Drag and Drop
 
-    public Func<object> GetDragData;
-    public Func<object, bool> HandleDrop;
+    public Func<object> GetDragData { get; init; }
+    public Func<object, bool> HandleDrop { get; init; }
 
     #endregion
 

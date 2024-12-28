@@ -10,7 +10,8 @@ using Util;
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices) where TPrimitive : allows ref struct
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
+    where TPrimitive : struct, allows ref struct
 {
     nint bufferAddr, primitives;
     int bufferOffset, drawOffset, vertexBufferSize;

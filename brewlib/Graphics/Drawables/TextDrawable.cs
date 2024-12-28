@@ -5,7 +5,6 @@ using System.Numerics;
 using Cameras;
 using Renderers;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 using Text;
 using Util;
 
@@ -13,7 +12,7 @@ public sealed class TextDrawable : Drawable
 {
     readonly RenderStates RenderStates = new();
     BoxAlignment alignment = BoxAlignment.TopLeft;
-    public Rgba32 Color;
+    public Color Color;
     float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
 
     TextFont font;
@@ -110,7 +109,7 @@ public sealed class TextDrawable : Drawable
         var inverseScaling = 1 / scaling;
         var color = Color.WithOpacity(opacity);
 
-        var renderer = DrawState.Prepare(drawContext.Get<QuadRenderer>(), camera, RenderStates);
+        var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, RenderStates);
 
         var clipRegion = DrawState.GetClipRegion(camera) ??
             new(new(camera.ExtendedViewport.X + camera.Position.X, camera.ExtendedViewport.Y + camera.Position.Y),

@@ -10,7 +10,7 @@ using Shaders;
 using Shaders.Snippets;
 using Textures;
 
-public class QuadRendererBuffered : QuadRenderer
+public class QuadRendererBuffered : IQuadRenderer
 {
     const int VertexPerQuad = 6;
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
@@ -22,7 +22,7 @@ public class QuadRendererBuffered : QuadRenderer
     readonly int maxQuadsPerBatch, textureUniformLocation;
     readonly bool ownsShader;
 
-    readonly PrimitiveStreamer<QuadPrimitive> primitiveStreamer;
+    readonly IPrimitiveStreamer<QuadPrimitive> primitiveStreamer;
     readonly Shader shader;
 
     Camera camera;
@@ -66,7 +66,7 @@ public class QuadRendererBuffered : QuadRenderer
             VertexPerQuad,
             indices);
 
-        Trace.WriteLine($"Initialized {nameof(QuadRenderer)} using {primitiveStreamer.GetType().Name}");
+        Trace.WriteLine($"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
 
     public Matrix4x4 TransformMatrix

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 
-public interface QuadRenderer : Renderer, IDisposable
+public interface IQuadRenderer : Renderer, IDisposable
 {
     void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture);
 }

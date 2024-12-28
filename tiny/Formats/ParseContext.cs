@@ -3,14 +3,12 @@
 using System;
 using System.Collections.Generic;
 
-public class ParseContext<TokenType> : IDisposable
+public sealed class ParseContext<TTokenType> : IDisposable
 {
-    readonly Stack<Parser<TokenType>> parserStack = new();
-    readonly IEnumerator<Token<TokenType>> tokenEnumerator;
+    readonly Stack<Parser<TTokenType>> parserStack = new();
+    readonly IEnumerator<Token<TTokenType>> tokenEnumerator;
 
-    public Token<TokenType> CurrentToken, LookaheadToken;
-
-    public ParseContext(IEnumerable<Token<TokenType>> tokens, Parser<TokenType> initialParser)
+    public ParseContext(IEnumerable<Token<TTokenType>> tokens, Parser<TTokenType> initialParser)
     {
         tokenEnumerator = tokens.GetEnumerator();
         initializeCurrentAndLookahead();
@@ -18,7 +16,10 @@ public class ParseContext<TokenType> : IDisposable
         parserStack.Push(initialParser);
     }
 
-    public Parser<TokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
+    public Token<TTokenType> CurrentToken { get; private set; }
+    public Token<TTokenType> LookaheadToken { get; private set; }
+
+    public Parser<TTokenType> Parser => parserStack.Count > 0 ? parserStack.Peek() : null;
 
     public int IndentLevel { get; private set; }
 
@@ -34,9 +35,9 @@ public class ParseContext<TokenType> : IDisposable
     }
 
     public void PopParser() => parserStack.Pop();
-    public void PushParser(Parser<TokenType> parser) => parserStack.Push(parser);
+    public void PushParser(Parser<TTokenType> parser) => parserStack.Push(parser);
 
-    public void ReplaceParser(Parser<TokenType> parser)
+    public void ReplaceParser(Parser<TTokenType> parser)
     {
         parserStack.Pop();
         parserStack.Push(parser);

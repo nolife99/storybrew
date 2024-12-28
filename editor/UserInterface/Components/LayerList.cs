@@ -9,8 +9,8 @@ using StorybrewCommon.Storyboarding;
 
 public class LayerList : Widget
 {
+    readonly LayerManager layerManager;
     readonly LinearLayout layout, layersLayout;
-    LayerManager layerManager;
 
     public LayerList(WidgetManager manager, LayerManager layerManager) : base(manager)
     {
@@ -42,7 +42,6 @@ public class LayerList : Widget
     protected override void Dispose(bool disposing)
     {
         if (disposing) layerManager.OnLayersChanged -= layerManager_OnLayersChanged;
-        layerManager = null;
         base.Dispose(disposing);
     }
 
@@ -59,17 +58,18 @@ public class LayerList : Widget
         layersLayout.ClearWidgets();
         foreach (var osbLayer in Project.OsbLayers)
         {
-            Label osbLayerLabel;
-            layersLayout.Add(osbLayerLabel = new(Manager) { StyleName = "listHeader", Text = osbLayer.ToString() });
-
-            var ol = osbLayer;
-            osbLayerLabel.HandleDrop = data =>
+            layersLayout.Add(new Label(Manager)
             {
-                if (data is not EditorStoryboardLayer droppedLayer) return false;
-                var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
-                if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, ol);
-                return true;
-            };
+                StyleName = "listHeader",
+                Text = osbLayer.ToString(),
+                HandleDrop = data =>
+                {
+                    if (data is not EditorStoryboardLayer droppedLayer) return false;
+                    var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
+                    if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, osbLayer);
+                    return true;
+                }
+            });
 
             buildLayers(osbLayer, true);
             buildLayers(osbLayer, false);
@@ -151,19 +151,18 @@ public class LayerList : Widget
                         Checked = layer.Visible,
                         CanGrow = false
                     }
-                ]
+                ],
+                GetDragData = () => layer,
+                HandleDrop = data =>
+                {
+                    if (data is not EditorStoryboardLayer droppedLayer) return false;
+                    if (droppedLayer.Identifier == layer.Identifier) return true;
+                    var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
+                    if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, layer);
+
+                    return true;
+                }
             });
-
-            layerRoot.GetDragData = () => layer;
-            layerRoot.HandleDrop = data =>
-            {
-                if (data is not EditorStoryboardLayer droppedLayer) return false;
-                if (droppedLayer.Identifier == layer.Identifier) return true;
-                var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
-                if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, layer);
-
-                return true;
-            };
 
             Action<object, ChangedEventArgs> changedHandler;
             EventHandler effectChangedHandler;

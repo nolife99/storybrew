@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding.CommandValues;
 using Color4 = OpenTK.Mathematics.Color4;
@@ -196,6 +197,27 @@ public abstract class ObjectSerializer
             v =>
             {
                 var color = Unsafe.Unbox<Rgba32>(v);
+                return color.R.ToString(CultureInfo.InvariantCulture) +
+                    "," +
+                    color.G.ToString(CultureInfo.InvariantCulture) +
+                    "," +
+                    color.B.ToString(CultureInfo.InvariantCulture) +
+                    "," +
+                    color.A.ToString(CultureInfo.InvariantCulture);
+            }),
+        new SimpleObjectSerializer<Color>(r => (Color)new Rgba32(r.ReadUInt32()),
+            (w, v) => w.Write(((Rgba32)v).PackedValue),
+            v =>
+            {
+                var split = v.Split(',');
+                return Color.FromRgba(byte.Parse(split[0], CultureInfo.InvariantCulture),
+                    byte.Parse(split[1], CultureInfo.InvariantCulture),
+                    byte.Parse(split[2], CultureInfo.InvariantCulture),
+                    byte.Parse(split[3], CultureInfo.InvariantCulture));
+            },
+            v =>
+            {
+                var color = Unsafe.Unbox<Color>(v).ToPixel<Rgba32>();
                 return color.R.ToString(CultureInfo.InvariantCulture) +
                     "," +
                     color.G.ToString(CultureInfo.InvariantCulture) +

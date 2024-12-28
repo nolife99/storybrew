@@ -9,10 +9,10 @@ using BrewLib.Util;
 public class ContextMenu<T> : UiScreenLayer
 {
     readonly Action<T> callback;
-    readonly List<Option> options = [];
+    readonly Option[] options;
     readonly string title;
-    Button cancelButton;
 
+    Button cancelButton;
     LinearLayout mainLayout, optionsLayout;
     Textbox searchTextbox;
 
@@ -20,13 +20,19 @@ public class ContextMenu<T> : UiScreenLayer
     {
         this.title = title;
         this.callback = callback;
-        this.options.AddRange(options.Select(option => new Option(option.ToString(), option)));
+
+        this.options = new Option[options.Length];
+        for (var i = 0; i < options.Length; ++i)
+        {
+            var option = options[i];
+            this.options[i] = new(option.ToString(), option);
+        }
     }
     public ContextMenu(string title, Action<T> callback, IEnumerable<T> options)
     {
         this.title = title;
         this.callback = callback;
-        this.options.AddRange(options.Select(option => new Option(option.ToString(), option)));
+        this.options = options.Select(option => new Option(option.ToString(), option)).ToArray();
     }
 
     public override bool IsPopup => true;
@@ -104,9 +110,9 @@ public class ContextMenu<T> : UiScreenLayer
         mainLayout.Pack(400, 0, 0, 600);
     }
 
-    public sealed class Option(string name, T value)
+    readonly struct Option(string name, T value)
     {
-        public string Name => name;
-        public T Value => value;
+        public readonly string Name = name;
+        public readonly T Value = value;
     }
 }

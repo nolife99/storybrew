@@ -1,12 +1,14 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 
 public static class QuadRendererExtensions
 {
-    public static void Draw(this QuadRenderer renderer,
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Draw(this IQuadRenderer renderer,
         Texture2dRegion texture,
         float x,
         float y,

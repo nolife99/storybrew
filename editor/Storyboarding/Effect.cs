@@ -7,16 +7,10 @@ using StorybrewCommon.Storyboarding;
 
 public abstract class Effect : IDisposable
 {
-    public EffectConfig Config = new();
-
-    public long EstimatedSize;
-
-    public bool Highlight;
     List<EditorStoryboardLayer> layers;
 
     string name = "Unnamed Effect";
     EditorStoryboardLayer placeHolderLayer;
-    public Project Project;
 
     public Effect(Project project)
     {
@@ -26,6 +20,12 @@ public abstract class Effect : IDisposable
         refreshLayerNames();
         Project.LayerManager.Add(placeHolderLayer);
     }
+    public EffectConfig Config { get; } = new();
+
+    public long EstimatedSize { get; private set; }
+
+    public bool Highlight { get; set; }
+    public Project Project { get; }
 
     public string Name
     {
@@ -128,7 +128,11 @@ public abstract class Effect : IDisposable
         foreach (var l in layers) Project.LayerManager.Remove(l);
         Disposed = true;
     }
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     #endregion
 }

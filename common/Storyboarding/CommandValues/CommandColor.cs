@@ -7,6 +7,7 @@ using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Vector3 = System.Numerics.Vector3;
+using Vector4 = System.Numerics.Vector4;
 
 ///<summary> Base struct for coloring commands. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly record struct CommandColor : CommandValue
@@ -92,16 +93,22 @@ using Vector3 = System.Numerics.Vector3;
 
     /// <summary> Creates a <see cref="CommandColor"/> from a hex-code color. </summary>
     public static CommandColor FromHtml(string htmlColor)
-        => Rgba32.ParseHex(htmlColor.StartsWith('#') ? htmlColor : "#" + htmlColor);
+        => Color.ParseHex(htmlColor.StartsWith('#') ? htmlColor : '#' + htmlColor);
 
-    static byte toByte(float x) => byte.CreateTruncating(x * 255);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static byte toByte(float x) => byte.CreateSaturating(x * 255);
 
 #pragma warning disable CS1591
     public static implicit operator Color4(CommandColor obj) => new(obj.internalVec.X, obj.internalVec.Y, obj.internalVec.Z, 1);
-    public static implicit operator CommandColor(Color4 obj) => new Vector3(obj.R, obj.G, obj.B);
-    public static implicit operator Rgba32(CommandColor obj) => new(obj.R, obj.G, obj.B);
-    public static implicit operator CommandColor(Rgba32 obj) => new Vector3(obj.R / 255f, obj.G / 255f, obj.B / 255f);
-    public static implicit operator Color(CommandColor obj) => Color.FromPixel(new Rgb24(obj.R, obj.G, obj.B));
+    public static implicit operator CommandColor(Color4 obj) => Unsafe.As<Color4, CommandColor>(ref obj);
+    public static implicit operator Rgba32(CommandColor obj) => new(obj.internalVec);
+    public static implicit operator CommandColor(Rgba32 obj) => new Vector3(obj.R, obj.G, obj.B) / 255;
+    public static implicit operator Color(CommandColor obj) => new Rgba64(new Vector4(obj.internalVec, 1));
+    public static implicit operator CommandColor(Color obj)
+    {
+        var rgba = (Vector4)obj;
+        return Unsafe.As<Vector4, CommandColor>(ref rgba);
+    }
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
     public static implicit operator Vector3(CommandColor obj) => Unsafe.As<CommandColor, Vector3>(ref obj);
     public static implicit operator CommandColor(Vector3 obj) => Unsafe.As<Vector3, CommandColor>(ref obj);

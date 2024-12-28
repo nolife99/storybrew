@@ -5,9 +5,9 @@ using Shaders;
 
 public static class PrimitiveStreamerUtil
 {
-    public static PrimitiveStreamer<TPrimitive> DefaultCreatePrimitiveStreamer<TPrimitive>(VertexDeclaration vertDec,
+    public static IPrimitiveStreamer<TPrimitive> DefaultCreatePrimitiveStreamer<TPrimitive>(VertexDeclaration vertDec,
         int minVert,
-        ReadOnlySpan<ushort> indices) where TPrimitive : allows ref struct
+        ReadOnlySpan<ushort> indices) where TPrimitive : struct, allows ref struct
     {
         if (PrimitiveStreamerBufferData<TPrimitive>.HasCapabilities())
             return new PrimitiveStreamerBufferData<TPrimitive>(vertDec, minVert, indices);
