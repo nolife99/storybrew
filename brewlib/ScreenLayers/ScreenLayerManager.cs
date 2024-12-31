@@ -29,7 +29,7 @@ public sealed class ScreenLayerManager : IDisposable
     }
 
     public FrameTimeSource TimeSource { get; }
-    public InputHandler InputHandler => inputDispatcher;
+    public IInputHandler InputHandler => inputDispatcher;
     public T GetContext<T>() where T : class => Unsafe.As<T>(context);
 
     public void Add(ScreenLayer layer)

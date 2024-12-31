@@ -14,7 +14,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
 
 public sealed class Texture2d(int textureId, int width, int height, string description)
-    : Texture2dRegion(null, new(0, 0, width, height)), BindableTexture
+    : Texture2dRegion(null, new(0, 0, width, height))
 {
     public static readonly DecoderOptions ContiguousBufferDecoderOptions = loadDecoderOptions();
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
@@ -108,14 +108,11 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
         var compress = DrawState.UseTextureCompression;
 
+        var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
+            compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
+
         GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
-        GL.TextureStorage2D(textureId,
-            1,
-            Unsafe.BitCast<PixelInternalFormat, SizedInternalFormat>(sRgb ?
-                compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
-                compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8),
-            width,
-            height);
+        GL.TextureStorage2D(textureId, 1, Unsafe.As<PixelInternalFormat, SizedInternalFormat>(ref format), width, height);
 
         GL.TextureSubImage2D(textureId,
             0,

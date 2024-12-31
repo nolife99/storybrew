@@ -14,7 +14,7 @@ using ScreenLayers;
 using Skinning;
 using Util;
 
-public sealed class WidgetManager : InputHandler, IDisposable
+public sealed class WidgetManager : IInputHandler, IDisposable
 {
     readonly Dictionary<MouseButton, Widget> clickTargets = [];
 

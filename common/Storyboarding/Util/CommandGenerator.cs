@@ -2,6 +2,7 @@ namespace StorybrewCommon.Storyboarding.Util;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,10 +11,13 @@ using BrewLib.Memory;
 using Commands;
 using CommandValues;
 using Scripting;
+using SixLabors.ImageSharp;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
 {
+    static readonly Dictionary<int, Vector2> dimensions = [];
+
     readonly KeyframedValue<CommandColor> colors = new(InterpolatingFunctions.CommandColor),
         finalColors = new(InterpolatingFunctions.CommandColor);
 
@@ -304,9 +308,17 @@ public class CommandGenerator
 
     internal static Vector2 BitmapDimensions(string path)
     {
-        var image = StoryboardObjectGenerator.Current.GetMapsetBitmap(path, StoryboardObjectGenerator.Current.fonts.Count == 0);
+        ref var dimension = ref CollectionsMarshal.GetValueRefOrAddDefault(dimensions,
+            Path.GetFullPath(Path.Combine(StoryboardObjectGenerator.Current.MapsetPath, path))
+                .GetHashCode(StringComparison.OrdinalIgnoreCase),
+            out var exists);
 
-        return new(image.Width, image.Height);
+        if (exists) return dimension;
+
+        using var stream = StoryboardObjectGenerator.Current.OpenMapsetFile(path, false);
+        var info = Image.Identify(stream);
+
+        return dimension = new(info.Width, info.Height);
     }
 }
 

@@ -26,7 +26,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     public virtual bool IsPopup => false;
 
     public bool IsExiting { get; private set; }
-    public InputHandler InputHandler => inputDispatcher;
+    public IInputHandler InputHandler => inputDispatcher;
 
     public virtual void Load()
     {
@@ -37,7 +37,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     public void GainFocus() => HasFocus = true;
     public void LoseFocus() => HasFocus = false;
 
-    protected void AddInputHandler(InputHandler handler) => innerInputDispatcher.Add(handler);
+    protected void AddInputHandler(IInputHandler handler) => innerInputDispatcher.Add(handler);
 
     public virtual void Resize(int width, int height) { }
     public virtual void Update(bool isTopFocus, bool isCovered)

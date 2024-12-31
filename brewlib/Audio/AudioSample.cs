@@ -1,9 +1,11 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using IO;
 using ManagedBass;
-using Memory;
+using Configuration = SixLabors.ImageSharp.Configuration;
 
 public class AudioSample : IDisposable
 {
@@ -22,11 +24,15 @@ public class AudioSample : IDisposable
         using var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded);
         if (stream is null) throw new BassException(Bass.LastError);
 
-        var len = (int)stream.Length;
-        using SafeUnmanagedBuffer<byte> bytes = new(len);
-
-        var read = stream.Read(bytes.GetSpan());
-        sample = Bass.SampleLoad(bytes.Address, 0, read, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
+        using (var bytes = Configuration.Default.MemoryAllocator.Allocate<byte>((int)stream.Length))
+        {
+            var span = bytes.Memory.Span;
+            sample = Bass.SampleLoad(Unsafe.ByteOffset(ref Unsafe.NullRef<byte>(), ref MemoryMarshal.GetReference(span)),
+                0,
+                stream.Read(span),
+                MaxSimultaneousPlayBacks,
+                BassFlags.SampleOverrideLongestPlaying);
+        }
 
         if (sample != 0) return;
 

@@ -2,18 +2,19 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public sealed class InputManager : IDisposable
 {
-    readonly InputHandler handler;
+    readonly IInputHandler handler;
     internal readonly NativeWindow window;
 
     bool hasMouseHover;
 
-    public InputManager(NativeWindow window, InputHandler handler)
+    public InputManager(NativeWindow window, IInputHandler handler)
     {
         this.window = window;
         this.handler = handler;
@@ -79,7 +80,8 @@ public sealed class InputManager : IDisposable
     void window_MouseUp(MouseButtonEventArgs e) => handler.OnClickUp(e);
     void window_MouseMove(MouseMoveEventArgs e)
     {
-        MousePosition = new(e.X, e.Y);
+        var pos = e.Position;
+        MousePosition = Unsafe.ReadUnaligned<Vector2>(ref Unsafe.As<float, byte>(ref pos.X));
         handler.OnMouseMove(e);
     }
 

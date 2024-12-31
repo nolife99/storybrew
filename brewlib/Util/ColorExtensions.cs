@@ -21,7 +21,7 @@ public static class ColorExtensions
         return new Rgba64(rgba with { W = rgba.W * opacity });
     }
 
-    public static Color FromHsb(Vector4 hsba)
+    public static Vector4 FromHsb(Vector4 hsba)
     {
         float hue = hsba.X * 360, saturation = hsba.Y, brightness = hsba.Z;
         var c = brightness * saturation;
@@ -70,13 +70,11 @@ public static class ColorExtensions
         }
 
         var m = brightness - c;
-        return new Rgba64(new Vector4(r + m, g + m, b + m, hsba.W));
+        return new Vector4(r + m, g + m, b + m, hsba.W);
     }
 
-    public static Vector4 ToHsb(Color rgb)
+    public static Vector4 ToHsb(Vector4 vec)
     {
-        var vec = (Vector4)rgb;
-
         var max = float.Max(vec.X, float.Max(vec.Y, vec.Z));
         var min = float.Min(vec.X, float.Min(vec.Y, vec.Z));
         var delta = max - min;

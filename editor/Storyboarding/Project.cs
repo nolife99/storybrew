@@ -592,7 +592,7 @@ public sealed partial class Project : IDisposable
                 var fieldValue = ObjectSerializer.Read(r);
 
                 var allowedValueCount = r.ReadInt32();
-                var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : Array.Empty<NamedValue>();
+                var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : [];
                 for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
                     allowedValues[allowedValueIndex] = new(r.ReadString(), ObjectSerializer.Read(r));
 

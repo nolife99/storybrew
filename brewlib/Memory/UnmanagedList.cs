@@ -23,7 +23,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
 
     public bool IsFixedSize => false;
 
-    public object SyncRoot => buf;
+    public object SyncRoot => this;
 
     object IList.this[int index]
     {

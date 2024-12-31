@@ -1,11 +1,11 @@
 ﻿namespace StorybrewEditor.Util;
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,7 +20,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         this.allowDuplicates = allowDuplicates;
 
         if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
-        context = new(runnerCount);
+        context = new();
 
         actionRunners = new ActionRunner[runnerCount];
         for (var i = 0; i < runnerCount; ++i) actionRunners[i] = new(context);
@@ -28,15 +28,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
 
-    public int TaskCount
-    {
-        get
-        {
-            lock (context.Queue)
-            lock (context.Running)
-                return context.Queue.Count + context.Running.Count;
-        }
-    }
+    public int TaskCount => context.Queue.Count + context.Running.Count;
 
     public event Action<T, Exception> OnActionFailed
     {
@@ -49,31 +41,30 @@ public sealed class AsyncActionQueue<T> : IDisposable
         ObjectDisposedException.ThrowIf(disposed, this);
 
         foreach (var runner in actionRunners) runner?.EnsureThreadAlive();
-        lock (context.Queue)
-        {
-            if (!allowDuplicates && context.Queue.Exists(q => q.UniqueKey == uniqueKey)) return;
-            context.Queue.Add(new(target, uniqueKey, action, mustRunAlone));
-            Monitor.PulseAll(context.Queue);
-        }
+
+        if (!allowDuplicates && context.Queue.Any(q => q.UniqueKey == uniqueKey)) return;
+        context.Queue.Enqueue(new(target, uniqueKey, action, mustRunAlone));
+        context.Signal();
     }
 
     public Task CancelQueuedActions(bool stopThreads)
     {
-        lock (context.Queue) context.Queue.Clear();
+        context.Queue.Clear();
         return stopThreads ?
             Task.WhenAll(actionRunners.Where(runner => runner is not null).Select(runner => runner.DisposeAsync().AsTask())) :
             Task.CompletedTask;
     }
 
-    sealed record ActionContainer(T Target, int UniqueKey, Action Action, bool MustRunAlone);
+    readonly record struct ActionContainer(T Target, int UniqueKey, Action Action, bool MustRunAlone);
 
-    sealed class ActionQueueContext(int runnerCount)
+    sealed class ActionQueueContext
     {
-        public readonly List<ActionContainer> Queue = new(runnerCount);
-        public readonly HashSet<int> Running = new(runnerCount);
-
+        public readonly ConcurrentQueue<ActionContainer> Queue = [];
+        public readonly ConcurrentDictionary<int, object> Running = [];
         bool enabled;
-        public bool RunningLoneTask;
+        public volatile bool RunningLoneTask;
+
+        TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public bool Enabled
         {
@@ -83,10 +74,16 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 if (enabled == value) return;
                 enabled = value;
 
-                if (!enabled || Queue.Count == 0) return;
-                lock (Queue) Monitor.PulseAll(Queue);
+                if (!enabled || Queue.IsEmpty) return;
+                Signal();
             }
         }
+
+        public void Signal() => Interlocked
+            .Exchange(ref tcs, new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously))
+            .TrySetResult();
+
+        public Task WaitForSignal() => tcs.Task;
 
         public event Action<T, Exception> OnActionFailed;
         public void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
@@ -105,7 +102,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
             var localThread = thread;
             thread = null;
 
-            lock (context.Queue) Monitor.PulseAll(context.Queue);
+            context.Signal();
 
             if (await localThread.WaitAsync(TimeSpan.FromMilliseconds(400)).ContinueWith(t => t.IsFaulted))
             {
@@ -123,63 +120,56 @@ public sealed class AsyncActionQueue<T> : IDisposable
             tokenSrc?.Dispose();
             tokenSrc = new();
 
-            thread = Task.Run(() =>
+            thread = Task.Run(async () =>
             {
                 var mustSleep = false;
                 while (!tokenSrc.IsCancellationRequested)
                 {
                     if (mustSleep)
                     {
-                        Thread.Yield();
+                        await Task.Delay(200);
                         mustSleep = false;
                     }
 
-                    ActionContainer task = null;
-                    lock (context.Queue)
+                    while (!context.Enabled || context.Queue.IsEmpty)
                     {
-                        while (!context.Enabled || context.Queue.Count == 0)
+                        if (thread is null)
                         {
-                            if (thread is null)
-                            {
-                                Trace.WriteLine($"Exiting thread {threadId}");
-                                return;
-                            }
-
-                            Monitor.Wait(context.Queue);
+                            Trace.WriteLine($"Exiting thread {threadId}");
+                            return;
                         }
 
-                        lock (context.Running)
-                        {
-                            if (context.RunningLoneTask)
-                            {
-                                mustSleep = true;
-                                continue;
-                            }
-
-                            var index = -1;
-                            var queueSpan = CollectionsMarshal.AsSpan(context.Queue);
-
-                            for (var i = 0; i < queueSpan.Length; ++i)
-                            {
-                                task = queueSpan[i];
-                                if ((context.Running.Contains(task.UniqueKey) || task.MustRunAlone) &&
-                                    (!task.MustRunAlone || context.Running.Count != 0)) continue;
-
-                                index = i;
-                                break;
-                            }
-
-                            if (index == -1)
-                            {
-                                mustSleep = true;
-                                continue;
-                            }
-
-                            context.Queue.RemoveAt(index);
-                            context.Running.Add(task!.UniqueKey);
-                            if (task.MustRunAlone) context.RunningLoneTask = true;
-                        }
+                        await context.WaitForSignal();
                     }
+
+                    if (context.RunningLoneTask)
+                    {
+                        mustSleep = true;
+                        continue;
+                    }
+
+                    ActionContainer task = default;
+                    while (context.Queue.TryDequeue(out var t))
+                    {
+                        if ((context.Running.ContainsKey(t.UniqueKey) || t.MustRunAlone) &&
+                            (!t.MustRunAlone || !context.Running.IsEmpty))
+                        {
+                            context.Queue.Enqueue(t);
+                            continue;
+                        }
+
+                        task = t;
+                        break;
+                    }
+
+                    if (task.Action is null)
+                    {
+                        mustSleep = true;
+                        continue;
+                    }
+
+                    context.Running.TryAdd(task!.UniqueKey, null);
+                    if (task.MustRunAlone) context.RunningLoneTask = true;
 
                     try
                     {
@@ -192,11 +182,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
                     }
 
-                    lock (context.Running)
-                    {
-                        context.Running.Remove(task.UniqueKey);
-                        if (task.MustRunAlone) context.RunningLoneTask = false;
-                    }
+                    context.Running.Remove(task.UniqueKey, out _);
+                    if (task.MustRunAlone) context.RunningLoneTask = false;
                 }
             });
 

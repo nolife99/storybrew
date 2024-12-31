@@ -9,27 +9,22 @@ public static class BitmapHelper
     {
         var buffer = source.Frames.RootFrame.PixelBuffer;
         for (var y = 0; y < source.Height; ++y)
-        {
-            var span = buffer.DangerousGetRowSpan(y);
-            for (var i = 0; i < span.Length; ++i)
-            {
-                ref var pixel = ref span[i];
-                if (pixel.A != 0) return false;
-            }
-        }
+            foreach (ref var pixel in buffer.DangerousGetRowSpan(y))
+                if (pixel.A != 0)
+                    return false;
 
         return true;
     }
 
     public static Rectangle FindTransparencyBounds(Image<Rgba32> source)
     {
-        int xMin = source.Width, yMin = source.Height, xMax = -1, yMax = -1, width = source.Width, height = source.Height;
+        int xMin = source.Width, yMin = source.Height, xMax = -1, yMax = -1, height = source.Height;
 
         var buffer = source.Frames.RootFrame.PixelBuffer;
         for (var y = 0; y < height; ++y)
         {
             var srcData = buffer.DangerousGetRowSpan(y);
-            for (var x = 0; x < width; ++x)
+            for (var x = 0; x < srcData.Length; ++x)
                 if (srcData[x].A != 0)
                 {
                     if (x < xMin) xMin = x;

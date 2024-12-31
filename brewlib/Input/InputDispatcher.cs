@@ -3,9 +3,9 @@
 using System.Collections.Generic;
 using OpenTK.Windowing.Common;
 
-public sealed class InputDispatcher : InputHandler
+public sealed class InputDispatcher : IInputHandler
 {
-    readonly List<InputHandler> handlers = [];
+    readonly List<IInputHandler> handlers = [];
 
     public void OnFocusChanged(FocusedChangedEventArgs e)
     {
@@ -22,6 +22,6 @@ public sealed class InputDispatcher : InputHandler
     public bool OnKeyUp(KeyboardKeyEventArgs e) => handlers.Exists(h => h.OnKeyUp(e));
     public bool OnKeyPress(TextInputEventArgs e) => handlers.Exists(h => h.OnKeyPress(e));
 
-    public void Add(InputHandler handler) => handlers.Add(handler);
-    public void Remove(InputHandler handler) => handlers.Remove(handler);
+    public void Add(IInputHandler handler) => handlers.Add(handler);
+    public void Remove(IInputHandler handler) => handlers.Remove(handler);
 }

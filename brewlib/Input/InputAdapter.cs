@@ -2,7 +2,7 @@
 
 using OpenTK.Windowing.Common;
 
-public abstract class InputAdapter : InputHandler
+public abstract class InputAdapter : IInputHandler
 {
     public virtual void OnFocusChanged(FocusedChangedEventArgs e) { }
     public virtual bool OnClickDown(MouseButtonEventArgs e) => false;

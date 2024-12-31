@@ -78,7 +78,7 @@ public class FontTexture(string path,
     };
 }
 
-///<summary> A class that generates and manages font textures. </summary>
+///<summary> Generates and manages font textures. </summary>
 public sealed class FontGenerator
 {
     internal static readonly DrawingOptions options = new()

@@ -111,7 +111,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
             }
         }
 
-        var script = Unsafe.As<TScript>(Activator.CreateInstance(scriptType, true));
+        var script = Unsafe.As<TScript>(Activator.CreateInstance(scriptType!, true));
         script.Identifier = scriptType.AssemblyQualifiedName + Environment.CurrentManagedThreadId;
         return script;
     }

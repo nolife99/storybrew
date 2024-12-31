@@ -8,11 +8,8 @@ using System.Reflection;
 using System.Text;
 using Util;
 
-public class AssemblyResourceContainer(Assembly assembly = null, string baseNamespace = null, string basePath = null)
-    : ResourceContainer
+public class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null) : ResourceContainer
 {
-    readonly Assembly assembly = assembly ?? Assembly.GetEntryAssembly();
-
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
 
@@ -48,9 +45,8 @@ public class AssemblyResourceContainer(Assembly assembly = null, string baseName
                     var entry = archive.GetEntry(path);
                     if (entry is not null)
                     {
-                        using var entryStream = entry.Open();
                         SafeUnmanagedMemoryStream bytes = new();
-                        entryStream.CopyTo(bytes);
+                        using (var entryStream = entry.Open()) entryStream.CopyTo(bytes);
 
                         bytes.Position = 0;
                         return bytes;

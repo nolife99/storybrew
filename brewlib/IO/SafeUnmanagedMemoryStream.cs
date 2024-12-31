@@ -22,10 +22,7 @@ public sealed class SafeUnmanagedMemoryStream : Stream
     public override void Flush() { }
 
     void ReallocateBuffer(int minimumRequired)
-    {
-        currentBuffer = Native.ReallocateMemory(currentBuffer, minimumRequired);
-        capacity = minimumRequired;
-    }
+        => currentBuffer = Native.ReallocateMemory(currentBuffer, capacity = minimumRequired);
 
     public override void SetLength(long value)
     {
@@ -63,7 +60,7 @@ public sealed class SafeUnmanagedMemoryStream : Stream
         if (position >= 0 && position <= length) return position;
 
         position = oldValue;
-        throw new ArgumentException("Negative position", nameof(offset));
+        throw new ArgumentOutOfRangeException(nameof(offset), "Negative position");
     }
 
     public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));

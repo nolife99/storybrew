@@ -8,8 +8,8 @@ using System.Runtime.CompilerServices;
 public sealed class DrawContext : IDisposable
 {
     readonly List<IDisposable> disposables = [];
-    readonly Dictionary<Type, object> references = [];
     FrozenDictionary<Type, object> frozenReferences;
+    Dictionary<Type, object> references = [];
 
     public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(typeof(T)));
 
@@ -22,6 +22,8 @@ public sealed class DrawContext : IDisposable
     {
         disposables.TrimExcess();
         frozenReferences = references.ToFrozenDictionary();
+
+        references = null;
     }
 
     #region IDisposable Support

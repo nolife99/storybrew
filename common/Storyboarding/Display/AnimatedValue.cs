@@ -10,9 +10,9 @@ using CommandValues;
 public class AnimatedValue<TValue> where TValue : CommandValue
 {
     readonly List<ITypedCommand<TValue>> commands = [];
-    public TValue DefaultValue;
     public AnimatedValue() { }
     public AnimatedValue(TValue defaultValue) => DefaultValue = defaultValue;
+    public TValue DefaultValue { get; internal set; }
     public bool HasCommands => commands.Count > 0;
     public bool HasOverlap { get; private set; }
     public float StartTime => commands.Count > 0 ? commands[0].StartTime : 0;

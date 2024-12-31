@@ -155,9 +155,10 @@ public sealed class StringPool
 
         public void Reset()
         {
-            buckets.AsSpan().Clear();
-            mapEntries.AsSpan().Clear();
-            heapEntries.AsSpan().Clear();
+            Array.Clear(buckets);
+            Array.Clear(mapEntries);
+            Array.Clear(heapEntries);
+
             count = 0;
             timestamp = 0;
         }
