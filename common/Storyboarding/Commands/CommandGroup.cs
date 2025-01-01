@@ -16,6 +16,7 @@ public abstract class CommandGroup : ICommand
         {
             var commandsStartTime = float.MaxValue;
             foreach (var command in commands) commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
+
             return commandsStartTime;
         }
     }
@@ -26,6 +27,7 @@ public abstract class CommandGroup : ICommand
         {
             var commandsEndTime = float.MinValue;
             foreach (var command in commands) commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
+
             return commandsEndTime;
         }
     }
@@ -40,6 +42,7 @@ public abstract class CommandGroup : ICommand
             foreach (var command in commands)
             {
                 commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
+
                 commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
             }
 
@@ -52,13 +55,16 @@ public abstract class CommandGroup : ICommand
     public virtual bool Active => true;
     public int Cost => commands.Count;
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
+
     public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
     {
         if (commands.Count <= 0) return;
 
         writer.WriteLine(new string(' ', indentation) + GetCommandGroupHeader(exportSettings));
+
         foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, indentation + 1);
     }
+
     public bool Contains(ICommand command) => commands.Contains(command);
     public bool Add(ICommand command) => commands.Add(command);
     public virtual void EndGroup() { }

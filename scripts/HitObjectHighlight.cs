@@ -55,6 +55,7 @@ internal class HitObjectHighlight : StoryboardObjectGenerator
                     keyframe.Add(startTime, startPosition + hitobject.StackOffset);
 
                     if (complete) break;
+
                     startTime += timestep;
                 }
 

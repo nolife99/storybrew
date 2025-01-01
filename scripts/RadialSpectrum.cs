@@ -81,7 +81,8 @@ internal class RadialSpectrum : StoryboardObjectGenerator
             bar.Additive(StartTime);
 
             var hasMove = false;
-            keyframes.ForEachPair((start, end) =>
+            keyframes.ForEachPair(
+                (start, end) =>
                 {
                     hasMove = true;
                     bar.Move(start.Time, end.Time, start.Value, end.Value);

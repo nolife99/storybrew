@@ -17,45 +17,49 @@ public class ScrollArea : Widget
         ClipChildren = true;
         Add(scrollContainer = new(manager) { FitChildren = true, Children = [scrollable] });
 
-        Add(scrollIndicatorTop = new(manager)
-        {
-            StyleName = "icon",
-            Icon = IconFont.ArrowCircleUp,
-            AnchorFrom = BoxAlignment.TopRight,
-            AnchorTo = BoxAlignment.TopRight,
-            Hoverable = false,
-            Opacity = .6f
-        });
+        Add(
+            scrollIndicatorTop = new(manager)
+            {
+                StyleName = "icon",
+                Icon = IconFont.ArrowCircleUp,
+                AnchorFrom = BoxAlignment.TopRight,
+                AnchorTo = BoxAlignment.TopRight,
+                Hoverable = false,
+                Opacity = .6f
+            });
 
-        Add(scrollIndicatorBottom = new(manager)
-        {
-            StyleName = "icon",
-            Icon = IconFont.ArrowCircleDown,
-            AnchorFrom = BoxAlignment.BottomRight,
-            AnchorTo = BoxAlignment.BottomRight,
-            Hoverable = false,
-            Opacity = .6f
-        });
+        Add(
+            scrollIndicatorBottom = new(manager)
+            {
+                StyleName = "icon",
+                Icon = IconFont.ArrowCircleDown,
+                AnchorFrom = BoxAlignment.BottomRight,
+                AnchorTo = BoxAlignment.BottomRight,
+                Hoverable = false,
+                Opacity = .6f
+            });
 
-        Add(scrollIndicatorLeft = new(manager)
-        {
-            StyleName = "icon",
-            Icon = IconFont.ArrowCircleLeft,
-            AnchorFrom = BoxAlignment.BottomLeft,
-            AnchorTo = BoxAlignment.BottomLeft,
-            Hoverable = false,
-            Opacity = .6f
-        });
+        Add(
+            scrollIndicatorLeft = new(manager)
+            {
+                StyleName = "icon",
+                Icon = IconFont.ArrowCircleLeft,
+                AnchorFrom = BoxAlignment.BottomLeft,
+                AnchorTo = BoxAlignment.BottomLeft,
+                Hoverable = false,
+                Opacity = .6f
+            });
 
-        Add(scrollIndicatorRight = new(manager)
-        {
-            StyleName = "icon",
-            Icon = IconFont.ArrowCircleRight,
-            AnchorFrom = BoxAlignment.BottomRight,
-            AnchorTo = BoxAlignment.BottomRight,
-            Hoverable = false,
-            Opacity = .6f
-        });
+        Add(
+            scrollIndicatorRight = new(manager)
+            {
+                StyleName = "icon",
+                Icon = IconFont.ArrowCircleRight,
+                AnchorFrom = BoxAlignment.BottomRight,
+                AnchorTo = BoxAlignment.BottomRight,
+                Hoverable = false,
+                Opacity = .6f
+            });
 
         OnHovered += (_, e) =>
         {
@@ -66,6 +70,7 @@ public class ScrollArea : Widget
         OnClickDown += (_, e) =>
         {
             if (e.Button != MouseButton.Left) return false;
+
             dragged = true;
             return true;
         };
@@ -73,12 +78,14 @@ public class ScrollArea : Widget
         OnClickUp += (_, e) =>
         {
             if (e.Button != MouseButton.Left) return;
+
             dragged = false;
         };
 
         OnClickMove += (_, e) =>
         {
             if (!dragged) return;
+
             scroll(e.DeltaX, e.DeltaY);
         };
 
@@ -106,6 +113,7 @@ public class ScrollArea : Widget
         set
         {
             if (scrollsVertically == value) return;
+
             scrollsVertically = value;
             updateScrollIndicators();
         }
@@ -117,6 +125,7 @@ public class ScrollArea : Widget
         set
         {
             if (scrollsHorizontally == value) return;
+
             scrollsHorizontally = value;
             updateScrollIndicators();
         }
@@ -130,6 +139,7 @@ public class ScrollArea : Widget
         scroll(0, 0);
         base.DrawChildren(drawContext, actualOpacity);
     }
+
     protected override void Layout()
     {
         base.Layout();
@@ -137,16 +147,19 @@ public class ScrollArea : Widget
         var height = scrollsVertically ? Math.Max(Size.Y, scrollContainer.PreferredSize.Y) : Size.Y;
         scrollContainer.Size = new(width, height);
     }
+
     void scroll(float x, float y)
     {
         if (!scrollsHorizontally) x = 0;
         if (!scrollsVertically) y = 0;
 
-        scrollContainer.Offset = new(Math.Max(-ScrollableX, Math.Min(scrollContainer.Offset.X + x, 0)),
+        scrollContainer.Offset = new(
+            Math.Max(-ScrollableX, Math.Min(scrollContainer.Offset.X + x, 0)),
             Math.Max(-ScrollableY, Math.Min(scrollContainer.Offset.Y + y, 0)));
 
         updateScrollIndicators();
     }
+
     void updateScrollIndicators()
     {
         scrollIndicatorTop.Displayed = hovered && scrollsVertically && scrollContainer.Offset.Y < 0;

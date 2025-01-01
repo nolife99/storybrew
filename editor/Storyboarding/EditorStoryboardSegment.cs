@@ -45,11 +45,19 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     {
         var displayTime = project.DisplayTime * 1000;
         if (displayTime < StartTime || EndTime < displayTime) return;
+
         if (layer.Highlight || effect.Highlight)
             opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
         foreach (var o in displayableObjects)
-            o.Draw(drawContext, camera, bounds, opacity, new(transform, Origin, Position, Rotation, Scale), project, frameStats);
+            o.Draw(
+                drawContext,
+                camera,
+                bounds,
+                opacity,
+                new(transform, Origin, Position, Rotation, Scale),
+                project,
+                frameStats);
     }
 
     public void PostProcess()
@@ -130,8 +138,13 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
-        OsbOrigin origin = OsbOrigin.Centre)
-        => CreateAnimation(path, frameCount, frameDelay, loopType, origin, OsbSprite.DefaultPosition);
+        OsbOrigin origin = OsbOrigin.Centre) => CreateAnimation(
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        origin,
+        OsbSprite.DefaultPosition);
 
     public override OsbSample CreateSample(string path, float time, float volume)
     {
@@ -145,6 +158,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override StoryboardSegment CreateSegment(string identifier = null)
     {
         if (identifier is null) return getSegment(identifier);
+
         var originalName = identifier;
         var count = 0;
         while (namedSegments.ContainsKey(identifier)) identifier = $"{originalName}#{++count}";
@@ -160,6 +174,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             throw new InvalidOperationException($"Cannot add a named segment to an unnamed segment ({identifier})");
 
         if (identifier is not null && namedSegments.TryGetValue(identifier, out var segment)) return segment;
+
         segment = new(effect, layer, identifier);
         storyboardObjects.Add(segment);
         displayableObjects.Add(segment);
@@ -180,6 +195,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         }
 
         if (storyboardObject is not EditorStoryboardSegment segment) return;
+
         segments.Remove(segment);
         if (segment.Name is not null) namedSegments.Remove(segment.Name);
     }

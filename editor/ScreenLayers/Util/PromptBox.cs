@@ -17,32 +17,39 @@ public class PromptBox(string title, string description, string initialText, Act
         base.Load();
 
         Label descriptionLabel;
-        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
-        {
-            StyleName = "panel",
-            AnchorTarget = WidgetManager.Root,
-            AnchorFrom = BoxAlignment.Centre,
-            AnchorTo = BoxAlignment.Centre,
-            Padding = new(16),
-            Children =
-            [
-                descriptionLabel = new(WidgetManager)
-                {
-                    StyleName = "small", Text = description, AnchorFrom = BoxAlignment.Centre
-                },
-                textbox = new(WidgetManager) { LabelText = title, AnchorFrom = BoxAlignment.Centre, Value = initialText },
-                new LinearLayout(WidgetManager)
-                {
-                    Horizontal = true,
-                    AnchorFrom = BoxAlignment.Centre,
-                    Children =
-                    [
-                        okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
-                        cancelButton = new(WidgetManager) { Text = "Cancel", AnchorFrom = BoxAlignment.Centre }
-                    ]
-                }
-            ]
-        });
+        WidgetManager.Root.Add(
+            mainLayout = new(WidgetManager)
+            {
+                StyleName = "panel",
+                AnchorTarget = WidgetManager.Root,
+                AnchorFrom = BoxAlignment.Centre,
+                AnchorTo = BoxAlignment.Centre,
+                Padding = new(16),
+                Children =
+                [
+                    descriptionLabel = new(WidgetManager)
+                    {
+                        StyleName = "small", Text = description, AnchorFrom = BoxAlignment.Centre
+                    },
+                    textbox = new(WidgetManager)
+                    {
+                        LabelText = title, AnchorFrom = BoxAlignment.Centre, Value = initialText
+                    },
+                    new LinearLayout(WidgetManager)
+                    {
+                        Horizontal = true,
+                        AnchorFrom = BoxAlignment.Centre,
+                        Children =
+                        [
+                            okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
+                            cancelButton = new(WidgetManager)
+                            {
+                                Text = "Cancel", AnchorFrom = BoxAlignment.Centre
+                            }
+                        ]
+                    }
+                ]
+            });
 
         if (string.IsNullOrWhiteSpace(description)) descriptionLabel.Dispose();
 
@@ -54,6 +61,7 @@ public class PromptBox(string title, string description, string initialText, Act
 
         cancelButton.OnClick += (_, _) => Exit();
     }
+
     public override void OnTransitionIn()
     {
         base.OnTransitionIn();
@@ -61,6 +69,7 @@ public class PromptBox(string title, string description, string initialText, Act
         WidgetManager.KeyboardFocus = textbox;
         textbox.SelectAll();
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);

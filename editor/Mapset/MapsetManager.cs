@@ -36,6 +36,7 @@ public sealed class MapsetManager : IDisposable
         if (!Directory.Exists(path)) return;
 
         var maps = Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly);
+
         Array.Sort(maps);
 
         foreach (var beatmapPath in maps)
@@ -55,9 +56,11 @@ public sealed class MapsetManager : IDisposable
     void Dispose(bool disposing)
     {
         if (disposed) return;
+
         fileWatcher?.Dispose();
 
         if (!disposing) return;
+
         beatmaps.Clear();
 
         fileWatcher = null;
@@ -81,11 +84,13 @@ public sealed class MapsetManager : IDisposable
         fileWatcher.Changed += mapsetFileWatcher_Changed;
         fileWatcher.Renamed += mapsetFileWatcher_Changed;
         fileWatcher.Error += (_, e) => Trace.TraceError($"Watcher (mapset): {e.GetException()}");
+
         fileWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (mapset): {path}");
     }
 
-    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath,
+    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(
+        e.FullPath,
         _ =>
         {
             if (Path.GetExtension(e.Name) == ".osu") Trace.WriteLine($"Watched mapset file {e.ChangeType}: {e.FullPath}");

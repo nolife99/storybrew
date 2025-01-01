@@ -15,7 +15,9 @@ public static class Builder
 
     public static void Build()
     {
-        var archiveName = $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{RuntimeInformation.RuntimeIdentifier}.zip";
+        var archiveName =
+            $"storybrew.{Program.Version.Major}.{Program.Version.Minor}-{RuntimeInformation.RuntimeIdentifier}.zip";
+
         var appDirectory = Path.GetDirectoryName(typeof(Editor).Assembly.Location);
 
         try
@@ -93,6 +95,7 @@ public static class Builder
         }
 
         if (ignoredPaths.Contains(entryName)) return;
+
         if (entryName != mainExecutablePath && Path.GetExtension(entryName) == ".exe") entryName += "_";
 
         Trace.WriteLine($"Adding {entryName} to archive");

@@ -13,9 +13,11 @@ public sealed class TextFontProxy(TextFont textFont, Action dispose) : TextFont
     #region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (disposed) return;
+
         dispose();
         disposed = true;
     }

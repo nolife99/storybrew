@@ -23,6 +23,7 @@ public sealed class Sprite : Drawable
         if (Texture is null) return;
 
         var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, RenderStates);
+
         var color = Color.WithOpacity(opacity);
 
         var textureX0 = 0f;
@@ -49,10 +50,11 @@ public sealed class Sprite : Drawable
                     textureX1 = Texture.Width - textureX0;
                 }
 
-                break;
+            break;
 
             case ScaleMode.Fit:
             case ScaleMode.RepeatFit: scale = float.Min(scaleH, scaleV); break;
+
             default: scale = 1; break;
         }
 
@@ -62,7 +64,8 @@ public sealed class Sprite : Drawable
             case ScaleMode.RepeatFit:
                 for (var y = bounds.Y; y < bounds.Bottom; y += Texture.Height * scale)
                 for (var x = bounds.X; x < bounds.Right; x += Texture.Width * scale)
-                    renderer.Draw(Texture,
+                    renderer.Draw(
+                        Texture,
                         x,
                         y,
                         0,
@@ -76,10 +79,11 @@ public sealed class Sprite : Drawable
                         float.Min((bounds.Right - x) / scale, Texture.Width),
                         float.Min((bounds.Bottom - y) / scale, Texture.Height));
 
-                break;
+            break;
 
             default:
-                renderer.Draw(Texture,
+                renderer.Draw(
+                    Texture,
                     (bounds.X + bounds.Right) * .5f,
                     (bounds.Y + bounds.Bottom) * .5f,
                     (textureX1 - textureX0) * .5f,

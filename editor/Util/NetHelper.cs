@@ -11,8 +11,9 @@ public static class NetHelper
 {
     internal static HttpClient Client;
 
-    public static void OpenUrl(string url)
-        => Process.Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true })?.Dispose();
+    public static void OpenUrl(string url) => Process
+        .Start(new ProcessStartInfo(url.Replace("&", "^&")) { UseShellExecute = true })
+        ?.Dispose();
 
     public static async void Request(string url, Func<string, Exception, Task> action)
     {
@@ -40,6 +41,7 @@ public static class NetHelper
             response.EnsureSuccessStatusCode();
 
             var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
             action?.Invoke(responseContent, null);
         }
         catch (Exception e)
@@ -86,7 +88,14 @@ public static class NetHelper
             {
                 response.EnsureSuccessStatusCode();
 
-                await using FileStream fileStream = new(filename, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+                await using FileStream fileStream = new(
+                    filename,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    8192,
+                    true);
+
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                 var bytesRead = 0L;
                 var isMoreToRead = true;
@@ -100,9 +109,11 @@ public static class NetHelper
                     isMoreToRead = read.Length != 0;
 
                     if (totalBytes == -1L) continue;
+
                     var progressPercentage = (float)bytesRead / totalBytes * 100;
 
                     if (progressFunc(progressPercentage)) continue;
+
                     isMoreToRead = false;
                     completedAction?.Invoke(new HttpRequestException("Download cancelled"));
                 }

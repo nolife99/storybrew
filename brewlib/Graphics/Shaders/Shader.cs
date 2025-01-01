@@ -44,9 +44,11 @@ public sealed partial class Shader : IDisposable
         DrawState.ProgramId = SortId;
         started = true;
     }
+
     public void End()
     {
         if (!started) throw new InvalidOperationException("Not started");
+
         started = false;
     }
 
@@ -54,11 +56,15 @@ public sealed partial class Shader : IDisposable
 
     public int GetUniformLocation(string name, int index = -1, string field = null)
     {
-        var location = uniforms.TryGetValue(GetUniformIdentifier(name, index, field), out var property) ? property.Location : -1;
+        var location = uniforms.TryGetValue(GetUniformIdentifier(name, index, field), out var property) ?
+            property.Location :
+            -1;
 
         if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier");
+
         return location;
     }
+
     static string GetUniformIdentifier(string name, int index, string field)
         => name + (index >= 0 ? $"[{index}]" : "") + (field is not null ? "." + field : "");
 
@@ -75,6 +81,7 @@ public sealed partial class Shader : IDisposable
         SortId = linkProgram();
         isInitialized = SortId != -1;
     }
+
     int compileShader(OpenTK.Graphics.OpenGL.ShaderType type, string code)
     {
         var id = GL.CreateShader(type);
@@ -83,9 +90,11 @@ public sealed partial class Shader : IDisposable
         GL.GetShader(id, ShaderParameter.CompileStatus, out var compileStatus);
 
         if (compileStatus != 0) return id;
+
         log.AppendLine(CultureInfo.InvariantCulture, $"--- {type} ---\n{addLineExtracts(GL.GetShaderInfoLog(id), code)}");
         return -1;
     }
+
     int linkProgram()
     {
         var id = GL.CreateProgram();
@@ -95,9 +104,11 @@ public sealed partial class Shader : IDisposable
         GL.GetProgram(id, GetProgramParameterName.LinkStatus, out var linkStatus);
 
         if (linkStatus != 0) return id;
+
         log.AppendLine(GL.GetProgramInfoLog(id));
         return -1;
     }
+
     void retrieveAttributes()
     {
         GL.GetProgram(SortId, GetProgramParameterName.ActiveAttributes, out var attributeCount);
@@ -109,6 +120,7 @@ public sealed partial class Shader : IDisposable
             attributes[name] = new(size, type, GL.GetAttribLocation(SortId, name));
         }
     }
+
     void retrieveUniforms()
     {
         GL.GetProgram(SortId, GetProgramParameterName.ActiveUniforms, out var uniformCount);
@@ -122,9 +134,11 @@ public sealed partial class Shader : IDisposable
     }
 
     ~Shader() => dispose();
+
     void dispose()
     {
         if (!isInitialized) return;
+
         isInitialized = false;
 
         if (started) End();

@@ -82,6 +82,7 @@ public class LayerManager
     public void Remove(EditorStoryboardLayer layer)
     {
         if (!Layers.Remove(layer)) return;
+
         layer.OnChanged -= layer_OnChanged;
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -105,8 +106,9 @@ public class LayerManager
             sortLayer(layerToMove);
         }
         else
-            throw new InvalidOperationException($"Cannot move layer '{layerToMove.Name}' to the position of '{
-                layerToMove.Name}'");
+            throw new InvalidOperationException(
+                $"Cannot move layer '{layerToMove.Name}' to the position of '{
+                    layerToMove.Name}'");
     }
 
     public void TriggerEvents(float startTime, float endTime)
@@ -132,6 +134,7 @@ public class LayerManager
 
         var newIndex = initialIndex;
         while (newIndex > 0 && layer.CompareTo(Layers[newIndex - 1]) < 0) --newIndex;
+
         while (newIndex < Layers.Count - 1 && layer.CompareTo(Layers[newIndex + 1]) > 0) ++newIndex;
 
         Layers.Move(initialIndex, newIndex);
@@ -142,7 +145,9 @@ public class LayerManager
     {
         var index = Layers.BinarySearch(layer);
         if (index < 0) return ~index;
+
         while (index < Layers.Count && layer.CompareTo(Layers[index]) == 0) ++index;
+
         return index;
     }
 }

@@ -36,8 +36,8 @@ public class Sprite3d : Node3d, HasOsbSprites
     public string SpritePath;
 
     /// <summary>
-    ///     If this value is not <see langword="null"/>, scales sprites based on this vector instead of distance from
-    ///     the <see cref="Camera"/>.
+    ///     If this value is not <see langword="null"/>, scales sprites based on this vector instead of distance from the
+    ///     <see cref="Camera"/>.
     /// </summary>
     public CommandScale? UseDefaultScale;
 
@@ -57,7 +57,8 @@ public class Sprite3d : Node3d, HasOsbSprites
     public void ConfigureGenerators(Action<CommandGenerator> action) => action(gen);
 
     /// <inheritdoc/>
-    public override void GenerateSprite(StoryboardSegment segment) => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
+    public override void GenerateSprite(StoryboardSegment segment)
+        => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
 
     /// <inheritdoc/>
     public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
@@ -74,6 +75,7 @@ public class Sprite3d : Node3d, HasOsbSprites
                 angle += float.Atan2(delta.Y, delta.X);
                 break;
             }
+
             case RotationMode.UnitY:
             {
                 var delta = CameraState.ToScreen(wvp, Vector3.UnitY) - screenPosition;
@@ -84,26 +86,31 @@ public class Sprite3d : Node3d, HasOsbSprites
 
         var scale = (Vector2)SpriteScale.ValueAt(time) *
             new Vector2(
-                new Vector3(object3dState.WorldTransform.M11, object3dState.WorldTransform.M12, object3dState.WorldTransform.M13)
-                    .Length(),
-                new Vector3(object3dState.WorldTransform.M21, object3dState.WorldTransform.M22, object3dState.WorldTransform.M23)
-                    .Length()) *
+                new Vector3(
+                    object3dState.WorldTransform.M11,
+                    object3dState.WorldTransform.M12,
+                    object3dState.WorldTransform.M13).Length(),
+                new Vector3(
+                    object3dState.WorldTransform.M21,
+                    object3dState.WorldTransform.M22,
+                    object3dState.WorldTransform.M23).Length()) *
             (cameraState.FocusDistance / screenPosition.W) *
             cameraState.ResolutionScale;
 
         var opacity = screenPosition.W < 0 ? 0 : object3dState.Opacity;
         if (UseDistanceFade) opacity *= cameraState.OpacityAt(screenPosition.W);
 
-        gen.Add(new()
-        {
-            Time = time,
-            Position = new(screenPosition.X, screenPosition.Y),
-            Scale = UseDefaultScale ?? scale,
-            Rotation = angle + SpriteRotation.ValueAt(time),
-            Color = object3dState.Color,
-            Opacity = opacity,
-            Additive = Additive
-        });
+        gen.Add(
+            new()
+            {
+                Time = time,
+                Position = new(screenPosition.X, screenPosition.Y),
+                Scale = UseDefaultScale ?? scale,
+                Rotation = angle + SpriteRotation.ValueAt(time),
+                Color = object3dState.Color,
+                Opacity = opacity,
+                Additive = Additive
+            });
     }
 
     /// <inheritdoc/>

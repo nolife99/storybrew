@@ -20,6 +20,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     public float Duration => EndTime - StartTime;
     public TValue StartValue => commands.Count > 0 ? commands[0].StartValue : DefaultValue;
     public TValue EndValue => commands.Count > 0 ? commands[^1].EndValue : DefaultValue;
+
     public void Add(ITypedCommand<TValue> command)
     {
         if (command is not TriggerDecorator<TValue> triggerable)
@@ -38,6 +39,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
         }
         else triggerable.OnStateChanged += triggerable_OnStateChanged;
     }
+
     public TValue ValueAtTime(float time)
     {
         if (commands.Count == 0) return DefaultValue;
@@ -56,6 +58,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 
         return span[index].ValueAtTime(time);
     }
+
     static bool findCommandIndex(ReadOnlySpan<ITypedCommand<TValue>> commands, float time, out int index)
     {
         var left = 0;
@@ -66,6 +69,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
             index = left + (right - left >> 1);
             var commandTime = commands[index].StartTime;
             if (commandTime == time) return true;
+
             if (commandTime < time) left = index + 1;
             else right = index - 1;
         }
@@ -74,6 +78,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
 
         return false;
     }
+
     void triggerable_OnStateChanged(object sender, EventArgs e)
     {
         var command = (ITypedCommand<TValue>)sender;
@@ -81,6 +86,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
         if (!command.Active) return;
 
         findCommandIndex(CollectionsMarshal.AsSpan(commands), command.StartTime, out var index);
+
         commands.Insert(index, command);
     }
 }

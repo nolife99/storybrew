@@ -20,26 +20,30 @@ public class PathSelector : Widget
 
     public PathSelector(WidgetManager manager, PathSelectorMode mode) : base(manager)
     {
-        Add(layout = new(manager)
-        {
-            AnchorFrom = BoxAlignment.Centre,
-            AnchorTo = BoxAlignment.Centre,
-            Horizontal = true,
-            Fill = true,
-            FitChildren = true,
-            Children =
-            [
-                textbox = new(manager) { AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft },
-                button = new(manager)
-                {
-                    Icon = IconFont.FolderOpen,
-                    Tooltip = "Browse",
-                    AnchorFrom = BoxAlignment.BottomRight,
-                    AnchorTo = BoxAlignment.BottomRight,
-                    CanGrow = false
-                }
-            ]
-        });
+        Add(
+            layout = new(manager)
+            {
+                AnchorFrom = BoxAlignment.Centre,
+                AnchorTo = BoxAlignment.Centre,
+                Horizontal = true,
+                Fill = true,
+                FitChildren = true,
+                Children =
+                [
+                    textbox = new(manager)
+                    {
+                        AnchorFrom = BoxAlignment.BottomLeft, AnchorTo = BoxAlignment.BottomLeft
+                    },
+                    button = new(manager)
+                    {
+                        Icon = IconFont.FolderOpen,
+                        Tooltip = "Browse",
+                        AnchorFrom = BoxAlignment.BottomRight,
+                        AnchorTo = BoxAlignment.BottomRight,
+                        CanGrow = false
+                    }
+                ]
+            });
 
         textbox.OnValueChanged += (_, _) => OnValueChanged?.Invoke(this, EventArgs.Empty);
         textbox.OnValueCommited += (_, _) => OnValueCommited?.Invoke(this, EventArgs.Empty);
@@ -51,13 +55,16 @@ public class PathSelector : Widget
                     Manager.ScreenLayerManager.OpenFolderPicker(textbox.Value, path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenFile:
-                    Manager.ScreenLayerManager.OpenFilePicker(textbox.Value, "", Filter, path => textbox.Value = path); break;
+                    Manager.ScreenLayerManager.OpenFilePicker(textbox.Value, "", Filter, path => textbox.Value = path);
+                break;
 
                 case PathSelectorMode.OpenDirectory:
-                    Manager.ScreenLayerManager.OpenFilePicker("", textbox.Value, Filter, path => textbox.Value = path); break;
+                    Manager.ScreenLayerManager.OpenFilePicker("", textbox.Value, Filter, path => textbox.Value = path);
+                break;
 
                 case PathSelectorMode.SaveFile:
-                    Manager.ScreenLayerManager.OpenSaveLocationPicker(textbox.Value,
+                    Manager.ScreenLayerManager.OpenSaveLocationPicker(
+                        textbox.Value,
                         SaveExtension,
                         Filter,
                         path => textbox.Value = path); break;

@@ -53,6 +53,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     public void Dispose()
     {
         if (disposed) return;
+
         atlases.Dispose();
         disposed = true;
     }

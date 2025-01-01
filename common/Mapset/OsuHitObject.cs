@@ -12,7 +12,8 @@ public record OsuHitObject
     public static readonly SizeF PlayfieldSize = new(512, 384), StoryboardSize = new(640, 480);
 
     ///<summary> Represents the offset between the playfield and the storyboard field in osu!. </summary>
-    public static readonly CommandPosition PlayfieldToStoryboardOffset = new((StoryboardSize.Width - PlayfieldSize.Width) / 2,
+    public static readonly CommandPosition PlayfieldToStoryboardOffset = new(
+        (StoryboardSize.Width - PlayfieldSize.Width) / 2,
         (StoryboardSize.Height - PlayfieldSize.Height) * .75 - 16);
 
     ///<summary> Represents the widescreen storyboard size in osu!. </summary>
@@ -25,8 +26,9 @@ public record OsuHitObject
     public static readonly RectangleF StoryboardBounds = new(default, StoryboardSize);
 
     ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
-    public static readonly RectangleF WidescreenStoryboardBounds =
-        new(new((StoryboardSize.Width - WidescreenStoryboardSize.Width) / 2, 0), WidescreenStoryboardSize);
+    public static readonly RectangleF WidescreenStoryboardBounds = new(
+        new((StoryboardSize.Width - WidescreenStoryboardSize.Width) / 2, 0),
+        WidescreenStoryboardSize);
 
     ///<summary> Represents the combo color of this hit object. </summary>
     public CommandColor Color { get; set; } = CommandColor.White;
@@ -117,7 +119,8 @@ public record OsuHitObject
         var volume = controlPoint.Volume;
 
         if ((flags & HitObjectFlag.Circle) != 0)
-            return OsuCircle.Parse(values,
+            return OsuCircle.Parse(
+                values,
                 x,
                 y,
                 startTime,
@@ -129,7 +132,8 @@ public record OsuHitObject
                 volume);
 
         if ((flags & HitObjectFlag.Slider) != 0)
-            return OsuSlider.Parse(beatmap,
+            return OsuSlider.Parse(
+                beatmap,
                 values,
                 x,
                 y,
@@ -144,7 +148,8 @@ public record OsuHitObject
                 volume);
 
         if ((flags & HitObjectFlag.Hold) != 0)
-            return OsuHold.Parse(values,
+            return OsuHold.Parse(
+                values,
                 x,
                 y,
                 startTime,
@@ -156,7 +161,8 @@ public record OsuHitObject
                 volume);
 
         if ((flags & HitObjectFlag.Spinner) != 0)
-            return OsuSpinner.Parse(values,
+            return OsuSpinner.Parse(
+                values,
                 x,
                 y,
                 startTime,
@@ -167,8 +173,9 @@ public record OsuHitObject
                 customSampleSet,
                 volume);
 
-        throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line
-        }");
+        throw new NotSupportedException(
+            $"Parsing failed - the line does not contain valid hit object information: {line
+            }");
     }
 }
 

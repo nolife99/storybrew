@@ -8,10 +8,11 @@ using SixLabors.ImageSharp;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for scale commands. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandScale : CommandValue,
-    IAdditionOperators<CommandScale, CommandScale, CommandScale>, ISubtractionOperators<CommandScale, CommandScale, CommandScale>,
-    IMultiplyOperators<CommandScale, CommandScale, CommandScale>, IDivisionOperators<CommandScale, CommandScale, CommandScale>,
-    IUnaryNegationOperators<CommandScale, CommandScale>
+[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandScale
+    : CommandValue, IAdditionOperators<CommandScale, CommandScale, CommandScale>,
+        ISubtractionOperators<CommandScale, CommandScale, CommandScale>,
+        IMultiplyOperators<CommandScale, CommandScale, CommandScale>,
+        IDivisionOperators<CommandScale, CommandScale, CommandScale>, IUnaryNegationOperators<CommandScale, CommandScale>
 {
     readonly Vector2 internalVec;
 
@@ -57,6 +58,7 @@ using Vector2 = System.Numerics.Vector2;
 
     public static implicit operator CommandScale(OpenTK.Mathematics.Vector2 vector)
         => Unsafe.As<OpenTK.Mathematics.Vector2, CommandScale>(ref vector);
+
     public static implicit operator OpenTK.Mathematics.Vector2(CommandScale obj)
         => Unsafe.As<CommandScale, OpenTK.Mathematics.Vector2>(ref obj);
 

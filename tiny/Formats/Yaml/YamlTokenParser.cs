@@ -33,7 +33,9 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
         return result;
     }
 
-    abstract class MultilineParser(Action<TinyToken> callback, int virtualIndent) : Parser<YamlTokenType>(callback, virtualIndent)
+    abstract class MultilineParser(Action<TinyToken> callback, int virtualIndent) : Parser<YamlTokenType>(
+        callback,
+        virtualIndent)
     {
         int? indent;
         protected abstract int ResultCount { get; }
@@ -45,8 +47,9 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
             if (lineIndent != indent)
             {
                 if (lineIndent > indent)
-                    throw new InvalidDataException($"Unexpected indent: {lineIndent}, expected: {indent}, token: {
-                        context.CurrentToken}");
+                    throw new InvalidDataException(
+                        $"Unexpected indent: {lineIndent}, expected: {indent}, token: {
+                            context.CurrentToken}");
 
                 context.PopParser();
                 return true;
@@ -74,10 +77,8 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                 case YamlTokenType.ArrayIndicator:
                 case YamlTokenType.Property:
                 case YamlTokenType.PropertyQuoted:
-                    throw new InvalidDataException("Unexpected token: " +
-                        context.LookaheadToken +
-                        ", after: " +
-                        context.CurrentToken);
+                    throw new InvalidDataException(
+                        "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
             }
 
             switch (context.CurrentToken.Type)
@@ -91,13 +92,14 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                     {
                         case YamlTokenType.Word:
                         case YamlTokenType.WordQuoted: context.PushParser(new ValueParser(r => result.Add(key, r))); break;
+
                         case YamlTokenType.EndLine:
-                            context.PushParser(new EmptyProperyParser(r => result.Add(key, r), context.IndentLevel + 1)); break;
+                            context.PushParser(new EmptyProperyParser(r => result.Add(key, r), context.IndentLevel + 1));
+                        break;
+
                         default:
-                            throw new InvalidDataException("Unexpected token: " +
-                                context.LookaheadToken +
-                                ", after: " +
-                                context.CurrentToken);
+                            throw new InvalidDataException(
+                                "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
                     }
 
                     context.ConsumeToken();
@@ -114,7 +116,8 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
     {
         readonly TinyArray result = [];
 
-        public ArrayParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent) => callback(result);
+        public ArrayParser(Action<TinyToken> callback, int virtualIndent = 0) : base(callback, virtualIndent)
+            => callback(result);
 
         protected override int ResultCount => result.Count;
 
@@ -140,7 +143,8 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
     {
         static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            boolRegex = new($"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$",
+            boolRegex = new(
+                $"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public override void Parse(ParseContext<YamlTokenType> context)
@@ -148,11 +152,10 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
             switch (context.LookaheadToken.Type)
             {
                 case YamlTokenType.EndLine: break;
+
                 default:
-                    throw new InvalidDataException("Unexpected token: " +
-                        context.LookaheadToken +
-                        ", after: " +
-                        context.CurrentToken);
+                    throw new InvalidDataException(
+                        "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
             }
 
             switch (context.CurrentToken.Type)
@@ -162,7 +165,8 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                     var value = context.CurrentToken.Value;
                     Match match;
                     if ((match = floatRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Float));
-                    else if ((match = integerRegex.Match(value)).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
+                    else if ((match = integerRegex.Match(value)).Success)
+                        Callback(new TinyValue(value, TinyTokenType.Integer));
                     else if ((match = boolRegex.Match(value)).Success)
                         Callback(new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.OrdinalIgnoreCase)));
                     else Callback(new TinyValue(value));
@@ -200,9 +204,11 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                 case YamlTokenType.PropertyQuoted:
                     context.ReplaceParser(new ObjectParser(Callback, VirtualIndent));
                     return;
+
                 case YamlTokenType.ArrayIndicator:
                     context.ReplaceParser(new ArrayParser(Callback, VirtualIndent));
                     return;
+
                 case YamlTokenType.Word:
                 case YamlTokenType.WordQuoted:
                     context.ReplaceParser(new ValueParser(Callback));
@@ -215,8 +221,9 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
         public override void End() { }
     }
 
-    class EmptyProperyParser(Action<TinyToken> callback, int expectedIndent, int virtualIndent = 0)
-        : Parser<YamlTokenType>(callback, virtualIndent)
+    class EmptyProperyParser(Action<TinyToken> callback, int expectedIndent, int virtualIndent = 0) : Parser<YamlTokenType>(
+        callback,
+        virtualIndent)
     {
         readonly int expectedIndent = expectedIndent;
 
@@ -235,8 +242,9 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                 return;
             }
 
-            throw new InvalidDataException($"Unexpected indent: {context.IndentLevel}, expected: {expectedIndent
-            }, token: {context.CurrentToken}");
+            throw new InvalidDataException(
+                $"Unexpected indent: {context.IndentLevel}, expected: {expectedIndent
+                }, token: {context.CurrentToken}");
         }
 
         public override void End() => Callback(new TinyValue(null, TinyTokenType.Null));

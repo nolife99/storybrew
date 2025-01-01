@@ -84,10 +84,13 @@ public sealed class MultiFileWatcher : IDisposable
             {
                 var parentDirectoryPath = parentDirectory.ToString();
 
-                ref var watcher =
-                    ref CollectionsMarshal.GetValueRefOrAddDefault(recursiveFolderWatchers, parentDirectoryPath, out var exists);
+                ref var watcher = ref CollectionsMarshal.GetValueRefOrAddDefault(
+                    recursiveFolderWatchers,
+                    parentDirectoryPath,
+                    out var exists);
 
                 if (exists) return;
+
                 watcher = new()
                 {
                     Path = parentDirectoryPath,
@@ -110,7 +113,8 @@ public sealed class MultiFileWatcher : IDisposable
     void watcher_Changed(object sender, FileSystemEventArgs e)
     {
         Trace.WriteLine($"File {e.ChangeType}: {e.FullPath}");
-        scheduler.Schedule(e.FullPath,
+        scheduler.Schedule(
+            e.FullPath,
             _ =>
             {
                 if (disposed) return;

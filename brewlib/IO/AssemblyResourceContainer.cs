@@ -8,7 +8,8 @@ using System.Reflection;
 using System.Text;
 using Util;
 
-public class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null) : ResourceContainer
+public class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
+    : ResourceContainer
 {
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
@@ -54,7 +55,9 @@ public class AssemblyResourceContainer(Assembly assembly, string baseNamespace =
                 }
                 else
                 {
-                    stream = assembly.GetManifestResourceStream($"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
+                    stream = assembly.GetManifestResourceStream(
+                        $"{baseNamespace}.{path.Replace('\\', '.').Replace('/', '.')}");
+
                     if (stream is not null) return stream;
                 }
             }
@@ -76,6 +79,7 @@ public class AssemblyResourceContainer(Assembly assembly, string baseNamespace =
     public SafeWriteStream GetWriteStream(string path)
     {
         if (Path.IsPathRooted(path)) throw new ArgumentException("Resource paths must be relative", path);
+
         return new(basePath is not null ? Path.Combine(basePath, path) : path);
     }
 }

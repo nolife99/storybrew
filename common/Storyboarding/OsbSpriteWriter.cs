@@ -42,6 +42,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
         }
         else writeOsbSprite(sprite, in transform);
     }
+
     protected virtual OsbSprite CreateSprite(ICollection<IFragmentableCommand> segment)
     {
         OsbSprite spr = new()
@@ -52,17 +53,20 @@ public class OsbSpriteWriter(OsbSprite sprite,
         foreach (var command in segment) spr.AddCommand(command);
         return spr;
     }
+
     void writeOsbSprite(OsbSprite sprite, ref readonly StoryboardTransform transform)
     {
         WriteHeader(sprite, in transform);
         foreach (var command in sprite.Commands) command.WriteOsb(writer, exportSettings, transform, 1);
     }
+
     protected virtual void WriteHeader(OsbSprite sprite, ref readonly StoryboardTransform transform)
     {
         writer.Write("Sprite");
         WriteHeaderCommon(sprite, in transform);
         writer.WriteLine();
     }
+
     protected void WriteHeaderCommon(OsbSprite sprite, ref readonly StoryboardTransform transform)
     {
         writer.Write($",{layer},{sprite.Origin},\"{sprite.TexturePath.Trim()}\"");
@@ -79,6 +83,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
             writer.Write("," + transformedInitialPosition.Y.ToString(exportSettings.NumberFormat));
         else writer.Write(",0");
     }
+
     protected bool IsFragmentable()
     {
         // if there are commands with nondeterministic results (aka triggercommands) the sprite can't reliably be split
@@ -93,12 +98,14 @@ public class OsbSpriteWriter(OsbSprite sprite,
             fade.HasOverlap ||
             color.HasOverlap);
     }
+
     protected virtual HashSet<int> GetFragmentationTimes(IEnumerable<IFragmentableCommand> fragCommands)
     {
         HashSet<int> fragTimes = [..Enumerable.Range((int)sprite.StartTime, (int)(sprite.EndTime - sprite.StartTime) + 1)];
         foreach (var command in fragCommands) fragTimes.ExceptWith(command.GetNonFragmentableTimes());
         return fragTimes;
     }
+
     HashSet<IFragmentableCommand> getNextSegment(HashSet<int> fragmentationTimes, HashSet<IFragmentableCommand> commands)
     {
         HashSet<IFragmentableCommand> segment = [];
@@ -112,9 +119,10 @@ public class OsbSpriteWriter(OsbSprite sprite,
                 var sTime = Math.Max(startTime, (int)float.Round(cmd.StartTime));
                 var eTime = Math.Min(endTime, (int)float.Round(cmd.EndTime));
 
-                segment.Add(sTime != (int)float.Round(cmd.StartTime) || eTime != (int)float.Round(cmd.EndTime) ?
-                    cmd.GetFragment(sTime, eTime) :
-                    cmd);
+                segment.Add(
+                    sTime != (int)float.Round(cmd.StartTime) || eTime != (int)float.Round(cmd.EndTime) ?
+                        cmd.GetFragment(sTime, eTime) :
+                        cmd);
             }
 
         addStaticCommands(segment, startTime);
@@ -152,6 +160,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
 
         return endTime;
     }
+
     void addStaticCommands(ICollection<IFragmentableCommand> segment, int startTime)
     {
         if (move.HasCommands && !segment.Any(c => c is MoveCommand && c.StartTime == startTime))
@@ -220,7 +229,8 @@ public static class OsbWriterFactory
         OsbLayer layer)
     {
         if (sprite is OsbAnimation animation)
-            return new OsbAnimationWriter(animation,
+            return new OsbAnimationWriter(
+                animation,
                 move,
                 moveX,
                 moveY,

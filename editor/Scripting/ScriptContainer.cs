@@ -52,6 +52,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         get
         {
             if (LibraryFolder is null || !Directory.Exists(LibraryFolder)) return [MainSourcePath];
+
             return Directory.EnumerateFiles(LibraryFolder, "*.cs", SearchOption.AllDirectories).Union([MainSourcePath]);
         }
     }
@@ -86,8 +87,8 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
             try
             {
-                scriptType = ScriptCompiler
-                    .Compile(scriptDomain,
+                scriptType = ScriptCompiler.Compile(
+                        scriptDomain,
                         SourcePaths,
                         Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture),
                         referencedAssemblies)

@@ -54,6 +54,7 @@ public abstract class TinyToken
         if (value is TinyToken token) return token;
 
         if (TinyValue.FindValueType(value) is not TinyTokenType.Invalid) return new TinyValue(value);
+
         switch (value)
         {
             case IDictionary dictionary:
@@ -62,6 +63,7 @@ public abstract class TinyToken
                 foreach (var key in dictionary.Keys) o.Add(Unsafe.As<string>(key), ToToken(dictionary[key]));
                 return o;
             }
+
             case IEnumerable enumerable: return new TinyArray(enumerable);
             default: return new TinyValue(value);
         }

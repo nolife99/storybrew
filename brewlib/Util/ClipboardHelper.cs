@@ -15,6 +15,7 @@ public static unsafe class ClipboardHelper
 
         fixed (byte* ptr = bytes) GLFW.SetClipboardStringRaw(Native.GLFWPtr, ptr);
     }
+
     public static string GetText() => GLFW.GetClipboardString(Native.GLFWPtr);
 
     public static void SetData(object data) => LastData = data;

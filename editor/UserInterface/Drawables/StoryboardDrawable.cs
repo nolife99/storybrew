@@ -24,11 +24,13 @@ public sealed class StoryboardDrawable(Project project) : Drawable
         {
             var clip = DrawState.Clip(bounds, camera);
             project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
+
             DrawState.ClipRegion = clip;
         }
         else
         {
             project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
+
             DrawState.Prepare(drawContext.Get<ILineRenderer>(), camera, linesRenderStates)
                 .DrawSquare(new(bounds.Location, 0), new Vector3(bounds.Right, bounds.Bottom, 0), Color.Black);
         }

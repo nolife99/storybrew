@@ -42,6 +42,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
 
         Bound = true;
     }
+
     public void Unbind()
     {
         if (!Bound) return;
@@ -51,6 +52,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     }
 
     public abstract void Render(PrimitiveType type, int primitiveCount, int vertices);
+
     public void Dispose()
     {
         Dispose(true);
@@ -58,10 +60,12 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     }
 
     protected virtual void initializeVertexBuffer() => GL.CreateBuffers(1, out VertexBufferId);
+
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         GL.CreateBuffers(1, out IndexBufferId);
-        GL.NamedBufferStorage(IndexBufferId,
+        GL.NamedBufferStorage(
+            IndexBufferId,
             indices.Length * sizeof(ushort),
             ref MemoryMarshal.GetReference(indices),
             BufferStorageFlags.None);
@@ -82,6 +86,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     }
 
     ~PrimitiveStreamerVao() => Dispose(false);
+
     protected virtual void Dispose(bool disposing)
     {
         Unbind();

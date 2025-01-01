@@ -11,6 +11,7 @@ public static class OsuHelper
         try
         {
             using var registryKey = Registry.ClassesRoot.OpenSubKey("osu\\DefaultIcon");
+
             if (registryKey is not null)
             {
                 var value = registryKey.GetValue(null).ToString();
@@ -24,7 +25,8 @@ public static class OsuHelper
             // ignored
         }
 
-        var defaultPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        var defaultPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "osu!",
             "osu!.exe");
 

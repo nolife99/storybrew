@@ -26,8 +26,8 @@ public class Scene3d
     }
 
     /// <summary>
-    ///     Generates a 3D scene from <paramref name="startTime"/> to <paramref name="endTime"/> with an iteration period
-    ///     based on the beatmap's timing point and <paramref name="divisor"/>.
+    ///     Generates a 3D scene from <paramref name="startTime"/> to <paramref name="endTime"/> with an iteration period based
+    ///     on the beatmap's timing point and <paramref name="divisor"/>.
     /// </summary>
     public void Generate(Camera camera,
         StoryboardSegment segment,

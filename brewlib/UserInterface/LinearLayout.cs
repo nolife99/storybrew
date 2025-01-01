@@ -39,6 +39,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         set
         {
             if (horizontal == value) return;
+
             horizontal = value;
             InvalidateAncestorLayout();
         }
@@ -50,6 +51,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         set
         {
             if (spacing == value) return;
+
             spacing = value;
             InvalidateAncestorLayout();
         }
@@ -61,6 +63,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         set
         {
             if (padding == value) return;
+
             padding = value;
             InvalidateAncestorLayout();
         }
@@ -72,6 +75,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         set
         {
             if (fitChildren == value) return;
+
             fitChildren = value;
             InvalidateLayout();
         }
@@ -83,6 +87,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         set
         {
             if (fill == value) return;
+
             fill = value;
             InvalidateLayout();
         }
@@ -97,17 +102,20 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 
         Spacing = layoutStyle.Spacing;
     }
+
     public override void InvalidateLayout()
     {
         base.InvalidateLayout();
         invalidSizes = true;
     }
+
     protected override void Layout()
     {
         base.Layout();
 
         // Calculate the inner size excluding padding
         var innerSize = new Vector2(Size.X - padding.Horizontal, Size.Y - padding.Vertical);
+
         var totalSpace = horizontal ? innerSize.X : innerSize.Y;
         var usedSpace = 0f;
 
@@ -123,15 +131,16 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             var length = horizontal ? preferredSize.X : preferredSize.Y;
 
             // Add the child to the layout items list
-            items.Add(new()
-            {
-                Widget = child,
-                PreferredSize = preferredSize,
-                MinSize = child.MinSize,
-                MaxSize = child.MaxSize,
-                Length = length,
-                Scalable = true
-            });
+            items.Add(
+                new()
+                {
+                    Widget = child,
+                    PreferredSize = preferredSize,
+                    MinSize = child.MinSize,
+                    MaxSize = child.MaxSize,
+                    Length = length,
+                    Scalable = true
+                });
 
             usedSpace += length;
         }
@@ -155,6 +164,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             {
                 // Adjust item length if scalable
                 if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;
+
                 if (item.Scalable)
                 {
                     item.Length += adjustment;
@@ -211,7 +221,12 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 
                 // Place child in horizontal layout
                 var anchor = child.AnchorFrom & BoxAlignment.Vertical | BoxAlignment.Left;
-                PlaceChildren(child, new(distance, padding.GetVerticalOffset(anchor)), new(item.Length, childBreadth), anchor);
+
+                PlaceChildren(
+                    child,
+                    new(distance, padding.GetVerticalOffset(anchor)),
+                    new(item.Length, childBreadth),
+                    anchor);
             }
             else
             {
@@ -224,7 +239,12 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 
                 // Place child in vertical layout
                 var anchor = child.AnchorFrom & BoxAlignment.Horizontal | BoxAlignment.Top;
-                PlaceChildren(child, new(padding.GetHorizontalOffset(anchor), distance), new(childBreadth, item.Length), anchor);
+
+                PlaceChildren(
+                    child,
+                    new(padding.GetHorizontalOffset(anchor), distance),
+                    new(childBreadth, item.Length),
+                    anchor);
             }
 
             distance += item.Length + spacing;
@@ -238,9 +258,11 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         widget.AnchorFrom = anchor;
         widget.AnchorTo = anchor;
     }
+
     void measureChildren()
     {
         if (!invalidSizes) return;
+
         invalidSizes = false;
 
         float width = 0, height = 0, minWidth = 0, minHeight = 0;

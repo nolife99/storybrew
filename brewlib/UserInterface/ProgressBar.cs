@@ -18,8 +18,9 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 
     public override Vector2 MinSize => bar.MinSize;
 
-    public override Vector2 PreferredSize
-        => new(Math.Max(200, bar.PreferredSize.X), Math.Max(preferredHeight, bar.PreferredSize.Y));
+    public override Vector2 PreferredSize => new(
+        Math.Max(200, bar.PreferredSize.X),
+        Math.Max(preferredHeight, bar.PreferredSize.Y));
 
     public float Value
     {
@@ -29,6 +30,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
             value = Math.Clamp(value, MinValue, MaxValue);
 
             if (this.value == value) return;
+
             this.value = value;
             OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
@@ -47,6 +49,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         bar = null;
         base.Dispose(disposing);
     }
+
     protected override void ApplyStyle(WidgetStyle style)
     {
         base.ApplyStyle(style);
@@ -55,6 +58,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         bar = progressBarStyle.Bar;
         preferredHeight = progressBarStyle.Height;
     }
+
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
@@ -62,7 +66,8 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
         var progress = (value - MinValue) / (MaxValue - MinValue);
         var minWidth = bar.MinSize.X;
 
-        bar.Draw(drawContext,
+        bar.Draw(
+            drawContext,
             Manager.Camera,
             new(Bounds.X, Bounds.Y, minWidth + (Bounds.Width - minWidth) * progress, Bounds.Height),
             actualOpacity);

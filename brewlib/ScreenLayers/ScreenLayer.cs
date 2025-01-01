@@ -40,6 +40,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     protected void AddInputHandler(IInputHandler handler) => innerInputDispatcher.Add(handler);
 
     public virtual void Resize(int width, int height) { }
+
     public virtual void Update(bool isTopFocus, bool isCovered)
     {
         if (!hasStarted && !IsExiting && !isCovered)
@@ -54,6 +55,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
 
             CurrentState = State.FadingOut;
             if (updateTransition(Manager.TimeSource.Elapsed, TransitionOutDuration, -1)) return;
+
             OnHidden();
             Manager.Remove(this);
         }
@@ -100,6 +102,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
     {
         if (e.Key is not Keys.Escape) return base.OnKeyDown(e);
+
         Close();
         return true;
     }
@@ -107,6 +110,7 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     public void Exit()
     {
         if (IsExiting) return;
+
         IsExiting = true;
 
         OnExit();
@@ -124,9 +128,11 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
             case <= 0:
                 TransitionProgress = 0;
                 return false;
+
             case >= 1:
                 TransitionProgress = 1;
                 return false;
+
             default: return true;
         }
     }
@@ -134,12 +140,16 @@ public abstract class ScreenLayer : InputAdapter, IDisposable
     #region IDisposable Support
 
     protected bool IsDisposed { get; private set; }
+
     protected virtual void Dispose(bool disposing)
     {
         if (IsDisposed) return;
+
         if (disposing && HasFocus) throw new InvalidOperationException(GetType().Name + " still has focus");
+
         IsDisposed = true;
     }
+
     public void Dispose()
     {
         Dispose(true);

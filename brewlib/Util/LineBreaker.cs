@@ -191,6 +191,7 @@ public static class LineBreaker
                 i = findBreakIndex(text, startIndex, i);
 
                 yield return (startIndex, i - startIndex + 1);
+
                 startIndex = i + 1;
                 i = startIndex;
                 lineWidth = 0;
@@ -201,6 +202,7 @@ public static class LineBreaker
             if (!mustBreakAfter(text, i)) continue;
 
             yield return (startIndex, i - startIndex + 1);
+
             startIndex = i + 1;
             i = startIndex;
             lineWidth = 0;
@@ -210,6 +212,7 @@ public static class LineBreaker
 
         if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) yield return (0, 0);
     }
+
     static int findBreakIndex(ReadOnlySpan<char> text, int startIndex, int endIndex)
     {
         var firstAllowed = -1;
@@ -223,19 +226,24 @@ public static class LineBreaker
             if (after is Breakability.Prohibited || before is Breakability.Prohibited) continue;
 
             if (after is Breakability.Opportunity || before is Breakability.Opportunity) return i - 1;
+
             if (firstAllowed == -1) firstAllowed = i - 1;
         }
 
         if (firstAllowed != -1) return firstAllowed;
+
         return endIndex - 1;
     }
+
     static Breakability getBreakabilityAfter(char c)
     {
         if (breakOpportunityAfter.Contains(c) || c >= 0x2E0E && c <= 0x2E15) return Breakability.Opportunity;
+
         if (breakProhibitedAfter.Contains(c) || c >= 0x035C && c <= 0x0362) return Breakability.Prohibited;
 
         return Breakability.Allowed;
     }
+
     static Breakability getBreakabilityBefore(char c)
     {
         if (breakOpportunityBefore.Contains(c)) return Breakability.Opportunity;
@@ -243,12 +251,14 @@ public static class LineBreaker
 
         return Breakability.Allowed;
     }
+
     static bool mustBreakAfter(ReadOnlySpan<char> text, int index, bool ignoreLastCharacter = false)
     {
         if (!ignoreLastCharacter && index == text.Length - 1) return true;
 
         var c = text[index];
         if (causesBreakAfter.Contains(c)) return true;
+
         return c == 0x000D && (index == text.Length - 1 || text[index + 1] != 0x000A);
     }
 

@@ -13,6 +13,7 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
     public AudioSample Get(string filename)
     {
         ref var sample = ref CollectionsMarshal.GetValueRefOrAddDefault(samples, filename, out var exists);
+
         if (!exists) sample = manager.LoadSample(filename, container);
 
         return sample;
@@ -21,9 +22,11 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
     #region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (disposed) return;
+
         samples.Dispose();
         disposed = true;
     }

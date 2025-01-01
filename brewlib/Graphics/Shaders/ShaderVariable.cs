@@ -16,6 +16,7 @@ public class ShaderVariable
 
         reference = new(this);
     }
+
     public int ArrayCount { get; }
     public string Name { get; }
     public string ShaderTypeName { get; }
@@ -42,6 +43,7 @@ public class ShaderVariable
     public class Reference(ShaderVariable variable)
     {
         protected virtual string this[string index] => $"{variable.Name}[{index}]";
+
         public override string ToString() => variable.Name;
     }
 }

@@ -16,6 +16,7 @@ public sealed class ScreenLayerManager : IDisposable
     readonly InputDispatcher inputDispatcher = new();
 
     readonly List<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
+
     readonly NativeWindow window;
     ScreenLayer focusedLayer;
 
@@ -42,11 +43,13 @@ public sealed class ScreenLayerManager : IDisposable
         var size = window.ClientSize;
         layer.Resize(int.Max(1, size.X), int.Max(1, size.Y));
     }
+
     public void Set(ScreenLayer layer)
     {
         for (var i = layers.Count - 1; i >= 0; --i) layers[i].Exit();
         Add(layer);
     }
+
     public void Remove(ScreenLayer layer)
     {
         if (focusedLayer == layer) changeFocus(null);
@@ -55,6 +58,7 @@ public sealed class ScreenLayerManager : IDisposable
         removedLayers.Add(layer);
         updateQueue.Remove(layer);
     }
+
     public bool Close()
     {
         for (var i = layers.Count - 1; i >= 0; --i)
@@ -68,12 +72,14 @@ public sealed class ScreenLayerManager : IDisposable
 
         return false;
     }
+
     public void Exit()
     {
         foreach (var layer in layers.ToArray())
             if (!layer.IsExiting)
                 layer.Exit();
     }
+
     public void Update(bool isFixedRateUpdate)
     {
         var active = window.IsFocused;
@@ -152,15 +158,18 @@ public sealed class ScreenLayerManager : IDisposable
         var height = e.Height;
 
         if (width == 0 || height == 0) return;
+
         foreach (var layer in layers) layer.Resize(width, height);
     }
 
     #region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (disposed) return;
+
         changeFocus(null);
 
         foreach (var layer in layers) layer.Dispose();

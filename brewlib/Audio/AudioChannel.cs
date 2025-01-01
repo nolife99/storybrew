@@ -23,6 +23,7 @@ public class AudioChannel : IDisposable
         set
         {
             if (channel == value) return;
+
             channel = value;
 
             if (channel == 0) return;
@@ -41,6 +42,7 @@ public class AudioChannel : IDisposable
         set
         {
             if (channel == 0) return;
+
             Bass.ChannelSetPosition(channel, Bass.ChannelSeconds2Bytes(channel, value));
         }
     }
@@ -52,12 +54,14 @@ public class AudioChannel : IDisposable
         get
         {
             if (channel == 0) return false;
+
             var playbackState = Bass.ChannelIsActive(channel);
             return playbackState is PlaybackState.Playing or PlaybackState.Stalled;
         }
         set
         {
             if (channel == 0) return;
+
             if (value)
             {
                 Bass.ChannelPlay(channel);
@@ -75,6 +79,7 @@ public class AudioChannel : IDisposable
         set
         {
             if (volume == value) return;
+
             volume = value;
             UpdateVolume();
         }
@@ -86,6 +91,7 @@ public class AudioChannel : IDisposable
         set
         {
             if (timeFactor == value) return;
+
             timeFactor = value;
             updateTimeFactor();
         }
@@ -97,6 +103,7 @@ public class AudioChannel : IDisposable
         set
         {
             if (pitch == value) return;
+
             pitch = value;
             updatePitch();
         }
@@ -120,35 +127,45 @@ public class AudioChannel : IDisposable
     internal void UpdateVolume()
     {
         if (channel == 0) return;
+
         Bass.ChannelSetAttribute(channel, ChannelAttribute.Volume, SoundUtil.FromLinearVolume(volume * Manager.Volume));
     }
+
     void updateTimeFactor()
     {
         if (channel == 0) return;
+
         Bass.ChannelSetAttribute(channel, ChannelAttribute.Tempo, (timeFactor - 1) * 100);
     }
+
     void updatePitch()
     {
         if (channel == 0 || frequency <= 0) return;
+
         Bass.ChannelSetAttribute(channel, ChannelAttribute.Frequency, float.Clamp(frequency * pitch, 100, 100000));
     }
+
     void updatePan()
     {
         if (channel == 0) return;
+
         Bass.ChannelSetAttribute(channel, ChannelAttribute.Pan, pan);
     }
 
     #region IDisposable Support
 
     bool disposed;
+
     protected virtual void Dispose(bool disposing)
     {
         if (disposed || !disposing) return;
+
         Manager.UnregisterChannel(this);
         disposed = true;
     }
 
     ~AudioChannel() => Dispose(false);
+
     public void Dispose()
     {
         Dispose(true);

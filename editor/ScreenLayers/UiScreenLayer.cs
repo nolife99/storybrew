@@ -62,6 +62,7 @@ public class UiScreenLayer : ScreenLayer
             button.OnValueChanged += (sender, _) =>
             {
                 if (!(widget.Displayed = button.Checked)) return;
+
                 foreach (var otherButton in buttons)
                     if (sender != otherButton && otherButton.Checked)
                         otherButton.Checked = false;
@@ -72,6 +73,7 @@ public class UiScreenLayer : ScreenLayer
     #region IDisposable Support
 
     bool disposed;
+
     protected override void Dispose(bool disposing)
     {
         if (!disposed && disposing)

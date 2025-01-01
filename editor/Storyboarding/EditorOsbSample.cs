@@ -16,6 +16,7 @@ public class EditorOsbSample : OsbSample, IEvent
         if (EventTime + 1 < currentTime) return;
 
         Span<char> span = stackalloc char[project.MapsetPath.Length + AudioPath.Length + 1];
+
         Path.TryJoin(project.MapsetPath, AudioPath, span, out _);
         PathHelper.WithStandardSeparatorsUnsafe(span);
         var fullPath = StringPool.GetOrAdd(span);
@@ -27,7 +28,9 @@ public class EditorOsbSample : OsbSample, IEvent
             if (sample is null)
             {
                 Span<char> span2 = stackalloc char[project.ProjectAssetFolderPath.Length + AudioPath.Length + 1];
+
                 Path.TryJoin(project.ProjectAssetFolderPath, AudioPath, span2, out _);
+
                 PathHelper.WithStandardSeparatorsUnsafe(span2);
 
                 fullPath = StringPool.GetOrAdd(span2);

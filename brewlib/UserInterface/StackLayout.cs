@@ -33,6 +33,7 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
         set
         {
             if (fitChildren == value) return;
+
             fitChildren = value;
             InvalidateLayout();
         }
@@ -45,6 +46,7 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
         base.InvalidateLayout();
         invalidSizes = true;
     }
+
     protected override void Layout()
     {
         base.Layout();
@@ -57,10 +59,16 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
             var minSize = child.MinSize;
             var maxSize = child.MaxSize;
 
-            var childWidth = fitChildren ? Math.Max(minSize.X, Size.X) : Math.Max(minSize.X, Math.Min(preferredSize.X, Size.X));
+            var childWidth = fitChildren ?
+                Math.Max(minSize.X, Size.X) :
+                Math.Max(minSize.X, Math.Min(preferredSize.X, Size.X));
+
             if (maxSize.X > 0 && childWidth > maxSize.X) childWidth = maxSize.X;
 
-            var childHeight = fitChildren ? Math.Max(minSize.Y, Size.Y) : Math.Max(minSize.Y, Math.Min(preferredSize.Y, Size.Y));
+            var childHeight = fitChildren ?
+                Math.Max(minSize.Y, Size.Y) :
+                Math.Max(minSize.Y, Math.Min(preferredSize.Y, Size.Y));
+
             if (maxSize.Y > 0 && childHeight > maxSize.Y) childHeight = maxSize.Y;
 
             child.Size = new(childWidth, childHeight);
@@ -70,6 +78,7 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
     void measureChildren()
     {
         if (!invalidSizes) return;
+
         invalidSizes = false;
 
         var width = 0f;

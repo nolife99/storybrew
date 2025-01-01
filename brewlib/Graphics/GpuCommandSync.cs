@@ -9,12 +9,14 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public static class GpuCommandSync
 {
-    static readonly Lazy<Pool<SyncRange>> syncRangePool = new(() => new(obj =>
-        {
-            GL.DeleteSync(obj.Fence);
-            obj.Fence = 0;
-            obj.Expired = false;
-        }),
+    static readonly Lazy<Pool<SyncRange>> syncRangePool = new(
+        () => new(
+            obj =>
+            {
+                GL.DeleteSync(obj.Fence);
+                obj.Fence = 0;
+                obj.Expired = false;
+            }),
         LazyThreadSafetyMode.None);
 
     static readonly List<SyncRange> syncRanges = [];
@@ -23,6 +25,7 @@ public static class GpuCommandSync
     {
         foreach (var range in syncRanges) syncRangePool.Value.Release(range);
     }
+
     public static bool WaitForAll()
     {
         if (syncRanges.Count == 0) return false;
@@ -34,6 +37,7 @@ public static class GpuCommandSync
 
         return blocked;
     }
+
     public static bool WaitForRange(int index, int length)
     {
         trimExpiredRanges();
@@ -41,6 +45,7 @@ public static class GpuCommandSync
         {
             var syncRange = syncRanges[i];
             if (index >= syncRange.Index + syncRange.Length || syncRange.Index >= index + length) continue;
+
             var blocked = syncRange.Wait(true);
             clearToIndex(i);
             return blocked;
@@ -48,6 +53,7 @@ public static class GpuCommandSync
 
         return false;
     }
+
     public static void LockRange(int index, int length)
     {
         var item = syncRangePool.Value.Retrieve();
@@ -113,10 +119,11 @@ public static class GpuCommandSync
 
                     case WaitSyncStatus.TimeoutExpired:
                         if (!canBlock) return true;
+
                         blocked = true;
                         waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
                         timeout = 1000000000L;
-                        break;
+                    break;
 
                     case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
                 }

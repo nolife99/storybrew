@@ -60,6 +60,7 @@ public class TextLayout
             if (hasBounds) action(RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y));
         }
     }
+
     public int GetCharacterIndexAt(Vector2 position)
     {
         var index = 0;
@@ -69,6 +70,7 @@ public class TextLayout
             foreach (var glyph in line.Glyphs)
             {
                 if (lineMatches && position.X < glyph.Position.X + glyph.Glyph.Width * .5f) return index;
+
                 ++index;
             }
 
@@ -77,6 +79,7 @@ public class TextLayout
 
         return index - 1;
     }
+
     public int GetCharacterIndexAbove(int index)
     {
         for (var lineIndex = 0; lineIndex < Lines.Count; ++lineIndex)
@@ -95,6 +98,7 @@ public class TextLayout
 
         return getLastGlyph().Index;
     }
+
     public int GetCharacterIndexBelow(int index)
     {
         for (var lineIndex = 0; lineIndex < Lines.Count; ++lineIndex)
@@ -118,16 +122,19 @@ public class TextLayout
 
         return getLastGlyph().Index;
     }
+
     public TextLayoutGlyph GetGlyph(int index)
     {
         foreach (var line in Lines)
         {
             if (index < line.GlyphCount) return line.GetGlyph(index);
+
             index -= line.GlyphCount;
         }
 
         return getLastGlyph();
     }
+
     TextLayoutGlyph getLastGlyph()
     {
         var lastLine = Lines[^1];
@@ -145,7 +152,8 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
     public int Width { get; private set; }
     public int Height { get; private set; }
 
-    public Vector2 Position => new((alignment & BoxAlignment.Left) > 0 ? 0 :
+    public Vector2 Position => new(
+        (alignment & BoxAlignment.Left) > 0 ? 0 :
         (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f,
         y);
 

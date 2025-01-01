@@ -80,6 +80,7 @@ public class EditorBeatmap(string path) : Beatmap
     readonly List<ControlPoint> controlPoints = [];
 
     public override IEnumerable<ControlPoint> ControlPoints => controlPoints;
+
     public override IEnumerable<ControlPoint> TimingPoints => controlPoints.Where(c => !c.IsInherited);
 
     public ControlPoint GetControlPointAt(float time, Func<ControlPoint, bool> predicate)
@@ -90,6 +91,7 @@ public class EditorBeatmap(string path) : Beatmap
         foreach (var controlPoint in controlPoints)
         {
             if (predicate is not null && !predicate(controlPoint)) continue;
+
             if (closestTimingPoint is null || controlPoint.Offset - time <= ControlPointLeniency)
                 closestTimingPoint = controlPoint;
             else break;
@@ -113,142 +115,174 @@ public class EditorBeatmap(string path) : Beatmap
             EditorBeatmap beatmap = new(path);
 
             using var reader = File.OpenText(path);
-            reader.ParseSections(section =>
-            {
-                switch (section)
+            reader.ParseSections(
+                section =>
                 {
-                    case "General":
-                        reader.ParseKeyValueSection((key, value) =>
-                        {
-                            switch (key)
-                            {
-                                case "AudioFilename": beatmap.audioFilename = value; break;
-                                case "StackLeniency":
-                                    beatmap.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture); break;
-                            }
-                        }); break;
-
-                    case "Editor":
-                        reader.ParseKeyValueSection((key, value) =>
-                        {
-                            switch (key)
-                            {
-                                case "Bookmarks":
-                                    foreach (var bookmark in value.Split(','))
-                                        if (value.Length > 0)
-                                            beatmap.bookmarks.Add(int.Parse(bookmark, CultureInfo.InvariantCulture));
-
-                                    break;
-                            }
-                        }); break;
-
-                    case "Metadata":
-                        reader.ParseKeyValueSection((key, value) =>
-                        {
-                            switch (key)
-                            {
-                                case "Version": beatmap.name = value; break;
-                                case "BeatmapID": beatmap.id = long.Parse(value, CultureInfo.InvariantCulture); break;
-                            }
-                        }); break;
-
-                    case "Difficulty":
-                        reader.ParseKeyValueSection((key, value) =>
-                        {
-                            switch (key)
-                            {
-                                case "HPDrainRate": beatmap.hpDrainRate = float.Parse(value, CultureInfo.InvariantCulture); break;
-                                case "CircleSize": beatmap.circleSize = float.Parse(value, CultureInfo.InvariantCulture); break;
-                                case "OverallDifficulty":
-                                    beatmap.overallDifficulty = float.Parse(value, CultureInfo.InvariantCulture); break;
-                                case "ApproachRate":
-                                    beatmap.approachRate = float.Parse(value, CultureInfo.InvariantCulture); break;
-                                case "SliderMultiplier":
-                                    beatmap.sliderMultiplier = float.Parse(value, CultureInfo.InvariantCulture); break;
-                                case "SliderTickRate":
-                                    beatmap.sliderTickRate = float.Parse(value, CultureInfo.InvariantCulture); break;
-                            }
-                        }); break;
-
-                    case "Events":
-                        reader.ParseSectionLines(line =>
-                            {
-                                if (line.StartsWith("//", StringComparison.Ordinal)) return;
-                                if (line.StartsWith(' ')) return;
-
-                                var values = line.Split(',');
-                                switch (values[0])
+                    switch (section)
+                    {
+                        case "General":
+                            reader.ParseKeyValueSection(
+                                (key, value) =>
                                 {
-                                    case "0": beatmap.backgroundPath = removePathQuotes(values[2]); break;
-                                    case "2": beatmap.breaks.Add(OsuBreak.Parse(line)); break;
-                                }
-                            },
-                            false); break;
+                                    switch (key)
+                                    {
+                                        case "AudioFilename": beatmap.audioFilename = value; break;
 
-                    case "TimingPoints":
-                    {
-                        reader.ParseSectionLines(line => beatmap.controlPoints.Add(ControlPoint.Parse(line)));
-                        beatmap.controlPoints.Sort();
-                        break;
-                    }
-                    case "Colours":
-                    {
-                        beatmap.comboColors.Clear();
-                        reader.ParseKeyValueSection((key, value) =>
-                        {
-                            if (!key.StartsWith("Combo", StringComparison.Ordinal)) return;
+                                        case "StackLeniency":
+                                            beatmap.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                    }
+                                }); break;
 
-                            var rgb = value.Split(',');
-                            beatmap.comboColors.Add(Color.FromRgb(byte.Parse(rgb[0], CultureInfo.InvariantCulture),
-                                byte.Parse(rgb[1], CultureInfo.InvariantCulture),
-                                byte.Parse(rgb[2], CultureInfo.InvariantCulture)));
-                        });
-
-                        if (beatmap.comboColors.Count == 0) beatmap.comboColors.AddRange(defaultComboColors);
-                        break;
-                    }
-                    case "HitObjects":
-                    {
-                        OsuHitObject previousHitObject = null;
-                        var colorIndex = 0;
-                        var comboIndex = 0;
-
-                        reader.ParseSectionLines(line =>
-                            {
-                                var hitobject = OsuHitObject.Parse(beatmap, line);
-
-                                if (hitobject.NewCombo ||
-                                    previousHitObject is null ||
-                                    (previousHitObject.Flags & HitObjectFlag.Spinner) > 0)
+                        case "Editor":
+                            reader.ParseKeyValueSection(
+                                (key, value) =>
                                 {
-                                    hitobject.Flags |= HitObjectFlag.NewCombo;
+                                    switch (key)
+                                    {
+                                        case "Bookmarks":
+                                            foreach (var bookmark in value.Split(','))
+                                                if (value.Length > 0)
+                                                    beatmap.bookmarks.Add(int.Parse(bookmark, CultureInfo.InvariantCulture));
 
-                                    var colorIncrement = hitobject.ComboOffset;
-                                    if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) ++colorIncrement;
-                                    colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
-                                    comboIndex = 1;
-                                }
-                                else ++comboIndex;
+                                        break;
+                                    }
+                                }); break;
 
-                                hitobject.ComboIndex = comboIndex;
-                                hitobject.ColorIndex = colorIndex;
-                                hitobject.Color = beatmap.comboColors[colorIndex];
+                        case "Metadata":
+                            reader.ParseKeyValueSection(
+                                (key, value) =>
+                                {
+                                    switch (key)
+                                    {
+                                        case "Version": beatmap.name = value; break;
 
-                                beatmap.hitObjects.Add(hitobject);
-                                previousHitObject = hitobject;
-                            },
-                            false);
+                                        case "BeatmapID":
+                                            beatmap.id = long.Parse(value, CultureInfo.InvariantCulture); break;
+                                    }
+                                }); break;
 
-                        break;
+                        case "Difficulty":
+                            reader.ParseKeyValueSection(
+                                (key, value) =>
+                                {
+                                    switch (key)
+                                    {
+                                        case "HPDrainRate":
+                                            beatmap.hpDrainRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+
+                                        case "CircleSize":
+                                            beatmap.circleSize = float.Parse(value, CultureInfo.InvariantCulture); break;
+
+                                        case "OverallDifficulty":
+                                            beatmap.overallDifficulty = float.Parse(
+                                                value,
+                                                CultureInfo.InvariantCulture); break;
+
+                                        case "ApproachRate":
+                                            beatmap.approachRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+
+                                        case "SliderMultiplier":
+                                            beatmap.sliderMultiplier = float.Parse(
+                                                value,
+                                                CultureInfo.InvariantCulture); break;
+
+                                        case "SliderTickRate":
+                                            beatmap.sliderTickRate = float.Parse(value, CultureInfo.InvariantCulture); break;
+                                    }
+                                }); break;
+
+                        case "Events":
+                            reader.ParseSectionLines(
+                                line =>
+                                {
+                                    if (line.StartsWith("//", StringComparison.Ordinal)) return;
+
+                                    if (line.StartsWith(' ')) return;
+
+                                    var values = line.Split(',');
+                                    switch (values[0])
+                                    {
+                                        case "0": beatmap.backgroundPath = removePathQuotes(values[2]); break;
+                                        case "2": beatmap.breaks.Add(OsuBreak.Parse(line)); break;
+                                    }
+                                },
+                                false); break;
+
+                        case "TimingPoints":
+                        {
+                            reader.ParseSectionLines(line => beatmap.controlPoints.Add(ControlPoint.Parse(line)));
+
+                            beatmap.controlPoints.Sort();
+                            break;
+                        }
+
+                        case "Colours":
+                        {
+                            beatmap.comboColors.Clear();
+                            reader.ParseKeyValueSection(
+                                (key, value) =>
+                                {
+                                    if (!key.StartsWith("Combo", StringComparison.Ordinal)) return;
+
+                                    var rgb = value.Split(',');
+                                    beatmap.comboColors.Add(
+                                        Color.FromRgb(
+                                            byte.Parse(rgb[0], CultureInfo.InvariantCulture),
+                                            byte.Parse(rgb[1], CultureInfo.InvariantCulture),
+                                            byte.Parse(rgb[2], CultureInfo.InvariantCulture)));
+                                });
+
+                            if (beatmap.comboColors.Count == 0) beatmap.comboColors.AddRange(defaultComboColors);
+
+                            break;
+                        }
+
+                        case "HitObjects":
+                        {
+                            OsuHitObject previousHitObject = null;
+                            var colorIndex = 0;
+                            var comboIndex = 0;
+
+                            reader.ParseSectionLines(
+                                line =>
+                                {
+                                    var hitobject = OsuHitObject.Parse(beatmap, line);
+
+                                    if (hitobject.NewCombo ||
+                                        previousHitObject is null ||
+                                        (previousHitObject.Flags & HitObjectFlag.Spinner) > 0)
+                                    {
+                                        hitobject.Flags |= HitObjectFlag.NewCombo;
+
+                                        var colorIncrement = hitobject.ComboOffset;
+                                        if ((hitobject.Flags & HitObjectFlag.Spinner) == 0) ++colorIncrement;
+
+                                        colorIndex = (colorIndex + colorIncrement) % beatmap.comboColors.Count;
+
+                                        comboIndex = 1;
+                                    }
+                                    else ++comboIndex;
+
+                                    hitobject.ComboIndex = comboIndex;
+                                    hitobject.ColorIndex = colorIndex;
+                                    hitobject.Color = beatmap.comboColors[colorIndex];
+
+                                    beatmap.hitObjects.Add(hitobject);
+                                    previousHitObject = hitobject;
+                                },
+                                false);
+
+                            break;
+                        }
                     }
-                }
-            });
+                });
 
             return beatmap;
         }
         catch (Exception e)
         {
-            throw new BeatmapLoadingException($"Failed to load beatmap \"{System.IO.Path.GetFileNameWithoutExtension(path)}\".",
+            throw new BeatmapLoadingException(
+                $"Failed to load beatmap \"{System.IO.Path.GetFileNameWithoutExtension(path)}\".",
                 e);
         }
     }
@@ -274,12 +308,14 @@ public class EditorBeatmap(string path) : Beatmap
                     {
                         var objectN = hitObjects[n];
                         if (objectN is OsuSpinner) continue;
+
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.EndTime) break;
 
                         if (objectN is OsuSlider spanN &&
                             (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
                         {
                             var offset = objectI.StackIndex - objectN.StackIndex + 1;
+
                             for (var j = n + 1; j <= i; ++j)
                                 if ((spanN.PlayfieldEndPosition - hitObjects[j].PlayfieldPosition).LengthSquared <
                                     stackLenienceSquared)
@@ -297,6 +333,7 @@ public class EditorBeatmap(string path) : Beatmap
 
                     break;
                 }
+
                 case OsuSlider:
                 {
                     while (--n >= 0)

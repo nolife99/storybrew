@@ -19,9 +19,11 @@ public sealed class TextureAtlas2d(int width,
         var height = bitmap.Height;
 
         if (currentY + height > texture.Height) return null;
+
         if (currentX + width > texture.Width)
         {
             if (nextY + height > texture.Height) return null;
+
             currentX = 0;
             currentY = nextY;
         }
@@ -38,9 +40,11 @@ public sealed class TextureAtlas2d(int width,
     #region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (disposed) return;
+
         texture.Dispose();
         disposed = true;
     }

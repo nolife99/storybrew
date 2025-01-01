@@ -8,6 +8,7 @@ using System.Text;
 public class ShaderContext
 {
     readonly Dictionary<ShaderVariable, HashSet<ShaderVariable>> dependencies = [];
+
     readonly HashSet<ShaderVariable> usedVariables = [], flowVariables = [];
 
     bool canReceiveCommands;
@@ -27,21 +28,23 @@ public class ShaderContext
         flowVariables.Add(referencedVariable);
 
         if (dependantVariables is null) return;
+
         foreach (var dependentVariable in dependantVariables)
         {
             if (referencedVariable == dependentVariable) continue;
+
             if (!dependencies.TryGetValue(dependentVariable, out var existingDependencies))
                 existingDependencies = dependencies[dependentVariable] = [];
 
             existingDependencies.Add(referencedVariable);
         }
     }
+
     public void MarkUsedVariables(Action action, params ShaderVariable[] outputVariables)
     {
         if (canReceiveCommands)
-            throw new InvalidOperationException(code is null ?
-                "Already marking used variables" :
-                "Can't mark used variables while generate code");
+            throw new InvalidOperationException(
+                code is null ? "Already marking used variables" : "Can't mark used variables while generate code");
 
         canReceiveCommands = true;
         action();
@@ -50,12 +53,12 @@ public class ShaderContext
         foreach (var flowVariable in flowVariables) markUsed(flowVariable);
         foreach (var t in outputVariables) markUsed(t);
     }
+
     public void GenerateCode(StringBuilder code, Action action)
     {
         if (canReceiveCommands)
-            throw new InvalidOperationException(this.code is not null ?
-                "Already generating code" :
-                "Can't generate code while mark used variables");
+            throw new InvalidOperationException(
+                this.code is not null ? "Already generating code" : "Can't generate code while mark used variables");
 
         this.code = code;
         canReceiveCommands = true;
@@ -63,6 +66,7 @@ public class ShaderContext
         this.code = null;
         canReceiveCommands = false;
     }
+
     public bool Uses(ShaderVariable variable) => usedVariables.Contains(variable);
 
     public ShaderVariable Declare(string shaderTypeName, Func<string> expression = null)
@@ -73,6 +77,7 @@ public class ShaderContext
         assign(variable, expression, true);
         return variable;
     }
+
     public void Assign(ShaderVariable result, Func<string> expression, string components = null)
         => assign(result, expression, false, components);
 
@@ -91,12 +96,14 @@ public class ShaderContext
 
         this.dependantVariables = previousDependentVariables;
     }
+
     public void Comment(string line)
     {
         checkCanReceiveCommands();
         line = string.Join("\n// ", line.Split('\n'));
         code?.AppendLine(CultureInfo.InvariantCulture, $"\n// {line}\n");
     }
+
     void assign(ShaderVariable result, Func<string> expression, bool declare, string components = null)
     {
         checkCanReceiveCommands();
@@ -106,19 +113,24 @@ public class ShaderContext
             throw new InvalidOperationException("Cannot set components when declaring a variable");
 
         if (expression is not null)
-            Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
-                    components is not null ? $"{result.Ref}.{components} = {expression()}" : $"{result.Ref} = {expression()}",
+            Dependant(
+                () => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
+                    components is not null ? $"{result.Ref}.{components} = {expression()}" :
+                    $"{result.Ref} = {expression()}",
                 result);
 
         else if (declare) code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName} {result.Name};");
         else throw new ArgumentNullException(nameof(expression));
     }
+
     void markUsed(ShaderVariable var)
     {
         if (!usedVariables.Add(var)) return;
         if (!dependencies.TryGetValue(var, out var variableDependencies)) return;
+
         foreach (var dependency in variableDependencies) markUsed(dependency);
     }
+
     void checkCanReceiveCommands()
     {
         if (!canReceiveCommands)

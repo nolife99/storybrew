@@ -23,8 +23,8 @@ public static class QuadRendererExtensions
         float textureX1,
         float textureY1)
     {
-        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY, fx2 = width - originX,
-            fy2 = height - originY;
+        float width = textureX1 - textureX0, height = textureY1 - textureY0, fx = -originX, fy = -originY,
+            fx2 = width - originX, fy2 = height - originY;
 
         bool flipX = false, flipY = false;
 
@@ -34,6 +34,7 @@ public static class QuadRendererExtensions
             flipY = scaleY < 0;
 
             float absScaleX = flipX ? -scaleX : scaleX, absScaleY = flipY ? -scaleY : scaleY;
+
             fx *= absScaleX;
             fy *= absScaleY;
             fx2 *= absScaleX;
@@ -66,6 +67,7 @@ public static class QuadRendererExtensions
         }
 
         Vector2 textureUvOrigin = texture.UvOrigin, textureUvRatio = texture.UvRatio;
+
         float textureU0 = textureUvOrigin.X + textureX0 * textureUvRatio.X,
             textureV0 = textureUvOrigin.Y + textureY0 * textureUvRatio.Y,
             textureU1 = textureUvOrigin.X + textureX1 * textureUvRatio.X,

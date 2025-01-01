@@ -35,8 +35,9 @@ using Path = System.IO.Path;
 
 public sealed partial class Project : IDisposable
 {
-    const string BinaryExtension = ".sbp", TextExtension = ".sbrew.yaml", DefaultBinaryFilename = "project" + BinaryExtension,
-        DefaultTextFilename = "project" + TextExtension, DataFolder = ".sbrew";
+    const string BinaryExtension = ".sbp", TextExtension = ".sbrew.yaml",
+        DefaultBinaryFilename = "project" + BinaryExtension, DefaultTextFilename = "project" + TextExtension,
+        DataFolder = ".sbrew";
 
     public static readonly string ProjectsFolder = Path.GetFullPath("projects");
 
@@ -74,18 +75,21 @@ public sealed partial class Project : IDisposable
         var scriptsLibraryPath = Path.Combine(ScriptsPath, "scriptslibrary");
         if (!Directory.Exists(scriptsLibraryPath)) Directory.CreateDirectory(scriptsLibraryPath);
 
-        Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
-        }");
+        Trace.WriteLine(
+            $"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
+            }");
 
         initializeAssetWatcher();
-        scriptManager = new(resourceContainer,
+        scriptManager = new(
+            resourceContainer,
             "StorybrewScripts",
             ScriptsPath,
             CommonScriptsPath,
             scriptsLibraryPath,
             ReferencedAssemblies);
 
-        effectUpdateQueue.OnActionFailed += (effect, e) => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
+        effectUpdateQueue.OnActionFailed += (effect, e)
+            => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
 
         LayerManager.OnLayersChanged += (_, _) => Changed = true;
         OnMainBeatmapChanged += (_, _) =>
@@ -99,7 +103,9 @@ public sealed partial class Project : IDisposable
     public ExportSettings ExportSettings { get; } = new();
     public LayerManager LayerManager { get; } = new();
     public string ScriptsPath { get; }
+
     public string ProjectFolderPath => projectFolderPath ??= Path.GetDirectoryName(projectPath);
+
     public string ProjectAssetFolderPath => projectAssetFolderPath ??= Path.Combine(ProjectFolderPath, "assetlibrary");
 
     public string AudioPath
@@ -153,17 +159,20 @@ public sealed partial class Project : IDisposable
 
     public TextureContainer TextureContainer { get; private set; }
     public AudioSampleContainer AudioContainer { get; private set; }
+
     public FrameStats FrameStats { get; private set; } = frameStatsPool.Retrieve();
 
-    static readonly Pool<FrameStats> frameStatsPool = new(obj =>
-    {
-        obj.LoadedPaths.Clear();
-        obj.GpuPixelsFrame = 0;
-        obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
-        obj.LastTexture = null;
-        obj.ScreenFill = 0;
-        obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
-    });
+    static readonly Pool<FrameStats> frameStatsPool = new(
+        obj =>
+        {
+            obj.LoadedPaths.Clear();
+            obj.GpuPixelsFrame = 0;
+            obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
+
+            obj.LastTexture = null;
+            obj.ScreenFill = 0;
+            obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
+        });
 
     public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
@@ -175,6 +184,7 @@ public sealed partial class Project : IDisposable
         LayerManager.Draw(drawContext, camera, bounds, opacity, newFrameStats);
 
         if (newFrameStats is null) return;
+
         frameStatsPool.Release(FrameStats);
         FrameStats = newFrameStats;
     }
@@ -197,11 +207,13 @@ public sealed partial class Project : IDisposable
 
     readonly List<Effect> effects = [];
     public IReadOnlyCollection<Effect> Effects => effects;
+
     public event EventHandler OnEffectsChanged, OnEffectsStatusChanged, OnEffectsContentChanged;
 
     public EffectStatus EffectsStatus { get; private set; } = EffectStatus.Initializing;
 
     public float StartTime => effects.Count > 0 ? effects.Min(e => e.StartTime) : 0;
+
     public float EndTime => effects.Count > 0 ? effects.Max(e => e.EndTime) : 0;
 
     bool allowEffectUpdates = true;
@@ -211,6 +223,7 @@ public sealed partial class Project : IDisposable
     public void QueueEffectUpdate(Effect effect)
     {
         effectUpdateQueue.Queue(effect, effect.Path.GetHashCode(), effect.Update, effect.Multithreaded);
+
         refreshEffectsStatus();
     }
 
@@ -267,6 +280,7 @@ public sealed partial class Project : IDisposable
     void effect_OnChanged(object sender, EventArgs e)
     {
         if (Disposed) return;
+
         Changed = true;
 
         refreshEffectsStatus();
@@ -277,6 +291,7 @@ public sealed partial class Project : IDisposable
     {
         var previousStatus = EffectsStatus;
         var isUpdating = effectUpdateQueue is not null && effectUpdateQueue.TaskCount != 0;
+
         var hasError = false;
 
         foreach (var effect in effects)
@@ -286,9 +301,11 @@ public sealed partial class Project : IDisposable
                 case EffectStatus.Configuring:
                 case EffectStatus.Updating:
                 case EffectStatus.ReloadPending: isUpdating = true; break;
+
                 case EffectStatus.CompilationFailed:
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: hasError = true; break;
+
                 case EffectStatus.Initializing:
                 case EffectStatus.Ready: break;
             }
@@ -313,6 +330,7 @@ public sealed partial class Project : IDisposable
         set
         {
             if (mapsetPath == value) return;
+
             mapsetPath = value;
             MapsetPathIsValid = Directory.Exists(mapsetPath);
             Changed = true;
@@ -337,6 +355,7 @@ public sealed partial class Project : IDisposable
         set
         {
             if (mainBeatmap == value) return;
+
             mainBeatmap = value;
             Changed = true;
 
@@ -417,29 +436,33 @@ public sealed partial class Project : IDisposable
         assetWatcher.Changed += assetWatcher_OnFileChanged;
         assetWatcher.Renamed += assetWatcher_OnFileChanged;
         assetWatcher.Error += (_, e) => Trace.TraceError($"Watcher (assets): {e.GetException()}");
+
         assetWatcher.EnableRaisingEvents = true;
         Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
     }
 
-    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e) => Program.Schedule(() =>
-    {
-        if (Disposed) return;
-
-        switch (Path.GetExtension(e.Name))
+    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e) => Program.Schedule(
+        () =>
         {
-            case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
-            case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
-        }
-    });
+            if (Disposed) return;
+
+            switch (Path.GetExtension(e.Name))
+            {
+                case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
+                case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
+            }
+        });
 
     #endregion
 
     #region Assemblies
 
-    static readonly CompositeFormat runtimePath = CompositeFormat.Parse(Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(),
-        "../../../packs/{0}",
-        RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
-        string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
+    static readonly CompositeFormat runtimePath = CompositeFormat.Parse(
+        Path.Combine(
+            RuntimeEnvironment.GetRuntimeDirectory(),
+            "../../../packs/{0}",
+            RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
+            string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
     public static readonly FrozenSet<string> DefaultAssemblies =
     [
@@ -450,11 +473,13 @@ public sealed partial class Project : IDisposable
         typeof(Script).Assembly.Location,
         typeof(Pool<>).Assembly.Location,
         .. Directory
-            .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
+            .EnumerateFiles(
+                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
                 "*.dll")
-            .Concat(Directory.EnumerateFiles(
-                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
-                "*.dll"))
+            .Concat(
+                Directory.EnumerateFiles(
+                    string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
+                    "*.dll"))
     ];
 
     HashSet<string> importedAssemblies = [];
@@ -488,6 +513,7 @@ public sealed partial class Project : IDisposable
         set
         {
             if (ownsOsb == value) return;
+
             ownsOsb = value;
             Changed = true;
         }
@@ -496,12 +522,16 @@ public sealed partial class Project : IDisposable
     public Task Save()
     {
         var text = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
-        return File.Exists(text) ? saveText(text) : saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
+
+        return File.Exists(text) ?
+            saveText(text) :
+            saveBinary(projectPath.Replace(DefaultTextFilename, DefaultBinaryFilename));
     }
 
     public static Project Load(string projectPath, bool withCommonScripts, ResourceContainer resourceContainer)
     {
         Project project = new(projectPath, withCommonScripts, resourceContainer);
+
         if (projectPath.EndsWith(BinaryExtension, StringComparison.Ordinal)) project.loadBinary(projectPath);
         else project.loadText(projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename));
 
@@ -512,7 +542,8 @@ public sealed partial class Project : IDisposable
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        await using BinaryWriter w = new(new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false),
+        await using BinaryWriter w = new(
+            new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false),
             Encoding,
             false);
 
@@ -540,6 +571,7 @@ public sealed partial class Project : IDisposable
 
                 w.Write(field.AllowedValues?.Length ?? 0);
                 if (field.AllowedValues is null) continue;
+
                 foreach (var t in field.AllowedValues)
                 {
                     w.Write(t.Name);
@@ -566,7 +598,10 @@ public sealed partial class Project : IDisposable
 
     void loadBinary(string path)
     {
-        using BinaryReader r = new(new DeflateStream(File.OpenRead(path), CompressionMode.Decompress, false), Encoding, false);
+        using BinaryReader r = new(
+            new DeflateStream(File.OpenRead(path), CompressionMode.Decompress, false),
+            Encoding,
+            false);
 
         var version = r.ReadInt32();
         if (version > Version)
@@ -593,10 +628,12 @@ public sealed partial class Project : IDisposable
 
                 var allowedValueCount = r.ReadInt32();
                 var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : [];
+
                 for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
                     allowedValues[allowedValueIndex] = new(r.ReadString(), ObjectSerializer.Read(r));
 
-                effect.Config.UpdateField(fieldName,
+                effect.Config.UpdateField(
+                    fieldName,
                     fieldDisplayName,
                     null,
                     fieldIndex,
@@ -614,10 +651,11 @@ public sealed partial class Project : IDisposable
             var name = r.ReadString();
 
             var effect = effects[r.ReadInt32()];
-            effect.AddPlaceholder(new(name, effect)
-            {
-                DiffSpecific = r.ReadBoolean(), OsbLayer = (OsbLayer)r.ReadInt32(), Visible = r.ReadBoolean()
-            });
+            effect.AddPlaceholder(
+                new(name, effect)
+                {
+                    DiffSpecific = r.ReadBoolean(), OsbLayer = (OsbLayer)r.ReadInt32(), Visible = r.ReadBoolean()
+                });
         }
 
         var assemblyCount = r.ReadInt32();
@@ -632,7 +670,9 @@ public sealed partial class Project : IDisposable
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         if (!File.Exists(path))
-            await File.WriteAllTextAsync(path, "# This file is used to open the project\n# Project data is contained in /.sbrew");
+            await File.WriteAllTextAsync(
+                path,
+                "# This file is used to open the project\n# Project data is contained in /.sbrew");
 
         var projectDirectory = Path.GetDirectoryName(path);
 
@@ -687,10 +727,13 @@ public sealed partial class Project : IDisposable
                 };
 
                 if (field.DisplayName != field.Name) fieldRoot.Add("DisplayName", field.DisplayName);
+
                 if (!string.IsNullOrWhiteSpace(field.BeginsGroup)) fieldRoot.Add("BeginsGroup", field.BeginsGroup);
+
                 configRoot.Add(field.Name, fieldRoot);
 
                 if ((field.AllowedValues?.Length ?? 0) <= 0) continue;
+
                 TinyObject allowedValuesRoot = [];
                 fieldRoot.Add("AllowedValues", allowedValuesRoot);
 
@@ -716,6 +759,7 @@ public sealed partial class Project : IDisposable
                 }
 
             var effectPath = directoryWriter.GetPath("effect." + StringHelper.GetMd5(effect.Name) + ".yaml");
+
             effectRoot.Write(effectPath);
         }
 
@@ -726,6 +770,7 @@ public sealed partial class Project : IDisposable
     void loadText(string path)
     {
         var targetDirectory = Path.Combine(Path.GetDirectoryName(path), DataFolder);
+
         SafeDirectoryReader directoryReader = new(targetDirectory);
         var indexPath = directoryReader.GetPath("index.yaml");
         var indexRoot = TinyToken.Read(indexPath);
@@ -746,16 +791,22 @@ public sealed partial class Project : IDisposable
                     "This project's user settings were saved with a newer version; you need to update.");
 
             ExportSettings.UseFloatForTime = userRoot.Value<bool>("ExportTimeAsFloatingPoint");
+
             OwnsOsb = userRoot.Value<bool>("OwnsOsb");
         }
 
         MapsetPath = userRoot?.Value<string>("MapsetPath") ?? indexRoot.Value<string>("MapsetPath") ?? "nul";
+
         SelectBeatmap(indexRoot.Value<long>("BeatmapId"), indexRoot.Value<string>("BeatmapName"));
+
         ImportedAssemblies = indexRoot.Values<string>("Assemblies").ToArray();
 
         // Load effects
         Dictionary<string, Action> layerInserters = [];
-        foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path, "effect.*.yaml", SearchOption.TopDirectoryOnly))
+        foreach (var effectPath in Directory.EnumerateFiles(
+            directoryReader.Path,
+            "effect.*.yaml",
+            SearchOption.TopDirectoryOnly))
         {
             var effectRoot = TinyToken.Read(effectPath);
 
@@ -765,6 +816,7 @@ public sealed partial class Project : IDisposable
                     "This project has an effect that was saved with a newer version; you need to update.");
 
             var effect = AddScriptedEffect(effectRoot.Value<string>("Script"), effectRoot.Value<bool>("Multithreaded"));
+
             effect.Name = effectRoot.Value<string>("Name");
 
             var configRoot = effectRoot.Value<TinyObject>("Config");
@@ -776,14 +828,16 @@ public sealed partial class Project : IDisposable
                 var fieldTypeName = fieldRoot.Value<string>("Type");
                 var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldRoot.Value<string>("Value"));
 
-                effect.Config.UpdateField(fieldProperty.Key,
+                effect.Config.UpdateField(
+                    fieldProperty.Key,
                     fieldRoot.Value<string>("DisplayName"),
                     null,
                     fieldIndex++,
                     fieldValue?.GetType(),
                     fieldValue,
                     fieldRoot.Value<TinyObject>("AllowedValues")
-                        ?.Select(p => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>())))
+                        ?.Select(
+                            p => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>())))
                         .ToArray(),
                     fieldRoot.Value<string>("BeginsGroup"));
             }
@@ -795,18 +849,20 @@ public sealed partial class Project : IDisposable
                 var layerHash = layerProperty.Key;
                 var layerRoot = layerProperty.Value;
 
-                layerInserters[layerHash] = () => layerEffect.AddPlaceholder(new(layerRoot.Value<string>("Name"), layerEffect)
-                {
-                    OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
-                    DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
-                    Visible = layerRoot.Value<bool>("Visible")
-                });
+                layerInserters[layerHash] = () => layerEffect.AddPlaceholder(
+                    new(layerRoot.Value<string>("Name"), layerEffect)
+                    {
+                        OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
+                        DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
+                        Visible = layerRoot.Value<bool>("Visible")
+                    });
             }
         }
 
         if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
 
         var layersOrder = indexRoot.Values<string>("Layers").Distinct().ToArray();
+
         foreach (var layerGuid in layersOrder)
             if (layerInserters.TryGetValue(layerGuid, out var insertLayer))
                 insertLayer();
@@ -847,19 +903,22 @@ public sealed partial class Project : IDisposable
         string osuPath = null, osbPath = null;
         List<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
 
-        await Program.Schedule(() =>
-        {
-            osuPath = MainBeatmap.Path;
-            osbPath = OsbPath;
+        await Program.Schedule(
+            () =>
+            {
+                osuPath = MainBeatmap.Path;
+                osbPath = OsbPath;
 
-            if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
-            if (!OwnsOsb) OwnsOsb = true;
+                if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
 
-            localLayers = LayerManager.FindLayers(l => l.Visible);
-            diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
-        });
+                if (!OwnsOsb) OwnsOsb = true;
+
+                localLayers = LayerManager.FindLayers(l => l.Visible);
+                diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
+            });
 
         var usesOverlayLayer = localLayers.Exists(l => l.OsbLayer is OsbLayer.Overlay);
+
         var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
 
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)
@@ -888,6 +947,7 @@ public sealed partial class Project : IDisposable
                                 if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
                                 await writer.WriteLineAsync($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
+
                                 foreach (var layer in diffSpecific)
                                     if (layer.OsbLayer == osbLayer && layer.Visible)
                                         layer.WriteOsb(writer, ExportSettings);
@@ -919,6 +979,7 @@ public sealed partial class Project : IDisposable
                 if (osbLayer is OsbLayer.Overlay && !usesOverlayLayer) continue;
 
                 await writer.WriteLineAsync($"//Storyboard Layer {(int)osbLayer} ({osbLayer})");
+
                 foreach (var layer in sbLayer)
                     if (layer.OsbLayer == osbLayer)
                         layer.WriteOsb(writer, ExportSettings);
@@ -938,9 +999,11 @@ public sealed partial class Project : IDisposable
     void Dispose(bool disposing)
     {
         if (Disposed) return;
+
         assetWatcher.Dispose();
 
         if (!disposing) return;
+
         effectUpdateQueue.Dispose();
 
         foreach (var effect in effects) effect.Dispose();

@@ -32,6 +32,7 @@ public class Clock : TimeSource
         set
         {
             if (playing == value) return;
+
             playing = value;
 
             if (playing) stopwatch.Start();

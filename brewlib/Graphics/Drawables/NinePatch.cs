@@ -18,7 +18,8 @@ public sealed class NinePatch : Drawable
     public Vector2 PreferredSize => MinSize;
 
     public Vector2 MinSize => Texture is not null ?
-        new Vector2(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
+        new Vector2(
+            Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
             Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
         Vector2.Zero;
 
@@ -41,7 +42,8 @@ public sealed class NinePatch : Drawable
 
         // Center
         if (!BordersOnly && horizontalScale > 0 && verticalScale > 0)
-            renderer.Draw(Texture,
+            renderer.Draw(
+                Texture,
                 x1,
                 y1,
                 0,
@@ -59,7 +61,8 @@ public sealed class NinePatch : Drawable
         if (verticalScale > 0)
         {
             renderer.Draw(Texture, x0, y1, 0, 0, 1, verticalScale, 0, color, 0, Borders.Top, Borders.Left, Borders.Bottom);
-            renderer.Draw(Texture,
+            renderer.Draw(
+                Texture,
                 x2,
                 y1,
                 0,
@@ -77,7 +80,8 @@ public sealed class NinePatch : Drawable
         if (horizontalScale > 0)
         {
             renderer.Draw(Texture, x1, y0, 0, 0, horizontalScale, 1, 0, color, Borders.Left, 0, Borders.Right, Borders.Top);
-            renderer.Draw(Texture,
+            renderer.Draw(
+                Texture,
                 x1,
                 y2,
                 0,

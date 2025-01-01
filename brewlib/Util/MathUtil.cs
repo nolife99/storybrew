@@ -12,6 +12,7 @@ public static class MathUtil
         var diff = (to - from) % float.Tau;
         return 2 * diff % float.Tau - diff;
     }
+
     public static double ShortestAngleDelta(double from, double to)
     {
         if (from == to) return 0;

@@ -64,24 +64,29 @@ public sealed class InputManager : IDisposable
     }
 
     void updateMouseFocus() => handler.OnFocusChanged(new FocusedChangedEventArgs(HasMouseFocus));
+
     void window_MouseEnter()
     {
         hasMouseHover = true;
         updateMouseFocus();
     }
+
     void window_MouseLeave()
     {
         hasMouseHover = false;
         updateMouseFocus();
     }
+
     void window_FocusedChanged(FocusedChangedEventArgs e) => updateMouseFocus();
 
     void window_MouseDown(MouseButtonEventArgs e) => handler.OnClickDown(e);
     void window_MouseUp(MouseButtonEventArgs e) => handler.OnClickUp(e);
+
     void window_MouseMove(MouseMoveEventArgs e)
     {
         var pos = e.Position;
         MousePosition = Unsafe.ReadUnaligned<Vector2>(ref Unsafe.As<float, byte>(ref pos.X));
+
         handler.OnMouseMove(e);
     }
 
@@ -97,11 +102,13 @@ public sealed class InputManager : IDisposable
         updateModifierState(e);
         handler.OnKeyDown(e);
     }
+
     void window_KeyUp(KeyboardKeyEventArgs e)
     {
         updateModifierState(e);
         handler.OnKeyUp(e);
     }
+
     void window_KeyPress(TextInputEventArgs e) => handler.OnKeyPress(e);
 
     void window_MouseWheel(MouseWheelEventArgs e) => handler.OnMouseWheel(e);

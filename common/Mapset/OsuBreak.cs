@@ -2,19 +2,13 @@
 
 using System.Globalization;
 
-/// <summary>
-///     Represents an osu! break, a time period without hit objects.
-/// </summary>
+/// <summary>Represents an osu! break, a time period without hit objects.</summary>
 public class OsuBreak
 {
-    /// <summary>
-    ///     The time that the break starts.
-    /// </summary>
+    /// <summary>The time that the break starts.</summary>
     public int StartTime { get; internal set; }
 
-    /// <summary>
-    ///     The time that the break end.
-    /// </summary>
+    /// <summary>The time that the break end.</summary>
     public int EndTime { get; internal set; }
 
     /// <inheritdoc/>

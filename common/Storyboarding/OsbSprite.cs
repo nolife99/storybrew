@@ -53,6 +53,7 @@ public class OsbSprite : StoryboardObject
         set
         {
             if (initialPosition == value) return;
+
             initialPosition = value;
             moveTimeline.DefaultValue = initialPosition;
             moveXTimeline.DefaultValue = initialPosition.X;
@@ -78,8 +79,9 @@ public class OsbSprite : StoryboardObject
     }
 
     /// <returns> True if the <see cref="OsbSprite"/> has incompatible commands, else returns false. </returns>
-    public bool HasIncompatibleCommands => moveTimeline.HasCommands && (moveXTimeline.HasCommands || moveYTimeline.HasCommands) ||
-        scaleTimeline.HasCommands && scaleVecTimeline.HasCommands;
+    public bool HasIncompatibleCommands
+        => moveTimeline.HasCommands && (moveXTimeline.HasCommands || moveYTimeline.HasCommands) ||
+            scaleTimeline.HasCommands && scaleVecTimeline.HasCommands;
 
     /// <returns> True if the <see cref="OsbSprite"/> has overlapping commands, else returns false. </returns>
     public bool HasOverlappedCommands => moveTimeline.HasOverlap ||
@@ -139,23 +141,20 @@ public class OsbSprite : StoryboardObject
     }
 
     //==========M==========//
-    /// <summary>
-    ///     Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for
-    ///     MoveY.
-    /// </summary>
+    /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
     /// <param name="startTime"> Start time of the command. </param>
     /// <param name="endTime"> End time of the command. </param>
     /// <param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
     /// <param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, CommandPosition startPosition, CommandPosition endPosition)
-        => addCommand(new MoveCommand(easing, startTime, endTime, startPosition, endPosition));
+    public void Move(OsbEasing easing,
+        float startTime,
+        float endTime,
+        CommandPosition startPosition,
+        CommandPosition endPosition) => addCommand(new MoveCommand(easing, startTime, endTime, startPosition, endPosition));
 
-    /// <summary>
-    ///     Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for
-    ///     MoveY.
-    /// </summary>
+    /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
     /// <param name="startTime"> Start time of the command. </param>
@@ -163,13 +162,14 @@ public class OsbSprite : StoryboardObject
     /// <param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
     /// <param name="endX"> End-X value of the command. </param>
     /// <param name="endY"> End-Y value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, CommandPosition startPosition, double endX, double endY)
-        => Move(easing, startTime, endTime, startPosition, new(endX, endY));
+    public void Move(OsbEasing easing,
+        float startTime,
+        float endTime,
+        CommandPosition startPosition,
+        double endX,
+        double endY) => Move(easing, startTime, endTime, startPosition, new(endX, endY));
 
-    /// <summary>
-    ///     Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for
-    ///     MoveY.
-    /// </summary>
+    /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
     /// <param name="startTime"> Start time of the command. </param>
@@ -177,13 +177,14 @@ public class OsbSprite : StoryboardObject
     /// <param name="startX"> Start-X value of the command. </param>
     /// <param name="startY"> Start-Y value of the command. </param>
     /// <param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, double startX, double startY, CommandPosition endPosition)
-        => Move(easing, startTime, endTime, new(startX, startY), endPosition);
+    public void Move(OsbEasing easing,
+        float startTime,
+        float endTime,
+        double startX,
+        double startY,
+        CommandPosition endPosition) => Move(easing, startTime, endTime, new(startX, startY), endPosition);
 
-    /// <summary>
-    ///     Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for
-    ///     MoveY.
-    /// </summary>
+    /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
     /// <param name="startTime"> Start time of the command. </param>
@@ -192,13 +193,15 @@ public class OsbSprite : StoryboardObject
     /// <param name="startY"> Start-Y value of the command. </param>
     /// <param name="endX"> End-X value of the command. </param>
     /// <param name="endY"> End-Y value of the command. </param>
-    public void Move(OsbEasing easing, float startTime, float endTime, double startX, double startY, double endX, double endY)
-        => Move(easing, startTime, endTime, new(startX, startY), new(endX, endY));
+    public void Move(OsbEasing easing,
+        float startTime,
+        float endTime,
+        double startX,
+        double startY,
+        double endX,
+        double endY) => Move(easing, startTime, endTime, new(startX, startY), new(endX, endY));
 
-    /// <summary>
-    ///     Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for
-    ///     MoveY.
-    /// </summary>
+    /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="startTime"> Start time of the command. </param>
     /// <param name="endTime"> End time of the command. </param>
@@ -207,10 +210,7 @@ public class OsbSprite : StoryboardObject
     public void Move(float startTime, float endTime, CommandPosition startPosition, CommandPosition endPosition)
         => Move(default, startTime, endTime, startPosition, endPosition);
 
-    /// <summary>
-    ///     Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for
-    ///     MoveY.
-    /// </summary>
+    /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="startTime"> Start time of the command. </param>
     /// <param name="endTime"> End time of the command. </param>
@@ -220,10 +220,7 @@ public class OsbSprite : StoryboardObject
     public void Move(float startTime, float endTime, CommandPosition startPosition, double endX, double endY)
         => Move(default, startTime, endTime, startPosition, endX, endY);
 
-    /// <summary>
-    ///     Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for
-    ///     MoveY.
-    /// </summary>
+    /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="startTime"> Start time of the command. </param>
     /// <param name="endTime"> End time of the command. </param>
@@ -356,8 +353,13 @@ public class OsbSprite : StoryboardObject
     /// <param name="startY"> Start Y-Scale value of the command. </param>
     /// <param name="endX"> End X-Scale value of the command. </param>
     /// <param name="endY"> End Y-Scale value of the command. </param>
-    public void ScaleVec(OsbEasing easing, float startTime, float endTime, double startX, double startY, double endX, double endY)
-        => ScaleVec(easing, startTime, endTime, new(startX, startY), new(endX, endY));
+    public void ScaleVec(OsbEasing easing,
+        float startTime,
+        float endTime,
+        double startX,
+        double startY,
+        double endX,
+        double endY) => ScaleVec(easing, startTime, endTime, new(startX, startY), new(endX, endY));
 
     /// <summary> Change the vector scale of a sprite over time. </summary>
     /// <remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
@@ -592,7 +594,8 @@ public class OsbSprite : StoryboardObject
         double startB,
         double endH,
         double endS,
-        double endB) => Color(easing,
+        double endB) => Color(
+        easing,
         startTime,
         endTime,
         CommandColor.FromHsb(startH, startS, startB),
@@ -734,17 +737,29 @@ public class OsbSprite : StoryboardObject
     {
         switch (command)
         {
-            case ColorCommand color: Color(color.Easing, color.StartTime, color.EndTime, color.StartValue, color.EndValue); break;
+            case ColorCommand color:
+                Color(color.Easing, color.StartTime, color.EndTime, color.StartValue, color.EndValue); break;
+
             case FadeCommand fade: Fade(fade.Easing, fade.StartTime, fade.EndTime, fade.StartValue, fade.EndValue); break;
-            case ScaleCommand scale: Scale(scale.Easing, scale.StartTime, scale.EndTime, scale.StartValue, scale.EndValue); break;
+
+            case ScaleCommand scale:
+                Scale(scale.Easing, scale.StartTime, scale.EndTime, scale.StartValue, scale.EndValue); break;
+
             case VScaleCommand vScale:
                 ScaleVec(vScale.Easing, vScale.StartTime, vScale.EndTime, vScale.StartValue, vScale.EndValue); break;
+
             case ParameterCommand param: Parameter(param.StartTime, param.EndTime, param.StartValue); break;
             case MoveCommand move: Move(move.Easing, move.StartTime, move.EndTime, move.StartValue, move.EndValue); break;
-            case MoveXCommand moveX: MoveX(moveX.Easing, moveX.StartTime, moveX.EndTime, moveX.StartValue, moveX.EndValue); break;
-            case MoveYCommand moveY: MoveY(moveY.Easing, moveY.StartTime, moveY.EndTime, moveY.StartValue, moveY.EndValue); break;
+
+            case MoveXCommand moveX:
+                MoveX(moveX.Easing, moveX.StartTime, moveX.EndTime, moveX.StartValue, moveX.EndValue); break;
+
+            case MoveYCommand moveY:
+                MoveY(moveY.Easing, moveY.StartTime, moveY.EndTime, moveY.StartValue, moveY.EndValue); break;
+
             case RotateCommand rotate:
                 Rotate(rotate.Easing, rotate.StartTime, rotate.EndTime, rotate.StartValue, rotate.EndValue); break;
+
             case LoopCommand loop:
             {
                 StartLoopGroup(loop.StartTime, loop.LoopCount);
@@ -752,6 +767,7 @@ public class OsbSprite : StoryboardObject
                 EndGroup();
                 break;
             }
+
             case TriggerCommand trigger:
             {
                 StartTriggerGroup(trigger.TriggerName, trigger.StartTime, trigger.EndTime, trigger.Group);
@@ -759,9 +775,11 @@ public class OsbSprite : StoryboardObject
                 EndGroup();
                 break;
             }
+
             default:
-                throw new NotSupportedException($"Failed to add command: No support for adding command of type {
-                    command.GetType().FullName}");
+                throw new NotSupportedException(
+                    $"Failed to add command: No support for adding command of type {
+                        command.GetType().FullName}");
         }
     }
 
@@ -769,10 +787,14 @@ public class OsbSprite : StoryboardObject
     public bool IsActive(float time) => StartTime <= time && time <= EndTime;
 
     ///<summary> Writes this sprite's data to a stream. </summary>
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
+    public override void WriteOsb(TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer layer,
+        StoryboardTransform transform)
     {
         if (commands.Count != 0)
-            OsbWriterFactory.CreateWriter(this,
+            OsbWriterFactory.CreateWriter(
+                    this,
                     moveTimeline,
                     moveXTimeline,
                     moveYTimeline,

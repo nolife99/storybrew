@@ -26,8 +26,9 @@ public class Button : Widget, Field
 
     public override Vector2 MinSize => new(label.MinSize.X + padding.Horizontal, label.MinSize.Y + padding.Vertical);
 
-    public override Vector2 PreferredSize
-        => new(label.PreferredSize.X + padding.Horizontal, label.PreferredSize.Y + padding.Vertical);
+    public override Vector2 PreferredSize => new(
+        label.PreferredSize.X + padding.Horizontal,
+        label.PreferredSize.Y + padding.Vertical);
 
     public string Text { get => label.Text; set => label.Text = value; }
 
@@ -39,6 +40,7 @@ public class Button : Widget, Field
         set
         {
             if (padding == value) return;
+
             padding = value;
             InvalidateAncestorLayout();
         }
@@ -50,6 +52,7 @@ public class Button : Widget, Field
         set
         {
             if (isCheckable == value) return;
+
             isCheckable = value;
             if (!isCheckable) Checked = false;
         }
@@ -61,6 +64,7 @@ public class Button : Widget, Field
         set
         {
             if (isChecked == value) return;
+
             isChecked = value;
             RefreshStyle();
             OnValueChanged?.Invoke(this, EventArgs.Empty);
@@ -69,10 +73,11 @@ public class Button : Widget, Field
 
     public bool Disabled { get => clickBehavior.Disabled; set => clickBehavior.Disabled = value; }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ButtonStyle>(BuildStyleName(
-        clickBehavior.Disabled ? "disabled" : null,
-        clickBehavior.Hovered ? "hover" : null,
-        clickBehavior.Pressed || isChecked ? "pressed" : null));
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<ButtonStyle>(
+        BuildStyleName(
+            clickBehavior.Disabled ? "disabled" : null,
+            clickBehavior.Hovered ? "hover" : null,
+            clickBehavior.Pressed || isChecked ? "pressed" : null));
 
     public object FieldValue { get => Checked; set => Checked = Unsafe.Unbox<bool>(value); }
 
@@ -100,6 +105,7 @@ public class Button : Widget, Field
         label.StyleName = buttonStyle.LabelStyle;
         label.Offset = buttonStyle.LabelOffset;
     }
+
     protected override void Layout()
     {
         base.Layout();

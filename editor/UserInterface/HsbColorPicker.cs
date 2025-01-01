@@ -26,23 +26,24 @@ public class HsbColorPicker : Widget, Field
     {
         previewSprite = new() { Texture = DrawState.WhitePixel, ScaleMode = ScaleMode.Fill };
 
-        Add(layout = new(manager)
-        {
-            StyleName = "condensed",
-            FitChildren = true,
-            Children =
-            [
-                new Label(manager) { StyleName = "small", Text = "Hue" },
-                hueSlider = new(manager) { StyleName = "small", Value = 0 },
-                new Label(manager) { StyleName = "small", Text = "Saturation" },
-                saturationSlider = new(manager) { StyleName = "small", Value = .7f },
-                new Label(manager) { StyleName = "small", Text = "Brightness" },
-                brightnessSlider = new(manager) { StyleName = "small", Value = 1 },
-                new Label(manager) { StyleName = "small", Text = "Alpha" },
-                alphaSlider = new(manager) { StyleName = "small", Value = 1 },
-                htmlTextbox = new(manager)
-            ]
-        });
+        Add(
+            layout = new(manager)
+            {
+                StyleName = "condensed",
+                FitChildren = true,
+                Children =
+                [
+                    new Label(manager) { StyleName = "small", Text = "Hue" },
+                    hueSlider = new(manager) { StyleName = "small", Value = 0 },
+                    new Label(manager) { StyleName = "small", Text = "Saturation" },
+                    saturationSlider = new(manager) { StyleName = "small", Value = .7f },
+                    new Label(manager) { StyleName = "small", Text = "Brightness" },
+                    brightnessSlider = new(manager) { StyleName = "small", Value = 1 },
+                    new Label(manager) { StyleName = "small", Text = "Alpha" },
+                    alphaSlider = new(manager) { StyleName = "small", Value = 1 },
+                    htmlTextbox = new(manager)
+                ]
+            });
 
         hueSlider.OnValueChanged += slider_OnValueChanged;
         saturationSlider.OnValueChanged += slider_OnValueChanged;
@@ -70,6 +71,7 @@ public class HsbColorPicker : Widget, Field
         set
         {
             if (new Rgba32(this.value) == value) return;
+
             this.value = value.ToVector4();
 
             updateWidgets();
@@ -85,12 +87,11 @@ public class HsbColorPicker : Widget, Field
 
     void slider_OnValueChanged(object sender, EventArgs e)
     {
-        var value = ColorExtensions.FromHsb(new(hueSlider.Value % 1,
-            saturationSlider.Value,
-            brightnessSlider.Value,
-            alphaSlider.Value));
+        var value = ColorExtensions.FromHsb(
+            new(hueSlider.Value % 1, saturationSlider.Value, brightnessSlider.Value, alphaSlider.Value));
 
         if (this.value == value) return;
+
         this.value = value;
 
         updateWidgets();
@@ -158,7 +159,8 @@ public class HsbColorPicker : Widget, Field
         base.DrawBackground(drawContext, actualOpacity);
 
         var bounds = Bounds;
-        previewSprite.Draw(drawContext,
+        previewSprite.Draw(
+            drawContext,
             Manager.Camera,
             RectangleF.FromLTRB(bounds.X, bounds.Y, bounds.Right, bounds.Y + previewHeight),
             actualOpacity);

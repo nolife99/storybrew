@@ -18,6 +18,7 @@ public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTim
     public TValue EndValue => command.EndValue;
     public bool Active => true;
     public int Cost => throw new InvalidOperationException();
+
     public TValue ValueAtTime(float time)
     {
         if (time < StartTime) return command.ValueAtTime(command.StartTime);
@@ -32,10 +33,14 @@ public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTim
             return command.ValueAtTime(repeated ? command.EndTime : command.StartTime);
 
         if (command.EndTime < repeatTime) return command.ValueAtTime(command.EndTime);
+
         return command.ValueAtTime(repeatTime);
     }
+
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
+
     public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
         => throw new InvalidOperationException();
+
     public override string ToString() => $"loop x{repeats} ({StartTime}s - {EndTime}s)";
 }

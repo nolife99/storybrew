@@ -14,14 +14,15 @@ public class TextureOptions : IEquatable<TextureOptions>
 {
     public static readonly TextureOptions Default = new();
 
-    static readonly FrozenDictionary<Type, Func<TinyToken, object>> fieldParsers = new Dictionary<Type, Func<TinyToken, object>>
-    {
-        [typeof(string)] = data => data.Value<string>(),
-        [typeof(float)] = data => data.Value<float>(),
-        [typeof(double)] = data => data.Value<double>(),
-        [typeof(int)] = data => data.Value<int>(),
-        [typeof(bool)] = data => data.Value<bool>()
-    }.ToFrozenDictionary();
+    static readonly FrozenDictionary<Type, Func<TinyToken, object>> fieldParsers =
+        new Dictionary<Type, Func<TinyToken, object>>
+        {
+            [typeof(string)] = data => data.Value<string>(),
+            [typeof(float)] = data => data.Value<float>(),
+            [typeof(double)] = data => data.Value<double>(),
+            [typeof(int)] = data => data.Value<int>(),
+            [typeof(bool)] = data => data.Value<bool>()
+        }.ToFrozenDictionary();
 
     // Settings
     public bool Srgb, PreMultiply, GenerateMipmaps;
@@ -49,7 +50,8 @@ public class TextureOptions : IEquatable<TextureOptions>
     public override bool Equals(object obj) => Equals(obj as TextureOptions);
     public override int GetHashCode() => HashCode.Combine(TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
 
-    public static string GetOptionsFilename(string textureFilename) => Path.Combine(Path.GetDirectoryName(textureFilename),
+    public static string GetOptionsFilename(string textureFilename) => Path.Combine(
+        Path.GetDirectoryName(textureFilename),
         Path.GetFileNameWithoutExtension(textureFilename) + "-opt.json");
 
     public static TextureOptions Load(string filename, ResourceContainer resourceContainer = null)
@@ -64,6 +66,7 @@ public class TextureOptions : IEquatable<TextureOptions>
 
         return token is not null ? load(token) : null;
     }
+
     static TextureOptions load(TinyToken data)
     {
         TextureOptions options = new();
@@ -92,12 +95,15 @@ public class TextureOptions : IEquatable<TextureOptions>
             type = type.BaseType;
         }
     }
+
     static Func<TinyToken, object> getFieldParser(Type fieldType)
     {
         if (fieldType.IsEnum) return data => Enum.Parse(fieldType, data.Value<string>());
+
         while (fieldType != typeof(object))
         {
             if (fieldParsers.TryGetValue(fieldType, out var parser)) return parser;
+
             fieldType = fieldType.BaseType;
         }
 

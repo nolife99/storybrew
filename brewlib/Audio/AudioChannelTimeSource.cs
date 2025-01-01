@@ -13,6 +13,7 @@ public class AudioChannelTimeSource(AudioChannel channel) : TimeSource
     public bool Seek(float time)
     {
         if (time < 0 || time >= channel.Duration) return false;
+
         channel.Time = time;
         return true;
     }

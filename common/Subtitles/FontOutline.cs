@@ -25,6 +25,7 @@ public record FontOutline(int thickness = 1, Color color = default) : FontEffect
     public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y)
     {
         if (thickness < 1) return;
+
         bitmap.Draw(FontGenerator.options, pen, path);
     }
 }

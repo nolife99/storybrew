@@ -55,7 +55,9 @@ public record ControlPoint : IComparable<ControlPoint>
 
     /// <inheritdoc/>
     public override string ToString()
-        => (IsInherited ? $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4" : $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") +
+        => (IsInherited ?
+                $"{Offset}ms, {SliderMultiplier}x, {BeatPerMeasure}/4" :
+                $"{Offset}ms, {BPM}BPM, {BeatPerMeasure}/4") +
             (IsKiai ? " Kiai" : "");
 
     /// <inheritdoc/>
@@ -73,7 +75,8 @@ public record ControlPoint : IComparable<ControlPoint>
             Offset = float.Parse(values[0], CultureInfo.InvariantCulture),
             beatDurationSV = float.Parse(values[1], CultureInfo.InvariantCulture),
             BeatPerMeasure = values.Length > 2 ? int.Parse(values[2], CultureInfo.InvariantCulture) : 4,
-            SampleSet = values.Length > 3 ? (SampleSet)int.Parse(values[3], CultureInfo.InvariantCulture) : SampleSet.Normal,
+            SampleSet =
+                values.Length > 3 ? (SampleSet)int.Parse(values[3], CultureInfo.InvariantCulture) : SampleSet.Normal,
             CustomSampleSet = values.Length > 4 ? int.Parse(values[4], CultureInfo.InvariantCulture) : 0,
             Volume = values.Length > 5 ? int.Parse(values[5], CultureInfo.InvariantCulture) : 100,
             IsInherited = values.Length > 6 && int.Parse(values[6], CultureInfo.InvariantCulture) == 0,

@@ -25,6 +25,7 @@ public class CameraOrtho : CameraBase
         set
         {
             if (virtualWidth == value) return;
+
             virtualWidth = value;
             Invalidate();
         }
@@ -36,6 +37,7 @@ public class CameraOrtho : CameraBase
         set
         {
             if (virtualHeight == value) return;
+
             virtualHeight = value;
             Invalidate();
         }
@@ -65,7 +67,8 @@ public class CameraOrtho : CameraBase
         extendedViewport = orthoViewport;
 
         projection = Matrix4x4.Multiply(
-            Matrix4x4.CreateTranslation(orthoViewport.X - extendedViewport.Width * .5f,
+            Matrix4x4.CreateTranslation(
+                orthoViewport.X - extendedViewport.Width * .5f,
                 orthoViewport.Y - (yDown ? -extendedViewport.Height : extendedViewport.Height) * .5f,
                 0),
             Matrix4x4.CreateOrthographic(extendedViewport.Width, extendedViewport.Height, NearPlane, FarPlane));

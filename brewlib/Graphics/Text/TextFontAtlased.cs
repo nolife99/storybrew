@@ -29,24 +29,42 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
         if (char.IsWhiteSpace(c))
         {
             var prepended = c == '\n' ? "\u200b\n" : c.ToString();
-            DrawState.TextGenerator.CreateBitmap(prepended, name, size, default, BoxAlignment.Centre, out measuredSize, true);
+            DrawState.TextGenerator.CreateBitmap(
+                prepended,
+                name,
+                size,
+                default,
+                BoxAlignment.Centre,
+                out measuredSize,
+                true);
 
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }
 
         atlas ??= new(512, 512, $"Font Atlas {name}:{size:n1}");
-        using var bitmap =
-            DrawState.TextGenerator.CreateBitmap(c.ToString(), name, size, default, BoxAlignment.Centre, out measuredSize, false);
+        using var bitmap = DrawState.TextGenerator.CreateBitmap(
+            c.ToString(),
+            name,
+            size,
+            default,
+            BoxAlignment.Centre,
+            out measuredSize,
+            false);
 
-        return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
+        return new(
+            atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"),
+            (int)measuredSize.X,
+            (int)measuredSize.Y);
     }
 
     #region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (disposed) return;
+
         foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
         atlas?.Dispose();
 

@@ -37,6 +37,7 @@ public sealed class TextDrawable : Drawable
         set
         {
             if (maxSize == value) return;
+
             maxSize = value;
             invalidate();
         }
@@ -50,6 +51,7 @@ public sealed class TextDrawable : Drawable
         set
         {
             if (text == value) return;
+
             text = value;
             invalidate();
         }
@@ -61,6 +63,7 @@ public sealed class TextDrawable : Drawable
         set
         {
             if (fontName == value) return;
+
             fontName = value;
             invalidate();
         }
@@ -72,6 +75,7 @@ public sealed class TextDrawable : Drawable
         set
         {
             if (fontSize == value) return;
+
             fontSize = value;
             invalidate();
         }
@@ -83,6 +87,7 @@ public sealed class TextDrawable : Drawable
         set
         {
             if (scaling == value) return;
+
             scaling = value;
             invalidate();
         }
@@ -94,6 +99,7 @@ public sealed class TextDrawable : Drawable
         set
         {
             if (alignment == value) return;
+
             alignment = value;
             invalidate();
         }
@@ -112,7 +118,8 @@ public sealed class TextDrawable : Drawable
         var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, RenderStates);
 
         var clipRegion = DrawState.GetClipRegion(camera) ??
-            new(new(camera.ExtendedViewport.X + camera.Position.X, camera.ExtendedViewport.Y + camera.Position.Y),
+            new(
+                new(camera.ExtendedViewport.X + camera.Position.X, camera.ExtendedViewport.Y + camera.Position.Y),
                 camera.ExtendedViewport.Size);
 
         foreach (var line in textLayout.Lines)
@@ -124,10 +131,12 @@ public sealed class TextDrawable : Drawable
             var position = layoutGlyph.Position;
             var y = bounds.Y + position.Y * inverseScaling;
             if (y > clipRegion.Bottom) break;
+
             if (y + glyph.Height * inverseScaling < clipRegion.Y) continue;
 
             var texture = glyph.Texture;
-            renderer.Draw(texture,
+            renderer.Draw(
+                texture,
                 bounds.Left + position.X * inverseScaling,
                 y,
                 0,
@@ -144,6 +153,7 @@ public sealed class TextDrawable : Drawable
     }
 
     public void Dispose() => font?.Dispose();
+
     public RectangleF GetCharacterBounds(int index)
     {
         validate();
@@ -155,27 +165,34 @@ public sealed class TextDrawable : Drawable
 
         return new(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
     }
+
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         validate();
         var inverseScaling = 1 / scaling;
-        textLayout.ForTextBounds(startIndex,
+        textLayout.ForTextBounds(
+            startIndex,
             endIndex,
-            bounds => action(RectangleF.FromLTRB(bounds.X * inverseScaling,
-                bounds.Y * inverseScaling,
-                bounds.Right * inverseScaling,
-                bounds.Bottom * inverseScaling)));
+            bounds => action(
+                RectangleF.FromLTRB(
+                    bounds.X * inverseScaling,
+                    bounds.Y * inverseScaling,
+                    bounds.Right * inverseScaling,
+                    bounds.Bottom * inverseScaling)));
     }
+
     public int GetCharacterIndexAt(Vector2 position)
     {
         validate();
         return textLayout.GetCharacterIndexAt(position * scaling);
     }
+
     public int GetCharacterIndexAbove(int index)
     {
         validate();
         return textLayout.GetCharacterIndexAbove(index);
     }
+
     public int GetCharacterIndexBelow(int index)
     {
         validate();
@@ -183,9 +200,11 @@ public sealed class TextDrawable : Drawable
     }
 
     void invalidate() => textLayout = null;
+
     void validate()
     {
         if (textLayout is not null) return;
+
         if (font is null || font.Name != fontName || currentFontSize != fontSize || currentScaling != scaling)
         {
             font?.Dispose();

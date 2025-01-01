@@ -8,13 +8,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using BrewLib.Memory;
 
-/// <summary>
-///     A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.
-/// </summary>
+/// <summary>A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.</summary>
 /// <typeparam name="TValue"> The type of values of the keyframes. </typeparam>
-/// <remarks>
-///     See <see cref="Keyframe{TValue}"/> for more information about keyframes.
-/// </remarks>
+/// <remarks>See <see cref="Keyframe{TValue}"/> for more information about keyframes.</remarks>
 public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpolate = null, TValue defaultValue = default)
     : IEnumerable<Keyframe<TValue>>
 {
@@ -32,12 +28,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     ///<summary> Gets the value of the last keyframe. </summary>
     public TValue EndValue => keyframes.Count == 0 ? defaultValue : keyframes[^1].Value;
 
-    /// <summary>
-    ///     Gets or sets the keyframe at the specified index.
-    /// </summary>
-    /// <value>
-    ///     The keyframe at the specified index.
-    /// </value>
+    /// <summary>Gets or sets the keyframe at the specified index.</summary>
+    /// <value>The keyframe at the specified index.</value>
     /// <param name="index"> The index of the keyframe. </param>
     /// <returns> The keyframe at the specified index. </returns>
     public Keyframe<TValue> this[int index] { get => keyframes[index]; set => keyframes[index] = value; }
@@ -48,9 +40,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     IEnumerator<Keyframe<TValue>> IEnumerable<Keyframe<TValue>>.GetEnumerator() => keyframes.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => keyframes.GetEnumerator();
 
-    /// <summary>
-    ///     Adds a keyframe to the keyframed value.
-    /// </summary>
+    /// <summary>Adds a keyframe to the keyframed value.</summary>
     /// <param name="keyframe"> The keyframe to add. </param>
     /// <param name="before"> Whether to add the keyframe before any keyframes at the same time. </param>
     /// <returns> The keyframed value. </returns>
@@ -62,25 +52,19 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         return this;
     }
 
-    /// <summary>
-    ///     Adds a set of keyframes to the keyframed value.
-    /// </summary>
+    /// <summary>Adds a set of keyframes to the keyframed value.</summary>
     /// <param name="values"> The set of keyframes to add. </param>
     /// <returns> The keyframed value. </returns>
     public KeyframedValue<TValue> Add(params Keyframe<TValue>[] values) => AddRange(values);
 
-    /// <summary>
-    ///     Adds a new keyframe to the keyframed value at the given time with the given value.
-    /// </summary>
+    /// <summary>Adds a new keyframe to the keyframed value at the given time with the given value.</summary>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="value"> The value of the new keyframe. </param>
     /// <param name="before"> Whether to add the new keyframe before any keyframes at the same time. </param>
     /// <returns> The keyframed value. </returns>
     public KeyframedValue<TValue> Add(float time, TValue value, bool before = false) => Add(new(time, value), before);
 
-    /// <summary>
-    ///     Adds a new keyframe to the keyframed value at the given time with the given value and easing.
-    /// </summary>
+    /// <summary>Adds a new keyframe to the keyframed value at the given time with the given value and easing.</summary>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <param name="value"> The value of the new keyframe. </param>
     /// <param name="easing"> The easing to apply to the new keyframe. </param>
@@ -89,16 +73,12 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     public KeyframedValue<TValue> Add(float time, TValue value, Func<float, float> easing, bool before = false)
         => Add(new(time, value, easing), before);
 
-    /// <summary>
-    ///     Adds a new keyframe to the keyframed value at the given time with the value at that time.
-    /// </summary>
+    /// <summary>Adds a new keyframe to the keyframed value at the given time with the value at that time.</summary>
     /// <param name="time"> The time of the new keyframe. </param>
     /// <returns> The keyframed value. </returns>
     public KeyframedValue<TValue> Add(float time) => Add(time, ValueAt(time));
 
-    /// <summary>
-    ///     Adds a set of keyframes to the keyframed value.
-    /// </summary>
+    /// <summary>Adds a set of keyframes to the keyframed value.</summary>
     /// <param name="collection"> The set of keyframes to add. </param>
     /// <returns> The keyframed value. </returns>
     public KeyframedValue<TValue> AddRange(IEnumerable<Keyframe<TValue>> collection)
@@ -116,21 +96,18 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
     internal KeyframedValue<TValue> DebugUntil(float time) => Add(new Keyframe<TValue>(time, EndValue, null, true));
 
-    /// <summary>
-    ///     Transfers all keyframes from this keyframe collection to <paramref name="to"/>.
-    /// </summary>
+    /// <summary>Transfers all keyframes from this keyframe collection to <paramref name="to"/>.</summary>
     /// <param name="to"> The destination keyframe collection. </param>
     /// <param name="clear"> If <see langword="true"/>, clears the keyframes from this keyframe collection. </param>
     public void TransferKeyframes(KeyframedValue<TValue> to, bool clear = true)
     {
         if (Count == 0) return;
+
         to.AddRange(keyframes);
         if (clear) Clear();
     }
 
-    /// <summary>
-    ///     Gets the value of the keyframed value at the specified time by interpolating between keyframes.
-    /// </summary>
+    /// <summary>Gets the value of the keyframed value at the specified time by interpolating between keyframes.</summary>
     /// <param name="time">The time at which to get the value.</param>
     /// <returns>The interpolated value at the specified time.</returns>
     public TValue ValueAt(float time)
@@ -156,9 +133,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             interpolate(from.Value, to.Value, to.Ease((time - from.Time) / (to.Time - from.Time)));
     }
 
-    /// <summary>
-    ///     Enumerates each pair of adjacent keyframes in the keyframed value.
-    /// </summary>
+    /// <summary>Enumerates each pair of adjacent keyframes in the keyframed value.</summary>
     /// <param name="pair"> The action to invoke for each pair of adjacent keyframes. </param>
     /// <param name="defaultValue"> Optional default value to use if the keyframed value is empty. </param>
     /// <param name="edit"> Optional function to edit each keyframe value before passing it to <paramref name="pair"/>. </param>
@@ -173,6 +148,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         bool loopable = false)
     {
         if (keyframes.Count == 0) return;
+
         var span = CollectionsMarshal.AsSpan(keyframes);
 
         var startTime = explicitStartTime ?? span[0].Time;
@@ -259,9 +235,8 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         pair(loopable ? previousPairEndValue : endPair, endPair);
     }
 
-    static Keyframe<TValue> editKeyframe(ref Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null) => edit is not null ?
-        new(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) :
-        keyframe;
+    static Keyframe<TValue> editKeyframe(ref Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null)
+        => edit is not null ? new(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
 
     ///<summary> Removes all keyframes in the set. </summary>
     public void Clear(bool trim = false)
@@ -296,16 +271,12 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
     #region Manipulation
 
-    /// <summary>
-    ///     Flattens keyframes in the set.
-    /// </summary>
-    /// <param name="tolerance">
-    ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
-    ///     keyframes.
-    /// </param>
+    /// <summary>Flattens keyframes in the set.</summary>
+    /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="float"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 1D parameters. </remarks>
-    public void Simplify1dKeyframes(float tolerance, Func<TValue, float> getComponent) => SimplifyKeyframes(tolerance,
+    public void Simplify1dKeyframes(float tolerance, Func<TValue, float> getComponent) => SimplifyKeyframes(
+        tolerance,
         (startKeyframe, middleKeyframe, endKeyframe) =>
         {
             Vector2 start = new(startKeyframe.Time, getComponent(startKeyframe.Value)),
@@ -317,16 +288,12 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
                 .LengthSquared();
         });
 
-    /// <summary>
-    ///     Flattens keyframes in the set.
-    /// </summary>
-    /// <param name="tolerance">
-    ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
-    ///     keyframes.
-    /// </param>
+    /// <summary>Flattens keyframes in the set.</summary>
+    /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector2"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 2D parameters. </remarks>
-    public void Simplify2dKeyframes(float tolerance, Func<TValue, Vector2> getComponent) => SimplifyKeyframes(tolerance,
+    public void Simplify2dKeyframes(float tolerance, Func<TValue, Vector2> getComponent) => SimplifyKeyframes(
+        tolerance,
         (startKeyframe, middleKeyframe, endKeyframe) =>
         {
             Vector2 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value),
@@ -341,16 +308,12 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
                 .LengthSquared();
         });
 
-    /// <summary>
-    ///     Flattens keyframes in the set.
-    /// </summary>
-    /// <param name="tolerance">
-    ///     The tolerance of the keyframe simplification. Values closer to 0 will result in more
-    ///     keyframes.
-    /// </param>
+    /// <summary>Flattens keyframes in the set.</summary>
+    /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector3"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 3D parameters. </remarks>
-    public void Simplify3dKeyframes(float tolerance, Func<TValue, Vector3> getComponent) => SimplifyKeyframes(tolerance,
+    public void Simplify3dKeyframes(float tolerance, Func<TValue, Vector3> getComponent) => SimplifyKeyframes(
+        tolerance,
         (startKeyframe, middleKeyframe, endKeyframe) =>
         {
             Vector3 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value),
@@ -433,11 +396,13 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             {
                 var distanceSq = getDistance(start, span[i], end);
                 if (distanceSq < maxDistSq) continue;
+
                 maxDistSq = distanceSq;
                 indexFar = i;
             }
 
             if (maxDistSq < epsilonSq || indexFar <= 0) return;
+
             getSimplifiedKeyframeIndices(ref span, keep, first, indexFar, epsilonSq, getDistance);
             keep.Add(ref indexFar);
             first = indexFar;

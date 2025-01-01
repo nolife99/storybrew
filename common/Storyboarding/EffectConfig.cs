@@ -15,6 +15,7 @@ public partial class EffectConfig
     public IEnumerable<ConfigField> Fields => fields.Values;
     public IEnumerable<ConfigField> SortedFields => fields.Values.OrderBy(field => field.Order);
     public IEnumerable<string> FieldNames => fields.Keys;
+
     public void UpdateField(string name,
         string displayName,
         string description,
@@ -25,6 +26,7 @@ public partial class EffectConfig
         string beginsGroup)
     {
         if (fieldType is null) return;
+
         if (string.IsNullOrWhiteSpace(displayName))
         {
             displayName = UpperCaseAfterUpperCase().Replace(name, "$1 $2");
@@ -58,7 +60,9 @@ public partial class EffectConfig
             Order = order
         };
     }
+
     public void RemoveField(string name) => fields.Remove(name);
+
     public bool SetValue(string name, object value)
     {
         var field = fields[name];
@@ -68,10 +72,13 @@ public partial class EffectConfig
 
         return true;
     }
+
     public object GetValue(string name) => fields[name].Value;
+
     static object convertFieldValue(object value, Type oldType, Type newType, object defaultValue)
     {
         if (newType.IsAssignableFrom(oldType)) return value;
+
         try
         {
             return Convert.ChangeType(value, newType, CultureInfo.InvariantCulture);
@@ -81,8 +88,10 @@ public partial class EffectConfig
             return defaultValue;
         }
     }
+
     [GeneratedRegex(@"(\P{Ll})(\P{Ll}\p{Ll})")]
     private static partial Regex UpperCaseAfterUpperCase();
+
     [GeneratedRegex(@"(\p{Ll})(\P{Ll})")] private static partial Regex LowerUpperTransition();
 
     public struct ConfigField

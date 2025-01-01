@@ -6,9 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-/// <summary>
-///     Represents a bézier curve defined by a set of control points.
-/// </summary>
+/// <summary>Represents a bézier curve defined by a set of control points.</summary>
 public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
 {
     const float BEZIER_TOLERANCE = .25f;
@@ -61,6 +59,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
             }
 
             var rightChild = freeBuffers.Count > 0 ? freeBuffers.Pop() : new Vector2[degree + 1];
+
             bezierSubdivide(parent, subdivisionBuffer2, rightChild, subdivisionBuffer1, degree + 1);
 
             subdivisionBuffer2.AsSpan(0, degree + 1).CopyTo(parent);
@@ -72,6 +71,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         output.Add(controlPoints[pointCount]);
         return CollectionsMarshal.AsSpan(output);
     }
+
     static Stack<Vector2[]> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
     {
         Stack<Vector2[]> result = new();
@@ -133,7 +133,8 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
             l[i] = subdivisionBuffer[0];
             r[count - i - 1] = subdivisionBuffer[count - i - 1];
 
-            for (var j = 0; j < count - i - 1; j++) subdivisionBuffer[j] = (subdivisionBuffer[j] + subdivisionBuffer[j + 1]) / 2;
+            for (var j = 0; j < count - i - 1; j++)
+                subdivisionBuffer[j] = (subdivisionBuffer[j] + subdivisionBuffer[j + 1]) / 2;
         }
     }
 
@@ -152,7 +153,8 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         for (var i = 1; i < count - 1; ++i)
         {
             var index = 2 * i;
-            output.Add(.25f * (subdivisionBuffer2[index - 1] + 2 * subdivisionBuffer2[index] + subdivisionBuffer2[index + 1]));
+            output.Add(
+                .25f * (subdivisionBuffer2[index - 1] + 2 * subdivisionBuffer2[index] + subdivisionBuffer2[index + 1]));
         }
     }
 }

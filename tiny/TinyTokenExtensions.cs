@@ -26,12 +26,14 @@ public static class TinyTokenExtensions
 
                 break;
             }
+
             case TinyArray tinyArray when into is TinyArray intoArray:
             {
                 foreach (var t in tinyArray) intoArray.Add(t);
 
                 break;
             }
+
             default: throw new InvalidDataException($"Cannot merge {token} into {into}");
         }
     }

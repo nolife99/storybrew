@@ -64,20 +64,23 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         if (measureOnly) return null;
 
         Image<Rgba32> bitmap = new(Texture2d.ContiguousBufferDecoderOptions.Configuration, width, height);
-        bitmap.Mutate(b =>
-        {
-            RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };
-            b.DrawText(drawOptions, new(textOptions) { Origin = padding + Vector2.One }, text, shadow, null)
-                .DrawText(drawOptions, textOptions, text, fill, null);
-        });
+        bitmap.Mutate(
+            b =>
+            {
+                RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };
+                b.DrawText(drawOptions, new(textOptions) { Origin = padding + Vector2.One }, text, shadow, null)
+                    .DrawText(drawOptions, textOptions, text, fill, null);
+            });
 
         return bitmap;
     }
 
     Font getFont(string name, float emSize, FontStyle style)
     {
-        ref var font =
-            ref CollectionsMarshal.GetValueRefOrAddDefault(fonts, HashCode.Combine(name, emSize, style), out var exists);
+        ref var font = ref CollectionsMarshal.GetValueRefOrAddDefault(
+            fonts,
+            HashCode.Combine(name, emSize, style),
+            out var exists);
 
         if (exists) return font;
 
@@ -101,7 +104,8 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         using var stream = resourceContainer.GetStream(name, ResourceSource.Embedded);
         if (stream is null) return SystemFonts.Get(name, CultureInfo.InvariantCulture);
 
-        Trace.WriteLine($"Loaded font {(fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
+        Trace.WriteLine(
+            $"Loaded font {(fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
 
         return fontFamily;
     }

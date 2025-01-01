@@ -21,6 +21,7 @@ public class VertexAttribute
     public override bool Equals(object obj)
     {
         if (obj == this) return true;
+
         return obj is VertexAttribute otherAttribute &&
             Name == otherAttribute.Name &&
             Type == otherAttribute.Type &&
@@ -31,7 +32,14 @@ public class VertexAttribute
             Usage == otherAttribute.Usage;
     }
 
-    public override int GetHashCode() => HashCode.Combine(Name, Type, ComponentSize, ComponentCount, Offset, Normalized, Usage);
+    public override int GetHashCode() => HashCode.Combine(
+        Name,
+        Type,
+        ComponentSize,
+        ComponentCount,
+        Offset,
+        Normalized,
+        Usage);
 
     public static VertexAttribute CreatePosition2d()
         => new() { Name = PositionAttributeName, ComponentCount = 2, Usage = AttributeUsage.Position };

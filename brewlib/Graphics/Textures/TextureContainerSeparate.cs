@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 using IO;
 using Util;
 
-public sealed class TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
-    : TextureContainer
+public sealed class TextureContainerSeparate(ResourceContainer resourceContainer = null,
+    TextureOptions textureOptions = null) : TextureContainer
 {
     readonly Dictionary<string, Texture2d> textures = [];
 
@@ -30,15 +30,18 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
     {
         ref var texture = ref CollectionsMarshal.GetValueRefOrAddDefault(textures, filename, out var exists);
         if (exists) return texture;
+
         return texture = Texture2d.Load(filename, resourceContainer, textureOptions);
     }
 
     #region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (disposed) return;
+
         textures.Dispose();
         disposed = true;
     }

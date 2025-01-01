@@ -5,14 +5,7 @@ using System.Globalization;
 
 public enum TinyTokenType
 {
-    Null,
-    Boolean,
-    Integer,
-    Float,
-    String,
-    Object,
-    Array,
-    Invalid
+    Null, Boolean, Integer, Float, String, Object, Array, Invalid
 }
 
 public class TinyValue : TinyToken
@@ -88,12 +81,14 @@ public class TinyValue : TinyToken
         if (targetType.IsEnum && type is TinyTokenType.String or TinyTokenType.Integer)
         {
             if (value is null) return default;
+
             return (T)Enum.Parse(targetType, value.ToString());
         }
 
         if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
         {
             if (value is null) return default;
+
             targetType = Nullable.GetUnderlyingType(targetType);
         }
 

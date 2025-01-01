@@ -101,7 +101,10 @@ public class YamlFormat : Format<YamlTokenType>
         switch (type)
         {
             case TinyTokenType.Null: writer.WriteLine(); break;
-            case TinyTokenType.String: writer.WriteLine(string.Concat("\"", YamlUtil.EscapeString((string)value), "\"")); break;
+
+            case TinyTokenType.String:
+                writer.WriteLine(string.Concat("\"", YamlUtil.EscapeString((string)value), "\"")); break;
+
             case TinyTokenType.Integer: writer.WriteLine(value?.ToString()); break;
 
             case TinyTokenType.Float:
@@ -114,12 +117,14 @@ public class YamlFormat : Format<YamlTokenType>
                     default: throw new InvalidDataException(value?.ToString());
                 }
 
-                break;
+            break;
 
             case TinyTokenType.Boolean: writer.WriteLine((bool)value ? BooleanTrue : BooleanFalse); break;
+
             case TinyTokenType.Array:
             case TinyTokenType.Object:
             case TinyTokenType.Invalid: throw new InvalidDataException(type.ToString());
+
             default: throw new NotSupportedException(type.ToString());
         }
     }
@@ -127,6 +132,7 @@ public class YamlFormat : Format<YamlTokenType>
     static void writeIndent(TextWriter writer, int indentLevel)
     {
         if (indentLevel <= 0) return;
+
         writer.Write(new string(' ', indentLevel * 2));
     }
 }

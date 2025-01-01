@@ -23,6 +23,7 @@ public class Slider : ProgressBar
         OnClickDown += (_, e) =>
         {
             if (disabled || dragged) return false;
+
             dragButton = e.Button;
             dragged = true;
             Value = GetValueForPosition(manager.InputManager.MousePosition);
@@ -34,6 +35,7 @@ public class Slider : ProgressBar
         {
             if (disabled || !dragged) return;
             if (e.Button != dragButton) return;
+
             dragged = false;
             RefreshStyle();
             DragEnd(dragButton);
@@ -43,6 +45,7 @@ public class Slider : ProgressBar
         OnClickMove += (_, e) =>
         {
             if (disabled || !dragged) return;
+
             Value = GetValueForPosition(new(e.X, e.Y));
             DragUpdate(dragButton);
         };
@@ -54,14 +57,17 @@ public class Slider : ProgressBar
         set
         {
             if (disabled == value) return;
+
             disabled = value;
             dragged = false;
             RefreshStyle();
         }
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" :
-        dragged || hovered ? "hover" : null));
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(
+        BuildStyleName(
+            disabled ? "disabled" :
+            dragged || hovered ? "hover" : null));
 
     public event EventHandler OnValueCommited;
 

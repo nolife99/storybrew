@@ -40,22 +40,23 @@ public class Settings
         try
         {
             using var reader = File.OpenText(path);
-            reader.ParseKeyValueSection((key, value) =>
-            {
-                var field = type.GetField(key);
-                if (field is null ||
-                    !field.FieldType.IsGenericType ||
-                    !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
+            reader.ParseKeyValueSection(
+                (key, value) =>
+                {
+                    var field = type.GetField(key);
+                    if (field is null ||
+                        !field.FieldType.IsGenericType ||
+                        !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
 
-                try
-                {
-                    Unsafe.As<Setting>(field.GetValue(this)).Set(value);
-                }
-                catch (Exception e)
-                {
-                    Trace.TraceError($"Loading setting {key} with value {value}: {e}");
-                }
-            });
+                    try
+                    {
+                        Unsafe.As<Setting>(field.GetValue(this)).Set(value);
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.TraceError($"Loading setting {key} with value {value}: {e}");
+                    }
+                });
         }
         catch (Exception e)
         {
@@ -97,6 +98,7 @@ public class Setting<T>(T defaultValue) : Setting
     public void Set(T value)
     {
         if (this.value.Equals(value)) return;
+
         this.value = value;
         OnValueChanged?.Invoke(this, EventArgs.Empty);
     }

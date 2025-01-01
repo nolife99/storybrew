@@ -19,15 +19,19 @@ public class AudioSample : IDisposable
         manager = audioManager;
 
         sample = Bass.SampleLoad(path, 0, 0, MaxSimultaneousPlayBacks, BassFlags.SampleOverrideLongestPlaying);
+
         if (sample != 0) return;
 
         using var stream = resourceContainer?.GetStream(path, ResourceSource.Embedded);
+
         if (stream is null) throw new BassException(Bass.LastError);
 
         using (var bytes = Configuration.Default.MemoryAllocator.Allocate<byte>((int)stream.Length))
+        using (bytes.Memory.Pin())
         {
             var span = bytes.Memory.Span;
-            sample = Bass.SampleLoad(Unsafe.ByteOffset(ref Unsafe.NullRef<byte>(), ref MemoryMarshal.GetReference(span)),
+            sample = Bass.SampleLoad(
+                Unsafe.ByteOffset(ref Unsafe.NullRef<byte>(), ref MemoryMarshal.GetReference(span)),
                 0,
                 stream.Read(span),
                 MaxSimultaneousPlayBacks,
@@ -43,7 +47,8 @@ public class AudioSample : IDisposable
     {
         if (sample == 0) return;
 
-        AudioChannel channel = new(manager, Bass.SampleGetChannel(sample), true) { Volume = volume, Pitch = pitch, Pan = pan };
+        AudioChannel channel =
+            new(manager, Bass.SampleGetChannel(sample), true) { Volume = volume, Pitch = pitch, Pan = pan };
 
         manager.RegisterChannel(channel);
 
@@ -55,6 +60,7 @@ public class AudioSample : IDisposable
     bool disposed;
 
     ~AudioSample() => Bass.SampleFree(sample);
+
     public void Dispose()
     {
         if (!disposed) Bass.SampleFree(sample);

@@ -15,23 +15,25 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
     public override void Load()
     {
         base.Load();
-        WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
-        {
-            StyleName = "panel",
-            AnchorTarget = WidgetManager.Root,
-            AnchorFrom = BoxAlignment.Centre,
-            AnchorTo = BoxAlignment.Centre,
-            Padding = new(16),
-            Children =
-            [
-                new ScrollArea(WidgetManager,
-                    new Label(WidgetManager) { Text = message, AnchorFrom = BoxAlignment.Centre })
-                {
-                    ScrollsHorizontally = true
-                },
-                buttonsLayout = new(WidgetManager) { Horizontal = true, AnchorFrom = BoxAlignment.Centre }
-            ]
-        });
+        WidgetManager.Root.Add(
+            mainLayout = new LinearLayout(WidgetManager)
+            {
+                StyleName = "panel",
+                AnchorTarget = WidgetManager.Root,
+                AnchorFrom = BoxAlignment.Centre,
+                AnchorTo = BoxAlignment.Centre,
+                Padding = new(16),
+                Children =
+                [
+                    new ScrollArea(
+                        WidgetManager,
+                        new Label(WidgetManager) { Text = message, AnchorFrom = BoxAlignment.Centre })
+                    {
+                        ScrollsHorizontally = true
+                    },
+                    buttonsLayout = new(WidgetManager) { Horizontal = true, AnchorFrom = BoxAlignment.Centre }
+                ]
+            });
 
         Button yesButton = new(WidgetManager) { Text = noAction is null ? "Ok" : "Yes", AnchorFrom = BoxAlignment.Centre };
 
@@ -64,12 +66,15 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             buttonsLayout.Add(cancelButton);
         }
     }
+
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
     {
         if (e.IsRepeat || e.Key is not Keys.C || !e.Control) return base.OnKeyDown(e);
+
         ClipboardHelper.SetText(message);
         return true;
     }
+
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);

@@ -65,6 +65,7 @@ internal class Tetris : StoryboardObjectGenerator
             for (var y = 0; y < GridHeight; ++y)
             {
                 if (cells[x, y].HasSprite) break;
+
                 heightMap[x] = y;
             }
 
@@ -157,7 +158,8 @@ internal class Tetris : StoryboardObjectGenerator
         shadow.Scale(startTime, SpriteScale);
         shadow.Color(startTime, 0, 0, 0);
         shadow.Fade(startTime, .5f);
-        shadow.Move(OsbEasing.In,
+        shadow.Move(
+            OsbEasing.In,
             startTime,
             endTime,
             transform(startPosition) + ShadowOffset,
@@ -192,16 +194,17 @@ internal class Tetris : StoryboardObjectGenerator
         var startPosition = targetPosition with { Y = dropY * CellSize };
 
         sprite.Move(OsbEasing.In, startTime, endTime, transform(startPosition), transform(targetPosition));
-        shadow.Move(OsbEasing.In,
+        shadow.Move(
+            OsbEasing.In,
             startTime,
             endTime,
             transform(startPosition) + ShadowOffset,
             transform(targetPosition) + ShadowOffset);
     }
 
-    Vector2 transform(Vector2 position)
-        => Vector2.Transform(new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize),
-            Quaternion.CreateFromYawPitchRoll(0, float.DegreesToRadians(Rotation), 0));
+    Vector2 transform(Vector2 position) => Vector2.Transform(
+        new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize),
+        Quaternion.CreateFromYawPitchRoll(0, float.DegreesToRadians(Rotation), 0));
 
     void shuffle(int[] array)
     {

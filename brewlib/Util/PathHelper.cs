@@ -11,7 +11,8 @@ public static class PathHelper
 {
     const char StandardDirectorySeparator = '/';
 
-    static readonly SearchValues<char> invalidChars = SearchValues.Create('"',
+    static readonly SearchValues<char> invalidChars = SearchValues.Create(
+        '"',
         '<',
         '>',
         '|',
@@ -48,8 +49,9 @@ public static class PathHelper
         '\u001e',
         '\u001f');
 
-    public static void OpenExplorer(string path)
-        => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true })?.Dispose();
+    public static void OpenExplorer(string path) => Process
+        .Start(new ProcessStartInfo(path) { UseShellExecute = true })
+        ?.Dispose();
 
     public static void SafeDelete(string path)
     {
@@ -59,6 +61,7 @@ public static class PathHelper
         }
         catch (SystemException) { }
     }
+
     public static string WithStandardSeparators(string path)
     {
         Span<char> chars = stackalloc char[path.Length];
@@ -75,11 +78,13 @@ public static class PathHelper
     public static void WithStandardSeparatorsUnsafe(ReadOnlySpan<char> path)
     {
         var chars = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(path), path.Length);
+
         if (Path.DirectorySeparatorChar != StandardDirectorySeparator)
             chars.Replace(Path.DirectorySeparatorChar, StandardDirectorySeparator);
 
         chars.Replace('\\', StandardDirectorySeparator);
     }
+
     public static bool FolderContainsPath(string folder, string path)
     {
         folder = WithStandardSeparators(Path.GetFullPath(folder));
@@ -92,14 +97,17 @@ public static class PathHelper
             _path[_folder.Length] == '/' &&
             _path.StartsWith(_folder, StringComparison.OrdinalIgnoreCase);
     }
+
     public static string GetRelativePath(string folder, string path) => Path.GetRelativePath(folder, path);
 
     public static bool IsValidPath(string path) => !MemoryExtensions.ContainsAny(path, invalidChars);
+
     public static bool IsValidFilename(string filename)
     {
         foreach (var character in filename.AsSpan())
             if (invalidChars.Contains(character) ||
-                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character)))
+                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) ||
+                    char.IsDigit(character)))
                 return false;
 
         return true;

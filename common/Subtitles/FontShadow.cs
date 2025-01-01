@@ -23,6 +23,7 @@ public record FontShadow(int thickness = 1, Color color = default) : FontEffect
     public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y)
     {
         if (thickness < 1) return;
+
         bitmap.Fill(FontGenerator.options, brush, path.Translate(thickness, thickness));
     }
 }

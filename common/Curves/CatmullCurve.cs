@@ -5,9 +5,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-/// <summary>
-///     Represents a Catmull-Rom curve defined by a set of control points.
-/// </summary>
+/// <summary>Represents a Catmull-Rom curve defined by a set of control points.</summary>
 public class CatmullCurve(Vector2[] points) : BaseCurve
 {
     const int catmull_detail = 50;
@@ -43,11 +41,13 @@ public class CatmullCurve(Vector2[] points) : BaseCurve
             var v1 = i > 0 ? controlPoints[i - 1] : controlPoints[i];
             var v2 = controlPoints[i];
             var v3 = i < controlPoints.Length - 1 ? controlPoints[i + 1] : v2 + v2 - v1;
+
             var v4 = i < controlPoints.Length - 2 ? controlPoints[i + 2] : v3 + v3 - v2;
 
             for (var c = 0; c < catmull_detail; c++)
             {
                 result.Add(catmullFindPoint(ref v1, ref v2, ref v3, ref v4, (float)c / catmull_detail));
+
                 result.Add(catmullFindPoint(ref v1, ref v2, ref v3, ref v4, (float)(c + 1) / catmull_detail));
             }
         }

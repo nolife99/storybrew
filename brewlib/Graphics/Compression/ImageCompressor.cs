@@ -34,22 +34,30 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
     public void LosslessCompress(string path, LosslessInputSettings settings)
         => InternalCompress(new Argument(path, settings), false);
 
-    public void Compress(string path, LossyInputSettings settings) => InternalCompress(new Argument(path, null, settings), true);
+    public void Compress(string path, LossyInputSettings settings)
+        => InternalCompress(new Argument(path, null, settings), true);
 
     protected abstract void InternalCompress(Argument arg, bool useLossy);
-    protected abstract string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless);
+
+    protected abstract string appendArgs(string path,
+        bool useLossy,
+        LossyInputSettings lossy,
+        LosslessInputSettings lossless);
 
     protected abstract void ensureTool();
+
     protected void ensureStop()
     {
         process?.Dispose();
         process = null;
     }
+
     protected string GetUtility() => Path.Combine(UtilityPath, UtilityName) + ".exe";
 
     protected virtual void Dispose(bool disposing)
     {
         if (disposed) return;
+
         ensureStop();
         if (disposing) disposed = true;
     }

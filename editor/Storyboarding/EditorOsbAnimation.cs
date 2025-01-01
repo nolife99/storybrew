@@ -13,8 +13,15 @@ public class EditorOsbAnimation : OsbAnimation, IDisplayable, IPostProcessable
         float opacity,
         StoryboardTransform transform,
         Project project,
-        FrameStats frameStats)
-        => EditorOsbSprite.Draw(drawContext, camera, bounds, opacity, ref transform, project, frameStats, this);
+        FrameStats frameStats) => EditorOsbSprite.Draw(
+        drawContext,
+        camera,
+        bounds,
+        opacity,
+        ref transform,
+        project,
+        frameStats,
+        this);
 
     public void PostProcess()
     {

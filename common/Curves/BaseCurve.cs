@@ -3,12 +3,8 @@
 using System.Collections.Generic;
 using System.Numerics;
 
-/// <summary>
-///     Represents a curve.
-/// </summary>
-/// <remarks>
-///     A <see cref="BaseCurve"/> is the base class for all curves.
-/// </remarks>
+/// <summary>Represents a curve.</summary>
+/// <remarks>A <see cref="BaseCurve"/> is the base class for all curves.</remarks>
 public abstract class BaseCurve : Curve
 {
     List<(float Distance, Vector2 Position)> distancePosition;
@@ -63,6 +59,7 @@ public abstract class BaseCurve : Curve
         }
 
         var delta = (distance - previousDistance) / (nextDistance - previousDistance);
+
         var previousToNext = nextPosition - previousPosition;
 
         return previousPosition + previousToNext * delta;

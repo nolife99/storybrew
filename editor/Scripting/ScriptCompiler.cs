@@ -33,23 +33,29 @@ public static class ScriptCompiler
         EmitResult result;
         using (SafeUnmanagedMemoryStream assemblyStream = new())
         {
-            result = CSharpCompilation.Create(asmName,
+            result = CSharpCompilation.Create(
+                    asmName,
                     trees.Keys,
-                    referencedAssemblies.Select(asmPath =>
-                    {
-                        using var stream = File.OpenRead(asmPath);
-                        if (!Project.DefaultAssemblies.Contains(asmPath))
+                    referencedAssemblies.Select(
+                        asmPath =>
                         {
-                            var assembly = context.LoadFromStream(stream);
-                            stream.Position = 0;
+                            using var stream = File.OpenRead(asmPath);
+                            if (!Project.DefaultAssemblies.Contains(asmPath))
+                            {
+                                var assembly = context.LoadFromStream(stream);
+                                stream.Position = 0;
 
-                            Trace.WriteLine($"Loaded user-provided assembly: {assembly.GetName().Name}");
-                        }
+                                Trace.WriteLine($"Loaded user-provided assembly: {assembly.GetName().Name}");
+                            }
 
-                        return MetadataReference.CreateFromStream(stream);
-                    }),
-                    new(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: true, optimizationLevel: OptimizationLevel.Release))
-                .Emit(assemblyStream,
+                            return MetadataReference.CreateFromStream(stream);
+                        }),
+                    new(
+                        OutputKind.DynamicallyLinkedLibrary,
+                        allowUnsafe: true,
+                        optimizationLevel: OptimizationLevel.Release))
+                .Emit(
+                    assemblyStream,
                     embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
                     options: new(debugInformationFormat: DebugInformationFormat.Embedded));
 
@@ -64,11 +70,13 @@ public static class ScriptCompiler
         error.Append("Compilation error\n \n");
 
         foreach (var diagnostics in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
-            .GroupBy(k =>
-            {
-                if (k.Location.SourceTree is null) return "";
-                return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
-            }))
+            .GroupBy(
+                k =>
+                {
+                    if (k.Location.SourceTree is null) return "";
+
+                    return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
+                }))
         {
             error.Append(Path.GetFileName(diagnostics.Key.AsSpan()));
             error.Append(":\n");

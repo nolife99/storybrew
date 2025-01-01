@@ -36,13 +36,14 @@ public class TimelineSlider : Slider
         this.project = project;
         line = new() { Texture = DrawState.WhitePixel, ScaleMode = ScaleMode.Fill };
 
-        Add(beatmapLabel = new(manager)
-        {
-            StyleName = "timelineBeatmapName",
-            Text = project.MainBeatmap.Name,
-            AnchorFrom = BoxAlignment.BottomRight,
-            AnchorTo = BoxAlignment.BottomRight
-        });
+        Add(
+            beatmapLabel = new(manager)
+            {
+                StyleName = "timelineBeatmapName",
+                Text = project.MainBeatmap.Name,
+                AnchorFrom = BoxAlignment.BottomRight,
+                AnchorTo = BoxAlignment.BottomRight
+            });
 
         StyleName = "timeline";
 
@@ -85,7 +86,8 @@ public class TimelineSlider : Slider
             var right = timeToXTop(RepeatEnd);
             if (right < left + pixelSize) right = left + pixelSize;
 
-            line.Draw(drawContext,
+            line.Draw(
+                drawContext,
                 Manager.Camera,
                 RectangleF.FromLTRB(left, offset.Y, right, offset.Y + Bounds.Height * .4f),
                 actualOpacity);
@@ -106,7 +108,8 @@ public class TimelineSlider : Slider
                 var kiaiRight = timeToXTop(controlPoint.Offset * .001f);
                 if (kiaiRight < kiaiLeft + pixelSize) kiaiRight = kiaiLeft + pixelSize;
 
-                line.Draw(drawContext,
+                line.Draw(
+                    drawContext,
                     Manager.Camera,
                     RectangleF.FromLTRB(kiaiLeft, offset.Y + Bounds.Height * .3f, kiaiRight, offset.Y + Bounds.Height * .4f),
                     actualOpacity);
@@ -124,7 +127,8 @@ public class TimelineSlider : Slider
             var breakRight = timeToXTop(osuBreak.EndTime * .001f);
             if (breakRight < breakLeft + pixelSize) breakRight = breakLeft + pixelSize;
 
-            line.Draw(drawContext,
+            line.Draw(
+                drawContext,
                 Manager.Camera,
                 RectangleF.FromLTRB(breakLeft, offset.Y + Bounds.Height * .3f, breakRight, offset.Y + Bounds.Height * .4f),
                 actualOpacity);
@@ -136,14 +140,16 @@ public class TimelineSlider : Slider
         {
             var left = timeToXTop(highlightStart * .001f);
             var right = timeToXTop(highlightEnd * .001f);
-            line.Draw(drawContext,
+            line.Draw(
+                drawContext,
                 Manager.Camera,
                 RectangleF.FromLTRB(left, offset.Y + Bounds.Height * .1f, right, offset.Y + Bounds.Height * .4f),
                 actualOpacity);
         }
 
         // Ticks
-        project.MainBeatmap.ForEachTick(leftTime,
+        project.MainBeatmap.ForEachTick(
+            leftTime,
             rightTime,
             SnapDivisor,
             (timingPoint, time, beatCount, tickCount) =>
@@ -180,8 +186,9 @@ public class TimelineSlider : Slider
                 }
                 else lineSize.Y *= .4f;
 
-                if (snap != 0 || tickCount == 0 && timingPoint.OmitFirstBarLine || beatCount % timingPoint.BeatPerMeasure != 0)
-                    lineSize.Y *= .5f;
+                if (snap != 0 ||
+                    tickCount == 0 && timingPoint.OmitFirstBarLine ||
+                    beatCount % timingPoint.BeatPerMeasure != 0) lineSize.Y *= .5f;
 
                 var tickX = offset.X + Manager.SnapToPixel((time - leftTime) * timeScale);
                 var tickOpacity = tickX > beatmapLabel.TextBounds.Left - 8 ? actualOpacity * .2f : actualOpacity;
@@ -198,7 +205,8 @@ public class TimelineSlider : Slider
                     var right = Math.Min((hitObject.EndTime - leftTime) * timeScale, Bounds.Width);
                     var height = Math.Max(Bounds.Height * .1f - pixelSize, pixelSize);
 
-                    drawLine(drawContext,
+                    drawLine(
+                        drawContext,
                         offset + new Vector2(Manager.SnapToPixel(left - height / 2), hitObjectsY),
                         new(Manager.SnapToPixel(right - left + height), height),
                         hitObject.Color,
@@ -208,14 +216,16 @@ public class TimelineSlider : Slider
         // Bookmarks
         foreach (var bookmark in project.MainBeatmap.Bookmarks)
         {
-            drawLine(drawContext,
+            drawLine(
+                drawContext,
                 new(timeToXTop(bookmark * .001f), offset.Y + Bounds.Height * .1f),
                 new(pixelSize, Bounds.Height * .3f),
                 bookmarkColor,
                 actualOpacity);
 
             if (leftTime < bookmark && bookmark < rightTime)
-                drawLine(drawContext,
+                drawLine(
+                    drawContext,
                     offset + new Vector2(Manager.SnapToPixel((bookmark - leftTime) * timeScale), lineBottomY),
                     new(pixelSize, Bounds.Height * .5f),
                     bookmarkColor,
@@ -228,7 +238,8 @@ public class TimelineSlider : Slider
             Vector2 lineSize = new(pixelSize, Bounds.Height * .4f);
             if (RepeatStart != RepeatEnd)
             {
-                drawLine(drawContext,
+                drawLine(
+                    drawContext,
                     offset with { X = timeToXTop(RepeatStart) - pixelSize },
                     lineSize,
                     Color.White,
@@ -236,7 +247,8 @@ public class TimelineSlider : Slider
 
                 drawLine(drawContext, offset with { X = x }, lineSize * .6f, Color.White, actualOpacity);
 
-                drawLine(drawContext,
+                drawLine(
+                    drawContext,
                     offset with { X = timeToXTop(RepeatEnd) + pixelSize },
                     lineSize,
                     Color.White,
@@ -252,13 +264,24 @@ public class TimelineSlider : Slider
             // Current time (bottom)
             var centerX = Bounds.Width * .5f;
             lineSize = new(pixelSize, Bounds.Height * .4f);
-            drawLine(drawContext, offset + new Vector2(centerX - pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
+            drawLine(
+                drawContext,
+                offset + new Vector2(centerX - pixelSize, lineBottomY),
+                lineSize,
+                Color.White,
+                actualOpacity);
 
-            drawLine(drawContext, offset + new Vector2(centerX + pixelSize, lineBottomY), lineSize, Color.White, actualOpacity);
+            drawLine(
+                drawContext,
+                offset + new Vector2(centerX + pixelSize, lineBottomY),
+                lineSize,
+                Color.White,
+                actualOpacity);
         }
     }
 
-    float timeToXTop(float time) => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
+    float timeToXTop(float time)
+        => Manager.SnapToPixel(AbsolutePosition.X + (time - MinValue) / (MaxValue - MinValue) * Width);
 
     void drawLine(DrawContext drawContext, Vector2 position, Vector2 size, Color color, float opacity)
     {

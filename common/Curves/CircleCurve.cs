@@ -5,9 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
 
-/// <summary>
-///     Represents a circular arc curve defined by three control points: a start point, a midpoint, and an end point.
-/// </summary>
+/// <summary>Represents a circular arc curve defined by three control points: a start point, a midpoint, and an end point.</summary>
 public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint) : BaseCurve
 {
     const float circular_arc_tolerance = .1f;
@@ -82,7 +80,8 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             var bSq = b.LengthSquared();
             var cSq = c.LengthSquared();
 
-            Centre = new Vector2(aSq * (b - c).Y + bSq * (c - a).Y + cSq * (a - b).Y,
+            Centre = new Vector2(
+                    aSq * (b - c).Y + bSq * (c - a).Y + cSq * (a - b).Y,
                     aSq * (c - b).X + bSq * (a - c).X + cSq * (b - a).X) /
                 d;
 

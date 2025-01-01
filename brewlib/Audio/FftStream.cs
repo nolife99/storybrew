@@ -36,10 +36,13 @@ public class FftStream : IDisposable
         }
 
         var data = Configuration.Default.MemoryAllocator.Allocate<float>(size);
-        if (Bass.ChannelGetData(stream,
-                Unsafe.ByteOffset(ref Unsafe.NullRef<float>(), ref MemoryMarshal.GetReference(data.Memory.Span)),
-                (int)flags) ==
-            -1) throw new BassException(Bass.LastError);
+        using (data.Memory.Pin())
+            if (Bass.ChannelGetData(
+                    stream,
+                    Unsafe.ByteOffset(ref Unsafe.NullRef<float>(), ref MemoryMarshal.GetReference(data.Memory.Span)),
+                    (int)flags) ==
+                -1)
+                throw new BassException(Bass.LastError);
 
         return data;
     }
@@ -47,15 +50,18 @@ public class FftStream : IDisposable
     #region IDisposable Support
 
     bool disposed;
+
     void Dispose(bool disposing)
     {
         if (disposed) return;
+
         Bass.StreamFree(stream);
 
         if (disposing) disposed = true;
     }
 
     ~FftStream() => Dispose(false);
+
     public void Dispose()
     {
         Dispose(true);

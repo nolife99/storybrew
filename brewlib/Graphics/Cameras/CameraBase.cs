@@ -84,6 +84,7 @@ public abstract class CameraBase : Camera
         set
         {
             if (nearPlane == value) return;
+
             nearPlane = value;
             Invalidate();
         }
@@ -95,6 +96,7 @@ public abstract class CameraBase : Camera
         set
         {
             if (farPlane == value) return;
+
             farPlane = value;
             Invalidate();
         }
@@ -106,6 +108,7 @@ public abstract class CameraBase : Camera
         set
         {
             if (viewport == value) return;
+
             viewport = value;
             Invalidate();
         }
@@ -117,6 +120,7 @@ public abstract class CameraBase : Camera
         set
         {
             if (position == value) return;
+
             position = value;
             Invalidate();
         }
@@ -128,6 +132,7 @@ public abstract class CameraBase : Camera
         set
         {
             if (forward == value) return;
+
             forward = value;
             Invalidate();
         }
@@ -139,6 +144,7 @@ public abstract class CameraBase : Camera
         set
         {
             if (up == value) return;
+
             up = value;
             Invalidate();
         }
@@ -149,6 +155,7 @@ public abstract class CameraBase : Camera
     public Vector3 FromScreen(Vector2 screenCoords)
     {
         Validate();
+
         // TODO Vector3.Unproject() ?
 
         var deviceX = 2 * (screenCoords.X / viewport.Width) - 1;
@@ -162,6 +169,7 @@ public abstract class CameraBase : Camera
 
         var direction = Vector3.Normalize(far - near);
         if (direction.Z == 0) return Vector3.Zero;
+
         return near - direction * (near.Z / direction.Z);
     }
 
@@ -175,13 +183,15 @@ public abstract class CameraBase : Camera
     public Vector3 ToScreen(Vector3 worldCoords)
     {
         Validate();
+
         // TODO Vector3.Project() ?
 
         var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
         var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) /
             float.Abs(transformedPosition.W);
 
-        return new Vector3((devicePosition.X + 1) * .5f * viewport.Width,
+        return new Vector3(
+            (devicePosition.X + 1) * .5f * viewport.Width,
             (-devicePosition.Y + 1) * .5f * viewport.Height,
             devicePosition.Z);
     }

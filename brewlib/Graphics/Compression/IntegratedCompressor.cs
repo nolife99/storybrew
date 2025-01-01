@@ -26,25 +26,33 @@ public class IntegratedCompressor : ImageCompressor
         var path = GetUtility();
         ensureTool();
 
-        tasks.Add(Task.Run(() =>
-        {
-            using var localProc =
-                Process.Start(new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+        tasks.Add(
+            Task.Run(
+                () =>
                 {
-                    CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
-                });
+                    using var localProc = Process.Start(
+                        new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+                        {
+                            CreateNoWindow = true,
+                            WorkingDirectory = Path.GetDirectoryName(UtilityPath),
+                            RedirectStandardError = true
+                        });
 
-            using (var errorStream = localProc.StandardError)
-            {
-                var error = errorStream.ReadToEnd();
-                if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
-                    Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
-            }
+                    using (var errorStream = localProc.StandardError)
+                    {
+                        var error = errorStream.ReadToEnd();
+                        if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
+                            Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
+                    }
 
-            localProc.WaitForExit();
-        }));
+                    localProc.WaitForExit();
+                }));
     }
-    protected override string appendArgs(string path, bool useLossy, LossyInputSettings lossy, LosslessInputSettings lossless)
+
+    protected override string appendArgs(string path,
+        bool useLossy,
+        LossyInputSettings lossy,
+        LosslessInputSettings lossless)
     {
         var input = string.Format(CultureInfo.InvariantCulture, "\"{0}\"", path);
         var str = StringHelper.StringBuilderPool.Retrieve();
@@ -53,6 +61,7 @@ public class IntegratedCompressor : ImageCompressor
         {
             str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
             if (lossy is null) return str.ToString();
+
             if (lossy.MinQuality >= 0 && lossy.MaxQuality is >= 0 and <= 100)
                 str.Append(CultureInfo.InvariantCulture, $" --quality {lossy.MinQuality}-{lossy.MaxQuality} ");
 
@@ -63,7 +72,10 @@ public class IntegratedCompressor : ImageCompressor
         else
         {
             var lvl = lossless?.OptimizationLevel ?? 4;
-            str.Append(CultureInfo.InvariantCulture, $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
+            str.Append(
+                CultureInfo.InvariantCulture,
+                $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
+
             str.Append(CultureInfo.InvariantCulture, $" {lossless?.CustomInputArgs} ");
             str.Append(CultureInfo.InvariantCulture, $"−s -a {input}");
         }
@@ -72,6 +84,7 @@ public class IntegratedCompressor : ImageCompressor
         StringHelper.StringBuilderPool.Release(str);
         return output;
     }
+
     protected override void ensureTool()
     {
         ObjectDisposedException.ThrowIf(disposed, this);
@@ -86,9 +99,11 @@ public class IntegratedCompressor : ImageCompressor
 
         toCleanup.Add(utility);
     }
+
     protected override void Dispose(bool disposing)
     {
         if (disposed) return;
+
         using (var all = Task.WhenAll(tasks)) all.Wait();
 
         base.Dispose(disposing);

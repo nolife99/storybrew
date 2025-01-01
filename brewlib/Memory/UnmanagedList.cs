@@ -68,11 +68,13 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     public void Insert(int index, T item) => Insert(index, ref item);
 
     public int IndexOf(T item) => IndexOf(ref item);
+
     public void RemoveAt(int index)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)Count);
         if (index < --Count) buf.AsSpan(index + 1).CopyTo(buf.AsSpan(index));
     }
+
     public void Clear() => Count = 0;
 
     public bool Contains(T item) => Contains(ref item);
@@ -80,6 +82,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     public void CopyTo(T[] array, int arrayIndex)
     {
         if (buf.Length == 0) return;
+
         buf.AsSpan(0, Count).CopyTo(array.AsSpan(arrayIndex));
     }
 
@@ -89,6 +92,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public EnumeratorRef GetEnumerator() => new(buf, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -109,6 +113,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     {
         var index = IndexOf(ref item);
         if (index < 0) return false;
+
         RemoveAt(index);
         return true;
     }
@@ -170,7 +175,8 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         else
         {
             EnsureCapacity(Count + items.Length);
-            Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
+            Unsafe.CopyBlock(
+                ref Unsafe.As<T, byte>(ref buf[0]),
                 ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(items)),
                 (uint)(items.Length * Unsafe.SizeOf<T>()));
         }
@@ -192,17 +198,20 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         {
             if (EnsureCapacityWithoutCopy(Count + items.Length, out var old))
             {
-                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
+                Unsafe.CopyBlock(
+                    ref Unsafe.As<T, byte>(ref buf[0]),
                     ref Unsafe.As<T, byte>(ref old[0]),
                     (uint)(index * Unsafe.SizeOf<T>()));
 
-                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[index + items.Length]),
+                Unsafe.CopyBlock(
+                    ref Unsafe.As<T, byte>(ref buf[index + items.Length]),
                     ref Unsafe.As<T, byte>(ref old[index]),
                     (uint)((Count - index) * Unsafe.SizeOf<T>()));
 
                 old.Free();
 
-                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
+                Unsafe.CopyBlock(
+                    ref Unsafe.As<T, byte>(ref buf[0]),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(items)),
                     (uint)(items.Length * Unsafe.SizeOf<T>()));
             }
@@ -211,15 +220,16 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
                 var head = buf.AsSpan(0, index);
                 var tail = buf.AsSpan(index, Count - index);
 
-                var headHasItemTail =
-                    SpanContainsMemory(head, ref Unsafe.Add(ref MemoryMarshal.GetReference(items), items.Length - 1));
+                var headHasItemTail = SpanContainsMemory(
+                    head,
+                    ref Unsafe.Add(ref MemoryMarshal.GetReference(items), items.Length - 1));
 
                 switch (SpanContainsMemory(head, ref itemsHead))
                 {
                     case true when headHasItemTail:
                         tail.CopyTo(buf.AsSpan(index + items.Length));
                         items.CopyTo(buf.AsSpan(index));
-                        break;
+                    break;
 
                     case false when !headHasItemTail:
                     {
@@ -227,12 +237,14 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
                         var tailMoved = buf.AsSpan(index + items.Length);
                         tail.CopyTo(tailMoved);
 
-                        MemoryMarshal.CreateSpan(ref Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(tailMoved), insertOfs),
+                        MemoryMarshal.CreateSpan(
+                                ref Unsafe.AddByteOffset(ref MemoryMarshal.GetReference(tailMoved), insertOfs),
                                 items.Length)
                             .CopyTo(buf.AsSpan(index));
 
                         break;
                     }
+
                     default:
                     {
                         var itemsHeadLen = (int)Unsafe.ByteOffset(ref itemsHead, ref MemoryMarshal.GetReference(tail));
@@ -254,7 +266,8 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
             EnsureCapacity(Count + items.Length);
             if (index < Count) buf.AsSpan(index, Count - index).CopyTo(buf.AsSpan(index + items.Length));
 
-            Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
+            Unsafe.CopyBlock(
+                ref Unsafe.As<T, byte>(ref buf[0]),
                 ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(items)),
                 (uint)(items.Length * Unsafe.SizeOf<T>()));
         }
@@ -272,6 +285,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
             case UnmanagedList<T> ul: InsertRange(index, ul.buf.AsSpan(0, ul.Count)); break;
             case T[] a: InsertRange(index, a.AsSpan()); break;
             case List<T> l: InsertRange(index, CollectionsMarshal.AsSpan(l)); break;
+
             case ICollection<T> c:
             {
                 var count = c.Count;
@@ -284,7 +298,8 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
                     try
                     {
                         c.CopyTo(rent, 0);
-                        Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
+                        Unsafe.CopyBlock(
+                            ref Unsafe.As<T, byte>(ref buf[0]),
                             ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(rent)),
                             (uint)(count * Unsafe.SizeOf<T>()));
                     }
@@ -298,6 +313,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
 
                 break;
             }
+
             default:
             {
                 foreach (var item in items) Insert(index++, item);
@@ -311,6 +327,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     protected override void Dispose(bool disposing)
     {
         if (buf.Ptr == 0) return;
+
         buf.Free();
         buf = default;
         Count = 0;
@@ -330,8 +347,10 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     bool EnsureCapacityWithoutDisposingOld(int min, out Buffer old)
     {
         if (!EnsureCapacityWithoutCopy(min, out old)) return false;
+
         if (Count > 0)
-            Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
+            Unsafe.CopyBlock(
+                ref Unsafe.As<T, byte>(ref buf[0]),
                 ref Unsafe.As<T, byte>(ref old[0]),
                 (uint)(Count * Unsafe.SizeOf<T>()));
 
@@ -378,6 +397,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         public bool MoveNext()
         {
             if (_index >= _list.Count) return false;
+
             Current = _list[_index];
             _index++;
             return true;
@@ -387,6 +407,37 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         {
             _index = 0;
             Current = default;
+        }
+    }
+
+    public ref struct EnumeratorRef
+    {
+        readonly Buffer _span;
+        readonly int _size;
+        int _index;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal EnumeratorRef(Buffer span, int count)
+        {
+            _span = span;
+            _size = count;
+            _index = -1;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext()
+        {
+            var index = _index + 1;
+            if (index >= _size) return false;
+
+            _index = index;
+            return true;
+        }
+
+        public ref T Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => ref _span[_index];
         }
     }
 
@@ -411,35 +462,5 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AsSpan(int start, int length) => MemoryMarshal.CreateSpan(ref this[start], length);
-    }
-
-    public ref struct EnumeratorRef
-    {
-        readonly Buffer _span;
-        readonly int _size;
-        int _index;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal EnumeratorRef(Buffer span, int count)
-        {
-            _span = span;
-            _size = count;
-            _index = -1;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MoveNext()
-        {
-            var index = _index + 1;
-            if (index >= _size) return false;
-            _index = index;
-            return true;
-        }
-
-        public ref T Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => ref _span[_index];
-        }
     }
 }

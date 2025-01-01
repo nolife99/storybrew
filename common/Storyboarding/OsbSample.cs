@@ -20,6 +20,7 @@ public class OsbSample : StoryboardObject
         set
         {
             if (audioPath == value) return;
+
             audioPath = value;
         }
     }
@@ -31,7 +32,10 @@ public class OsbSample : StoryboardObject
     public override float EndTime => Time;
 
     /// <summary/>
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
-        => writer.WriteLine($"Sample,{((int)Time).ToString(exportSettings.NumberFormat)},{layer},\"{AudioPath.Trim()
+    public override void WriteOsb(TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer layer,
+        StoryboardTransform transform) => writer.WriteLine(
+        $"Sample,{((int)Time).ToString(exportSettings.NumberFormat)},{layer},\"{AudioPath.Trim()
         }\",{((int)Volume).ToString(exportSettings.NumberFormat)}");
 }

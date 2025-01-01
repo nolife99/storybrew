@@ -205,11 +205,13 @@ public static class EasingFunctions
 
     /// <summary/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float ElasticOutHalf(float x) => float.Pow(2, -10 * x) * float.Sin((.5f * x - .075f) * float.Tau / .3f) + 1;
+    public static float ElasticOutHalf(float x)
+        => float.Pow(2, -10 * x) * float.Sin((.5f * x - .075f) * float.Tau / .3f) + 1;
 
     /// <summary/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static float ElasticOutQuarter(float x) => float.Pow(2, -10 * x) * float.Sin((.25f * x - .075f) * float.Tau / .3f) + 1;
+    public static float ElasticOutQuarter(float x)
+        => float.Pow(2, -10 * x) * float.Sin((.25f * x - .075f) * float.Tau / .3f) + 1;
 
     /// <summary>
     ///     <see href="https://easings.net/#easeInOutElastic"/>

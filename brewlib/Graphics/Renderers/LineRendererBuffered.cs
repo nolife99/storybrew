@@ -15,8 +15,9 @@ public class LineRendererBuffered : ILineRenderer
     const int VertexPerLine = 2;
     const string CombinedMatrixUniformName = "u_combinedMatrix";
 
-    static readonly VertexDeclaration VertexDeclaration =
-        new(VertexAttribute.CreatePosition3d(), VertexAttribute.CreateColor(true));
+    static readonly VertexDeclaration VertexDeclaration = new(
+        VertexAttribute.CreatePosition3d(),
+        VertexAttribute.CreateColor(true));
 
     readonly int maxLinesPerBatch;
     readonly bool ownsShader;
@@ -40,8 +41,10 @@ public class LineRendererBuffered : ILineRenderer
 
         this.shader = shader;
 
-        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
-            int.Max(this.maxLinesPerBatch = maxLinesPerBatch,
+        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(
+            VertexDeclaration,
+            int.Max(
+                this.maxLinesPerBatch = maxLinesPerBatch,
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) *
             VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
@@ -80,6 +83,7 @@ public class LineRendererBuffered : ILineRenderer
 
         rendering = true;
     }
+
     public void EndRendering()
     {
         primitiveStreamer.Unbind();
@@ -87,9 +91,11 @@ public class LineRendererBuffered : ILineRenderer
 
         rendering = false;
     }
+
     public void Flush(bool canBuffer = false)
     {
         if (linesInBatch == 0) return;
+
         if (!lastFlushWasBuffered)
         {
             var combinedMatrix = Matrix4x4.Multiply(transformMatrix, camera.ProjectionView);
@@ -113,6 +119,7 @@ public class LineRendererBuffered : ILineRenderer
 
         ++linesInBatch;
     }
+
     public void Dispose()
     {
         Dispose(true);
@@ -128,8 +135,10 @@ public class LineRendererBuffered : ILineRenderer
         var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
         var color = sb.AddVarying("vec4");
 
-        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
-            new Assign(sb.GlPosition,
+        sb.VertexShader = new Sequence(
+            new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
+            new Assign(
+                sb.GlPosition,
                 () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                 }, 1)"));
 
@@ -141,9 +150,11 @@ public class LineRendererBuffered : ILineRenderer
     #endregion
 
     ~LineRendererBuffered() => Dispose(false);
+
     void Dispose(bool disposing)
     {
         if (disposed) return;
+
         if (rendering) EndRendering();
 
         if (!disposing) return;

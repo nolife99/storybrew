@@ -62,7 +62,10 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         libraryWatcher = new()
         {
-            Filter = "*.cs", Path = scriptsLibraryPath, IncludeSubdirectories = true, NotifyFilter = NotifyFilters.LastWrite
+            Filter = "*.cs",
+            Path = scriptsLibraryPath,
+            IncludeSubdirectories = true,
+            NotifyFilter = NotifyFilters.LastWrite
         };
 
         libraryWatcher.Created += libraryWatcher_Changed;
@@ -91,7 +94,9 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     public ScriptContainer<TScript> Get(string scriptName)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        ref var scriptContainer = ref CollectionsMarshal.GetValueRefOrAddDefault(scriptContainers, scriptName, out var exists);
+        ref var scriptContainer =
+            ref CollectionsMarshal.GetValueRefOrAddDefault(scriptContainers, scriptName, out var exists);
+
         if (exists) return scriptContainer;
 
         var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
@@ -110,10 +115,12 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         return scriptContainer = new(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
     }
 
-    public IEnumerable<string> GetScriptNames() => Directory.EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
+    public IEnumerable<string> GetScriptNames() => Directory
+        .EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
         .Select(Path.GetFileNameWithoutExtension)
-        .Union(Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
-            .Select(Path.GetFileNameWithoutExtension));
+        .Union(
+            Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileNameWithoutExtension));
 
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {
@@ -121,10 +128,12 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)
-            scheduler?.Schedule(e.FullPath,
+            scheduler?.Schedule(
+                e.FullPath,
                 _ =>
                 {
-                    if (!disposed && scriptContainers.TryGetValue(Path.GetFileNameWithoutExtension(e.Name), out var container))
+                    if (!disposed &&
+                        scriptContainers.TryGetValue(Path.GetFileNameWithoutExtension(e.Name), out var container))
                         container.ReloadScript();
                 });
     }
@@ -135,18 +144,22 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)
-            scheduler?.Schedule(e.FullPath,
+            scheduler?.Schedule(
+                e.FullPath,
                 _ =>
                 {
                     if (disposed) return;
+
                     foreach (var container in scriptContainers.Values) container.ReloadScript();
                 });
     }
 
-    void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}",
+    void scheduleSolutionUpdate() => scheduler?.Schedule(
+        $"*{nameof(updateSolutionFiles)}",
         _ =>
         {
             if (disposed) return;
+
             updateSolutionFiles();
         });
 
@@ -173,6 +186,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             foreach (var path in referencedAssemblies)
             {
                 if (Project.DefaultAssemblies.Contains(path)) continue;
+
                 var compileNode = document.CreateElement("Reference", xmlns);
                 compileNode.SetAttribute("Include", AssemblyName.GetAssemblyName(path).Name);
 
@@ -194,10 +208,12 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     void Dispose(bool disposing)
     {
         if (disposed) return;
+
         scriptWatcher.Dispose();
         libraryWatcher.Dispose();
 
         if (!disposing) return;
+
         scriptContainers.Dispose();
 
         scheduler = null;

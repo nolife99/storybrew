@@ -44,8 +44,7 @@ public sealed class StringPool
             y2 = y4;
         }
 
-        Span<FixedSizePriorityMap> span = maps = GC.AllocateUninitializedArray<FixedSizePriorityMap>(x2);
-        foreach (ref var map in span) map = new(y2);
+        foreach (ref var map in (maps = new FixedSizePriorityMap[x2]).AsSpan()) map = new(y2);
 
         numberOfMaps = x2;
         return;
@@ -175,6 +174,7 @@ public sealed class StringPool
                 entry = ref Unsafe.Add(ref mapEntriesRef, i);
 
                 if (entry.HashCode != hashcode || !span.SequenceEqual(entry.Value)) continue;
+
                 UpdateTimestamp(ref entry.HeapIndex);
 
                 return ref entry.Value;
@@ -265,7 +265,7 @@ public sealed class StringPool
             var t = timestamp;
             if (t == uint.MaxValue) goto Fallback;
 
-            Downheap:
+        Downheap:
 
             root.Timestamp = timestamp = t + 1;
 
@@ -314,7 +314,7 @@ public sealed class StringPool
                 root = ref Unsafe.Add(ref heapEntriesRef, currentIndex);
             }
 
-            Fallback:
+        Fallback:
 
             for (var i = 0; i < count; i++) Unsafe.Add(ref heapEntriesRef, i).Timestamp = (uint)i;
             t = (uint)(c - 1);

@@ -32,7 +32,8 @@ public abstract class StoryboardObjectGenerator : Script
     ///<summary>Reserved</summary>
     protected StoryboardObjectGenerator()
     {
-        imageCompressor = new(() =>
+        imageCompressor = new(
+            () =>
             {
                 IntegratedCompressor compressor = new();
                 disposables.Add(compressor);
@@ -42,18 +43,21 @@ public abstract class StoryboardObjectGenerator : Script
 
         configurableFields = GetType()
             .GetFields()
-            .Select(field =>
-            {
-                var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-                return configurable is null ? null : new { Field = field, Configurable = configurable };
-            })
+            .Select(
+                field =>
+                {
+                    var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
+                    return configurable is null ? null : new { Field = field, Configurable = configurable };
+                })
             .Where(item => item is not null)
-            .Select((item, order) => new ConfigurableField(item.Field,
-                item.Configurable,
-                item.Field.GetValue(this),
-                item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
-                item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
-                order))
+            .Select(
+                (item, order) => new ConfigurableField(
+                    item.Field,
+                    item.Configurable,
+                    item.Field.GetValue(this),
+                    item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
+                    item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
+                    order))
             .ToArray();
     }
 
@@ -61,8 +65,8 @@ public abstract class StoryboardObjectGenerator : Script
     public static StoryboardObjectGenerator Current => instance.Value;
 
     /// <summary>
-    ///     Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating
-    ///     in parallel to this one.
+    ///     Set to <see langword="true"/> if this script uses multiple threads. It prevents other effects from updating in
+    ///     parallel to this one.
     /// </summary>
     protected bool Multithreaded { get; set; }
 
@@ -102,15 +106,15 @@ public abstract class StoryboardObjectGenerator : Script
     public static void Assert(bool condition, string message = null, [CallerLineNumber] int line = -1)
     {
         if (!condition)
-            throw new ArgumentException(message is not null ?
-                $"Assertion failed line {line}: {message}" :
-                $"Assertion failed line {line}");
+            throw new ArgumentException(
+                message is not null ? $"Assertion failed line {line}: {message}" : $"Assertion failed line {line}");
     }
 
     ///<summary> Generates the storyboard created by this script. </summary>
     public void Generate(GeneratorContext context)
     {
         if (instance.Value is not null) throw new InvalidOperationException("A script is already running in this thread");
+
         try
         {
             this.context = context;
@@ -146,7 +150,8 @@ public abstract class StoryboardObjectGenerator : Script
     /// <summary> Returns a <see cref="Image"/> from the mapset's directory. </summary>
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
-    public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),
+    public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(
+        Path.Combine(context.MapsetPath, path),
         Path.Combine(context.ProjectAssetPath, path),
         watch);
 
@@ -174,7 +179,8 @@ public abstract class StoryboardObjectGenerator : Script
 
     /// <summary> Opens a file, relative to the project folder, in read-only mode. </summary>
     /// <remarks> Dispose of the returned <see cref="Stream"/> as soon as possible. </remarks>
-    public Stream OpenProjectFile(string path, bool watch = true) => openFile(Path.Combine(context.ProjectPath, path), watch);
+    public Stream OpenProjectFile(string path, bool watch = true)
+        => openFile(Path.Combine(context.ProjectPath, path), watch);
 
     /// <summary> Opens a file, relative to the mapset folder, in read-only mode. </summary>
     /// <remarks> Dispose of the returned <see cref="Stream"/> as soon as possible. </remarks>
@@ -352,7 +358,9 @@ public abstract class StoryboardObjectGenerator : Script
                 for (var i = 0; i < enumValues.Length; ++i)
                 {
                     var value = enumValues.GetValue(i);
-                    allowedValues[i] = new(value.ToString(), Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture));
+                    allowedValues[i] = new(
+                        value.ToString(),
+                        Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture));
                 }
             }
 
@@ -360,7 +368,8 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 var displayName = configurableAttribute.DisplayName;
                 var initialValue = Convert.ChangeType(o, fieldType, CultureInfo.InvariantCulture);
-                config.UpdateField(field.Name,
+                config.UpdateField(
+                    field.Name,
                     displayName,
                     description,
                     order,

@@ -9,6 +9,7 @@ public static class ListExtensions
     public static void Move<T>(this List<T> list, int from, int to)
     {
         if (from == to) return;
+
         var span = CollectionsMarshal.AsSpan(list);
 
         var item = span[from];

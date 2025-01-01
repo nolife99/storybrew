@@ -24,9 +24,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     readonly TextureContainer TextureContainer = textureContainer;
     public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
 
-    public Drawable GetDrawable(string name) => drawables.TryGetValue(name, out var drawable) ? drawable : NullDrawable.Instance;
+    public Drawable GetDrawable(string name)
+        => drawables.TryGetValue(name, out var drawable) ? drawable : NullDrawable.Instance;
 
     public T GetStyle<T>(string name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
+
     WidgetStyle GetStyle(Type type, ReadOnlySpan<char> name)
     {
         while (true)
@@ -39,6 +41,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             while (!n.IsEmpty)
             {
                 if (altLookup.TryGetValue(n, out var style)) return style;
+
                 n = getImplicitParentStyleName(n);
             }
 
@@ -52,9 +55,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     #region IDisposable Support
 
     bool disposed;
+
     public void Dispose()
     {
         if (disposed) return;
+
         drawables.Dispose();
         disposed = true;
     }
@@ -63,7 +68,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
     #region Loading
 
-    public void Load(string filename, ResourceContainer resourceContainer = null) => load(loadJson(filename, resourceContainer));
+    public void Load(string filename, ResourceContainer resourceContainer = null)
+        => load(loadJson(filename, resourceContainer));
 
     void load(TinyObject data)
     {
@@ -72,6 +78,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         loadDrawables(data.Value<TinyObject>("drawables"), constants);
         loadStyles(data.Value<TinyObject>("styles"), constants);
     }
+
     TinyObject loadJson(string filename, ResourceContainer resourceContainer)
     {
         TinyToken token = null;
@@ -89,6 +96,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             _ => throw new InvalidDataException($"{filename} does not contain an object")
         };
     }
+
     TinyObject resolveIncludes(TinyObject data, ResourceContainer resourceContainer)
     {
         var includes = data.Value<TinyArray>("include");
@@ -99,9 +107,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
         return data;
     }
+
     void loadDrawables(TinyObject data, TinyObject constants)
     {
         if (data is null) return;
+
         foreach (var (name, value) in data)
             try
             {
@@ -116,6 +126,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 Trace.TraceError($"Skin - Loading drawable {name}: {e}");
             }
     }
+
     Drawable loadDrawable(TinyToken data, TinyObject constants)
     {
         switch (data.Type)
@@ -131,6 +142,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
                 return drawable;
             }
+
             case TinyTokenType.Array:
             {
                 CompositeDrawable composite = new();
@@ -144,15 +156,19 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
         }
 
-        var drawableB = Unsafe.As<Drawable>(Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type")) ??
-            throw new InvalidDataException($"Drawable '{data}' must declare a type")));
+        var drawableB = Unsafe.As<Drawable>(
+            Activator.CreateInstance(
+                ResolveDrawableType(data.Value<string>("_type")) ??
+                throw new InvalidDataException($"Drawable '{data}' must declare a type")));
 
         parseFields(drawableB, data.Value<TinyObject>(), null, constants);
         return drawableB;
     }
+
     void loadStyles(TinyObject data, TinyObject constants)
     {
         if (data is null) return;
+
         foreach (var (styleTypeName, value) in data)
         {
             var styleTypeObject = value.Value<TinyObject>();
@@ -217,6 +233,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
         }
     }
+
     void parseFields(object skinnable, TinyObject data, object parent, TinyObject constants)
     {
         var type = skinnable.GetType();
@@ -243,6 +260,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             type = type.BaseType;
         }
     }
+
     static TinyToken resolveConstants(TinyToken fieldData, TinyObject constants)
     {
         while (fieldData?.Type is TinyTokenType.String)
@@ -258,6 +276,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
 
         return fieldData;
     }
+
     static T resolve<T>(TinyToken data, TinyObject constants) => resolveConstants(data, constants).Value<T>();
 
     static ReadOnlySpan<char> getBaseStyleName(ReadOnlySpan<char> styleName)
@@ -265,23 +284,28 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         var index = styleName.IndexOf(' ');
         return index == -1 ? styleName : styleName[..index];
     }
+
     static ReadOnlySpan<char> getStyleFlags(ReadOnlySpan<char> styleName)
     {
         var index = styleName.LastIndexOf(' ');
         return index == -1 ? ReadOnlySpan<char>.Empty : styleName[(index + 1)..];
     }
+
     static ReadOnlySpan<char> getImplicitParentStyleName(ReadOnlySpan<char> styleName)
     {
         var index = styleName.LastIndexOf(' ');
         return index == -1 ? ReadOnlySpan<char>.Empty : styleName[..index];
     }
+
     static Func<TinyToken, TinyObject, Skin, object> getFieldParser(Type fieldType)
     {
         if (fieldType.IsEnum) return (data, _, _) => Enum.Parse(fieldType, data.Value<string>());
+
         while (fieldType != typeof(object))
         {
             var parser = fieldParsers.GetValueRefOrNullRef(fieldType);
             if (parser is not null) return parser;
+
             fieldType = fieldType.BaseType;
         }
 
@@ -319,11 +343,13 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 if (data is TinyArray tinyArray)
                     return tinyArray.Count switch
                     {
-                        3 => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
+                        3 => (Color)new Vector4(
+                            resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             1),
-                        _ => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
+                        _ => (Color)new Vector4(
+                            resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants))
@@ -337,11 +363,15 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     return tinyArray.Count switch
                     {
                         1 => new FourSide(resolve<float>(tinyArray[0], constants)),
-                        2 => new FourSide(resolve<float>(tinyArray[0], constants), resolve<float>(tinyArray[1], constants)),
-                        3 => new FourSide(resolve<float>(tinyArray[0], constants),
+                        2 => new FourSide(
+                            resolve<float>(tinyArray[0], constants),
+                            resolve<float>(tinyArray[1], constants)),
+                        3 => new FourSide(
+                            resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants)),
-                        _ => new FourSide(resolve<float>(tinyArray[0], constants),
+                        _ => new FourSide(
+                            resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants))

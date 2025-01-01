@@ -26,10 +26,12 @@ public static class StringHelper
 
         return string.Format(CultureInfo.InvariantCulture, format, byteCount, sizeOrders[order]);
     }
+
     public static string StripUtf8Bom(this string s)
         => s.StartsWith(utf8Bom, StringComparison.Ordinal) ? s.Remove(0, utf8Bom.Length) : s;
 
     public static string GetMd5(string value) => GetMd5(Encoding.ASCII.GetBytes(value));
+
     public static string GetMd5(byte[] data)
     {
         data = MD5.HashData(data);
@@ -41,6 +43,7 @@ public static class StringHelper
         StringBuilderPool.Release(chars);
         return str;
     }
+
     public static string GetFileMd5(string path)
     {
         var data = GetFileMd5Bytes(path);
@@ -52,6 +55,7 @@ public static class StringHelper
         StringBuilderPool.Release(chars);
         return str;
     }
+
     public static byte[] GetFileMd5Bytes(string path)
     {
         using var stream = File.OpenRead(path);

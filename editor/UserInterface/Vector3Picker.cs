@@ -15,46 +15,47 @@ public class Vector3Picker : Widget, Field
 
     public Vector3Picker(WidgetManager manager) : base(manager)
     {
-        Add(layout = new LinearLayout(manager)
-        {
-            FitChildren = true,
-            Children =
-            [
-                new LinearLayout(manager)
-                {
-                    Horizontal = true,
-                    FitChildren = true,
-                    Fill = true,
-                    Children =
-                    [
-                        new Label(Manager) { StyleName = "small", Text = "X", CanGrow = false },
-                        xTextbox = new(manager) { EnterCommits = true }
-                    ]
-                },
-                new LinearLayout(manager)
-                {
-                    Horizontal = true,
-                    FitChildren = true,
-                    Fill = true,
-                    Children =
-                    [
-                        new Label(Manager) { StyleName = "small", Text = "Y", CanGrow = false },
-                        yTextbox = new(manager) { EnterCommits = true }
-                    ]
-                },
-                new LinearLayout(manager)
-                {
-                    Horizontal = true,
-                    FitChildren = true,
-                    Fill = true,
-                    Children =
-                    [
-                        new Label(Manager) { StyleName = "small", Text = "Z", CanGrow = false },
-                        zTextbox = new Textbox(manager) { EnterCommits = true }
-                    ]
-                }
-            ]
-        });
+        Add(
+            layout = new LinearLayout(manager)
+            {
+                FitChildren = true,
+                Children =
+                [
+                    new LinearLayout(manager)
+                    {
+                        Horizontal = true,
+                        FitChildren = true,
+                        Fill = true,
+                        Children =
+                        [
+                            new Label(Manager) { StyleName = "small", Text = "X", CanGrow = false },
+                            xTextbox = new(manager) { EnterCommits = true }
+                        ]
+                    },
+                    new LinearLayout(manager)
+                    {
+                        Horizontal = true,
+                        FitChildren = true,
+                        Fill = true,
+                        Children =
+                        [
+                            new Label(Manager) { StyleName = "small", Text = "Y", CanGrow = false },
+                            yTextbox = new(manager) { EnterCommits = true }
+                        ]
+                    },
+                    new LinearLayout(manager)
+                    {
+                        Horizontal = true,
+                        FitChildren = true,
+                        Fill = true,
+                        Children =
+                        [
+                            new Label(Manager) { StyleName = "small", Text = "Z", CanGrow = false },
+                            zTextbox = new Textbox(manager) { EnterCommits = true }
+                        ]
+                    }
+                ]
+            });
 
         updateWidgets();
 
@@ -73,6 +74,7 @@ public class Vector3Picker : Widget, Field
         set
         {
             if (this.value == value) return;
+
             this.value = value;
 
             updateWidgets();

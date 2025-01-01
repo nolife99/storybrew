@@ -30,6 +30,7 @@ public sealed class SafeUnmanagedMemoryStream : Stream
         if (currentBuffer == 0 || capacity < value) ReallocateBuffer((int)BitOperations.RoundUpToPowerOf2((uint)value));
 
         if (position < value) return;
+
         if (value == 0) position = 0;
         else position = length - 1;
     }
@@ -72,7 +73,8 @@ public sealed class SafeUnmanagedMemoryStream : Stream
         var readlen = count > length - position ? length - position : count;
         if (readlen <= 0) return 0;
 
-        Unsafe.CopyBlock(ref MemoryMarshal.GetReference(buffer),
+        Unsafe.CopyBlock(
+            ref MemoryMarshal.GetReference(buffer),
             ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), currentBuffer + position),
             (uint)readlen);
 
@@ -87,9 +89,11 @@ public sealed class SafeUnmanagedMemoryStream : Stream
         var count = buffer.Length;
 
         var endOffset = position + count;
-        if (currentBuffer == 0 || endOffset > capacity) ReallocateBuffer((int)BitOperations.RoundUpToPowerOf2((uint)endOffset));
+        if (currentBuffer == 0 || endOffset > capacity)
+            ReallocateBuffer((int)BitOperations.RoundUpToPowerOf2((uint)endOffset));
 
-        Unsafe.CopyBlock(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), currentBuffer + position),
+        Unsafe.CopyBlock(
+            ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), currentBuffer + position),
             ref MemoryMarshal.GetReference(buffer),
             (uint)count);
 

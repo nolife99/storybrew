@@ -5,13 +5,11 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.Util;
 
-/// <summary>
-///     An example script containing en entire storyboard.
+/// <summary>An example script containing en entire storyboard.
 ///     <para/>
 ///     It is best to split yours into multiple effects, or it could take a long time to update in the editor.
 ///     <para/>
-///     To be used with <see href="https://osu.ppy.sh/s/183628"/>
-/// </summary>
+///     To be used with <see href="https://osu.ppy.sh/s/183628"/></summary>
 internal class Jigoku : StoryboardObjectGenerator
 {
     const float BgScaling = 480f / 768;
@@ -553,7 +551,8 @@ internal class Jigoku : StoryboardObjectGenerator
 
     void MakeNote(int time, float angle, float distance) => MakeNote(time, 140, 340, angle, distance);
 
-    void MakeNote(int time, float x, float y, float angle, float distance) => MakeNote(time, x, y, angle, distance, 200, 250);
+    void MakeNote(int time, float x, float y, float angle, float distance)
+        => MakeNote(time, x, y, angle, distance, 200, 250);
 
     void MakeNote(int time, float x, float y, float angle, float distance, int inTime, int outTime)
     {

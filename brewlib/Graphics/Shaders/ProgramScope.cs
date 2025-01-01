@@ -19,12 +19,14 @@ public class ProgramScope
         types.Add(type);
         return type;
     }
+
     public ShaderVariable AddUniform(ShaderContext context, string name, string shaderTypeName, int count = -1)
     {
         ShaderVariable uniform = new(context, name, shaderTypeName, count);
         uniforms.Add(uniform);
         return uniform;
     }
+
     public ShaderVariable AddVarying(ShaderContext context, string shaderTypeName)
     {
         ShaderVariable varying = new(context, nextGenericVaryingName, shaderTypeName);

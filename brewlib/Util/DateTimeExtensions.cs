@@ -22,12 +22,13 @@ public static class DateTimeExtensions
 
     public static string ToTimeAgo(this DateTimeOffset date)
     {
-        var seconds = (DateTimeOffset.Now.Ticks - date.Ticks) * 1E-7;
+        var seconds = DateTimeOffset.UtcNow.Second - date.Second;
         foreach (var threshold in thresholds)
             if (seconds < threshold.Item1)
             {
-                TimeSpan timespan = new(DateTimeOffset.Now.Ticks - date.Ticks);
-                return string.Format(CultureInfo.InvariantCulture,
+                var timespan = TimeSpan.FromSeconds(seconds);
+                return string.Format(
+                    CultureInfo.InvariantCulture,
                     threshold.Item2,
                     (timespan.Days > 365 ? timespan.Days / 365 :
                         timespan.Days > 30 ? timespan.Days / 30 :

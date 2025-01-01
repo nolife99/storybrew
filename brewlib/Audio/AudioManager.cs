@@ -54,6 +54,7 @@ public sealed class AudioManager : IDisposable
         {
             var channel = audioChannels[i];
             if (!channel.Temporary || !channel.Completed) continue;
+
             channel.Dispose();
             --i;
         }
@@ -66,7 +67,8 @@ public sealed class AudioManager : IDisposable
         return audio;
     }
 
-    public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null) => new(this, path, resourceContainer);
+    public AudioSample LoadSample(string path, ResourceContainer resourceContainer = null)
+        => new(this, path, resourceContainer);
 
     internal void RegisterChannel(AudioChannel channel) => audioChannels.Add(channel);
     internal void UnregisterChannel(AudioChannel channel) => audioChannels.Remove(channel);
@@ -80,6 +82,7 @@ public sealed class AudioManager : IDisposable
     public void Dispose()
     {
         if (disposed) return;
+
         Bass.Free();
         disposed = true;
 

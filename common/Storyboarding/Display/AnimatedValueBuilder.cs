@@ -10,9 +10,11 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
     CompositeCommand<TValue> composite;
     Func<ITypedCommand<TValue>, ITypedCommand<TValue>> decorate;
     public void Add(ICommand command) => Add(command as Command<TValue>);
+
     public void StartDisplayLoop(LoopCommand loopCommand)
     {
-        if (composite is not null) throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
+        if (composite is not null)
+            throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
 
         decorate = command =>
         {
@@ -20,29 +22,39 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
                 throw new InvalidOperationException(
                     $"Commands in a loop must start at 0ms, but start at {loopCommand.CommandsStartTime}ms");
 
-            return new LoopDecorator<TValue>(command, loopCommand.StartTime, loopCommand.CommandsDuration, loopCommand.LoopCount);
+            return new LoopDecorator<TValue>(
+                command,
+                loopCommand.StartTime,
+                loopCommand.CommandsDuration,
+                loopCommand.LoopCount);
         };
 
         composite = new();
     }
+
     public void StartDisplayTrigger(TriggerCommand triggerCommand)
     {
-        if (composite is not null) throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
+        if (composite is not null)
+            throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
 
         decorate = command => new TriggerDecorator<TValue>(command);
         composite = new();
     }
+
     public void EndDisplayComposite()
     {
         if (composite is null) throw new InvalidOperationException("Cannot complete loop or trigger: Not inside one");
+
         if (composite.HasCommands) value.Add(decorate(composite));
 
         composite = null;
         decorate = null;
     }
+
     public void Add(Command<TValue> command)
     {
         if (command is null) return;
+
         (composite ?? value).Add(command);
     }
 }

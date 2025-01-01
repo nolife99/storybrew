@@ -34,7 +34,8 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
             if (attributeLocation < 0) continue;
 
             GL.EnableVertexArrayAttrib(vao, attributeLocation);
-            GL.VertexArrayAttribFormat(vao,
+            GL.VertexArrayAttribFormat(
+                vao,
                 attributeLocation,
                 attribute.ComponentCount,
                 attribute.Type,
@@ -44,6 +45,7 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
             GL.VertexArrayAttribBinding(vao, attributeLocation, 0);
         }
     }
+
     public void DeactivateAttributes(Shader shader, int vao)
     {
         for (var i = 0; i < vertexAttributes.Length; i++)

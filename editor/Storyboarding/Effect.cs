@@ -20,6 +20,7 @@ public abstract class Effect : IDisposable
         refreshLayerNames();
         Project.LayerManager.Add(placeHolderLayer);
     }
+
     public EffectConfig Config { get; } = new();
 
     public long EstimatedSize { get; private set; }
@@ -108,6 +109,7 @@ public abstract class Effect : IDisposable
     public void Refresh()
     {
         if (Project.Disposed) return;
+
         Project.QueueEffectUpdate(this);
     }
 
@@ -115,7 +117,8 @@ public abstract class Effect : IDisposable
 
     void refreshLayerNames()
     {
-        foreach (var layer in layers) layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})";
+        foreach (var layer in layers)
+            layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})";
     }
 
     #region IDisposable Support
@@ -125,9 +128,11 @@ public abstract class Effect : IDisposable
     protected virtual void Dispose(bool disposing)
     {
         if (Disposed || !disposing) return;
+
         foreach (var l in layers) Project.LayerManager.Remove(l);
         Disposed = true;
     }
+
     public void Dispose()
     {
         Dispose(true);
@@ -139,13 +144,5 @@ public abstract class Effect : IDisposable
 
 public enum EffectStatus
 {
-    Initializing,
-    Loading,
-    Configuring,
-    Updating,
-    ReloadPending,
-    Ready,
-    CompilationFailed,
-    LoadingFailed,
-    ExecutionFailed
+    Initializing, Loading, Configuring, Updating, ReloadPending, Ready, CompilationFailed, LoadingFailed, ExecutionFailed
 }

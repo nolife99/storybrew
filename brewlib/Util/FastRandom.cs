@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 public class FastRandom
 {
     const double UNIT_INT = 1 / (int.MaxValue + 1d), UNIT_UINT = 1 / (uint.MaxValue + 1d);
+
     const uint Y = 842502087, Z = 3579807591, W = 273326509;
 
     uint bitBuffer, bitMask = 1, x, y, z, w;
@@ -72,6 +73,7 @@ public class FastRandom
 
         var range = maxValue - minValue;
         if (range < 0) return minValue + (int)(UNIT_UINT * (w = w ^ w >> 19 ^ t ^ t >> 8) * (maxValue - (long)minValue));
+
         return minValue + (int)(UNIT_INT * (int)(0x7FFFFFFF & (w = w ^ w >> 19 ^ t ^ t >> 8)) * range);
     }
 

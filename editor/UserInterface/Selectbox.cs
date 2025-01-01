@@ -22,8 +22,12 @@ public class Selectbox : Widget, Field
         button.OnClick += (_, _) =>
         {
             if (options is null) return;
+
             if (options.Length > 2)
-                Manager.ScreenLayerManager.ShowContextMenu("Select a value", optionValue => Value = optionValue.Value, options);
+                Manager.ScreenLayerManager.ShowContextMenu(
+                    "Select a value",
+                    optionValue => Value = optionValue.Value,
+                    options);
             else
             {
                 var optionFound = false;
@@ -51,6 +55,7 @@ public class Selectbox : Widget, Field
         set
         {
             if (options == value) return;
+
             options = value;
 
             button.Text = findValueName(this.value);
@@ -63,6 +68,7 @@ public class Selectbox : Widget, Field
         set
         {
             if (this.value == value) return;
+
             this.value = value;
 
             button.Text = findValueName(this.value);
@@ -93,6 +99,7 @@ public class Selectbox : Widget, Field
     string findValueName(object value)
     {
         if (options is null) return "";
+
         foreach (var option in options)
             if (option.Value.Equals(value))
                 return option.Name;

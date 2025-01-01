@@ -23,61 +23,71 @@ public class StartMenu : UiScreenLayer
         base.Load();
 
         WidgetManager.Root.StyleName = "panel";
-        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
-        {
-            AnchorTarget = WidgetManager.Root,
-            AnchorFrom = BoxAlignment.Centre,
-            AnchorTo = BoxAlignment.Centre,
-            Padding = new(16),
-            FitChildren = true,
-            Children =
-            [
-                newProjectButton = new(WidgetManager) { Text = "New project", AnchorFrom = BoxAlignment.Centre },
-                openProjectButton = new(WidgetManager) { Text = "Open project", AnchorFrom = BoxAlignment.Centre },
-                new Button(WidgetManager) { Text = "Preferences", AnchorFrom = BoxAlignment.Centre, Disabled = true },
-                closeButton = new(WidgetManager) { Text = "Close", AnchorFrom = BoxAlignment.Centre }
-            ]
-        });
+        WidgetManager.Root.Add(
+            mainLayout = new(WidgetManager)
+            {
+                AnchorTarget = WidgetManager.Root,
+                AnchorFrom = BoxAlignment.Centre,
+                AnchorTo = BoxAlignment.Centre,
+                Padding = new(16),
+                FitChildren = true,
+                Children =
+                [
+                    newProjectButton = new(WidgetManager) { Text = "New project", AnchorFrom = BoxAlignment.Centre },
+                    openProjectButton =
+                        new(WidgetManager) { Text = "Open project", AnchorFrom = BoxAlignment.Centre },
+                    new Button(WidgetManager)
+                    {
+                        Text = "Preferences", AnchorFrom = BoxAlignment.Centre, Disabled = true
+                    },
+                    closeButton = new(WidgetManager) { Text = "Close", AnchorFrom = BoxAlignment.Centre }
+                ]
+            });
 
-        WidgetManager.Root.Add(bottomRightLayout = new(WidgetManager)
-        {
-            AnchorTarget = WidgetManager.Root,
-            AnchorFrom = BoxAlignment.BottomRight,
-            AnchorTo = BoxAlignment.BottomRight,
-            Padding = new(16),
-            Horizontal = true,
-            Fill = true,
-            Children =
-            [
-                discordButton = new(WidgetManager)
-                {
-                    StyleName = "small", Text = "Join Discord", AnchorFrom = BoxAlignment.Centre
-                },
-                wikiButton = new(WidgetManager) { StyleName = "small", Text = "Wiki", AnchorFrom = BoxAlignment.Centre }
-            ]
-        });
+        WidgetManager.Root.Add(
+            bottomRightLayout = new(WidgetManager)
+            {
+                AnchorTarget = WidgetManager.Root,
+                AnchorFrom = BoxAlignment.BottomRight,
+                AnchorTo = BoxAlignment.BottomRight,
+                Padding = new(16),
+                Horizontal = true,
+                Fill = true,
+                Children =
+                [
+                    discordButton = new(WidgetManager)
+                    {
+                        StyleName = "small", Text = "Join Discord", AnchorFrom = BoxAlignment.Centre
+                    },
+                    wikiButton = new(WidgetManager)
+                    {
+                        StyleName = "small", Text = "Wiki", AnchorFrom = BoxAlignment.Centre
+                    }
+                ]
+            });
 
-        WidgetManager.Root.Add(bottomLayout = new(WidgetManager)
-        {
-            AnchorTarget = WidgetManager.Root,
-            AnchorFrom = BoxAlignment.Bottom,
-            AnchorTo = BoxAlignment.Bottom,
-            Padding = new(16),
-            Children =
-            [
-                updateButton = new(WidgetManager)
-                {
-                    Text = "Checking for updates",
-                    AnchorFrom = BoxAlignment.Centre,
-                    StyleName = "small",
-                    Disabled = true
-                },
-                versionLabel = new(WidgetManager)
-                {
-                    StyleName = "small", Text = Program.FullName, AnchorFrom = BoxAlignment.Centre
-                }
-            ]
-        });
+        WidgetManager.Root.Add(
+            bottomLayout = new(WidgetManager)
+            {
+                AnchorTarget = WidgetManager.Root,
+                AnchorFrom = BoxAlignment.Bottom,
+                AnchorTo = BoxAlignment.Bottom,
+                Padding = new(16),
+                Children =
+                [
+                    updateButton = new(WidgetManager)
+                    {
+                        Text = "Checking for updates",
+                        AnchorFrom = BoxAlignment.Centre,
+                        StyleName = "small",
+                        Disabled = true
+                    },
+                    versionLabel = new(WidgetManager)
+                    {
+                        StyleName = "small", Text = Program.FullName, AnchorFrom = BoxAlignment.Centre
+                    }
+                ]
+            });
 
         newProjectButton.OnClick += (_, _) => Manager.Add(new NewProjectMenu());
         openProjectButton.OnClick += (_, _) => Manager.ShowOpenProject();
@@ -105,6 +115,7 @@ public class StartMenu : UiScreenLayer
         async (r, e) =>
         {
             if (IsDisposed) return;
+
             if (e is not null)
             {
                 await handleLatestVersionException(e);
@@ -137,6 +148,7 @@ public class StartMenu : UiScreenLayer
                         {
                             var downloadName = asset.Value<string>("name");
                             if (!downloadName.EndsWith(".zip", StringComparison.Ordinal)) continue;
+
                             downloadUrl = asset.Value<string>("browser_download_url");
                             break;
                         }
@@ -145,7 +157,8 @@ public class StartMenu : UiScreenLayer
                     if (Program.Version < version || Program.Version >= latestVersion)
                     {
                         var publishedAt = release.Value<string>("published_at");
-                        var publishDate = DateTimeOffset.ParseExact(publishedAt,
+                        var publishDate = DateTimeOffset.ParseExact(
+                            publishedAt,
                             @"yyyy-MM-dd\THH:mm:ss\Z",
                             CultureInfo.InvariantCulture,
                             DateTimeStyles.AssumeUniversal);

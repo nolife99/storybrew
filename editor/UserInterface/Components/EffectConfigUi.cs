@@ -9,7 +9,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using BrewLib.IO;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using SixLabors.ImageSharp.PixelFormats;
@@ -32,54 +31,55 @@ public class EffectConfigUi : Widget
     {
         Button copyButton, pasteButton, closeButton;
 
-        Add(layout = new(manager)
-        {
-            StyleName = "panel",
-            Padding = new(16),
-            FitChildren = true,
-            Fill = true,
-            Children =
-            [
-                new LinearLayout(manager)
-                {
-                    Fill = true,
-                    FitChildren = true,
-                    Horizontal = true,
-                    CanGrow = false,
-                    Children =
-                    [
-                        titleLabel = new(manager) { Text = "Configuration" },
-                        copyButton = new(Manager)
-                        {
-                            StyleName = "icon",
-                            Icon = IconFont.CopyAll,
-                            Tooltip = "Copy all fields",
-                            AnchorFrom = BoxAlignment.Centre,
-                            AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false
-                        },
-                        pasteButton = new(Manager)
-                        {
-                            StyleName = "icon",
-                            Icon = IconFont.ContentPasteGo,
-                            Tooltip = "Paste all fields",
-                            AnchorFrom = BoxAlignment.Centre,
-                            AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false
-                        },
-                        closeButton = new(Manager)
-                        {
-                            StyleName = "icon",
-                            Icon = IconFont.Cancel,
-                            AnchorFrom = BoxAlignment.Centre,
-                            AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false
-                        }
-                    ]
-                },
-                new ScrollArea(manager, configFieldsLayout = new(manager) { FitChildren = true })
-            ]
-        });
+        Add(
+            layout = new(manager)
+            {
+                StyleName = "panel",
+                Padding = new(16),
+                FitChildren = true,
+                Fill = true,
+                Children =
+                [
+                    new LinearLayout(manager)
+                    {
+                        Fill = true,
+                        FitChildren = true,
+                        Horizontal = true,
+                        CanGrow = false,
+                        Children =
+                        [
+                            titleLabel = new(manager) { Text = "Configuration" },
+                            copyButton = new(Manager)
+                            {
+                                StyleName = "icon",
+                                Icon = IconFont.CopyAll,
+                                Tooltip = "Copy all fields",
+                                AnchorFrom = BoxAlignment.Centre,
+                                AnchorTo = BoxAlignment.Centre,
+                                CanGrow = false
+                            },
+                            pasteButton = new(Manager)
+                            {
+                                StyleName = "icon",
+                                Icon = IconFont.ContentPasteGo,
+                                Tooltip = "Paste all fields",
+                                AnchorFrom = BoxAlignment.Centre,
+                                AnchorTo = BoxAlignment.Centre,
+                                CanGrow = false
+                            },
+                            closeButton = new(Manager)
+                            {
+                                StyleName = "icon",
+                                Icon = IconFont.Cancel,
+                                AnchorFrom = BoxAlignment.Centre,
+                                AnchorTo = BoxAlignment.Centre,
+                                CanGrow = false
+                            }
+                        ]
+                    },
+                    new ScrollArea(manager, configFieldsLayout = new(manager) { FitChildren = true })
+                ]
+            });
 
         copyButton.OnClick += (_, _) => copyConfiguration();
         pasteButton.OnClick += (_, _) => pasteConfiguration();
@@ -100,6 +100,7 @@ public class EffectConfigUi : Widget
         set
         {
             if (effect == value) return;
+
             if (effect is not null)
             {
                 effect.OnChanged -= Effect_OnChanged;
@@ -136,6 +137,7 @@ public class EffectConfigUi : Widget
     void updateEffect()
     {
         if (effect is null) return;
+
         titleLabel.Text = $"Configuration: {effect.Name} ({effect.BaseName})";
     }
 
@@ -150,13 +152,14 @@ public class EffectConfigUi : Widget
             if (!string.IsNullOrWhiteSpace(field.BeginsGroup))
             {
                 currentGroup = field.BeginsGroup;
-                configFieldsLayout.Add(new Label(Manager)
-                {
-                    StyleName = "listGroup",
-                    Text = field.BeginsGroup,
-                    AnchorFrom = BoxAlignment.Centre,
-                    AnchorTo = BoxAlignment.Centre
-                });
+                configFieldsLayout.Add(
+                    new Label(Manager)
+                    {
+                        StyleName = "listGroup",
+                        Text = field.BeginsGroup,
+                        AnchorFrom = BoxAlignment.Centre,
+                        AnchorTo = BoxAlignment.Centre
+                    });
             }
 
             var displayName = field.DisplayName;
@@ -165,25 +168,26 @@ public class EffectConfigUi : Widget
             var description = $"Variable: {field.Name} ({field.Type.Name})";
             if (!string.IsNullOrWhiteSpace(field.Description)) description = "  " + description + "\n" + field.Description;
 
-            configFieldsLayout.Add(new LinearLayout(Manager)
-            {
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Horizontal = true,
-                Fill = true,
-                Children =
-                [
-                    new Label(Manager)
-                    {
-                        StyleName = "listItem",
-                        Text = displayName,
-                        AnchorFrom = BoxAlignment.TopLeft,
-                        AnchorTo = BoxAlignment.TopLeft,
-                        Tooltip = description
-                    },
-                    buildFieldEditor(field)
-                ]
-            });
+            configFieldsLayout.Add(
+                new LinearLayout(Manager)
+                {
+                    AnchorFrom = BoxAlignment.Centre,
+                    AnchorTo = BoxAlignment.Centre,
+                    Horizontal = true,
+                    Fill = true,
+                    Children =
+                    [
+                        new Label(Manager)
+                        {
+                            StyleName = "listItem",
+                            Text = displayName,
+                            AnchorFrom = BoxAlignment.TopLeft,
+                            AnchorTo = BoxAlignment.TopLeft,
+                            Tooltip = description
+                        },
+                        buildFieldEditor(field)
+                    ]
+                });
         }
     }
 
@@ -201,6 +205,7 @@ public class EffectConfigUi : Widget
             };
 
             widget.OnValueChanged += (_, _) => setFieldValue(field, widget.Value);
+
             return widget;
         }
 
@@ -216,6 +221,7 @@ public class EffectConfigUi : Widget
             };
 
             widget.OnValueChanged += (_, _) => setFieldValue(field, widget.Value);
+
             return widget;
         }
 
@@ -266,6 +272,7 @@ public class EffectConfigUi : Widget
             widget.OnValueCommited += (_, _) =>
             {
                 var ctor = field.Type.GetConstructor([typeof(float), typeof(float), typeof(float)]);
+
                 setFieldValue(field, ctor.Invoke([widget.Value[0], widget.Value[1], widget.Value[2]]));
 
                 var configVal = effect.Config.GetValue(field.Name);
@@ -294,6 +301,7 @@ public class EffectConfigUi : Widget
                 try
                 {
                     var value = Convert.ChangeType(widget.Value, field.Type, CultureInfo.InvariantCulture);
+
                     setFieldValue(field, value);
                 }
                 catch
@@ -365,7 +373,8 @@ public class EffectConfigUi : Widget
 
                 widget.Value = field.Type == typeof(Vector2) ?
                     Unsafe.Unbox<Vector2>(effect.Config.GetValue(field.Name)) :
-                    Unsafe.As<CommandScale, CommandPosition>(ref Unsafe.Unbox<CommandScale>(effect.Config.GetValue(field.Name)));
+                    Unsafe.As<CommandScale, CommandPosition>(
+                        ref Unsafe.Unbox<CommandScale>(effect.Config.GetValue(field.Name)));
             };
 
             return widget;
@@ -388,7 +397,8 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                if (field.Type == typeof(Color4)) setFieldValue(field, Unsafe.BitCast<Vector4, Color4>(widget.Value.ToVector4()));
+                if (field.Type == typeof(Color4))
+                    setFieldValue(field, Unsafe.BitCast<Vector4, Color4>(widget.Value.ToVector4()));
                 else setFieldValue(field, widget.Value);
 
                 widget.Value = field.Type == typeof(Color4) ?
@@ -431,7 +441,7 @@ public class EffectConfigUi : Widget
 
     void copyConfiguration()
     {
-        SafeUnmanagedMemoryStream memory = new();
+        MemoryStream memory = new();
         using BinaryWriter writer = new(memory, Encoding.UTF8, true);
 
         writer.Write(effect.Config.FieldCount);
@@ -459,6 +469,7 @@ public class EffectConfigUi : Widget
                 try
                 {
                     if (effect.Config.Fields.First(f => f.Name == name).Value.Equals(value)) continue;
+
                     changed |= effect.Config.SetValue(name, value);
                 }
                 catch (Exception ex)

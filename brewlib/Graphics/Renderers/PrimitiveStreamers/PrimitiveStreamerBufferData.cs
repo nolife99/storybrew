@@ -8,14 +8,14 @@ using Util;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
-    ReadOnlySpan<ushort> indices)
-    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
+    ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
     where TPrimitive : struct, allows ref struct
 {
     nint primitives;
 
-    public override ref TPrimitive PrimitiveAt(int index)
-        => ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives + index * PrimitiveSize);
+    public override ref TPrimitive PrimitiveAt(int index) => ref Unsafe.AddByteOffset(
+        ref Unsafe.NullRef<TPrimitive>(),
+        primitives + index * PrimitiveSize);
 
     public override void Render(PrimitiveType type, int primitiveCount, int vertices)
     {
@@ -25,6 +25,7 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         if (IndexBufferId != -1) GL.DrawElements(type, primitiveCount * vertices, DrawElementsType.UnsignedShort, 0);
         else GL.DrawArrays(type, 0, primitiveCount * vertices);
     }
+
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
@@ -32,11 +33,13 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         var vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
         primitives = Native.AllocateMemory(vertexBufferSize);
 
-        GL.NamedBufferStorage(VertexBufferId,
+        GL.NamedBufferStorage(
+            VertexBufferId,
             vertexBufferSize,
             0,
             BufferStorageFlags.MapWriteBit | BufferStorageFlags.DynamicStorageBit);
     }
+
     protected override void Dispose(bool disposing)
     {
         Native.FreeMemory(primitives);

@@ -10,6 +10,7 @@ public sealed class Pool<T>(Action<T> disposer = null) where T : new()
     public T Retrieve()
     {
         if (queue.Count == 0) return new();
+
         return queue.TryTake(out var obj) ? obj : new();
     }
 

@@ -27,8 +27,9 @@ public class CommandGenerator
     readonly KeyframedValue<CommandPosition> positions = new(InterpolatingFunctions.Position),
         finalPositions = new(InterpolatingFunctions.Position);
 
-    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle), fades = new(InterpolatingFunctions.Float),
-        finalRotations = new(InterpolatingFunctions.FloatAngle), finalFades = new(InterpolatingFunctions.Float);
+    readonly KeyframedValue<float> rotations = new(InterpolatingFunctions.FloatAngle),
+        fades = new(InterpolatingFunctions.Float), finalRotations = new(InterpolatingFunctions.FloatAngle),
+        finalFades = new(InterpolatingFunctions.Float);
 
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
@@ -68,7 +69,8 @@ public class CommandGenerator
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State EndState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.GetReference(states.Count - 1);
+    public ref State EndState
+        => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.GetReference(states.Count - 1);
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
@@ -132,16 +134,18 @@ public class CommandGenerator
 
                     addKeyframes(ref state, time);
                     if (!stateAdded) stateAdded = true;
-                    break;
+                break;
+
                 case true when !isVisible:
                     addKeyframes(ref state, time);
                     commitKeyframes(imageSize);
-                    break;
+                break;
+
                 default:
                     if (isVisible) addKeyframes(ref state, time);
                     else stateAdded = false;
 
-                    break;
+                break;
             }
 
             previousState = ref state;
@@ -178,7 +182,12 @@ public class CommandGenerator
         colors.TransferKeyframes(finalColors.Until(colors.StartTime));
     }
 
-    void convertToCommands(OsbSprite sprite, float? startTime, float? endTime, float timeOffset, Vector2 imageSize, bool loopable)
+    void convertToCommands(OsbSprite sprite,
+        float? startTime,
+        float? endTime,
+        float timeOffset,
+        Vector2 imageSize,
+        bool loopable)
     {
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
@@ -189,6 +198,7 @@ public class CommandGenerator
         foreach (ref var keyframe in posSpan)
         {
             if (checkPos(keyframe.Value.Y) == checkPos(finalPositions.StartValue.Y)) continue;
+
             moveX = false;
             break;
         }
@@ -196,11 +206,13 @@ public class CommandGenerator
         foreach (ref var keyframe in posSpan)
         {
             if (checkPos(keyframe.Value.X) == checkPos(finalPositions.StartValue.X)) continue;
+
             moveY = false;
             break;
         }
 
-        finalPositions.ForEachPair((s, e) =>
+        finalPositions.ForEachPair(
+            (s, e) =>
             {
                 if (moveX && !moveY)
                 {
@@ -224,11 +236,13 @@ public class CommandGenerator
         foreach (var keyframe in CollectionsMarshal.AsSpan(finalScales.keyframes))
         {
             if (Math.Abs(checkScale(keyframe.Value.X) - checkScale(keyframe.Value.Y)) < 1) continue;
+
             scalar = false;
             break;
         }
 
-        finalScales.ForEachPair((s, e) =>
+        finalScales.ForEachPair(
+            (s, e) =>
             {
                 if (scalar) sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
                 else sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -239,25 +253,29 @@ public class CommandGenerator
             endState,
             loopable);
 
-        finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
+        finalRotations.ForEachPair(
+            (s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
             0,
             r => float.Round(r, RotationDecimals),
             startState,
             endState,
             loopable);
 
-        finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value),
+        finalColors.ForEachPair(
+            (s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value),
             CommandColor.White,
             null,
             startState,
             endState,
             loopable);
 
-        finalFades.ForEachPair((s, e) =>
+        finalFades.ForEachPair(
+            (s, e) =>
             {
                 if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 ||
                     s.Time == sprite.EndTime ||
-                    s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0)) sprite.Fade(s.Time, e.Time, s.Value, e.Value);
+                    s.Time == EndState.Time && s.Time == e.Time && e.Value <= 0))
+                    sprite.Fade(s.Time, e.Time, s.Value, e.Value);
             },
             -1,
             o => float.Round(o, OpacityDecimals),
@@ -308,7 +326,8 @@ public class CommandGenerator
 
     internal static Vector2 BitmapDimensions(string path)
     {
-        ref var dimension = ref CollectionsMarshal.GetValueRefOrAddDefault(dimensions,
+        ref var dimension = ref CollectionsMarshal.GetValueRefOrAddDefault(
+            dimensions,
             Path.GetFullPath(Path.Combine(StoryboardObjectGenerator.Current.MapsetPath, path))
                 .GetHashCode(StringComparison.OrdinalIgnoreCase),
             out var exists);
@@ -352,9 +371,7 @@ public record struct State : IComparer<State>
     ///<summary> Represents the base time, in milliseconds, of this state. </summary>
     public float Time;
 
-    /// <summary>
-    ///     Creates a default state.
-    /// </summary>
+    /// <summary>Creates a default state.</summary>
     public State()
     {
         Additive = FlipH = FlipV = false;
@@ -367,17 +384,15 @@ public record struct State : IComparer<State>
     int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
 
     /// <summary>
-    ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions
-    ///     and <see cref="OsbOrigin"/>.
+    ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and
+    ///     <see cref="OsbOrigin"/>.
     /// </summary>
-    /// <returns>
-    ///     <see langword="true"/> if the sprite is visible within widescreen boundaries, else returns
-    ///     <see langword="false"/>.
-    /// </returns>
+    /// <returns><see langword="true"/> if the sprite is visible within widescreen boundaries, else returns <see langword="false"/>.</returns>
     public bool IsVisible(Vector2 imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;
-        Vector2 scale = new(noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
+        Vector2 scale = new(
+            noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
             noGen ? Scale.Y : float.Round(Scale.Y, generator.ScaleDecimals));
 
         if (Additive && Color == CommandColor.Black ||
@@ -386,7 +401,8 @@ public record struct State : IComparer<State>
             scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
-            new(noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
+            new(
+                noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
                 noGen ? Position.Y : float.Round(Position.Y, generator.PositionDecimals)),
             imageSize * scale,
             noGen ? Rotation : float.Round(Rotation, generator.RotationDecimals),

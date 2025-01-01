@@ -16,6 +16,7 @@ public class RenderStates
         BlendingFactor.Apply();
         currentState = BlendingFactor;
     }
+
     public static void ClearStateCache() => currentState = BlendingFactorState.Default;
 }
 
@@ -37,34 +38,35 @@ public readonly record struct BlendingFactorState
             case BlendingMode.AlphaBlend:
                 src = alphaSrc = BlendingFactorSrc.SrcAlpha;
                 dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-                break;
+            break;
 
             case BlendingMode.Color:
                 src = BlendingFactorSrc.SrcAlpha;
                 dest = BlendingFactorDest.OneMinusSrcAlpha;
                 alphaSrc = BlendingFactorSrc.Zero;
                 alphaDest = BlendingFactorDest.One;
-                break;
+            break;
 
             case BlendingMode.Additive:
                 src = alphaSrc = BlendingFactorSrc.SrcAlpha;
                 dest = alphaDest = BlendingFactorDest.One;
-                break;
+            break;
 
             case BlendingMode.Premultiply:
                 src = BlendingFactorSrc.SrcAlpha;
                 dest = BlendingFactorDest.OneMinusSrcAlpha;
                 alphaSrc = BlendingFactorSrc.One;
                 alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-                break;
+            break;
 
             case BlendingMode.BlendAdd:
             case BlendingMode.Premultiplied:
                 src = alphaSrc = BlendingFactorSrc.One;
                 dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-                break;
+            break;
         }
     }
+
     public void Apply()
     {
         DrawState.SetCapability(EnableCap.Blend, enabled);

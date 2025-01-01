@@ -39,6 +39,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         set
         {
             if (name == value) return;
+
             name = value;
             RaiseChanged(nameof(Identifier));
         }
@@ -50,6 +51,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         set
         {
             if (visible == value) return;
+
             visible = value;
             RaiseChanged(nameof(Visible));
         }
@@ -61,6 +63,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         set
         {
             if (osbLayer == value) return;
+
             osbLayer = value;
             RaiseChanged(nameof(OsbLayer));
         }
@@ -72,6 +75,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         set
         {
             if (diffSpecific == value) return;
+
             diffSpecific = value;
             RaiseChanged(nameof(DiffSpecific));
         }
@@ -106,15 +110,21 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
     public override OsbSprite CreateSprite(string path, OsbOrigin origin, CommandPosition initialPosition)
         => segment.CreateSprite(path, origin, initialPosition);
 
-    public override OsbSprite CreateSprite(string path, OsbOrigin origin) => segment.CreateSprite(path, origin, new(320, 240));
+    public override OsbSprite CreateSprite(string path, OsbOrigin origin)
+        => segment.CreateSprite(path, origin, new(320, 240));
 
     public override OsbAnimation CreateAnimation(string path,
         int frameCount,
         float frameDelay,
         OsbLoopType loopType,
         OsbOrigin origin,
-        CommandPosition initialPosition)
-        => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, initialPosition);
+        CommandPosition initialPosition) => segment.CreateAnimation(
+        path,
+        frameCount,
+        frameDelay,
+        loopType,
+        origin,
+        initialPosition);
 
     public override OsbAnimation CreateAnimation(string path,
         int frameCount,
@@ -122,7 +132,8 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         OsbLoopType loopType,
         OsbOrigin origin = OsbOrigin.Centre) => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin);
 
-    public override OsbSample CreateSample(string path, float time, float volume) => segment.CreateSample(path, time, volume);
+    public override OsbSample CreateSample(string path, float time, float volume)
+        => segment.CreateSample(path, time, volume);
 
     public override StoryboardSegment CreateSegment(string identifier = null) => segment.CreateSegment(identifier);
     public override StoryboardSegment GetSegment(string identifier) => segment.GetSegment(identifier);
@@ -135,7 +146,8 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
 
     public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
-        if (Visible) segment.Draw(drawContext, camera, bounds, opacity, StoryboardTransform.Identity, Effect.Project, frameStats);
+        if (Visible)
+            segment.Draw(drawContext, camera, bounds, opacity, StoryboardTransform.Identity, Effect.Project, frameStats);
     }
 
     public void PostProcess()
@@ -151,11 +163,16 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         EstimatedSize = segment.CalculateSize(osbLayer);
     }
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings)
-        => WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
+    public void WriteOsb(TextWriter writer, ExportSettings exportSettings) => WriteOsb(
+        writer,
+        exportSettings,
+        osbLayer,
+        StoryboardTransform.Identity);
 
-    public override void WriteOsb(TextWriter writer, ExportSettings exportSettings, OsbLayer layer, StoryboardTransform transform)
-        => segment.WriteOsb(writer, exportSettings, layer, transform);
+    public override void WriteOsb(TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer layer,
+        StoryboardTransform transform) => segment.WriteOsb(writer, exportSettings, layer, transform);
 
     public void CopySettings(EditorStoryboardLayer other)
     {

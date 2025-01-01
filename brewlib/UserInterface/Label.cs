@@ -23,6 +23,7 @@ public class Label(WidgetManager manager) : Widget(manager)
         set
         {
             if (textDrawable.Text == value) return;
+
             textDrawable.Text = value;
             InvalidateAncestorLayout();
         }
@@ -34,6 +35,7 @@ public class Label(WidgetManager manager) : Widget(manager)
         set
         {
             if (textDrawable.Icon == value) return;
+
             textDrawable.Icon = value;
             InvalidateAncestorLayout();
         }
@@ -77,6 +79,7 @@ public class Label(WidgetManager manager) : Widget(manager)
         textDrawable.Alignment = labelStyle.TextAlignment;
         textDrawable.Color = labelStyle.Color;
     }
+
     public override void PreLayout()
     {
         base.PreLayout();
@@ -91,9 +94,11 @@ public class Label(WidgetManager manager) : Widget(manager)
         }
 
         if (!NeedsLayout && !scalingChanged) return;
+
         textDrawable.MaxSize = Vector2.Zero;
         InvalidateAncestorLayout();
     }
+
     protected override void Layout()
     {
         base.Layout();
@@ -102,30 +107,37 @@ public class Label(WidgetManager manager) : Widget(manager)
         textDrawable.MaxSize = Size;
         InvalidateAncestorLayout();
     }
+
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
         if (!string.IsNullOrWhiteSpace(textDrawable.Text))
             textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
     }
+
     public RectangleF GetCharacterBounds(int index)
     {
         var position = AbsolutePosition;
         var bounds = textDrawable.GetCharacterBounds(index);
-        return RectangleF.FromLTRB(position.X + bounds.X,
+        return RectangleF.FromLTRB(
+            position.X + bounds.X,
             position.Y + bounds.Y,
             position.X + bounds.Right,
             position.Y + bounds.Bottom);
     }
+
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var position = AbsolutePosition;
-        textDrawable.ForTextBounds(startIndex,
+        textDrawable.ForTextBounds(
+            startIndex,
             endIndex,
-            bounds => action(RectangleF.FromLTRB(position.X + bounds.X,
-                position.Y + bounds.Y,
-                position.X + bounds.Right,
-                position.Y + bounds.Bottom)));
+            bounds => action(
+                RectangleF.FromLTRB(
+                    position.X + bounds.X,
+                    position.Y + bounds.Y,
+                    position.X + bounds.Right,
+                    position.Y + bounds.Bottom)));
     }
 
     public int GetCharacterIndexAt(Vector2 position) => textDrawable.GetCharacterIndexAt(position - AbsolutePosition);

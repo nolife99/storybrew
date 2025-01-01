@@ -13,15 +13,17 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
 
-public sealed class Texture2d(int textureId, int width, int height, string description)
-    : Texture2dRegion(null, new(0, 0, width, height))
+public sealed class Texture2d(int textureId, int width, int height, string description) : Texture2dRegion(
+    null,
+    new(0, 0, width, height))
 {
     public static readonly DecoderOptions ContiguousBufferDecoderOptions = loadDecoderOptions();
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
 
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
-    public void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions) => GL.TextureSubImage2D(textureId,
+    public void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions) => GL.TextureSubImage2D(
+        textureId,
         0,
         x,
         y,
@@ -44,6 +46,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         Trace.TraceWarning($"Texture not found: {filename}");
         return null;
     }
+
     public static TextureOptions LoadTextureOptions(string forBitmapFilename, ResourceContainer resourceContainer = null)
         => TextureOptions.Load(TextureOptions.GetOptionsFilename(forBitmapFilename), resourceContainer);
 
@@ -56,6 +59,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) :
             null;
     }
+
     public static Texture2d Create(Rgba32 color,
         string description,
         int width = 1,
@@ -83,7 +87,8 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             var span = spanOwner.Memory.Span;
 
             span.Fill(color);
-            GL.TextureSubImage2D(textureId,
+            GL.TextureSubImage2D(
+                textureId,
                 0,
                 0,
                 0,
@@ -99,6 +104,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
         return new(textureId, width, height, description);
     }
+
     public static Texture2d Load(Image<Rgba32> bitmap, string description, TextureOptions textureOptions = null)
     {
         var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
@@ -114,7 +120,8 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
         GL.TextureStorage2D(textureId, 1, Unsafe.As<PixelInternalFormat, SizedInternalFormat>(ref format), width, height);
 
-        GL.TextureSubImage2D(textureId,
+        GL.TextureSubImage2D(
+            textureId,
             0,
             0,
             0,

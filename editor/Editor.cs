@@ -49,8 +49,10 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
     public void Initialize(MonitorInfo displayDevice)
     {
-        ResourceContainer =
-            new AssemblyResourceContainer(typeof(Editor).Assembly, $"{nameof(StorybrewEditor)}.Resources", "resources");
+        ResourceContainer = new AssemblyResourceContainer(
+            typeof(Editor).Assembly,
+            $"{nameof(StorybrewEditor)}.Resources",
+            "resources");
 
         var size = window.ClientSize;
         DrawState.UseTextureCompression = Program.Settings.TextureCompression;
@@ -69,15 +71,20 @@ public sealed class Editor(NativeWindow window) : IDisposable
             Skin = new(drawContext.Get<TextureContainer>())
             {
                 ResolveDrawableType =
-                    drawableTypeName
-                        => brewLibAssembly.GetType(
-                            $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}",
-                            true,
-                            true),
+                    drawableTypeName => brewLibAssembly.GetType(
+                        $"{nameof(BrewLib)}.{nameof(BrewLib.Graphics)}.{nameof(BrewLib.Graphics.Drawables)}.{drawableTypeName}",
+                        true,
+                        true),
                 ResolveWidgetType =
                     widgetTypeName
-                        => Type.GetType($"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}", false, true) ??
-                        brewLibAssembly.GetType($"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}", true, true),
+                        => Type.GetType(
+                            $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{widgetTypeName}",
+                            false,
+                            true) ??
+                        brewLibAssembly.GetType(
+                            $"{nameof(BrewLib)}.{nameof(UserInterface)}.{widgetTypeName}",
+                            true,
+                            true),
                 ResolveStyleType = styleTypeName
                     => Type.GetType(
                         $"{nameof(StorybrewEditor)}.{nameof(UserInterface)}.{nameof(UserInterface.Skinning)}.{nameof(UserInterface.Skinning.Styles)}.{styleTypeName}",
@@ -193,42 +200,44 @@ public sealed class Editor(NativeWindow window) : IDisposable
     void initializeOverlay()
     {
         overlay.Root.ClearWidgets();
-        overlay.Root.Add(overlayTop = new(overlay)
-        {
-            AnchorTarget = overlay.Root,
-            AnchorFrom = BoxAlignment.Top,
-            AnchorTo = BoxAlignment.Top,
-            Horizontal = true,
-            Opacity = 0,
-            Displayed = false,
-            Children =
-            [
-                statsLabel = new(overlay)
-                {
-                    StyleName = "small",
-                    AnchorTarget = overlay.Root,
-                    AnchorTo = BoxAlignment.TopLeft,
-                    Displayed = Program.Settings.ShowStats
-                }
-            ]
-        });
+        overlay.Root.Add(
+            overlayTop = new(overlay)
+            {
+                AnchorTarget = overlay.Root,
+                AnchorFrom = BoxAlignment.Top,
+                AnchorTo = BoxAlignment.Top,
+                Horizontal = true,
+                Opacity = 0,
+                Displayed = false,
+                Children =
+                [
+                    statsLabel = new(overlay)
+                    {
+                        StyleName = "small",
+                        AnchorTarget = overlay.Root,
+                        AnchorTo = BoxAlignment.TopLeft,
+                        Displayed = Program.Settings.ShowStats
+                    }
+                ]
+            });
 
         overlayTop.Pack(1024, 16);
 
-        overlay.Root.Add(altOverlayTop = new(overlay)
-        {
-            AnchorTarget = overlay.Root,
-            AnchorFrom = BoxAlignment.Top,
-            AnchorTo = BoxAlignment.Top,
-            Horizontal = true,
-            Opacity = 0,
-            Displayed = false,
-            Children =
-            [
-                new Label(overlay) { StyleName = "icon", Icon = IconFont.VolumeUp },
-                volumeSlider = new(overlay) { Step = .01f }
-            ]
-        });
+        overlay.Root.Add(
+            altOverlayTop = new(overlay)
+            {
+                AnchorTarget = overlay.Root,
+                AnchorFrom = BoxAlignment.Top,
+                AnchorTo = BoxAlignment.Top,
+                Horizontal = true,
+                Opacity = 0,
+                Displayed = false,
+                Children =
+                [
+                    new Label(overlay) { StyleName = "icon", Icon = IconFont.VolumeUp },
+                    volumeSlider = new(overlay) { Step = .01f }
+                ]
+            });
 
         altOverlayTop.Pack(0, 0, 1024);
 
