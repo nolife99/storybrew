@@ -18,28 +18,26 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
     {
         base.Load();
 
-        WidgetManager.Root.Add(
-            mainLayout = new(WidgetManager)
-            {
-                StyleName = "panel",
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new(16),
-                FitChildren = true,
-                Children =
-                [
-                    actionLabel = new(WidgetManager) { Text = "Updating", AnchorFrom = BoxAlignment.Centre },
-                    new Label(WidgetManager)
-                    {
-                        StyleName = "small", Text = downloadUrl, AnchorFrom = BoxAlignment.Centre
-                    },
-                    progressBar = new(WidgetManager) { Value = 0, AnchorFrom = BoxAlignment.Centre }
-                ]
-            });
+        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
+        {
+            StyleName = "panel",
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            FitChildren = true,
+            Children =
+            [
+                actionLabel = new(WidgetManager) { Text = "Updating", AnchorFrom = BoxAlignment.Centre },
+                new Label(WidgetManager)
+                {
+                    StyleName = "small", Text = downloadUrl, AnchorFrom = BoxAlignment.Centre
+                },
+                progressBar = new(WidgetManager) { Value = 0, AnchorFrom = BoxAlignment.Centre }
+            ]
+        });
 
-        NetHelper.Download(
-            downloadUrl,
+        NetHelper.Download(downloadUrl,
             Updater.UpdateArchivePath,
             progress =>
             {
@@ -55,8 +53,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 if (exception is not null)
                 {
                     Trace.TraceError($"Failed to download the new version.\n\n{exception}");
-                    Manager.ShowMessage(
-                        $"Failed to download the new version, please update manually.\n\n{exception}",
+                    Manager.ShowMessage($"Failed to download the new version, please update manually.\n\n{exception}",
                         Updater.OpenLatestReleasePage);
 
                     Exit();
@@ -104,8 +101,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                     if (process.Start()) Manager.Exit();
                     else
                     {
-                        Manager.ShowMessage(
-                            "Failed to start the update process, please update manually.",
+                        Manager.ShowMessage("Failed to start the update process, please update manually.",
                             Updater.OpenLatestReleasePage);
 
                         Exit();
@@ -114,8 +110,7 @@ public class UpdateMenu(string downloadUrl) : UiScreenLayer
                 catch (Exception e)
                 {
                     Trace.TraceError($"Failed to start the update process.\n\n{e}");
-                    Manager.ShowMessage(
-                        $"Failed to start the update process, please update manually.\n\n{e}",
+                    Manager.ShowMessage($"Failed to start the update process, please update manually.\n\n{e}",
                         Updater.OpenLatestReleasePage);
 
                     Exit();

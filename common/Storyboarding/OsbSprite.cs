@@ -594,8 +594,7 @@ public class OsbSprite : StoryboardObject
         double startB,
         double endH,
         double endS,
-        double endB) => Color(
-        easing,
+        double endB) => Color(easing,
         startTime,
         endTime,
         CommandColor.FromHsb(startH, startS, startB),
@@ -777,9 +776,8 @@ public class OsbSprite : StoryboardObject
             }
 
             default:
-                throw new NotSupportedException(
-                    $"Failed to add command: No support for adding command of type {
-                        command.GetType().FullName}");
+                throw new NotSupportedException($"Failed to add command: No support for adding command of type {
+                    command.GetType().FullName}");
         }
     }
 
@@ -793,8 +791,7 @@ public class OsbSprite : StoryboardObject
         StoryboardTransform transform)
     {
         if (commands.Count != 0)
-            OsbWriterFactory.CreateWriter(
-                    this,
+            OsbWriterFactory.CreateWriter(this,
                     moveTimeline,
                     moveXTimeline,
                     moveYTimeline,

@@ -80,8 +80,7 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             var bSq = b.LengthSquared();
             var cSq = c.LengthSquared();
 
-            Centre = new Vector2(
-                    aSq * (b - c).Y + bSq * (c - a).Y + cSq * (a - b).Y,
+            Centre = new Vector2(aSq * (b - c).Y + bSq * (c - a).Y + cSq * (a - b).Y,
                     aSq * (c - b).X + bSq * (a - c).X + cSq * (b - a).X) /
                 d;
 

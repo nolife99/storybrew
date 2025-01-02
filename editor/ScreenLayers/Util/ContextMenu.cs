@@ -42,40 +42,39 @@ public class ContextMenu<T> : UiScreenLayer
     {
         base.Load();
 
-        WidgetManager.Root.Add(
-            mainLayout = new(WidgetManager)
-            {
-                StyleName = "panel",
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new(16),
-                FitChildren = true,
-                Children =
-                [
-                    new LinearLayout(WidgetManager)
-                    {
-                        Horizontal = true,
-                        Fill = true,
-                        Children =
-                        [
-                            new Label(WidgetManager) { Text = title },
-                            searchTextbox = new(WidgetManager)
-                            {
-                                AnchorFrom = BoxAlignment.Centre, DefaultSize = new(120, 0)
-                            },
-                            cancelButton = new(WidgetManager)
-                            {
-                                StyleName = "icon",
-                                Icon = IconFont.Cancel,
-                                AnchorFrom = BoxAlignment.Centre,
-                                CanGrow = false
-                            }
-                        ]
-                    },
-                    new ScrollArea(WidgetManager, optionsLayout = new(WidgetManager) { FitChildren = true })
-                ]
-            });
+        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
+        {
+            StyleName = "panel",
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            FitChildren = true,
+            Children =
+            [
+                new LinearLayout(WidgetManager)
+                {
+                    Horizontal = true,
+                    Fill = true,
+                    Children =
+                    [
+                        new Label(WidgetManager) { Text = title },
+                        searchTextbox = new(WidgetManager)
+                        {
+                            AnchorFrom = BoxAlignment.Centre, DefaultSize = new(120, 0)
+                        },
+                        cancelButton = new(WidgetManager)
+                        {
+                            StyleName = "icon",
+                            Icon = IconFont.Cancel,
+                            AnchorFrom = BoxAlignment.Centre,
+                            CanGrow = false
+                        }
+                    ]
+                },
+                new ScrollArea(WidgetManager, optionsLayout = new(WidgetManager) { FitChildren = true })
+            ]
+        });
 
         cancelButton.OnClick += (_, _) => Exit();
 

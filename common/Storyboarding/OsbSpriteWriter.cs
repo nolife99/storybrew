@@ -119,10 +119,9 @@ public class OsbSpriteWriter(OsbSprite sprite,
                 var sTime = Math.Max(startTime, (int)float.Round(cmd.StartTime));
                 var eTime = Math.Min(endTime, (int)float.Round(cmd.EndTime));
 
-                segment.Add(
-                    sTime != (int)float.Round(cmd.StartTime) || eTime != (int)float.Round(cmd.EndTime) ?
-                        cmd.GetFragment(sTime, eTime) :
-                        cmd);
+                segment.Add(sTime != (int)float.Round(cmd.StartTime) || eTime != (int)float.Round(cmd.EndTime) ?
+                    cmd.GetFragment(sTime, eTime) :
+                    cmd);
             }
 
         addStaticCommands(segment, startTime);
@@ -229,8 +228,7 @@ public static class OsbWriterFactory
         OsbLayer layer)
     {
         if (sprite is OsbAnimation animation)
-            return new OsbAnimationWriter(
-                animation,
+            return new OsbAnimationWriter(animation,
                 move,
                 moveX,
                 moveY,

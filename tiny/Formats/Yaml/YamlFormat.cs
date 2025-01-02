@@ -117,7 +117,7 @@ public class YamlFormat : Format<YamlTokenType>
                     default: throw new InvalidDataException(value?.ToString());
                 }
 
-            break;
+                break;
 
             case TinyTokenType.Boolean: writer.WriteLine((bool)value ? BooleanTrue : BooleanFalse); break;
 

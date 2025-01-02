@@ -15,6 +15,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     nint bufferAddr, primitives;
     int bufferOffset, drawOffset, vertexBufferSize;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override ref TPrimitive PrimitiveAt(int index) => ref Unsafe.AddByteOffset(
         ref Unsafe.NullRef<TPrimitive>(),
         primitives + index * PrimitiveSize);
@@ -30,8 +31,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         if (GpuCommandSync.WaitForRange(bufferOffset, vertexDataSize)) expandVertexBuffer();
 
-        Unsafe.CopyBlock(
-            ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), bufferAddr + bufferOffset),
+        Unsafe.CopyBlock(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), bufferAddr + bufferOffset),
             ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), primitives),
             (uint)vertexDataSize);
 
@@ -53,14 +53,12 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         base.initializeVertexBuffer();
         vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
-        GL.NamedBufferStorage(
-            VertexBufferId,
+        GL.NamedBufferStorage(VertexBufferId,
             vertexBufferSize,
             0,
             BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit);
 
-        bufferAddr = GL.MapNamedBufferRange(
-            VertexBufferId,
+        bufferAddr = GL.MapNamedBufferRange(VertexBufferId,
             0,
             vertexBufferSize,
             BufferAccessMask.MapWriteBit |

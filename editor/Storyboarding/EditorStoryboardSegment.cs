@@ -50,8 +50,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             opacity *= (float.Sin(drawContext.Get<Editor>().TimeSource.Current * 4) + 1) * .5f;
 
         foreach (var o in displayableObjects)
-            o.Draw(
-                drawContext,
+            o.Draw(drawContext,
                 camera,
                 bounds,
                 opacity,
@@ -68,7 +67,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             displayableObjects.Reverse();
         }
 
-        foreach (var storyboardObject in storyboardObjects) (storyboardObject as IPostProcessable)?.PostProcess();
+        foreach (var sbo in storyboardObjects) (sbo as IPostProcessable)?.PostProcess();
 
         startTime = float.MaxValue;
         endTime = float.MinValue;

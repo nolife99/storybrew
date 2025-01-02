@@ -275,8 +275,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="float"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 1D parameters. </remarks>
-    public void Simplify1dKeyframes(float tolerance, Func<TValue, float> getComponent) => SimplifyKeyframes(
-        tolerance,
+    public void Simplify1dKeyframes(float tolerance, Func<TValue, float> getComponent) => SimplifyKeyframes(tolerance,
         (startKeyframe, middleKeyframe, endKeyframe) =>
         {
             Vector2 start = new(startKeyframe.Time, getComponent(startKeyframe.Value)),
@@ -292,8 +291,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector2"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 2D parameters. </remarks>
-    public void Simplify2dKeyframes(float tolerance, Func<TValue, Vector2> getComponent) => SimplifyKeyframes(
-        tolerance,
+    public void Simplify2dKeyframes(float tolerance, Func<TValue, Vector2> getComponent) => SimplifyKeyframes(tolerance,
         (startKeyframe, middleKeyframe, endKeyframe) =>
         {
             Vector2 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value),
@@ -312,8 +310,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector3"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 3D parameters. </remarks>
-    public void Simplify3dKeyframes(float tolerance, Func<TValue, Vector3> getComponent) => SimplifyKeyframes(
-        tolerance,
+    public void Simplify3dKeyframes(float tolerance, Func<TValue, Vector3> getComponent) => SimplifyKeyframes(tolerance,
         (startKeyframe, middleKeyframe, endKeyframe) =>
         {
             Vector3 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value),

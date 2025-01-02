@@ -19,8 +19,7 @@ public class Texture2dRegion : IDisposable
     public int Width => bounds.Width;
     public int Height => bounds.Height;
 
-    public RectangleF UvBounds => RectangleF.FromLTRB(
-        (float)bounds.Left / BindableTexture.Width,
+    public RectangleF UvBounds => RectangleF.FromLTRB((float)bounds.Left / BindableTexture.Width,
         (float)bounds.Top / BindableTexture.Height,
         (float)bounds.Right / BindableTexture.Width,
         (float)bounds.Bottom / BindableTexture.Height);

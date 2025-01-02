@@ -13,6 +13,7 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
 {
     nint primitives;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override ref TPrimitive PrimitiveAt(int index) => ref Unsafe.AddByteOffset(
         ref Unsafe.NullRef<TPrimitive>(),
         primitives + index * PrimitiveSize);
@@ -33,8 +34,7 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         var vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
         primitives = Native.AllocateMemory(vertexBufferSize);
 
-        GL.NamedBufferStorage(
-            VertexBufferId,
+        GL.NamedBufferStorage(VertexBufferId,
             vertexBufferSize,
             0,
             BufferStorageFlags.MapWriteBit | BufferStorageFlags.DynamicStorageBit);

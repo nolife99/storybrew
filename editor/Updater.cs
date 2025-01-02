@@ -92,8 +92,7 @@ public static class Updater
     {
         Trace.WriteLine("First run\n");
 
-        foreach (var exeFilename in Directory.EnumerateFiles(
-            Path.GetDirectoryName(typeof(Editor).Assembly.Location),
+        foreach (var exeFilename in Directory.EnumerateFiles(Path.GetDirectoryName(typeof(Editor).Assembly.Location),
             "*.exe_",
             SearchOption.AllDirectories))
         {

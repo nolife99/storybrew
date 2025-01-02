@@ -20,47 +20,46 @@ public class NewProjectMenu : UiScreenLayer
         base.Load();
 
         WidgetManager.Root.StyleName = "panel";
-        WidgetManager.Root.Add(
-            mainLayout = new(WidgetManager)
-            {
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new(16),
-                FitChildren = true,
-                Children =
-                [
-                    new Label(WidgetManager) { Text = "New Project", AnchorFrom = BoxAlignment.Centre },
-                    projectNameTextbox = new(WidgetManager)
-                    {
-                        LabelText = "Project Name", AnchorFrom = BoxAlignment.Centre
-                    },
-                    mapsetPathSelector = new(WidgetManager, PathSelectorMode.OpenDirectory)
-                    {
-                        Value = OsuHelper.GetOsuSongFolder(),
-                        LabelText = "Mapset Path",
-                        AnchorFrom = BoxAlignment.Centre,
-                        Filter = [new(".osu files", "osu")]
-                    },
-                    new LinearLayout(WidgetManager)
-                    {
-                        Horizontal = true,
-                        AnchorFrom = BoxAlignment.Centre,
-                        Fill = true,
-                        Children =
-                        [
-                            startButton = new(WidgetManager)
-                            {
-                                Text = "Start", AnchorFrom = BoxAlignment.Centre
-                            },
-                            cancelButton = new(WidgetManager)
-                            {
-                                Text = "Cancel", AnchorFrom = BoxAlignment.Centre
-                            }
-                        ]
-                    }
-                ]
-            });
+        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
+        {
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            FitChildren = true,
+            Children =
+            [
+                new Label(WidgetManager) { Text = "New Project", AnchorFrom = BoxAlignment.Centre },
+                projectNameTextbox = new(WidgetManager)
+                {
+                    LabelText = "Project Name", AnchorFrom = BoxAlignment.Centre
+                },
+                mapsetPathSelector = new(WidgetManager, PathSelectorMode.OpenDirectory)
+                {
+                    Value = OsuHelper.GetOsuSongFolder(),
+                    LabelText = "Mapset Path",
+                    AnchorFrom = BoxAlignment.Centre,
+                    Filter = [new(".osu files", "osu")]
+                },
+                new LinearLayout(WidgetManager)
+                {
+                    Horizontal = true,
+                    AnchorFrom = BoxAlignment.Centre,
+                    Fill = true,
+                    Children =
+                    [
+                        startButton = new(WidgetManager)
+                        {
+                            Text = "Start", AnchorFrom = BoxAlignment.Centre
+                        },
+                        cancelButton = new(WidgetManager)
+                        {
+                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
+                        }
+                    ]
+                }
+            ]
+        });
 
         projectNameTextbox.OnValueChanged += (_, _) => updateButtonsState();
         projectNameTextbox.OnValueCommited += (_, _) => projectNameTextbox.Value = Path.GetInvalidFileNameChars()
@@ -90,12 +89,10 @@ public class NewProjectMenu : UiScreenLayer
         mainLayout.Pack(300);
     }
 
-    void createProject() => Manager.AsyncLoading(
-        "Creating project",
+    void createProject() => Manager.AsyncLoading("Creating project",
         async () =>
         {
-            var project = await Project.Create(
-                projectNameTextbox.Value,
+            var project = await Project.Create(projectNameTextbox.Value,
                 mapsetPathSelector.Value,
                 true,
                 Manager.GetContext<Editor>().ResourceContainer);

@@ -80,8 +80,7 @@ internal class Spectrum : StoryboardObjectGenerator
             scaleX = MathF.Floor(scaleX * 10) * .1f;
 
             var hasScale = false;
-            keyframes.ForEachPair(
-                (start, end) =>
+            keyframes.ForEachPair((start, end) =>
                 {
                     hasScale = true;
                     bar.ScaleVec(start.Time, end.Time, scaleX, start.Value, scaleX, end.Value);

@@ -119,8 +119,7 @@ public class Label(WidgetManager manager) : Widget(manager)
     {
         var position = AbsolutePosition;
         var bounds = textDrawable.GetCharacterBounds(index);
-        return RectangleF.FromLTRB(
-            position.X + bounds.X,
+        return RectangleF.FromLTRB(position.X + bounds.X,
             position.Y + bounds.Y,
             position.X + bounds.Right,
             position.Y + bounds.Bottom);
@@ -129,15 +128,12 @@ public class Label(WidgetManager manager) : Widget(manager)
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var position = AbsolutePosition;
-        textDrawable.ForTextBounds(
-            startIndex,
+        textDrawable.ForTextBounds(startIndex,
             endIndex,
-            bounds => action(
-                RectangleF.FromLTRB(
-                    position.X + bounds.X,
-                    position.Y + bounds.Y,
-                    position.X + bounds.Right,
-                    position.Y + bounds.Bottom)));
+            bounds => action(RectangleF.FromLTRB(position.X + bounds.X,
+                position.Y + bounds.Y,
+                position.X + bounds.Right,
+                position.Y + bounds.Bottom)));
     }
 
     public int GetCharacterIndexAt(Vector2 position) => textDrawable.GetCharacterIndexAt(position - AbsolutePosition);

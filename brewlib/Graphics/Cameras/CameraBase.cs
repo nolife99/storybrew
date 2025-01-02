@@ -190,8 +190,7 @@ public abstract class CameraBase : Camera
         var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) /
             float.Abs(transformedPosition.W);
 
-        return new Vector3(
-            (devicePosition.X + 1) * .5f * viewport.Width,
+        return new Vector3((devicePosition.X + 1) * .5f * viewport.Width,
             (-devicePosition.Y + 1) * .5f * viewport.Height,
             devicePosition.Z);
     }

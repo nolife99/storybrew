@@ -177,38 +177,33 @@ public sealed class FontGenerator
         var segments = TextBuilder.GenerateGlyphs(text, new(format) { Origin = new(paddingX, paddingY) });
 
         Image<Rgba32> realText = new(width, height);
-        realText.Mutate(
-            b =>
+        realText.Mutate(b =>
+        {
+            if (debugRandom is not null)
             {
-                if (debugRandom is not null)
-                {
-                    debugRandom.Reinitialise(cache.Count);
-                    b.Clear(
-                        Color.FromPixel(
-                            new Rgb24(
-                                (byte)debugRandom.Next(100, 255),
-                                (byte)debugRandom.Next(100, 255),
-                                (byte)debugRandom.Next(100, 255))));
-                }
+                debugRandom.Reinitialise(cache.Count);
+                b.Clear(Color.FromRgb((byte)debugRandom.Next(100, 255),
+                    (byte)debugRandom.Next(100, 255),
+                    (byte)debugRandom.Next(100, 255)));
+            }
 
-                foreach (var t in effects)
-                    if (!t.Overlay)
-                        t.Draw(b, segments, x, paddingY);
+            foreach (var t in effects)
+                if (!t.Overlay)
+                    t.Draw(b, segments, x, paddingY);
 
-                if (!description.EffectsOnly) b.Fill(options, textBrush, segments);
-                foreach (var t in effects)
-                    if (t.Overlay)
-                        t.Draw(b, segments, x, paddingY);
+            if (!description.EffectsOnly) b.Fill(options, textBrush, segments);
+            foreach (var t in effects)
+                if (t.Overlay)
+                    t.Draw(b, segments, x, paddingY);
 
-                if (!description.Debug) return;
+            if (!description.Debug) return;
 
-                b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + measuredSize.Height))
-                    .DrawLine(
-                        Color.Red,
-                        1,
-                        new(x - measuredSize.Width * .5f, paddingY),
-                        new(x + measuredSize.Width * .5f, paddingY));
-            });
+            b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + measuredSize.Height))
+                .DrawLine(Color.Red,
+                    1,
+                    new(x - measuredSize.Width * .5f, paddingY),
+                    new(x + measuredSize.Width * .5f, paddingY));
+        });
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;
         var validBounds = !bounds.IsEmpty && !bounds.Equals(new(0, 0, width, height));

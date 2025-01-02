@@ -26,47 +26,45 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         base.Load();
         Button addAssemblyButton;
 
-        WidgetManager.Root.Add(
-            layout = new(WidgetManager)
-            {
-                StyleName = "panel",
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Centre,
-                AnchorTo = BoxAlignment.Centre,
-                Padding = new(16),
-                FitChildren = true,
-                Fill = true,
-                Children =
-                [
-                    new Label(WidgetManager) { Text = "Imported Referenced Assemblies", CanGrow = false },
-                    new ScrollArea(WidgetManager, assembliesLayout = new(WidgetManager) { FitChildren = true }),
-                    addAssemblyButton = new(WidgetManager)
-                    {
-                        Text = "Add assembly file",
-                        AnchorFrom = BoxAlignment.Centre,
-                        AnchorTo = BoxAlignment.Centre,
-                        CanGrow = false
-                    },
-                    new LinearLayout(WidgetManager)
-                    {
-                        Horizontal = true,
-                        Fill = true,
-                        AnchorFrom = BoxAlignment.Centre,
-                        CanGrow = false,
-                        Children =
-                        [
-                            okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
-                            cancelButton = new(WidgetManager)
-                            {
-                                Text = "Cancel", AnchorFrom = BoxAlignment.Centre
-                            }
-                        ]
-                    }
-                ]
-            });
+        WidgetManager.Root.Add(layout = new(WidgetManager)
+        {
+            StyleName = "panel",
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Centre,
+            AnchorTo = BoxAlignment.Centre,
+            Padding = new(16),
+            FitChildren = true,
+            Fill = true,
+            Children =
+            [
+                new Label(WidgetManager) { Text = "Imported Referenced Assemblies", CanGrow = false },
+                new ScrollArea(WidgetManager, assembliesLayout = new(WidgetManager) { FitChildren = true }),
+                addAssemblyButton = new(WidgetManager)
+                {
+                    Text = "Add assembly file",
+                    AnchorFrom = BoxAlignment.Centre,
+                    AnchorTo = BoxAlignment.Centre,
+                    CanGrow = false
+                },
+                new LinearLayout(WidgetManager)
+                {
+                    Horizontal = true,
+                    Fill = true,
+                    AnchorFrom = BoxAlignment.Centre,
+                    CanGrow = false,
+                    Children =
+                    [
+                        okButton = new(WidgetManager) { Text = "Ok", AnchorFrom = BoxAlignment.Centre },
+                        cancelButton = new(WidgetManager)
+                        {
+                            Text = "Cancel", AnchorFrom = BoxAlignment.Centre
+                        }
+                    ]
+                }
+            ]
+        });
 
-        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker(
-            "",
+        addAssemblyButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.OpenFilePicker("",
             project.ProjectFolderPath,
             fileFilter,
             path =>
@@ -80,10 +78,9 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                 }
 
                 if (validateAssembly(path))
-                    addReferencedAssembly(
-                        PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ?
-                            path :
-                            copyReferencedAssembly(path));
+                    addReferencedAssembly(PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ?
+                        path :
+                        copyReferencedAssembly(path));
             });
 
         okButton.OnClick += (_, _) =>
@@ -109,58 +106,57 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         foreach (var assembly in selectedAssemblies.OrderBy(getAssemblyName))
         {
             Button editButton, removeButton;
-            assembliesLayout.Add(
-                new LinearLayout(WidgetManager)
-                {
-                    AnchorFrom = BoxAlignment.Centre,
-                    AnchorTo = BoxAlignment.Centre,
-                    Horizontal = true,
-                    FitChildren = true,
-                    Fill = true,
-                    Children =
-                    [
-                        new LinearLayout(WidgetManager)
-                        {
-                            StyleName = "condensed",
-                            Children =
-                            [
-                                new Label(WidgetManager)
-                                {
-                                    StyleName = "listItem",
-                                    Text = getAssemblyName(assembly),
-                                    AnchorFrom = BoxAlignment.Left,
-                                    AnchorTo = BoxAlignment.Left
-                                }
-                            ]
-                        },
-                        new Button(WidgetManager)
-                        {
-                            StyleName = "icon",
-                            AnchorFrom = BoxAlignment.Centre,
-                            AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false,
-                            Displayed = false
-                        },
-                        editButton = new(WidgetManager)
-                        {
-                            StyleName = "icon",
-                            Icon = IconFont.DriveFileMove,
-                            Tooltip = "Change file",
-                            AnchorFrom = BoxAlignment.Centre,
-                            AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false
-                        },
-                        removeButton = new(WidgetManager)
-                        {
-                            StyleName = "icon",
-                            Icon = IconFont.Close,
-                            Tooltip = "Remove",
-                            AnchorFrom = BoxAlignment.Centre,
-                            AnchorTo = BoxAlignment.Centre,
-                            CanGrow = false
-                        }
-                    ]
-                });
+            assembliesLayout.Add(new LinearLayout(WidgetManager)
+            {
+                AnchorFrom = BoxAlignment.Centre,
+                AnchorTo = BoxAlignment.Centre,
+                Horizontal = true,
+                FitChildren = true,
+                Fill = true,
+                Children =
+                [
+                    new LinearLayout(WidgetManager)
+                    {
+                        StyleName = "condensed",
+                        Children =
+                        [
+                            new Label(WidgetManager)
+                            {
+                                StyleName = "listItem",
+                                Text = getAssemblyName(assembly),
+                                AnchorFrom = BoxAlignment.Left,
+                                AnchorTo = BoxAlignment.Left
+                            }
+                        ]
+                    },
+                    new Button(WidgetManager)
+                    {
+                        StyleName = "icon",
+                        AnchorFrom = BoxAlignment.Centre,
+                        AnchorTo = BoxAlignment.Centre,
+                        CanGrow = false,
+                        Displayed = false
+                    },
+                    editButton = new(WidgetManager)
+                    {
+                        StyleName = "icon",
+                        Icon = IconFont.DriveFileMove,
+                        Tooltip = "Change file",
+                        AnchorFrom = BoxAlignment.Centre,
+                        AnchorTo = BoxAlignment.Centre,
+                        CanGrow = false
+                    },
+                    removeButton = new(WidgetManager)
+                    {
+                        StyleName = "icon",
+                        Icon = IconFont.Close,
+                        Tooltip = "Remove",
+                        AnchorFrom = BoxAlignment.Centre,
+                        AnchorTo = BoxAlignment.Centre,
+                        CanGrow = false
+                    }
+                ]
+            });
 
             var ass = assembly;
 
@@ -232,8 +228,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         refreshAssemblies();
     }
 
-    void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker(
-        "",
+    void changeReferencedAssembly(string assembly) => WidgetManager.ScreenLayerManager.OpenFilePicker("",
         Path.GetDirectoryName(assembly),
         fileFilter,
         path =>

@@ -72,26 +72,25 @@ public class Line3d : Node3d, HasOsbSprites
         if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
         var endStateRot = Unsafe.IsNullRef(ref gen.EndState) ? 0 : gen.EndState.Rotation;
-        gen.Add(
-            new()
+        gen.Add(new()
+        {
+            Time = time,
+            Position = sprite.Origin switch
             {
-                Time = time,
-                Position = sprite.Origin switch
-                {
-                    OsbOrigin.TopCentre => new(startVector.X + delta.X / 2, startVector.Y),
-                    OsbOrigin.Centre => new Vector2(startVector.X, startVector.Y) + delta / 2,
-                    OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
-                    OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
-                    OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
-                    OsbOrigin.BottomRight => new(endVector.X, endVector.Y),
-                    _ => new(startVector.X, startVector.Y)
-                },
-                Scale = new(delta.Length() / spriteBitmap.X, Thickness.ValueAt(time)),
-                Rotation = InterpolatingFunctions.FloatAngle(endStateRot, float.Atan2(delta.Y, delta.X), 1),
-                Color = object3dState.Color,
-                Opacity = opacity,
-                Additive = Additive
-            });
+                OsbOrigin.TopCentre => new(startVector.X + delta.X / 2, startVector.Y),
+                OsbOrigin.Centre => new Vector2(startVector.X, startVector.Y) + delta / 2,
+                OsbOrigin.BottomCentre => new(startVector.X + delta.X / 2, startVector.Y + delta.Y),
+                OsbOrigin.TopRight => new(endVector.X, endVector.Y - delta.Y),
+                OsbOrigin.CentreRight => new(endVector.X, endVector.Y - delta.Y / 2),
+                OsbOrigin.BottomRight => new(endVector.X, endVector.Y),
+                _ => new(startVector.X, startVector.Y)
+            },
+            Scale = new(delta.Length() / spriteBitmap.X, Thickness.ValueAt(time)),
+            Rotation = InterpolatingFunctions.FloatAngle(endStateRot, float.Atan2(delta.Y, delta.X), 1),
+            Color = object3dState.Color,
+            Opacity = opacity,
+            Additive = Additive
+        });
     }
 
     /// <inheritdoc/>
@@ -238,17 +237,16 @@ public class Line3dEx : Node3d, HasOsbSprites
         var length = delta.Length();
 
         var positionBody = new Vector2(startVector.X, startVector.Y) + delta / 2;
-        genBody.Add(
-            new State
-            {
-                Time = time,
-                Position = positionBody,
-                Scale = new(length / spriteBitmaps[0].X, bodyHeight / spriteBitmaps[0].Y),
-                Rotation = rotation,
-                Color = object3dState.Color,
-                Opacity = opacity,
-                Additive = Additive
-            });
+        genBody.Add(new State
+        {
+            Time = time,
+            Position = positionBody,
+            Scale = new(length / spriteBitmaps[0].X, bodyHeight / spriteBitmaps[0].Y),
+            Rotation = rotation,
+            Color = object3dState.Color,
+            Opacity = opacity,
+            Additive = Additive
+        });
 
         if (SpritePathEdge is not null)
         {
@@ -261,32 +259,30 @@ public class Line3dEx : Node3d, HasOsbSprites
 
             var edgeOpacity = ignoreEdges ? 0 : opacity;
 
-            genTopEdge.Add(
-                new()
-                {
-                    Time = time,
-                    Position = positionTop,
-                    Scale = edgeScale,
-                    Rotation = rotation,
-                    Color = object3dState.Color,
-                    Opacity = edgeOpacity,
-                    FlipH = flip,
-                    Additive = Additive
-                });
+            genTopEdge.Add(new()
+            {
+                Time = time,
+                Position = positionTop,
+                Scale = edgeScale,
+                Rotation = rotation,
+                Color = object3dState.Color,
+                Opacity = edgeOpacity,
+                FlipH = flip,
+                Additive = Additive
+            });
 
-            genBottomEdge.Add(
-                new()
-                {
-                    Time = time,
-                    Position = positionBottom,
-                    Scale = edgeScale,
-                    Rotation = rotation,
-                    Color = object3dState.Color,
-                    Opacity = edgeOpacity,
-                    Additive = Additive,
-                    FlipH = flip,
-                    FlipV = true
-                });
+            genBottomEdge.Add(new()
+            {
+                Time = time,
+                Position = positionBottom,
+                Scale = edgeScale,
+                Rotation = rotation,
+                Color = object3dState.Color,
+                Opacity = edgeOpacity,
+                Additive = Additive,
+                FlipH = flip,
+                FlipV = true
+            });
         }
 
         if (SpritePathCap is not null)
@@ -302,30 +298,28 @@ public class Line3dEx : Node3d, HasOsbSprites
                 endCapScale.X *= .5f;
             }
 
-            genStartCap.Add(
-                new()
-                {
-                    Time = time,
-                    Position = new Vector2(startVector.X, startVector.Y) + capOffset,
-                    Scale = startCapScale,
-                    Rotation = OrientedCaps ? rotation + float.Pi : 0,
-                    Color = object3dState.Color,
-                    Opacity = startScale > .5f ? opacity : 0,
-                    Additive = Additive
-                });
+            genStartCap.Add(new()
+            {
+                Time = time,
+                Position = new Vector2(startVector.X, startVector.Y) + capOffset,
+                Scale = startCapScale,
+                Rotation = OrientedCaps ? rotation + float.Pi : 0,
+                Color = object3dState.Color,
+                Opacity = startScale > .5f ? opacity : 0,
+                Additive = Additive
+            });
 
-            genEndCap.Add(
-                new()
-                {
-                    Time = time,
-                    Position = new Vector2(endVector.X, endVector.Y) - capOffset,
-                    Scale = endCapScale,
-                    Rotation = OrientedCaps ? rotation + float.Pi : 0,
-                    Color = object3dState.Color,
-                    Opacity = endScale > .5f ? opacity : 0,
-                    Additive = Additive,
-                    FlipH = OrientedCaps
-                });
+            genEndCap.Add(new()
+            {
+                Time = time,
+                Position = new Vector2(endVector.X, endVector.Y) - capOffset,
+                Scale = endCapScale,
+                Rotation = OrientedCaps ? rotation + float.Pi : 0,
+                Color = object3dState.Color,
+                Opacity = endScale > .5f ? opacity : 0,
+                Additive = Additive,
+                FlipH = OrientedCaps
+            });
         }
     }
 

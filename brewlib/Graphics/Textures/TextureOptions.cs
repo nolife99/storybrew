@@ -50,8 +50,7 @@ public class TextureOptions : IEquatable<TextureOptions>
     public override bool Equals(object obj) => Equals(obj as TextureOptions);
     public override int GetHashCode() => HashCode.Combine(TextureMinFilter, TextureMagFilter, TextureWrapS, TextureWrapT);
 
-    public static string GetOptionsFilename(string textureFilename) => Path.Combine(
-        Path.GetDirectoryName(textureFilename),
+    public static string GetOptionsFilename(string textureFilename) => Path.Combine(Path.GetDirectoryName(textureFilename),
         Path.GetFileNameWithoutExtension(textureFilename) + "-opt.json");
 
     public static TextureOptions Load(string filename, ResourceContainer resourceContainer = null)

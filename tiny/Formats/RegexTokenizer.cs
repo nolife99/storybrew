@@ -48,15 +48,14 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
         readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public IEnumerable<Match> FindMatches(string input, int priority) => regex.Matches(input)
-            .Select(
-                match => new Match
-                {
-                    StartIndex = match.Index,
-                    EndIndex = match.Index + match.Length,
-                    Priority = priority,
-                    Type = matchType,
-                    Value = match.Groups.Count > captureGroup ? match.Groups[captureGroup].Value : match.Value
-                });
+            .Select(match => new Match
+            {
+                StartIndex = match.Index,
+                EndIndex = match.Index + match.Length,
+                Priority = priority,
+                Type = matchType,
+                Value = match.Groups.Count > captureGroup ? match.Groups[captureGroup].Value : match.Value
+            });
 
         public override string ToString() => $"regex:{regex}, matchType:{matchType}, captureGroup:{captureGroup}";
 

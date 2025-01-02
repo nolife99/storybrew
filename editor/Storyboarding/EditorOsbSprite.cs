@@ -141,20 +141,15 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         scale *= boundsScaling;
 
         DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
-            .Draw(
-                texture,
-                bounds.X + bounds.Width * .5f + (position.X - 320) * boundsScaling,
-                bounds.Y + position.Y * boundsScaling,
-                origin.X,
-                origin.Y,
-                scale.X,
-                scale.Y,
+            .Draw(texture,
+                new Vector2(bounds.X + bounds.Width * .5f, bounds.Y) +
+                position with { X = position.X - 320 } * boundsScaling,
+                origin,
+                scale,
                 rotation,
                 ((Color)sprite.ColorAt(time)).LerpColor(in SixLabors.ImageSharp.Color.Black, project.DimFactor)
                 .WithOpacity(opacity * fade),
-                0,
-                0,
-                texture.Width,
-                texture.Height);
+                Vector2.Zero,
+                texture.Size);
     }
 }

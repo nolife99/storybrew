@@ -10,7 +10,7 @@ public static class SoundUtil
     public const int A = G + 2;
     public const int B = A + 2;
 
-    public static float FromLinearVolume(float volume) => float.Pow(volume, 4);
+    public static float FromLinearVolume(float volume) => volume * volume * volume * volume;
     public static float GetNoteFrequency(float note, float a = 440) => float.Pow(2, (note - 49) / 12) * a;
 
     public static float GetNoteRailsback(float note, float factor = .4f)

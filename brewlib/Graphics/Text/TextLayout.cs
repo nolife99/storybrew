@@ -152,8 +152,7 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
     public int Width { get; private set; }
     public int Height { get; private set; }
 
-    public Vector2 Position => new(
-        (alignment & BoxAlignment.Left) > 0 ? 0 :
+    public Vector2 Position => new((alignment & BoxAlignment.Left) > 0 ? 0 :
         (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f,
         y);
 

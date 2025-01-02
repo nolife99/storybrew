@@ -14,67 +14,64 @@ public class LoadingScreen(string title, Func<Task> action) : UiScreenLayer
 
     public override void Load()
     {
-        Task.Run(
-            async () =>
+        Task.Run(async () =>
+        {
+            Exception ex = null;
+            try
             {
-                Exception ex = null;
-                try
-                {
-                    await action();
-                }
-                catch (Exception e)
-                {
-                    ex = e;
-                }
+                await action();
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
 
-                if (ex is null)
-                {
-                    await Program.Schedule(Exit);
-                    return;
-                }
+            if (ex is null)
+            {
+                await Program.Schedule(Exit);
+                return;
+            }
 
-                Trace.TraceError($"{title} failed ({action.Method.Name}): {ex}");
+            Trace.TraceError($"{title} failed ({action.Method.Name}): {ex}");
 
-                var sb = StringHelper.StringBuilderPool.Retrieve();
-                sb.Append(ex.Message);
+            var sb = StringHelper.StringBuilderPool.Retrieve();
+            sb.Append(ex.Message);
+            sb.Append(" (");
+            sb.Append(ex.GetType().Name);
+            sb.Append(")\n");
+
+            var innerEx = ex.InnerException;
+            while (innerEx is not null)
+            {
+                sb.Append("Caused by: ");
+                sb.Append(innerEx.Message);
                 sb.Append(" (");
-                sb.Append(ex.GetType().Name);
-                sb.Append(")\n");
+                sb.Append(innerEx.GetType().Name);
+                sb.Append(")\n ");
 
-                var innerEx = ex.InnerException;
-                while (innerEx is not null)
-                {
-                    sb.Append("Caused by: ");
-                    sb.Append(innerEx.Message);
-                    sb.Append(" (");
-                    sb.Append(innerEx.GetType().Name);
-                    sb.Append(")\n ");
+                innerEx = innerEx.InnerException;
+            }
 
-                    innerEx = innerEx.InnerException;
-                }
-
-                await Program.Schedule(
-                    () =>
-                    {
-                        Manager.ShowMessage($"{title} failed:\n \n{sb}\n \nDetails:\n{ex.GetBaseException()}");
-                        StringHelper.StringBuilderPool.Release(sb);
-                        Exit();
-                    });
+            await Program.Schedule(() =>
+            {
+                Manager.ShowMessage($"{title} failed:\n \n{sb}\n \nDetails:\n{ex.GetBaseException()}");
+                StringHelper.StringBuilderPool.Release(sb);
+                Exit();
             });
+        });
 
         base.Load();
-        WidgetManager.Root.Add(
-            mainLayout = new(WidgetManager)
-            {
-                AnchorTarget = WidgetManager.Root,
-                AnchorFrom = BoxAlignment.Bottom,
-                AnchorTo = BoxAlignment.Bottom,
-                Offset = new(0, -64),
-                Padding = new(16),
-                FitChildren = true,
-                Horizontal = true,
-                Children = [new Label(WidgetManager) { Text = title + "..." }]
-            });
+        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
+        {
+            AnchorTarget = WidgetManager.Root,
+            AnchorFrom = BoxAlignment.Bottom,
+            AnchorTo = BoxAlignment.Bottom,
+            Offset = new(0, -64),
+            Padding = new(16),
+            FitChildren = true,
+            Horizontal = true,
+            Children = [new Label(WidgetManager) { Text = title + "..." }]
+        });
     }
 
     public override void Resize(int width, int height)

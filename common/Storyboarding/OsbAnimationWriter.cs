@@ -19,8 +19,7 @@ public sealed class OsbAnimationWriter(OsbAnimation animation,
     AnimatedValue<CommandColor> color,
     TextWriter writer,
     ExportSettings exportSettings,
-    OsbLayer layer) : OsbSpriteWriter(
-    animation,
+    OsbLayer layer) : OsbSpriteWriter(animation,
     move,
     moveX,
     moveY,
@@ -33,10 +32,8 @@ public sealed class OsbAnimationWriter(OsbAnimation animation,
     exportSettings,
     layer)
 {
-    string getLastFramePath() => Path.Combine(
-        Path.GetDirectoryName(animation.TexturePath),
-        string.Concat(
-            Path.GetFileNameWithoutExtension(animation.TexturePath),
+    string getLastFramePath() => Path.Combine(Path.GetDirectoryName(animation.TexturePath),
+        string.Concat(Path.GetFileNameWithoutExtension(animation.TexturePath),
             (animation.FrameCount - 1).ToString(exportSettings.NumberFormat),
             Path.GetExtension(animation.TexturePath)));
 

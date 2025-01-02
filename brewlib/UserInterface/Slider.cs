@@ -64,10 +64,8 @@ public class Slider : ProgressBar
         }
     }
 
-    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(
-        BuildStyleName(
-            disabled ? "disabled" :
-            dragged || hovered ? "hover" : null));
+    protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(BuildStyleName(disabled ? "disabled" :
+        dragged || hovered ? "hover" : null));
 
     public event EventHandler OnValueCommited;
 

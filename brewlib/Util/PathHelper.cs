@@ -11,8 +11,7 @@ public static class PathHelper
 {
     const char StandardDirectorySeparator = '/';
 
-    static readonly SearchValues<char> invalidChars = SearchValues.Create(
-        '"',
+    static readonly SearchValues<char> invalidChars = SearchValues.Create('"',
         '<',
         '>',
         '|',

@@ -89,8 +89,7 @@ public sealed class MapsetManager : IDisposable
         Trace.WriteLine($"Watching (mapset): {path}");
     }
 
-    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(
-        e.FullPath,
+    void mapsetFileWatcher_Changed(object sender, FileSystemEventArgs e) => scheduler.Schedule(e.FullPath,
         _ =>
         {
             if (Path.GetExtension(e.Name) == ".osu") Trace.WriteLine($"Watched mapset file {e.ChangeType}: {e.FullPath}");

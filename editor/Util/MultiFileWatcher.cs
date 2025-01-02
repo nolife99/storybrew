@@ -113,8 +113,7 @@ public sealed class MultiFileWatcher : IDisposable
     void watcher_Changed(object sender, FileSystemEventArgs e)
     {
         Trace.WriteLine($"File {e.ChangeType}: {e.FullPath}");
-        scheduler.Schedule(
-            e.FullPath,
+        scheduler.Schedule(e.FullPath,
             _ =>
             {
                 if (disposed) return;

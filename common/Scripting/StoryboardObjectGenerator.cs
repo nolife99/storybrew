@@ -32,8 +32,7 @@ public abstract class StoryboardObjectGenerator : Script
     ///<summary>Reserved</summary>
     protected StoryboardObjectGenerator()
     {
-        imageCompressor = new(
-            () =>
+        imageCompressor = new(() =>
             {
                 IntegratedCompressor compressor = new();
                 disposables.Add(compressor);
@@ -43,21 +42,18 @@ public abstract class StoryboardObjectGenerator : Script
 
         configurableFields = GetType()
             .GetFields()
-            .Select(
-                field =>
-                {
-                    var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-                    return configurable is null ? null : new { Field = field, Configurable = configurable };
-                })
+            .Select(field =>
+            {
+                var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
+                return configurable is null ? null : new { Field = field, Configurable = configurable };
+            })
             .Where(item => item is not null)
-            .Select(
-                (item, order) => new ConfigurableField(
-                    item.Field,
-                    item.Configurable,
-                    item.Field.GetValue(this),
-                    item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
-                    item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
-                    order))
+            .Select((item, order) => new ConfigurableField(item.Field,
+                item.Configurable,
+                item.Field.GetValue(this),
+                item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
+                item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
+                order))
             .ToArray();
     }
 
@@ -106,8 +102,9 @@ public abstract class StoryboardObjectGenerator : Script
     public static void Assert(bool condition, string message = null, [CallerLineNumber] int line = -1)
     {
         if (!condition)
-            throw new ArgumentException(
-                message is not null ? $"Assertion failed line {line}: {message}" : $"Assertion failed line {line}");
+            throw new ArgumentException(message is not null ?
+                $"Assertion failed line {line}: {message}" :
+                $"Assertion failed line {line}");
     }
 
     ///<summary> Generates the storyboard created by this script. </summary>
@@ -150,8 +147,7 @@ public abstract class StoryboardObjectGenerator : Script
     /// <summary> Returns a <see cref="Image"/> from the mapset's directory. </summary>
     /// <param name="path"> The image path, relative to the mapset's folder. </param>
     /// <param name="watch"> Watch the file as a dependency. </param>
-    public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(
-        Path.Combine(context.MapsetPath, path),
+    public Image<Rgba32> GetMapsetBitmap(string path, bool watch = true) => getBitmap(Path.Combine(context.MapsetPath, path),
         Path.Combine(context.ProjectAssetPath, path),
         watch);
 
@@ -358,8 +354,7 @@ public abstract class StoryboardObjectGenerator : Script
                 for (var i = 0; i < enumValues.Length; ++i)
                 {
                     var value = enumValues.GetValue(i);
-                    allowedValues[i] = new(
-                        value.ToString(),
+                    allowedValues[i] = new(value.ToString(),
                         Convert.ChangeType(value, fieldType, CultureInfo.InvariantCulture));
                 }
             }
@@ -368,8 +363,7 @@ public abstract class StoryboardObjectGenerator : Script
             {
                 var displayName = configurableAttribute.DisplayName;
                 var initialValue = Convert.ChangeType(o, fieldType, CultureInfo.InvariantCulture);
-                config.UpdateField(
-                    field.Name,
+                config.UpdateField(field.Name,
                     displayName,
                     description,
                     order,

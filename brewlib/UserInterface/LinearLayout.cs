@@ -131,16 +131,15 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             var length = horizontal ? preferredSize.X : preferredSize.Y;
 
             // Add the child to the layout items list
-            items.Add(
-                new()
-                {
-                    Widget = child,
-                    PreferredSize = preferredSize,
-                    MinSize = child.MinSize,
-                    MaxSize = child.MaxSize,
-                    Length = length,
-                    Scalable = true
-                });
+            items.Add(new()
+            {
+                Widget = child,
+                PreferredSize = preferredSize,
+                MinSize = child.MinSize,
+                MaxSize = child.MaxSize,
+                Length = length,
+                Scalable = true
+            });
 
             usedSpace += length;
         }
@@ -222,8 +221,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
                 // Place child in horizontal layout
                 var anchor = child.AnchorFrom & BoxAlignment.Vertical | BoxAlignment.Left;
 
-                PlaceChildren(
-                    child,
+                PlaceChildren(child,
                     new(distance, padding.GetVerticalOffset(anchor)),
                     new(item.Length, childBreadth),
                     anchor);
@@ -240,8 +238,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
                 // Place child in vertical layout
                 var anchor = child.AnchorFrom & BoxAlignment.Horizontal | BoxAlignment.Top;
 
-                PlaceChildren(
-                    child,
+                PlaceChildren(child,
                     new(padding.GetHorizontalOffset(anchor), distance),
                     new(childBreadth, item.Length),
                     anchor);

@@ -127,13 +127,13 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         if (index < Count) buf.AsSpan(index, Count - index).CopyTo(buf.AsSpan(index + 1));
 
         buf[index] = item;
-        Count++;
+        ++Count;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int IndexOf(ref T item)
     {
-        for (var i = 0; i < Count; i++)
+        for (var i = 0; i < Count; ++i)
             if (_comparer.Equals(buf[i], item))
                 return i;
 
@@ -175,8 +175,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         else
         {
             EnsureCapacity(Count + items.Length);
-            Unsafe.CopyBlock(
-                ref Unsafe.As<T, byte>(ref buf[0]),
+            Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
                 ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(items)),
                 (uint)(items.Length * Unsafe.SizeOf<T>()));
         }
@@ -198,20 +197,17 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         {
             if (EnsureCapacityWithoutCopy(Count + items.Length, out var old))
             {
-                Unsafe.CopyBlock(
-                    ref Unsafe.As<T, byte>(ref buf[0]),
+                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
                     ref Unsafe.As<T, byte>(ref old[0]),
                     (uint)(index * Unsafe.SizeOf<T>()));
 
-                Unsafe.CopyBlock(
-                    ref Unsafe.As<T, byte>(ref buf[index + items.Length]),
+                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[index + items.Length]),
                     ref Unsafe.As<T, byte>(ref old[index]),
                     (uint)((Count - index) * Unsafe.SizeOf<T>()));
 
                 old.Free();
 
-                Unsafe.CopyBlock(
-                    ref Unsafe.As<T, byte>(ref buf[0]),
+                Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(items)),
                     (uint)(items.Length * Unsafe.SizeOf<T>()));
             }
@@ -220,8 +216,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
                 var head = buf.AsSpan(0, index);
                 var tail = buf.AsSpan(index, Count - index);
 
-                var headHasItemTail = SpanContainsMemory(
-                    head,
+                var headHasItemTail = SpanContainsMemory(head,
                     ref Unsafe.Add(ref MemoryMarshal.GetReference(items), items.Length - 1));
 
                 switch (SpanContainsMemory(head, ref itemsHead))
@@ -229,7 +224,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
                     case true when headHasItemTail:
                         tail.CopyTo(buf.AsSpan(index + items.Length));
                         items.CopyTo(buf.AsSpan(index));
-                    break;
+                        break;
 
                     case false when !headHasItemTail:
                     {
@@ -266,8 +261,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
             EnsureCapacity(Count + items.Length);
             if (index < Count) buf.AsSpan(index, Count - index).CopyTo(buf.AsSpan(index + items.Length));
 
-            Unsafe.CopyBlock(
-                ref Unsafe.As<T, byte>(ref buf[0]),
+            Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
                 ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(items)),
                 (uint)(items.Length * Unsafe.SizeOf<T>()));
         }
@@ -298,8 +292,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
                     try
                     {
                         c.CopyTo(rent, 0);
-                        Unsafe.CopyBlock(
-                            ref Unsafe.As<T, byte>(ref buf[0]),
+                        Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
                             ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(rent)),
                             (uint)(count * Unsafe.SizeOf<T>()));
                     }
@@ -349,8 +342,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
         if (!EnsureCapacityWithoutCopy(min, out old)) return false;
 
         if (Count > 0)
-            Unsafe.CopyBlock(
-                ref Unsafe.As<T, byte>(ref buf[0]),
+            Unsafe.CopyBlock(ref Unsafe.As<T, byte>(ref buf[0]),
                 ref Unsafe.As<T, byte>(ref old[0]),
                 (uint)(Count * Unsafe.SizeOf<T>()));
 

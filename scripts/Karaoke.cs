@@ -65,8 +65,7 @@ internal class Karaoke : StoryboardObjectGenerator
 
     protected override void Generate()
     {
-        var font = LoadFont(
-            SpritesPath,
+        var font = LoadFont(SpritesPath,
             new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
             new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor),
             new FontOutline(OutlineThickness, OutlineColor),
@@ -76,8 +75,7 @@ internal class Karaoke : StoryboardObjectGenerator
 
         if (GlowRadius > 0 && GlowAdditive)
         {
-            var glowFont = LoadFont(
-                Path.Combine(SpritesPath, "glow"),
+            var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"),
                 new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true),
                 new FontGlow(GlowRadius, 0, GlowColor));
 

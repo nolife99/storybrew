@@ -53,8 +53,7 @@ public class ScriptedEffect : Effect
             if (!Disposed) Refresh();
         };
 
-        EditorGeneratorContext context = new(
-            this,
+        EditorGeneratorContext context = new(this,
             Project.ProjectFolderPath,
             Project.ProjectAssetFolderPath,
             Project.MapsetPath,
@@ -69,19 +68,18 @@ public class ScriptedEffect : Effect
             var script = scriptContainer.CreateScript();
 
             changeStatus(EffectStatus.Configuring);
-            Program.Schedule(
-                    () =>
+            Program.Schedule(() =>
+                {
+                    beatmapDependent = true;
+                    if (script.Identifier != configScriptIdentifier)
                     {
-                        beatmapDependent = true;
-                        if (script.Identifier != configScriptIdentifier)
-                        {
-                            script.UpdateConfiguration(Config);
-                            configScriptIdentifier = script.Identifier;
+                        script.UpdateConfiguration(Config);
+                        configScriptIdentifier = script.Identifier;
 
-                            RaiseConfigFieldsChanged();
-                        }
-                        else script.ApplyConfiguration(Config);
-                    })
+                        RaiseConfigFieldsChanged();
+                    }
+                    else script.ApplyConfiguration(Config);
+                })
                 .Wait();
 
             changeStatus(EffectStatus.Updating);
@@ -99,8 +97,7 @@ public class ScriptedEffect : Effect
         }
         catch (ScriptLoadingException e)
         {
-            changeStatus(
-                EffectStatus.LoadingFailed,
+            changeStatus(EffectStatus.LoadingFailed,
                 e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message,
                 context.Log);
 

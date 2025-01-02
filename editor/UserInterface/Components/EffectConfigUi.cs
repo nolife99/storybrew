@@ -31,55 +31,54 @@ public class EffectConfigUi : Widget
     {
         Button copyButton, pasteButton, closeButton;
 
-        Add(
-            layout = new(manager)
-            {
-                StyleName = "panel",
-                Padding = new(16),
-                FitChildren = true,
-                Fill = true,
-                Children =
-                [
-                    new LinearLayout(manager)
-                    {
-                        Fill = true,
-                        FitChildren = true,
-                        Horizontal = true,
-                        CanGrow = false,
-                        Children =
-                        [
-                            titleLabel = new(manager) { Text = "Configuration" },
-                            copyButton = new(Manager)
-                            {
-                                StyleName = "icon",
-                                Icon = IconFont.CopyAll,
-                                Tooltip = "Copy all fields",
-                                AnchorFrom = BoxAlignment.Centre,
-                                AnchorTo = BoxAlignment.Centre,
-                                CanGrow = false
-                            },
-                            pasteButton = new(Manager)
-                            {
-                                StyleName = "icon",
-                                Icon = IconFont.ContentPasteGo,
-                                Tooltip = "Paste all fields",
-                                AnchorFrom = BoxAlignment.Centre,
-                                AnchorTo = BoxAlignment.Centre,
-                                CanGrow = false
-                            },
-                            closeButton = new(Manager)
-                            {
-                                StyleName = "icon",
-                                Icon = IconFont.Cancel,
-                                AnchorFrom = BoxAlignment.Centre,
-                                AnchorTo = BoxAlignment.Centre,
-                                CanGrow = false
-                            }
-                        ]
-                    },
-                    new ScrollArea(manager, configFieldsLayout = new(manager) { FitChildren = true })
-                ]
-            });
+        Add(layout = new(manager)
+        {
+            StyleName = "panel",
+            Padding = new(16),
+            FitChildren = true,
+            Fill = true,
+            Children =
+            [
+                new LinearLayout(manager)
+                {
+                    Fill = true,
+                    FitChildren = true,
+                    Horizontal = true,
+                    CanGrow = false,
+                    Children =
+                    [
+                        titleLabel = new(manager) { Text = "Configuration" },
+                        copyButton = new(Manager)
+                        {
+                            StyleName = "icon",
+                            Icon = IconFont.CopyAll,
+                            Tooltip = "Copy all fields",
+                            AnchorFrom = BoxAlignment.Centre,
+                            AnchorTo = BoxAlignment.Centre,
+                            CanGrow = false
+                        },
+                        pasteButton = new(Manager)
+                        {
+                            StyleName = "icon",
+                            Icon = IconFont.ContentPasteGo,
+                            Tooltip = "Paste all fields",
+                            AnchorFrom = BoxAlignment.Centre,
+                            AnchorTo = BoxAlignment.Centre,
+                            CanGrow = false
+                        },
+                        closeButton = new(Manager)
+                        {
+                            StyleName = "icon",
+                            Icon = IconFont.Cancel,
+                            AnchorFrom = BoxAlignment.Centre,
+                            AnchorTo = BoxAlignment.Centre,
+                            CanGrow = false
+                        }
+                    ]
+                },
+                new ScrollArea(manager, configFieldsLayout = new(manager) { FitChildren = true })
+            ]
+        });
 
         copyButton.OnClick += (_, _) => copyConfiguration();
         pasteButton.OnClick += (_, _) => pasteConfiguration();
@@ -152,14 +151,13 @@ public class EffectConfigUi : Widget
             if (!string.IsNullOrWhiteSpace(field.BeginsGroup))
             {
                 currentGroup = field.BeginsGroup;
-                configFieldsLayout.Add(
-                    new Label(Manager)
-                    {
-                        StyleName = "listGroup",
-                        Text = field.BeginsGroup,
-                        AnchorFrom = BoxAlignment.Centre,
-                        AnchorTo = BoxAlignment.Centre
-                    });
+                configFieldsLayout.Add(new Label(Manager)
+                {
+                    StyleName = "listGroup",
+                    Text = field.BeginsGroup,
+                    AnchorFrom = BoxAlignment.Centre,
+                    AnchorTo = BoxAlignment.Centre
+                });
             }
 
             var displayName = field.DisplayName;
@@ -168,26 +166,25 @@ public class EffectConfigUi : Widget
             var description = $"Variable: {field.Name} ({field.Type.Name})";
             if (!string.IsNullOrWhiteSpace(field.Description)) description = "  " + description + "\n" + field.Description;
 
-            configFieldsLayout.Add(
-                new LinearLayout(Manager)
-                {
-                    AnchorFrom = BoxAlignment.Centre,
-                    AnchorTo = BoxAlignment.Centre,
-                    Horizontal = true,
-                    Fill = true,
-                    Children =
-                    [
-                        new Label(Manager)
-                        {
-                            StyleName = "listItem",
-                            Text = displayName,
-                            AnchorFrom = BoxAlignment.TopLeft,
-                            AnchorTo = BoxAlignment.TopLeft,
-                            Tooltip = description
-                        },
-                        buildFieldEditor(field)
-                    ]
-                });
+            configFieldsLayout.Add(new LinearLayout(Manager)
+            {
+                AnchorFrom = BoxAlignment.Centre,
+                AnchorTo = BoxAlignment.Centre,
+                Horizontal = true,
+                Fill = true,
+                Children =
+                [
+                    new Label(Manager)
+                    {
+                        StyleName = "listItem",
+                        Text = displayName,
+                        AnchorFrom = BoxAlignment.TopLeft,
+                        AnchorTo = BoxAlignment.TopLeft,
+                        Tooltip = description
+                    },
+                    buildFieldEditor(field)
+                ]
+            });
         }
     }
 

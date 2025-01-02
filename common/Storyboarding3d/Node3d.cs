@@ -29,8 +29,7 @@ public class Node3d : Object3d
 
     /// <inheritdoc/>
     public override Matrix4x4 WorldTransformAt(float time) => Matrix4x4.Multiply(
-        Matrix4x4.Multiply(
-            Matrix4x4.CreateScale(ScaleX.ValueAt(time), ScaleY.ValueAt(time), ScaleZ.ValueAt(time)),
+        Matrix4x4.Multiply(Matrix4x4.CreateScale(ScaleX.ValueAt(time), ScaleY.ValueAt(time), ScaleZ.ValueAt(time)),
             Matrix4x4.CreateFromQuaternion(Rotation.ValueAt(time))),
         Matrix4x4.CreateTranslation(PositionX.ValueAt(time), PositionY.ValueAt(time), PositionZ.ValueAt(time)));
 }

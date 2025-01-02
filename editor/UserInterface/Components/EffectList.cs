@@ -27,46 +27,44 @@ public partial class EffectList : Widget
         this.effectConfigUi = effectConfigUi;
 
         Button addEffectButton, newScriptButton;
-        Add(
-            layout = new(manager)
-            {
-                StyleName = "panel",
-                Padding = new(16),
-                FitChildren = true,
-                Fill = true,
-                Children =
-                [
-                    new Label(manager) { Text = "Effects", CanGrow = false },
-                    new ScrollArea(manager, effectsLayout = new(manager) { FitChildren = true }),
-                    new LinearLayout(manager)
-                    {
-                        Fill = true,
-                        FitChildren = true,
-                        Horizontal = true,
-                        CanGrow = false,
-                        Children =
-                        [
-                            addEffectButton = new(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "Add effect",
-                                AnchorFrom = BoxAlignment.Centre,
-                                AnchorTo = BoxAlignment.Centre
-                            },
-                            newScriptButton = new(Manager)
-                            {
-                                StyleName = "small",
-                                Text = "New script",
-                                AnchorFrom = BoxAlignment.Centre,
-                                AnchorTo = BoxAlignment.Centre
-                            }
-                        ]
-                    }
-                ]
-            });
+        Add(layout = new(manager)
+        {
+            StyleName = "panel",
+            Padding = new(16),
+            FitChildren = true,
+            Fill = true,
+            Children =
+            [
+                new Label(manager) { Text = "Effects", CanGrow = false },
+                new ScrollArea(manager, effectsLayout = new(manager) { FitChildren = true }),
+                new LinearLayout(manager)
+                {
+                    Fill = true,
+                    FitChildren = true,
+                    Horizontal = true,
+                    CanGrow = false,
+                    Children =
+                    [
+                        addEffectButton = new(Manager)
+                        {
+                            StyleName = "small",
+                            Text = "Add effect",
+                            AnchorFrom = BoxAlignment.Centre,
+                            AnchorTo = BoxAlignment.Centre
+                        },
+                        newScriptButton = new(Manager)
+                        {
+                            StyleName = "small",
+                            Text = "New script",
+                            AnchorFrom = BoxAlignment.Centre,
+                            AnchorTo = BoxAlignment.Centre
+                        }
+                    ]
+                }
+            ]
+        });
 
-        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu(
-            "Select an effect",
+        addEffectButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowContextMenu("Select an effect",
             name => project.AddScriptedEffect(name),
             project.GetEffectNames());
 
@@ -240,8 +238,7 @@ public partial class EffectList : Widget
             StringHelper.StringBuilderPool.Release(sb);
         };
 
-        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt(
-            "Effect name",
+        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name",
             $"Pick a new name for {effect.Name}",
             effect.Name,
             newName =>
@@ -281,12 +278,12 @@ public partial class EffectList : Widget
             case EffectStatus.Updating:
                 button.Icon = IconFont.Sync;
                 button.Disabled = true;
-            break;
+                break;
 
             case EffectStatus.ReloadPending:
                 button.Icon = IconFont.LinkOff;
                 button.Disabled = true;
-            break;
+                break;
 
             case EffectStatus.CompilationFailed:
             case EffectStatus.LoadingFailed:
@@ -295,7 +292,7 @@ public partial class EffectList : Widget
             case EffectStatus.Ready:
                 button.Icon = IconFont.Eco;
                 button.Tooltip = "Open log";
-            break;
+                break;
         }
     }
 
@@ -304,8 +301,7 @@ public partial class EffectList : Widget
         var resourceContainer = Manager.ScreenLayerManager.GetContext<Editor>().ResourceContainer;
 
         name = ZeroOrMoreDigitsPrefixRegex()
-            .Replace(
-                NotLetterNorNumberRegex()
+            .Replace(NotLetterNorNumberRegex()
                     .Replace(CultureInfo.InvariantCulture.TextInfo.ToTitleCase(AlphabetRegex().Replace(name, " $1")), ""),
                 "");
 
@@ -345,23 +341,19 @@ public partial class EffectList : Widget
 
         List<string> paths =
         [
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
                 "Microsoft VS Code",
                 "bin",
                 "code"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
                 "Microsoft VS Code",
                 "bin",
                 "code"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
                 "Microsoft VS Code Insiders",
                 "bin",
                 "code-insiders"),
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
                 "Microsoft VS Code Insiders",
                 "bin",
                 "code-insiders")
@@ -384,13 +376,11 @@ public partial class EffectList : Widget
                 if (!File.Exists(path)) continue;
 
                 Trace.WriteLine($"Opening vscode with \"{path} {arguments}\"");
-                Process.Start(
-                        new ProcessStartInfo(path, arguments)
-                        {
-                            UseShellExecute = true,
-                            WindowStyle =
-                                Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
-                        })
+                Process.Start(new ProcessStartInfo(path, arguments)
+                    {
+                        UseShellExecute = true,
+                        WindowStyle = Program.Settings.VerboseVsCode ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden
+                    })
                     ?.Dispose();
 
                 return;

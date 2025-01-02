@@ -92,8 +92,7 @@ public abstract record Command<TValue>(string identifier,
         var result = StringHelper.StringBuilderPool.Retrieve();
         if (startTimeString.Equals(endTimeString, StringComparison.Ordinal)) endTimeString = "";
 
-        result.AppendJoin(
-            ',',
+        result.AppendJoin(',',
             identifier,
             ((int)Easing).ToString(exportSettings.NumberFormat),
             startTimeString,

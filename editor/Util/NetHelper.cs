@@ -88,8 +88,7 @@ public static class NetHelper
             {
                 response.EnsureSuccessStatusCode();
 
-                await using FileStream fileStream = new(
-                    filename,
+                await using FileStream fileStream = new(filename,
                     FileMode.Create,
                     FileAccess.Write,
                     FileShare.None,

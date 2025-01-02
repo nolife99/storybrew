@@ -11,10 +11,42 @@ public static class BitmapHelper
     public static bool IsFullyTransparent(Image<Rgba32> source)
     {
         var buffer = source.Frames.RootFrame.PixelBuffer;
-        var width = source.Width;
+        if (source.DangerousTryGetSinglePixelMemory(out var contiguousMem))
+        {
+            var contiguousSpan = contiguousMem.Span;
+            if (Vector.IsHardwareAccelerated)
+            {
+                var zeroVector = Vector<int>.Zero;
+                var vectorSize = Vector<int>.Count;
+
+                Vector<int> alphaMask = new(Unsafe.BitCast<Rgba32, int>(new(0, 0, 0, 255)));
+
+                ref var first = ref Unsafe.As<Rgba32, int>(ref MemoryMarshal.GetReference(contiguousSpan));
+
+                var offset = 0;
+                while (offset + vectorSize <= contiguousSpan.Length)
+                {
+                    if ((Vector.LoadUnsafe(ref first, (nuint)offset) & alphaMask) >> 24 != zeroVector) return false;
+
+                    offset += vectorSize;
+                }
+
+                for (; offset < contiguousSpan.Length; ++offset)
+                    if (Unsafe.As<int, Rgba32>(ref Unsafe.Add(ref first, offset)).A != 0)
+                        return false;
+            }
+            else
+                foreach (ref var pixel in contiguousSpan)
+                    if (pixel.A != 0)
+                        return false;
+
+            return true;
+        }
 
         if (Vector.IsHardwareAccelerated)
         {
+            var width = source.Width;
+
             var zeroVector = Vector<int>.Zero;
             var vectorSize = Vector<int>.Count;
 
@@ -27,15 +59,12 @@ public static class BitmapHelper
                 var x = 0;
                 while (x + vectorSize <= width)
                 {
-                    if (Vector.ShiftRightLogical(
-                            Vector.BitwiseAnd(Vector.LoadUnsafe(ref Unsafe.Add(ref rowFirst, x)), alphaMask),
-                            24) !=
-                        zeroVector) return false;
+                    if ((Vector.LoadUnsafe(ref rowFirst, (nuint)x) & alphaMask) >> 24 != zeroVector) return false;
 
                     x += vectorSize;
                 }
 
-                for (; x < rowSpan.Length; ++x)
+                for (; x < width; ++x)
                     if (Unsafe.As<int, Rgba32>(ref Unsafe.Add(ref rowFirst, x)).A != 0)
                         return false;
             }
@@ -70,10 +99,7 @@ public static class BitmapHelper
                 var x = 0;
                 while (x + vectorSize <= width)
                 {
-                    if (Vector.ShiftRightLogical(
-                            Vector.BitwiseAnd(Vector.LoadUnsafe(ref Unsafe.Add(ref rowFirst, x)), alphaMask),
-                            24) ==
-                        zeroVector)
+                    if ((Vector.LoadUnsafe(ref rowFirst, (nuint)x) & alphaMask) >> 24 == zeroVector)
                     {
                         x += vectorSize;
                         continue;

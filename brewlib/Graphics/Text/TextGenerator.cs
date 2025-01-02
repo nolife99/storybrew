@@ -64,13 +64,12 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         if (measureOnly) return null;
 
         Image<Rgba32> bitmap = new(Texture2d.ContiguousBufferDecoderOptions.Configuration, width, height);
-        bitmap.Mutate(
-            b =>
-            {
-                RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };
-                b.DrawText(drawOptions, new(textOptions) { Origin = padding + Vector2.One }, text, shadow, null)
-                    .DrawText(drawOptions, textOptions, text, fill, null);
-            });
+        bitmap.Mutate(b =>
+        {
+            RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };
+            b.DrawText(drawOptions, new(textOptions) { Origin = padding + Vector2.One }, text, shadow, null)
+                .DrawText(drawOptions, textOptions, text, fill, null);
+        });
 
         return bitmap;
     }

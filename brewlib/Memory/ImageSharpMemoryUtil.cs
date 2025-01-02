@@ -67,8 +67,7 @@ public sealed class PooledManagedBuffer<T> : MemoryManager<T> where T : struct
     public override unsafe MemoryHandle Pin(int elementIndex = 0)
     {
         if (!pinHandle.IsAllocated) pinHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-        return new(
-            Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffer)), elementIndex),
+        return new(Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffer)), elementIndex),
             pinHandle);
     }
 

@@ -13,8 +13,7 @@ using Util;
 public static class ScreenLayerManagerExtensions
 {
     public static void OpenFolderPicker(this ScreenLayerManager screenLayer, string initialValue, Action<string> callback)
-        => screenLayer.AsyncLoading(
-            "Select a folder",
+        => screenLayer.AsyncLoading("Select a folder",
             async () =>
             {
                 var selectedPath = NFD.PickFolder(initialValue);
@@ -25,8 +24,7 @@ public static class ScreenLayerManagerExtensions
         string initialValue,
         string initialDirectory,
         IReadOnlyCollection<KeyValuePair<string, string>> filter,
-        Action<string> callback) => screenLayer.AsyncLoading(
-        "Select a file",
+        Action<string> callback) => screenLayer.AsyncLoading("Select a file",
         async () =>
         {
             var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
@@ -37,8 +35,7 @@ public static class ScreenLayerManagerExtensions
         string initialValue,
         string extension,
         IReadOnlyCollection<KeyValuePair<string, string>> filter,
-        Action<string> callback) => screenLayer.AsyncLoading(
-        "Select a location",
+        Action<string> callback) => screenLayer.AsyncLoading("Select a location",
         async () =>
         {
             var fileName = NFD.SaveDialog(initialValue, extension, filter);
@@ -79,8 +76,7 @@ public static class ScreenLayerManagerExtensions
     public static void ShowOpenProject(this ScreenLayerManager screenLayer)
     {
         if (!Directory.Exists(Project.ProjectsFolder)) Directory.CreateDirectory(Project.ProjectsFolder);
-        screenLayer.OpenFilePicker(
-            "",
+        screenLayer.OpenFilePicker("",
             Project.ProjectsFolder,
             Project.FileFilter,
             projectPath =>
@@ -90,12 +86,10 @@ public static class ScreenLayerManagerExtensions
                     screenLayer.ShowMessage("Projects must be placed directly inside the 'projects' folder.");
 
                 else
-                    screenLayer.AsyncLoading(
-                        "Loading project",
+                    screenLayer.AsyncLoading("Loading project",
                         async () =>
                         {
-                            var project = Project.Load(
-                                projectPath,
+                            var project = Project.Load(projectPath,
                                 true,
                                 screenLayer.GetContext<Editor>().ResourceContainer);
 

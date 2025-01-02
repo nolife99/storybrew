@@ -24,8 +24,7 @@ public class Selectbox : Widget, Field
             if (options is null) return;
 
             if (options.Length > 2)
-                Manager.ScreenLayerManager.ShowContextMenu(
-                    "Select a value",
+                Manager.ScreenLayerManager.ShowContextMenu("Select a value",
                     optionValue => Value = optionValue.Value,
                     options);
             else

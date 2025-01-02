@@ -106,9 +106,8 @@ public class LayerManager
             sortLayer(layerToMove);
         }
         else
-            throw new InvalidOperationException(
-                $"Cannot move layer '{layerToMove.Name}' to the position of '{
-                    layerToMove.Name}'");
+            throw new InvalidOperationException($"Cannot move layer '{layerToMove.Name}' to the position of '{
+                layerToMove.Name}'");
     }
 
     public void TriggerEvents(float startTime, float endTime)

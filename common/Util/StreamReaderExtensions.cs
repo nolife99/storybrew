@@ -39,13 +39,12 @@ public static class StreamReaderExtensions
 
     /// <summary>Calls <paramref name="action"/> with key and value, until it finds a blank line or reaches the end of the file.</summary>
     public static void ParseKeyValueSection(this StreamReader reader, Action<string, string> action)
-        => reader.ParseSectionLines(
-            l =>
-            {
-                var line = l.AsSpan();
-                var separatorIndex = line.IndexOf(':');
-                if (separatorIndex == -1) throw new InvalidDataException($"{line} is not a key/value");
+        => reader.ParseSectionLines(l =>
+        {
+            var line = l.AsSpan();
+            var separatorIndex = line.IndexOf(':');
+            if (separatorIndex == -1) throw new InvalidDataException($"{line} is not a key/value");
 
-                action(line[..separatorIndex].Trim().ToString(), line[(separatorIndex + 1)..].Trim().ToString());
-            });
+            action(line[..separatorIndex].Trim().ToString(), line[(separatorIndex + 1)..].Trim().ToString());
+        });
 }

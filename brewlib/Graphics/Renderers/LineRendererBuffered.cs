@@ -41,10 +41,8 @@ public class LineRendererBuffered : ILineRenderer
 
         this.shader = shader;
 
-        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(
-            VertexDeclaration,
-            int.Max(
-                this.maxLinesPerBatch = maxLinesPerBatch,
+        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
+            int.Max(this.maxLinesPerBatch = maxLinesPerBatch,
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) *
             VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
@@ -135,10 +133,8 @@ public class LineRendererBuffered : ILineRenderer
         var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
         var color = sb.AddVarying("vec4");
 
-        sb.VertexShader = new Sequence(
-            new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
-            new Assign(
-                sb.GlPosition,
+        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
+            new Assign(sb.GlPosition,
                 () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                 }, 1)"));
 

@@ -47,9 +47,8 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
             if (lineIndent != indent)
             {
                 if (lineIndent > indent)
-                    throw new InvalidDataException(
-                        $"Unexpected indent: {lineIndent}, expected: {indent}, token: {
-                            context.CurrentToken}");
+                    throw new InvalidDataException($"Unexpected indent: {lineIndent}, expected: {indent}, token: {
+                        context.CurrentToken}");
 
                 context.PopParser();
                 return true;
@@ -77,8 +76,10 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                 case YamlTokenType.ArrayIndicator:
                 case YamlTokenType.Property:
                 case YamlTokenType.PropertyQuoted:
-                    throw new InvalidDataException(
-                        "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
+                    throw new InvalidDataException("Unexpected token: " +
+                        context.LookaheadToken +
+                        ", after: " +
+                        context.CurrentToken);
             }
 
             switch (context.CurrentToken.Type)
@@ -95,11 +96,13 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
 
                         case YamlTokenType.EndLine:
                             context.PushParser(new EmptyProperyParser(r => result.Add(key, r), context.IndentLevel + 1));
-                        break;
+                            break;
 
                         default:
-                            throw new InvalidDataException(
-                                "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
+                            throw new InvalidDataException("Unexpected token: " +
+                                context.LookaheadToken +
+                                ", after: " +
+                                context.CurrentToken);
                     }
 
                     context.ConsumeToken();
@@ -143,8 +146,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
     {
         static readonly Regex floatRegex = new("^[-+]?[0-9]*\\.[0-9]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
             integerRegex = new("^[-+]?\\d+$", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-            boolRegex = new(
-                $"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$",
+            boolRegex = new($"^{YamlFormat.BooleanTrue}|{YamlFormat.BooleanFalse}$",
                 RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         public override void Parse(ParseContext<YamlTokenType> context)
@@ -154,8 +156,10 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                 case YamlTokenType.EndLine: break;
 
                 default:
-                    throw new InvalidDataException(
-                        "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
+                    throw new InvalidDataException("Unexpected token: " +
+                        context.LookaheadToken +
+                        ", after: " +
+                        context.CurrentToken);
             }
 
             switch (context.CurrentToken.Type)
@@ -242,9 +246,8 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                 return;
             }
 
-            throw new InvalidDataException(
-                $"Unexpected indent: {context.IndentLevel}, expected: {expectedIndent
-                }, token: {context.CurrentToken}");
+            throw new InvalidDataException($"Unexpected indent: {context.IndentLevel}, expected: {expectedIndent
+            }, token: {context.CurrentToken}");
         }
 
         public override void End() => Callback(new TinyValue(null, TinyTokenType.Null));

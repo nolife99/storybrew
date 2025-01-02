@@ -31,8 +31,7 @@ public record CameraState(Matrix4x4 ViewProjection,
             2 *
             new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
 
-        return new(
-            screenPosition.X - (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2,
+        return new(screenPosition.X - (OsuHitObject.WidescreenStoryboardSize.Width - OsuHitObject.StoryboardSize.Width) / 2,
             screenPosition.Y,
             transformed.Z / transformed.W,
             transformed.W);
@@ -102,15 +101,13 @@ public class PerspectiveCamera : Camera
         var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance * .5f, 1);
         var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5f;
 
-        var view = Matrix4x4.CreateLookAt(
-            cameraPosition,
+        var view = Matrix4x4.CreateLookAt(cameraPosition,
             targetPosition,
             Up.ValueAt(time) * (1 / Up.ValueAt(time).Length()));
 
         var projection = Matrix4x4.CreatePerspectiveFieldOfView(fovY, aspectRatio, nearClip, farClip);
 
-        return new(
-            Matrix4x4.Multiply(view, projection),
+        return new(Matrix4x4.Multiply(view, projection),
             aspectRatio,
             focusDistance,
             ResolutionScale,

@@ -107,12 +107,12 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             case SliderCurveType.Catmull:
                 if (controlPoints.Length == 1) goto case SliderCurveType.Linear;
                 curve = generateCatmullCurve();
-            break;
+                break;
 
             case SliderCurveType.Bezier:
                 if (controlPoints.Length == 1) goto case SliderCurveType.Linear;
                 curve = generateBezierCurve();
-            break;
+                break;
 
             case SliderCurveType.Perfect:
                 if (controlPoints.Length > 2) goto case SliderCurveType.Bezier;
@@ -120,7 +120,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
                     goto case SliderCurveType.Linear;
 
                 curve = generateCircleCurve();
-            break;
+                break;
 
             case SliderCurveType.Linear:
             default: curve = generateLinearCurve(); break;

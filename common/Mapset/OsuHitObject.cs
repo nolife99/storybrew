@@ -119,8 +119,7 @@ public record OsuHitObject
         var volume = controlPoint.Volume;
 
         if ((flags & HitObjectFlag.Circle) != 0)
-            return OsuCircle.Parse(
-                values,
+            return OsuCircle.Parse(values,
                 x,
                 y,
                 startTime,
@@ -132,8 +131,7 @@ public record OsuHitObject
                 volume);
 
         if ((flags & HitObjectFlag.Slider) != 0)
-            return OsuSlider.Parse(
-                beatmap,
+            return OsuSlider.Parse(beatmap,
                 values,
                 x,
                 y,
@@ -148,8 +146,7 @@ public record OsuHitObject
                 volume);
 
         if ((flags & HitObjectFlag.Hold) != 0)
-            return OsuHold.Parse(
-                values,
+            return OsuHold.Parse(values,
                 x,
                 y,
                 startTime,
@@ -161,8 +158,7 @@ public record OsuHitObject
                 volume);
 
         if ((flags & HitObjectFlag.Spinner) != 0)
-            return OsuSpinner.Parse(
-                values,
+            return OsuSpinner.Parse(values,
                 x,
                 y,
                 startTime,
@@ -173,9 +169,8 @@ public record OsuHitObject
                 customSampleSet,
                 volume);
 
-        throw new NotSupportedException(
-            $"Parsing failed - the line does not contain valid hit object information: {line
-            }");
+        throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line
+        }");
     }
 }
 

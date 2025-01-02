@@ -34,28 +34,27 @@ public class SynchronousCompressor : ImageCompressor
         };
 
         if (toCompress.Count != 0)
-            using (Task losslessTask = new(
-                async () =>
-                {
-                    UtilityName = "oxipng32.exe";
-                    startInfo.FileName = GetUtility();
-                    ensureTool();
+            using (Task losslessTask = new(async () =>
+            {
+                UtilityName = "oxipng32.exe";
+                startInfo.FileName = GetUtility();
+                ensureTool();
 
-                    foreach (var arg in toCompress.Where(arg => File.Exists(arg.path)))
-                        try
-                        {
-                            startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
-                            process ??= Process.Start(startInfo);
-                            var error = await process.StandardError.ReadToEndAsync();
-                            if (!string.IsNullOrEmpty(error) && process.ExitCode != 0)
-                                throw new OperationCanceledException(
-                                    $"Image compression closed with code {process.ExitCode}: {error}");
-                        }
-                        finally
-                        {
-                            ensureStop();
-                        }
-                }))
+                foreach (var arg in toCompress.Where(arg => File.Exists(arg.path)))
+                    try
+                    {
+                        startInfo.Arguments = appendArgs(arg.path, false, null, arg.lossless);
+                        process ??= Process.Start(startInfo);
+                        var error = await process.StandardError.ReadToEndAsync();
+                        if (!string.IsNullOrEmpty(error) && process.ExitCode != 0)
+                            throw new OperationCanceledException(
+                                $"Image compression closed with code {process.ExitCode}: {error}");
+                    }
+                    finally
+                    {
+                        ensureStop();
+                    }
+            }))
             {
                 losslessTask.Start();
                 await losslessTask;
@@ -63,28 +62,27 @@ public class SynchronousCompressor : ImageCompressor
 
         if (lossyCompress.Count != 0)
         {
-            using Task lossyTask = new(
-                async () =>
-                {
-                    UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
-                    startInfo.FileName = GetUtility();
-                    ensureTool();
+            using Task lossyTask = new(async () =>
+            {
+                UtilityName = Environment.Is64BitOperatingSystem ? "pngquant.exe" : "oxipng32.exe";
+                startInfo.FileName = GetUtility();
+                ensureTool();
 
-                    foreach (var arg in lossyCompress.Where(arg => File.Exists(arg.path)))
-                        try
-                        {
-                            startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
-                            process ??= Process.Start(startInfo);
-                            var error = await process.StandardError.ReadToEndAsync();
-                            if (!string.IsNullOrEmpty(error) && process.ExitCode != 0)
-                                throw new OperationCanceledException(
-                                    $"Image compression failed with code {process.ExitCode}: {error}");
-                        }
-                        finally
-                        {
-                            ensureStop();
-                        }
-                });
+                foreach (var arg in lossyCompress.Where(arg => File.Exists(arg.path)))
+                    try
+                    {
+                        startInfo.Arguments = appendArgs(arg.path, true, arg.lossy, null);
+                        process ??= Process.Start(startInfo);
+                        var error = await process.StandardError.ReadToEndAsync();
+                        if (!string.IsNullOrEmpty(error) && process.ExitCode != 0)
+                            throw new OperationCanceledException(
+                                $"Image compression failed with code {process.ExitCode}: {error}");
+                    }
+                    finally
+                    {
+                        ensureStop();
+                    }
+            });
 
             lossyTask.Start();
             await lossyTask;
@@ -118,8 +116,7 @@ public class SynchronousCompressor : ImageCompressor
                 if (lossless is not null)
                 {
                     var lvl = (byte)lossless.OptimizationLevel;
-                    str.Append(
-                        CultureInfo.InvariantCulture,
+                    str.Append(CultureInfo.InvariantCulture,
                         $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
 
                     str.Append(CultureInfo.InvariantCulture, $" {lossless.CustomInputArgs} ");
@@ -131,8 +128,7 @@ public class SynchronousCompressor : ImageCompressor
         else
         {
             var lvl = lossless?.OptimizationLevel ?? 4;
-            str.Append(
-                CultureInfo.InvariantCulture,
+            str.Append(CultureInfo.InvariantCulture,
                 $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
 
             str.Append(CultureInfo.InvariantCulture, $" {lossless?.CustomInputArgs} ");

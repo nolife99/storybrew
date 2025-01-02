@@ -22,8 +22,7 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
                 throw new InvalidOperationException(
                     $"Commands in a loop must start at 0ms, but start at {loopCommand.CommandsStartTime}ms");
 
-            return new LoopDecorator<TValue>(
-                command,
+            return new LoopDecorator<TValue>(command,
                 loopCommand.StartTime,
                 loopCommand.CommandsDuration,
                 loopCommand.LoopCount);

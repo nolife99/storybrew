@@ -29,8 +29,7 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
         if (char.IsWhiteSpace(c))
         {
             var prepended = c == '\n' ? "\u200b\n" : c.ToString();
-            DrawState.TextGenerator.CreateBitmap(
-                prepended,
+            DrawState.TextGenerator.CreateBitmap(prepended,
                 name,
                 size,
                 default,
@@ -42,8 +41,7 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
         }
 
         atlas ??= new(512, 512, $"Font Atlas {name}:{size:n1}");
-        using var bitmap = DrawState.TextGenerator.CreateBitmap(
-            c.ToString(),
+        using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(),
             name,
             size,
             default,
@@ -51,8 +49,7 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
             out measuredSize,
             false);
 
-        return new(
-            atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"),
+        return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"),
             (int)measuredSize.X,
             (int)measuredSize.Y);
     }

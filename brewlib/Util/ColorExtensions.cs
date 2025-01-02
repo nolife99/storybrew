@@ -36,43 +36,43 @@ public static class ColorExtensions
                 r = c;
                 g = x;
                 b = 0;
-            break;
+                break;
 
             case >= 1 and < 2:
                 r = x;
                 g = c;
                 b = 0;
-            break;
+                break;
 
             case >= 2 and < 3:
                 r = 0;
                 g = c;
                 b = x;
-            break;
+                break;
 
             case >= 3 and < 4:
                 r = 0;
                 g = x;
                 b = c;
-            break;
+                break;
 
             case >= 4 and < 5:
                 r = x;
                 g = 0;
                 b = c;
-            break;
+                break;
 
             case >= 5 and < 6:
                 r = c;
                 g = 0;
                 b = x;
-            break;
+                break;
 
             default:
                 r = 0;
                 g = 0;
                 b = 0;
-            break;
+                break;
         }
 
         var m = brightness - c;

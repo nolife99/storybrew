@@ -134,18 +134,18 @@ public class CommandGenerator
 
                     addKeyframes(ref state, time);
                     if (!stateAdded) stateAdded = true;
-                break;
+                    break;
 
                 case true when !isVisible:
                     addKeyframes(ref state, time);
                     commitKeyframes(imageSize);
-                break;
+                    break;
 
                 default:
                     if (isVisible) addKeyframes(ref state, time);
                     else stateAdded = false;
 
-                break;
+                    break;
             }
 
             previousState = ref state;
@@ -211,8 +211,7 @@ public class CommandGenerator
             break;
         }
 
-        finalPositions.ForEachPair(
-            (s, e) =>
+        finalPositions.ForEachPair((s, e) =>
             {
                 if (moveX && !moveY)
                 {
@@ -241,8 +240,7 @@ public class CommandGenerator
             break;
         }
 
-        finalScales.ForEachPair(
-            (s, e) =>
+        finalScales.ForEachPair((s, e) =>
             {
                 if (scalar) sprite.Scale(s.Time, e.Time, s.Value.X, e.Value.X);
                 else sprite.ScaleVec(s.Time, e.Time, s.Value, e.Value);
@@ -253,24 +251,21 @@ public class CommandGenerator
             endState,
             loopable);
 
-        finalRotations.ForEachPair(
-            (s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
+        finalRotations.ForEachPair((s, e) => sprite.Rotate(s.Time, e.Time, s.Value, e.Value),
             0,
             r => float.Round(r, RotationDecimals),
             startState,
             endState,
             loopable);
 
-        finalColors.ForEachPair(
-            (s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value),
+        finalColors.ForEachPair((s, e) => sprite.Color(s.Time, e.Time, s.Value, e.Value),
             CommandColor.White,
             null,
             startState,
             endState,
             loopable);
 
-        finalFades.ForEachPair(
-            (s, e) =>
+        finalFades.ForEachPair((s, e) =>
             {
                 if (!(s.Time == sprite.StartTime && s.Time == e.Time && e.Value >= 1 ||
                     s.Time == sprite.EndTime ||
@@ -326,8 +321,7 @@ public class CommandGenerator
 
     internal static Vector2 BitmapDimensions(string path)
     {
-        ref var dimension = ref CollectionsMarshal.GetValueRefOrAddDefault(
-            dimensions,
+        ref var dimension = ref CollectionsMarshal.GetValueRefOrAddDefault(dimensions,
             Path.GetFullPath(Path.Combine(StoryboardObjectGenerator.Current.MapsetPath, path))
                 .GetHashCode(StringComparison.OrdinalIgnoreCase),
             out var exists);
@@ -391,8 +385,7 @@ public record struct State : IComparer<State>
     public bool IsVisible(Vector2 imageSize, OsbOrigin origin, CommandGenerator generator = null)
     {
         var noGen = generator is null;
-        Vector2 scale = new(
-            noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
+        Vector2 scale = new(noGen ? Scale.X : float.Round(Scale.X, generator.ScaleDecimals),
             noGen ? Scale.Y : float.Round(Scale.Y, generator.ScaleDecimals));
 
         if (Additive && Color == CommandColor.Black ||
@@ -401,8 +394,7 @@ public record struct State : IComparer<State>
             scale.Y <= 0) return false;
 
         return OsbSprite.InScreenBounds(
-            new(
-                noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
+            new(noGen ? Position.X : float.Round(Position.X, generator.PositionDecimals),
                 noGen ? Position.Y : float.Round(Position.Y, generator.PositionDecimals)),
             imageSize * scale,
             noGen ? Rotation : float.Round(Rotation, generator.RotationDecimals),

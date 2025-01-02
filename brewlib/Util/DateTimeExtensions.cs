@@ -27,8 +27,7 @@ public static class DateTimeExtensions
             if (seconds < threshold.Item1)
             {
                 var timespan = TimeSpan.FromSeconds(seconds);
-                return string.Format(
-                    CultureInfo.InvariantCulture,
+                return string.Format(CultureInfo.InvariantCulture,
                     threshold.Item2,
                     (timespan.Days > 365 ? timespan.Days / 365 :
                         timespan.Days > 30 ? timespan.Days / 30 :

@@ -43,8 +43,9 @@ public class ShaderContext
     public void MarkUsedVariables(Action action, params ShaderVariable[] outputVariables)
     {
         if (canReceiveCommands)
-            throw new InvalidOperationException(
-                code is null ? "Already marking used variables" : "Can't mark used variables while generate code");
+            throw new InvalidOperationException(code is null ?
+                "Already marking used variables" :
+                "Can't mark used variables while generate code");
 
         canReceiveCommands = true;
         action();
@@ -57,8 +58,9 @@ public class ShaderContext
     public void GenerateCode(StringBuilder code, Action action)
     {
         if (canReceiveCommands)
-            throw new InvalidOperationException(
-                this.code is not null ? "Already generating code" : "Can't generate code while mark used variables");
+            throw new InvalidOperationException(this.code is not null ?
+                "Already generating code" :
+                "Can't generate code while mark used variables");
 
         this.code = code;
         canReceiveCommands = true;
@@ -113,8 +115,7 @@ public class ShaderContext
             throw new InvalidOperationException("Cannot set components when declaring a variable");
 
         if (expression is not null)
-            Dependant(
-                () => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
+            Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
                     components is not null ? $"{result.Ref}.{components} = {expression()}" :
                     $"{result.Ref} = {expression()}",
                 result);

@@ -56,8 +56,7 @@ public class ShaderBuilder
     ReadOnlySpan<char> buildCommon()
     {
         var code = StringHelper.StringBuilderPool.Retrieve();
-        code.AppendLine(
-            CultureInfo.InvariantCulture,
+        code.AppendLine(CultureInfo.InvariantCulture,
             $"#version {int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
         foreach (var extensionName in FragmentShader.RequiredExtensions.Union(VertexShader.RequiredExtensions))

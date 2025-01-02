@@ -32,8 +32,10 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
                 case JsonTokenType.PropertyQuoted:
 
                     if (expectingSeparator)
-                        throw new InvalidDataException(
-                            "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
+                        throw new InvalidDataException("Unexpected token: " +
+                            context.LookaheadToken +
+                            ", after: " +
+                            context.CurrentToken);
 
                     var key = context.CurrentToken.Value;
                     if (context.CurrentToken.Type == JsonTokenType.PropertyQuoted) key = JsonUtil.UnescapeString(key);
@@ -47,8 +49,10 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
                         case JsonTokenType.WordQuoted: context.PushParser(new ValueParser(r => result.Add(key, r))); break;
 
                         default:
-                            throw new InvalidDataException(
-                                "Unexpected token: " + context.LookaheadToken + ", after: " + context.CurrentToken);
+                            throw new InvalidDataException("Unexpected token: " +
+                                context.LookaheadToken +
+                                ", after: " +
+                                context.CurrentToken);
                     }
 
                     expectingSeparator = true;

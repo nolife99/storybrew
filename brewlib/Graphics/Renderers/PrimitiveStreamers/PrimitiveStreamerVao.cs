@@ -64,8 +64,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
         GL.CreateBuffers(1, out IndexBufferId);
-        GL.NamedBufferStorage(
-            IndexBufferId,
+        GL.NamedBufferStorage(IndexBufferId,
             indices.Length * sizeof(ushort),
             ref MemoryMarshal.GetReference(indices),
             BufferStorageFlags.None);

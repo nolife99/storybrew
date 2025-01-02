@@ -17,12 +17,10 @@ public record SrtParser : SubtitleParser
     }
 
     /// <inheritdoc/>
-    public SubtitleSet Parse(Stream stream) => new(
-        from block in parseBlocks(stream)
+    public SubtitleSet Parse(Stream stream) => new(from block in parseBlocks(stream)
         select block.Split('\n') into blockLines
         let timestamps = blockLines[1].Split("-->")
-        select new SubtitleLine(
-            SubtitleParser.ParseTimestamp(timestamps[0].Replace(',', '.')),
+        select new SubtitleLine(SubtitleParser.ParseTimestamp(timestamps[0].Replace(',', '.')),
             SubtitleParser.ParseTimestamp(timestamps[1].Replace(',', '.')),
             string.Join("\n", blockLines, 2, blockLines.Length - 2)));
 

@@ -10,7 +10,7 @@ public interface ILineRenderer : Renderer, IDisposable
     void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color);
 }
 
-[StructLayout(LayoutKind.Sequential, Pack = 4)]
+[StructLayout(LayoutKind.Sequential, Size = 16)]
 public ref struct LinePrimitive
 {
     public Vector3 from;

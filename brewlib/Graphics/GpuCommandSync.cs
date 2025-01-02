@@ -9,14 +9,12 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public static class GpuCommandSync
 {
-    static readonly Lazy<Pool<SyncRange>> syncRangePool = new(
-        () => new(
-            obj =>
-            {
-                GL.DeleteSync(obj.Fence);
-                obj.Fence = 0;
-                obj.Expired = false;
-            }),
+    static readonly Lazy<Pool<SyncRange>> syncRangePool = new(() => new(obj =>
+        {
+            GL.DeleteSync(obj.Fence);
+            obj.Fence = 0;
+            obj.Expired = false;
+        }),
         LazyThreadSafetyMode.None);
 
     static readonly List<SyncRange> syncRanges = [];
@@ -123,7 +121,7 @@ public static class GpuCommandSync
                         blocked = true;
                         waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
                         timeout = 1000000000L;
-                    break;
+                        break;
 
                     case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
                 }

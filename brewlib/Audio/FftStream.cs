@@ -37,8 +37,7 @@ public class FftStream : IDisposable
 
         var data = Configuration.Default.MemoryAllocator.Allocate<float>(size);
         using (data.Memory.Pin())
-            if (Bass.ChannelGetData(
-                    stream,
+            if (Bass.ChannelGetData(stream,
                     Unsafe.ByteOffset(ref Unsafe.NullRef<float>(), ref MemoryMarshal.GetReference(data.Memory.Span)),
                     (int)flags) ==
                 -1)

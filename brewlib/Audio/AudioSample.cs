@@ -30,8 +30,7 @@ public class AudioSample : IDisposable
         using (bytes.Memory.Pin())
         {
             var span = bytes.Memory.Span;
-            sample = Bass.SampleLoad(
-                Unsafe.ByteOffset(ref Unsafe.NullRef<byte>(), ref MemoryMarshal.GetReference(span)),
+            sample = Bass.SampleLoad(Unsafe.ByteOffset(ref Unsafe.NullRef<byte>(), ref MemoryMarshal.GetReference(span)),
                 0,
                 stream.Read(span),
                 MaxSimultaneousPlayBacks,

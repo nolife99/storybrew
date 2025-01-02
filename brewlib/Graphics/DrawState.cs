@@ -49,8 +49,7 @@ public static class DrawState
     public static void Initialize(ResourceContainer resourceContainer, int width, int height)
     {
         if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
-            GL.Arb.DebugMessageCallback(
-                (source, type, _, severity, _, message, _) =>
+            GL.Arb.DebugMessageCallback((source, type, _, severity, _, message, _) =>
                 {
                     var str = Marshal.PtrToStringAnsi(message);
                     Trace.WriteLine("Debug message: " + str);
@@ -93,8 +92,7 @@ public static class DrawState
         retrieveRendererInfo();
         if (UseSrgb && GLFW.ExtensionSupported("GL_ARB_framebuffer_object"))
         {
-            GL.GetFramebufferAttachmentParameter(
-                FramebufferTarget.Framebuffer,
+            GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer,
                 FramebufferAttachment.BackLeft,
                 FramebufferParameterName.FramebufferAttachmentColorEncoding,
                 out var defaultFramebufferColorEncoding);
@@ -306,8 +304,7 @@ public static class DrawState
     {
         var previousClipRegion = clipRegion;
         ClipRegion = clipRegion.HasValue && newRegion.HasValue ?
-            Rectangle.Intersect(
-                Nullable.GetValueRefOrDefaultRef(ref clipRegion),
+            Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion),
                 Nullable.GetValueRefOrDefaultRef(ref newRegion)) :
             newRegion;
 
@@ -317,12 +314,10 @@ public static class DrawState
     public static Rectangle? Clip(RectangleF bounds, Camera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
-        return Clip(
-            new(
-                (int)float.Round(screenBounds.X),
-                viewport.Height - (int)float.Round(screenBounds.Y + screenBounds.Height),
-                (int)float.Round(screenBounds.Width),
-                (int)float.Round(screenBounds.Height)));
+        return Clip(new((int)float.Round(screenBounds.X),
+            viewport.Height - (int)float.Round(screenBounds.Y + screenBounds.Height),
+            (int)float.Round(screenBounds.Width),
+            (int)float.Round(screenBounds.Height)));
     }
 
     public static RectangleF? GetClipRegion(Camera camera)
@@ -330,8 +325,7 @@ public static class DrawState
         if (!clipRegion.HasValue) return null;
 
         var bounds = camera.FromScreen(Nullable.GetValueRefOrDefaultRef(ref clipRegion));
-        return RectangleF.FromLTRB(
-            bounds.X,
+        return RectangleF.FromLTRB(bounds.X,
             camera.ExtendedViewport.Height - bounds.Bottom,
             bounds.Right,
             camera.ExtendedViewport.Height - bounds.Y);

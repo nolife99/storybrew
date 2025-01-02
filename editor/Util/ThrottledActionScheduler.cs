@@ -11,8 +11,7 @@ public class ThrottledActionScheduler
     readonly HashSet<string> scheduled = [];
     public int Delay = 100;
 
-    public void Schedule(string key, Action<string> action) => Schedule(
-        key,
+    public void Schedule(string key, Action<string> action) => Schedule(key,
         k =>
         {
             action(k);
@@ -26,12 +25,10 @@ public class ThrottledActionScheduler
                 return;
 
         Task.Delay(Delay)
-            .ContinueWith(
-                _ => Program.Schedule(
-                    () =>
-                    {
-                        lock (_lock) scheduled.Remove(key);
-                        if (!action(key)) Schedule(key, action);
-                    }));
+            .ContinueWith(_ => Program.Schedule(() =>
+            {
+                lock (_lock) scheduled.Remove(key);
+                if (!action(key)) Schedule(key, action);
+            }));
     }
 }

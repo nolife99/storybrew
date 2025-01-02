@@ -26,27 +26,25 @@ public class IntegratedCompressor : ImageCompressor
         var path = GetUtility();
         ensureTool();
 
-        tasks.Add(
-            Task.Run(
-                () =>
+        tasks.Add(Task.Run(async () =>
+        {
+            using var localProc = Process.Start(
+                new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
                 {
-                    using var localProc = Process.Start(
-                        new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
-                        {
-                            CreateNoWindow = true,
-                            WorkingDirectory = Path.GetDirectoryName(UtilityPath),
-                            RedirectStandardError = true
-                        });
+                    CreateNoWindow = true,
+                    WorkingDirectory = Path.GetDirectoryName(UtilityPath),
+                    RedirectStandardError = true
+                });
 
-                    using (var errorStream = localProc.StandardError)
-                    {
-                        var error = errorStream.ReadToEnd();
-                        if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
-                            Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
-                    }
+            using (var errorStream = localProc.StandardError)
+            {
+                var error = await errorStream.ReadToEndAsync();
+                if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
+                    Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
+            }
 
-                    localProc.WaitForExit();
-                }));
+            await localProc.WaitForExitAsync();
+        }));
     }
 
     protected override string appendArgs(string path,
@@ -72,8 +70,7 @@ public class IntegratedCompressor : ImageCompressor
         else
         {
             var lvl = lossless?.OptimizationLevel ?? 4;
-            str.Append(
-                CultureInfo.InvariantCulture,
+            str.Append(CultureInfo.InvariantCulture,
                 $" -o {(lvl > 6 ? "max" : lvl.ToString(CultureInfo.InvariantCulture))} ");
 
             str.Append(CultureInfo.InvariantCulture, $" {lossless?.CustomInputArgs} ");
@@ -104,7 +101,7 @@ public class IntegratedCompressor : ImageCompressor
     {
         if (disposed) return;
 
-        using (var all = Task.WhenAll(tasks)) all.Wait();
+        Task.WhenAll(tasks).Wait();
 
         base.Dispose(disposing);
         foreach (var clean in toCleanup) File.Delete(clean);

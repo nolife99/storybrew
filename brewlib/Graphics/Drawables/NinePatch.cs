@@ -18,8 +18,7 @@ public sealed class NinePatch : Drawable
     public Vector2 PreferredSize => MinSize;
 
     public Vector2 MinSize => Texture is not null ?
-        new Vector2(
-            Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
+        new Vector2(Borders.Left + Texture.Width - Borders.Right - Outset.Horizontal,
             Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
         Vector2.Zero;
 
@@ -27,80 +26,94 @@ public sealed class NinePatch : Drawable
     {
         if (Texture is null) return;
 
-        var x0 = bounds.X - Outset.Left;
-        var y0 = bounds.Y - Outset.Top;
-        var x1 = x0 + Borders.Left;
-        var y1 = y0 + Borders.Top;
-        var x2 = bounds.Right + Outset.Right - (Texture.Width - Borders.Right);
-        var y2 = bounds.Bottom + Outset.Bottom - (Texture.Height - Borders.Bottom);
+        var vec0 = (Vector2)bounds.Location - new Vector2(Outset.Left, Outset.Top);
+        var vec1 = vec0 + new Vector2(Borders.Left, Borders.Top);
+        var vec2 = new Vector2(bounds.Right + Outset.Right, bounds.Bottom + Outset.Bottom) -
+            new Vector2(Texture.Width - Borders.Right, Texture.Height - Borders.Bottom);
 
-        var horizontalScale = (x2 - x1) / (Borders.Right - Borders.Left);
-        var verticalScale = (y2 - y1) / (Borders.Bottom - Borders.Top);
+        var scale = (vec2 - vec1) / new Vector2(Borders.Right - Borders.Left, Borders.Bottom - Borders.Top);
 
         var color = Color.WithOpacity(opacity);
         var renderer = DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, RenderStates);
 
         // Center
-        if (!BordersOnly && horizontalScale > 0 && verticalScale > 0)
-            renderer.Draw(
-                Texture,
-                x1,
-                y1,
-                0,
-                0,
-                horizontalScale,
-                verticalScale,
+        if (!BordersOnly && scale is { X: > 0, Y: > 0 })
+            renderer.Draw(Texture,
+                vec1,
+                Vector2.Zero,
+                scale,
                 0,
                 color,
-                Borders.Left,
-                Borders.Top,
-                Borders.Right,
-                Borders.Bottom);
+                new(Borders.Left, Borders.Top),
+                new(Borders.Right, Borders.Bottom));
 
         // Sides
-        if (verticalScale > 0)
+        if (scale.Y > 0)
         {
-            renderer.Draw(Texture, x0, y1, 0, 0, 1, verticalScale, 0, color, 0, Borders.Top, Borders.Left, Borders.Bottom);
-            renderer.Draw(
-                Texture,
-                x2,
-                y1,
-                0,
-                0,
-                1,
-                verticalScale,
+            var unitX = scale with { X = 1 };
+            renderer.Draw(Texture,
+                new(vec0.X, vec1.Y),
+                Vector2.Zero,
+                unitX,
                 0,
                 color,
-                Borders.Right,
-                Borders.Top,
-                Texture.Width,
-                Borders.Bottom);
+                new(0, Borders.Top),
+                new(Borders.Left, Borders.Bottom));
+
+            renderer.Draw(Texture,
+                new(vec2.X, vec1.Y),
+                Vector2.Zero,
+                unitX,
+                0,
+                color,
+                new(Borders.Right, Borders.Top),
+                new(Texture.Width, Borders.Bottom));
         }
 
-        if (horizontalScale > 0)
+        if (scale.X > 0)
         {
-            renderer.Draw(Texture, x1, y0, 0, 0, horizontalScale, 1, 0, color, Borders.Left, 0, Borders.Right, Borders.Top);
-            renderer.Draw(
-                Texture,
-                x1,
-                y2,
-                0,
-                0,
-                horizontalScale,
-                1,
+            var unitY = scale with { Y = 1 };
+            renderer.Draw(Texture,
+                new(vec1.X, vec0.Y),
+                Vector2.Zero,
+                unitY,
                 0,
                 color,
-                Borders.Left,
-                Borders.Bottom,
-                Borders.Right,
-                Texture.Height);
+                new(Borders.Left, 0),
+                new(Borders.Right, Borders.Top));
+
+            renderer.Draw(Texture,
+                new(vec1.X, vec2.Y),
+                Vector2.Zero,
+                unitY,
+                0,
+                color,
+                new(Borders.Left, Borders.Bottom),
+                new(Borders.Right, Texture.Height));
         }
 
         // Corners
-        renderer.Draw(Texture, x0, y0, 0, 0, 1, 1, 0, color, 0, 0, Borders.Left, Borders.Top);
-        renderer.Draw(Texture, x2, y0, 0, 0, 1, 1, 0, color, Borders.Right, 0, Texture.Width, Borders.Top);
-        renderer.Draw(Texture, x0, y2, 0, 0, 1, 1, 0, color, 0, Borders.Bottom, Borders.Left, Texture.Height);
-        renderer.Draw(Texture, x2, y2, 0, 0, 1, 1, 0, color, Borders.Right, Borders.Bottom, Texture.Width, Texture.Height);
+        renderer.Draw(Texture, vec0, Vector2.Zero, Vector2.One, 0, color, Vector2.Zero, new(Borders.Left, Borders.Top));
+
+        renderer.Draw(Texture,
+            new(vec2.X, vec0.Y),
+            Vector2.Zero,
+            Vector2.One,
+            0,
+            color,
+            new(Borders.Right, 0),
+            new(Texture.Width, Borders.Top));
+
+        renderer.Draw(Texture,
+            new(vec0.X, vec2.Y),
+            Vector2.Zero,
+            Vector2.One,
+            0,
+            color,
+            new(0, Borders.Bottom),
+            new(Borders.Left, Texture.Height));
+
+        renderer.Draw(Texture, vec2, Vector2.Zero, Vector2.One, 0, color, new(Borders.Right, Borders.Bottom), Texture.Size);
     }
 
     public void Dispose() => Texture.Dispose();

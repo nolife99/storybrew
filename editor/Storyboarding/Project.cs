@@ -75,13 +75,11 @@ public sealed partial class Project : IDisposable
         var scriptsLibraryPath = Path.Combine(ScriptsPath, "scriptslibrary");
         if (!Directory.Exists(scriptsLibraryPath)) Directory.CreateDirectory(scriptsLibraryPath);
 
-        Trace.WriteLine(
-            $"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
-            }");
+        Trace.WriteLine($"Scripts path - project:{ScriptsPath}, common:{CommonScriptsPath}, library:{scriptsLibraryPath
+        }");
 
         initializeAssetWatcher();
-        scriptManager = new(
-            resourceContainer,
+        scriptManager = new(resourceContainer,
             "StorybrewScripts",
             ScriptsPath,
             CommonScriptsPath,
@@ -162,17 +160,16 @@ public sealed partial class Project : IDisposable
 
     public FrameStats FrameStats { get; private set; } = frameStatsPool.Retrieve();
 
-    static readonly Pool<FrameStats> frameStatsPool = new(
-        obj =>
-        {
-            obj.LoadedPaths.Clear();
-            obj.GpuPixelsFrame = 0;
-            obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
+    static readonly Pool<FrameStats> frameStatsPool = new(obj =>
+    {
+        obj.LoadedPaths.Clear();
+        obj.GpuPixelsFrame = 0;
+        obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
 
-            obj.LastTexture = null;
-            obj.ScreenFill = 0;
-            obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
-        });
+        obj.LastTexture = null;
+        obj.ScreenFill = 0;
+        obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
+    });
 
     public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
@@ -441,28 +438,26 @@ public sealed partial class Project : IDisposable
         Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
     }
 
-    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e) => Program.Schedule(
-        () =>
-        {
-            if (Disposed) return;
+    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e) => Program.Schedule(() =>
+    {
+        if (Disposed) return;
 
-            switch (Path.GetExtension(e.Name))
-            {
-                case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
-                case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
-            }
-        });
+        switch (Path.GetExtension(e.Name))
+        {
+            case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
+            case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
+        }
+    });
 
     #endregion
 
     #region Assemblies
 
-    static readonly CompositeFormat runtimePath = CompositeFormat.Parse(
-        Path.Combine(
-            RuntimeEnvironment.GetRuntimeDirectory(),
-            "../../../packs/{0}",
-            RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
-            string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
+    static readonly CompositeFormat runtimePath = CompositeFormat.Parse(Path.Combine(
+        RuntimeEnvironment.GetRuntimeDirectory(),
+        "../../../packs/{0}",
+        RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
+        string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
     public static readonly FrozenSet<string> DefaultAssemblies =
     [
@@ -473,13 +468,11 @@ public sealed partial class Project : IDisposable
         typeof(Script).Assembly.Location,
         typeof(Pool<>).Assembly.Location,
         .. Directory
-            .EnumerateFiles(
-                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
+            .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),
                 "*.dll")
-            .Concat(
-                Directory.EnumerateFiles(
-                    string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
-                    "*.dll"))
+            .Concat(Directory.EnumerateFiles(
+                string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.NETCore.App.Ref"),
+                "*.dll"))
     ];
 
     HashSet<string> importedAssemblies = [];
@@ -542,8 +535,7 @@ public sealed partial class Project : IDisposable
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        await using BinaryWriter w = new(
-            new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false),
+        await using BinaryWriter w = new(new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false),
             Encoding,
             false);
 
@@ -598,8 +590,7 @@ public sealed partial class Project : IDisposable
 
     void loadBinary(string path)
     {
-        using BinaryReader r = new(
-            new DeflateStream(File.OpenRead(path), CompressionMode.Decompress, false),
+        using BinaryReader r = new(new DeflateStream(File.OpenRead(path), CompressionMode.Decompress, false),
             Encoding,
             false);
 
@@ -632,8 +623,7 @@ public sealed partial class Project : IDisposable
                 for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
                     allowedValues[allowedValueIndex] = new(r.ReadString(), ObjectSerializer.Read(r));
 
-                effect.Config.UpdateField(
-                    fieldName,
+                effect.Config.UpdateField(fieldName,
                     fieldDisplayName,
                     null,
                     fieldIndex,
@@ -651,11 +641,10 @@ public sealed partial class Project : IDisposable
             var name = r.ReadString();
 
             var effect = effects[r.ReadInt32()];
-            effect.AddPlaceholder(
-                new(name, effect)
-                {
-                    DiffSpecific = r.ReadBoolean(), OsbLayer = (OsbLayer)r.ReadInt32(), Visible = r.ReadBoolean()
-                });
+            effect.AddPlaceholder(new(name, effect)
+            {
+                DiffSpecific = r.ReadBoolean(), OsbLayer = (OsbLayer)r.ReadInt32(), Visible = r.ReadBoolean()
+            });
         }
 
         var assemblyCount = r.ReadInt32();
@@ -670,8 +659,7 @@ public sealed partial class Project : IDisposable
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         if (!File.Exists(path))
-            await File.WriteAllTextAsync(
-                path,
+            await File.WriteAllTextAsync(path,
                 "# This file is used to open the project\n# Project data is contained in /.sbrew");
 
         var projectDirectory = Path.GetDirectoryName(path);
@@ -803,8 +791,7 @@ public sealed partial class Project : IDisposable
 
         // Load effects
         Dictionary<string, Action> layerInserters = [];
-        foreach (var effectPath in Directory.EnumerateFiles(
-            directoryReader.Path,
+        foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path,
             "effect.*.yaml",
             SearchOption.TopDirectoryOnly))
         {
@@ -828,16 +815,15 @@ public sealed partial class Project : IDisposable
                 var fieldTypeName = fieldRoot.Value<string>("Type");
                 var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldRoot.Value<string>("Value"));
 
-                effect.Config.UpdateField(
-                    fieldProperty.Key,
+                effect.Config.UpdateField(fieldProperty.Key,
                     fieldRoot.Value<string>("DisplayName"),
                     null,
                     fieldIndex++,
                     fieldValue?.GetType(),
                     fieldValue,
                     fieldRoot.Value<TinyObject>("AllowedValues")
-                        ?.Select(
-                            p => new NamedValue(p.Key, ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>())))
+                        ?.Select(p => new NamedValue(p.Key,
+                            ObjectSerializer.FromString(fieldTypeName, p.Value.Value<string>())))
                         .ToArray(),
                     fieldRoot.Value<string>("BeginsGroup"));
             }
@@ -903,19 +889,18 @@ public sealed partial class Project : IDisposable
         string osuPath = null, osbPath = null;
         List<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
 
-        await Program.Schedule(
-            () =>
-            {
-                osuPath = MainBeatmap.Path;
-                osbPath = OsbPath;
+        await Program.Schedule(() =>
+        {
+            osuPath = MainBeatmap.Path;
+            osbPath = OsbPath;
 
-                if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
+            if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
 
-                if (!OwnsOsb) OwnsOsb = true;
+            if (!OwnsOsb) OwnsOsb = true;
 
-                localLayers = LayerManager.FindLayers(l => l.Visible);
-                diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
-            });
+            localLayers = LayerManager.FindLayers(l => l.Visible);
+            diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
+        });
 
         var usesOverlayLayer = localLayers.Exists(l => l.OsbLayer is OsbLayer.Overlay);
 

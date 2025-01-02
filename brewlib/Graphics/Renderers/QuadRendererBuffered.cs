@@ -15,8 +15,7 @@ public class QuadRendererBuffered : IQuadRenderer
     const int VertexPerQuad = 6;
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture";
 
-    static readonly VertexDeclaration VertexDeclaration = new(
-        VertexAttribute.CreatePosition2d(),
+    static readonly VertexDeclaration VertexDeclaration = new(VertexAttribute.CreatePosition2d(),
         VertexAttribute.CreateDiffuseCoord(),
         VertexAttribute.CreateColor(true));
 
@@ -62,10 +61,8 @@ public class QuadRendererBuffered : IQuadRenderer
             indices[triangleIndex + 4] = (ushort)(quadIndex + 3);
         }
 
-        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(
-            VertexDeclaration,
-            int.Max(
-                this.maxQuadsPerBatch = maxQuadsPerBatch,
+        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
+            int.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
                 primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) *
             VertexPerQuad,
             indices);
@@ -170,16 +167,14 @@ public class QuadRendererBuffered : IQuadRenderer
         var color = sb.AddVarying("vec4");
         var textureCoord = sb.AddVarying("vec2");
 
-        sb.VertexShader = new Sequence(
-            new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
+        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
             new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
-            new Assign(
-                sb.GlPosition,
+            new Assign(sb.GlPosition,
                 () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                 }, 0, 1)"));
 
-        sb.FragmentShader = new Sequence(
-            new Assign(sb.GlFragColor, () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
+        sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor,
+            () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
 
         return sb.Build();
     }

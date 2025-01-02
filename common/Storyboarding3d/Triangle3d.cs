@@ -154,8 +154,7 @@ public class Triangle3d : Node3d, HasOsbSprites
 
             var position = project(new(vector0.X, vector0.Y), new(vector2.X, vector2.Y), new(vector1.X, vector1.Y));
             Vector2 scale0 =
-                    new(
-                        (new Vector2(vector2.X, vector2.Y) - position).Length() / spriteBitmap.X,
+                    new((new Vector2(vector2.X, vector2.Y) - position).Length() / spriteBitmap.X,
                         (new Vector2(vector1.X, vector1.Y) - position).Length() / spriteBitmap.Y),
                 scale1 = scale0 with { X = (new Vector2(vector0.X, vector0.Y) - position).Length() / spriteBitmap.X };
 
@@ -178,30 +177,28 @@ public class Triangle3d : Node3d, HasOsbSprites
                 if (!Unsafe.IsNullRef(ref gen1.EndState)) gen1.EndState.Opacity = 0;
             }
 
-            gen0.Add(
-                new()
-                {
-                    Time = time,
-                    Position = position,
-                    Scale = scale0,
-                    Rotation = rotation,
-                    Color = object3dState.Color,
-                    Opacity = switchedEdge ? 0 : opacity,
-                    Additive = Additive
-                });
+            gen0.Add(new()
+            {
+                Time = time,
+                Position = position,
+                Scale = scale0,
+                Rotation = rotation,
+                Color = object3dState.Color,
+                Opacity = switchedEdge ? 0 : opacity,
+                Additive = Additive
+            });
 
-            gen1.Add(
-                new()
-                {
-                    Time = time,
-                    Position = position,
-                    Scale = scale1,
-                    Rotation = rotation,
-                    Color = object3dState.Color,
-                    Opacity = switchedEdge ? 0 : opacity,
-                    Additive = Additive,
-                    FlipH = true
-                });
+            gen1.Add(new()
+            {
+                Time = time,
+                Position = position,
+                Scale = scale1,
+                Rotation = rotation,
+                Color = object3dState.Color,
+                Opacity = switchedEdge ? 0 : opacity,
+                Additive = Additive,
+                FlipH = true
+            });
 
             break;
         }
@@ -230,8 +227,7 @@ public class Triangle3d : Node3d, HasOsbSprites
         var m = (line2.Y - line1.Y) / (line2.X - line1.X);
         var b = line1.Y - m * line1.X;
 
-        return new(
-            (m * toProject.Y + toProject.X - m * b) / (m * m + 1),
+        return new((m * toProject.Y + toProject.X - m * b) / (m * m + 1),
             (m * m * toProject.Y + m * toProject.X + b) / (m * m + 1));
     }
 }

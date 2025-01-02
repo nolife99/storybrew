@@ -156,10 +156,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
         }
 
-        var drawableB = Unsafe.As<Drawable>(
-            Activator.CreateInstance(
-                ResolveDrawableType(data.Value<string>("_type")) ??
-                throw new InvalidDataException($"Drawable '{data}' must declare a type")));
+        var drawableB = Unsafe.As<Drawable>(Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type")) ??
+            throw new InvalidDataException($"Drawable '{data}' must declare a type")));
 
         parseFields(drawableB, data.Value<TinyObject>(), null, constants);
         return drawableB;
@@ -343,13 +341,11 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 if (data is TinyArray tinyArray)
                     return tinyArray.Count switch
                     {
-                        3 => (Color)new Vector4(
-                            resolve<float>(tinyArray[0], constants),
+                        3 => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             1),
-                        _ => (Color)new Vector4(
-                            resolve<float>(tinyArray[0], constants),
+                        _ => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants))
@@ -363,15 +359,12 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     return tinyArray.Count switch
                     {
                         1 => new FourSide(resolve<float>(tinyArray[0], constants)),
-                        2 => new FourSide(
-                            resolve<float>(tinyArray[0], constants),
+                        2 => new FourSide(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants)),
-                        3 => new FourSide(
-                            resolve<float>(tinyArray[0], constants),
+                        3 => new FourSide(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants)),
-                        _ => new FourSide(
-                            resolve<float>(tinyArray[0], constants),
+                        _ => new FourSide(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
                             resolve<float>(tinyArray[3], constants))

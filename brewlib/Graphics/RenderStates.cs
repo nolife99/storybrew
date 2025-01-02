@@ -38,32 +38,32 @@ public readonly record struct BlendingFactorState
             case BlendingMode.AlphaBlend:
                 src = alphaSrc = BlendingFactorSrc.SrcAlpha;
                 dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-            break;
+                break;
 
             case BlendingMode.Color:
                 src = BlendingFactorSrc.SrcAlpha;
                 dest = BlendingFactorDest.OneMinusSrcAlpha;
                 alphaSrc = BlendingFactorSrc.Zero;
                 alphaDest = BlendingFactorDest.One;
-            break;
+                break;
 
             case BlendingMode.Additive:
                 src = alphaSrc = BlendingFactorSrc.SrcAlpha;
                 dest = alphaDest = BlendingFactorDest.One;
-            break;
+                break;
 
             case BlendingMode.Premultiply:
                 src = BlendingFactorSrc.SrcAlpha;
                 dest = BlendingFactorDest.OneMinusSrcAlpha;
                 alphaSrc = BlendingFactorSrc.One;
                 alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-            break;
+                break;
 
             case BlendingMode.BlendAdd:
             case BlendingMode.Premultiplied:
                 src = alphaSrc = BlendingFactorSrc.One;
                 dest = alphaDest = BlendingFactorDest.OneMinusSrcAlpha;
-            break;
+                break;
         }
     }
 

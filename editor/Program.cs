@@ -86,8 +86,7 @@ public static class Program
                 editor.Initialize(displayDevice);
 
                 using (AudioManager = createAudioManager())
-                    runMainLoop(
-                        window,
+                    runMainLoop(window,
                         editor,
                         1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
                         1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
@@ -123,17 +122,16 @@ public static class Program
 
         if ((debugContext & ContextFlags.Debug) == 0) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
 
-        NativeWindow window = new(
-            new()
-            {
-                Flags = debugContext,
-                Profile = ContextProfile.Core,
-                CurrentMonitor = displayDevice.Handle,
-                Title = Name,
-                StartVisible = false,
-                DepthBits = 0,
-                StencilBits = 0
-            });
+        NativeWindow window = new(new()
+        {
+            Flags = debugContext,
+            Profile = ContextProfile.Core,
+            CurrentMonitor = displayDevice.Handle,
+            Title = Name,
+            StartVisible = false,
+            DepthBits = 0,
+            StencilBits = 0
+        });
 
         Native.InitializeHandle(window);
         Native.SetWindowIcon(typeof(Editor), "icon.ico");

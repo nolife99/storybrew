@@ -119,8 +119,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     readonly Dictionary<Widget, Widget> tooltips = [];
 
-    public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(
-        widget,
+    public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget,
         new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
 
     public void RegisterTooltip(Widget widget, Widget tooltip)
@@ -280,8 +279,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     {
         if (!IsDragging) return;
 
-        dragDrawable.Draw(
-            drawContext,
+        dragDrawable.Draw(drawContext,
             camera,
             new(mousePosition.X + dragOffset.X, mousePosition.Y + dragOffset.Y, dragSize.X, dragSize.Y));
     }

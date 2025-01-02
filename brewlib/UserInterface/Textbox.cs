@@ -58,30 +58,31 @@ public class Textbox : Widget, Field
             {
                 case Keys.Escape:
                     if (hasFocus) manager.KeyboardFocus = null;
-                break;
+                    break;
 
                 case Keys.Backspace:
                     if (selectionStart > 0 && selectionStart == cursorPosition) selectionStart--;
 
                     ReplaceSelection("");
-                break;
+                    break;
 
                 case Keys.Delete:
                     if (selectionStart < Value.Length && selectionStart == cursorPosition) cursorPosition++;
 
                     ReplaceSelection("");
-                break;
+                    break;
 
                 case Keys.A:
                     if (inputManager.ControlOnly) SelectAll();
-                break;
+                    break;
 
                 case Keys.C:
                     if (inputManager.ControlOnly)
-                        ClipboardHelper.SetText(
-                            selectionStart != cursorPosition ? Value.AsSpan(SelectionLeft, SelectionLength) : Value);
+                        ClipboardHelper.SetText(selectionStart != cursorPosition ?
+                            Value.AsSpan(SelectionLeft, SelectionLength) :
+                            Value);
 
-                break;
+                    break;
 
                 case Keys.V:
                     if (inputManager.ControlOnly)
@@ -95,7 +96,7 @@ public class Textbox : Widget, Field
                         }
                     }
 
-                break;
+                    break;
 
                 case Keys.X:
                     if (inputManager.ControlOnly)
@@ -106,7 +107,7 @@ public class Textbox : Widget, Field
                         ReplaceSelection("");
                     }
 
-                break;
+                    break;
 
                 case Keys.Left:
                     if (inputManager.Shift)
@@ -116,7 +117,7 @@ public class Textbox : Widget, Field
                     else if (selectionStart != cursorPosition) SelectionRight = SelectionLeft;
                     else if (cursorPosition > 0) cursorPosition = --selectionStart;
 
-                break;
+                    break;
 
                 case Keys.Right:
                     if (inputManager.Shift)
@@ -126,29 +127,29 @@ public class Textbox : Widget, Field
                     else if (selectionStart != cursorPosition) SelectionLeft = SelectionRight;
                     else if (cursorPosition < Value.Length) selectionStart = ++cursorPosition;
 
-                break;
+                    break;
 
                 case Keys.Up:
                     cursorPosition = content.GetCharacterIndexAbove(cursorPosition);
 
                     if (!inputManager.Shift) selectionStart = cursorPosition;
-                break;
+                    break;
 
                 case Keys.Down:
                     cursorPosition = content.GetCharacterIndexBelow(cursorPosition);
 
                     if (!inputManager.Shift) selectionStart = cursorPosition;
-                break;
+                    break;
 
                 case Keys.Home:
                     cursorPosition = 0;
                     if (!inputManager.Shift) selectionStart = cursorPosition;
-                break;
+                    break;
 
                 case Keys.End:
                     cursorPosition = Value.Length;
                     if (!inputManager.Shift) selectionStart = cursorPosition;
-                break;
+                    break;
 
                 case Keys.Enter:
                 case Keys.KeyPadEnter:
@@ -159,7 +160,7 @@ public class Textbox : Widget, Field
                         hasCommitPending = false;
                     }
 
-                break;
+                    break;
             }
 
             return true;
@@ -292,8 +293,7 @@ public class Textbox : Widget, Field
         if (!hasFocus) return;
 
         if (cursorPosition != selectionStart)
-            content.ForTextBounds(
-                SelectionLeft,
+            content.ForTextBounds(SelectionLeft,
                 SelectionRight,
                 selectionBounds => cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
 

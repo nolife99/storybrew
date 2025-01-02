@@ -118,9 +118,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     public IEnumerable<string> GetScriptNames() => Directory
         .EnumerateFiles(ScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
         .Select(Path.GetFileNameWithoutExtension)
-        .Union(
-            Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
-                .Select(Path.GetFileNameWithoutExtension));
+        .Union(Directory.EnumerateFiles(commonScriptsPath, "*.cs", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileNameWithoutExtension));
 
     void scriptWatcher_Changed(object sender, FileSystemEventArgs e)
     {
@@ -128,8 +127,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)
-            scheduler?.Schedule(
-                e.FullPath,
+            scheduler?.Schedule(e.FullPath,
                 _ =>
                 {
                     if (!disposed &&
@@ -144,8 +142,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         if (e.ChangeType is not WatcherChangeTypes.Changed) scheduleSolutionUpdate();
         if (e.ChangeType is not WatcherChangeTypes.Deleted)
-            scheduler?.Schedule(
-                e.FullPath,
+            scheduler?.Schedule(e.FullPath,
                 _ =>
                 {
                     if (disposed) return;
@@ -154,8 +151,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
                 });
     }
 
-    void scheduleSolutionUpdate() => scheduler?.Schedule(
-        $"*{nameof(updateSolutionFiles)}",
+    void scheduleSolutionUpdate() => scheduler?.Schedule($"*{nameof(updateSolutionFiles)}",
         _ =>
         {
             if (disposed) return;
