@@ -47,9 +47,9 @@ public class VertexDeclaration : IEnumerable<VertexAttribute>
 
     public void DeactivateAttributes(Shader shader, int vao)
     {
-        for (var i = 0; i < vertexAttributes.Length; i++)
+        foreach (var attrib in vertexAttributes)
         {
-            var attributeLocation = shader.GetAttributeLocation(vertexAttributes[i].Name);
+            var attributeLocation = shader.GetAttributeLocation(attrib.Name);
             if (attributeLocation >= 0) GL.DisableVertexArrayAttrib(vao, attributeLocation);
         }
     }

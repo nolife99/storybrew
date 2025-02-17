@@ -1,7 +1,8 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
-using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 
@@ -17,32 +18,30 @@ public static class QuadRendererExtensions
         Vector2 texture0,
         Vector2 texture1)
     {
-        scale = Vector2.Abs(scale);
-        Vector2 flip = new(scale.X < 0 ? -1 : 1, scale.Y < 0 ? -1 : 1);
-        var size = texture1 - texture0;
-
+        var flip = Vector2.CopySign(Vector2.One, scale);
         var fx = -origin * scale * flip;
-        var fx2 = (size - origin) * scale * flip;
+        var fx2 = (texture1 - texture0 - origin) * scale * flip;
 
-        Span<Vector2> corners = stackalloc Vector2[4];
+        ref var cornersRef = ref MemoryMarshal.GetReference(stackalloc Vector2[4]);
         if (rotation != 0)
         {
             var rotationMatrix = Matrix3x2.CreateRotation(rotation);
 
-            corners[0] = Vector2.Transform(fx, rotationMatrix);
-            corners[1] = Vector2.Transform(fx with { Y = fx2.Y }, rotationMatrix);
-            corners[2] = Vector2.Transform(fx2, rotationMatrix);
-            corners[3] = corners[0] + (corners[2] - corners[1]);
+            cornersRef = Vector2.Transform(fx, rotationMatrix);
+            ref var temp1 = ref Unsafe.Add(ref cornersRef, 1);
+            ref var temp2 = ref Unsafe.Add(ref cornersRef, 2);
+
+            temp1 = Vector2.Transform(fx with { Y = fx2.Y }, rotationMatrix);
+            temp2 = Vector2.Transform(fx2, rotationMatrix);
+            Unsafe.Add(ref cornersRef, 3) = temp2 - temp1 + cornersRef;
         }
         else
         {
-            corners[0] = fx;
-            corners[1] = fx with { Y = fx2.Y };
-            corners[2] = fx2;
-            corners[3] = fx2 with { Y = fx.Y };
+            cornersRef = fx;
+            Unsafe.Add(ref cornersRef, 1) = fx with { Y = fx2.Y };
+            Unsafe.Add(ref cornersRef, 2) = fx2;
+            Unsafe.Add(ref cornersRef, 3) = fx2 with { Y = fx.Y };
         }
-
-        for (var i = 0; i < 4; i++) corners[i] += xy;
 
         var textureUvOrigin = texture.UvOrigin;
         var textureUvRatio = texture.UvRatio;
@@ -55,10 +54,10 @@ public static class QuadRendererExtensions
 
         QuadPrimitive primitive = new()
         {
-            vec1 = corners[0],
-            vec2 = corners[1],
-            vec3 = corners[2],
-            vec4 = corners[3],
+            vec1 = cornersRef + xy,
+            vec2 = Unsafe.Add(ref cornersRef, 1) + xy,
+            vec3 = Unsafe.Add(ref cornersRef, 2) + xy,
+            vec4 = Unsafe.Add(ref cornersRef, 3) + xy,
             u1 = textureU0U1.X,
             u2 = textureU0U1.X,
             u3 = textureU0U1.Y,

@@ -12,7 +12,6 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using Textures;
 using Util;
 
 public sealed class TextGenerator(ResourceContainer resourceContainer)
@@ -63,7 +62,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         textureSize = new(width, height);
         if (measureOnly) return null;
 
-        Image<Rgba32> bitmap = new(Texture2d.ContiguousBufferDecoderOptions.Configuration, width, height);
+        Image<Rgba32> bitmap = new(width, height);
         bitmap.Mutate(b =>
         {
             RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };

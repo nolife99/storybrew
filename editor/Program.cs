@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -66,12 +65,10 @@ public static class Program
         Settings = new();
         Updater.NotifyEditorRun();
 
-        var displayDevice = findDisplayDevice();
+        var displayDevice = Monitors.GetPrimaryMonitor();
         using (var window = createWindow(displayDevice))
         {
             Trace.Write(Environment.OSVersion);
-            Trace.Write(" / Handle: 0x");
-            Trace.WriteLine(Native.MainWindowHandle.ToString($"X{nint.Size}", CultureInfo.InvariantCulture));
 
             using Editor editor = new(window);
             window.Refresh += () =>
@@ -94,21 +91,6 @@ public static class Program
         }
 
         Settings.Save();
-    }
-
-    static MonitorInfo findDisplayDevice()
-    {
-        try
-        {
-            return Monitors.GetPrimaryMonitor();
-        }
-        catch (Exception e)
-        {
-            Trace.TraceWarning($"Failed to use default display device: {e}");
-            foreach (var monitor in Monitors.GetMonitors()) return monitor;
-        }
-
-        throw new InvalidOperationException("Failed to find a display device");
     }
 
     static NativeWindow createWindow(MonitorInfo displayDevice)
@@ -154,6 +136,7 @@ public static class Program
     {
         double prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
 
+        var windowContext = window.Context;
         while (!window.IsExiting)
         {
             var cur = GLFW.GetTime();
@@ -173,7 +156,7 @@ public static class Program
             if (!window.Exists || window.IsExiting) return;
 
             editor.Draw();
-            window.Context.SwapBuffers();
+            windowContext.SwapBuffers();
 
             window.IsVisible = true;
             while (scheduledActions.TryDequeue(out var action))
@@ -251,7 +234,7 @@ public static class Program
 
         domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
 
-        domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, true);
+        domain.UnhandledException += (_, e) => logError(Unsafe.As<Exception>(e.ExceptionObject), crashPath, true);
 
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");

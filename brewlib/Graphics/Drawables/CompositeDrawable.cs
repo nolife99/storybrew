@@ -45,7 +45,7 @@ public sealed class CompositeDrawable : Drawable
         }
     }
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity)
     {
         foreach (var drawable in Drawables) drawable.Draw(drawContext, camera, bounds, opacity);
     }

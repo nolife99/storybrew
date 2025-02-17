@@ -25,6 +25,7 @@ public static unsafe class Native
 
     public static void InitializeHandle(NativeWindow glfwWindow)
     {
+        Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
         Configuration.Default.MemoryAllocator = allocator;
 
         GLFWPtr = glfwWindow.WindowPtr;

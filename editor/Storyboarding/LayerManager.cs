@@ -115,7 +115,7 @@ public class LayerManager
         foreach (var layer in Layers) layer.TriggerEvents(startTime, endTime);
     }
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
         foreach (var layer in Layers) layer.Draw(drawContext, camera, bounds, opacity, frameStats);
     }

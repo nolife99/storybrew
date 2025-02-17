@@ -262,15 +262,12 @@ public abstract class StoryboardObjectGenerator : Script
         var resultSpan = resultFft.Memory.Span;
 
         var baseIndex = 0;
-        for (var i = 0; i < magnitudes; ++i)
+        for (var i = 0; i < resultSpan.Length; ++i)
         {
             var progress = easing.Ease((float)i / magnitudes);
             var index = Math.Min((int)Math.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
 
-            var value = 0f;
-            for (var v = baseIndex; v < index; ++v) value = Math.Max(value, fft[index]);
-
-            resultSpan[i] = value;
+            resultSpan[i] = fft[index];
             baseIndex = index;
         }
 

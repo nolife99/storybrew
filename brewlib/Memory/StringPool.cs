@@ -15,7 +15,7 @@ using System.Threading;
 
 public sealed class StringPool
 {
-    static readonly StringPool Shared = new(4096);
+    static readonly StringPool Shared = new(2048);
     readonly FixedSizePriorityMap[] maps;
     readonly int numberOfMaps;
 

@@ -156,7 +156,7 @@ public static class DrawState
         flushingRenderer = false;
     }
 
-    public static T Prepare<T>(T renderer, Camera camera, RenderStates renderStates) where T : Renderer
+    public static T Prepare<T>(T renderer, ICamera camera, RenderStates renderStates) where T : Renderer
     {
         Renderer = renderer;
         renderer.Camera = camera;
@@ -200,14 +200,12 @@ public static class DrawState
     static int BindTextures(ReadOnlySpan<int> textures)
     {
         Span<int> samplerIndexes = stackalloc int[textures.Length];
-        var samplerCount = samplerTextureIds.Length;
-
         for (var i = 0; i < textures.Length; ++i)
         {
             var textureId = textures[i];
 
             samplerIndexes[i] = -1;
-            for (var j = 0; j < samplerCount; ++j)
+            for (var j = 0; j < samplerTextureIds.Length; ++j)
                 if (samplerTextureIds[j] == textureId)
                 {
                     samplerIndexes[i] = j;
@@ -215,6 +213,7 @@ public static class DrawState
                 }
         }
 
+        var samplerCount = samplerTextureIds.Length;
         for (var i = 0; i < textures.Length; ++i)
         {
             if (samplerIndexes[i] != -1) continue;
@@ -250,12 +249,11 @@ public static class DrawState
 
     public static void UnbindTexture(int textureId)
     {
-        for (var i = 0; i < samplerTextureIds.Length; ++i)
-            if (samplerTextureIds[i] == textureId)
-            {
-                GL.BindTextureUnit(i, 0);
-                samplerTextureIds[i] = 0;
-            }
+        var i = Array.IndexOf(samplerTextureIds, textureId, 0, samplerTextureIds.Length);
+        if (i == -1) return;
+
+        GL.BindTextureUnit(i, 0);
+        samplerTextureIds[i] = 0;
     }
 
     #endregion
@@ -311,7 +309,7 @@ public static class DrawState
         return previousClipRegion;
     }
 
-    public static Rectangle? Clip(RectangleF bounds, Camera camera)
+    public static Rectangle? Clip(RectangleF bounds, ICamera camera)
     {
         var screenBounds = camera.ToScreen(bounds);
         return Clip(new((int)float.Round(screenBounds.X),
@@ -320,7 +318,7 @@ public static class DrawState
             (int)float.Round(screenBounds.Height)));
     }
 
-    public static RectangleF? GetClipRegion(Camera camera)
+    public static RectangleF? GetClipRegion(ICamera camera)
     {
         if (!clipRegion.HasValue) return null;
 

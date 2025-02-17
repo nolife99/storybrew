@@ -22,7 +22,7 @@ public sealed class NinePatch : Drawable
             Borders.Top + Texture.Height - Borders.Bottom - Outset.Vertical) :
         Vector2.Zero;
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity)
     {
         if (Texture is null) return;
 

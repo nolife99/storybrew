@@ -18,7 +18,7 @@ public sealed class Sprite : Drawable
     public Vector2 MinSize => Vector2.Zero;
     public Vector2 PreferredSize => Texture?.Size ?? Vector2.Zero;
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity)
     {
         if (Texture is null) return;
 
@@ -61,14 +61,17 @@ public sealed class Sprite : Drawable
             case ScaleMode.RepeatFit:
                 for (var y = bounds.Y; y < bounds.Bottom; y += Texture.Height * scale)
                 for (var x = bounds.X; x < bounds.Right; x += Texture.Width * scale)
+                {
+                    Vector2 xy = new(x, y);
                     renderer.Draw(Texture,
-                        new(x, y),
+                        xy,
                         Vector2.Zero,
                         new(scale),
                         0,
                         color,
                         Vector2.Zero,
-                        Vector2.Min(new Vector2(bounds.Right - x, bounds.Bottom - y) / scale, Texture.Size));
+                        Vector2.Min((new Vector2(bounds.Right, bounds.Bottom) - xy) / scale, Texture.Size));
+                }
 
                 break;
 

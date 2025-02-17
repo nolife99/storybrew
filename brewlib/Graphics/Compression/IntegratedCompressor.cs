@@ -104,6 +104,6 @@ public class IntegratedCompressor : ImageCompressor
         Task.WhenAll(tasks).Wait();
 
         base.Dispose(disposing);
-        foreach (var clean in toCleanup) File.Delete(clean);
+        // foreach (var clean in toCleanup) File.Delete(clean);
     }
 }

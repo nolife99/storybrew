@@ -1,79 +1,63 @@
 ﻿namespace BrewLib.Util;
 
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 
 public static class BitmapHelper
 {
-    public static bool IsFullyTransparent(Image<Rgba32> source)
+    public static bool IsFullyTransparent(this Image<Rgba32> source)
     {
         var buffer = source.Frames.RootFrame.PixelBuffer;
-        if (source.DangerousTryGetSinglePixelMemory(out var contiguousMem))
-        {
-            var contiguousSpan = contiguousMem.Span;
-            if (Vector.IsHardwareAccelerated)
-            {
-                var zeroVector = Vector<int>.Zero;
-                var vectorSize = Vector<int>.Count;
+        return buffer.MemoryGroup.Count == 1 ?
+            IsFullyTransparentContiguous(MemoryMarshal.CreateReadOnlySpan(
+                ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)),
+                buffer.Width * buffer.Height)) :
+            IsFullyTransparentDiscontiguous(buffer);
+    }
 
-                Vector<int> alphaMask = new(Unsafe.BitCast<Rgba32, int>(new(0, 0, 0, 255)));
-
-                ref var first = ref Unsafe.As<Rgba32, int>(ref MemoryMarshal.GetReference(contiguousSpan));
-
-                var offset = 0;
-                while (offset + vectorSize <= contiguousSpan.Length)
-                {
-                    if ((Vector.LoadUnsafe(ref first, (nuint)offset) & alphaMask) >> 24 != zeroVector) return false;
-
-                    offset += vectorSize;
-                }
-
-                for (; offset < contiguousSpan.Length; ++offset)
-                    if (Unsafe.As<int, Rgba32>(ref Unsafe.Add(ref first, offset)).A != 0)
-                        return false;
-            }
-            else
-                foreach (ref var pixel in contiguousSpan)
-                    if (pixel.A != 0)
-                        return false;
-
-            return true;
-        }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool IsFullyTransparentContiguous(ReadOnlySpan<Rgba32> buffer)
+    {
         if (Vector.IsHardwareAccelerated)
         {
-            var width = source.Width;
-
             var zeroVector = Vector<int>.Zero;
-            var vectorSize = Vector<int>.Count;
+            var vectorSize = (nuint)Vector<int>.Count;
+            var len = (nuint)buffer.Length;
 
             Vector<int> alphaMask = new(Unsafe.BitCast<Rgba32, int>(new(0, 0, 0, 255)));
-            for (var y = 0; y < source.Height; ++y)
+
+            ref var first = ref Unsafe.As<Rgba32, int>(ref MemoryMarshal.GetReference(buffer));
+
+            nuint offset = 0;
+            while (offset + vectorSize <= len)
             {
-                var rowSpan = buffer.DangerousGetRowSpan(y);
-                ref var rowFirst = ref Unsafe.As<Rgba32, int>(ref MemoryMarshal.GetReference(rowSpan));
+                if ((Vector.LoadUnsafe(ref first, offset) & alphaMask) >> 24 != zeroVector) return false;
 
-                var x = 0;
-                while (x + vectorSize <= width)
-                {
-                    if ((Vector.LoadUnsafe(ref rowFirst, (nuint)x) & alphaMask) >> 24 != zeroVector) return false;
-
-                    x += vectorSize;
-                }
-
-                for (; x < width; ++x)
-                    if (Unsafe.As<int, Rgba32>(ref Unsafe.Add(ref rowFirst, x)).A != 0)
-                        return false;
+                offset += vectorSize;
             }
+
+            if (len - offset == 0) return true;
+            if ((Vector.LoadUnsafe(ref first, len - vectorSize) & alphaMask) >> 24 != zeroVector)
+                return false;
         }
-        else
-            for (var y = 0; y < source.Height; ++y)
-                foreach (ref var pixel in buffer.DangerousGetRowSpan(y))
-                    if (pixel.A != 0)
-                        return false;
+        else foreach (ref readonly var pixel in buffer)
+            if (pixel.A != 0)
+                return false;
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    static bool IsFullyTransparentDiscontiguous(Buffer2D<Rgba32> buffer)
+    {
+        for (var y = 0; y < buffer.Height; ++y)
+            if (!IsFullyTransparentContiguous(buffer.DangerousGetRowSpan(y)))
+                return false;
 
         return true;
     }
@@ -81,65 +65,22 @@ public static class BitmapHelper
     public static Rectangle FindTransparencyBounds(Image<Rgba32> source)
     {
         int xMin = source.Width, yMin = source.Height, xMax = -1, yMax = -1;
-        int width = source.Width, height = source.Height;
 
         var buffer = source.Frames.RootFrame.PixelBuffer;
-
-        if (Vector.IsHardwareAccelerated)
+        for (var y = 0; y < source.Height; ++y)
         {
-            var zeroVector = Vector<int>.Zero;
-            var vectorSize = Vector<int>.Count;
+            var srcData = buffer.DangerousGetRowSpan(y);
+            ref var rowRefAsColor = ref MemoryMarshal.GetReference(srcData);
 
-            Vector<int> alphaMask = new(Unsafe.BitCast<Rgba32, int>(new(0, 0, 0, 255)));
-            for (var y = 0; y < height; ++y)
-            {
-                var rowSpan = buffer.DangerousGetRowSpan(y);
-                ref var rowFirst = ref Unsafe.As<Rgba32, int>(ref MemoryMarshal.GetReference(rowSpan));
-
-                var x = 0;
-                while (x + vectorSize <= width)
+            for (var x = 0; x < srcData.Length; ++x)
+                if (Unsafe.Add(ref rowRefAsColor, x).A != 0)
                 {
-                    if ((Vector.LoadUnsafe(ref rowFirst, (nuint)x) & alphaMask) >> 24 == zeroVector)
-                    {
-                        x += vectorSize;
-                        continue;
-                    }
-
-                    for (var i = 0; i < vectorSize; ++i, ++x)
-                    {
-                        if (Unsafe.As<int, Rgba32>(ref Unsafe.Add(ref rowFirst, x)).A == 0) continue;
-
-                        if (x < xMin) xMin = x;
-                        if (x > xMax) xMax = x;
-                        if (y < yMin) yMin = y;
-                        if (y > yMax) yMax = y;
-                    }
-                }
-
-                for (; x < rowSpan.Length; ++x)
-                {
-                    if (Unsafe.As<int, Rgba32>(ref Unsafe.Add(ref rowFirst, x)).A == 0) continue;
-
                     if (x < xMin) xMin = x;
                     if (x > xMax) xMax = x;
                     if (y < yMin) yMin = y;
                     if (y > yMax) yMax = y;
                 }
-            }
         }
-        else
-            for (var y = 0; y < height; ++y)
-            {
-                var srcData = buffer.DangerousGetRowSpan(y);
-                for (var x = 0; x < srcData.Length; ++x)
-                    if (srcData[x].A != 0)
-                    {
-                        if (x < xMin) xMin = x;
-                        if (x > xMax) xMax = x;
-                        if (y < yMin) yMin = y;
-                        if (y > yMax) yMax = y;
-                    }
-            }
 
         return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
     }

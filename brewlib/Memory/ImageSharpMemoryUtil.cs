@@ -48,27 +48,32 @@ public sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct
 
 public sealed class PooledManagedBuffer<T> : MemoryManager<T> where T : struct
 {
-    readonly T[] buffer;
+    readonly byte[] buffer;
     readonly int length;
 
     GCHandle pinHandle;
 
     internal PooledManagedBuffer(int length, AllocationOptions options = AllocationOptions.None)
     {
+        length *= Unsafe.SizeOf<T>();
         this.length = length;
 
-        buffer = ArrayPool<T>.Shared.Rent(length);
+        buffer = ArrayPool<byte>.Shared.Rent(length);
         if (options is AllocationOptions.Clean) Array.Clear(buffer, 0, length);
     }
 
-    protected override void Dispose(bool disposing) => ArrayPool<T>.Shared.Return(buffer);
-    public override Span<T> GetSpan() => buffer.AsSpan(0, length);
+    protected override void Dispose(bool disposing)
+    {
+        if (pinHandle.IsAllocated) pinHandle.Free();
+        ArrayPool<byte>.Shared.Return(buffer);
+    }
+
+    public override Span<T> GetSpan() => MemoryMarshal.Cast<byte, T>(buffer.AsSpan(0, length));
 
     public override unsafe MemoryHandle Pin(int elementIndex = 0)
     {
         if (!pinHandle.IsAllocated) pinHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-        return new(Unsafe.Add<T>(Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(buffer)), elementIndex),
-            pinHandle);
+        return new((void*)pinHandle.AddrOfPinnedObject(), pinHandle);
     }
 
     public override void Unpin()

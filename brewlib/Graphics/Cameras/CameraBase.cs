@@ -2,9 +2,10 @@
 
 using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp;
 
-public abstract class CameraBase : Camera
+public abstract class CameraBase : ICamera
 {
     static readonly Vector3 DefaultForward = new(0, -1, 0), DefaultUp = new(0, 0, 1);
 
@@ -150,7 +151,11 @@ public abstract class CameraBase : Camera
         }
     }
 
-    public void Dispose() => DrawState.ViewportChanged -= drawState_ViewportChanged;
+    public void Dispose()
+    {
+        DrawState.ViewportChanged -= drawState_ViewportChanged;
+        GC.SuppressFinalize(this);
+    }
 
     public Vector3 FromScreen(Vector2 screenCoords)
     {
@@ -158,14 +163,13 @@ public abstract class CameraBase : Camera
 
         // TODO Vector3.Unproject() ?
 
-        var deviceX = 2 * (screenCoords.X / viewport.Width) - 1;
-        var deviceY = -2 * (screenCoords.Y / viewport.Height) + 1;
+        Vector2 device = new(2 * (screenCoords.X / viewport.Width) - 1, -2 * (screenCoords.Y / viewport.Height) + 1);
 
-        var nearBase = Vector4.Transform(new Vector4(deviceX, deviceY, NearPlane, 1), invertedProjectionView);
-        var near = new Vector3(nearBase.X, nearBase.Y, nearBase.Z);
+        var nearBase = Vector4.Transform(new Vector4(device, NearPlane, 1), invertedProjectionView);
+        ref var near = ref Unsafe.As<Vector4, Vector3>(ref nearBase);
 
-        var farBase = Vector4.Transform(new Vector4(deviceX, deviceY, FarPlane, 1), invertedProjectionView);
-        var far = new Vector3(farBase.X, farBase.Y, farBase.Z);
+        var farBase = Vector4.Transform(new Vector4(device, FarPlane, 1), invertedProjectionView);
+        ref var far = ref Unsafe.As<Vector4, Vector3>(ref farBase);
 
         var direction = Vector3.Normalize(far - near);
         if (direction.Z == 0) return Vector3.Zero;
@@ -187,15 +191,14 @@ public abstract class CameraBase : Camera
         // TODO Vector3.Project() ?
 
         var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
-        var devicePosition = new Vector3(transformedPosition.X, transformedPosition.Y, transformedPosition.Z) /
-            float.Abs(transformedPosition.W);
+        var devicePosition = Unsafe.As<Vector4, Vector3>(ref transformedPosition) / float.Abs(transformedPosition.W);
 
-        return new Vector3((devicePosition.X + 1) * .5f * viewport.Width,
+        return new((devicePosition.X + 1) * .5f * viewport.Width,
             (-devicePosition.Y + 1) * .5f * viewport.Height,
             devicePosition.Z);
     }
 
-    public Vector3 ToScreen(Vector2 worldCoords) => ToScreen(new Vector3(worldCoords.X, worldCoords.Y, 0));
+    public Vector3 ToScreen(Vector2 worldCoords) => ToScreen(new Vector3(worldCoords, 0));
 
     public RectangleF ToScreen(RectangleF worldBox2)
     {

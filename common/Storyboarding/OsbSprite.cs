@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using BrewLib.Util;
 using Commands;
 using CommandValues;
@@ -850,38 +851,46 @@ public class OsbSprite : StoryboardObject
 
     /// <summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition PositionAt(float time) => moveTimeline.HasCommands ?
         moveTimeline.ValueAtTime(time) :
         new(moveXTimeline.ValueAtTime(time), moveYTimeline.ValueAtTime(time));
 
     /// <summary> Retrieves the <see cref="CommandScale"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandScale ScaleAt(float time) => scaleVecTimeline.HasCommands ?
         scaleVecTimeline.ValueAtTime(time) :
         new(scaleTimeline.ValueAtTime(time));
 
     /// <summary> Retrieves the rotation, in radians, of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandDecimal RotationAt(float time) => rotateTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the opacity level of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandDecimal OpacityAt(float time) => fadeTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the <see cref="CommandColor"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandColor ColorAt(float time) => colorTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the additive value of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter AdditiveAt(float time) => additiveTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the horizontal flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter FlipHAt(float time) => flipHTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the vertical flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter FlipVAt(float time) => flipVTimeline.ValueAtTime(time);
 
     void initializeDisplayValueBuilders() => displayValueBuilders =

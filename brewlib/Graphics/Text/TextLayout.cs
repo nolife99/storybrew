@@ -82,14 +82,14 @@ public class TextLayout
 
     public int GetCharacterIndexAbove(int index)
     {
-        for (var lineIndex = 0; lineIndex < Lines.Count; ++lineIndex)
+        for (var i = 0; i < Lines.Count; ++i)
         {
-            var line = Lines[lineIndex];
+            var line = Lines[i];
             if (index < line.GlyphCount)
             {
-                if (lineIndex == 0) return 0;
+                if (i == 0) return 0;
 
-                var previousLine = Lines[lineIndex - 1];
+                var previousLine = Lines[i - 1];
                 return previousLine.GetGlyph(int.Min(index, previousLine.GlyphCount - 1)).Index;
             }
 
@@ -101,19 +101,19 @@ public class TextLayout
 
     public int GetCharacterIndexBelow(int index)
     {
-        for (var lineIndex = 0; lineIndex < Lines.Count; ++lineIndex)
+        for (var i = 0; i < Lines.Count; ++i)
         {
-            var line = Lines[lineIndex];
+            var line = Lines[i];
             if (index < line.GlyphCount)
             {
                 var lastLineIndex = Lines.Count - 1;
-                if (lineIndex == lastLineIndex)
+                if (i == lastLineIndex)
                 {
                     var lastLine = Lines[lastLineIndex];
                     return lastLine.GetGlyph(lastLine.GlyphCount - 1).Index;
                 }
 
-                var nextLine = Lines[lineIndex + 1];
+                var nextLine = Lines[i + 1];
                 return nextLine.GetGlyph(int.Min(index, nextLine.GlyphCount - 1)).Index;
             }
 

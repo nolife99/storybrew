@@ -4,7 +4,7 @@ using System;
 using System.Numerics;
 using SixLabors.ImageSharp;
 
-public interface Camera : IDisposable
+public interface ICamera : IDisposable
 {
     // Inputs
 

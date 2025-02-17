@@ -25,7 +25,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     public readonly Skin Skin;
 
     readonly Widget tooltipOverlay;
-    Camera camera;
+    ICamera camera;
     public Widget HoveredWidget;
     Widget keyboardFocus;
     Vector2 mousePosition;
@@ -68,16 +68,16 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     public Vector2 MousePosition => mousePosition;
 
-    public Camera Camera
+    public ICamera Camera
     {
         get => camera;
         set
         {
             if (camera == value) return;
 
-            if (camera is not null) camera.Changed -= camera_Changed;
+            if (camera is not null) camera.Changed -= ICameraChanged;
             camera = value;
-            if (camera is not null) camera.Changed += camera_Changed;
+            if (camera is not null) camera.Changed += ICameraChanged;
             RefreshHover();
         }
     }
@@ -113,7 +113,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         drawDragIndicator(drawContext);
     }
 
-    void camera_Changed(object sender, EventArgs e) => InvalidateAnchors();
+    void ICameraChanged(object sender, EventArgs e) => InvalidateAnchors();
 
     #region Tooltip
 
@@ -392,7 +392,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         if (disposed) return;
 
         rootContainer.Dispose();
-        if (camera is not null) camera.Changed -= camera_Changed;
+        if (camera is not null) camera.Changed -= ICameraChanged;
 
         if (disposing) disposed = true;
     }

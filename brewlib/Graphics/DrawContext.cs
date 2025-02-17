@@ -11,6 +11,7 @@ public sealed class DrawContext : IDisposable
     FrozenDictionary<Type, object> frozenReferences;
     Dictionary<Type, object> references = [];
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(typeof(T)));
 
     public void Register<T>(T obj, bool dispose = false) where T : class

@@ -13,10 +13,9 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
 {
     nint primitives;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override ref TPrimitive PrimitiveAt(int index) => ref Unsafe.AddByteOffset(
+    public override ref TPrimitive PrimitiveAt(int index) => ref Unsafe.Add(ref Unsafe.AddByteOffset(
         ref Unsafe.NullRef<TPrimitive>(),
-        primitives + index * PrimitiveSize);
+        primitives), index);
 
     public override void Render(PrimitiveType type, int primitiveCount, int vertices)
     {

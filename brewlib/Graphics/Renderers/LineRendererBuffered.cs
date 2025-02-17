@@ -25,7 +25,7 @@ public class LineRendererBuffered : ILineRenderer
     readonly IPrimitiveStreamer<LinePrimitive> primitiveStreamer;
     readonly Shader shader;
 
-    Camera camera;
+    ICamera camera;
     bool disposed, lastFlushWasBuffered, rendering;
     int linesInBatch;
 
@@ -62,7 +62,7 @@ public class LineRendererBuffered : ILineRenderer
         }
     }
 
-    public Camera Camera
+    public ICamera Camera
     {
         get => camera;
         set

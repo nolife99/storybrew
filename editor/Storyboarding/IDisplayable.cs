@@ -11,7 +11,7 @@ public interface IDisplayable
     float EndTime { get; }
 
     void Draw(DrawContext drawContext,
-        Camera camera,
+        ICamera camera,
         RectangleF bounds,
         float opacity,
         StoryboardTransform transform,

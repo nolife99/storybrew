@@ -83,7 +83,17 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     /// <returns> The keyframed value. </returns>
     public KeyframedValue<TValue> AddRange(IEnumerable<Keyframe<TValue>> collection)
     {
-        if (collection is ICollection<Keyframe<TValue>> list) keyframes.EnsureCapacity(keyframes.Count + list.Count);
+        switch (collection)
+        {
+            case ICollection<Keyframe<TValue>> list:
+                keyframes.EnsureCapacity(keyframes.Count + list.Count);
+                break;
+
+            case KeyframedValue<TValue> keyframedValue:
+                keyframes.EnsureCapacity(keyframes.Count + keyframedValue.Count);
+                break;
+        }
+
         foreach (var keyframe in collection)
             if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
             else keyframes.Insert(indexFor(keyframe, false), keyframe);
@@ -334,12 +344,12 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             List<Keyframe<TValue>> unionKeyframes = [];
             var comparer = EqualityComparer<TValue>.Default;
 
-            for (int i = 0, count = span.Length; i < count; i++)
+            for (var i = 0; i < span.Length; ++i)
             {
                 var startKeyframe = span[i];
                 unionKeyframes.Add(startKeyframe);
 
-                for (var j = i + 1; j < count; j++)
+                for (var j = i + 1; j < span.Length; j++)
                 {
                     var endKeyframe = span[j];
                     if (!comparer.Equals(startKeyframe.Value, endKeyframe.Value))
@@ -350,7 +360,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
                         break;
                     }
 
-                    if (j == count - 1) i = j;
+                    if (j == span.Length - 1) i = j;
                 }
             }
 

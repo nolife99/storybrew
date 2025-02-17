@@ -17,6 +17,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     public UnmanagedList(int capacity = 0)
     {
         if (capacity > 0) buf = new(capacity);
+        else GC.SuppressFinalize(this);
     }
 
     public bool IsSynchronized => false;
@@ -93,7 +94,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public EnumeratorRef GetEnumerator() => new(buf, Count);
+    public EnumeratorRef GetEnumerator() => new(ref buf, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(ref T item)
@@ -141,14 +142,7 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Contains(ref T item)
-    {
-        for (var i = 0; i < Count; i++)
-            if (_comparer.Equals(buf[i], item))
-                return true;
-
-        return false;
-    }
+    public bool Contains(ref T item) => IndexOf(ref item) != -1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Sort(IComparer<T> comparer = null) => buf.AsSpan(0, Count).Sort(comparer);
@@ -353,9 +347,9 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
     {
         if (buf.Length < min)
         {
-            Buffer newBuf = new((int)BitOperations.RoundUpToPowerOf2((uint)min));
             old = buf;
-            buf = newBuf;
+            buf = new((int)BitOperations.RoundUpToPowerOf2((uint)min));
+            GC.ReRegisterForFinalize(this);
             return true;
         }
 
@@ -404,14 +398,14 @@ public sealed class UnmanagedList<T> : MemoryManager<T>, IList<T>, IReadOnlyList
 
     public ref struct EnumeratorRef
     {
-        readonly Buffer _span;
+        readonly ref Buffer _span;
         readonly int _size;
         int _index;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal EnumeratorRef(Buffer span, int count)
+        internal EnumeratorRef(ref Buffer span, int count)
         {
-            _span = span;
+            _span = ref span;
             _size = count;
             _index = -1;
         }

@@ -25,14 +25,14 @@ public class QuadRendererBuffered : IQuadRenderer
     readonly IPrimitiveStreamer<QuadPrimitive> primitiveStreamer;
     readonly Shader shader;
 
-    Camera camera;
+    ICamera camera;
     int currentSamplerUnit, quadsInBatch, currentTexture;
 
     bool disposed, lastFlushWasBuffered, rendering;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 7168, int primitiveBufferSize = 0)
+    public unsafe QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 7168, int primitiveBufferSize = 0)
     {
         if (shader is null)
         {
@@ -82,7 +82,7 @@ public class QuadRendererBuffered : IQuadRenderer
         }
     }
 
-    public Camera Camera
+    public ICamera Camera
     {
         get => camera;
         set

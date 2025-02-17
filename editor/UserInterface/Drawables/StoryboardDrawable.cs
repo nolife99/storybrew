@@ -17,7 +17,7 @@ public sealed class StoryboardDrawable(Project project) : Drawable
     public Vector2 MinSize => Vector2.Zero;
     public Vector2 PreferredSize => new(854, 480);
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity = 1)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity = 1)
     {
         project.DisplayTime = Time;
         if (Clip)
@@ -32,7 +32,7 @@ public sealed class StoryboardDrawable(Project project) : Drawable
             project.Draw(drawContext, camera, bounds, opacity, UpdateFrameStats);
 
             DrawState.Prepare(drawContext.Get<ILineRenderer>(), camera, linesRenderStates)
-                .DrawSquare(new(bounds.Location, 0), new Vector3(bounds.Right, bounds.Bottom, 0), Color.Black);
+                .DrawSquare(new(bounds.Location, 0), new(bounds.Right, bounds.Bottom, 0), Color.Black);
         }
     }
 

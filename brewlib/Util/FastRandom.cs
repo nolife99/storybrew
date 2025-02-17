@@ -96,7 +96,7 @@ public class FastRandom
         uint x = this.x, y = this.y, z = this.z, w = this.w, t;
         var i = 0;
 
-        for (var bound = buffer.Length - 3; i < bound;)
+        for (var bound = buffer.Length - 3; i < bound; i += 4)
         {
             t = x ^ x << 11;
             x = y;
@@ -104,10 +104,7 @@ public class FastRandom
             z = w;
             w = w ^ w >> 19 ^ t ^ t >> 8;
 
-            buffer[i++] = (byte)w;
-            buffer[i++] = (byte)(w >> 8);
-            buffer[i++] = (byte)(w >> 16);
-            buffer[i++] = (byte)(w >> 24);
+            Unsafe.WriteUnaligned(ref buffer[i], w);
         }
 
         while (i < buffer.Length)

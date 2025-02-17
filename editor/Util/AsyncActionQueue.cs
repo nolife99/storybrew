@@ -23,7 +23,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         context = new(runnerCount);
 
         actionRunners = new ActionRunner[runnerCount];
-        for (var i = 0; i < runnerCount; ++i) actionRunners[i] = new(context);
+        for (var i = 0; i < actionRunners.Length; ++i) actionRunners[i] = new(context);
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }

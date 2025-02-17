@@ -22,9 +22,13 @@ public class UiScreenLayer : ScreenLayer
 
     public override void Resize(int width, int height)
     {
-        uiCamera.VirtualHeight = (int)(height * Math.Max(1024f / width, 768f / height));
-        uiCamera.VirtualWidth = width * uiCamera.VirtualHeight / height;
-        WidgetManager.Size = new(uiCamera.VirtualWidth, uiCamera.VirtualHeight);
+        var virtualHeight = height * Math.Max(1024f / width, 768f / height);
+        uiCamera.VirtualHeight = (int)virtualHeight;
+
+        var virtualWidth = width * virtualHeight / height;
+        uiCamera.VirtualWidth = (int)virtualWidth;
+
+        WidgetManager.Size = new(virtualWidth, virtualHeight);
         base.Resize(width, height);
     }
 

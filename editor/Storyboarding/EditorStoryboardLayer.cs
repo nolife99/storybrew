@@ -144,7 +144,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
         if (Visible) segment.TriggerEvents(fromTime, toTime);
     }
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, FrameStats frameStats)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, FrameStats frameStats)
     {
         if (Visible)
             segment.Draw(drawContext, camera, bounds, opacity, StoryboardTransform.Identity, Effect.Project, frameStats);

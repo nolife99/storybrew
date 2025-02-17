@@ -36,7 +36,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override float EndTime => endTime;
 
     public void Draw(DrawContext drawContext,
-        Camera camera,
+        ICamera camera,
         RectangleF bounds,
         float opacity,
         StoryboardTransform transform,

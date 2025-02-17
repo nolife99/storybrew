@@ -173,7 +173,7 @@ public sealed partial class Project : IDisposable
 
     public void TriggerEvents(float startTime, float endTime) => LayerManager.TriggerEvents(startTime, endTime);
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity, bool updateFrameStats)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity, bool updateFrameStats)
     {
         effectUpdateQueue.Enabled = allowEffectUpdates && MapsetPathIsValid;
 
@@ -620,7 +620,7 @@ public sealed partial class Project : IDisposable
                 var allowedValueCount = r.ReadInt32();
                 var allowedValues = allowedValueCount > 0 ? new NamedValue[allowedValueCount] : [];
 
-                for (var allowedValueIndex = 0; allowedValueIndex < allowedValueCount; ++allowedValueIndex)
+                for (var allowedValueIndex = 0; allowedValueIndex < allowedValues.Length; ++allowedValueIndex)
                     allowedValues[allowedValueIndex] = new(r.ReadString(), ObjectSerializer.Read(r));
 
                 effect.Config.UpdateField(fieldName,

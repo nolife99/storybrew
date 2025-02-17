@@ -4,7 +4,7 @@ using Cameras;
 
 public interface Renderer
 {
-    Camera Camera { get; set; }
+    ICamera Camera { get; set; }
 
     void BeginRendering();
     void EndRendering();

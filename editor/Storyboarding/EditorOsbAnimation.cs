@@ -8,7 +8,7 @@ using StorybrewCommon.Storyboarding;
 public class EditorOsbAnimation : OsbAnimation, IDisplayable, IPostProcessable
 {
     public void Draw(DrawContext drawContext,
-        Camera camera,
+        ICamera camera,
         RectangleF bounds,
         float opacity,
         StoryboardTransform transform,

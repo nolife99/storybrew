@@ -5,16 +5,9 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 
-public class TinyArray : TinyToken, IList<TinyToken>
+public class TinyArray() : TinyToken, IList<TinyToken>
 {
-    TinyToken[] tokens;
-
-    public TinyArray()
-    {
-        const int InitialCapacity = 4;
-        tokens = ArrayPool<TinyToken>.Shared.Rent(InitialCapacity);
-        Count = 0;
-    }
+    TinyToken[] tokens = [];
 
     public TinyArray(IEnumerable values) : this()
     {
@@ -33,13 +26,13 @@ public class TinyArray : TinyToken, IList<TinyToken>
 
     public void Add(TinyToken item)
     {
-        if (Count == tokens.Length) EnsureCapacity(Count * 2);
+        if (Count == tokens.Length) EnsureCapacity(Math.Max(Count * 2, 4));
         tokens[Count++] = item;
     }
 
     public void Clear()
     {
-        Array.Clear(tokens, 0, Count);
+        Array.Clear(tokens);
         Count = 0;
     }
 

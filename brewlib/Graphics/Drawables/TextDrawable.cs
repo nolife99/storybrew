@@ -108,7 +108,7 @@ public sealed class TextDrawable : Drawable
     public Vector2 MinSize => Size;
     public Vector2 PreferredSize => Size;
 
-    public void Draw(DrawContext drawContext, Camera camera, RectangleF bounds, float opacity)
+    public void Draw(DrawContext drawContext, ICamera camera, RectangleF bounds, float opacity)
     {
         validate();
 

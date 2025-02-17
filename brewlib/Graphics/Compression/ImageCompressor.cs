@@ -19,7 +19,7 @@ public abstract class ImageCompressor(string utilityPath = null) : IDisposable
 
     public string UtilityName
     {
-        get => HashCode.Combine(utilName, Environment.CurrentManagedThreadId).ToString(CultureInfo.InvariantCulture);
+        get => Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture);
         protected set => utilName = value;
     }
 

@@ -159,7 +159,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     {
         var curvePoints = new Vector2[controlPoints.Length + 1];
         curvePoints[0] = PlayfieldPosition;
-        for (var i = 0; i < ControlPointCount; ++i) curvePoints[i + 1] = controlPoints[i];
+        for (var i = 0; i < controlPoints.Length; ++i) curvePoints[i + 1] = controlPoints[i];
         return new(curvePoints);
     }
 
@@ -207,12 +207,12 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         var sliderControlPointCount = sliderValues.Length - 1;
         var sliderControlPoints = new Vector2[sliderControlPointCount];
 
-        for (var i = 0; i < sliderControlPointCount; i++)
+        for (var i = 0; i < sliderControlPoints.Length; ++i)
         {
             var controlPointValues = sliderValues[i + 1].Split(':');
             var controlPointX = float.Parse(controlPointValues[0], CultureInfo.InvariantCulture);
             var controlPointY = float.Parse(controlPointValues[1], CultureInfo.InvariantCulture);
-            sliderControlPoints[i] = new Vector2(controlPointX, controlPointY);
+            sliderControlPoints[i] = new(controlPointX, controlPointY);
         }
 
         var nodeCount = int.Parse(values[6], CultureInfo.InvariantCulture) + 1;
@@ -223,7 +223,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         var travelDuration = timingPoint.BeatDuration * travelDurationBeats;
 
         var sliderNodes = new OsuSliderNode[nodeCount];
-        for (var i = 0; i < nodeCount; i++)
+        for (var i = 0; i < sliderNodes.Length; i++)
         {
             var nodeStartTime = startTime + i * travelDuration;
             var nodeControlPoint = beatmap.GetTimingPointAt((int)nodeStartTime);

@@ -20,7 +20,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
     public void Draw(DrawContext drawContext,
-        Camera camera,
+        ICamera camera,
         RectangleF bounds,
         float opacity,
         StoryboardTransform transform,
@@ -33,7 +33,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
     }
 
     public static void Draw(DrawContext drawContext,
-        Camera camera,
+        ICamera camera,
         RectangleF bounds,
         float opacity,
         ref readonly StoryboardTransform transform,
