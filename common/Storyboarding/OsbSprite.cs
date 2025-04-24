@@ -56,9 +56,9 @@ public class OsbSprite : StoryboardObject
             if (initialPosition == value) return;
 
             initialPosition = value;
-            moveTimeline.DefaultValue = initialPosition;
-            moveXTimeline.DefaultValue = initialPosition.X;
-            moveYTimeline.DefaultValue = initialPosition.Y;
+            MoveTimeline.DefaultValue = initialPosition;
+            MoveXTimeline.DefaultValue = initialPosition.X;
+            MoveYTimeline.DefaultValue = initialPosition.Y;
         }
     }
 
@@ -81,25 +81,24 @@ public class OsbSprite : StoryboardObject
 
     /// <returns> True if the <see cref="OsbSprite"/> has incompatible commands, else returns false. </returns>
     public bool HasIncompatibleCommands
-        => moveTimeline.HasCommands && (moveXTimeline.HasCommands || moveYTimeline.HasCommands) ||
-            scaleTimeline.HasCommands && scaleVecTimeline.HasCommands;
+        => MoveTimeline.HasCommands && (MoveXTimeline.HasCommands || MoveYTimeline.HasCommands) ||
+            ScaleTimeline.HasCommands && ScaleVecTimeline.HasCommands;
 
     /// <returns> True if the <see cref="OsbSprite"/> has overlapping commands, else returns false. </returns>
-    public bool HasOverlappedCommands => moveTimeline.HasOverlap ||
-        moveXTimeline.HasOverlap ||
-        moveYTimeline.HasOverlap ||
-        scaleTimeline.HasOverlap ||
-        scaleVecTimeline.HasOverlap ||
-        rotateTimeline.HasOverlap ||
-        fadeTimeline.HasOverlap ||
-        colorTimeline.HasOverlap ||
-        additiveTimeline.HasOverlap ||
-        flipHTimeline.HasOverlap ||
-        flipVTimeline.HasOverlap;
+    public bool HasOverlappedCommands => MoveTimeline.HasOverlap ||
+        MoveXTimeline.HasOverlap ||
+        MoveYTimeline.HasOverlap ||
+        ScaleTimeline.HasOverlap ||
+        ScaleVecTimeline.HasOverlap ||
+        RotateTimeline.HasOverlap ||
+        FadeTimeline.HasOverlap ||
+        ColorTimeline.HasOverlap ||
+        AdditiveTimeline.HasOverlap ||
+        FlipHTimeline.HasOverlap ||
+        FlipVTimeline.HasOverlap;
 
-    public bool HasRotateCommands => rotateTimeline.HasCommands;
-    public bool HasScalingCommands => scaleTimeline.HasCommands || scaleVecTimeline.HasCommands;
-    public bool HasMoveXYCommands => moveXTimeline.HasCommands || moveYTimeline.HasCommands;
+    public bool HasMoveCommands => MoveXTimeline.HasCommands || MoveYTimeline.HasCommands || MoveTimeline.HasCommands;
+    public bool HasScalingCommands => ScaleTimeline.HasCommands || ScaleVecTimeline.HasCommands;
 
     ///<summary> Gets the start time of the first command on this sprite. </summary>
     public override float StartTime
@@ -793,14 +792,14 @@ public class OsbSprite : StoryboardObject
     {
         if (commands.Count != 0)
             OsbWriterFactory.CreateWriter(this,
-                    moveTimeline,
-                    moveXTimeline,
-                    moveYTimeline,
-                    scaleTimeline,
-                    scaleVecTimeline,
-                    rotateTimeline,
-                    fadeTimeline,
-                    colorTimeline,
+                    MoveTimeline,
+                    MoveXTimeline,
+                    MoveYTimeline,
+                    ScaleTimeline,
+                    ScaleVecTimeline,
+                    RotateTimeline,
+                    FadeTimeline,
+                    ColorTimeline,
                     writer,
                     exportSettings,
                     layer)
@@ -838,77 +837,77 @@ public class OsbSprite : StoryboardObject
     #region Display
 
     (Func<ICommand, bool>, IAnimatedValueBuilder)[] displayValueBuilders;
-    readonly AnimatedValue<CommandPosition> moveTimeline = new();
+    public readonly AnimatedValue<CommandPosition> MoveTimeline = new();
 
-    readonly AnimatedValue<CommandDecimal> moveXTimeline = new(), moveYTimeline = new(), scaleTimeline = new(1),
-        rotateTimeline = new(), fadeTimeline = new(1);
+    public readonly AnimatedValue<CommandDecimal> MoveXTimeline = new(), MoveYTimeline = new(), ScaleTimeline = new(1),
+        RotateTimeline = new(), FadeTimeline = new(1);
 
-    readonly AnimatedValue<CommandScale> scaleVecTimeline = new(Vector2.One);
-    readonly AnimatedValue<CommandColor> colorTimeline = new(CommandColor.White);
+    public readonly AnimatedValue<CommandScale> ScaleVecTimeline = new(Vector2.One);
+    public readonly AnimatedValue<CommandColor> ColorTimeline = new(CommandColor.White);
 
-    readonly AnimatedValue<CommandParameter> additiveTimeline = new(CommandParameter.None),
-        flipHTimeline = new(CommandParameter.None), flipVTimeline = new(CommandParameter.None);
+    public readonly AnimatedValue<CommandParameter> AdditiveTimeline = new(CommandParameter.None),
+        FlipHTimeline = new(CommandParameter.None), FlipVTimeline = new(CommandParameter.None);
 
     /// <summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandPosition PositionAt(float time) => moveTimeline.HasCommands ?
-        moveTimeline.ValueAtTime(time) :
-        new(moveXTimeline.ValueAtTime(time), moveYTimeline.ValueAtTime(time));
+    public CommandPosition PositionAt(float time) => MoveTimeline.HasCommands ?
+        MoveTimeline.ValueAtTime(time) :
+        new(MoveXTimeline.ValueAtTime(time), MoveYTimeline.ValueAtTime(time));
 
     /// <summary> Retrieves the <see cref="CommandScale"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandScale ScaleAt(float time) => scaleVecTimeline.HasCommands ?
-        scaleVecTimeline.ValueAtTime(time) :
-        new(scaleTimeline.ValueAtTime(time));
+    public CommandScale ScaleAt(float time) => ScaleVecTimeline.HasCommands ?
+        ScaleVecTimeline.ValueAtTime(time) :
+        new(ScaleTimeline.ValueAtTime(time));
 
     /// <summary> Retrieves the rotation, in radians, of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandDecimal RotationAt(float time) => rotateTimeline.ValueAtTime(time);
+    public CommandDecimal RotationAt(float time) => RotateTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the opacity level of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandDecimal OpacityAt(float time) => fadeTimeline.ValueAtTime(time);
+    public CommandDecimal OpacityAt(float time) => FadeTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the <see cref="CommandColor"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandColor ColorAt(float time) => colorTimeline.ValueAtTime(time);
+    public CommandColor ColorAt(float time) => ColorTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the additive value of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandParameter AdditiveAt(float time) => additiveTimeline.ValueAtTime(time);
+    public CommandParameter AdditiveAt(float time) => AdditiveTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the horizontal flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandParameter FlipHAt(float time) => flipHTimeline.ValueAtTime(time);
+    public CommandParameter FlipHAt(float time) => FlipHTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the vertical flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public CommandParameter FlipVAt(float time) => flipVTimeline.ValueAtTime(time);
+    public CommandParameter FlipVAt(float time) => FlipVTimeline.ValueAtTime(time);
 
     void initializeDisplayValueBuilders() => displayValueBuilders =
     [
-        (c => c is MoveCommand, new AnimatedValueBuilder<CommandPosition>(moveTimeline)),
-        (c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(moveXTimeline)),
-        (c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(moveYTimeline)),
-        (c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(scaleTimeline)),
-        (c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(scaleVecTimeline)),
-        (c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(rotateTimeline)),
-        (c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(fadeTimeline)),
-        (c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(colorTimeline)),
+        (c => c is MoveCommand, new AnimatedValueBuilder<CommandPosition>(MoveTimeline)),
+        (c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(MoveXTimeline)),
+        (c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(MoveYTimeline)),
+        (c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(ScaleTimeline)),
+        (c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(ScaleVecTimeline)),
+        (c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(RotateTimeline)),
+        (c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(FadeTimeline)),
+        (c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(ColorTimeline)),
         (c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending },
-            new AnimatedValueBuilder<CommandParameter>(additiveTimeline)),
+            new AnimatedValueBuilder<CommandParameter>(AdditiveTimeline)),
         (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal },
-            new AnimatedValueBuilder<CommandParameter>(flipHTimeline)),
+            new AnimatedValueBuilder<CommandParameter>(FlipHTimeline)),
         (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical },
-            new AnimatedValueBuilder<CommandParameter>(flipVTimeline))
+            new AnimatedValueBuilder<CommandParameter>(FlipVTimeline))
     ];
 
     void addDisplayCommand(ICommand command)

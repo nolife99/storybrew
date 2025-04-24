@@ -23,7 +23,7 @@ public class ShaderBuilder
         VertexDeclaration = vertexDeclaration;
         GlPosition = new(Context, "gl_Position", "vec4");
         GlPointSize = new(Context, "gl_PointSize", "float");
-        GlFragColor = new(Context, "gl_FragColor", "vec4");
+        GlFragColor = ProgramScope.AddBuiltinVarying(Context, "fragColor", "vec4", true);
         GlFragDepth = new(Context, "gl_FragDepth", "float");
     }
 
@@ -32,10 +32,10 @@ public class ShaderBuilder
 
     public ShaderVariable AddVarying(string shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
 
-    public Shader Build(bool log = false)
+    public Shader Build(bool log = true)
     {
         Context.VertexDeclaration = VertexDeclaration;
-        Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPointSize, GlFragColor, GlFragDepth);
+        Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPosition, GlPointSize, GlFragDepth);
 
         var commonCode = buildCommon();
         var vertexShaderCode = buildVertexShader().Insert(0, commonCode);
@@ -60,11 +60,9 @@ public class ShaderBuilder
             $"#version {int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
         foreach (var extensionName in FragmentShader.RequiredExtensions.Union(VertexShader.RequiredExtensions))
-            code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : enable");
+            code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : require");
 
         ProgramScope.DeclareTypes(code);
-        ProgramScope.DeclareUniforms(code);
-        ProgramScope.DeclareVaryings(code, Context);
 
         var codeString = code.ToString();
         StringHelper.StringBuilderPool.Release(code);
@@ -76,8 +74,13 @@ public class ShaderBuilder
         StringBuilder code = new();
 
         // Attributes
+
+        ProgramScope.DeclareVaryings(code, Context, false);
+
         foreach (var attribute in VertexDeclaration)
-            code.AppendLine(CultureInfo.InvariantCulture, $"attribute {attribute.ShaderTypeName} {attribute.Name};");
+            code.AppendLine(CultureInfo.InvariantCulture, $"in {attribute.ShaderTypeName} {attribute.Name};");
+
+        ProgramScope.DeclareUniforms(code);
 
         VertexShader.GenerateFunctions(code);
 
@@ -94,6 +97,8 @@ public class ShaderBuilder
     StringBuilder buildFragmentShader()
     {
         StringBuilder code = new();
+        ProgramScope.DeclareVaryings(code, Context, true);
+        ProgramScope.DeclareUniforms(code);
         FragmentShader.GenerateFunctions(code);
 
         // Main function

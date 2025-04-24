@@ -94,6 +94,10 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
 
     public override bool ReverseDepth { get => segment.ReverseDepth; set => segment.ReverseDepth = value; }
 
+    public override bool FlipX { get => segment.FlipX; set => segment.FlipX = value; }
+
+    public override bool FlipY { get => segment.FlipY; set => segment.FlipY = value; }
+
     public override IEnumerable<StoryboardSegment> NamedSegments => segment.NamedSegments;
 
     public int CompareTo(EditorStoryboardLayer other)

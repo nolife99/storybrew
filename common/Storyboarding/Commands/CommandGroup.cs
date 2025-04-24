@@ -67,6 +67,7 @@ public abstract class CommandGroup : ICommand
 
     public bool Contains(ICommand command) => commands.Contains(command);
     public bool Add(ICommand command) => commands.Add(command);
+    public bool Remove(ICommand command) => commands.Remove(command);
     public virtual void EndGroup() { }
     protected abstract string GetCommandGroupHeader(ExportSettings exportSettings);
     public override string ToString() => $"{GetCommandGroupHeader(ExportSettings.Default)} ({commands.Count} commands)";

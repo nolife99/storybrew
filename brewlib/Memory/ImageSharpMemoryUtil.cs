@@ -14,8 +14,6 @@ internal sealed class UnmanagedMemoryAllocator : MemoryAllocator
 
     public override IMemoryOwner<T> Allocate<T>(int length, AllocationOptions options = AllocationOptions.None)
     {
-        if (length * Unsafe.SizeOf<T>() < 1 << 16) return new PooledManagedBuffer<T>(length, options);
-
         return new SafeUnmanagedBuffer<T>(length, options);
     }
 }

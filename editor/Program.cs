@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
+using BrewLib.Graphics;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
@@ -155,7 +156,7 @@ public static class Program
 
             if (!window.Exists || window.IsExiting) return;
 
-            editor.Draw();
+            var draws = editor.Draw();
             windowContext.SwapBuffers();
 
             window.IsVisible = true;
@@ -185,7 +186,7 @@ public static class Program
             avActive = (active + avActive) * .5;
             longest = Math.Max(frameTime, longest);
 
-            Stats = $"fps:{1 / av:0}/{1 / avActive:0} (act:{avActive * 1000:0} avg:{av * 1000:0} hi:{longest * 1000:0})";
+            Stats = $"fps:{1 / av:0}/{1 / avActive:0} (act:{avActive * 1000:0} avg:{av * 1000:0} hi:{longest * 1000:0})\n{draws} draws";
 
             longest = 0;
             lastStat = cur;

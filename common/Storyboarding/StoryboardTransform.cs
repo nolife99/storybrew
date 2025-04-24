@@ -20,17 +20,16 @@ public readonly struct StoryboardTransform
     /// <param name="position">The position of the element.</param>
     /// <param name="rotation">The rotation of the element in radians.</param>
     /// <param name="scale">The scale of the element.</param>
-    public StoryboardTransform(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale)
+    /// <param name="flipX">Whether to reflect the element along the X axis.</param>
+    /// <param name="flipY">Whether to reflect the element along the Y axis.</param>
+    public StoryboardTransform(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale, bool flipX, bool flipY)
     {
-        var transform = parent.transform;
+        var localTransform = parent.transform;
+        localTransform = Matrix3x2.Multiply(localTransform, Matrix3x2.CreateTranslation(position - origin));
+        localTransform = Matrix3x2.Multiply(localTransform, Matrix3x2.CreateRotation(rotation));
+        localTransform = Matrix3x2.Multiply(localTransform, Matrix3x2.CreateScale(flipX ? -scale : scale, flipY ? -scale : scale));
 
-        if (position != Vector2.Zero) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateTranslation(position));
-        if (rotation != 0) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateRotation(rotation));
-        if (scale != 1) transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateScale(scale));
-        if (origin != Vector2.Zero)
-            transform = Matrix3x2.Multiply(transform, Matrix3x2.CreateTranslation(-origin.X, -origin.Y));
-
-        this.transform = transform;
+        transform = localTransform;
     }
 
     /// <summary>Applies the transform to a position vector.</summary>

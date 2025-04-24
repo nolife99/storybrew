@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime;
@@ -20,7 +19,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         this.allowDuplicates = allowDuplicates;
 
         if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
-        context = new(runnerCount);
+        context = new();
 
         actionRunners = new ActionRunner[runnerCount];
         for (var i = 0; i < actionRunners.Length; ++i) actionRunners[i] = new(context);
@@ -28,7 +27,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
 
-    public int TaskCount => context.Queue.Count + context.Running.Count;
+    public int TaskCount => context.Queue.Count + context.Running;
 
     public event Action<T, Exception> OnActionFailed
     {
@@ -57,10 +56,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     sealed record ActionContainer(T Target, int UniqueKey, Action Action, bool MustRunAlone);
 
-    sealed class ActionQueueContext(int runnerCount)
+    sealed class ActionQueueContext
     {
         public readonly ConcurrentQueue<ActionContainer> Queue = [];
-        public readonly ConcurrentDictionary<int, object> Running = new(runnerCount, runnerCount);
+        public volatile int Running;
         bool enabled;
         public volatile bool RunningLoneTask;
 
@@ -155,7 +154,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                     ActionContainer task = null;
                     while (context.Queue.TryDequeue(out var t))
                     {
-                        if (t.MustRunAlone && !context.Running.IsEmpty)
+                        if (t.MustRunAlone && context.Running != 0)
                         {
                             context.Queue.Enqueue(t);
                             continue;
@@ -171,7 +170,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         continue;
                     }
 
-                    context.Running.TryAdd(task.UniqueKey, null);
+                    Interlocked.Increment(ref context.Running);
                     if (task.MustRunAlone) context.RunningLoneTask = true;
 
                     try
@@ -185,7 +184,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
                     }
 
-                    context.Running.Remove(task.UniqueKey, out _);
+                    Interlocked.Decrement(ref context.Running);
                     if (task.MustRunAlone) context.RunningLoneTask = false;
                 }
             });

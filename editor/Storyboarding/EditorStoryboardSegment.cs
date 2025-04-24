@@ -31,6 +31,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     public override float Rotation { get; set; }
     public override float Scale { get; set; } = 1;
     public override bool ReverseDepth { get; set; }
+    public override bool FlipX { get; set; }
+    public override bool FlipY { get; set; }
     public override IEnumerable<StoryboardSegment> NamedSegments => namedSegments.Values;
     public override float StartTime => startTime;
     public override float EndTime => endTime;
@@ -54,7 +56,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
                 camera,
                 bounds,
                 opacity,
-                new(transform, Origin, Position, Rotation, Scale),
+                new(transform, Origin, Position, Rotation, Scale, FlipX,FlipY),
                 project,
                 frameStats);
     }
@@ -214,7 +216,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         StoryboardTransform transform)
     {
         foreach (var sbo in storyboardObjects)
-            sbo.WriteOsb(writer, exportSettings, osbLayer, new(transform, Origin, Position, Rotation, Scale));
+            sbo.WriteOsb(writer, exportSettings, osbLayer, new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY));
     }
 
     public int CalculateSize(OsbLayer osbLayer)

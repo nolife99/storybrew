@@ -4,7 +4,7 @@ using System;
 
 public class ShaderVariable
 {
-    readonly ShaderContext Context;
+    public readonly ShaderContext Context;
     readonly Reference reference;
 
     public ShaderVariable(ShaderContext context, string name, string shaderTypeName = null, int count = -1)

@@ -50,7 +50,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             ++frameStats.SpriteCount;
             frameStats.CommandCount += sprite.CommandCost;
             frameStats.IncompatibleCommands |= sprite.HasIncompatibleCommands;
-            frameStats.OverlappedCommands |= sprite.HasOverlappedCommands;
+            if (sprite.HasOverlappedCommands) frameStats.OverlappedSprites.Add(sprite);
         }
 
         var fade = (float)sprite.OpacityAt(time);
@@ -96,11 +96,11 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var origin = GetOriginVector(sprite.Origin, texture.Size);
         if (!transform.IsIdentity)
         {
-            position = sprite.HasMoveXYCommands ?
+            position = sprite.HasMoveCommands ?
                 transform.ApplyToPositionXY(position) :
                 transform.ApplyToPosition(position);
 
-            if (sprite.HasRotateCommands) rotation = transform.ApplyToRotation(rotation);
+            if (sprite.RotateTimeline.HasCommands) rotation = transform.ApplyToRotation(rotation);
             if (sprite.HasScalingCommands) scale = transform.ApplyToScale(scale);
         }
 

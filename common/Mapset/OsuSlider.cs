@@ -134,7 +134,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     CompositeCurve generateBezierCurve()
     {
         List<BezierCurve> curves = [];
-        using UnmanagedList<Vector2> curvePoints = [];
+        List<Vector2> curvePoints = [];
 
         var previousPosition = (Vector2)PlayfieldPosition;
         curvePoints.Add(previousPosition);

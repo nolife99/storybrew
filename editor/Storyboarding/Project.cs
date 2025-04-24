@@ -163,8 +163,9 @@ public sealed partial class Project : IDisposable
     static readonly Pool<FrameStats> frameStatsPool = new(obj =>
     {
         obj.LoadedPaths.Clear();
+        obj.OverlappedSprites.Clear();
         obj.GpuPixelsFrame = 0;
-        obj.LastBlendingMode = obj.IncompatibleCommands = obj.OverlappedCommands = false;
+        obj.LastBlendingMode = obj.IncompatibleCommands = false;
 
         obj.LastTexture = null;
         obj.ScreenFill = 0;
@@ -189,7 +190,7 @@ public sealed partial class Project : IDisposable
     void reloadTextures()
     {
         TextureContainer?.Dispose();
-        TextureContainer = new TextureContainerSeparate(null, TextureOptions.Default);
+        TextureContainer = new TextureContainerAtlas(null, TextureOptions.Default, padding: 1, description: "Storyboard");
     }
 
     void reloadAudio()

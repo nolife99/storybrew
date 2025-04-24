@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using CommandValues;
 
-/// <summary>Provides a way to optimize filesize and creates a way for sprites to be reused at a minor cost of performance.</summary>
+
+/// <summary> Provides a way for sprites to be reused. </summary>
+/// <remarks> It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite will cause performance issues. </remarks>
 public class OsbSpritePool : IDisposable
 {
     readonly Action<OsbSprite, float, float> _attributes;
@@ -13,12 +15,12 @@ public class OsbSpritePool : IDisposable
     readonly CommandPosition _position;
 
     readonly StoryboardSegment _segment;
-    readonly List<PooledSprite> pooled = [];
+    internal readonly List<PooledSprite> pooled = [];
 
     bool disposed;
 
     ///<summary> The maximum duration for a sprite to be pooled. </summary>
-    public int MaxPoolDuration;
+    public int MaxPoolDuration { get; set; }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
@@ -140,12 +142,29 @@ public class OsbSpritePool : IDisposable
         return sprite;
     }
 
-#pragma warning disable CS1591
-    protected virtual OsbSprite CreateSprite(StoryboardSegment segment,
+    /// <summary> Modifies the start and end times of a sprite in the pool. </summary>
+    /// <remarks> If the sprite is not found in the pool, it is added to the pool. </remarks>
+    /// <param name="sprite"> The sprite to modify. </param>
+    /// <param name="startTime"> The new start time for the sprite. </param>
+    /// <param name="endTime"> The new end time for the sprite. </param>
+    public void EditPoolDuration(OsbSprite sprite, float startTime, float endTime)
+    {
+        foreach (var pooledSprite in pooled)
+            if (pooledSprite.Sprite == sprite)
+            {
+                pooledSprite.StartTime = startTime;
+                pooledSprite.EndTime = endTime;
+
+                return;
+            }
+
+        pooled.Add(new(sprite, startTime, endTime));
+    }
+
+    internal virtual OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
         CommandPosition position)
-#pragma warning restore CS1591
         => segment.CreateSprite(path, origin, position);
 
     internal void Dispose(bool disposing)
@@ -162,18 +181,16 @@ public class OsbSpritePool : IDisposable
         disposed = true;
     }
 
-    sealed class PooledSprite(OsbSprite sprite, float startTime, float endTime)
+    internal sealed class PooledSprite(OsbSprite sprite, float startTime, float endTime)
     {
-        internal readonly OsbSprite Sprite = sprite;
-        internal readonly float StartTime = startTime;
-        internal float EndTime = endTime;
+        public readonly OsbSprite Sprite = sprite;
+        public float StartTime = startTime;
+        public float EndTime = endTime;
     }
 }
 
-/// <summary>Provides a way to optimize filesize and creates a way for sprites to be reused at a minor cost of performance.</summary>
-/// <remarks> Includes support for animation pools. </remarks>
-/// <remarks> Constructs a <see cref="OsbSpritePools"/>. </remarks>
-/// <param name="segment"> <see cref="StoryboardSegment"/> of the sprites in the pool. </param>
+/// <summary> Provides a way for sprites to be reused. This class provides support for <see cref="OsbAnimation"/>. </summary>
+/// <remarks> It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite will cause performance issues. </remarks>
 public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 {
     readonly Dictionary<int, OsbAnimationPool> animationPools = [];
@@ -518,6 +535,28 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
         additive,
         group);
 
+    /// <summary> Modifies the start and end times of a sprite in the pool. </summary>
+    /// <remarks> If the sprite is not found in the pool, it is added to the pool. </remarks>
+    /// <param name="sprite"> The sprite to modify. </param>
+    /// <param name="startTime"> The new start time for the sprite. </param>
+    /// <param name="endTime"> The new end time for the sprite. </param>
+    /// <param name="attributes"> The original delegate that was provided when the sprite was pooled. </param>
+    /// <param name="group"> The original group for the pooled sprite. </param>
+    public void EditPoolDuration(OsbSprite sprite, float startTime, float endTime, Action<OsbSprite, float, float> attributes, int group)
+    {
+        var pool = getPool(sprite.TexturePath, sprite.Origin, sprite.InitialPosition, attributes, group);
+        foreach (var pooledSprite in pool.pooled)
+            if (pooledSprite.Sprite == sprite)
+            {
+                pooledSprite.StartTime = startTime;
+                pooledSprite.EndTime = endTime;
+
+                return;
+            }
+
+        pool.pooled.Add(new(sprite, startTime, endTime));
+    }
+
     OsbSpritePool getPool(string path,
         OsbOrigin origin,
         CommandPosition position,
@@ -585,16 +624,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     }
 }
 
-/// <summary>Provides a way to optimize filesize and creates a way for animations to be reused at a minor cost of performance.</summary>
-/// <remarks> Constructs a new <see cref="OsbAnimationPool"/>. </remarks>
-/// <param name="segment"> <see cref="StoryboardSegment"/> of the <see cref="OsbAnimationPool"/>. </param>
-/// <param name="path"> Image path of the available sprite. </param>
-/// <param name="frameCount"> Amount of frames in the <see cref="OsbAnimation"/>. </param>
-/// <param name="frameDelay"> Delay between frames of the <see cref="OsbAnimation"/>. </param>
-/// <param name="loopType"> <see cref="OsbLoopType"/> of the <see cref="OsbAnimation"/>. </param>
-/// <param name="origin"> <see cref="OsbOrigin"/> of the <see cref="OsbAnimation"/>. </param>
-/// <param name="position"> Initial position of the <see cref="OsbAnimation"/>. </param>
-/// <param name="attributes"> Commands to be run on each animation in the pool. </param>
+/// <summary> Provides a way for animations to be reused. </summary>
+/// <remarks> It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite will cause performance issues. </remarks>
 public sealed class OsbAnimationPool(StoryboardSegment segment,
     string path,
     int frameCount,
@@ -742,11 +773,9 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
         OsbLoopType loopType,
         bool additive) : this(segment, path, frameCount, frameDelay, loopType, OsbOrigin.Centre, default, additive) { }
 
-#pragma warning disable CS1591
-    protected override OsbSprite CreateSprite(StoryboardSegment segment,
+    internal override OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
         CommandPosition position)
-#pragma warning restore CS1591
         => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);
 }

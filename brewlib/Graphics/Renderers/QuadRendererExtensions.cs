@@ -46,8 +46,9 @@ public static class QuadRendererExtensions
         var textureUvOrigin = texture.UvOrigin;
         var textureUvRatio = texture.UvRatio;
 
-        var textureU0V0 = Vector2.FusedMultiplyAdd(texture0, textureUvRatio, textureUvOrigin);
-        var textureU1V1 = Vector2.FusedMultiplyAdd(texture1, textureUvRatio, textureUvOrigin);
+        var half = texture.Width < 3 || texture.Height < 3 ? new(.5f) : Vector2.Zero;
+        var textureU0V0 = Vector2.FusedMultiplyAdd(texture0 + half, textureUvRatio, textureUvOrigin);
+        var textureU1V1 = Vector2.FusedMultiplyAdd(texture1 + half, textureUvRatio, textureUvOrigin);
 
         var textureU0U1 = flip.X > 0 ? textureU0V0 with { Y = textureU1V1.X } : textureU1V1 with { Y = textureU0V0.X };
         var textureV0V1 = flip.Y > 0 ? textureU1V1 with { X = textureU0V0.Y } : textureU0V0 with { X = textureU1V1.Y };

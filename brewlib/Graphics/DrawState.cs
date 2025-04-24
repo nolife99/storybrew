@@ -23,6 +23,7 @@ public static class DrawState
 
     static bool flushingRenderer;
     public static bool UseTextureCompression { get; set; }
+    public static int DrawCalls { get; private set; }
 
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
@@ -142,6 +143,7 @@ public static class DrawState
     public static void CompleteFrame()
     {
         Renderer = null;
+        DrawCalls = 0;
 
         capabilityCache.Clear();
         RenderStates.ClearStateCache();
@@ -153,6 +155,7 @@ public static class DrawState
 
         flushingRenderer = true;
         renderer.Flush(canBuffer);
+        DrawCalls++;
         flushingRenderer = false;
     }
 

@@ -7,8 +7,8 @@ using Util;
 
 public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = null,
     TextureOptions textureOptions = null,
-    int width = 512,
-    int height = 512,
+    int width = 2048,
+    int height = 2048,
     int padding = 0,
     string description = nameof(TextureContainerAtlas)) : TextureContainer
 {

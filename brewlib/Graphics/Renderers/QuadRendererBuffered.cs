@@ -49,8 +49,8 @@ public class QuadRendererBuffered : IQuadRenderer
         // Generate an index buffer to render 1 quad as 2 triangles
         // any factor below 1.5x is too small, causing GL to not draw anything
 
-        Span<ushort> indices = stackalloc ushort[(int)(maxQuadsPerBatch * VertexPerQuad * iboFactor)];
-        for (var i = 0; i < maxQuadsPerBatch * iboFactor; ++i)
+        Span<ushort> indices = stackalloc ushort[ushort.MaxValue];
+        for (var i = 0; i < ushort.MaxValue / VertexPerQuad; ++i)
         {
             var triangleIndex = i * VertexPerQuad;
             var quadIndex = i * 4;
@@ -174,7 +174,7 @@ public class QuadRendererBuffered : IQuadRenderer
                 }, 0, 1)"));
 
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor,
-            () => $"{color.Ref} * texture2D({texture.Ref}, {textureCoord.Ref})"));
+            () => $"{color.Ref} * texture({texture.Ref}, {textureCoord.Ref})"));
 
         return sb.Build();
     }

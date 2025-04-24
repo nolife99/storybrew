@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -501,7 +502,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                             })\nCheck its log for the actual error.");
                     }
 
-                    await Task.Yield();
+                    await Task.Delay(100);
                 }
 
                 await proj.ExportToOsb(first);
@@ -602,8 +603,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var sbLoad = stats.ScreenFill;
         switch (sbLoad)
         {
-            case > 0 and < 5
-                when proj.DisplayDebugWarning:
+            case > 0 and < 5 when proj.DisplayDebugWarning:
                 warnings.Append(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill\n"); break;
 
             case >= 5: warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {sbLoad:f2}x Screen Fill\n"); break;
@@ -621,7 +621,13 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         else if (totalGpuMemory >= 256)
             warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {totalGpuMemory:0.0}MB Total Texture Memory\n");
 
-        if (stats.OverlappedCommands) warnings.Append("\ue002 Overlapped Commands\n");
+        if (stats.OverlappedSprites.Count != 0)
+        {
+            warnings.Append("\ue002 Overlapped Commands (");
+            warnings.AppendJoin(", ", stats.OverlappedSprites.Select(s => s.TexturePath));
+            warnings.Append(")\n");
+        }
+
         if (stats.IncompatibleCommands) warnings.Append("\ue002 Incompatible Commands");
 
         var str = warnings.TrimEnd().ToString();
@@ -674,7 +680,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 await Program.Schedule(() => Manager.GetContext<Editor>().Restart());
 
                 await Task.Delay(2000);
-                GC.Collect();
+
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, false);
             });
     });
 

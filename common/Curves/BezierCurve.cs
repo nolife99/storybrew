@@ -23,6 +23,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
         var linearSegments = BSplineToPiecewiseLinear(points, points.Length - 1);
+        distancePosition.EnsureCapacity(distancePosition.Count + linearSegments.Length - 1);
 
         length = 0;
         for (var i = 0; i < linearSegments.Length - 1; ++i)
@@ -43,8 +44,8 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
         Stack<Vector2[]> freeBuffers = new();
 
-        var subdivisionBuffer1 = new Vector2[degree + 1];
-        var subdivisionBuffer2 = new Vector2[degree * 2 + 1];
+        Span<Vector2> subdivisionBuffer1 = stackalloc Vector2[degree + 1];
+        Span<Vector2> subdivisionBuffer2 = stackalloc Vector2[degree * 2 + 1];
 
         while (toFlatten.Count > 0)
         {
@@ -62,7 +63,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
 
             bezierSubdivide(parent, subdivisionBuffer2, rightChild, subdivisionBuffer1, degree + 1);
 
-            subdivisionBuffer2.AsSpan(0, degree + 1).CopyTo(parent);
+            subdivisionBuffer2[..(degree + 1)].CopyTo(parent);
 
             toFlatten.Push(rightChild);
             toFlatten.Push(parent);

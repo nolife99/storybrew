@@ -60,7 +60,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, null, 1024, 1024), true);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, null, 813, 326), true);
         drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
         drawContext.Freeze();
@@ -158,13 +158,17 @@ public sealed class Editor(NativeWindow window) : IDisposable
         screenLayerManager.Update(IsFixedRateUpdate);
     }
 
-    public void Draw()
+    public int Draw()
     {
         GL.Clear(ClearBufferMask.ColorBufferBit);
 
         screenLayerManager.Draw(drawContext);
         overlay.Draw(drawContext);
+
+        var drawCalls = DrawState.DrawCalls;
         DrawState.CompleteFrame();
+
+        return drawCalls;
     }
 
     void window_Closing(CancelEventArgs e) => screenLayerManager.Close();

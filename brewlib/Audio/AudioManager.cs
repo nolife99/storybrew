@@ -14,7 +14,12 @@ public sealed class AudioManager : IDisposable
     public AudioManager(nint handle)
     {
         Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
-        if (Bass.Init(Win: handle)) return;
+        if (Bass.Init(Win: handle))
+        {
+            Bass.PlaybackBufferLength = 100;
+            Bass.UpdatePeriod = 20;
+            return;
+        }
 
         Trace.WriteLine($"Failed to initialize audio with default device: {Bass.LastError}");
 

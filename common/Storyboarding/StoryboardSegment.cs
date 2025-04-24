@@ -30,6 +30,12 @@ public abstract class StoryboardSegment : StoryboardObject
     ///<summary> Gets or sets the scale of the storyboard segment. </summary>
     public abstract float Scale { get; set; }
 
+    ///<summary> Whether the storyboard segment should be reflected horizontally. </summary>
+    public abstract bool FlipX { get; set; }
+
+    ///<summary> Whether the storyboard segment should be reflected vertically. </summary>
+    public abstract bool FlipY { get; set; }
+
     ///<summary> Reverses the order of sprites, with newer sprites being placed at the bottom of the list. </summary>
     public abstract bool ReverseDepth { get; set; }
 

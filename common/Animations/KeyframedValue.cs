@@ -372,20 +372,20 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         if (span.Length < 3) return;
 
         var lastPoint = span.Length - 1;
-        using UnmanagedList<int> keep = [0, lastPoint];
+        List<int> keep = [0, lastPoint];
         getSimplifiedKeyframeIndices(ref span, keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
         if (keep.Count == span.Length) return;
 
         List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
         keep.Sort();
-        foreach (ref var t in keep) simplifiedKeyframes.Add(span[t]);
+        foreach (var t in keep) simplifiedKeyframes.Add(span[t]);
 
         Clear(true);
         keyframes = simplifiedKeyframes;
     }
 
     static void getSimplifiedKeyframeIndices(ref Span<Keyframe<TValue>> span,
-        UnmanagedList<int> keep,
+        List<int> keep,
         int first,
         int last,
         float epsilonSq,
@@ -411,7 +411,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
             if (maxDistSq < epsilonSq || indexFar <= 0) return;
 
             getSimplifiedKeyframeIndices(ref span, keep, first, indexFar, epsilonSq, getDistance);
-            keep.Add(ref indexFar);
+            keep.Add(indexFar);
             first = indexFar;
         }
     }

@@ -2,12 +2,13 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 
 public class ProgramScope
 {
     readonly List<ShaderType> types = [];
-    readonly List<ShaderVariable> varyings = [], uniforms = [];
+    readonly List<ShaderVariable> varyings = [], uniforms = [], vertexBuiltins = [], fragmentBuiltins = [];
 
     int lastId;
     string nextGenericTypeName => $"t_{lastId++:000}";
@@ -34,6 +35,15 @@ public class ProgramScope
         return varying;
     }
 
+    public ShaderVariable AddBuiltinVarying(ShaderContext context, string name, string shaderTypeName, bool isFragmentShader)
+    {
+        ShaderVariable varying = new(context, name, shaderTypeName);
+        if (isFragmentShader) fragmentBuiltins.Add(varying);
+        else vertexBuiltins.Add(varying);
+
+        return varying;
+    }
+
     public void DeclareTypes(StringBuilder code)
     {
         foreach (var type in types)
@@ -56,15 +66,38 @@ public class ProgramScope
         }
     }
 
-    public void DeclareVaryings(StringBuilder code, ShaderContext context)
+    public void DeclareVaryings(StringBuilder code, ShaderContext context, bool isFragmentShader)
     {
+        if (isFragmentShader)
+            for (var i = 0; i < fragmentBuiltins.Count; i++)
+            {
+                var varying = fragmentBuiltins[i];
+                DeclareBuiltinVarying(varying, i);
+            }
+        else
+            for (var i = 0; i < vertexBuiltins.Count; i++)
+            {
+                var varying = vertexBuiltins[i];
+                DeclareBuiltinVarying(varying, i);
+            }
+
         foreach (var varying in varyings)
             if (context.Uses(varying))
             {
-                code.Append(CultureInfo.InvariantCulture, $"varying {varying.ShaderTypeName} {varying.Name}");
+                var varyingType = isFragmentShader ? "in" : "out";
+                code.Append(CultureInfo.InvariantCulture, $"{varyingType} {varying.ShaderTypeName} {varying.Name}");
                 if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
                 code.AppendLine(";");
             }
+
+        return;
+
+        void DeclareBuiltinVarying(ShaderVariable varying, int index)
+        {
+            code.Append(CultureInfo.InvariantCulture, $"layout(location = {index}) out {varying.ShaderTypeName} {varying.Name}");
+            if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
+            code.AppendLine(";");
+        }
     }
 
     public void DeclareUnusedVaryingsAsVariables(StringBuilder code, ShaderContext context)
