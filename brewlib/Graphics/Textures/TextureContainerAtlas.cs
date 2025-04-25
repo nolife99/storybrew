@@ -1,16 +1,19 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Util;
 
 public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = null,
     TextureOptions textureOptions = null,
-    int width = 2048,
-    int height = 2048,
+    int width = 1024,
+    int height = 1024,
     int padding = 0,
-    string description = nameof(TextureContainerAtlas)) : TextureContainer
+    string atlasDescription = nameof(TextureContainerAtlas)) : TextureContainer
 {
     readonly Dictionary<TextureOptions, TextureMultiAtlas2d> atlases = [];
     readonly Dictionary<string, Texture2dRegion> textures = [];
@@ -21,10 +24,11 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
         {
             var sum = 0f;
             foreach (var texture in textures.Values)
-            {
-                var size = texture.Size;
-                sum += size.X * size.Y;
-            }
+                if (texture is not null)
+                {
+                    var size = texture.Size;
+                    sum += size.X * size.Y;
+                }
 
             return sum / 1024 / 1024;
         }
@@ -36,14 +40,19 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
         ref var texture = ref CollectionsMarshal.GetValueRefOrAddDefault(textures, filename, out var exists);
         if (exists) return texture;
 
-        var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer) ?? TextureOptions.Default;
-        ref var atlas = ref CollectionsMarshal.GetValueRefOrAddDefault(atlases, options, out exists);
-        if (!exists) atlas = new(width, height, $"{description} (Option set {atlases.Count})", options, padding);
+        var options = textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer);
+        return texture = Add(Texture2d.LoadBitmap(filename, resourceContainer), filename, options);
+    }
 
-        using var bitmap = Texture2d.LoadBitmap(filename, resourceContainer);
-        if (bitmap is not null) texture = atlas.AddRegion(bitmap, filename);
+    public Texture2dRegion Add(Image<Rgba32> bitmap, string description, TextureOptions options)
+    {
+        if (bitmap is null) return null;
 
-        return texture;
+        options ??= TextureOptions.Default;
+        ref var atlas = ref CollectionsMarshal.GetValueRefOrAddDefault(atlases, options, out var exists);
+        if (!exists) atlas = new(width, height, $"{atlasDescription} (Option set {atlases.Count})", options, padding);
+
+        return atlas.AddRegion(bitmap, description);
     }
 
     #region IDisposable Support

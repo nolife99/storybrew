@@ -35,8 +35,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), primitives),
             (uint)vertexDataSize);
 
-        GL.FlushMappedNamedBufferRange(VertexBufferId, bufferOffset, vertexDataSize);
-
         var drawCount = primitiveCount * vertices;
         if (IndexBufferId != -1)
             GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));
@@ -63,7 +61,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             vertexBufferSize,
             BufferAccessMask.MapWriteBit |
             BufferAccessMask.MapPersistentBit |
-            BufferAccessMask.MapFlushExplicitBit |
+            BufferAccessMask.MapCoherentBit |
             BufferAccessMask.MapUnsynchronizedBit |
             BufferAccessMask.MapInvalidateBufferBit);
 

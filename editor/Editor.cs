@@ -54,16 +54,16 @@ public sealed class Editor(NativeWindow window) : IDisposable
             $"{nameof(StorybrewEditor)}.Resources",
             "resources");
 
-        var size = window.ClientSize;
-        DrawState.UseTextureCompression = Program.Settings.TextureCompression;
-        DrawState.Initialize(ResourceContainer, size.X, size.Y);
-
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer, null, 813, 326), true);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
         drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
         drawContext.Freeze();
+
+        var size = window.ClientSize;
+        DrawState.UseTextureCompression = Program.Settings.TextureCompression;
+        DrawState.Initialize(drawContext.Get<TextureContainer>(), ResourceContainer, size.X, size.Y);
 
         try
         {

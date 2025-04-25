@@ -8,13 +8,16 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Graphics;
 using BrewLib.Util;
+using OpenTK.Core;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Util;
+using Vector = System.Numerics.Vector;
 
 public static class Program
 {
@@ -101,9 +104,9 @@ public static class Program
             ContextFlags.Debug | ContextFlags.ForwardCompatible;
 #else
             ContextFlags.ForwardCompatible;
-#endif
 
-        if ((debugContext & ContextFlags.Debug) == 0) GLFW.WindowHint(WindowHintBool.ContextNoError, true);
+        GLFW.WindowHint(WindowHintBool.ContextNoError, true);
+#endif
 
         NativeWindow window = new(new()
         {
@@ -176,7 +179,7 @@ public static class Program
             var active = GLFW.GetTime() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
+            if (sleepTime > 0) Utils.AccurateSleep(sleepTime, 8);
 
             var frameTime = cur - prev;
             prev = cur;
@@ -262,7 +265,12 @@ public static class Program
                     w.WriteLine();
                 }
 
-                if (show) Environment.FailFast("Unhandled exception", e);
+                if (show &&
+                    MessageBox.Show($"An error occurred:\n\n{e.Message} ({e.GetType().Name
+                    })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
+                        FullName,
+                        MessageBoxButton.OKCancel,
+                        MessageBoxImage.Error) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
             }
             catch (Exception e2)
             {

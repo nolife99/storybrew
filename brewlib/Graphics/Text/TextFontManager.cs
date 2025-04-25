@@ -2,9 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using Textures;
 using Util;
 
-public sealed class TextFontManager : IDisposable
+public sealed class TextFontManager(TextureContainer container) : IDisposable
 {
     readonly Dictionary<int, TextFontAtlased> fonts = [];
     readonly Dictionary<int, int> references = [];
@@ -12,7 +13,7 @@ public sealed class TextFontManager : IDisposable
     public TextFont GetTextFont(string fontName, float fontSize, float scaling)
     {
         var identifier = HashCode.Combine(fontName, fontSize, scaling);
-        if (!fonts.TryGetValue(identifier, out var font)) fonts[identifier] = font = new(fontName, fontSize * scaling);
+        if (!fonts.TryGetValue(identifier, out var font)) fonts[identifier] = font = new(container, fontName, fontSize * scaling);
         if (references.TryGetValue(identifier, out var refCount)) references[identifier] = refCount + 1;
         else references[identifier] = 1;
 

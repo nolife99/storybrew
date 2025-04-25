@@ -7,10 +7,9 @@ using System.Runtime.InteropServices;
 using Textures;
 using Util;
 
-public sealed class TextFontAtlased(string name, float size) : TextFont
+public sealed class TextFontAtlased(TextureContainer container, string name, float size) : TextFont
 {
     readonly Dictionary<char, FontGlyph> glyphs = [];
-    static TextureMultiAtlas2d atlas;
 
     public string Name => name;
     public float Size => size;
@@ -40,7 +39,6 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
             return new(null, (int)measuredSize.X, (int)measuredSize.Y);
         }
 
-        atlas ??= new(1024, 1024, $"Font Atlas {name}:{size:n1}");
         using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(),
             name,
             size,
@@ -49,7 +47,7 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
             out measuredSize,
             false);
 
-        return new(atlas.AddRegion(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"),
+        return new(container.Add(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"),
             (int)measuredSize.X,
             (int)measuredSize.Y);
     }

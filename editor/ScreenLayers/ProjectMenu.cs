@@ -679,9 +679,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 await proj.CancelEffectUpdates(true);
                 await Program.Schedule(() => Manager.GetContext<Editor>().Restart());
 
-                await Task.Delay(2000);
+                await Task.Delay(5000);
 
-                GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, false);
+                GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             });
     });
 

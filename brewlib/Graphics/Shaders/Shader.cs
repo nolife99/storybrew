@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,6 +17,7 @@ public sealed partial class Shader : IDisposable
 
     bool isInitialized, started;
     Dictionary<string, Property<ActiveUniformType>> uniforms;
+    Dictionary<string, Property<ActiveUniformType>>.AlternateLookup<ReadOnlySpan<char>> uniformLookup;
     int vertexShaderId = -1, fragmentShaderId = -1, SortId = -1;
 
     public Shader(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
@@ -56,17 +58,47 @@ public sealed partial class Shader : IDisposable
 
     public int GetUniformLocation(string name, int index = -1, string field = null)
     {
-        var location = uniforms.TryGetValue(GetUniformIdentifier(name, index, field), out var property) ?
+        Span<char> buffer = stackalloc char[256];
+        buffer = buffer[..(GetUniformIdentifier(buffer, name, index, field) - 1)];
+
+        var location = uniformLookup.TryGetValue(buffer, out var property) ?
             property.Location :
             -1;
 
-        if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier");
+        if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier ({buffer})");
 
         return location;
     }
 
-    static string GetUniformIdentifier(string name, int index, string field)
-        => name + (index >= 0 ? $"[{index}]" : "") + (field is not null ? "." + field : "");
+    static int GetUniformIdentifier(Span<char> buffer, string name, int index, string field)
+    {
+        var total = 0;
+
+        name.CopyTo(buffer);
+        buffer = buffer[name.Length..];
+
+        if (index >= 0)
+        {
+            buffer[0] = '[';
+            buffer = buffer[1..];
+
+            index.TryFormat(buffer, out var charsWritten, provider: CultureInfo.InvariantCulture);
+            buffer[charsWritten] = ']';
+
+            buffer = buffer[1..];
+            total += charsWritten + 2;
+        }
+
+        if (field is not null)
+        {
+            buffer[0] = '.';
+            field.CopyTo(buffer[1..]);
+
+            total += field.Length + 1;
+        }
+
+        return total + name.Length + 1;
+    }
 
     void initialize(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
     {
@@ -126,6 +158,8 @@ public sealed partial class Shader : IDisposable
         GL.GetProgram(SortId, GetProgramParameterName.ActiveUniforms, out var uniformCount);
 
         uniforms = new(uniformCount);
+        uniformLookup = uniforms.GetAlternateLookup<ReadOnlySpan<char>>();
+
         for (var i = 0; i < uniformCount; ++i)
         {
             var name = GL.GetActiveUniform(SortId, i, out var size, out var type);

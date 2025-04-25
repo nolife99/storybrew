@@ -30,6 +30,7 @@ public class LineRendererBuffered : ILineRenderer
     int linesInBatch;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
+    Matrix4x4 lastTransformMatrix;
 
     public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 1024, int primitiveBufferSize = 0)
     {
@@ -97,7 +98,12 @@ public class LineRendererBuffered : ILineRenderer
         if (!lastFlushWasBuffered)
         {
             var combinedMatrix = Matrix4x4.Multiply(transformMatrix, camera.ProjectionView);
-            GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, ref combinedMatrix.M11);
+            if (combinedMatrix != lastTransformMatrix)
+            {
+                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, ref combinedMatrix.M11);
+
+                lastTransformMatrix = combinedMatrix;
+            }
         }
 
         primitiveStreamer.Render(PrimitiveType.Lines, linesInBatch, VertexPerLine);

@@ -19,7 +19,29 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
-    public void Update(Image<Rgba32> bitmap, int x, int y, TextureOptions textureOptions)
+    public void Update(Rgba32 color, int x, int y, int width, int height)
+    {
+        if (useGlClearTex)
+            GL.ClearTexSubImage(textureId, 0, x, y, 0, width, height, 1, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
+        else
+        {
+            using var spanOwner = Configuration.Default.MemoryAllocator.Allocate<Rgba32>(width * height);
+            var span = spanOwner.Memory.Span;
+
+            span.Fill(color);
+            GL.TextureSubImage2D(textureId,
+                0,
+                x,
+                y,
+                width,
+                height,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                ref MemoryMarshal.GetReference(span));
+        }
+    }
+
+    public void Update(Image<Rgba32> bitmap, int x, int y)
     {
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1)

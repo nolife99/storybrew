@@ -47,7 +47,7 @@ public static class DrawState
         }
     }
 
-    public static void Initialize(ResourceContainer resourceContainer, int width, int height)
+    public static void Initialize(TextureContainer textureContainer, ResourceContainer resourceContainer, int width, int height)
     {
         if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
             GL.Arb.DebugMessageCallback((source, type, _, severity, _, message, _) =>
@@ -124,18 +124,17 @@ public static class DrawState
         samplerTextureIds = new int[maxTextureImageUnits];
         samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
 
-        WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>(), "whitepixel");
-        NormalPixel = Texture2d.Create(new(127, 127, 255), "normalpixel");
+        using (Image<Rgba32> whitePixel = new(1, 1, Color.White.ToPixel<Rgba32>()))
+            WhitePixel = textureContainer.Add(whitePixel, "whitepixel");
 
         TextGenerator = new(resourceContainer);
-        TextFontManager = new();
+        TextFontManager = new(textureContainer);
 
         Viewport = new(0, 0, width, height);
     }
 
     public static void Cleanup()
     {
-        NormalPixel.Dispose();
         WhitePixel.Dispose();
         TextFontManager.Dispose();
     }
@@ -169,8 +168,7 @@ public static class DrawState
 
     #region Texture states
 
-    public static Texture2d WhitePixel { get; private set; }
-    public static Texture2d NormalPixel { get; private set; }
+    public static Texture2dRegion WhitePixel { get; private set; }
 
     static int[] samplerTextureIds;
     static TextureTarget[] samplerTexturingModes;

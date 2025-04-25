@@ -16,6 +16,8 @@ public class Texture2dRegion : IDisposable
 
     public Vector2 Size => new(bounds.Width, bounds.Height);
 
+    public int X => bounds.X;
+    public int Y => bounds.Y;
     public int Width => bounds.Width;
     public int Height => bounds.Height;
 
