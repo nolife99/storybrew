@@ -11,7 +11,7 @@ public class RenderStates
     {
         if (currentState.Equals(BlendingFactor)) return;
 
-        DrawState.FlushRenderer();
+        DrawState.FlushRenderer(true);
 
         BlendingFactor.Apply();
         currentState = BlendingFactor;

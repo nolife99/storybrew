@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
@@ -13,21 +14,14 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     where TPrimitive : struct, allows ref struct
 {
     nint bufferAddr, primitives;
-    int bufferOffset, drawOffset, vertexBufferSize;
+    int bufferOffset, vertexBufferSize;
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override ref TPrimitive PrimitiveAt(int index) => ref Unsafe.AddByteOffset(
-        ref Unsafe.NullRef<TPrimitive>(),
-        primitives + index * PrimitiveSize);
+    protected override void AddPrimitiveInternal(ref readonly TPrimitive primitive) => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives), totalQueuedPrimitives) = primitive;
 
-    public override void Render(PrimitiveType type, int primitiveCount, int vertices)
+    protected override void RenderInternal(PrimitiveType type, int primitiveCount, ReadOnlySpan<int> counts, ReadOnlySpan<nint> indices, ReadOnlySpan<int> firsts)
     {
         var vertexDataSize = primitiveCount * PrimitiveSize;
-        if (bufferOffset + vertexDataSize > vertexBufferSize)
-        {
-            bufferOffset = 0;
-            drawOffset = 0;
-        }
+        if (bufferOffset + vertexDataSize > vertexBufferSize) bufferOffset = 0;
 
         if (GpuCommandSync.WaitForRange(bufferOffset, vertexDataSize)) expandVertexBuffer();
 
@@ -35,15 +29,12 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), primitives),
             (uint)vertexDataSize);
 
-        var drawCount = primitiveCount * vertices;
-        if (IndexBufferId != -1)
-            GL.DrawElements(type, drawCount, DrawElementsType.UnsignedShort, drawOffset * sizeof(ushort));
-        else GL.DrawArrays(type, drawOffset, drawCount);
+        if (IndexBufferId != -1) GL.MultiDrawElements(type, ref MemoryMarshal.GetReference(counts), DrawElementsType.UnsignedShort, ref MemoryMarshal.GetReference(indices), counts.Length);
+        else GL.MultiDrawArrays(type, ref MemoryMarshal.GetReference(firsts), ref MemoryMarshal.GetReference(counts), counts.Length);
 
         GpuCommandSync.LockRange(bufferOffset, vertexDataSize);
 
         bufferOffset += vertexDataSize;
-        drawOffset += drawCount;
     }
 
     protected override void initializeVertexBuffer()
@@ -100,7 +91,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         CurrentShader = null;
 
         bufferOffset = 0;
-        drawOffset = 0;
     }
 
     public new static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_map_buffer_range") &&

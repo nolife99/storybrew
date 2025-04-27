@@ -139,13 +139,18 @@ public static class DrawState
         TextFontManager.Dispose();
     }
 
-    public static void CompleteFrame()
+    public static int CompleteFrame()
     {
+        FlushRenderer(true);
+        var drawCalls = DrawCalls;
+
         Renderer = null;
         DrawCalls = 0;
 
         capabilityCache.Clear();
         RenderStates.ClearStateCache();
+
+        return drawCalls;
     }
 
     public static void FlushRenderer(bool canBuffer = false)
@@ -153,8 +158,8 @@ public static class DrawState
         if (renderer is null || flushingRenderer) return;
 
         flushingRenderer = true;
+        if (canBuffer) ++DrawCalls;
         renderer.Flush(canBuffer);
-        DrawCalls++;
         flushingRenderer = false;
     }
 
@@ -215,7 +220,7 @@ public static class DrawState
         }
 
         var samplerCount = samplerTextureIds.Length;
-        for (var i = 0; i < textures.Length; ++i)
+        for (var i = 0; i < samplerIndexes.Length; ++i)
         {
             if (samplerIndexes[i] != -1) continue;
 
@@ -253,7 +258,6 @@ public static class DrawState
         var i = Array.IndexOf(samplerTextureIds, textureId, 0, samplerTextureIds.Length);
         if (i == -1) return;
 
-        GL.BindTextureUnit(i, 0);
         samplerTextureIds[i] = 0;
     }
 
@@ -288,7 +292,7 @@ public static class DrawState
         {
             if (clipRegion == value) return;
 
-            FlushRenderer();
+            FlushRenderer(true);
             clipRegion = value;
 
             SetCapability(EnableCap.ScissorTest, clipRegion.HasValue);

@@ -5,10 +5,8 @@ using System.Text;
 
 public abstract class ShaderSnippet
 {
-    public virtual IEnumerable<string> RequiredExtensions { get { yield break; } }
-
-    public virtual int MinVersion => 330;
+    public virtual int MinVersion => 430;
 
     public virtual void GenerateFunctions(StringBuilder code) { }
-    public virtual void Generate(ShaderContext context) => context.Comment(GetType().Name);
+    public virtual void Generate(ShaderContext context) { }
 }

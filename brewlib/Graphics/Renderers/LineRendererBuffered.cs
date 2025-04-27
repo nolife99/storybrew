@@ -1,9 +1,12 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Cameras;
+using Memory;
 using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
@@ -26,11 +29,11 @@ public class LineRendererBuffered : ILineRenderer
     readonly Shader shader;
 
     ICamera camera;
-    bool disposed, lastFlushWasBuffered, rendering;
-    int linesInBatch;
+    bool disposed, rendering;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
-    Matrix4x4 lastTransformMatrix;
+    readonly UnmanagedList<Matrix4x4> combinedMatrices;
+    readonly int combinedMatricesBuffer;
 
     public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 1024, int primitiveBufferSize = 0)
     {
@@ -47,6 +50,11 @@ public class LineRendererBuffered : ILineRenderer
                 primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) *
             VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
+
+        GL.CreateBuffers(1, out combinedMatricesBuffer);
+        GL.NamedBufferStorage(combinedMatricesBuffer, Unsafe.SizeOf<Matrix4x4>() * maxLinesPerBatch, 0, BufferStorageFlags.DynamicStorageBit);
+
+        combinedMatrices = new();
 
         Trace.WriteLine($"Initialized {nameof(LineRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
@@ -93,35 +101,31 @@ public class LineRendererBuffered : ILineRenderer
 
     public void Flush(bool canBuffer = false)
     {
-        if (linesInBatch == 0) return;
+        if (primitiveStreamer.PrimitivesInBatch == 0) return;
 
-        if (!lastFlushWasBuffered)
-        {
-            var combinedMatrix = Matrix4x4.Multiply(transformMatrix, camera.ProjectionView);
-            if (combinedMatrix != lastTransformMatrix)
-            {
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, ref combinedMatrix.M11);
+        combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
+        primitiveStreamer.QueueRender(VertexPerLine);
 
-                lastTransformMatrix = combinedMatrix;
-            }
-        }
+        if (!canBuffer) return;
 
-        primitiveStreamer.Render(PrimitiveType.Lines, linesInBatch, VertexPerLine);
+        var queuedRenders = primitiveStreamer.QueuedRenders;
 
-        linesInBatch = 0;
-        lastFlushWasBuffered = canBuffer;
+        GL.NamedBufferSubData(combinedMatricesBuffer, 0, Unsafe.SizeOf<Matrix4x4>() * queuedRenders, ref combinedMatrices.GetReference(0));
+        combinedMatrices.Clear();
+
+        primitiveStreamer.Render(PrimitiveType.Lines);
     }
 
     public void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color)
     {
-        if (linesInBatch == maxLinesPerBatch) DrawState.FlushRenderer(true);
-
-        ref var ptr = ref primitiveStreamer.PrimitiveAt(linesInBatch);
-        ptr.from = start;
-        ptr.to = end;
-        ptr.color1 = ptr.color2 = color;
-
-        ++linesInBatch;
+        LinePrimitive primitive = new()
+        {
+            from = start,
+            to = end,
+            color1 = color,
+            color2 = color
+        };
+        primitiveStreamer.AddPrimitive(ref primitive);
     }
 
     public void Dispose()
@@ -135,13 +139,15 @@ public class LineRendererBuffered : ILineRenderer
     static Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
+        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters");
 
-        var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
-        var color = sb.AddVarying("vec4");
+        var combinedMatrices = sb.AddSSBO(0);
+        var combinedMatrix = combinedMatrices.FieldAsVariable(new(sb.Context, combinedMatrices.Name, ActiveUniformType.FloatMat4, 0), combinedMatrices.AddField(CombinedMatrixUniformName, ActiveUniformType.FloatMat4, 0));
 
+        var color = sb.AddVarying(ActiveUniformType.FloatVec4);
         sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
             new Assign(sb.GlPosition,
-                () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
+                () => $"{combinedMatrix.Ref[sb.GlDrawID.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                 }, 1)"));
 
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor, () => $"{color.Ref}"));
@@ -158,6 +164,9 @@ public class LineRendererBuffered : ILineRenderer
         if (disposed) return;
 
         if (rendering) EndRendering();
+        GL.DeleteBuffer(combinedMatricesBuffer);
+
+        ((IDisposable)combinedMatrices).Dispose();
 
         if (!disposing) return;
 

@@ -20,7 +20,7 @@ public sealed partial class Shader : IDisposable
     Dictionary<string, Property<ActiveUniformType>>.AlternateLookup<ReadOnlySpan<char>> uniformLookup;
     int vertexShaderId = -1, fragmentShaderId = -1, SortId = -1;
 
-    public Shader(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
+    public Shader(string vertexShaderCode, string fragmentShaderCode)
     {
         initialize(vertexShaderCode, fragmentShaderCode);
         if (!isInitialized)
@@ -100,13 +100,13 @@ public sealed partial class Shader : IDisposable
         return total + name.Length + 1;
     }
 
-    void initialize(StringBuilder vertexShaderCode, StringBuilder fragmentShaderCode)
+    void initialize(string vertexShaderCode, string fragmentShaderCode)
     {
         dispose();
         GL.EnableVertexAttribArray(0);
 
-        vertexShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode.ToString());
-        fragmentShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode.ToString());
+        vertexShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode);
+        fragmentShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode);
 
         if (vertexShaderId == -1 || fragmentShaderId == -1) return;
 

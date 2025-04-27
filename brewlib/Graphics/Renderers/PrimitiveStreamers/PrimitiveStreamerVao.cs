@@ -1,8 +1,10 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Memory;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
@@ -11,9 +13,14 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     where TPrimitive : struct, allows ref struct
 {
     bool Bound;
-    protected Shader CurrentShader;
-    protected int VertexArrayId = -1, VertexBufferId = -1, IndexBufferId = -1, PrimitiveSize, MinRenderableVertexCount;
-    protected VertexDeclaration VertexDeclaration;
+    protected Shader CurrentShader { get; set; }
+    protected int VertexBufferId { get; private set; } = -1;
+    protected int IndexBufferId { get; private set; } = -1;
+    protected int PrimitiveSize { get; }
+    protected int MinRenderableVertexCount { get; set; }
+    protected VertexDeclaration VertexDeclaration { get; }
+
+    int vertexArrayId = -1;
 
     protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration,
         int minRenderableVertexCount,
@@ -28,17 +35,32 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         PrimitiveSize = Unsafe.SizeOf<TPrimitive>();
 
         initializeVertexBuffer();
-        if (!indices.IsEmpty) initializeIndexBuffer(indices);
+
+        if (indices.IsEmpty) firsts = new();
+        else
+        {
+            initializeIndexBuffer(indices);
+            drawOffsets = new();
+        }
     }
 
-    public abstract ref TPrimitive PrimitiveAt(int index);
+    public void AddPrimitive(ref readonly TPrimitive primitive)
+    {
+        if (primitivesInBatch == MinRenderableVertexCount) DrawState.FlushRenderer(true);
+        AddPrimitiveInternal(in primitive);
+
+        ++primitivesInBatch;
+        ++totalQueuedPrimitives;
+    }
+
+    protected abstract void AddPrimitiveInternal(ref readonly TPrimitive primitive);
 
     public void Bind(Shader shader)
     {
         if (Bound || shader is null) return;
 
         if (CurrentShader != shader) setupVertexArray(shader);
-        GL.BindVertexArray(VertexArrayId);
+        GL.BindVertexArray(vertexArrayId);
 
         Bound = true;
     }
@@ -51,7 +73,39 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         Bound = false;
     }
 
-    public abstract void Render(PrimitiveType type, int primitiveCount, int vertices);
+    public void Render(PrimitiveType type)
+    {
+        var usesIndex = IndexBufferId != -1;
+
+        RenderInternal(type, totalQueuedPrimitives, multiDrawQueue.GetSpan(), usesIndex ? drawOffsets.GetSpan() : default, usesIndex ? default : firsts.GetSpan());
+
+        multiDrawQueue.Clear();
+        if (IndexBufferId != -1) drawOffsets.Clear();
+        else firsts.Clear();
+
+        totalQueuedPrimitives = 0;
+    }
+
+    public int QueuedRenders => multiDrawQueue.Count;
+    public int PrimitivesInBatch => primitivesInBatch;
+
+    protected abstract void RenderInternal(PrimitiveType type, int primitiveCount, ReadOnlySpan<int> counts, ReadOnlySpan<nint> indices, ReadOnlySpan<int> firsts);
+
+    protected int totalQueuedPrimitives, primitivesInBatch;
+
+    readonly UnmanagedList<int> multiDrawQueue = new(), firsts;
+    readonly UnmanagedList<nint> drawOffsets;
+
+    public void QueueRender(int vertexCount)
+    {
+        multiDrawQueue.Add(primitivesInBatch * vertexCount);
+
+        var drawOffset = (totalQueuedPrimitives - primitivesInBatch) * sizeof(ushort) * vertexCount;
+        if (IndexBufferId != -1) drawOffsets.Add(drawOffset);
+        else firsts.Add(drawOffset);
+
+        primitivesInBatch = 0;
+    }
 
     public void Dispose()
     {
@@ -59,11 +113,17 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void initializeVertexBuffer() => GL.CreateBuffers(1, out VertexBufferId);
+    protected virtual void initializeVertexBuffer()
+    {
+        GL.CreateBuffers(1, out int buffer);
+        VertexBufferId = buffer;
+    }
 
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
-        GL.CreateBuffers(1, out IndexBufferId);
+        GL.CreateBuffers(1, out int buffer);
+        IndexBufferId = buffer;
+
         GL.NamedBufferStorage(IndexBufferId,
             indices.Length * sizeof(ushort),
             ref MemoryMarshal.GetReference(indices),
@@ -73,13 +133,13 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     void setupVertexArray(Shader shader)
     {
         var initial = CurrentShader is null;
-        if (initial) GL.CreateVertexArrays(1, out VertexArrayId);
+        if (initial) GL.CreateVertexArrays(1, out vertexArrayId);
+        else VertexDeclaration.DeactivateAttributes(CurrentShader, vertexArrayId);
 
-        GL.VertexArrayVertexBuffer(VertexArrayId, 0, VertexBufferId, 0, VertexDeclaration.VertexSize);
-        if (!initial) VertexDeclaration.DeactivateAttributes(CurrentShader, VertexArrayId);
-        VertexDeclaration.ActivateAttributes(shader, VertexArrayId);
+        VertexDeclaration.ActivateAttributes(shader, vertexArrayId);
+        GL.VertexArrayVertexBuffer(vertexArrayId, 0, VertexBufferId, 0, VertexDeclaration.VertexSize);
 
-        if (initial && IndexBufferId != -1) GL.VertexArrayElementBuffer(VertexArrayId, IndexBufferId);
+        if (initial && IndexBufferId != -1) GL.VertexArrayElementBuffer(vertexArrayId, IndexBufferId);
 
         CurrentShader = shader;
     }
@@ -90,7 +150,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     {
         Unbind();
 
-        if (VertexArrayId != -1) GL.DeleteVertexArray(VertexArrayId);
+        if (vertexArrayId != -1) GL.DeleteVertexArray(vertexArrayId);
         if (VertexBufferId != -1) GL.DeleteBuffer(VertexBufferId);
         if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
     }

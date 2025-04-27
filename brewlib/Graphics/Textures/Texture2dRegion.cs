@@ -2,6 +2,7 @@
 
 using System;
 using System.Numerics;
+using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 
 public class Texture2dRegion : IDisposable
@@ -10,11 +11,16 @@ public class Texture2dRegion : IDisposable
 
     public Texture2dRegion(Texture2d texture, Rectangle bounds)
     {
-        BindableTexture = texture ?? this as Texture2d;
+        texture ??= this as Texture2d;
+        BindableTexture = texture;
+        BindlessTextureHandle = GL.Arb.GetTextureHandle(texture.TextureId);
+
+        texture.MakeBindlessResident();
         this.bounds = bounds;
     }
 
     public Vector2 Size => new(bounds.Width, bounds.Height);
+    public long BindlessTextureHandle { get; }
 
     public int X => bounds.X;
     public int Y => bounds.Y;

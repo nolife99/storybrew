@@ -1,9 +1,14 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Cameras;
+using Memory;
 using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
@@ -19,21 +24,22 @@ public class QuadRendererBuffered : IQuadRenderer
         VertexAttribute.CreateDiffuseCoord(),
         VertexAttribute.CreateColor(true));
 
-    readonly int maxQuadsPerBatch, textureUniformLocation;
     readonly bool ownsShader;
 
     readonly IPrimitiveStreamer<QuadPrimitive> primitiveStreamer;
     readonly Shader shader;
 
     ICamera camera;
-    int currentSamplerUnit, quadsInBatch, currentTexture;
+    long currentTextureHandle;
 
-    bool disposed, lastFlushWasBuffered, rendering;
+    bool disposed, rendering;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
-    Matrix4x4 lastTransformMatrix;
+    readonly UnmanagedList<Matrix4x4> combinedMatrices;
+    readonly UnmanagedList<long> bindlessTextures;
+    readonly int combinedMatricesBuffer, bindlessTexturesBuffer;
 
-    public unsafe QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 7168, int primitiveBufferSize = 0)
+    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
     {
         if (shader is null)
         {
@@ -43,15 +49,12 @@ public class QuadRendererBuffered : IQuadRenderer
 
         this.shader = shader;
 
-        textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
+        var indicesCount = (int)(maxQuadsPerBatch * VertexPerQuad * 1.5f);
+        if (indicesCount > ushort.MaxValue)
+            throw new ArgumentException("Can't have more than 65535 indexed vertices!");
 
-        const float iboFactor = 1.5f;
-
-        // Generate an index buffer to render 1 quad as 2 triangles
-        // any factor below 1.5x is too small, causing GL to not draw anything
-
-        Span<ushort> indices = stackalloc ushort[ushort.MaxValue];
-        for (var i = 0; i < ushort.MaxValue / VertexPerQuad; ++i)
+        Span<ushort> indices = stackalloc ushort[indicesCount];
+        for (var i = 0; i < indicesCount / VertexPerQuad; ++i)
         {
             var triangleIndex = i * VertexPerQuad;
             var quadIndex = i * 4;
@@ -63,10 +66,19 @@ public class QuadRendererBuffered : IQuadRenderer
         }
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
-            int.Max(this.maxQuadsPerBatch = maxQuadsPerBatch,
+            int.Max(maxQuadsPerBatch,
                 primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) *
             VertexPerQuad,
             indices);
+
+        var buffers = new int[2];
+        GL.CreateBuffers(2, buffers);
+
+        GL.NamedBufferStorage(combinedMatricesBuffer = buffers[0], Unsafe.SizeOf<Matrix4x4>() * maxQuadsPerBatch, 0, BufferStorageFlags.DynamicStorageBit);
+        GL.NamedBufferStorage(bindlessTexturesBuffer = buffers[1], sizeof(long) * maxQuadsPerBatch, 0, BufferStorageFlags.DynamicStorageBit);
+
+        combinedMatrices = new();
+        bindlessTextures = new();
 
         Trace.WriteLine($"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
     }
@@ -98,6 +110,9 @@ public class QuadRendererBuffered : IQuadRenderer
     public void BeginRendering()
     {
         shader.Begin();
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, combinedMatricesBuffer);
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, bindlessTexturesBuffer);
+
         primitiveStreamer.Bind(shader);
 
         rendering = true;
@@ -106,53 +121,46 @@ public class QuadRendererBuffered : IQuadRenderer
     public void EndRendering()
     {
         primitiveStreamer.Unbind();
+
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, 0);
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 1, 0);
         shader.End();
 
-        currentTexture = 0;
+        currentTextureHandle = 0;
         rendering = false;
     }
 
     public void Flush(bool canBuffer = false)
     {
-        if (quadsInBatch == 0) return;
+        if (primitiveStreamer.PrimitivesInBatch == 0) return;
 
-        // When the previous flush was bufferable, draw state should stay the same.
-        if (!lastFlushWasBuffered)
-        {
-            var combinedMatrix = Matrix4x4.Multiply(transformMatrix, camera.ProjectionView);
-            if (combinedMatrix != lastTransformMatrix)
-            {
-                GL.UniformMatrix4(shader.GetUniformLocation(CombinedMatrixUniformName), 1, false, ref combinedMatrix.M11);
+        combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
+        bindlessTextures.Add(currentTextureHandle);
+        primitiveStreamer.QueueRender(VertexPerQuad);
 
-                lastTransformMatrix = combinedMatrix;
-            }
+        if (!canBuffer) return;
 
-            var samplerUnit = DrawState.BindTexture(currentTexture);
-            if (currentSamplerUnit != samplerUnit)
-            {
-                GL.Uniform1(textureUniformLocation, samplerUnit);
-                currentSamplerUnit = samplerUnit;
-            }
-        }
+        var queuedRenders = primitiveStreamer.QueuedRenders;
 
-        primitiveStreamer.Render(PrimitiveType.Triangles, quadsInBatch, VertexPerQuad);
+        GL.NamedBufferSubData(combinedMatricesBuffer, 0, Unsafe.SizeOf<Matrix4x4>() * queuedRenders, ref combinedMatrices.GetReference(0));
+        combinedMatrices.Clear();
 
-        quadsInBatch = 0;
-        lastFlushWasBuffered = canBuffer;
+        GL.NamedBufferSubData(bindlessTexturesBuffer, 0, sizeof(long) * queuedRenders, ref bindlessTextures.GetReference(0));
+        bindlessTextures.Clear();
+
+        primitiveStreamer.Render(PrimitiveType.Triangles);
     }
 
     public void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
-        var textureId = texture.BindableTexture.TextureId;
-        if (currentTexture != textureId)
+        var textureId = texture.BindlessTextureHandle;
+        if (currentTextureHandle != textureId)
         {
             DrawState.FlushRenderer();
-            currentTexture = textureId;
+            currentTextureHandle = textureId;
         }
-        else if (quadsInBatch == maxQuadsPerBatch) DrawState.FlushRenderer(true);
 
-        primitiveStreamer.PrimitiveAt(quadsInBatch) = quad;
-        ++quadsInBatch;
+        primitiveStreamer.AddPrimitive(in quad);
     }
 
     public void Dispose()
@@ -166,21 +174,33 @@ public class QuadRendererBuffered : IQuadRenderer
     static Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
+        sb.AddRequiredExtension("GL_ARB_bindless_texture", "GL_ARB_shader_draw_parameters");
 
-        var combinedMatrix = sb.AddUniform(CombinedMatrixUniformName, "mat4");
-        var texture = sb.AddUniform(TextureUniformName, "sampler2D");
+        var combinedMatrices = sb.AddSSBO(0);
+        combinedMatrices.Restrict = true;
+        combinedMatrices.ReadOnly = true;
 
-        var color = sb.AddVarying("vec4");
-        var textureCoord = sb.AddVarying("vec2");
+        var combinedMatrix = combinedMatrices.FieldAsVariable(new(sb.Context, combinedMatrices.Name, ActiveUniformType.FloatMat4, 0), combinedMatrices.AddField(CombinedMatrixUniformName, ActiveUniformType.FloatMat4, 0));
 
-        sb.VertexShader = new Sequence(new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
+        var textures = sb.AddSSBO(1);
+        textures.Restrict = true;
+        textures.ReadOnly = true;
+
+        var texture = textures.FieldAsVariable(new(sb.Context, textures.Name, ActiveUniformType.UnsignedIntVec2, 0), textures.AddField(TextureUniformName, ActiveUniformType.UnsignedIntVec2, 0));
+
+        var color = sb.AddVarying(ActiveUniformType.FloatVec4);
+        var textureCoord = sb.AddVarying(ActiveUniformType.FloatVec2);
+        var drawId = sb.AddVarying(ActiveUniformType.Int);
+
+        sb.VertexShader = new Sequence(new Assign(drawId, () => sb.GlDrawID.Name),
+            new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
             new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
             new Assign(sb.GlPosition,
-                () => $"{combinedMatrix.Ref} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
+                () => $"{combinedMatrix.Ref[sb.GlDrawID.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
                 }, 0, 1)"));
 
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor,
-            () => $"{color.Ref} * texture({texture.Ref}, {textureCoord.Ref})"));
+            () => $"{color.Ref} * texture(sampler2D({texture.Ref[drawId.Ref.ToString()]}), {textureCoord.Ref})"));
 
         return sb.Build();
     }
@@ -194,6 +214,11 @@ public class QuadRendererBuffered : IQuadRenderer
         if (disposed) return;
 
         if (rendering) EndRendering();
+        GL.DeleteBuffer(combinedMatricesBuffer);
+        GL.DeleteBuffer(bindlessTexturesBuffer);
+
+        ((IDisposable)combinedMatrices).Dispose();
+        ((IDisposable)bindlessTextures).Dispose();
 
         if (!disposing) return;
 

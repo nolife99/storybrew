@@ -1,16 +1,19 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using OpenTK.Graphics.OpenGL;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using Util;
 
 public class ShaderBuilder
 {
-    readonly ShaderContext Context = new();
-    public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth;
+    public readonly ShaderContext Context = new();
+    public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth, GlDrawID;
     readonly ProgramScope ProgramScope = new();
     readonly ShaderPartScope VertexShaderScope = new("vs"), FragmentShaderScope = new("fs");
     public int MinVersion = 110;
@@ -18,19 +21,33 @@ public class ShaderBuilder
 
     public ShaderSnippet VertexShader, FragmentShader;
 
+    List<string> requiredExt = [];
+
     public ShaderBuilder(VertexDeclaration vertexDeclaration)
     {
         VertexDeclaration = vertexDeclaration;
-        GlPosition = new(Context, "gl_Position", "vec4");
-        GlPointSize = new(Context, "gl_PointSize", "float");
-        GlFragColor = ProgramScope.AddBuiltinVarying(Context, "fragColor", "vec4", true);
-        GlFragDepth = new(Context, "gl_FragDepth", "float");
+        GlPosition = new(Context, "gl_Position", ActiveUniformType.FloatVec4);
+        GlPointSize = new(Context, "gl_PointSize", ActiveUniformType.Float);
+        GlFragColor = ProgramScope.AddBuiltinVarying(Context, "fragColor", ActiveUniformType.FloatVec4, true);
+        GlFragDepth = new(Context, "gl_FragDepth", ActiveUniformType.Float);
+        GlDrawID = new(Context, "gl_DrawIDARB", ActiveUniformType.Int);
     }
 
-    public ShaderVariable AddUniform(string name, string shaderTypeName, int count = -1)
+    public ShaderVariable AddUniform(string name, ActiveUniformType shaderTypeName, int count = -1)
         => ProgramScope.AddUniform(Context, name, shaderTypeName, count);
 
-    public ShaderVariable AddVarying(string shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
+    public ShaderVariable AddVarying(ActiveUniformType shaderTypeName) => ProgramScope.AddVarying(Context, shaderTypeName);
+
+    public ShaderVariable AddVertexVariable(ActiveUniformType shaderTypeName)
+        => VertexShaderScope.AddVariable(Context, shaderTypeName);
+
+    public ShaderVariable AddFragmentVariable(ActiveUniformType shaderTypeName)
+        => FragmentShaderScope.AddVariable(Context, shaderTypeName);
+
+    public void AddRequiredExtension(params string[] extensionName) => requiredExt.AddRange(extensionName);
+
+    public ShaderStorageType AddSSBO(int bindingIndex)
+        => ProgramScope.AddSSBO(bindingIndex);
 
     public Shader Build(bool log = true)
     {
@@ -50,7 +67,7 @@ public class ShaderBuilder
             Trace.WriteLine(fragmentShaderCode);
         }
 
-        return new(vertexShaderCode, fragmentShaderCode);
+        return new(vertexShaderCode.ToString(), fragmentShaderCode.ToString());
     }
 
     ReadOnlySpan<char> buildCommon()
@@ -59,8 +76,13 @@ public class ShaderBuilder
         code.AppendLine(CultureInfo.InvariantCulture,
             $"#version {int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
 
-        foreach (var extensionName in FragmentShader.RequiredExtensions.Union(VertexShader.RequiredExtensions))
+        foreach (var extensionName in requiredExt)
+        {
+            if (!GLFW.ExtensionSupported(extensionName))
+                throw new NotSupportedException($"Required extension {extensionName} not supported");
+
             code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : require");
+        }
 
         ProgramScope.DeclareTypes(code);
 
@@ -97,6 +119,7 @@ public class ShaderBuilder
     StringBuilder buildFragmentShader()
     {
         StringBuilder code = new();
+
         ProgramScope.DeclareVaryings(code, Context, true);
         ProgramScope.DeclareUniforms(code);
         FragmentShader.GenerateFunctions(code);

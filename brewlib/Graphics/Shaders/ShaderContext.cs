@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using OpenTK.Graphics.OpenGL;
 
 public class ShaderContext
 {
@@ -71,7 +72,7 @@ public class ShaderContext
 
     public bool Uses(ShaderVariable variable) => usedVariables.Contains(variable);
 
-    public ShaderVariable Declare(string shaderTypeName, Func<string> expression = null)
+    public ShaderVariable Declare(ActiveUniformType shaderTypeName, Func<string> expression = null)
     {
         checkCanReceiveCommands();
 
@@ -115,12 +116,12 @@ public class ShaderContext
             throw new InvalidOperationException("Cannot set components when declaring a variable");
 
         if (expression is not null)
-            Dependant(() => declare ? $"{result.ShaderTypeName} {result.Ref} = {expression()}" :
+            Dependant(() => declare ? $"{result.ShaderTypeName.GetString()} {result.Ref} = {expression()}" :
                     components is not null ? $"{result.Ref}.{components} = {expression()}" :
                     $"{result.Ref} = {expression()}",
                 result);
 
-        else if (declare) code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName} {result.Name};");
+        else if (declare) code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName.GetString()} {result.Name};");
         else throw new ArgumentNullException(nameof(expression));
     }
 

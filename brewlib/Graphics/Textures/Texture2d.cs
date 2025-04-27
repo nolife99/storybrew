@@ -162,6 +162,9 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
                 PixelType.UnsignedByte,
                 ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
         else
+        {
+            Trace.TraceWarning($"Loading huge texture \"{description}\" with {buffer.MemoryGroup.Count} buffers ({width}x{height})");
+
             for (var i = 0; i < height; ++i)
                 GL.TextureSubImage2D(textureId,
                     0,
@@ -172,11 +175,21 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
                     PixelFormat.Rgba,
                     PixelType.UnsignedByte,
                     ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(i)));
+        }
 
         if (textureOptions.GenerateMipmaps) GL.GenerateTextureMipmap(textureId);
         textureOptions.ApplyParameters(textureId);
 
         return new(textureId, width, height, description);
+    }
+
+    bool isResident;
+    public void MakeBindlessResident()
+    {
+        if (isResident) return;
+
+        GL.Arb.MakeTextureHandleResident(BindlessTextureHandle);
+        isResident = true;
     }
 
     #region IDisposable Support
@@ -185,8 +198,12 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     {
         if (!disposed)
         {
-            DrawState.UnbindTexture(textureId);
             GL.DeleteTexture(textureId);
+            if (isResident)
+            {
+                GL.Arb.MakeTextureHandleNonResident(BindlessTextureHandle);
+                isResident = false;
+            }
 
             if (disposing) disposed = true;
         }

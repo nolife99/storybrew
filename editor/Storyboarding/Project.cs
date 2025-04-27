@@ -190,7 +190,7 @@ public sealed partial class Project : IDisposable
     void reloadTextures()
     {
         TextureContainer?.Dispose();
-        TextureContainer = new TextureContainerAtlas(null, TextureOptions.Default, padding: 1, atlasDescription: "Storyboard");
+        TextureContainer = new TextureContainerSeparate();
     }
 
     void reloadAudio()

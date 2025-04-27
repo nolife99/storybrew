@@ -265,6 +265,8 @@ public static class Program
                     w.WriteLine();
                 }
 
+                Trace.Flush();
+
                 if (show &&
                     MessageBox.Show($"An error occurred:\n\n{e.Message} ({e.GetType().Name
                     })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",

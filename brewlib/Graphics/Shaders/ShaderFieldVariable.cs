@@ -14,9 +14,9 @@ internal class ShaderFieldVariable(ShaderContext context, ShaderVariable baseVar
         }
     }
 
-    public new class Reference(ShaderVariable variable, ShaderType.Field field) : ShaderVariable.Reference(variable)
+    new class Reference(ShaderVariable variable, ShaderType.Field field) : ShaderVariable.Reference(variable)
     {
-        protected override string this[string index] => $"{base[index]}.{field.Name}";
+        public override string this[string index] => $"{variable.Name}.{field.Name}[{index}]";
         public override string ToString() => $"{base.ToString()}.{field.Name}";
     }
 }

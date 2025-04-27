@@ -17,8 +17,7 @@ public sealed class TextureAtlas2d(int width,
     int padding = 0) : IDisposable
 {
     readonly Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
-    List<Rectangle> _freeRegions = [new(0, 0, width, height)];
-    readonly Pool<List<Rectangle>> freeRegionsPool = new(x => x.Clear());
+    readonly List<Rectangle> _freeRegions = [new(0, 0, width, height)];
 
     public Texture2dRegion AddRegion(Image<Rgba32> bitmap)
     {
@@ -97,27 +96,22 @@ public sealed class TextureAtlas2d(int width,
             maxY = Math.Max(maxY, r.Bottom);
         }
 
-        // Step 2: Initialize and fill grid
         var grid = Span2D<bool>.DangerousCreate(ref MemoryMarshal.GetReference(stackalloc bool[maxX * maxY]), maxX, maxY, 0);
         foreach (var r in _freeRegions)
             for (var x = r.X; x < r.Right; x++)
             for (var y = r.Y; y < r.Bottom; y++)
                 grid[x, y] = true;
 
-        freeRegionsPool.Release(_freeRegions);
+        _freeRegions.Clear();
 
-        // Step 3: Greedy extraction of maximal rectangles
-        _freeRegions = freeRegionsPool.Retrieve();
-        for (var y = 0; y < maxY; y++)
-        for (var x = 0; x < maxX; x++)
+        for (var y = 0; y < maxY; ++y)
+        for (var x = 0; x < maxX; ++x)
         {
             if (!grid[x, y]) continue;
 
-            // Expand right
             var width = 0;
             while (x + width < maxX && grid[x + width, y]) width++;
 
-            // Expand down
             var height = 1;
             var stop = false;
             while (y + height < maxY && !stop)
@@ -129,12 +123,11 @@ public sealed class TextureAtlas2d(int width,
                         break;
                     }
 
-                if (!stop) height++;
+                if (!stop) ++height;
             }
 
-            // Mark cells as processed
-            for (var dx = 0; dx < width; dx++)
-            for (var dy = 0; dy < height; dy++)
+            for (var dx = 0; dx < width; ++dx)
+            for (var dy = 0; dy < height; ++dy)
                 grid[x + dx, y + dy] = false;
 
             _freeRegions.Add(new(x, y, width, height));
@@ -154,13 +147,6 @@ public sealed class TextureAtlas2d(int width,
     }
 
     #endregion
-
-    readonly struct SweepEvent(int x, Rectangle rect, bool isStart)
-    {
-        public readonly int X = x;
-        public readonly Rectangle Rect = rect;
-        public readonly bool IsStart = isStart;
-    }
 
     class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent) : Texture2dRegion(texture, bounds)
     {

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using CommunityToolkit.HighPerformance.Buffers;
 
 /// <summary>Represents a bézier curve defined by a set of control points.</summary>
 public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
@@ -42,7 +43,6 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         var pointCount = controlPoints.Length - 1;
 
         var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
-        Stack<Vector2[]> freeBuffers = new();
 
         Span<Vector2> subdivisionBuffer1 = stackalloc Vector2[degree + 1];
         Span<Vector2> subdivisionBuffer2 = stackalloc Vector2[degree * 2 + 1];
@@ -51,19 +51,19 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         {
             var parent = toFlatten.Pop();
 
-            if (bezierIsFlatEnough(parent))
+            if (bezierIsFlatEnough(parent.Span))
             {
-                bezierApproximate(parent, output, subdivisionBuffer1, subdivisionBuffer2, degree + 1);
+                bezierApproximate(parent.Span, output, subdivisionBuffer1, subdivisionBuffer2, degree + 1);
 
-                freeBuffers.Push(parent);
+                parent.Dispose();
                 continue;
             }
 
-            var rightChild = freeBuffers.Count > 0 ? freeBuffers.Pop() : new Vector2[degree + 1];
+            var rightChild = MemoryOwner<Vector2>.Allocate(degree + 1);
 
-            bezierSubdivide(parent, subdivisionBuffer2, rightChild, subdivisionBuffer1, degree + 1);
+            bezierSubdivide(parent.Span, subdivisionBuffer2, rightChild.Span, subdivisionBuffer1, degree + 1);
 
-            subdivisionBuffer2[..(degree + 1)].CopyTo(parent);
+            subdivisionBuffer2[..(degree + 1)].CopyTo(parent.Span);
 
             toFlatten.Push(rightChild);
             toFlatten.Push(parent);
@@ -73,46 +73,53 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         return CollectionsMarshal.AsSpan(output);
     }
 
-    static Stack<Vector2[]> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
+    static Stack<MemoryOwner<Vector2>> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
     {
-        Stack<Vector2[]> result = new();
+        Stack<MemoryOwner<Vector2>> result = new();
         degree = Math.Min(degree, controlPoints.Length - 1);
 
         var pointCount = controlPoints.Length - 1;
-        var points = controlPoints.ToArray();
+        var points = MemoryOwner<Vector2>.Allocate(controlPoints.Length);
+        var pointsSpan = points.Span;
+        controlPoints.CopyTo(pointsSpan);
 
         if (degree == pointCount) result.Push(points);
         else
         {
             for (var i = 0; i < pointCount - degree; i++)
             {
-                var subBezier = new Vector2[degree + 1];
-                subBezier[0] = points[i];
+                var subBezier = MemoryOwner<Vector2>.Allocate(degree + 1);
+                var subBezierSpan = subBezier.Span;
+
+                subBezierSpan[0] = pointsSpan[i];
 
                 for (var j = 0; j < degree - 1; j++)
                 {
-                    subBezier[j + 1] = points[i + 1];
+                    subBezierSpan[j + 1] = pointsSpan[i + 1];
 
                     for (var k = 1; k < degree - j; k++)
                     {
                         var l = Math.Min(k, pointCount - degree - i);
-                        points[i + k] = (l * points[i + k] + points[i + k + 1]) / (l + 1);
+                        pointsSpan[i + k] = (l * pointsSpan[i + k] + pointsSpan[i + k + 1]) / (l + 1);
                     }
                 }
 
-                subBezier[degree] = points[i + 1];
+                subBezierSpan[degree] = pointsSpan[i + 1];
                 result.Push(subBezier);
             }
 
-            result.Push(points[(pointCount - degree)..]);
+            var pointSpan = pointsSpan[(pointCount - degree)..];
+            var memoryOwner = MemoryOwner<Vector2>.Allocate(pointSpan.Length);
+            pointSpan.CopyTo(memoryOwner.Span);
 
+            result.Push(memoryOwner);
             result = new(result);
         }
 
         return result;
     }
 
-    static bool bezierIsFlatEnough(Vector2[] controlPoints)
+    static bool bezierIsFlatEnough(ReadOnlySpan<Vector2> controlPoints)
     {
         for (var i = 1; i < controlPoints.Length - 1; i++)
             if ((controlPoints[i - 1] - 2 * controlPoints[i] + controlPoints[i + 1]).LengthSquared() >
