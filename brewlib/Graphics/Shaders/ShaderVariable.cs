@@ -37,7 +37,9 @@ public class ShaderVariable
 
     public override string ToString()
     {
-        var arrayTag = ArrayCount == 0 ? "[]" : ArrayCount != -1 ? $"[{ArrayCount}]" : "";
+        var arrayTag = ArrayCount == 0 ? "[]" :
+            ArrayCount != -1 ? $"[{ArrayCount}]" : "";
+
         return $"{ShaderTypeName.GetString()} {Name}{arrayTag}";
     }
 

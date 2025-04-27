@@ -47,9 +47,7 @@ public sealed class TextFontAtlased(TextureContainer container, string name, flo
             out measuredSize,
             false);
 
-        return new(container.Add(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"),
-            (int)measuredSize.X,
-            (int)measuredSize.Y);
+        return new(container.Add(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
     }
 
     #region IDisposable Support

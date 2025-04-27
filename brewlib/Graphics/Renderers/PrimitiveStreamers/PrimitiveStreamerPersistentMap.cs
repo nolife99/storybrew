@@ -16,9 +16,15 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     nint bufferAddr, primitives;
     int bufferOffset, vertexBufferSize;
 
-    protected override void AddPrimitiveInternal(ref readonly TPrimitive primitive) => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives), totalQueuedPrimitives) = primitive;
+    protected override void AddPrimitiveInternal(ref readonly TPrimitive primitive)
+        => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives), totalQueuedPrimitives) =
+            primitive;
 
-    protected override void RenderInternal(PrimitiveType type, int primitiveCount, ReadOnlySpan<int> counts, ReadOnlySpan<nint> indices, ReadOnlySpan<int> firsts)
+    protected override void RenderInternal(PrimitiveType type,
+        int primitiveCount,
+        ReadOnlySpan<int> counts,
+        ReadOnlySpan<nint> indices,
+        ReadOnlySpan<int> firsts)
     {
         var vertexDataSize = primitiveCount * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize) bufferOffset = 0;
@@ -29,8 +35,21 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), primitives),
             (uint)vertexDataSize);
 
-        if (IndexBufferId != -1) GL.MultiDrawElements(type, ref MemoryMarshal.GetReference(counts), DrawElementsType.UnsignedShort, ref MemoryMarshal.GetReference(indices), counts.Length);
-        else GL.MultiDrawArrays(type, ref MemoryMarshal.GetReference(firsts), ref MemoryMarshal.GetReference(counts), counts.Length);
+        GL.FlushMappedNamedBufferRange(VertexBufferId, bufferOffset, vertexDataSize);
+
+        // TODO: FIX THIS!!
+
+        if (IndexBufferId != -1)
+            GL.MultiDrawElements(type,
+                ref MemoryMarshal.GetReference(counts),
+                DrawElementsType.UnsignedShort,
+                ref MemoryMarshal.GetReference(indices),
+                counts.Length);
+        else
+            GL.MultiDrawArrays(type,
+                ref MemoryMarshal.GetReference(firsts),
+                ref MemoryMarshal.GetReference(counts),
+                counts.Length);
 
         GpuCommandSync.LockRange(bufferOffset, vertexDataSize);
 
@@ -52,7 +71,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             vertexBufferSize,
             BufferAccessMask.MapWriteBit |
             BufferAccessMask.MapPersistentBit |
-            BufferAccessMask.MapCoherentBit |
+            BufferAccessMask.MapFlushExplicitBit |
             BufferAccessMask.MapUnsynchronizedBit |
             BufferAccessMask.MapInvalidateBufferBit);
 

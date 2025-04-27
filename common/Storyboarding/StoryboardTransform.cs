@@ -22,12 +22,19 @@ public readonly struct StoryboardTransform
     /// <param name="scale">The scale of the element.</param>
     /// <param name="flipX">Whether to reflect the element along the X axis.</param>
     /// <param name="flipY">Whether to reflect the element along the Y axis.</param>
-    public StoryboardTransform(StoryboardTransform parent, Vector2 origin, Vector2 position, float rotation, float scale, bool flipX, bool flipY)
+    public StoryboardTransform(StoryboardTransform parent,
+        Vector2 origin,
+        Vector2 position,
+        float rotation,
+        float scale,
+        bool flipX,
+        bool flipY)
     {
         var localTransform = parent.transform;
         localTransform = Matrix3x2.Multiply(localTransform, Matrix3x2.CreateTranslation(position - origin));
         localTransform = Matrix3x2.Multiply(localTransform, Matrix3x2.CreateRotation(rotation));
-        localTransform = Matrix3x2.Multiply(localTransform, Matrix3x2.CreateScale(flipX ? -scale : scale, flipY ? -scale : scale));
+        localTransform = Matrix3x2.Multiply(localTransform,
+            Matrix3x2.CreateScale(flipX ? -scale : scale, flipY ? -scale : scale));
 
         transform = localTransform;
     }

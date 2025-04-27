@@ -4,9 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
-using Memory;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -16,8 +14,8 @@ public sealed class TextureAtlas2d(int width,
     TextureOptions textureOptions = null,
     int padding = 0) : IDisposable
 {
-    readonly Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
     readonly List<Rectangle> _freeRegions = [new(0, 0, width, height)];
+    readonly Texture2d texture = Texture2d.Create(default, description, width, height, textureOptions);
 
     public Texture2dRegion AddRegion(Image<Rgba32> bitmap)
     {
@@ -45,18 +43,13 @@ public sealed class TextureAtlas2d(int width,
                 bitmap.Mutate(x => x.Resize(width, height, KnownResamplers.NearestNeighbor));
                 region.WasUpscaled = true;
             }
+
             texture.Update(bitmap, free.X, free.Y);
 
             _freeRegions.RemoveAt(i);
-            if (free.Width > width)
-                _freeRegions.Add(new(
-                    free.X + width, free.Y,
-                    free.Width - width, height));
+            if (free.Width > width) _freeRegions.Add(new(free.X + width, free.Y, free.Width - width, height));
 
-            if (free.Height > height)
-                _freeRegions.Add(new(
-                    free.X, free.Y + height,
-                    free.Width, free.Height - height));
+            if (free.Height > height) _freeRegions.Add(new(free.X, free.Y + height, free.Width, free.Height - height));
 
             MergeRectangles();
 
@@ -78,6 +71,7 @@ public sealed class TextureAtlas2d(int width,
             width *= 3;
             height *= 3;
         }
+
         texture.Update(default, region.X, region.Y, width, height);
 
         width += padding;
@@ -134,6 +128,17 @@ public sealed class TextureAtlas2d(int width,
         }
     }
 
+    class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent) : Texture2dRegion(texture, bounds)
+    {
+        public bool WasUpscaled;
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            parent.FreeRegion(this);
+        }
+    }
+
     #region IDisposable Support
 
     bool disposed;
@@ -147,14 +152,4 @@ public sealed class TextureAtlas2d(int width,
     }
 
     #endregion
-
-    class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent) : Texture2dRegion(texture, bounds)
-    {
-        public bool WasUpscaled;
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            parent.FreeRegion(this);
-        }
-    }
 }

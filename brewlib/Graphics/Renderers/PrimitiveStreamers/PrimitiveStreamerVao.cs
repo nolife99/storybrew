@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Memory;
@@ -12,13 +11,12 @@ using Shaders;
 public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     where TPrimitive : struct, allows ref struct
 {
+    readonly UnmanagedList<nint> drawOffsets;
+
+    readonly UnmanagedList<int> multiDrawQueue = new(), firsts;
     bool Bound;
-    protected Shader CurrentShader { get; set; }
-    protected int VertexBufferId { get; private set; } = -1;
-    protected int IndexBufferId { get; private set; } = -1;
-    protected int PrimitiveSize { get; }
-    protected int MinRenderableVertexCount { get; set; }
-    protected VertexDeclaration VertexDeclaration { get; }
+
+    protected int totalQueuedPrimitives, primitivesInBatch;
 
     int vertexArrayId = -1;
 
@@ -44,6 +42,13 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         }
     }
 
+    protected Shader CurrentShader { get; set; }
+    protected int VertexBufferId { get; private set; } = -1;
+    protected int IndexBufferId { get; private set; } = -1;
+    protected int PrimitiveSize { get; }
+    protected int MinRenderableVertexCount { get; set; }
+    protected VertexDeclaration VertexDeclaration { get; }
+
     public void AddPrimitive(ref readonly TPrimitive primitive)
     {
         if (primitivesInBatch == MinRenderableVertexCount) DrawState.FlushRenderer(true);
@@ -52,8 +57,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         ++primitivesInBatch;
         ++totalQueuedPrimitives;
     }
-
-    protected abstract void AddPrimitiveInternal(ref readonly TPrimitive primitive);
 
     public void Bind(Shader shader)
     {
@@ -77,7 +80,11 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     {
         var usesIndex = IndexBufferId != -1;
 
-        RenderInternal(type, totalQueuedPrimitives, multiDrawQueue.GetSpan(), usesIndex ? drawOffsets.GetSpan() : default, usesIndex ? default : firsts.GetSpan());
+        RenderInternal(type,
+            totalQueuedPrimitives,
+            multiDrawQueue.GetSpan(),
+            usesIndex ? drawOffsets.GetSpan() : default,
+            usesIndex ? default : firsts.GetSpan());
 
         multiDrawQueue.Clear();
         if (IndexBufferId != -1) drawOffsets.Clear();
@@ -88,13 +95,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
 
     public int QueuedRenders => multiDrawQueue.Count;
     public int PrimitivesInBatch => primitivesInBatch;
-
-    protected abstract void RenderInternal(PrimitiveType type, int primitiveCount, ReadOnlySpan<int> counts, ReadOnlySpan<nint> indices, ReadOnlySpan<int> firsts);
-
-    protected int totalQueuedPrimitives, primitivesInBatch;
-
-    readonly UnmanagedList<int> multiDrawQueue = new(), firsts;
-    readonly UnmanagedList<nint> drawOffsets;
 
     public void QueueRender(int vertexCount)
     {
@@ -112,6 +112,14 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         Dispose(true);
         GC.SuppressFinalize(this);
     }
+
+    protected abstract void AddPrimitiveInternal(ref readonly TPrimitive primitive);
+
+    protected abstract void RenderInternal(PrimitiveType type,
+        int primitiveCount,
+        ReadOnlySpan<int> counts,
+        ReadOnlySpan<nint> indices,
+        ReadOnlySpan<int> firsts);
 
     protected virtual void initializeVertexBuffer()
     {
@@ -153,6 +161,10 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         if (vertexArrayId != -1) GL.DeleteVertexArray(vertexArrayId);
         if (VertexBufferId != -1) GL.DeleteBuffer(VertexBufferId);
         if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
+
+        ((IDisposable)multiDrawQueue).Dispose();
+        ((IDisposable)firsts)?.Dispose();
+        ((IDisposable)drawOffsets)?.Dispose();
     }
 
     public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_vertex_array_object") &&

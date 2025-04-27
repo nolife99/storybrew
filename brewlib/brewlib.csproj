@@ -26,7 +26,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
+        <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0"/>
         <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.7.0-beta.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -36,15 +36,21 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="ManagedBass.Fx" Version="3.1.1"/>
-        <PackageReference Include="OpenTK.Graphics" Version="4.9.4" />
-        <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.4" />
-        <PackageReference Include="SixLabors.Fonts" Version="2.1.3" />
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
-        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.6" />
+        <PackageReference Include="OpenTK.Graphics" Version="4.9.4"/>
+        <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.4"/>
+        <PackageReference Include="SixLabors.Fonts" Version="2.1.3"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8"/>
+        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.1.6"/>
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\tiny\tiny.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Util\BitmapHelper.cs~" />
+      <None Remove="Graphics\DrawState.cs~" />
+      <None Remove="Graphics\Cameras\CameraOrtho.cs~" />
     </ItemGroup>
 
 </Project>

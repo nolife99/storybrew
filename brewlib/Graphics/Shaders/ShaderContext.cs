@@ -121,7 +121,8 @@ public class ShaderContext
                     $"{result.Ref} = {expression()}",
                 result);
 
-        else if (declare) code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName.GetString()} {result.Name};");
+        else if (declare)
+            code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName.GetString()} {result.Name};");
         else throw new ArgumentNullException(nameof(expression));
     }
 

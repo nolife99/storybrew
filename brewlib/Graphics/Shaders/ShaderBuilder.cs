@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -15,13 +14,13 @@ public class ShaderBuilder
     public readonly ShaderContext Context = new();
     public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth, GlDrawID;
     readonly ProgramScope ProgramScope = new();
+
+    readonly List<string> requiredExt = [];
     readonly ShaderPartScope VertexShaderScope = new("vs"), FragmentShaderScope = new("fs");
     public int MinVersion = 110;
     public VertexDeclaration VertexDeclaration;
 
     public ShaderSnippet VertexShader, FragmentShader;
-
-    List<string> requiredExt = [];
 
     public ShaderBuilder(VertexDeclaration vertexDeclaration)
     {
@@ -46,8 +45,7 @@ public class ShaderBuilder
 
     public void AddRequiredExtension(params string[] extensionName) => requiredExt.AddRange(extensionName);
 
-    public ShaderStorageType AddSSBO(int bindingIndex)
-        => ProgramScope.AddSSBO(bindingIndex);
+    public ShaderStorageType AddSSBO(int bindingIndex) => ProgramScope.AddSSBO(bindingIndex);
 
     public Shader Build(bool log = true)
     {

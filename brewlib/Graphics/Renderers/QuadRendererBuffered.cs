@@ -1,12 +1,9 @@
 ﻿namespace BrewLib.Graphics.Renderers;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Cameras;
 using Memory;
 using OpenTK.Graphics.OpenGL;
@@ -24,6 +21,10 @@ public class QuadRendererBuffered : IQuadRenderer
         VertexAttribute.CreateDiffuseCoord(),
         VertexAttribute.CreateColor(true));
 
+    readonly UnmanagedList<long> bindlessTextures;
+    readonly UnmanagedList<Matrix4x4> combinedMatrices;
+    readonly int combinedMatricesBuffer, bindlessTexturesBuffer;
+
     readonly bool ownsShader;
 
     readonly IPrimitiveStreamer<QuadPrimitive> primitiveStreamer;
@@ -35,9 +36,6 @@ public class QuadRendererBuffered : IQuadRenderer
     bool disposed, rendering;
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
-    readonly UnmanagedList<Matrix4x4> combinedMatrices;
-    readonly UnmanagedList<long> bindlessTextures;
-    readonly int combinedMatricesBuffer, bindlessTexturesBuffer;
 
     public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
     {
@@ -50,8 +48,7 @@ public class QuadRendererBuffered : IQuadRenderer
         this.shader = shader;
 
         var indicesCount = (int)(maxQuadsPerBatch * VertexPerQuad * 1.5f);
-        if (indicesCount > ushort.MaxValue)
-            throw new ArgumentException("Can't have more than 65535 indexed vertices!");
+        if (indicesCount > ushort.MaxValue) throw new ArgumentException("Can't have more than 65535 indexed vertices!");
 
         Span<ushort> indices = stackalloc ushort[indicesCount];
         for (var i = 0; i < indicesCount / VertexPerQuad; ++i)
@@ -66,16 +63,21 @@ public class QuadRendererBuffered : IQuadRenderer
         }
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
-            int.Max(maxQuadsPerBatch,
-                primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) *
-            VertexPerQuad,
+            int.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad,
             indices);
 
         var buffers = new int[2];
         GL.CreateBuffers(2, buffers);
 
-        GL.NamedBufferStorage(combinedMatricesBuffer = buffers[0], Unsafe.SizeOf<Matrix4x4>() * maxQuadsPerBatch, 0, BufferStorageFlags.DynamicStorageBit);
-        GL.NamedBufferStorage(bindlessTexturesBuffer = buffers[1], sizeof(long) * maxQuadsPerBatch, 0, BufferStorageFlags.DynamicStorageBit);
+        GL.NamedBufferStorage(combinedMatricesBuffer = buffers[0],
+            Unsafe.SizeOf<Matrix4x4>() * maxQuadsPerBatch,
+            0,
+            BufferStorageFlags.DynamicStorageBit);
+
+        GL.NamedBufferStorage(bindlessTexturesBuffer = buffers[1],
+            sizeof(long) * maxQuadsPerBatch,
+            0,
+            BufferStorageFlags.DynamicStorageBit);
 
         combinedMatrices = new();
         bindlessTextures = new();
@@ -142,7 +144,11 @@ public class QuadRendererBuffered : IQuadRenderer
 
         var queuedRenders = primitiveStreamer.QueuedRenders;
 
-        GL.NamedBufferSubData(combinedMatricesBuffer, 0, Unsafe.SizeOf<Matrix4x4>() * queuedRenders, ref combinedMatrices.GetReference(0));
+        GL.NamedBufferSubData(combinedMatricesBuffer,
+            0,
+            Unsafe.SizeOf<Matrix4x4>() * queuedRenders,
+            ref combinedMatrices.GetReference(0));
+
         combinedMatrices.Clear();
 
         GL.NamedBufferSubData(bindlessTexturesBuffer, 0, sizeof(long) * queuedRenders, ref bindlessTextures.GetReference(0));
@@ -180,13 +186,16 @@ public class QuadRendererBuffered : IQuadRenderer
         combinedMatrices.Restrict = true;
         combinedMatrices.ReadOnly = true;
 
-        var combinedMatrix = combinedMatrices.FieldAsVariable(new(sb.Context, combinedMatrices.Name, ActiveUniformType.FloatMat4, 0), combinedMatrices.AddField(CombinedMatrixUniformName, ActiveUniformType.FloatMat4, 0));
+        var combinedMatrix = combinedMatrices.FieldAsVariable(
+            new(sb.Context, combinedMatrices.Name, ActiveUniformType.FloatMat4, 0),
+            combinedMatrices.AddField(CombinedMatrixUniformName, ActiveUniformType.FloatMat4, 0));
 
         var textures = sb.AddSSBO(1);
         textures.Restrict = true;
         textures.ReadOnly = true;
 
-        var texture = textures.FieldAsVariable(new(sb.Context, textures.Name, ActiveUniformType.UnsignedIntVec2, 0), textures.AddField(TextureUniformName, ActiveUniformType.UnsignedIntVec2, 0));
+        var texture = textures.FieldAsVariable(new(sb.Context, textures.Name, ActiveUniformType.UnsignedIntVec2, 0),
+            textures.AddField(TextureUniformName, ActiveUniformType.UnsignedIntVec2, 0));
 
         var color = sb.AddVarying(ActiveUniformType.FloatVec4);
         var textureCoord = sb.AddVarying(ActiveUniformType.FloatVec2);
@@ -196,8 +205,9 @@ public class QuadRendererBuffered : IQuadRenderer
             new Assign(color, sb.VertexDeclaration.GetAttribute(AttributeUsage.Color)),
             new Assign(textureCoord, sb.VertexDeclaration.GetAttribute(AttributeUsage.DiffuseMapCoord)),
             new Assign(sb.GlPosition,
-                () => $"{combinedMatrix.Ref[sb.GlDrawID.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
-                }, 0, 1)"));
+                ()
+                    => $"{combinedMatrix.Ref[sb.GlDrawID.Name]} * vec4({sb.VertexDeclaration.GetAttribute(AttributeUsage.Position).Name
+                    }, 0, 1)"));
 
         sb.FragmentShader = new Sequence(new Assign(sb.GlFragColor,
             () => $"{color.Ref} * texture(sampler2D({texture.Ref[drawId.Ref.ToString()]}), {textureCoord.Ref})"));

@@ -59,8 +59,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
     sealed class ActionQueueContext
     {
         public readonly ConcurrentQueue<ActionContainer> Queue = [];
-        public volatile int Running;
         bool enabled;
+        public volatile int Running;
         public volatile bool RunningLoneTask;
 
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -109,9 +109,19 @@ public static class ShaderUtil
         ActiveUniformType.IntSampler2DMultisampleArray => "isampler2DMSArray",
         ActiveUniformType.UnsignedIntSampler2DMultisampleArray => "usampler2DMSArray",
         ActiveUniformType.UnsignedIntAtomicCounter => "atomic_uint",
-        _ => "",
+        _ => ""
     };
 
-    public static bool IsFlatType(this ActiveUniformType type)
-        => type is ActiveUniformType.Int or ActiveUniformType.UnsignedInt or ActiveUniformType.Bool or ActiveUniformType.IntVec2 or ActiveUniformType.IntVec3 or ActiveUniformType.IntVec4 or ActiveUniformType.UnsignedIntVec2 or ActiveUniformType.UnsignedIntVec3 or ActiveUniformType.UnsignedIntVec4 or ActiveUniformType.BoolVec2 or ActiveUniformType.BoolVec3 or ActiveUniformType.BoolVec4;
+    public static bool IsFlatType(this ActiveUniformType type) => type is ActiveUniformType.Int
+        or ActiveUniformType.UnsignedInt
+        or ActiveUniformType.Bool
+        or ActiveUniformType.IntVec2
+        or ActiveUniformType.IntVec3
+        or ActiveUniformType.IntVec4
+        or ActiveUniformType.UnsignedIntVec2
+        or ActiveUniformType.UnsignedIntVec3
+        or ActiveUniformType.UnsignedIntVec4
+        or ActiveUniformType.BoolVec2
+        or ActiveUniformType.BoolVec3
+        or ActiveUniformType.BoolVec4;
 }

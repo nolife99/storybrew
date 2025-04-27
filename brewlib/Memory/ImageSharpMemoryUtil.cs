@@ -13,9 +13,7 @@ internal sealed class UnmanagedMemoryAllocator : MemoryAllocator
     protected override int GetBufferCapacityInBytes() => int.MaxValue;
 
     public override IMemoryOwner<T> Allocate<T>(int length, AllocationOptions options = AllocationOptions.None)
-    {
-        return new SafeUnmanagedBuffer<T>(length, options);
-    }
+        => new SafeUnmanagedBuffer<T>(length, options);
 }
 
 public sealed class SafeUnmanagedBuffer<T> : MemoryManager<T> where T : struct

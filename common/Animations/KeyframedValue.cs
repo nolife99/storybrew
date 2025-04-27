@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using BrewLib.Memory;
 
 /// <summary>A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.</summary>
 /// <typeparam name="TValue"> The type of values of the keyframes. </typeparam>
@@ -85,13 +84,10 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     {
         switch (collection)
         {
-            case ICollection<Keyframe<TValue>> list:
-                keyframes.EnsureCapacity(keyframes.Count + list.Count);
-                break;
+            case ICollection<Keyframe<TValue>> list: keyframes.EnsureCapacity(keyframes.Count + list.Count); break;
 
             case KeyframedValue<TValue> keyframedValue:
-                keyframes.EnsureCapacity(keyframes.Count + keyframedValue.Count);
-                break;
+                keyframes.EnsureCapacity(keyframes.Count + keyframedValue.Count); break;
         }
 
         foreach (var keyframe in collection)

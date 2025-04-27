@@ -36,6 +36,7 @@ public sealed class SafeUnmanagedMemoryStream : Stream
     }
 
     ~SafeUnmanagedMemoryStream() => Dispose(false);
+
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);

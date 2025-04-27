@@ -42,12 +42,12 @@ public static class BitmapHelper
             }
 
             if (len - offset == 0) return true;
-            if ((Vector.LoadUnsafe(ref first, len - vectorSize) & alphaMask) >> 24 != zeroVector)
-                return false;
+            if ((Vector.LoadUnsafe(ref first, len - vectorSize) & alphaMask) >> 24 != zeroVector) return false;
         }
-        else foreach (ref readonly var pixel in buffer)
-            if (pixel.A != 0)
-                return false;
+        else
+            foreach (ref readonly var pixel in buffer)
+                if (pixel.A != 0)
+                    return false;
 
         return true;
     }

@@ -56,7 +56,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
                 camera,
                 bounds,
                 opacity,
-                new(transform, Origin, Position, Rotation, Scale, FlipX,FlipY),
+                new(transform, Origin, Position, Rotation, Scale, FlipX, FlipY),
                 project,
                 frameStats);
     }

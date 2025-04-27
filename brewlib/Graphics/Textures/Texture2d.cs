@@ -17,12 +17,24 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 {
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
 
+    bool isResident;
+
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
     public void Update(Rgba32 color, int x, int y, int width, int height)
     {
         if (useGlClearTex)
-            GL.ClearTexSubImage(textureId, 0, x, y, 0, width, height, 1, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
+            GL.ClearTexSubImage(textureId,
+                0,
+                x,
+                y,
+                0,
+                width,
+                height,
+                1,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                ref color);
         else
         {
             using var spanOwner = Configuration.Default.MemoryAllocator.Allocate<Rgba32>(width * height);
@@ -69,10 +81,11 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
-        using var stream = File.Exists(filename) ? File.OpenRead(filename) : resourceContainer?.GetStream(filename, ResourceSource.Embedded);
+        using var stream = File.Exists(filename) ?
+            File.OpenRead(filename) :
+            resourceContainer?.GetStream(filename, ResourceSource.Embedded);
 
-        if (stream is not null)
-            return Image.Load<Rgba32>(stream);
+        if (stream is not null) return Image.Load<Rgba32>(stream);
 
         Trace.TraceWarning($"Texture not found: {filename}");
         return null;
@@ -163,7 +176,8 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
                 ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
         else
         {
-            Trace.TraceWarning($"Loading huge texture \"{description}\" with {buffer.MemoryGroup.Count} buffers ({width}x{height})");
+            Trace.TraceWarning(
+                $"Loading huge texture \"{description}\" with {buffer.MemoryGroup.Count} buffers ({width}x{height})");
 
             for (var i = 0; i < height; ++i)
                 GL.TextureSubImage2D(textureId,
@@ -183,7 +197,6 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         return new(textureId, width, height, description);
     }
 
-    bool isResident;
     public void MakeBindlessResident()
     {
         if (isResident) return;

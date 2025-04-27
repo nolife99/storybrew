@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
-using System.Collections.Generic;
 using System.Text;
 
 public abstract class ShaderSnippet

@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using BrewLib.Audio;
-using BrewLib.Graphics;
 using BrewLib.Util;
 using OpenTK.Core;
 using OpenTK.Windowing.Common;
@@ -189,7 +188,8 @@ public static class Program
             avActive = (active + avActive) * .5;
             longest = Math.Max(frameTime, longest);
 
-            Stats = $"fps:{1 / av:0}/{1 / avActive:0} (act:{avActive * 1000:0} avg:{av * 1000:0} hi:{longest * 1000:0})\n{draws} draws";
+            Stats =
+                $"fps:{1 / av:0}/{1 / avActive:0} (act:{avActive * 1000:0} avg:{av * 1000:0} hi:{longest * 1000:0})\n{draws} draws";
 
             longest = 0;
             lastStat = cur;

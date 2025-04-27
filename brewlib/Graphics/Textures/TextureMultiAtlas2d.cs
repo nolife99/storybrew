@@ -38,6 +38,7 @@ public sealed class TextureMultiAtlas2d : IDisposable
             if (firstOversize)
             {
                 if (bitmap.Width * bitmap.Height > width * height) return loadOversized(bitmap, description);
+
                 firstOversize = false;
             }
             else return loadOversized(bitmap, description);

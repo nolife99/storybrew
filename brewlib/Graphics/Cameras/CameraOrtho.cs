@@ -55,7 +55,9 @@ public class CameraOrtho : CameraBase
 
         if (virtualHeight != 0)
         {
-            orthoViewport.Width = (int)float.Round(screenViewport.Width * (screenViewport.Height == 0 ? 1 : (float)virtualHeight / screenViewport.Height));
+            orthoViewport.Width = (int)float.Round(screenViewport.Width *
+                (screenViewport.Height == 0 ? 1 : (float)virtualHeight / screenViewport.Height));
+
             orthoViewport.Height = virtualHeight;
             if (virtualWidth > 0) orthoViewport.X += (orthoViewport.Width - virtualWidth) / 2;
 

@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,8 +15,8 @@ public sealed partial class Shader : IDisposable
     Dictionary<string, Property<ActiveAttribType>> attributes;
 
     bool isInitialized, started;
-    Dictionary<string, Property<ActiveUniformType>> uniforms;
     Dictionary<string, Property<ActiveUniformType>>.AlternateLookup<ReadOnlySpan<char>> uniformLookup;
+    Dictionary<string, Property<ActiveUniformType>> uniforms;
     int vertexShaderId = -1, fragmentShaderId = -1, SortId = -1;
 
     public Shader(string vertexShaderCode, string fragmentShaderCode)
@@ -61,9 +60,7 @@ public sealed partial class Shader : IDisposable
         Span<char> buffer = stackalloc char[256];
         buffer = buffer[..(GetUniformIdentifier(buffer, name, index, field) - 1)];
 
-        var location = uniformLookup.TryGetValue(buffer, out var property) ?
-            property.Location :
-            -1;
+        var location = uniformLookup.TryGetValue(buffer, out var property) ? property.Location : -1;
 
         if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier ({buffer})");
 

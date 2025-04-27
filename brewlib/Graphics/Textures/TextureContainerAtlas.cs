@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IO;
 using SixLabors.ImageSharp;

@@ -96,9 +96,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var origin = GetOriginVector(sprite.Origin, texture.Size);
         if (!transform.IsIdentity)
         {
-            position = sprite.HasMoveCommands ?
-                transform.ApplyToPositionXY(position) :
-                transform.ApplyToPosition(position);
+            position = sprite.HasMoveCommands ? transform.ApplyToPositionXY(position) : transform.ApplyToPosition(position);
 
             if (sprite.RotateTimeline.HasCommands) rotation = transform.ApplyToRotation(rotation);
             if (sprite.HasScalingCommands) scale = transform.ApplyToScale(scale);

@@ -2,15 +2,14 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using OpenTK.Graphics.OpenGL;
 using Util;
 
 public class ProgramScope
 {
-    readonly List<ShaderType> structs = [];
     readonly List<ShaderStorageType> ssbos = [];
+    readonly List<ShaderType> structs = [];
     readonly List<ShaderVariable> varyings = [], uniforms = [], vertexBuiltins = [], fragmentBuiltins = [];
 
     int lastId;
@@ -45,7 +44,10 @@ public class ProgramScope
         return varying;
     }
 
-    public ShaderVariable AddBuiltinVarying(ShaderContext context, string name, ActiveUniformType shaderTypeName, bool isFragmentShader)
+    public ShaderVariable AddBuiltinVarying(ShaderContext context,
+        string name,
+        ActiveUniformType shaderTypeName,
+        bool isFragmentShader)
     {
         ShaderVariable varying = new(context, name, shaderTypeName);
         if (isFragmentShader) fragmentBuiltins.Add(varying);
@@ -64,6 +66,7 @@ public class ProgramScope
 
             code.AppendLine("};");
         }
+
         foreach (var type in ssbos)
         {
             var prefix = StringHelper.StringBuilderPool.Retrieve();
@@ -73,7 +76,9 @@ public class ProgramScope
             if (type.ReadOnly) prefix.Append("readonly ");
             if (type.WriteOnly) prefix.Append("writeonly ");
 
-            code.AppendLine(CultureInfo.InvariantCulture, $"layout(binding = {type.BindingIndex}, std430) {prefix}buffer {ShaderStorageType.BlockName} {{");
+            code.AppendLine(CultureInfo.InvariantCulture,
+                $"layout(binding = {type.BindingIndex}, std430) {prefix}buffer {ShaderStorageType.BlockName} {{");
+
             StringHelper.StringBuilderPool.Release(prefix);
 
             foreach (var field in type.Fields)
@@ -117,7 +122,9 @@ public class ProgramScope
             {
                 var flat = varying.ShaderTypeName.IsFlatType() ? "flat " : "";
                 var varyingType = isFragmentShader ? "in" : "out";
-                code.Append(CultureInfo.InvariantCulture, $"{flat}{varyingType} {varying.ShaderTypeName.GetString()} {varying.Name}");
+                code.Append(CultureInfo.InvariantCulture,
+                    $"{flat}{varyingType} {varying.ShaderTypeName.GetString()} {varying.Name}");
+
                 if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
                 code.AppendLine(";");
             }
@@ -126,7 +133,9 @@ public class ProgramScope
 
         void DeclareBuiltinVarying(ShaderVariable varying, int index)
         {
-            code.Append(CultureInfo.InvariantCulture, $"layout(location = {index}) out {varying.ShaderTypeName.GetString()} {varying.Name}");
+            code.Append(CultureInfo.InvariantCulture,
+                $"layout(location = {index}) out {varying.ShaderTypeName.GetString()} {varying.Name}");
+
             if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
             code.AppendLine(";");
         }

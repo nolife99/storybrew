@@ -47,7 +47,10 @@ public static class DrawState
         }
     }
 
-    public static void Initialize(TextureContainer textureContainer, ResourceContainer resourceContainer, int width, int height)
+    public static void Initialize(TextureContainer textureContainer,
+        ResourceContainer resourceContainer,
+        int width,
+        int height)
     {
         if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
             GL.Arb.DebugMessageCallback((source, type, _, severity, _, message, _) =>

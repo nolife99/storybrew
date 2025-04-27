@@ -4,9 +4,11 @@ using System;
 using System.Collections.Generic;
 using CommandValues;
 
-
 /// <summary> Provides a way for sprites to be reused. </summary>
-/// <remarks> It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite will cause performance issues. </remarks>
+/// <remarks>
+///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled
+///     sprite will cause performance issues.
+/// </remarks>
 public class OsbSpritePool : IDisposable
 {
     readonly Action<OsbSprite, float, float> _attributes;
@@ -18,9 +20,6 @@ public class OsbSpritePool : IDisposable
     internal readonly List<PooledSprite> pooled = [];
 
     bool disposed;
-
-    ///<summary> The maximum duration for a sprite to be pooled. </summary>
-    public int MaxPoolDuration { get; set; }
 
     /// <summary> Initializes a new instance of the <see cref="OsbSpritePool"/> class. </summary>
     /// <param name="segment"> The storyboard segment associated with the pool. </param>
@@ -113,6 +112,9 @@ public class OsbSpritePool : IDisposable
         _attributes = attributes;
     }
 
+    ///<summary> The maximum duration for a sprite to be pooled. </summary>
+    public int MaxPoolDuration { get; set; }
+
     /// <inheritdoc/>
     public void Dispose() => Dispose(true);
 
@@ -164,8 +166,7 @@ public class OsbSpritePool : IDisposable
     internal virtual OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
-        CommandPosition position)
-        => segment.CreateSprite(path, origin, position);
+        CommandPosition position) => segment.CreateSprite(path, origin, position);
 
     internal void Dispose(bool disposing)
     {
@@ -184,13 +185,16 @@ public class OsbSpritePool : IDisposable
     internal sealed class PooledSprite(OsbSprite sprite, float startTime, float endTime)
     {
         public readonly OsbSprite Sprite = sprite;
-        public float StartTime = startTime;
         public float EndTime = endTime;
+        public float StartTime = startTime;
     }
 }
 
 /// <summary> Provides a way for sprites to be reused. This class provides support for <see cref="OsbAnimation"/>. </summary>
-/// <remarks> It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite will cause performance issues. </remarks>
+/// <remarks>
+///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled
+///     sprite will cause performance issues.
+/// </remarks>
 public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 {
     readonly Dictionary<int, OsbAnimationPool> animationPools = [];
@@ -542,7 +546,11 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
     /// <param name="endTime"> The new end time for the sprite. </param>
     /// <param name="attributes"> The original delegate that was provided when the sprite was pooled. </param>
     /// <param name="group"> The original group for the pooled sprite. </param>
-    public void EditPoolDuration(OsbSprite sprite, float startTime, float endTime, Action<OsbSprite, float, float> attributes, int group)
+    public void EditPoolDuration(OsbSprite sprite,
+        float startTime,
+        float endTime,
+        Action<OsbSprite, float, float> attributes,
+        int group)
     {
         var pool = getPool(sprite.TexturePath, sprite.Origin, sprite.InitialPosition, attributes, group);
         foreach (var pooledSprite in pool.pooled)
@@ -625,7 +633,10 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 }
 
 /// <summary> Provides a way for animations to be reused. </summary>
-/// <remarks> It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite will cause performance issues. </remarks>
+/// <remarks>
+///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled
+///     sprite will cause performance issues.
+/// </remarks>
 public sealed class OsbAnimationPool(StoryboardSegment segment,
     string path,
     int frameCount,
@@ -776,6 +787,5 @@ public sealed class OsbAnimationPool(StoryboardSegment segment,
     internal override OsbSprite CreateSprite(StoryboardSegment segment,
         string path,
         OsbOrigin origin,
-        CommandPosition position)
-        => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);
+        CommandPosition position) => segment.CreateAnimation(path, frameCount, frameDelay, loopType, origin, position);
 }

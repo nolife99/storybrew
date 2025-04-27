@@ -21,6 +21,7 @@ public class ShaderType(string name)
     public ShaderVariable FieldAsVariable(ShaderVariable variable, Field field)
     {
         if (variable is null) return null;
+
         if (!fields.Contains(field)) throw new InvalidOperationException();
 
         return new ShaderFieldVariable(variable.Context, variable, field);
