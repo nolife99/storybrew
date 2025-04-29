@@ -22,8 +22,8 @@ public static class DrawState
     static Renderer renderer;
 
     static bool flushingRenderer;
+    static int drawCalls;
     public static bool UseTextureCompression { get; set; }
-    public static int DrawCalls { get; private set; }
 
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
@@ -35,7 +35,7 @@ public static class DrawState
         {
             if (renderer == value) return;
 
-            FlushRenderer();
+            FlushRenderer(true);
 
             flushingRenderer = true;
             renderer?.EndRendering();
@@ -124,9 +124,6 @@ public static class DrawState
 
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
-        samplerTextureIds = new int[maxTextureImageUnits];
-        samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
-
         using (Image<Rgba32> whitePixel = new(1, 1, Color.White.ToPixel<Rgba32>()))
             WhitePixel = textureContainer.Add(whitePixel, "whitepixel");
 
@@ -144,16 +141,15 @@ public static class DrawState
 
     public static int CompleteFrame()
     {
-        FlushRenderer(true);
-        var drawCalls = DrawCalls;
-
         Renderer = null;
-        DrawCalls = 0;
+
+        var totalDraws = drawCalls;
+        drawCalls = 0;
 
         capabilityCache.Clear();
         RenderStates.ClearStateCache();
 
-        return drawCalls;
+        return totalDraws;
     }
 
     public static void FlushRenderer(bool canBuffer = false)
@@ -161,108 +157,24 @@ public static class DrawState
         if (renderer is null || flushingRenderer) return;
 
         flushingRenderer = true;
-        if (canBuffer) ++DrawCalls;
+        if (canBuffer) ++drawCalls;
         renderer.Flush(canBuffer);
         flushingRenderer = false;
     }
 
-    public static T Prepare<T>(T renderer, ICamera camera, RenderStates renderStates) where T : Renderer
+    public static T Prepare<T>(T nextRenderer, ICamera camera, RenderStates renderStates) where T : Renderer
     {
-        Renderer = renderer;
+        Renderer = nextRenderer;
         renderer.Camera = camera;
-        renderStates?.Apply();
-        return renderer;
+        renderStates.Apply();
+        return nextRenderer;
     }
 
     #region Texture states
 
     public static Texture2dRegion WhitePixel { get; private set; }
 
-    static int[] samplerTextureIds;
-    static TextureTarget[] samplerTexturingModes;
-
-    static int lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits,
-        maxCombinedTextureImageUnits;
-
-    static void SetTexturingMode(int samplerIndex, TextureTarget mode)
-    {
-        ref var previousMode = ref samplerTexturingModes[samplerIndex];
-        if (previousMode == mode) return;
-
-        if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
-        previousMode = mode;
-    }
-
-    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode = TextureTarget.Texture2D)
-    {
-        SetTexturingMode(samplerIndex, mode);
-
-        ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
-        if (samplerTextureId == textureId) return;
-
-        GL.BindTextureUnit(samplerIndex, textureId);
-        samplerTextureId = textureId;
-    }
-
-    public static int BindTexture(int textureId) => BindTextures([textureId]);
-
-    static int BindTextures(ReadOnlySpan<int> textures)
-    {
-        Span<int> samplerIndexes = stackalloc int[textures.Length];
-        for (var i = 0; i < textures.Length; ++i)
-        {
-            var textureId = textures[i];
-
-            samplerIndexes[i] = -1;
-            for (var j = 0; j < samplerTextureIds.Length; ++j)
-                if (samplerTextureIds[j] == textureId)
-                {
-                    samplerIndexes[i] = j;
-                    break;
-                }
-        }
-
-        var samplerCount = samplerTextureIds.Length;
-        for (var i = 0; i < samplerIndexes.Length; ++i)
-        {
-            if (samplerIndexes[i] != -1) continue;
-
-            var first = true;
-            var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
-            for (var samplerIndex = samplerStartIndex;
-                first || samplerIndex != samplerStartIndex;
-                samplerIndex = (samplerIndex + 1) % samplerCount)
-            {
-                first = false;
-
-                var isFreeSamplerUnit = true;
-                foreach (var usedIndex in samplerIndexes)
-                {
-                    if (usedIndex != samplerIndex) continue;
-
-                    isFreeSamplerUnit = false;
-                    break;
-                }
-
-                if (!isFreeSamplerUnit) continue;
-
-                BindTexture(textures[i], samplerIndex);
-                samplerIndexes[i] = samplerIndex;
-                lastRecycledTextureUnit = samplerIndex;
-                break;
-            }
-        }
-
-        return samplerIndexes[0];
-    }
-
-    public static void UnbindTexture(int textureId)
-    {
-        var i = Array.IndexOf(samplerTextureIds, textureId, 0, samplerTextureIds.Length);
-        if (i == -1) return;
-
-        samplerTextureIds[i] = 0;
-    }
+    static int maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
 
     #endregion
 
@@ -295,14 +207,8 @@ public static class DrawState
         {
             if (clipRegion == value) return;
 
-            FlushRenderer(true);
+            FlushRenderer();
             clipRegion = value;
-
-            SetCapability(EnableCap.ScissorTest, clipRegion.HasValue);
-            if (!clipRegion.HasValue) return;
-
-            var actualClipRegion = Rectangle.Intersect(Nullable.GetValueRefOrDefaultRef(ref clipRegion), viewport);
-            GL.Scissor(actualClipRegion.X, actualClipRegion.Y, actualClipRegion.Width, actualClipRegion.Height);
         }
     }
 
@@ -355,13 +261,12 @@ public static class DrawState
 
     internal static void SetCapability(EnableCap capability, bool enable)
     {
-        ref var enableRef = ref CollectionsMarshal.GetValueRefOrAddDefault(capabilityCache, capability, out var exists);
-        if (!exists && enableRef == enable) return;
+        if (capabilityCache.TryGetValue(capability, out var isEnabled) && isEnabled == enable) return;
 
         if (enable) GL.Enable(capability);
         else GL.Disable(capability);
 
-        enableRef = enable;
+        capabilityCache[capability] = enable;
     }
 
     #endregion

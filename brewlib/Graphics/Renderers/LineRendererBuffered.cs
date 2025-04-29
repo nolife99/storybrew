@@ -35,7 +35,7 @@ public class LineRendererBuffered : ILineRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 1024, int primitiveBufferSize = 0)
+    public LineRendererBuffered(Shader shader = null, int maxLinesPerBatch = 512, int primitiveBufferSize = 0)
     {
         if (shader is null)
         {
@@ -74,6 +74,8 @@ public class LineRendererBuffered : ILineRenderer
         }
     }
 
+    public int TotalQueuedPrimitives => primitiveStreamer.QueuedRenders;
+
     public ICamera Camera
     {
         get => camera;
@@ -104,16 +106,18 @@ public class LineRendererBuffered : ILineRenderer
 
     public void Flush(bool canBuffer = false)
     {
-        if (primitiveStreamer.PrimitivesInBatch == 0) return;
+        if (primitiveStreamer.PrimitivesInBatch != 0)
+        {
+            combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
+            primitiveStreamer.QueueRender(VertexPerLine);
+        }
 
-        combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
-        primitiveStreamer.QueueRender(VertexPerLine);
-
-        if (!canBuffer) return;
+        var queuedRenders = primitiveStreamer.QueuedRenders;
+        if (!canBuffer || queuedRenders == 0) return;
 
         GL.NamedBufferSubData(combinedMatricesBuffer,
             0,
-            Unsafe.SizeOf<Matrix4x4>() * primitiveStreamer.QueuedRenders,
+            Unsafe.SizeOf<Matrix4x4>() * queuedRenders,
             ref combinedMatrices.GetReference(0));
 
         combinedMatrices.Clear();
@@ -124,7 +128,7 @@ public class LineRendererBuffered : ILineRenderer
     public void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color)
     {
         LinePrimitive primitive = new() { from = start, to = end, color1 = color, color2 = color };
-        primitiveStreamer.AddPrimitive(ref primitive);
+        primitiveStreamer.AddPrimitive(ref primitive, VertexPerLine);
     }
 
     public void Dispose()

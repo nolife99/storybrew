@@ -100,7 +100,6 @@ public sealed partial class Shader : IDisposable
     void initialize(string vertexShaderCode, string fragmentShaderCode)
     {
         dispose();
-        GL.EnableVertexAttribArray(0);
 
         vertexShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.VertexShader, vertexShaderCode);
         fragmentShaderId = compileShader(OpenTK.Graphics.OpenGL.ShaderType.FragmentShader, fragmentShaderCode);

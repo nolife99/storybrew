@@ -21,12 +21,11 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             primitive;
 
     protected override void RenderInternal(PrimitiveType type,
-        int primitiveCount,
         ReadOnlySpan<int> counts,
         ReadOnlySpan<nint> indices,
         ReadOnlySpan<int> firsts)
     {
-        var vertexDataSize = primitiveCount * PrimitiveSize;
+        var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
         if (bufferOffset + vertexDataSize > vertexBufferSize) bufferOffset = 0;
 
         if (GpuCommandSync.WaitForRange(bufferOffset, vertexDataSize)) expandVertexBuffer();
@@ -97,14 +96,10 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         Unbind();
 
-        // Rebuild the VBO
-
         GL.UnmapNamedBuffer(VertexBufferId);
         GL.DeleteBuffer(VertexBufferId);
 
         initializeVertexBuffer();
-
-        // Rebuild the VAO
 
         Bind(CurrentShader);
         CurrentShader = null;

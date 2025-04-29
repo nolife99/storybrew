@@ -12,7 +12,7 @@ using Util;
 public class ShaderBuilder
 {
     public readonly ShaderContext Context = new();
-    public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth, GlDrawID;
+    public readonly ShaderVariable GlPosition, GlPointSize, GlFragColor, GlFragDepth, GlFragCoord, GlDrawID;
     readonly ProgramScope ProgramScope = new();
 
     readonly List<string> requiredExt = [];
@@ -26,6 +26,7 @@ public class ShaderBuilder
     {
         VertexDeclaration = vertexDeclaration;
         GlPosition = new(Context, "gl_Position", ActiveUniformType.FloatVec4);
+        GlFragCoord = new(Context, "gl_FragCoord", ActiveUniformType.FloatVec4);
         GlPointSize = new(Context, "gl_PointSize", ActiveUniformType.Float);
         GlFragColor = ProgramScope.AddBuiltinVarying(Context, "fragColor", ActiveUniformType.FloatVec4, true);
         GlFragDepth = new(Context, "gl_FragDepth", ActiveUniformType.Float);
@@ -50,7 +51,7 @@ public class ShaderBuilder
     public Shader Build(bool log = true)
     {
         Context.VertexDeclaration = VertexDeclaration;
-        Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPosition, GlPointSize, GlFragDepth);
+        Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPosition, GlFragCoord, GlPointSize, GlFragDepth);
 
         var commonCode = buildCommon();
         var vertexShaderCode = buildVertexShader().Insert(0, commonCode);

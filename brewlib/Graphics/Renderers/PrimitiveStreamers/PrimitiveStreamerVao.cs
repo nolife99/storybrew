@@ -1,6 +1,7 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Memory;
@@ -25,8 +26,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         ReadOnlySpan<ushort> indices)
     {
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
-        if (!indices.IsEmpty && minRenderableVertexCount > ushort.MaxValue)
-            throw new ArgumentException("Can't have more than " + ushort.MaxValue + " indexed vertices");
 
         MinRenderableVertexCount = minRenderableVertexCount;
         VertexDeclaration = vertexDeclaration;
@@ -49,9 +48,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     protected int MinRenderableVertexCount { get; set; }
     protected VertexDeclaration VertexDeclaration { get; }
 
-    public void AddPrimitive(ref readonly TPrimitive primitive)
+    public void AddPrimitive(ref readonly TPrimitive primitive, int vertexCount)
     {
-        if (primitivesInBatch == MinRenderableVertexCount) DrawState.FlushRenderer(true);
+        if (totalQueuedPrimitives == MinRenderableVertexCount / vertexCount) DrawState.FlushRenderer(true);
         AddPrimitiveInternal(in primitive);
 
         ++primitivesInBatch;
@@ -81,7 +80,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         var usesIndex = IndexBufferId != -1;
 
         RenderInternal(type,
-            totalQueuedPrimitives,
             multiDrawQueue.GetSpan(),
             usesIndex ? drawOffsets.GetSpan() : default,
             usesIndex ? default : firsts.GetSpan());
@@ -100,9 +98,8 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     {
         multiDrawQueue.Add(primitivesInBatch * vertexCount);
 
-        var drawOffset = (totalQueuedPrimitives - primitivesInBatch) * sizeof(ushort) * vertexCount;
-        if (IndexBufferId != -1) drawOffsets.Add(drawOffset);
-        else firsts.Add(drawOffset);
+        if (IndexBufferId != -1) drawOffsets.Add((totalQueuedPrimitives - primitivesInBatch) * sizeof(ushort) * vertexCount);
+        else firsts.Add((totalQueuedPrimitives - primitivesInBatch) * vertexCount);
 
         primitivesInBatch = 0;
     }
@@ -116,7 +113,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     protected abstract void AddPrimitiveInternal(ref readonly TPrimitive primitive);
 
     protected abstract void RenderInternal(PrimitiveType type,
-        int primitiveCount,
         ReadOnlySpan<int> counts,
         ReadOnlySpan<nint> indices,
         ReadOnlySpan<int> firsts);
@@ -163,10 +159,11 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
 
         ((IDisposable)multiDrawQueue).Dispose();
-        ((IDisposable)firsts)?.Dispose();
-        ((IDisposable)drawOffsets)?.Dispose();
+        if (IndexBufferId != -1) ((IDisposable)drawOffsets).Dispose();
+        else ((IDisposable)firsts).Dispose();
     }
 
     public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_vertex_array_object") &&
-        GLFW.ExtensionSupported("GL_ARB_buffer_storage");
+        GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
+        GLFW.ExtensionSupported("GL_ARB_shader_storage_buffer_object");
 }

@@ -6,8 +6,8 @@ using CommandValues;
 
 /// <summary> Provides a way for sprites to be reused. </summary>
 /// <remarks>
-///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled
-///     sprite will cause performance issues.
+///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite
+///     will cause performance issues.
 /// </remarks>
 public class OsbSpritePool : IDisposable
 {
@@ -192,8 +192,8 @@ public class OsbSpritePool : IDisposable
 
 /// <summary> Provides a way for sprites to be reused. This class provides support for <see cref="OsbAnimation"/>. </summary>
 /// <remarks>
-///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled
-///     sprite will cause performance issues.
+///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite
+///     will cause performance issues.
 /// </remarks>
 public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 {
@@ -634,8 +634,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 
 /// <summary> Provides a way for animations to be reused. </summary>
 /// <remarks>
-///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled
-///     sprite will cause performance issues.
+///     It is recommended to balance the lifetime of pooled sprites. Having too much commands on a long-lived pooled sprite
+///     will cause performance issues.
 /// </remarks>
 public sealed class OsbAnimationPool(StoryboardSegment segment,
     string path,

@@ -273,6 +273,8 @@ public static class Program
                         FullName,
                         MessageBoxButton.OKCancel,
                         MessageBoxImage.Error) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
+
+                Environment.Exit(1);
             }
             catch (Exception e2)
             {

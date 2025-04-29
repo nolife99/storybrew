@@ -8,7 +8,7 @@ public interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive :
 {
     int QueuedRenders { get; }
     int PrimitivesInBatch { get; }
-    void AddPrimitive(ref readonly TPrimitive primitive);
+    void AddPrimitive(ref readonly TPrimitive primitive, int vertexCount);
 
     void Bind(Shader shader);
     void Unbind();

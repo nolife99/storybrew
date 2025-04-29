@@ -48,9 +48,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="Util\BitmapHelper.cs~" />
-      <None Remove="Graphics\DrawState.cs~" />
-      <None Remove="Graphics\Cameras\CameraOrtho.cs~" />
+        <None Remove="Util\BitmapHelper.cs~"/>
+        <None Remove="Graphics\DrawState.cs~"/>
+        <None Remove="Graphics\Cameras\CameraOrtho.cs~"/>
     </ItemGroup>
 
 </Project>

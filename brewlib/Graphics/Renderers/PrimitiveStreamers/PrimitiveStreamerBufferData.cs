@@ -19,7 +19,6 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
             primitive;
 
     protected override void RenderInternal(PrimitiveType type,
-        int primitiveCount,
         ReadOnlySpan<int> counts,
         ReadOnlySpan<nint> indices,
         ReadOnlySpan<int> firsts)
@@ -44,7 +43,7 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
     {
         base.initializeVertexBuffer();
 
-        var vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
+        var vertexBufferSize = MinRenderableVertexCount * PrimitiveSize;
         primitives = Native.AllocateMemory(vertexBufferSize);
 
         GL.NamedBufferStorage(VertexBufferId, vertexBufferSize, 0, BufferStorageFlags.DynamicStorageBit);

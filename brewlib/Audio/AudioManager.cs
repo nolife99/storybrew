@@ -17,7 +17,7 @@ public sealed class AudioManager : IDisposable
         if (Bass.Init(Win: handle))
         {
             Bass.PlaybackBufferLength = 100;
-            Bass.UpdatePeriod = 20;
+            Bass.UpdatePeriod = 10;
             return;
         }
 
