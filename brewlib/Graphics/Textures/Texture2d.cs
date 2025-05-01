@@ -9,6 +9,7 @@ using IO;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
 
@@ -16,6 +17,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     new(0, 0, width, height))
 {
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
+    static readonly DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone() };
 
     bool isResident;
 
@@ -56,27 +58,15 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     public void Update(Image<Rgba32> bitmap, int x, int y)
     {
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
-        if (buffer.MemoryGroup.Count == 1)
-            GL.TextureSubImage2D(textureId,
-                0,
-                x,
-                y,
-                buffer.Width,
-                buffer.Height,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
-        else
-            for (var i = 0; i < buffer.Height; ++i)
-                GL.TextureSubImage2D(textureId,
-                    0,
-                    0,
-                    y + i,
-                    buffer.Width,
-                    1,
-                    PixelFormat.Rgba,
-                    PixelType.UnsignedByte,
-                    ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(i)));
+        GL.TextureSubImage2D(textureId,
+            0,
+            x,
+            y,
+            buffer.Width,
+            buffer.Height,
+            PixelFormat.Rgba,
+            PixelType.UnsignedByte,
+            ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
     }
 
     public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
@@ -85,7 +75,11 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             File.OpenRead(filename) :
             resourceContainer?.GetStream(filename, ResourceSource.Embedded);
 
-        if (stream is not null) return Image.Load<Rgba32>(stream);
+        if (stream is not null)
+        {
+            decoderOptions.Configuration.PreferContiguousImageBuffers = true;
+            return Image.Load<Rgba32>(decoderOptions, stream);
+        }
 
         Trace.TraceWarning($"Texture not found: {filename}");
         return null;
@@ -164,32 +158,15 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         GL.TextureStorage2D(textureId, 1, Unsafe.As<PixelInternalFormat, SizedInternalFormat>(ref format), width, height);
 
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
-        if (buffer.MemoryGroup.Count == 1)
-            GL.TextureSubImage2D(textureId,
-                0,
-                0,
-                0,
-                width,
-                height,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
-        else
-        {
-            Trace.TraceWarning(
-                $"Loading huge texture \"{description}\" with {buffer.MemoryGroup.Count} buffers ({width}x{height})");
-
-            for (var i = 0; i < height; ++i)
-                GL.TextureSubImage2D(textureId,
-                    0,
-                    0,
-                    i,
-                    width,
-                    1,
-                    PixelFormat.Rgba,
-                    PixelType.UnsignedByte,
-                    ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(i)));
-        }
+        GL.TextureSubImage2D(textureId,
+            0,
+            0,
+            0,
+            width,
+            height,
+            PixelFormat.Rgba,
+            PixelType.UnsignedByte,
+            ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
 
         if (textureOptions.GenerateMipmaps) GL.GenerateTextureMipmap(textureId);
         textureOptions.ApplyParameters(textureId);

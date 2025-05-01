@@ -4,8 +4,9 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Cameras;
-using Memory;
+using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
@@ -21,7 +22,7 @@ public class LineRendererBuffered : ILineRenderer
         VertexAttribute.CreatePosition3d(),
         VertexAttribute.CreateColor(true));
 
-    readonly UnmanagedList<Matrix4x4> combinedMatrices;
+    readonly PooledList<Matrix4x4> combinedMatrices;
     readonly int combinedMatricesBuffer;
 
     readonly int maxLinesPerBatch;
@@ -118,7 +119,7 @@ public class LineRendererBuffered : ILineRenderer
         GL.NamedBufferSubData(combinedMatricesBuffer,
             0,
             Unsafe.SizeOf<Matrix4x4>() * queuedRenders,
-            ref combinedMatrices.GetReference(0));
+            ref MemoryMarshal.GetReference(combinedMatrices.Span));
 
         combinedMatrices.Clear();
 
@@ -172,7 +173,7 @@ public class LineRendererBuffered : ILineRenderer
         if (rendering) EndRendering();
         GL.DeleteBuffer(combinedMatricesBuffer);
 
-        ((IDisposable)combinedMatrices).Dispose();
+        combinedMatrices.Dispose();
 
         if (!disposing) return;
 

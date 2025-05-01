@@ -1,10 +1,9 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Memory;
+using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
@@ -12,9 +11,9 @@ using Shaders;
 public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     where TPrimitive : struct, allows ref struct
 {
-    readonly UnmanagedList<nint> drawOffsets;
+    readonly PooledList<nint> drawOffsets;
 
-    readonly UnmanagedList<int> multiDrawQueue = new(), firsts;
+    readonly PooledList<int> multiDrawQueue = new(), firsts;
     bool Bound;
 
     protected int totalQueuedPrimitives, primitivesInBatch;
@@ -79,10 +78,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     {
         var usesIndex = IndexBufferId != -1;
 
-        RenderInternal(type,
-            multiDrawQueue.GetSpan(),
-            usesIndex ? drawOffsets.GetSpan() : default,
-            usesIndex ? default : firsts.GetSpan());
+        RenderInternal(type, multiDrawQueue.Span, usesIndex ? drawOffsets.Span : default, usesIndex ? default : firsts.Span);
 
         multiDrawQueue.Clear();
         if (IndexBufferId != -1) drawOffsets.Clear();
@@ -158,9 +154,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         if (VertexBufferId != -1) GL.DeleteBuffer(VertexBufferId);
         if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
 
-        ((IDisposable)multiDrawQueue).Dispose();
-        if (IndexBufferId != -1) ((IDisposable)drawOffsets).Dispose();
-        else ((IDisposable)firsts).Dispose();
+        multiDrawQueue.Dispose();
+        if (IndexBufferId != -1) drawOffsets.Dispose();
+        else firsts.Dispose();
     }
 
     public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_vertex_array_object") &&

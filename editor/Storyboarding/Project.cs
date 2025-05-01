@@ -19,6 +19,7 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Memory;
 using BrewLib.Util;
+using Collections.Pooled;
 using Mapset;
 using OpenTK.Mathematics;
 using Scripting;
@@ -791,7 +792,7 @@ public sealed partial class Project : IDisposable
         ImportedAssemblies = indexRoot.Values<string>("Assemblies").ToArray();
 
         // Load effects
-        Dictionary<string, Action> layerInserters = [];
+        using PooledDictionary<string, Action> layerInserters = new();
         foreach (var effectPath in Directory.EnumerateFiles(directoryReader.Path,
             "effect.*.yaml",
             SearchOption.TopDirectoryOnly))
@@ -830,11 +831,9 @@ public sealed partial class Project : IDisposable
             }
 
             var layersRoot = effectRoot.Value<TinyObject>("Layers");
-            foreach (var layerProperty in layersRoot)
+            foreach (var (layerHash, layerRoot) in layersRoot)
             {
                 var layerEffect = effect;
-                var layerHash = layerProperty.Key;
-                var layerRoot = layerProperty.Value;
 
                 layerInserters[layerHash] = () => layerEffect.AddPlaceholder(
                     new(layerRoot.Value<string>("Name"), layerEffect)

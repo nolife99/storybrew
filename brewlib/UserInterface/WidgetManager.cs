@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Collections.Pooled;
 using Graphics;
 using Graphics.Cameras;
 using Graphics.Drawables;
@@ -16,7 +17,7 @@ using Util;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {
-    readonly Dictionary<MouseButton, Widget> clickTargets = [];
+    readonly PooledDictionary<MouseButton, Widget> clickTargets = new();
 
     public readonly InputManager InputManager;
     public readonly Widget Root;
@@ -117,7 +118,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     #region Tooltip
 
-    readonly Dictionary<Widget, Widget> tooltips = [];
+    readonly Dictionary<Widget, Widget> tooltips = new();
 
     public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget,
         new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
@@ -137,6 +138,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     public void UnregisterTooltip(Widget widget)
     {
+        // TODO: Fix the DivideByZeroException thrown when using pooled dictionary
         if (!tooltips.Remove(widget, out var tooltip)) return;
 
         tooltip.Dispose();
@@ -238,7 +240,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     Drawable dragDrawable;
     Vector2 dragOffset, dragSize;
     Widget hoveredDraggableWidget;
-    readonly Dictionary<MouseButton, object> dragData = [];
+    readonly PooledDictionary<MouseButton, object> dragData = [];
 
     public bool IsDragging => dragData.Values.Any(v => v is not null);
 
@@ -288,7 +290,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     #region Input events
 
-    readonly List<Widget> gamepadTargets = [];
+    readonly PooledList<Widget> gamepadTargets = new();
 
     public void DisableGamepadEvents(Widget widget) => gamepadTargets.Remove(widget);
 
@@ -393,6 +395,10 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
         rootContainer.Dispose();
         if (camera is not null) camera.Changed -= ICameraChanged;
+
+        clickTargets.Dispose();
+        dragData.Dispose();
+        gamepadTargets.Dispose();
 
         if (disposing) disposed = true;
     }

@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Storyboarding.Util;
 
 using System;
-using System.Collections.Generic;
+using Collections.Pooled;
 using CommandValues;
 
 /// <summary> Provides a way for sprites to be reused. </summary>
@@ -17,7 +17,7 @@ public class OsbSpritePool : IDisposable
     readonly CommandPosition _position;
 
     readonly StoryboardSegment _segment;
-    internal readonly List<PooledSprite> pooled = [];
+    internal readonly PooledList<PooledSprite> pooled = [];
 
     bool disposed;
 
@@ -179,6 +179,8 @@ public class OsbSpritePool : IDisposable
             _attributes(sprite, sprite.StartTime, pooledSprite.EndTime);
         }
 
+        pooled.Dispose();
+
         disposed = true;
     }
 
@@ -197,8 +199,8 @@ public class OsbSpritePool : IDisposable
 /// </remarks>
 public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 {
-    readonly Dictionary<int, OsbAnimationPool> animationPools = [];
-    readonly Dictionary<int, OsbSpritePool> pools = [];
+    readonly PooledDictionary<int, OsbAnimationPool> animationPools = new();
+    readonly PooledDictionary<int, OsbSpritePool> pools = new();
 
     bool disposed;
     int maxPoolDuration;
@@ -625,8 +627,8 @@ public sealed class OsbSpritePools(StoryboardSegment segment) : IDisposable
 
         if (!disposing) return;
 
-        pools.Clear();
-        animationPools.Clear();
+        pools.Dispose();
+        animationPools.Dispose();
 
         disposed = true;
     }

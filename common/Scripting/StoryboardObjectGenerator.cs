@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Scripting;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -12,6 +11,7 @@ using System.Threading;
 using Animations;
 using BrewLib.Graphics.Compression;
 using BrewLib.Util;
+using Collections.Pooled;
 using Mapset;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -126,7 +126,11 @@ public abstract class StoryboardObjectGenerator : Script
             instance.Value = null;
             this.context = null;
 
+            bitmaps.Dispose();
+            fonts.Dispose();
+
             foreach (var disposable in disposables) disposable.Dispose();
+            disposables.Dispose();
         }
     }
 
@@ -135,8 +139,8 @@ public abstract class StoryboardObjectGenerator : Script
 
     #region File loading
 
-    internal readonly Dictionary<string, Image<Rgba32>> bitmaps = [];
-    readonly List<IDisposable> disposables = [];
+    internal readonly PooledDictionary<string, Image<Rgba32>> bitmaps = new();
+    internal readonly PooledList<IDisposable> disposables = new();
 
     /// <summary> Returns a <see cref="Image"/> from the project's directory. </summary>
     /// <param name="path"> The image path, relative to the project's folder. </param>
@@ -281,7 +285,7 @@ public abstract class StoryboardObjectGenerator : Script
     static readonly SrtParser srt = new();
     static readonly AssParser ass = new();
     static readonly SbvParser sbv = new();
-    internal readonly Dictionary<string, FontGenerator> fonts = [];
+    readonly PooledDictionary<string, FontGenerator> fonts = new();
 
     ///<summary> Loads subtitles from a given subtitle file. </summary>
     public SubtitleSet LoadSubtitles(string path)
@@ -324,6 +328,7 @@ public abstract class StoryboardObjectGenerator : Script
 
         FontGenerator fontGenerator = new(directory, description, effects, context.ProjectPath, assetDirectory);
         fonts[fontDirectory] = fontGenerator;
+        disposables.Add(fontGenerator);
         return fontGenerator;
     }
 

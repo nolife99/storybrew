@@ -6,6 +6,7 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using BrewLib.Util;
+using Collections.Pooled;
 using Commands;
 using CommandValues;
 using Display;
@@ -18,7 +19,7 @@ public class OsbSprite : StoryboardObject
     ///<summary> Default position of sprites, unless modified elsewhere. </summary>
     public static readonly CommandPosition DefaultPosition = new(320, 240);
 
-    readonly HashSet<ICommand> commands = [];
+    readonly PooledSet<ICommand> commands = new();
 
     float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue;
     CommandGroup currentCommandGroup;

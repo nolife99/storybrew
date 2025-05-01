@@ -2,14 +2,14 @@
 
 using System;
 using System.Collections.Frozen;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Collections.Pooled;
 
 public sealed class DrawContext : IDisposable
 {
-    readonly List<IDisposable> disposables = [];
+    readonly PooledList<IDisposable> disposables = new();
     FrozenDictionary<Type, object> frozenReferences;
-    Dictionary<Type, object> references = [];
+    PooledDictionary<Type, object> references = new();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Get<T>() where T : class => Unsafe.As<T>(frozenReferences.GetValueRefOrNullRef(typeof(T)));
@@ -24,9 +24,9 @@ public sealed class DrawContext : IDisposable
 
     public void Freeze()
     {
-        disposables.TrimExcess();
         frozenReferences = references.ToFrozenDictionary();
 
+        references.Dispose();
         references = null;
     }
 
@@ -39,6 +39,8 @@ public sealed class DrawContext : IDisposable
         if (disposed) return;
 
         foreach (var disposable in disposables) disposable.Dispose();
+        disposables.Dispose();
+
         disposed = true;
     }
 

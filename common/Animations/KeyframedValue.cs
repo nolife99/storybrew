@@ -5,15 +5,28 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using Collections.Pooled;
+using Scripting;
 
 /// <summary>A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.</summary>
 /// <typeparam name="TValue"> The type of values of the keyframes. </typeparam>
 /// <remarks>See <see cref="Keyframe{TValue}"/> for more information about keyframes.</remarks>
-public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpolate = null, TValue defaultValue = default)
-    : IEnumerable<Keyframe<TValue>>
+public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 {
-    internal List<Keyframe<TValue>> keyframes = [];
+    readonly TValue _defaultValue;
+    readonly Func<TValue, TValue, float, TValue> _interpolate;
+    internal PooledList<Keyframe<TValue>> keyframes = new();
+
+    /// <summary>A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.</summary>
+    /// <typeparam name="TValue"> The type of values of the keyframes. </typeparam>
+    /// <remarks>See <see cref="Keyframe{TValue}"/> for more information about keyframes.</remarks>
+    public KeyframedValue(Func<TValue, TValue, float, TValue> interpolate = null, TValue defaultValue = default)
+    {
+        _interpolate = interpolate;
+        _defaultValue = defaultValue;
+
+        if (StoryboardObjectGenerator.Current is not null) StoryboardObjectGenerator.Current.disposables.Add(keyframes);
+    }
 
     ///<summary> Returns the time of the first keyframe. </summary>
     public float StartTime => keyframes.Count == 0 ? int.MaxValue : keyframes[0].Time;
@@ -22,10 +35,10 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     public float EndTime => keyframes.Count == 0 ? int.MinValue : keyframes[^1].Time;
 
     ///<summary> Gets the value of the first keyframe. </summary>
-    public TValue StartValue => keyframes.Count == 0 ? defaultValue : keyframes[0].Value;
+    public TValue StartValue => keyframes.Count == 0 ? _defaultValue : keyframes[0].Value;
 
     ///<summary> Gets the value of the last keyframe. </summary>
-    public TValue EndValue => keyframes.Count == 0 ? defaultValue : keyframes[^1].Value;
+    public TValue EndValue => keyframes.Count == 0 ? _defaultValue : keyframes[^1].Value;
 
     /// <summary>Gets or sets the keyframe at the specified index.</summary>
     /// <value>The keyframe at the specified index.</value>
@@ -82,14 +95,6 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     /// <returns> The keyframed value. </returns>
     public KeyframedValue<TValue> AddRange(IEnumerable<Keyframe<TValue>> collection)
     {
-        switch (collection)
-        {
-            case ICollection<Keyframe<TValue>> list: keyframes.EnsureCapacity(keyframes.Count + list.Count); break;
-
-            case KeyframedValue<TValue> keyframedValue:
-                keyframes.EnsureCapacity(keyframes.Count + keyframedValue.Count); break;
-        }
-
         foreach (var keyframe in collection)
             if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
             else keyframes.Insert(indexFor(keyframe, false), keyframe);
@@ -120,7 +125,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     {
         switch (keyframes.Count)
         {
-            case 0: return defaultValue;
+            case 0: return _defaultValue;
             case 1: return keyframes[0].Value;
         }
 
@@ -128,7 +133,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         if (i == 0) return keyframes[0].Value;
         if (i == keyframes.Count) return keyframes[^1].Value;
 
-        if (interpolate is null)
+        if (_interpolate is null)
             throw new InvalidOperationException("Cannot interpolate keyframes without an interpolation function");
 
         var from = keyframes[i - 1];
@@ -136,7 +141,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
         return from.Time == to.Time ?
             to.Value :
-            interpolate(from.Value, to.Value, to.Ease((time - from.Time) / (to.Time - from.Time)));
+            _interpolate(from.Value, to.Value, to.Ease((time - from.Time) / (to.Time - from.Time)));
     }
 
     /// <summary>Enumerates each pair of adjacent keyframes in the keyframed value.</summary>
@@ -155,7 +160,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
     {
         if (keyframes.Count == 0) return;
 
-        var span = CollectionsMarshal.AsSpan(keyframes);
+        var span = keyframes.Span;
 
         var startTime = explicitStartTime ?? span[0].Time;
         var endTime = explicitEndTime ?? span[^1].Time;
@@ -255,7 +260,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
-        var span = CollectionsMarshal.AsSpan(keyframes);
+        var span = keyframes.Span;
 
         var i = span.BinarySearch(keyframe, Keyframe<TValue>.Comparer);
         if (i >= 0)
@@ -333,11 +338,11 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
 
     void SimplifyKeyframes(float tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
     {
-        var span = CollectionsMarshal.AsSpan(keyframes);
+        var span = keyframes.Span;
 
         if (tolerance <= .00001f)
         {
-            List<Keyframe<TValue>> unionKeyframes = [];
+            PooledList<Keyframe<TValue>> unionKeyframes = new();
             var comparer = EqualityComparer<TValue>.Default;
 
             for (var i = 0; i < span.Length; ++i)
@@ -360,7 +365,7 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
                 }
             }
 
-            Clear(true);
+            keyframes.Dispose();
             keyframes = unionKeyframes;
             return;
         }
@@ -368,20 +373,20 @@ public class KeyframedValue<TValue>(Func<TValue, TValue, float, TValue> interpol
         if (span.Length < 3) return;
 
         var lastPoint = span.Length - 1;
-        List<int> keep = [0, lastPoint];
+        using PooledList<int> keep = [0, lastPoint];
         getSimplifiedKeyframeIndices(ref span, keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
         if (keep.Count == span.Length) return;
 
-        List<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
+        PooledList<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
         keep.Sort();
         foreach (var t in keep) simplifiedKeyframes.Add(span[t]);
 
-        Clear(true);
+        keyframes.Dispose();
         keyframes = simplifiedKeyframes;
     }
 
     static void getSimplifiedKeyframeIndices(ref Span<Keyframe<TValue>> span,
-        List<int> keep,
+        PooledList<int> keep,
         int first,
         int last,
         float epsilonSq,

@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Collections.Pooled;
 using Graphics.Drawables;
 using Graphics.Textures;
 using IO;
@@ -19,8 +20,8 @@ using Util;
 
 public sealed class Skin(TextureContainer textureContainer) : IDisposable
 {
-    readonly Dictionary<string, Drawable> drawables = [];
-    readonly Dictionary<Type, Dictionary<string, WidgetStyle>> stylesPerType = [];
+    readonly PooledDictionary<string, Drawable> drawables = new();
+    readonly PooledDictionary<Type, PooledDictionary<int, WidgetStyle>> stylesPerType = new();
     readonly TextureContainer TextureContainer = textureContainer;
     public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
 
@@ -37,10 +38,9 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             if (!stylesPerType.TryGetValue(type, out var styles)) return null;
 
             var n = name;
-            var altLookup = styles.GetAlternateLookup<ReadOnlySpan<char>>();
             while (!n.IsEmpty)
             {
-                if (altLookup.TryGetValue(n, out var style)) return style;
+                if (styles.TryGetValue(string.GetHashCode(n), out var style)) return style;
 
                 n = getImplicitParentStyleName(n);
             }
@@ -60,7 +60,12 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     {
         if (disposed) return;
 
+        foreach (var drawable in drawables.Values) drawable.Dispose();
         drawables.Dispose();
+
+        foreach (var styles in stylesPerType.Values) styles.Dispose();
+        stylesPerType.Dispose();
+
         disposed = true;
     }
 
@@ -173,7 +178,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             try
             {
                 var styleType = ResolveStyleType(styleTypeName + "Style");
-                if (!stylesPerType.TryGetValue(styleType, out var styles)) stylesPerType[styleType] = styles = [];
+                if (!stylesPerType.TryGetValue(styleType, out var styles)) stylesPerType[styleType] = styles = new();
 
                 WidgetStyle defaultStyle = null;
                 foreach (var (styleName, tinyToken) in styleTypeObject)
@@ -187,8 +192,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         var implicitParentStyleName = getImplicitParentStyleName(styleName);
                         if (!implicitParentStyleName.IsEmpty)
                         {
-                            var altLookup = styles.GetAlternateLookup<ReadOnlySpan<char>>();
-                            if (!altLookup.TryGetValue(implicitParentStyleName, out parentStyle) &&
+                            if (!styles.TryGetValue(string.GetHashCode(implicitParentStyleName), out parentStyle) &&
                                 styleTypeObject.Value<TinyToken>(implicitParentStyleName.ToString()) is not null)
                                 throw new InvalidDataException(
                                     $"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
@@ -197,7 +201,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         }
 
                         var parentName = styleObject.Value<string>("_parent");
-                        if (parentName is not null && !styles.TryGetValue(parentName, out parentStyle))
+                        if (parentName is not null && !styles.TryGetValue(parentName.GetHashCode(), out parentStyle))
                             throw new InvalidDataException(
                                 $"Parent style '{parentName}' style must be defined before '{styleName}'");
 
@@ -209,7 +213,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                             else throw new InvalidDataException($"The default {styleTypeName} style must be defined first");
                         }
 
-                        styles.Add(styleName, style);
+                        styles.Add(styleName.GetHashCode(), style);
                     }
                     catch (InvalidDataException e)
                     {

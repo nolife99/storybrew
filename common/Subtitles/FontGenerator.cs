@@ -1,12 +1,12 @@
 ﻿namespace StorybrewCommon.Subtitles;
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using BrewLib.Util;
+using Collections.Pooled;
 using Scripting;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -79,7 +79,7 @@ public class FontTexture(string path,
 }
 
 ///<summary> Generates and manages font textures. </summary>
-public sealed class FontGenerator
+public sealed class FontGenerator : IDisposable
 {
     internal static readonly DrawingOptions options = new()
     {
@@ -88,7 +88,7 @@ public sealed class FontGenerator
 
     readonly string assetDirectory;
 
-    readonly Dictionary<string, FontTexture> cache = [];
+    readonly PooledDictionary<string, FontTexture> cache = new();
 
     readonly FastRandom debugRandom;
     readonly FontDescription description;
@@ -136,6 +136,8 @@ public sealed class FontGenerator
 
     /// <summary> The directory to the font textures. </summary>
     public string Directory { get; }
+
+    public void Dispose() => cache.Dispose();
 
     ///<summary> Gets the texture path of the matching item's string representation. </summary>
     public FontTexture GetTexture(object obj)

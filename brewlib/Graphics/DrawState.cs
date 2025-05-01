@@ -1,11 +1,11 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Cameras;
+using Collections.Pooled;
 using IO;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -127,6 +127,9 @@ public static class DrawState
         using (Image<Rgba32> whitePixel = new(1, 1, Color.White.ToPixel<Rgba32>()))
             WhitePixel = textureContainer.Add(whitePixel, "whitepixel");
 
+        using (Image<Rgba32> transparentPixel = new(1, 1, default))
+            TransparentPixel = textureContainer.Add(transparentPixel, "transparentpixel");
+
         TextGenerator = new(resourceContainer);
         TextFontManager = new(textureContainer);
 
@@ -137,6 +140,8 @@ public static class DrawState
     {
         WhitePixel.Dispose();
         TextFontManager.Dispose();
+        TextGenerator.Dispose();
+        capabilityCache.Dispose();
     }
 
     public static int CompleteFrame()
@@ -173,6 +178,7 @@ public static class DrawState
     #region Texture states
 
     public static Texture2dRegion WhitePixel { get; private set; }
+    public static Texture2dRegion TransparentPixel { get; private set; }
 
     static int maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
 
@@ -257,7 +263,7 @@ public static class DrawState
         }
     }
 
-    static readonly Dictionary<EnableCap, bool> capabilityCache = [];
+    static readonly PooledDictionary<EnableCap, bool> capabilityCache = new();
 
     internal static void SetCapability(EnableCap capability, bool enable)
     {

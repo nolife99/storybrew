@@ -3,11 +3,14 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Collections.Pooled;
 using SixLabors.ImageSharp;
 using Util;
 
-public class TextLayout
+public class TextLayout : IDisposable
 {
+    readonly PooledList<TextLayoutLine> _lines = new();
+
     public TextLayout(string text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
         var glyphIndex = 0;
@@ -16,16 +19,16 @@ public class TextLayout
 
         foreach (var (start, length) in LineBreaker.Split(text, float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
         {
-            TextLayoutLine line = new(this, height, alignment, Lines.Count == 0) { Glyphs = { Capacity = length + 1 } };
+            TextLayoutLine line = new(this, height, alignment, _lines.Count == 0);
             foreach (var c in text.AsSpan(start, length)) line.Add(font.GetGlyph(c), glyphIndex++);
 
-            Lines.Add(line);
+            _lines.Add(line);
             width = float.Max(width, line.Width);
             height += line.Height;
         }
 
-        if (Lines.Count == 0) Lines.Add(new(this, 0, alignment, true) { Glyphs = { Capacity = 1 } });
-        var lastLine = Lines[^1];
+        if (_lines.Count == 0) _lines.Add(new(this, 0, alignment, true));
+        var lastLine = _lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
         lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);
 
@@ -34,12 +37,18 @@ public class TextLayout
 
     public Vector2 Size { get; }
 
-    public List<TextLayoutLine> Lines { get; } = [];
+    public IReadOnlyList<TextLayoutLine> Lines => _lines;
+
+    public void Dispose()
+    {
+        foreach (var line in _lines) line.Dispose();
+        _lines.Dispose();
+    }
 
     public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
     {
         var index = 0;
-        foreach (var line in Lines)
+        foreach (var line in _lines)
         {
             var topLeft = Vector2.Zero;
             var bottomRight = Vector2.Zero;
@@ -64,7 +73,7 @@ public class TextLayout
     public int GetCharacterIndexAt(Vector2 position)
     {
         var index = 0;
-        foreach (var line in Lines)
+        foreach (var line in _lines)
         {
             var lineMatches = position.Y < line.Position.Y + line.Height;
             foreach (var glyph in line.Glyphs)
@@ -82,14 +91,14 @@ public class TextLayout
 
     public int GetCharacterIndexAbove(int index)
     {
-        for (var i = 0; i < Lines.Count; ++i)
+        for (var i = 0; i < _lines.Count; ++i)
         {
-            var line = Lines[i];
+            var line = _lines[i];
             if (index < line.GlyphCount)
             {
                 if (i == 0) return 0;
 
-                var previousLine = Lines[i - 1];
+                var previousLine = _lines[i - 1];
                 return previousLine.GetGlyph(int.Min(index, previousLine.GlyphCount - 1)).Index;
             }
 
@@ -101,19 +110,19 @@ public class TextLayout
 
     public int GetCharacterIndexBelow(int index)
     {
-        for (var i = 0; i < Lines.Count; ++i)
+        for (var i = 0; i < _lines.Count; ++i)
         {
-            var line = Lines[i];
+            var line = _lines[i];
             if (index < line.GlyphCount)
             {
-                var lastLineIndex = Lines.Count - 1;
+                var lastLineIndex = _lines.Count - 1;
                 if (i == lastLineIndex)
                 {
-                    var lastLine = Lines[lastLineIndex];
+                    var lastLine = _lines[lastLineIndex];
                     return lastLine.GetGlyph(lastLine.GlyphCount - 1).Index;
                 }
 
-                var nextLine = Lines[i + 1];
+                var nextLine = _lines[i + 1];
                 return nextLine.GetGlyph(int.Min(index, nextLine.GlyphCount - 1)).Index;
             }
 
@@ -125,7 +134,7 @@ public class TextLayout
 
     public TextLayoutGlyph GetGlyph(int index)
     {
-        foreach (var line in Lines)
+        foreach (var line in _lines)
         {
             if (index < line.GlyphCount) return line.GetGlyph(index);
 
@@ -137,17 +146,18 @@ public class TextLayout
 
     TextLayoutGlyph getLastGlyph()
     {
-        var lastLine = Lines[^1];
+        var lastLine = _lines[^1];
         return lastLine.GetGlyph(lastLine.GlyphCount - 1);
     }
 }
 
-public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph)
+public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph) : IDisposable
 {
+    readonly PooledList<TextLayoutGlyph> _glyphs = new();
     bool advance = advanceOnEmptyGlyph;
 
-    public List<TextLayoutGlyph> Glyphs { get; } = [];
-    public int GlyphCount => Glyphs.Count;
+    public IReadOnlyList<TextLayoutGlyph> Glyphs => _glyphs;
+    public int GlyphCount => _glyphs.Count;
 
     public int Width { get; private set; }
     public int Height { get; private set; }
@@ -156,16 +166,18 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
         (alignment & BoxAlignment.Right) > 0 ? layout.Size.X - Width : layout.Size.X * .5f - Width * .5f,
         y);
 
+    public void Dispose() => _glyphs.Dispose();
+
     public void Add(FontGlyph glyph, int glyphIndex)
     {
         if (!glyph.IsEmpty) advance = true;
 
-        Glyphs.Add(new(this, glyph, glyphIndex, Width));
+        _glyphs.Add(new(this, glyph, glyphIndex, Width));
         if (advance) Width += glyph.Width;
         Height = int.Max(Height, glyph.Height);
     }
 
-    public TextLayoutGlyph GetGlyph(int index) => Glyphs[index];
+    public TextLayoutGlyph GetGlyph(int index) => _glyphs[index];
 }
 
 public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, int Index, float X)

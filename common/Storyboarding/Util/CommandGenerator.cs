@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Animations;
-using BrewLib.Memory;
+using Collections.Pooled;
 using Commands;
 using CommandValues;
 using Scripting;
@@ -34,7 +34,7 @@ public class CommandGenerator
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
 
-    UnmanagedList<State> states = new();
+    readonly PooledList<State> states = new();
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public float ColorTolerance { get; set; } = 1;
@@ -65,31 +65,30 @@ public class CommandGenerator
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State StartState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.GetReference(0);
+    public ref State StartState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.Span[0];
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State EndState
-        => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.GetReference(states.Count - 1);
+    public ref State EndState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.Span[states.Count - 1];
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
     {
         var count = states.Count;
 
-        if (count == 0 || states.GetReference(count - 1).Time <= state.Time)
+        if (count == 0 || states[^1].Time <= state.Time)
         {
-            states.Add(ref state);
+            states.Add(state);
             return;
         }
 
-        var i = states.GetSpan().BinarySearch(state, state);
+        var i = states.BinarySearch(state, state);
         if (i >= 0)
-            while (i < count - 1 && states.GetReference(i + 1).Time <= state.Time)
+            while (i < count - 1 && states[i + 1].Time <= state.Time)
                 ++i;
         else i = ~i;
 
-        states.Insert(i, ref state);
+        states.Insert(i, state);
     }
 
     /// <summary> Generates commands on a sprite based on this generator's states. </summary>
@@ -119,7 +118,7 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        foreach (ref var state in states.GetSpan())
+        foreach (ref var state in states.Span)
         {
             var time = state.Time + timeOffset;
             if (sprite is OsbAnimation) imageSize = BitmapDimensions(sprite.GetTexturePathAt(time));
@@ -193,7 +192,7 @@ public class CommandGenerator
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
         bool moveX = true, moveY = true;
-        var posSpan = CollectionsMarshal.AsSpan(finalPositions.keyframes);
+        var posSpan = finalPositions.keyframes.Span;
 
         foreach (ref var keyframe in posSpan)
         {
@@ -232,7 +231,7 @@ public class CommandGenerator
             loopable);
 
         var scalar = true;
-        foreach (var keyframe in CollectionsMarshal.AsSpan(finalScales.keyframes))
+        foreach (var keyframe in finalScales.keyframes.Span)
         {
             if (Math.Abs(checkScale(keyframe.Value.X) - checkScale(keyframe.Value.Y)) < 1) continue;
 
@@ -301,22 +300,21 @@ public class CommandGenerator
 
     void clearKeyframes()
     {
-        /* positions.Clear();
-        scales.Clear();
-        rotations.Clear();
-        colors.Clear();
-        fades.Clear();
-        finalPositions.Clear();
-        finalScales.Clear();
-        finalRotations.Clear();
-        finalColors.Clear();
-        finalFades.Clear();
-        flipH.Clear();
-        flipV.Clear();
-        additive.Clear(); */
+        positions.keyframes.Dispose();
+        scales.keyframes.Dispose();
+        rotations.keyframes.Dispose();
+        colors.keyframes.Dispose();
+        fades.keyframes.Dispose();
+        finalPositions.keyframes.Dispose();
+        finalScales.keyframes.Dispose();
+        finalRotations.keyframes.Dispose();
+        finalColors.keyframes.Dispose();
+        finalFades.keyframes.Dispose();
+        flipH.keyframes.Dispose();
+        flipV.keyframes.Dispose();
+        additive.keyframes.Dispose();
 
         ((IDisposable)states).Dispose();
-        states = new();
     }
 
     internal static Vector2 BitmapDimensions(string path)

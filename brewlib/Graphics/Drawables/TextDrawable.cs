@@ -145,7 +145,11 @@ public sealed class TextDrawable : Drawable
         }
     }
 
-    public void Dispose() => font?.Dispose();
+    public void Dispose()
+    {
+        textLayout?.Dispose();
+        font?.Dispose();
+    }
 
     public RectangleF GetCharacterBounds(int index)
     {
@@ -189,7 +193,11 @@ public sealed class TextDrawable : Drawable
         return textLayout.GetCharacterIndexBelow(index);
     }
 
-    void invalidate() => textLayout = null;
+    void invalidate()
+    {
+        textLayout?.Dispose();
+        textLayout = null;
+    }
 
     void validate()
     {

@@ -4,14 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Threading;
-using BrewLib.Util;
+using Collections.Pooled;
 
 public sealed class MultiFileWatcher : IDisposable
 {
     static readonly Lock fileLock = new();
-    readonly Dictionary<string, FileSystemWatcher> folderWatchers = [], recursiveFolderWatchers = [];
+    readonly PooledDictionary<string, FileSystemWatcher> folderWatchers = new(), recursiveFolderWatchers = new();
     readonly ThrottledActionScheduler scheduler = new();
 
     bool disposed;
@@ -23,7 +22,10 @@ public sealed class MultiFileWatcher : IDisposable
     {
         if (disposed) return;
 
+        foreach (var watcher in folderWatchers.Values) watcher.Dispose();
         folderWatchers.Dispose();
+
+        foreach (var watcher in recursiveFolderWatchers.Values) watcher.Dispose();
         recursiveFolderWatchers.Dispose();
 
         watchedFilenames = null;
@@ -50,10 +52,9 @@ public sealed class MultiFileWatcher : IDisposable
             // The folder containing the file to watch exists,
             // only watch that folder
 
-            ref var watcher = ref CollectionsMarshal.GetValueRefOrAddDefault(folderWatchers, directoryPath, out var exists);
-            if (!exists)
+            if (!folderWatchers.ContainsKey(directoryPath))
             {
-                watcher = new()
+                var watcher = folderWatchers[directoryPath] = new()
                 {
                     Path = directoryPath,
                     IncludeSubdirectories = false,
@@ -83,15 +84,9 @@ public sealed class MultiFileWatcher : IDisposable
             if (parentDirectory is not null && parentDirectory != parentDirectory.Root)
             {
                 var parentDirectoryPath = parentDirectory.ToString();
+                if (recursiveFolderWatchers.ContainsKey(parentDirectoryPath)) return;
 
-                ref var watcher = ref CollectionsMarshal.GetValueRefOrAddDefault(
-                    recursiveFolderWatchers,
-                    parentDirectoryPath,
-                    out var exists);
-
-                if (exists) return;
-
-                watcher = new()
+                var watcher = recursiveFolderWatchers[parentDirectoryPath] = new()
                 {
                     Path = parentDirectoryPath,
                     IncludeSubdirectories = true,

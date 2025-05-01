@@ -4,8 +4,9 @@ using System;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Cameras;
-using Memory;
+using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
@@ -24,9 +25,9 @@ public class QuadRendererBuffered : IQuadRenderer
         VertexAttribute.CreateDiffuseCoord(),
         VertexAttribute.CreateColor(true));
 
-    readonly UnmanagedList<long> bindlessTextures;
-    readonly UnmanagedList<Vector4> clipRegions;
-    readonly UnmanagedList<Matrix4x4> combinedMatrices;
+    readonly PooledList<long> bindlessTextures;
+    readonly PooledList<Vector4> clipRegions;
+    readonly PooledList<Matrix4x4> combinedMatrices;
 
     readonly bool ownsShader;
 
@@ -41,7 +42,7 @@ public class QuadRendererBuffered : IQuadRenderer
 
     Matrix4x4 transformMatrix = Matrix4x4.Identity;
 
-    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 7168, int primitiveBufferSize = 0)
+    public QuadRendererBuffered(Shader shader = null, int maxQuadsPerBatch = 4096, int primitiveBufferSize = 0)
     {
         this.maxQuadsPerBatch = maxQuadsPerBatch;
         if (shader is null)
@@ -109,8 +110,6 @@ public class QuadRendererBuffered : IQuadRenderer
         }
     }
 
-    public int TotalQueuedPrimitives => primitiveStreamer.QueuedRenders;
-
     public void BeginRendering()
     {
         shader.Begin();
@@ -151,21 +150,24 @@ public class QuadRendererBuffered : IQuadRenderer
 
         // TODO: Buffer everything at once or map (will save ~15% frametime)
 
-        GL.NamedBufferSubData(ssbo, 0, queuedRenders * Unsafe.SizeOf<Matrix4x4>(), ref combinedMatrices.GetReference(0));
+        GL.NamedBufferSubData(ssbo,
+            0,
+            queuedRenders * Unsafe.SizeOf<Matrix4x4>(),
+            ref MemoryMarshal.GetReference(combinedMatrices.Span));
 
         combinedMatrices.Clear();
 
         GL.NamedBufferSubData(ssbo,
             maxQuadsPerBatch * Unsafe.SizeOf<Matrix4x4>(),
             queuedRenders * sizeof(long),
-            ref bindlessTextures.GetReference(0));
+            ref MemoryMarshal.GetReference(bindlessTextures.Span));
 
         bindlessTextures.Clear();
 
         GL.NamedBufferSubData(ssbo,
             maxQuadsPerBatch * (sizeof(long) + Unsafe.SizeOf<Matrix4x4>()),
             queuedRenders * Unsafe.SizeOf<Vector4>(),
-            ref clipRegions.GetReference(0));
+            ref MemoryMarshal.GetReference(clipRegions.Span));
 
         clipRegions.Clear();
 
@@ -245,8 +247,9 @@ public class QuadRendererBuffered : IQuadRenderer
         if (rendering) EndRendering();
         GL.DeleteBuffer(ssbo);
 
-        ((IDisposable)combinedMatrices).Dispose();
-        ((IDisposable)bindlessTextures).Dispose();
+        combinedMatrices.Dispose();
+        bindlessTextures.Dispose();
+        clipRegions.Dispose();
 
         if (!disposing) return;
 

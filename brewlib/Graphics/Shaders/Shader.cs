@@ -1,10 +1,10 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using Util;
 
@@ -12,11 +12,10 @@ public sealed partial class Shader : IDisposable
 {
     readonly StringBuilder log = new();
 
-    Dictionary<string, Property<ActiveAttribType>> attributes;
+    PooledDictionary<int, Property<ActiveAttribType>> attributes;
 
     bool isInitialized, started;
-    Dictionary<string, Property<ActiveUniformType>>.AlternateLookup<ReadOnlySpan<char>> uniformLookup;
-    Dictionary<string, Property<ActiveUniformType>> uniforms;
+    PooledDictionary<int, Property<ActiveUniformType>> uniforms;
     int vertexShaderId = -1, fragmentShaderId = -1, SortId = -1;
 
     public Shader(string vertexShaderCode, string fragmentShaderCode)
@@ -35,6 +34,10 @@ public sealed partial class Shader : IDisposable
     public void Dispose()
     {
         dispose();
+
+        attributes.Dispose();
+        uniforms.Dispose();
+
         GC.SuppressFinalize(this);
     }
 
@@ -53,21 +56,22 @@ public sealed partial class Shader : IDisposable
         started = false;
     }
 
-    public int GetAttributeLocation(string name) => attributes.TryGetValue(name, out var property) ? property.Location : -1;
+    public int GetAttributeLocation(ReadOnlySpan<char> name)
+        => attributes.TryGetValue(string.GetHashCode(name), out var property) ? property.Location : -1;
 
-    public int GetUniformLocation(string name, int index = -1, string field = null)
+    public int GetUniformLocation(ReadOnlySpan<char> name, int index = -1, string field = null)
     {
         Span<char> buffer = stackalloc char[256];
         buffer = buffer[..(GetUniformIdentifier(buffer, name, index, field) - 1)];
 
-        var location = uniformLookup.TryGetValue(buffer, out var property) ? property.Location : -1;
+        var location = uniforms.TryGetValue(string.GetHashCode(buffer), out var property) ? property.Location : -1;
 
         if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier ({buffer})");
 
         return location;
     }
 
-    static int GetUniformIdentifier(Span<char> buffer, string name, int index, string field)
+    static int GetUniformIdentifier(Span<char> buffer, ReadOnlySpan<char> name, int index, string field)
     {
         var total = 0;
 
@@ -145,7 +149,7 @@ public sealed partial class Shader : IDisposable
         for (var i = 0; i < attributeCount; ++i)
         {
             var name = GL.GetActiveAttrib(SortId, i, out var size, out var type);
-            attributes[name] = new(size, type, GL.GetAttribLocation(SortId, name));
+            attributes[name.GetHashCode()] = new(size, type, GL.GetAttribLocation(SortId, name));
         }
     }
 
@@ -154,12 +158,10 @@ public sealed partial class Shader : IDisposable
         GL.GetProgram(SortId, GetProgramParameterName.ActiveUniforms, out var uniformCount);
 
         uniforms = new(uniformCount);
-        uniformLookup = uniforms.GetAlternateLookup<ReadOnlySpan<char>>();
-
         for (var i = 0; i < uniformCount; ++i)
         {
             var name = GL.GetActiveUniform(SortId, i, out var size, out var type);
-            uniforms[name] = new(size, type, GL.GetUniformLocation(SortId, name));
+            uniforms[name.GetHashCode()] = new(size, type, GL.GetUniformLocation(SortId, name));
         }
     }
 

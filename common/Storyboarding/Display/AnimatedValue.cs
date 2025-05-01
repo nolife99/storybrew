@@ -2,13 +2,14 @@
 
 using System;
 using System.Collections.Generic;
+using Collections.Pooled;
 using Commands;
 using CommandValues;
 
 #pragma warning disable CS1591
 public class AnimatedValue<TValue> where TValue : CommandValue
 {
-    readonly List<ITypedCommand<TValue>> commands = [];
+    readonly PooledList<ITypedCommand<TValue>> commands = new();
     public AnimatedValue() { }
     public AnimatedValue(TValue defaultValue) => DefaultValue = defaultValue;
     public IReadOnlyList<ITypedCommand<TValue>> Commands => commands;

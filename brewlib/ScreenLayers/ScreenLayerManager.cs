@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.ScreenLayers;
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Collections.Pooled;
 using Graphics;
 using Input;
 using OpenTK.Windowing.Common;
@@ -15,7 +15,7 @@ public sealed class ScreenLayerManager : IDisposable
 
     readonly InputDispatcher inputDispatcher = new();
 
-    readonly List<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
+    readonly PooledList<ScreenLayer> layers = [], removedLayers = [], updateQueue = [];
 
     readonly NativeWindow window;
     ScreenLayer focusedLayer;
@@ -173,7 +173,12 @@ public sealed class ScreenLayerManager : IDisposable
         changeFocus(null);
 
         foreach (var layer in layers) layer.Dispose();
+        layers.Dispose();
+
         foreach (var layer in removedLayers) layer.Dispose();
+        removedLayers.Dispose();
+
+        updateQueue.Dispose();
 
         window.Resize -= window_Resize;
         disposed = true;

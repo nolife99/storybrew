@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.InteropServices;
+using Collections.Pooled;
 using IO;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -14,15 +14,21 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Util;
 
-public sealed class TextGenerator(ResourceContainer resourceContainer)
+public sealed class TextGenerator(ResourceContainer resourceContainer) : IDisposable
 {
     static readonly DrawingOptions drawOptions = new() { GraphicsOptions = new() { AntialiasSubpixelDepth = 2 } };
     static readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
-    readonly Dictionary<string, FontFamily> families = [];
+    readonly PooledDictionary<string, FontFamily> families = new();
 
     readonly FontCollection fontCollection = new();
-    readonly Dictionary<int, Font> fonts = [];
+    readonly PooledDictionary<int, Font> fonts = new();
     IReadOnlyList<FontFamily> fallback;
+
+    public void Dispose()
+    {
+        families.Dispose();
+        fonts.Dispose();
+    }
 
     public Image<Rgba32> CreateBitmap(string text,
         string fontName,
@@ -75,15 +81,10 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
 
     Font getFont(string name, float emSize, FontStyle style)
     {
-        ref var font = ref CollectionsMarshal.GetValueRefOrAddDefault(
-            fonts,
-            HashCode.Combine(name, emSize, style),
-            out var exists);
-
-        if (exists) return font;
+        var id = HashCode.Combine(name, emSize, style);
+        if (fonts.TryGetValue(id, out var font)) return font;
 
         var fontFamily = getFamily(name);
-
         if (fontFamily != default) font = new(fontFamily, emSize, style);
         else
         {
@@ -91,13 +92,12 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
             Trace.WriteLine($"Using system font for {name}");
         }
 
-        return font;
+        return fonts[id] = font;
     }
 
     FontFamily getFamily(string name)
     {
-        ref var fontFamily = ref CollectionsMarshal.GetValueRefOrAddDefault(families, name, out var exists);
-        if (exists) return fontFamily;
+        if (families.TryGetValue(name, out var fontFamily)) return fontFamily;
 
         using var stream = resourceContainer.GetStream(name, ResourceSource.Embedded);
         if (stream is null) return SystemFonts.Get(name, CultureInfo.InvariantCulture);
@@ -105,6 +105,6 @@ public sealed class TextGenerator(ResourceContainer resourceContainer)
         Trace.WriteLine(
             $"Loaded font {(fontFamily = fontCollection.Add(stream, CultureInfo.InvariantCulture)).Name} for {name}");
 
-        return fontFamily;
+        return families[name] = fontFamily;
     }
 }

@@ -1,10 +1,9 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.InteropServices;
+using Collections.Pooled;
 using Graphics;
 using Graphics.Drawables;
 using OpenTK.Windowing.Common;
@@ -213,11 +212,11 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public Widget Parent { get; private set; }
 
-    readonly List<Widget> children = [];
+    readonly PooledList<Widget> children = new();
 
     public ReadOnlySpan<Widget> Children
     {
-        get => CollectionsMarshal.AsSpan(children);
+        get => children.Span;
         init
         {
             ClearWidgets();
@@ -570,7 +569,7 @@ public class Widget(WidgetManager manager) : IDisposable
             ClearWidgets();
         }
 
-        children.Clear();
+        children.Dispose();
         Tooltip = null;
 
         if (disposing) OnDisposed?.Invoke(this, EventArgs.Empty);

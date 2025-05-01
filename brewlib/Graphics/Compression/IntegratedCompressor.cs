@@ -1,18 +1,18 @@
 namespace BrewLib.Graphics.Compression;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
+using Collections.Pooled;
 using IO;
 using Util;
 
 public class IntegratedCompressor : ImageCompressor
 {
-    readonly List<Task> tasks = [];
-    readonly HashSet<string> toCleanup = [];
+    readonly PooledList<Task> tasks = [];
+    readonly PooledSet<string> toCleanup = [];
 
     public IntegratedCompressor(string utilityPath = null) : base(utilityPath)
         => container = new AssemblyResourceContainer(typeof(Argument).Assembly, "BrewLib");
@@ -102,6 +102,12 @@ public class IntegratedCompressor : ImageCompressor
         if (disposed) return;
 
         Task.WhenAll(tasks).Wait();
+
+        if (disposing)
+        {
+            tasks.Dispose();
+            toCleanup.Dispose();
+        }
 
         base.Dispose(disposing);
 

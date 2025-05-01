@@ -6,10 +6,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Xml;
 using BrewLib.IO;
 using BrewLib.Util;
+using Collections.Pooled;
 using Storyboarding;
 using StorybrewCommon.Scripting;
 using Util;
@@ -18,14 +18,14 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 {
     readonly FileSystemWatcher libraryWatcher;
     readonly ResourceContainer resourceContainer;
-    readonly Dictionary<string, ScriptContainer<TScript>> scriptContainers = [];
+    readonly PooledDictionary<string, ScriptContainer<TScript>> scriptContainers = new();
     readonly string scriptsNamespace, commonScriptsPath, scriptsLibraryPath;
 
     readonly FileSystemWatcher scriptWatcher;
 
     bool disposed;
 
-    List<string> referencedAssemblies = [];
+    PooledList<string> referencedAssemblies = new();
     ThrottledActionScheduler scheduler = new();
 
     public ScriptManager(ResourceContainer resourceContainer,
@@ -82,7 +82,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         get => referencedAssemblies;
         set
         {
-            referencedAssemblies = value as List<string> ?? value.ToList();
+            referencedAssemblies = value as PooledList<string> ?? value.ToPooledList();
             foreach (var container in scriptContainers.Values) container.ReferencedAssemblies = referencedAssemblies;
             updateSolutionFiles();
         }
@@ -94,10 +94,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     public ScriptContainer<TScript> Get(string scriptName)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
-        ref var scriptContainer =
-            ref CollectionsMarshal.GetValueRefOrAddDefault(scriptContainers, scriptName, out var exists);
 
-        if (exists) return scriptContainer;
+        if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
 
         var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
         var sourcePath = Path.Combine(ScriptsPath, $"{scriptName}.cs");
@@ -112,7 +110,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             }
         }
 
-        return scriptContainer = new(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
+        return scriptContainers[scriptName] = new(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
     }
 
     public IEnumerable<string> GetScriptNames() => Directory
@@ -210,7 +208,10 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
 
         if (!disposing) return;
 
+        foreach (var container in scriptContainers.Values) container.Dispose();
         scriptContainers.Dispose();
+
+        referencedAssemblies.Dispose();
 
         scheduler = null;
         disposed = true;

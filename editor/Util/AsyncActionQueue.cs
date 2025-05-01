@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.Util;
 
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
@@ -21,8 +22,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
         context = new();
 
-        actionRunners = new ActionRunner[runnerCount];
-        for (var i = 0; i < actionRunners.Length; ++i) actionRunners[i] = new(context);
+        actionRunners = ArrayPool<ActionRunner>.Shared.Rent(runnerCount);
+        for (var i = 0; i < runnerCount; ++i) actionRunners[i] = new(context);
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
@@ -204,6 +205,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
         context.Enabled = false;
         CancelQueuedActions(true).Wait();
+
+        ArrayPool<ActionRunner>.Shared.Return(actionRunners);
 
         disposed = true;
     }

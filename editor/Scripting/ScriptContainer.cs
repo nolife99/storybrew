@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using Collections.Pooled;
 using StorybrewCommon.Scripting;
 
 public sealed class ScriptContainer<TScript> : IDisposable where TScript : Script
@@ -18,7 +19,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
     volatile int currentVersion, targetVersion = 1;
 
-    List<string> referencedAssemblies = [];
+    PooledList<string> referencedAssemblies = new();
     Type scriptType;
 
     public ScriptContainer(string scriptTypeName,
@@ -62,7 +63,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         get => referencedAssemblies;
         set
         {
-            var newReferencedAssemblies = value as List<string> ?? value.ToList();
+            var newReferencedAssemblies = value as PooledList<string> ?? value.ToPooledList();
             if (newReferencedAssemblies.Count == referencedAssemblies.Count &&
                 newReferencedAssemblies.TrueForAll(referencedAssemblies.Contains)) return;
 
@@ -73,7 +74,11 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
     public bool HasScript => scriptType is not null || currentVersion != targetVersion;
 
-    public void Dispose() => appDomain?.Unload();
+    public void Dispose()
+    {
+        appDomain?.Unload();
+        referencedAssemblies.Dispose();
+    }
 
     public event EventHandler OnScriptChanged;
 

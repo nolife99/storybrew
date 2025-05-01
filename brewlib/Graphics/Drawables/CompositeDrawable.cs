@@ -1,13 +1,13 @@
 ﻿namespace BrewLib.Graphics.Drawables;
 
-using System.Collections.Generic;
 using System.Numerics;
 using Cameras;
+using Collections.Pooled;
 using SixLabors.ImageSharp;
 
 public sealed class CompositeDrawable : Drawable
 {
-    public List<Drawable> Drawables { get; } = [];
+    public PooledList<Drawable> Drawables { get; } = new();
 
     public Vector2 MinSize
     {
@@ -55,6 +55,7 @@ public sealed class CompositeDrawable : Drawable
     public void Dispose()
     {
         foreach (var drawable in Drawables) drawable.Dispose();
+        Drawables.Dispose();
     }
 
     #endregion

@@ -4,10 +4,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
-using Memory;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using SixLabors.ImageSharp;
 using Image = OpenTK.Windowing.GraphicsLibraryFramework.Image;
 
 public static unsafe class Native
@@ -15,7 +13,6 @@ public static unsafe class Native
     #region Win32
 
     static nint handle;
-    static readonly UnmanagedMemoryAllocator allocator = new();
 
     public static Window* GLFWPtr { get; private set; }
 
@@ -25,9 +22,6 @@ public static unsafe class Native
 
     public static void InitializeHandle(NativeWindow glfwWindow)
     {
-        Configuration.Default.MemoryAllocator.ReleaseRetainedResources();
-        Configuration.Default.MemoryAllocator = allocator;
-
         GLFWPtr = glfwWindow.WindowPtr;
         handle = GLFW.GetWin32Window(GLFWPtr);
     }

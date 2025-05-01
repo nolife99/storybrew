@@ -1,22 +1,18 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using Collections.Pooled;
 using IO;
-using Util;
 
 public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer container = null) : IDisposable
 {
-    readonly Dictionary<string, AudioSample> samples = [];
+    readonly PooledDictionary<string, AudioSample> samples = new();
 
     public AudioSample Get(string filename)
     {
-        ref var sample = ref CollectionsMarshal.GetValueRefOrAddDefault(samples, filename, out var exists);
+        if (samples.TryGetValue(filename, out var sample)) return sample;
 
-        if (!exists) sample = manager.LoadSample(filename, container);
-
-        return sample;
+        return samples[filename] = manager.LoadSample(filename, container);
     }
 
     #region IDisposable Support
@@ -27,6 +23,7 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
     {
         if (disposed) return;
 
+        foreach (var sample in samples.Values) sample.Dispose();
         samples.Dispose();
         disposed = true;
     }

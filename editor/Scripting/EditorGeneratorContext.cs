@@ -4,10 +4,9 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using BrewLib.Audio;
-using BrewLib.Util;
+using Collections.Pooled;
 using Mapset;
 using Storyboarding;
 using StorybrewCommon.Mapset;
@@ -54,7 +53,11 @@ public sealed class EditorGeneratorContext(Effect effect,
     public override bool Multithreaded { get; set; }
     public string Log => log.ToString();
 
-    public void Dispose() => fftAudioStreams.Dispose();
+    public void Dispose()
+    {
+        foreach (var audioStream in fftAudioStreams.Values) audioStream.Dispose();
+        fftAudioStreams.Dispose();
+    }
 
     public override StoryboardLayer GetLayer(string name)
     {
@@ -72,15 +75,15 @@ public sealed class EditorGeneratorContext(Effect effect,
 
     #region Audio data
 
-    readonly Dictionary<string, FftStream> fftAudioStreams = [];
+    readonly PooledDictionary<string, FftStream> fftAudioStreams = new();
 
     FftStream getFftStream(string path)
     {
         path = Path.GetFullPath(path);
 
-        ref var audioStream = ref CollectionsMarshal.GetValueRefOrAddDefault(fftAudioStreams, path, out var exists);
-        if (!exists) audioStream = new(path);
-        return audioStream;
+        if (fftAudioStreams.TryGetValue(path, out var audioStream)) return audioStream;
+
+        return fftAudioStreams[path] = new(path);
     }
 
     public override float AudioDuration => getFftStream(effect.Project.AudioPath).Duration * 1000;

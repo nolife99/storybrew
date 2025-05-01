@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using BrewLib.IO;
 using BrewLib.Util;
+using Collections.Pooled;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
@@ -22,7 +23,7 @@ public static class ScriptCompiler
         string asmName,
         IEnumerable<string> referencedAssemblies)
     {
-        Dictionary<SyntaxTree, (string SourcePath, SourceText SourceText)> trees = [];
+        using PooledDictionary<SyntaxTree, (string SourcePath, SourceText SourceText)> trees = new();
         foreach (var src in sourcePaths)
         {
             using var sourceStream = File.OpenRead(src);

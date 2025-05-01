@@ -2,10 +2,11 @@
 
 using System;
 using System.Collections.Generic;
+using Collections.Pooled;
 
 public sealed class ParseContext<TTokenType> : IDisposable
 {
-    readonly Stack<Parser<TTokenType>> parserStack = new();
+    readonly PooledStack<Parser<TTokenType>> parserStack = new();
     readonly IEnumerator<Token<TTokenType>> tokenEnumerator;
 
     public ParseContext(IEnumerable<Token<TTokenType>> tokens, Parser<TTokenType> initialParser)
@@ -32,6 +33,7 @@ public sealed class ParseContext<TTokenType> : IDisposable
         }
 
         tokenEnumerator.Dispose();
+        parserStack.Dispose();
     }
 
     public void PopParser() => parserStack.Pop();

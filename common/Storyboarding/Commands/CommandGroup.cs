@@ -3,11 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Collections.Pooled;
 
 #pragma warning disable CS1591
 public abstract class CommandGroup : ICommand
 {
-    protected readonly HashSet<ICommand> commands = [];
+    protected readonly PooledSet<ICommand> commands = [];
     public IReadOnlyCollection<ICommand> Commands => commands;
 
     public float CommandsStartTime
@@ -65,9 +66,7 @@ public abstract class CommandGroup : ICommand
         foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, indentation + 1);
     }
 
-    public bool Contains(ICommand command) => commands.Contains(command);
     public bool Add(ICommand command) => commands.Add(command);
-    public bool Remove(ICommand command) => commands.Remove(command);
     public virtual void EndGroup() { }
     protected abstract string GetCommandGroupHeader(ExportSettings exportSettings);
     public override string ToString() => $"{GetCommandGroupHeader(ExportSettings.Default)} ({commands.Count} commands)";

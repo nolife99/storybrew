@@ -1,11 +1,13 @@
 ﻿namespace StorybrewCommon.Curves;
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using CommunityToolkit.HighPerformance.Buffers;
+using Collections.Pooled;
+using SixLabors.ImageSharp;
 
 /// <summary>Represents a bézier curve defined by a set of control points.</summary>
 public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
@@ -42,7 +44,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         List<Vector2> output = [];
         var pointCount = controlPoints.Length - 1;
 
-        var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
+        using var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
 
         Span<Vector2> subdivisionBuffer1 = stackalloc Vector2[degree + 1];
         Span<Vector2> subdivisionBuffer2 = stackalloc Vector2[degree * 2 + 1];
@@ -50,20 +52,21 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         while (toFlatten.Count > 0)
         {
             var parent = toFlatten.Pop();
+            var parentSpan = parent.Memory.Span;
 
-            if (bezierIsFlatEnough(parent.Span))
+            if (bezierIsFlatEnough(parentSpan))
             {
-                bezierApproximate(parent.Span, output, subdivisionBuffer1, subdivisionBuffer2, degree + 1);
+                bezierApproximate(parentSpan, output, subdivisionBuffer1, subdivisionBuffer2, degree + 1);
 
                 parent.Dispose();
                 continue;
             }
 
-            var rightChild = MemoryOwner<Vector2>.Allocate(degree + 1);
+            var rightChild = Configuration.Default.MemoryAllocator.Allocate<Vector2>(degree + 1);
 
-            bezierSubdivide(parent.Span, subdivisionBuffer2, rightChild.Span, subdivisionBuffer1, degree + 1);
+            bezierSubdivide(parentSpan, subdivisionBuffer2, rightChild.Memory.Span, subdivisionBuffer1, degree + 1);
 
-            subdivisionBuffer2[..(degree + 1)].CopyTo(parent.Span);
+            subdivisionBuffer2[..(degree + 1)].CopyTo(parentSpan);
 
             toFlatten.Push(rightChild);
             toFlatten.Push(parent);
@@ -73,14 +76,14 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         return CollectionsMarshal.AsSpan(output);
     }
 
-    static Stack<MemoryOwner<Vector2>> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
+    static PooledStack<IMemoryOwner<Vector2>> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
     {
-        Stack<MemoryOwner<Vector2>> result = new();
+        PooledStack<IMemoryOwner<Vector2>> result = new();
         degree = Math.Min(degree, controlPoints.Length - 1);
 
         var pointCount = controlPoints.Length - 1;
-        var points = MemoryOwner<Vector2>.Allocate(controlPoints.Length);
-        var pointsSpan = points.Span;
+        var points = Configuration.Default.MemoryAllocator.Allocate<Vector2>(controlPoints.Length);
+        var pointsSpan = points.Memory.Span;
         controlPoints.CopyTo(pointsSpan);
 
         if (degree == pointCount) result.Push(points);
@@ -88,8 +91,8 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         {
             for (var i = 0; i < pointCount - degree; i++)
             {
-                var subBezier = MemoryOwner<Vector2>.Allocate(degree + 1);
-                var subBezierSpan = subBezier.Span;
+                var subBezier = Configuration.Default.MemoryAllocator.Allocate<Vector2>(degree + 1);
+                var subBezierSpan = subBezier.Memory.Span;
 
                 subBezierSpan[0] = pointsSpan[i];
 
@@ -109,11 +112,14 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
             }
 
             var pointSpan = pointsSpan[(pointCount - degree)..];
-            var memoryOwner = MemoryOwner<Vector2>.Allocate(pointSpan.Length);
-            pointSpan.CopyTo(memoryOwner.Span);
+            var memoryOwner = Configuration.Default.MemoryAllocator.Allocate<Vector2>(pointSpan.Length);
+            pointSpan.CopyTo(memoryOwner.Memory.Span);
 
             result.Push(memoryOwner);
-            result = new(result);
+
+            var old = result;
+            result = new(old);
+            old.Dispose();
         }
 
         return result;

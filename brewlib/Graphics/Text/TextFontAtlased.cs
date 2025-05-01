@@ -1,15 +1,14 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
+using Collections.Pooled;
 using Textures;
 using Util;
 
 public sealed class TextFontAtlased(TextureContainer container, string name, float size) : TextFont
 {
-    readonly Dictionary<char, FontGlyph> glyphs = [];
+    readonly PooledDictionary<char, FontGlyph> glyphs = new();
 
     public string Name => name;
     public float Size => size;
@@ -17,9 +16,9 @@ public sealed class TextFontAtlased(TextureContainer container, string name, flo
 
     public FontGlyph GetGlyph(char c)
     {
-        ref var glyph = ref CollectionsMarshal.GetValueRefOrAddDefault(glyphs, c, out var exists);
-        if (!exists) glyph = generateGlyph(c);
-        return glyph;
+        if (glyphs.TryGetValue(c, out var glyph)) return glyph;
+
+        return glyphs[c] = generateGlyph(c);
     }
 
     FontGlyph generateGlyph(char c)
@@ -59,6 +58,7 @@ public sealed class TextFontAtlased(TextureContainer container, string name, flo
         if (disposed) return;
 
         foreach (var glyph in glyphs.Values) glyph.Texture?.Dispose();
+        glyphs.Dispose();
 
         disposed = true;
     }

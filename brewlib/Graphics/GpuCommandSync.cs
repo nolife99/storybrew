@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
+using Collections.Pooled;
 using Memory;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -17,11 +17,12 @@ public static class GpuCommandSync
         }),
         LazyThreadSafetyMode.None);
 
-    static readonly List<SyncRange> syncRanges = [];
+    static readonly PooledList<SyncRange> syncRanges = new();
 
     public static void DeleteFences()
     {
         foreach (var range in syncRanges) syncRangePool.Value.Release(range);
+        syncRanges.Dispose();
     }
 
     public static bool WaitForAll()

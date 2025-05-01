@@ -1,14 +1,14 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
+using Collections.Pooled;
 using IO;
 using ManagedBass;
 
 public sealed class AudioManager : IDisposable
 {
-    readonly List<AudioChannel> audioChannels = [];
+    readonly PooledList<AudioChannel> audioChannels = new();
     float volume = 1;
 
     public AudioManager(nint handle)
@@ -87,6 +87,8 @@ public sealed class AudioManager : IDisposable
     public void Dispose()
     {
         if (disposed) return;
+
+        audioChannels.Dispose();
 
         Bass.Free();
         disposed = true;
