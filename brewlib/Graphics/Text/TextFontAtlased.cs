@@ -6,7 +6,7 @@ using Collections.Pooled;
 using Textures;
 using Util;
 
-public sealed class TextFontAtlased(TextureContainer container, string name, float size) : TextFont
+public sealed class TextFontAtlased(string name, float size) : TextFont
 {
     readonly PooledDictionary<char, FontGlyph> glyphs = new();
 
@@ -46,7 +46,7 @@ public sealed class TextFontAtlased(TextureContainer container, string name, flo
             out measuredSize,
             false);
 
-        return new(container.Add(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
+        return new(Texture2d.Load(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
     }
 
     #region IDisposable Support

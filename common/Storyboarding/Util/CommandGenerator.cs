@@ -76,7 +76,7 @@ public class CommandGenerator
     {
         var count = states.Count;
 
-        if (count == 0 || states[^1].Time <= state.Time)
+        if (count == 0 || states[count - 1].Time <= state.Time)
         {
             states.Add(state);
             return;
@@ -314,7 +314,7 @@ public class CommandGenerator
         flipV.keyframes.Dispose();
         additive.keyframes.Dispose();
 
-        ((IDisposable)states).Dispose();
+        states.Dispose();
     }
 
     internal static Vector2 BitmapDimensions(string path)

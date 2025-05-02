@@ -67,6 +67,7 @@ public static class Program
     {
         Settings = new();
         Updater.NotifyEditorRun();
+        Native.MainThreadScheduler = Schedule;
 
         var displayDevice = Monitors.GetPrimaryMonitor();
         using (var window = createWindow(displayDevice))
@@ -74,11 +75,14 @@ public static class Program
             Trace.Write(Environment.OSVersion);
 
             using Editor editor = new(window);
-            window.Refresh += () =>
+
+            void refreshCallback()
             {
                 editor.Draw();
                 window.Context.SwapBuffers();
-            };
+            }
+
+            window.Refresh += refreshCallback;
 
             using (NetHelper.Client = new())
             {
@@ -91,6 +95,8 @@ public static class Program
                         1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
                         1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
             }
+
+            window.Refresh -= refreshCallback;
         }
 
         Settings.Save();
@@ -110,7 +116,6 @@ public static class Program
         NativeWindow window = new(new()
         {
             Flags = debugContext,
-            Profile = ContextProfile.Core,
             CurrentMonitor = displayDevice.Handle,
             Title = Name,
             StartVisible = false,
@@ -273,8 +278,6 @@ public static class Program
                         FullName,
                         MessageBoxButton.OKCancel,
                         MessageBoxImage.Error) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
-
-                Environment.FailFast(null, e);
             }
             catch (Exception e2)
             {

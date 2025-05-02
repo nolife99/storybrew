@@ -42,9 +42,9 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         OsbSprite sprite)
     {
         var time = project.DisplayTime * 1000;
-        var texturePath = sprite.GetTexturePathAt(time);
-        if (texturePath is null || !sprite.IsActive(time)) return;
+        if (!sprite.IsActive(time)) return;
 
+        var texturePath = sprite.GetTexturePathAt(time);
         if (frameStats is not null)
         {
             ++frameStats.SpriteCount;
@@ -116,7 +116,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                     var intersectionArea =
                         size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
 
-                    if (!float.IsNaN(intersectionArea))
+                    if (float.IsFinite(intersectionArea))
                         frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
                             OsuHitObject.WidescreenStoryboardArea;
                 }

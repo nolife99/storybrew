@@ -48,7 +48,7 @@ public class ShaderBuilder
 
     public ShaderStorageType AddSSBO(int bindingIndex) => ProgramScope.AddSSBO(bindingIndex);
 
-    public Shader Build(bool log = true)
+    public Shader Build(bool log = false)
     {
         Context.VertexDeclaration = VertexDeclaration;
         Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPosition, GlFragCoord, GlPointSize, GlFragDepth);

@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using OpenTK.Graphics.OpenGL;
-using Util;
 
 public class ProgramScope
 {
@@ -69,17 +68,8 @@ public class ProgramScope
 
         foreach (var type in ssbos)
         {
-            var prefix = StringHelper.StringBuilderPool.Retrieve();
-            if (type.Coherent) prefix.Append("coherent ");
-            if (type.Volatile) prefix.Append("volatile ");
-            if (type.Restrict) prefix.Append("restrict ");
-            if (type.ReadOnly) prefix.Append("readonly ");
-            if (type.WriteOnly) prefix.Append("writeonly ");
-
             code.AppendLine(CultureInfo.InvariantCulture,
-                $"layout(binding = {type.BindingIndex}, std430) {prefix}buffer {ShaderStorageType.BlockName} {{");
-
-            StringHelper.StringBuilderPool.Release(prefix);
+                $"layout(binding = {type.BindingIndex}) buffer {ShaderStorageType.BlockName} {{");
 
             foreach (var field in type.Fields)
             {

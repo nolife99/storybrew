@@ -24,7 +24,7 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         ReadOnlySpan<int> firsts)
     {
         var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
-        GL.NamedBufferSubData(VertexBufferId, 0, vertexDataSize, primitives);
+        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, vertexDataSize, primitives);
 
         if (IndexBufferId != -1)
             GL.MultiDrawElements(type,
@@ -39,6 +39,8 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
                 counts.Length);
     }
 
+    protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
+
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
@@ -46,7 +48,7 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         var vertexBufferSize = MinRenderableVertexCount * PrimitiveSize;
         primitives = Native.AllocateMemory(vertexBufferSize);
 
-        GL.NamedBufferStorage(VertexBufferId, vertexBufferSize, 0, BufferStorageFlags.DynamicStorageBit);
+        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferStorageFlags.DynamicStorageBit);
     }
 
     protected override void Dispose(bool disposing)

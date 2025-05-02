@@ -41,10 +41,4 @@ public class ShaderStorageType(string name, int bindingIndex) : ShaderType(name)
 
     public static string BlockName => $"ssbo{nextGenericTypeName++}";
     public int BindingIndex => bindingIndex;
-
-    public bool Coherent { get; set; }
-    public bool Volatile { get; set; }
-    public bool Restrict { get; set; }
-    public bool ReadOnly { get; set; }
-    public bool WriteOnly { get; set; }
 }

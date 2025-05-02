@@ -48,8 +48,7 @@ public abstract record Command<TValue>(string identifier,
         if (EndTime < time) return MaintainValue ? ValueAtProgress(1) : default;
 
         var duration = EndTime - StartTime;
-        var progress = duration > 0 ? easing.Ease((time - StartTime) / duration) : 0;
-        return ValueAtProgress(progress);
+        return ValueAtProgress(duration > 0 ? easing.Ease((time - StartTime) / duration) : 0);
     }
 
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);

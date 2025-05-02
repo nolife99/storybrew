@@ -72,9 +72,8 @@ public class QuadRendererBuffered : IQuadRenderer
             int.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad,
             indices);
 
-        GL.CreateBuffers(1, out ssbo);
-
-        GL.NamedBufferStorage(ssbo,
+        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo = GL.GenBuffer());
+        GL.BufferStorage(BufferTarget.ShaderStorageBuffer,
             (Unsafe.SizeOf<Matrix4x4>() + sizeof(long) + Unsafe.SizeOf<Vector4>()) * maxQuadsPerBatch,
             0,
             BufferStorageFlags.DynamicStorageBit);
@@ -123,8 +122,6 @@ public class QuadRendererBuffered : IQuadRenderer
     public void EndRendering()
     {
         primitiveStreamer.Unbind();
-
-        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, 0);
         shader.End();
 
         currentTextureHandle = 0;
@@ -150,21 +147,21 @@ public class QuadRendererBuffered : IQuadRenderer
 
         // TODO: Buffer everything at once or map (will save ~15% frametime)
 
-        GL.NamedBufferSubData(ssbo,
+        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             0,
             queuedRenders * Unsafe.SizeOf<Matrix4x4>(),
             ref MemoryMarshal.GetReference(combinedMatrices.Span));
 
         combinedMatrices.Clear();
 
-        GL.NamedBufferSubData(ssbo,
+        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             maxQuadsPerBatch * Unsafe.SizeOf<Matrix4x4>(),
             queuedRenders * sizeof(long),
             ref MemoryMarshal.GetReference(bindlessTextures.Span));
 
         bindlessTextures.Clear();
 
-        GL.NamedBufferSubData(ssbo,
+        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             maxQuadsPerBatch * (sizeof(long) + Unsafe.SizeOf<Matrix4x4>()),
             queuedRenders * Unsafe.SizeOf<Vector4>(),
             ref MemoryMarshal.GetReference(clipRegions.Span));
@@ -192,16 +189,14 @@ public class QuadRendererBuffered : IQuadRenderer
         GC.SuppressFinalize(this);
     }
 
-    #region Default Shader
-
     Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
-        sb.AddRequiredExtension("GL_ARB_bindless_texture", "GL_ARB_shader_draw_parameters");
+        sb.AddRequiredExtension("GL_ARB_bindless_texture",
+            "GL_ARB_shader_draw_parameters",
+            "GL_ARB_shader_storage_buffer_object");
 
         var allSsbo = sb.AddSSBO(0);
-        allSsbo.Restrict = true;
-        allSsbo.ReadOnly = true;
 
         var combinedMatrix = allSsbo.FieldAsVariable(
             new(sb.Context, allSsbo.Name, ActiveUniformType.FloatMat4, maxQuadsPerBatch),
@@ -235,8 +230,6 @@ public class QuadRendererBuffered : IQuadRenderer
 
         return sb.Build();
     }
-
-    #endregion
 
     ~QuadRendererBuffered() => Dispose(false);
 

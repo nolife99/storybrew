@@ -63,7 +63,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         var size = window.ClientSize;
         DrawState.UseTextureCompression = Program.Settings.TextureCompression;
-        DrawState.Initialize(drawContext.Get<TextureContainer>(), ResourceContainer, size.X, size.Y);
+        DrawState.Initialize(ResourceContainer, size.X, size.Y);
 
         try
         {

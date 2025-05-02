@@ -63,6 +63,8 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         if (CurrentShader != shader) setupVertexArray(shader);
         GL.BindVertexArray(vertexArrayId);
 
+        internalBind();
+
         Bound = true;
     }
 
@@ -106,6 +108,8 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         GC.SuppressFinalize(this);
     }
 
+    protected virtual void internalBind() { }
+
     protected abstract void AddPrimitiveInternal(ref readonly TPrimitive primitive);
 
     protected abstract void RenderInternal(PrimitiveType type,
@@ -114,17 +118,14 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         ReadOnlySpan<int> firsts);
 
     protected virtual void initializeVertexBuffer()
-    {
-        GL.CreateBuffers(1, out int buffer);
-        VertexBufferId = buffer;
-    }
+        => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId = GL.GenBuffer());
 
     void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
     {
-        GL.CreateBuffers(1, out int buffer);
-        IndexBufferId = buffer;
+        IndexBufferId = GL.GenBuffer();
 
-        GL.NamedBufferStorage(IndexBufferId,
+        GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
+        GL.BufferStorage(BufferTarget.ElementArrayBuffer,
             indices.Length * sizeof(ushort),
             ref MemoryMarshal.GetReference(indices),
             BufferStorageFlags.None);
@@ -133,13 +134,15 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     void setupVertexArray(Shader shader)
     {
         var initial = CurrentShader is null;
-        if (initial) GL.CreateVertexArrays(1, out vertexArrayId);
-        else VertexDeclaration.DeactivateAttributes(CurrentShader, vertexArrayId);
+        if (initial) vertexArrayId = GL.GenVertexArray();
 
-        VertexDeclaration.ActivateAttributes(shader, vertexArrayId);
-        GL.VertexArrayVertexBuffer(vertexArrayId, 0, VertexBufferId, 0, VertexDeclaration.VertexSize);
+        GL.BindVertexArray(vertexArrayId);
+        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
 
-        if (initial && IndexBufferId != -1) GL.VertexArrayElementBuffer(vertexArrayId, IndexBufferId);
+        if (!initial) VertexDeclaration.DeactivateAttributes(CurrentShader);
+        VertexDeclaration.ActivateAttributes(shader);
+
+        if (initial && IndexBufferId != -1) GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
 
         CurrentShader = shader;
     }
@@ -159,7 +162,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         else firsts.Dispose();
     }
 
-    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_vertex_array_object") &&
-        GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
+    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
         GLFW.ExtensionSupported("GL_ARB_shader_storage_buffer_object");
 }

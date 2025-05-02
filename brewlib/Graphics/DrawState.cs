@@ -3,7 +3,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Cameras;
 using Collections.Pooled;
 using IO;
@@ -14,6 +16,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Text;
 using Textures;
+using Util;
 
 public static class DrawState
 {
@@ -47,54 +50,66 @@ public static class DrawState
         }
     }
 
-    public static void Initialize(TextureContainer textureContainer,
-        ResourceContainer resourceContainer,
+    public static void Initialize(ResourceContainer resourceContainer,
         int width,
         int height)
     {
         if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
-            GL.Arb.DebugMessageCallback((source, type, _, severity, _, message, _) =>
+            GL.Arb.DebugMessageCallback((source, type, _, severity, length, message, _) =>
                 {
-                    var str = Marshal.PtrToStringAnsi(message);
-                    Trace.WriteLine("Debug message: " + str);
+                    var bytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.NullRef<byte>(), message),
+                        length);
+
+                    Span<char> chars = stackalloc char[Encoding.ASCII.GetCharCount(bytes) + 1];
+                    Encoding.ASCII.GetChars(bytes, chars);
+
+                    var str = StringHelper.StringBuilderPool.Retrieve();
+                    str.Append("[OpenGL] ");
+                    str.Append(chars);
+                    str.Append('(');
 
                     switch (source)
                     {
-                        case DebugSource.DebugSourceApi: Trace.WriteLine("Source: API"); break;
-                        case DebugSource.DebugSourceWindowSystem: Trace.WriteLine("Source: Window System"); break;
-                        case DebugSource.DebugSourceShaderCompiler: Trace.WriteLine("Source: Shader Compiler"); break;
-                        case DebugSource.DebugSourceThirdParty: Trace.WriteLine("Source: Third Party"); break;
-                        case DebugSource.DebugSourceApplication: Trace.WriteLine("Source: Application"); break;
-                        case DebugSource.DebugSourceOther: Trace.WriteLine("Source: Other"); break;
+                        case DebugSource.DebugSourceApi: str.Append("Source: API"); break;
+                        case DebugSource.DebugSourceWindowSystem: str.Append("Source: Window System"); break;
+                        case DebugSource.DebugSourceShaderCompiler: str.Append("Source: Shader Compiler"); break;
+                        case DebugSource.DebugSourceThirdParty: str.Append("Source: Third Party"); break;
+                        case DebugSource.DebugSourceApplication: str.Append("Source: Application"); break;
+                        case DebugSource.DebugSourceOther: str.Append("Source: Other"); break;
                     }
 
+                    str.Append(", ");
                     switch (type)
                     {
-                        case DebugType.DebugTypeError: Trace.WriteLine("Type: Error"); break;
-                        case DebugType.DebugTypeDeprecatedBehavior: Trace.WriteLine("Type: Deprecated Behaviour"); break;
-                        case DebugType.DebugTypeUndefinedBehavior: Trace.WriteLine("Type: Undefined Behaviour"); break;
-                        case DebugType.DebugTypePortability: Trace.WriteLine("Type: Portability"); break;
-                        case DebugType.DebugTypePerformance: Trace.WriteLine("Type: Performance"); break;
-                        case DebugType.DebugTypeMarker: Trace.WriteLine("Type: Marker"); break;
-                        case DebugType.DebugTypePushGroup: Trace.WriteLine("Type: Push Group"); break;
-                        case DebugType.DebugTypePopGroup: Trace.WriteLine("Type: Pop Group"); break;
-                        case DebugType.DebugTypeOther: Trace.WriteLine("Type: Other"); break;
+                        case DebugType.DebugTypeError: str.Append("Type: Error"); break;
+                        case DebugType.DebugTypeDeprecatedBehavior: str.Append("Type: Deprecated Behaviour"); break;
+                        case DebugType.DebugTypeUndefinedBehavior: str.Append("Type: Undefined Behaviour"); break;
+                        case DebugType.DebugTypePortability: str.Append("Type: Portability"); break;
+                        case DebugType.DebugTypePerformance: str.Append("Type: Performance"); break;
+                        case DebugType.DebugTypeMarker: str.Append("Type: Marker"); break;
+                        case DebugType.DebugTypePushGroup: str.Append("Type: Push Group"); break;
+                        case DebugType.DebugTypePopGroup: str.Append("Type: Pop Group"); break;
+                        case DebugType.DebugTypeOther: str.Append("Type: Other"); break;
                     }
 
+                    str.Append(", ");
                     switch (severity)
                     {
-                        case DebugSeverity.DebugSeverityHigh: Trace.WriteLine("Severity: high"); break;
-                        case DebugSeverity.DebugSeverityMedium: Trace.WriteLine("Severity: medium"); break;
-                        case DebugSeverity.DebugSeverityLow: Trace.WriteLine("Severity: low"); break;
-                        case DebugSeverity.DebugSeverityNotification: Trace.WriteLine("Severity: notification"); break;
+                        case DebugSeverity.DebugSeverityHigh: str.Append("Severity: High"); break;
+                        case DebugSeverity.DebugSeverityMedium: str.Append("Severity: Medium"); break;
+                        case DebugSeverity.DebugSeverityLow: str.Append("Severity: Low"); break;
+                        case DebugSeverity.DebugSeverityNotification: str.Append("Severity: Notification"); break;
                     }
 
+                    str.Append(")\n");
+
+                    Trace.Write(str);
                     if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
                 },
                 0);
 
         retrieveRendererInfo();
-        if (UseSrgb && GLFW.ExtensionSupported("GL_ARB_framebuffer_object"))
+        if (UseSrgb)
         {
             GL.GetFramebufferAttachmentParameter(FramebufferTarget.Framebuffer,
                 FramebufferAttachment.BackLeft,
@@ -124,14 +139,11 @@ public static class DrawState
 
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
-        using (Image<Rgba32> whitePixel = new(1, 1, Color.White.ToPixel<Rgba32>()))
-            WhitePixel = textureContainer.Add(whitePixel, "whitepixel");
-
-        using (Image<Rgba32> transparentPixel = new(1, 1, default))
-            TransparentPixel = textureContainer.Add(transparentPixel, "transparentpixel");
+        WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>(), "whitepixel");
+        TransparentPixel = Texture2d.Create(default, "transparentpixel");
 
         TextGenerator = new(resourceContainer);
-        TextFontManager = new(textureContainer);
+        TextFontManager = new();
 
         Viewport = new(0, 0, width, height);
     }
@@ -297,9 +309,6 @@ public static class DrawState
         if (glVer < new Version(3, 3))
             throw new NotSupportedException(
                 $"This application requires at least OpenGL 3.3 (version {glVer} found)\n{rendererName} ({rendererVendor})");
-
-        if (!GLFW.ExtensionSupported("GL_ARB_direct_state_access"))
-            throw new NotSupportedException("This application requires the OpenGL extension 'ARB_direct_state_access'");
 
         Trace.WriteLine($"GLSL v{GL.GetString(StringName.ShadingLanguageVersion)}");
     }

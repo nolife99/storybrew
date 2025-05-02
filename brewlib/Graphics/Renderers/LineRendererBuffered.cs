@@ -25,7 +25,6 @@ public class LineRendererBuffered : ILineRenderer
     readonly PooledList<Matrix4x4> combinedMatrices;
     readonly int combinedMatricesBuffer;
 
-    readonly int maxLinesPerBatch;
     readonly bool ownsShader;
 
     readonly IPrimitiveStreamer<LinePrimitive> primitiveStreamer;
@@ -47,13 +46,11 @@ public class LineRendererBuffered : ILineRenderer
         this.shader = shader;
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
-            int.Max(this.maxLinesPerBatch = maxLinesPerBatch,
-                primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) *
-            VertexPerLine,
+            int.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine,
             ReadOnlySpan<ushort>.Empty);
 
-        GL.CreateBuffers(1, out combinedMatricesBuffer);
-        GL.NamedBufferStorage(combinedMatricesBuffer,
+        GL.BindBuffer(BufferTarget.ShaderStorageBuffer, combinedMatricesBuffer = GL.GenBuffer());
+        GL.BufferStorage(BufferTarget.ShaderStorageBuffer,
             Unsafe.SizeOf<Matrix4x4>() * maxLinesPerBatch,
             0,
             BufferStorageFlags.DynamicStorageBit);
@@ -92,6 +89,8 @@ public class LineRendererBuffered : ILineRenderer
     public void BeginRendering()
     {
         shader.Begin();
+        GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, combinedMatricesBuffer);
+
         primitiveStreamer.Bind(shader);
 
         rendering = true;
@@ -116,7 +115,7 @@ public class LineRendererBuffered : ILineRenderer
         var queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
-        GL.NamedBufferSubData(combinedMatricesBuffer,
+        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             0,
             Unsafe.SizeOf<Matrix4x4>() * queuedRenders,
             ref MemoryMarshal.GetReference(combinedMatrices.Span));
@@ -143,7 +142,7 @@ public class LineRendererBuffered : ILineRenderer
     static Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
-        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters");
+        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters", "GL_ARB_shader_storage_buffer_object");
 
         var combinedMatrices = sb.AddSSBO(0);
         var combinedMatrix = combinedMatrices.FieldAsVariable(

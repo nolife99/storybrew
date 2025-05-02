@@ -23,42 +23,12 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
     public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
 
-    public void Update(Rgba32 color, int x, int y, int width, int height)
-    {
-        if (useGlClearTex)
-            GL.ClearTexSubImage(textureId,
-                0,
-                x,
-                y,
-                0,
-                width,
-                height,
-                1,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                ref color);
-        else
-        {
-            using var spanOwner = Configuration.Default.MemoryAllocator.Allocate<Rgba32>(width * height);
-            var span = spanOwner.Memory.Span;
-
-            span.Fill(color);
-            GL.TextureSubImage2D(textureId,
-                0,
-                x,
-                y,
-                width,
-                height,
-                PixelFormat.Rgba,
-                PixelType.UnsignedByte,
-                ref MemoryMarshal.GetReference(span));
-        }
-    }
-
     public void Update(Image<Rgba32> bitmap, int x, int y)
     {
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
-        GL.TextureSubImage2D(textureId,
+
+        GL.BindTexture(TextureTarget.Texture2D, textureId);
+        GL.TexSubImage2D(TextureTarget.Texture2D,
             0,
             x,
             y,
@@ -69,7 +39,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
     }
 
-    public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
+    static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
         using var stream = File.Exists(filename) ?
             File.OpenRead(filename) :
@@ -115,8 +85,13 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
 
         var sRgb = textureOptions.Srgb && DrawState.ColorCorrected;
 
-        GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
-        GL.TextureStorage2D(textureId, 1, sRgb ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8, width, height);
+        var textureId = GL.GenTexture();
+        GL.BindTexture(TextureTarget.Texture2D, textureId);
+        GL.TexStorage2D(TextureTarget2d.Texture2D,
+            1,
+            sRgb ? SizedInternalFormat.Srgb8 : SizedInternalFormat.Rgba8,
+            width,
+            height);
 
         if (useGlClearTex) GL.ClearTexImage(textureId, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ref color);
         else
@@ -125,7 +100,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             var span = spanOwner.Memory.Span;
 
             span.Fill(color);
-            GL.TextureSubImage2D(textureId,
+            GL.TexSubImage2D(TextureTarget.Texture2D,
                 0,
                 0,
                 0,
@@ -136,8 +111,8 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
                 ref MemoryMarshal.GetReference(span));
         }
 
-        if (textureOptions.GenerateMipmaps) GL.GenerateTextureMipmap(textureId);
-        textureOptions.ApplyParameters(textureId);
+        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
         return new(textureId, width, height, description);
     }
@@ -154,11 +129,16 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         var format = sRgb ? compress ? PixelInternalFormat.CompressedSrgbS3tcDxt1Ext : PixelInternalFormat.Srgb8 :
             compress ? PixelInternalFormat.CompressedRgbaS3tcDxt5Ext : PixelInternalFormat.Rgba8;
 
-        GL.CreateTextures(TextureTarget.Texture2D, 1, out int textureId);
-        GL.TextureStorage2D(textureId, 1, Unsafe.As<PixelInternalFormat, SizedInternalFormat>(ref format), width, height);
+        var textureId = GL.GenTexture();
+        GL.BindTexture(TextureTarget.Texture2D, textureId);
+        GL.TexStorage2D(TextureTarget2d.Texture2D,
+            1,
+            Unsafe.As<PixelInternalFormat, SizedInternalFormat>(ref format),
+            width,
+            height);
 
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
-        GL.TextureSubImage2D(textureId,
+        GL.TexSubImage2D(TextureTarget.Texture2D,
             0,
             0,
             0,
@@ -168,18 +148,17 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             PixelType.UnsignedByte,
             ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
 
-        if (textureOptions.GenerateMipmaps) GL.GenerateTextureMipmap(textureId);
-        textureOptions.ApplyParameters(textureId);
+        if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
+        textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
         return new(textureId, width, height, description);
     }
 
     public void MakeBindlessResident()
     {
-        if (isResident) return;
+        if (GL.Arb.IsTextureHandleResident(BindlessTextureHandle)) return;
 
         GL.Arb.MakeTextureHandleResident(BindlessTextureHandle);
-        isResident = true;
     }
 
     #region IDisposable Support
@@ -188,12 +167,10 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     {
         if (!disposed)
         {
-            GL.DeleteTexture(textureId);
-            if (isResident)
-            {
+            if (GL.Arb.IsTextureHandleResident(BindlessTextureHandle))
                 GL.Arb.MakeTextureHandleNonResident(BindlessTextureHandle);
-                isResident = false;
-            }
+
+            GL.DeleteTexture(textureId);
 
             if (disposing) disposed = true;
         }

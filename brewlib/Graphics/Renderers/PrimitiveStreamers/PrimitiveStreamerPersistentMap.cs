@@ -4,7 +4,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
 using Util;
 
@@ -15,6 +14,8 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 {
     nint bufferAddr, primitives;
     int bufferOffset, vertexBufferSize;
+
+    protected override void internalBind() { }
 
     protected override void AddPrimitiveInternal(ref readonly TPrimitive primitive)
         => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives), totalQueuedPrimitives) =
@@ -34,7 +35,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), primitives),
             (uint)vertexDataSize);
 
-        GL.FlushMappedNamedBufferRange(VertexBufferId, bufferOffset, vertexDataSize);
+        GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, vertexDataSize);
 
         // TODO: FIX THIS!!
 
@@ -60,26 +61,28 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
         base.initializeVertexBuffer();
         vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
 
-        GL.NamedBufferStorage(VertexBufferId,
+        GL.BufferStorage(BufferTarget.ArrayBuffer,
             vertexBufferSize,
             0,
             BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit);
 
-        bufferAddr = GL.MapNamedBufferRange(VertexBufferId,
+        bufferAddr = GL.MapBufferRange(BufferTarget.ArrayBuffer,
             0,
             vertexBufferSize,
-            BufferAccessMask.MapWriteBit |
-            BufferAccessMask.MapPersistentBit |
-            BufferAccessMask.MapFlushExplicitBit |
-            BufferAccessMask.MapUnsynchronizedBit |
-            BufferAccessMask.MapInvalidateBufferBit);
+            MapBufferAccessMask.MapWriteBit |
+            MapBufferAccessMask.MapPersistentBit |
+            MapBufferAccessMask.MapFlushExplicitBit |
+            MapBufferAccessMask.MapUnsynchronizedBit |
+            MapBufferAccessMask.MapInvalidateBufferBit);
 
         primitives = Native.AllocateMemory(vertexBufferSize);
     }
 
     protected override void Dispose(bool disposing)
     {
-        GL.UnmapNamedBuffer(VertexBufferId);
+        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
+        GL.UnmapBuffer(BufferTarget.ArrayBuffer);
+
         Native.FreeMemory(primitives);
 
         GpuCommandSync.DeleteFences();
@@ -96,7 +99,6 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         Unbind();
 
-        GL.UnmapNamedBuffer(VertexBufferId);
         GL.DeleteBuffer(VertexBufferId);
 
         initializeVertexBuffer();
@@ -106,8 +108,4 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         bufferOffset = 0;
     }
-
-    public new static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_map_buffer_range") &&
-        GpuCommandSync.HasCapabilities() &&
-        PrimitiveStreamerVao<TPrimitive>.HasCapabilities();
 }

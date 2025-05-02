@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -15,6 +16,7 @@ public static unsafe class Native
     static nint handle;
 
     public static Window* GLFWPtr { get; private set; }
+    public static Func<Action, Task> MainThreadScheduler { get; set; }
 
     public static nint MainWindowHandle => handle != 0 ?
         handle :

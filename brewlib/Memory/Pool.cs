@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using Microsoft.IO;
 
 public sealed class Pool<T>(Action<T> disposer = null) where T : new()
 {
@@ -19,4 +20,9 @@ public sealed class Pool<T>(Action<T> disposer = null) where T : new()
         disposer?.Invoke(obj);
         queue.TryAdd(obj);
     }
+}
+
+public static class Pool
+{
+    public static readonly RecyclableMemoryStreamManager PooledMemoryStreamManager = new();
 }

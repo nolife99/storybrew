@@ -10,8 +10,14 @@ public static class ColorExtensions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color LerpColor(this Color color, ref readonly Color otherColor, float blend)
     {
-        var rgba = (Vector4)color;
-        return new Rgba64(Vector4.Lerp(rgba, (Vector4)otherColor, blend) with { Z = rgba.Z });
+        var rgba = (Rgba64)color;
+        var otherRgba = (Rgba64)otherColor;
+
+        var invBlend = 1 - blend;
+        return new Rgba64((ushort)(rgba.R * invBlend + otherRgba.R * blend),
+            (ushort)(rgba.G * invBlend + otherRgba.G * blend),
+            (ushort)(rgba.B * invBlend + otherRgba.B * blend),
+            rgba.A);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

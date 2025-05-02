@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
-using BrewLib.IO;
+using BrewLib.Memory;
 using BrewLib.Util;
 using Collections.Pooled;
 using Microsoft.CodeAnalysis;
@@ -32,7 +32,7 @@ public static class ScriptCompiler
         }
 
         EmitResult result;
-        using (SafeUnmanagedMemoryStream assemblyStream = new())
+        using (var assemblyStream = Pool.PooledMemoryStreamManager.GetStream())
         {
             result = CSharpCompilation.Create(asmName,
                     trees.Keys,

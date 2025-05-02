@@ -5,7 +5,6 @@ using System.Threading;
 using Collections.Pooled;
 using Memory;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 
 public static class GpuCommandSync
 {
@@ -88,8 +87,6 @@ public static class GpuCommandSync
         for (var i = 0; i <= index; ++i) syncRangePool.Value.Release(syncRanges[i]);
         syncRanges.RemoveRange(0, index + 1);
     }
-
-    public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_sync");
 
     sealed class SyncRange
     {
