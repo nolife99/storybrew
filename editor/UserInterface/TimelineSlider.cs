@@ -8,17 +8,23 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using StorybrewCommon.Mapset;
 
 public class TimelineSlider : Slider
 {
-    static readonly Color tickBlue = Color.FromRgba(50, 128, 255, 225), tickYellow = Color.FromRgba(255, 255, 0, 225),
-        tickRed = Color.FromRgba(255, 0, 0, 225), tickViolet = Color.FromRgba(200, 0, 200, 225),
-        tickWhite = Color.FromRgba(255, 255, 255, 220), tickMagenta = Color.FromRgba(144, 64, 144, 225),
-        tickGrey = Color.FromRgba(160, 160, 160, 225), kiaiColor = Color.FromRgba(255, 146, 18, 140),
-        breakColor = Color.FromRgba(255, 255, 255, 140), bookmarkColor = Color.FromRgba(58, 110, 170, 240),
-        repeatColor = Color.FromRgba(58, 110, 170, 80), highlightColor = Color.FromRgba(255, 0, 0, 80);
+    static readonly Color tickBlue = Color.FromPixel(new Rgba32(50, 128, 255, 225)),
+        tickYellow = Color.FromPixel(new Rgba32(255, 255, 0, 225)), tickRed = Color.FromPixel(new Rgba32(255, 0, 0, 225)),
+        tickViolet = Color.FromPixel(new Rgba32(200, 0, 200, 225)),
+        tickWhite = Color.FromPixel(new Rgba32(255, 255, 255, 220)),
+        tickMagenta = Color.FromPixel(new Rgba32(144, 64, 144, 225)),
+        tickGrey = Color.FromPixel(new Rgba32(160, 160, 160, 225)),
+        kiaiColor = Color.FromPixel(new Rgba32(255, 146, 18, 140)),
+        breakColor = Color.FromPixel(new Rgba32(255, 255, 255, 140)),
+        bookmarkColor = Color.FromPixel(new Rgba32(58, 110, 170, 240)),
+        repeatColor = Color.FromPixel(new Rgba32(58, 110, 170, 80)),
+        highlightColor = Color.FromPixel(new Rgba32(255, 0, 0, 80));
 
     readonly Label beatmapLabel;
 

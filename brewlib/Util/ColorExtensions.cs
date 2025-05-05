@@ -3,28 +3,27 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
 
 public static class ColorExtensions
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color LerpColor(this Color color, ref readonly Color otherColor, float blend)
     {
-        var rgba = (Rgba64)color;
-        var otherRgba = (Rgba64)otherColor;
+        var rgba = color.ToScaledVector4();
+        var otherRgba = otherColor.ToScaledVector4();
 
         var invBlend = 1 - blend;
-        return new Rgba64((ushort)(rgba.R * invBlend + otherRgba.R * blend),
-            (ushort)(rgba.G * invBlend + otherRgba.G * blend),
-            (ushort)(rgba.B * invBlend + otherRgba.B * blend),
-            rgba.A);
+        return Color.FromScaledVector(new(rgba.X * invBlend + otherRgba.X * blend,
+            rgba.Y * invBlend + otherRgba.Y * blend,
+            rgba.Z * invBlend + otherRgba.Z * blend,
+            rgba.W));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Color WithOpacity(this Color color, float opacity)
     {
-        var rgba = (Vector4)color;
-        return new Rgba64(rgba with { W = rgba.W * opacity });
+        var rgba = color.ToScaledVector4();
+        return Color.FromScaledVector(rgba with { W = rgba.W * opacity });
     }
 
     public static Vector4 FromHsb(Vector4 hsba)

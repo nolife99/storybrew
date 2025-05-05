@@ -2,25 +2,21 @@
 
 using System;
 using System.Numerics;
-using OpenTK.Graphics.OpenGL;
 using SixLabors.ImageSharp;
 
 public class Texture2dRegion : IDisposable
 {
     readonly Rectangle bounds;
 
-    public Texture2dRegion(Texture2d texture, Rectangle bounds)
+    protected Texture2dRegion(Texture2d texture, Rectangle bounds)
     {
         texture ??= this as Texture2d;
         BindableTexture = texture;
-        BindlessTextureHandle = GL.Arb.GetTextureHandle(texture.TextureId);
 
-        texture.MakeBindlessResident();
         this.bounds = bounds;
     }
 
     public Vector2 Size => new(bounds.Width, bounds.Height);
-    public long BindlessTextureHandle { get; }
 
     public int X => bounds.X;
     public int Y => bounds.Y;

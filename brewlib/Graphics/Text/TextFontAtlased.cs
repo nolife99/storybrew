@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.Graphics.Text;
 
-using System;
 using System.Numerics;
 using Collections.Pooled;
 using Textures;
@@ -46,7 +45,7 @@ public sealed class TextFontAtlased(string name, float size) : TextFont
             out measuredSize,
             false);
 
-        return new(Texture2d.Load(bitmap, $"{Convert.ToInt32(c)}{Name}{Size:n1}"), (int)measuredSize.X, (int)measuredSize.Y);
+        return new(Texture2d.Load(bitmap), (int)measuredSize.X, (int)measuredSize.Y);
     }
 
     #region IDisposable Support

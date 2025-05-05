@@ -34,6 +34,8 @@ public static class Program
     {
         if (args.Length != 0 && handleArguments(args)) return;
 
+        MainThread = Thread.CurrentThread;
+
         setupLogging();
         startEditor();
     }
@@ -108,7 +110,7 @@ public static class Program
 #if DEBUG
             ContextFlags.Debug | ContextFlags.ForwardCompatible;
 #else
-            ContextFlags.ForwardCompatible;
+            ContextFlags.Debug | ContextFlags.ForwardCompatible;
 
         GLFW.WindowHint(WindowHintBool.ContextNoError, true);
 #endif
@@ -133,7 +135,7 @@ public static class Program
 
     static AudioManager createAudioManager()
     {
-        AudioManager audioManager = new(Native.MainWindowHandle) { Volume = Settings.Volume };
+        AudioManager audioManager = new() { Volume = Settings.Volume };
 
         Settings.Volume.OnValueChanged += (_, _) => audioManager.Volume = Settings.Volume;
 
@@ -207,8 +209,16 @@ public static class Program
 
     static readonly ConcurrentQueue<(Action Action, TaskCompletionSource Task)> scheduledActions = [];
 
+    public static Thread MainThread { get; private set; }
+
     public static Task Schedule(Action action)
     {
+        if (Thread.CurrentThread == MainThread)
+        {
+            action();
+            return Task.CompletedTask;
+        }
+
         TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         scheduledActions.Enqueue((action, tcs));

@@ -11,6 +11,7 @@ using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
 using Shaders.Snippets;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 public class LineRendererBuffered : ILineRenderer
@@ -125,9 +126,10 @@ public class LineRendererBuffered : ILineRenderer
         primitiveStreamer.Render(PrimitiveType.Lines);
     }
 
-    public void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color)
+    public void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color)
     {
-        LinePrimitive primitive = new() { from = start, to = end, color1 = color, color2 = color };
+        var rgba = color.ToPixel<Rgba32>();
+        LinePrimitive primitive = new() { from = start, to = end, color1 = rgba, color2 = rgba };
         primitiveStreamer.AddPrimitive(ref primitive, VertexPerLine);
     }
 

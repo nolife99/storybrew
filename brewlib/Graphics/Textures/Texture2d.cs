@@ -9,34 +9,30 @@ using IO;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
+using Util;
 using Image = SixLabors.ImageSharp.Image;
 
-public sealed class Texture2d(int textureId, int width, int height, string description) : Texture2dRegion(null,
+public sealed class Texture2d(int textureId, int width, int height, nint texFence) : Texture2dRegion(null,
     new(0, 0, width, height))
 {
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
-    static readonly DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone() };
 
-    bool isResident;
+    long bindlessId = -1;
 
-    public int TextureId => disposed ? throw new ObjectDisposedException(description) : textureId;
-
-    public void Update(Image<Rgba32> bitmap, int x, int y)
+    public long BindlessTextureHandle
     {
-        var buffer = bitmap.Frames.RootFrame.PixelBuffer;
+        get
+        {
+            if (bindlessId != -1) return bindlessId;
 
-        GL.BindTexture(TextureTarget.Texture2D, textureId);
-        GL.TexSubImage2D(TextureTarget.Texture2D,
-            0,
-            x,
-            y,
-            buffer.Width,
-            buffer.Height,
-            PixelFormat.Rgba,
-            PixelType.UnsignedByte,
-            ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
+            GL.WaitSync(texFence, WaitSyncFlags.None, -1);
+            GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(textureId));
+
+            GL.DeleteSync(texFence);
+
+            return bindlessId;
+        }
     }
 
     static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
@@ -45,11 +41,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             File.OpenRead(filename) :
             resourceContainer?.GetStream(filename, ResourceSource.Embedded);
 
-        if (stream is not null)
-        {
-            decoderOptions.Configuration.PreferContiguousImageBuffers = true;
-            return Image.Load<Rgba32>(decoderOptions, stream);
-        }
+        if (stream is not null) return Image.Load<Rgba32>(stream);
 
         Trace.TraceWarning($"Texture not found: {filename}");
         return null;
@@ -63,16 +55,10 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         TextureOptions textureOptions = null)
     {
         using var bitmap = LoadBitmap(filename, resourceContainer);
-        return bitmap is not null ?
-            Load(bitmap, $"file:{filename}", textureOptions ?? LoadTextureOptions(filename, resourceContainer)) :
-            null;
+        return bitmap is not null ? Load(bitmap, textureOptions ?? LoadTextureOptions(filename, resourceContainer)) : null;
     }
 
-    public static Texture2d Create(Rgba32 color,
-        string description,
-        int width = 1,
-        int height = 1,
-        TextureOptions textureOptions = null)
+    public static Texture2d Create(Rgba32 color, int width = 1, int height = 1, TextureOptions textureOptions = null)
     {
         if (width < 1 || height < 1) throw new InvalidOperationException($"Invalid texture size: {width}x{height}");
 
@@ -114,10 +100,10 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        return new(textureId, width, height, description);
+        return new(textureId, width, height, GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None));
     }
 
-    public static Texture2d Load(Image<Rgba32> bitmap, string description, TextureOptions textureOptions = null)
+    public static Texture2d Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
     {
         var width = int.Min(DrawState.MaxTextureSize, bitmap.Width);
         var height = int.Min(DrawState.MaxTextureSize, bitmap.Height);
@@ -138,27 +124,46 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
             height);
 
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
-        GL.TexSubImage2D(TextureTarget.Texture2D,
-            0,
-            0,
-            0,
-            width,
-            height,
-            PixelFormat.Rgba,
-            PixelType.UnsignedByte,
-            ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
+        if (buffer.MemoryGroup.Count == 1 && bitmap.Width <= width && bitmap.Height <= height)
+            GL.TexSubImage2D(TextureTarget.Texture2D,
+                0,
+                0,
+                0,
+                width,
+                height,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
+        else
+        {
+            var pbo = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.PixelUnpackBuffer, pbo);
+
+            var dataSize = width * height * Unsafe.SizeOf<Rgba32>();
+            GL.BufferStorage(BufferTarget.PixelUnpackBuffer, dataSize, 0, BufferStorageFlags.MapWriteBit);
+
+            ref var addr = ref Unsafe.AddByteOffset(ref Unsafe.NullRef<Rgba32>(),
+                GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
+                    0,
+                    dataSize,
+                    MapBufferAccessMask.MapInvalidateBufferBit |
+                    MapBufferAccessMask.MapWriteBit |
+                    MapBufferAccessMask.MapUnsynchronizedBit));
+
+            for (var i = 0; i < height; ++i)
+                buffer.DangerousGetRowSpan(i)[..width]
+                    .CopyTo(MemoryMarshal.CreateSpan(ref Unsafe.Add(ref addr, i * width), width));
+
+            GL.UnmapBuffer(BufferTarget.PixelUnpackBuffer);
+            GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, width, height, PixelFormat.Rgba, PixelType.UnsignedByte, 0);
+
+            GL.DeleteBuffer(pbo);
+        }
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        return new(textureId, width, height, description);
-    }
-
-    public void MakeBindlessResident()
-    {
-        if (GL.Arb.IsTextureHandleResident(BindlessTextureHandle)) return;
-
-        GL.Arb.MakeTextureHandleResident(BindlessTextureHandle);
+        return new(textureId, width, height, GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None));
     }
 
     #region IDisposable Support
@@ -167,11 +172,7 @@ public sealed class Texture2d(int textureId, int width, int height, string descr
     {
         if (!disposed)
         {
-            if (GL.Arb.IsTextureHandleResident(BindlessTextureHandle))
-                GL.Arb.MakeTextureHandleNonResident(BindlessTextureHandle);
-
-            GL.DeleteTexture(textureId);
-
+            Native.MainThreadScheduler(() => GL.DeleteTexture(textureId)).Wait();
             if (disposing) disposed = true;
         }
 

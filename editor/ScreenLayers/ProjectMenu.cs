@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -682,6 +683,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
                 await Task.Delay(5000);
 
+                GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             });
     });

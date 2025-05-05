@@ -18,7 +18,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
 
     protected int totalQueuedPrimitives, primitivesInBatch;
 
-    int vertexArrayId = -1;
+    int vertexArrayId = -1, vertexCount;
 
     protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration,
         int minRenderableVertexCount,
@@ -50,7 +50,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     public void AddPrimitive(ref readonly TPrimitive primitive, int vertexCount)
     {
         if (totalQueuedPrimitives == MinRenderableVertexCount / vertexCount) DrawState.FlushRenderer(true);
-        AddPrimitiveInternal(in primitive);
+        internalAddPrimitive(in primitive);
 
         ++primitivesInBatch;
         ++totalQueuedPrimitives;
@@ -80,7 +80,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     {
         var usesIndex = IndexBufferId != -1;
 
-        RenderInternal(type, multiDrawQueue.Span, usesIndex ? drawOffsets.Span : default, usesIndex ? default : firsts.Span);
+        internalRender(type, vertexCount, multiDrawQueue.Span, usesIndex ? drawOffsets.Span : default, usesIndex ? default : firsts.Span);
 
         multiDrawQueue.Clear();
         if (IndexBufferId != -1) drawOffsets.Clear();
@@ -94,10 +94,21 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
 
     public void QueueRender(int vertexCount)
     {
+        this.vertexCount = vertexCount;
         multiDrawQueue.Add(primitivesInBatch * vertexCount);
 
-        if (IndexBufferId != -1) drawOffsets.Add((totalQueuedPrimitives - primitivesInBatch) * sizeof(ushort) * vertexCount);
-        else firsts.Add((totalQueuedPrimitives - primitivesInBatch) * vertexCount);
+        if (IndexBufferId != -1)
+        {
+            var baseIndex = (totalQueuedPrimitives - primitivesInBatch) * sizeof(ushort) * vertexCount;
+            internalQueueRender(ref baseIndex);
+            drawOffsets.Add(baseIndex);
+        }
+        else
+        {
+            var baseIndex = (totalQueuedPrimitives - primitivesInBatch) * vertexCount;
+            internalQueueRender(ref baseIndex);
+            firsts.Add(baseIndex);
+        }
 
         primitivesInBatch = 0;
     }
@@ -109,10 +120,11 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     }
 
     protected virtual void internalBind() { }
+    protected virtual void internalQueueRender(ref int baseIndex) { }
 
-    protected abstract void AddPrimitiveInternal(ref readonly TPrimitive primitive);
+    protected abstract void internalAddPrimitive(ref readonly TPrimitive primitive);
 
-    protected abstract void RenderInternal(PrimitiveType type,
+    protected abstract void internalRender(PrimitiveType type, int vertexCount,
         ReadOnlySpan<int> counts,
         ReadOnlySpan<nint> indices,
         ReadOnlySpan<int> firsts);

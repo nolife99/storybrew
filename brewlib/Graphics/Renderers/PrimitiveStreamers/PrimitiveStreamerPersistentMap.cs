@@ -1,50 +1,46 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
-using Util;
 
 public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
     where TPrimitive : struct, allows ref struct
 {
-    nint bufferAddr, primitives;
-    int bufferOffset, vertexBufferSize;
+    nint bufferAddr;
+    int bufferOffset, vertexBufferSize, baseVertex;
 
-    protected override void internalBind() { }
+    readonly PooledList<int> baseVertexList = new();
 
-    protected override void AddPrimitiveInternal(ref readonly TPrimitive primitive)
-        => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives), totalQueuedPrimitives) =
-            primitive;
+    protected override void internalQueueRender(ref int baseIndex) => baseVertexList.Add(baseVertex);
 
-    protected override void RenderInternal(PrimitiveType type,
+    protected override void internalAddPrimitive(ref readonly TPrimitive primitive)
+    {
+        if (GpuCommandSync.WaitForRange(bufferOffset, PrimitiveSize)) expandVertexBuffer();
+        Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), bufferAddr + bufferOffset),
+            totalQueuedPrimitives) = primitive;
+    }
+
+    protected override void internalRender(PrimitiveType type, int vertexCount,
         ReadOnlySpan<int> counts,
         ReadOnlySpan<nint> indices,
         ReadOnlySpan<int> firsts)
     {
         var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
-        if (bufferOffset + vertexDataSize > vertexBufferSize) bufferOffset = 0;
-
-        if (GpuCommandSync.WaitForRange(bufferOffset, vertexDataSize)) expandVertexBuffer();
-
-        Unsafe.CopyBlock(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), bufferAddr + bufferOffset),
-            ref Unsafe.AddByteOffset(ref Unsafe.NullRef<byte>(), primitives),
-            (uint)vertexDataSize);
-
         GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, vertexDataSize);
 
-        // TODO: FIX THIS!!
-
         if (IndexBufferId != -1)
-            GL.MultiDrawElements(type,
+            GL.MultiDrawElementsBaseVertex(type,
                 ref MemoryMarshal.GetReference(counts),
                 DrawElementsType.UnsignedShort,
                 ref MemoryMarshal.GetReference(indices),
-                counts.Length);
+                counts.Length, ref MemoryMarshal.GetReference(baseVertexList.Span));
         else
             GL.MultiDrawArrays(type,
                 ref MemoryMarshal.GetReference(firsts),
@@ -53,13 +49,23 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
         GpuCommandSync.LockRange(bufferOffset, vertexDataSize);
 
-        bufferOffset += vertexDataSize;
+        if (bufferOffset + MinRenderableVertexCount * PrimitiveSize > vertexBufferSize)
+        {
+            bufferOffset = 0;
+            baseVertex = 0;
+            baseVertexList.Clear();
+        }
+        else
+        {
+            bufferOffset += vertexDataSize;
+            baseVertex += totalQueuedPrimitives;
+        }
     }
 
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
-        vertexBufferSize = MinRenderableVertexCount * VertexDeclaration.VertexSize;
+        vertexBufferSize = MinRenderableVertexCount * PrimitiveSize;
 
         GL.BufferStorage(BufferTarget.ArrayBuffer,
             vertexBufferSize,
@@ -74,17 +80,10 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
             MapBufferAccessMask.MapFlushExplicitBit |
             MapBufferAccessMask.MapUnsynchronizedBit |
             MapBufferAccessMask.MapInvalidateBufferBit);
-
-        primitives = Native.AllocateMemory(vertexBufferSize);
     }
 
     protected override void Dispose(bool disposing)
     {
-        GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
-        GL.UnmapBuffer(BufferTarget.ArrayBuffer);
-
-        Native.FreeMemory(primitives);
-
         GpuCommandSync.DeleteFences();
         base.Dispose(disposing);
     }
@@ -92,9 +91,11 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
     void expandVertexBuffer()
     {
         // Prevent the vertex buffer from becoming too large (maxes at 4mb * grow factor)
-        if (IndexBufferId != -1 || MinRenderableVertexCount * VertexDeclaration.VertexSize > 4194304) return;
+        if (IndexBufferId != -1 || MinRenderableVertexCount * PrimitiveSize > 4194304) return;
 
-        MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.75f);
+        MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.5f);
+        Trace.WriteLine($"[OpenGL] Expanding vertex buffer to {MinRenderableVertexCount * PrimitiveSize} bytes");
+
         GpuCommandSync.WaitForAll();
 
         Unbind();

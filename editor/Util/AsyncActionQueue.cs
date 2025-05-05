@@ -124,71 +124,72 @@ public sealed class AsyncActionQueue<T> : IDisposable
             tokenSrc?.Dispose();
             tokenSrc = new();
 
-            thread = Task.Run(async () =>
-            {
-                var mustSleep = false;
-                while (!tokenSrc.IsCancellationRequested)
+            thread = Task.Factory.StartNew(async () =>
                 {
-                    if (mustSleep)
+                    var mustSleep = false;
+                    while (!tokenSrc.IsCancellationRequested)
                     {
-                        await Task.Delay(200);
-                        mustSleep = false;
-                    }
-
-                    while (!context.Enabled || context.Queue.IsEmpty)
-                    {
-                        if (thread is null)
+                        if (mustSleep)
                         {
-                            Trace.WriteLine($"Exiting thread {threadId}");
-                            return;
+                            await Task.Delay(200);
+                            mustSleep = false;
                         }
 
-                        await context.WaitForSignal();
-                    }
-
-                    if (context.RunningLoneTask)
-                    {
-                        mustSleep = true;
-                        continue;
-                    }
-
-                    ActionContainer task = null;
-                    while (context.Queue.TryDequeue(out var t))
-                    {
-                        if (t.MustRunAlone && context.Running != 0)
+                        while (!context.Enabled || context.Queue.IsEmpty)
                         {
-                            context.Queue.Enqueue(t);
+                            if (thread is null)
+                            {
+                                Trace.WriteLine($"Exiting thread {threadId}");
+                                return;
+                            }
+
+                            await context.WaitForSignal();
+                        }
+
+                        if (context.RunningLoneTask)
+                        {
+                            mustSleep = true;
                             continue;
                         }
 
-                        task = t;
-                        break;
-                    }
+                        ActionContainer task = null;
+                        while (context.Queue.TryDequeue(out var t))
+                        {
+                            if (t.MustRunAlone && context.Running != 0)
+                            {
+                                context.Queue.Enqueue(t);
+                                continue;
+                            }
 
-                    if (task is null)
-                    {
-                        mustSleep = true;
-                        continue;
-                    }
+                            task = t;
+                            break;
+                        }
 
-                    Interlocked.Increment(ref context.Running);
-                    if (task.MustRunAlone) context.RunningLoneTask = true;
+                        if (task is null)
+                        {
+                            mustSleep = true;
+                            continue;
+                        }
 
-                    try
-                    {
+                        Interlocked.Increment(ref context.Running);
+                        if (task.MustRunAlone) context.RunningLoneTask = true;
+
+                        try
+                        {
 #pragma warning disable SYSLIB0046
-                        ControlledExecution.Run(task.Action, tokenSrc.Token);
+                            ControlledExecution.Run(task.Action, tokenSrc.Token);
 #pragma warning restore SYSLIB0046
-                    }
-                    catch (Exception e)
-                    {
-                        if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
-                    }
+                        }
+                        catch (Exception e)
+                        {
+                            if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
+                        }
 
-                    Interlocked.Decrement(ref context.Running);
-                    if (task.MustRunAlone) context.RunningLoneTask = false;
-                }
-            });
+                        Interlocked.Decrement(ref context.Running);
+                        if (task.MustRunAlone) context.RunningLoneTask = false;
+                    }
+                },
+                TaskCreationOptions.LongRunning);
 
             threadId = thread.Id;
             Trace.WriteLine($"Started thread {threadId}");

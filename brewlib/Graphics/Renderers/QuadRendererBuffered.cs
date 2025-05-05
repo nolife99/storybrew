@@ -16,6 +16,7 @@ using Textures;
 
 public class QuadRendererBuffered : IQuadRenderer
 {
+    const int IndexPerQuad = 6;
     const int VertexPerQuad = 6;
 
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture",
@@ -53,24 +54,26 @@ public class QuadRendererBuffered : IQuadRenderer
 
         this.shader = shader;
 
-        var indicesCount = (int)(maxQuadsPerBatch * VertexPerQuad * 1.5f);
-        if (indicesCount > ushort.MaxValue) throw new ArgumentException("Can't have more than 65535 indexed vertices");
-
-        Span<ushort> indices = stackalloc ushort[indicesCount];
-        for (var i = 0; i < indicesCount / VertexPerQuad; ++i)
+        var indicesCount = maxQuadsPerBatch * 6;
+        using (var indicesBuffer = Configuration.Default.MemoryAllocator.Allocate<ushort>(indicesCount))
         {
-            var triangleIndex = i * VertexPerQuad;
-            var quadIndex = i * 4;
+            var indices = indicesBuffer.Memory.Span;
+            for (var i = 0; i < indicesCount / 6; ++i)
+            {
+                var triangleIndex = i * 6;
+                var quadIndex = i * 4;
 
-            indices[triangleIndex] = indices[triangleIndex + 5] = (ushort)quadIndex;
-            indices[triangleIndex + 1] = (ushort)(quadIndex + 1);
-            indices[triangleIndex + 2] = indices[triangleIndex + 3] = (ushort)(quadIndex + 2);
-            indices[triangleIndex + 4] = (ushort)(quadIndex + 3);
+                indices[triangleIndex] = indices[triangleIndex + 5] = (ushort)quadIndex;
+                indices[triangleIndex + 1] = (ushort)(quadIndex + 1);
+                indices[triangleIndex + 2] = indices[triangleIndex + 3] = (ushort)(quadIndex + 2);
+                indices[triangleIndex + 4] = (ushort)(quadIndex + 3);
+            }
+
+            primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
+                int.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) *
+                VertexPerQuad,
+                indices);
         }
-
-        primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
-            int.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) * VertexPerQuad,
-            indices);
 
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo = GL.GenBuffer());
         GL.BufferStorage(BufferTarget.ShaderStorageBuffer,
@@ -139,7 +142,7 @@ public class QuadRendererBuffered : IQuadRenderer
             if (clipRegion == Rectangle.Empty) clipRegion = DrawState.Viewport;
 
             clipRegions.Add(clipRegion);
-            primitiveStreamer.QueueRender(VertexPerQuad);
+            primitiveStreamer.QueueRender(IndexPerQuad);
         }
 
         var queuedRenders = primitiveStreamer.QueuedRenders;
@@ -173,7 +176,7 @@ public class QuadRendererBuffered : IQuadRenderer
 
     public void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
-        var textureId = texture.BindlessTextureHandle;
+        var textureId = texture.BindableTexture.BindlessTextureHandle;
         if (currentTextureHandle != textureId)
         {
             DrawState.FlushRenderer();

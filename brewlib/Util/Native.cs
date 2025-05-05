@@ -1,64 +1,40 @@
 ﻿namespace BrewLib.Util;
 
 using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
 using OpenTK.Windowing.Desktop;
-using OpenTK.Windowing.GraphicsLibraryFramework;
-using Image = OpenTK.Windowing.GraphicsLibraryFramework.Image;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using Image = OpenTK.Windowing.Common.Input.Image;
 
-public static unsafe class Native
+public static class Native
 {
     #region Win32
 
-    static nint handle;
+    public static NativeWindow Window { get; private set; }
 
-    public static Window* GLFWPtr { get; private set; }
     public static Func<Action, Task> MainThreadScheduler { get; set; }
 
-    public static nint MainWindowHandle => handle != 0 ?
-        handle :
-        throw new InvalidOperationException("hWnd isn't initialized");
-
-    public static void InitializeHandle(NativeWindow glfwWindow)
-    {
-        GLFWPtr = glfwWindow.WindowPtr;
-        handle = GLFW.GetWin32Window(GLFWPtr);
-    }
+    public static void InitializeHandle(NativeWindow glfwWindow) => Window = glfwWindow;
 
     public static void SetWindowIcon(Type type, string iconPath)
     {
-        IconBitmapDecoder decoder;
+        Image<Rgba32> image;
         using (var iconResource = type.Assembly.GetManifestResourceStream(type, iconPath))
         {
             if (iconResource is null) return;
 
-            decoder = new(iconResource, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+            image = SixLabors.ImageSharp.Image.Load<Rgba32>(iconResource);
         }
 
-        var frame = decoder.Frames[0];
-        var bytesLength = frame.PixelWidth * frame.PixelHeight * 4;
-        var bytes = stackalloc byte[bytesLength];
+        var bytes = ArrayPool<byte>.Shared.Rent(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());
+        image.CopyPixelDataTo(bytes);
 
-        frame.CopyPixels(default, (nint)bytes, bytesLength, frame.PixelWidth * 4);
-
-        Image icon = new(frame.PixelWidth, frame.PixelHeight, bytes);
-        GLFW.SetWindowIconRaw(GLFWPtr, 1, &icon);
+        Window.Icon = new(new Image(image.Width, image.Height, bytes));
+        ArrayPool<byte>.Shared.Return(bytes);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static nint AllocateMemory(int cb) => (nint)NativeMemory.Alloc((nuint)cb);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static nint ZeroAllocateMemory(int cb) => (nint)NativeMemory.AllocZeroed((nuint)cb);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static nint ReallocateMemory(nint ptr, int cb) => (nint)NativeMemory.Realloc((void*)ptr, (nuint)cb);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void FreeMemory(nint ptr) => NativeMemory.Free((void*)ptr);
 
     #endregion
 }

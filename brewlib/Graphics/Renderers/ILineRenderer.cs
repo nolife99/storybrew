@@ -3,11 +3,12 @@
 using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 public interface ILineRenderer : Renderer, IDisposable
 {
-    void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Rgba32 color);
+    void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color);
 }
 
 [StructLayout(LayoutKind.Sequential, Size = 16)]

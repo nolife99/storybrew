@@ -209,15 +209,15 @@ public abstract class ObjectSerializer
                     "," +
                     color.A.ToString(CultureInfo.InvariantCulture);
             }),
-        new SimpleObjectSerializer<Color>(r => (Color)new Rgba32(r.ReadUInt32()),
+        new SimpleObjectSerializer<Color>(r => Color.FromPixel(new Rgba32(r.ReadUInt32())),
             (w, v) => w.Write(((Rgba32)v).PackedValue),
             v =>
             {
                 var split = v.Split(',');
-                return Color.FromRgba(byte.Parse(split[0], CultureInfo.InvariantCulture),
+                return Color.FromPixel(new Rgba32(byte.Parse(split[0], CultureInfo.InvariantCulture),
                     byte.Parse(split[1], CultureInfo.InvariantCulture),
                     byte.Parse(split[2], CultureInfo.InvariantCulture),
-                    byte.Parse(split[3], CultureInfo.InvariantCulture));
+                    byte.Parse(split[3], CultureInfo.InvariantCulture)));
             },
             v =>
             {

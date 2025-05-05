@@ -17,7 +17,7 @@ using Util;
 public sealed class TextGenerator(ResourceContainer resourceContainer) : IDisposable
 {
     static readonly DrawingOptions drawOptions = new() { GraphicsOptions = new() { AntialiasSubpixelDepth = 2 } };
-    static readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromRgba(0, 0, 0, 220));
+    static readonly SolidBrush fill = new(Color.White), shadow = new(Color.FromPixel(new Rgba32(0, 0, 0, 220)));
     readonly PooledDictionary<string, FontFamily> families = new();
 
     readonly FontCollection fontCollection = new();
@@ -69,10 +69,12 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         if (measureOnly) return null;
 
         Image<Rgba32> bitmap = new(width, height);
+        RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback },
+            shadowTextOptions = new(textOptions) { Origin = padding + Vector2.One };
+
         bitmap.Mutate(b =>
         {
-            RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback };
-            b.DrawText(drawOptions, new(textOptions) { Origin = padding + Vector2.One }, text, shadow, null)
+            b.DrawText(drawOptions, shadowTextOptions, text, shadow, null)
                 .DrawText(drawOptions, textOptions, text, fill, null);
         });
 

@@ -150,8 +150,9 @@ public class HsbColorPicker : Widget, Field
         alphaSlider.SetValueSilent(hsba.W);
         alphaSlider.Tooltip = $"{hsba.W:.%}";
 
+        previewSprite.Color = Color.FromScaledVector(value);
         Rgba32 bit32 = new(value);
-        previewSprite.Color = bit32;
+
         htmlTextbox.SetValueSilent($"#{bit32.R:X2}{bit32.G:X2}{bit32.B:X2}");
     }
 

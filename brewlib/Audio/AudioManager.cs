@@ -11,10 +11,10 @@ public sealed class AudioManager : IDisposable
     readonly PooledList<AudioChannel> audioChannels = new();
     float volume = 1;
 
-    public AudioManager(nint handle)
+    public AudioManager()
     {
         Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
-        if (Bass.Init(Win: handle))
+        if (Bass.Init())
         {
             Bass.PlaybackBufferLength = 100;
             Bass.UpdatePeriod = 10;
@@ -29,7 +29,7 @@ public sealed class AudioManager : IDisposable
             var device = Bass.GetDeviceInfo(i);
             if (device.Driver is null || device.IsDefault) continue;
 
-            if (Bass.Init(i, Win: handle))
+            if (Bass.Init(i))
             {
                 initialized = true;
                 break;

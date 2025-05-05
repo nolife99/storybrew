@@ -191,7 +191,7 @@ public sealed partial class Project : IDisposable
     void reloadTextures()
     {
         TextureContainer?.Dispose();
-        TextureContainer = new TextureContainerSeparate();
+        TextureContainer = new TextureContainerAsync();
     }
 
     void reloadAudio()

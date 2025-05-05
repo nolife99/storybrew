@@ -104,11 +104,11 @@ using Vector4 = System.Numerics.Vector4;
     public static implicit operator CommandColor(Color4 obj) => Unsafe.As<Color4, CommandColor>(ref obj);
     public static implicit operator Rgba32(CommandColor obj) => new(obj.internalVec);
     public static implicit operator CommandColor(Rgba32 obj) => new Vector3(obj.R, obj.G, obj.B) / 255;
-    public static implicit operator Color(CommandColor obj) => new Rgba64(new Vector4(obj.internalVec, 1));
+    public static implicit operator Color(CommandColor obj) => Color.FromScaledVector(new Vector4(obj.internalVec, 1));
 
     public static implicit operator CommandColor(Color obj)
     {
-        var rgba = (Vector4)obj;
+        var rgba = obj.ToScaledVector4();
         return Unsafe.As<Vector4, CommandColor>(ref rgba);
     }
 

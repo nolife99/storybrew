@@ -345,14 +345,14 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                 if (data is TinyArray tinyArray)
                     return tinyArray.Count switch
                     {
-                        3 => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
+                        3 => Color.FromScaledVector(new Vector4(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
-                            1),
-                        _ => (Color)new Vector4(resolve<float>(tinyArray[0], constants),
+                            1)),
+                        _ => Color.FromScaledVector(new Vector4(resolve<float>(tinyArray[0], constants),
                             resolve<float>(tinyArray[1], constants),
                             resolve<float>(tinyArray[2], constants),
-                            resolve<float>(tinyArray[3], constants))
+                            resolve<float>(tinyArray[3], constants)))
                     };
 
                 throw new InvalidDataException($"Incorrect color format: {data}");

@@ -6,10 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Definition> definitions,
-    TokenType? endLineToken) : Tokenizer<TokenType> where TokenType : struct
+public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.Definition> definitions,
+    TTokenType? endLineToken) : Tokenizer<TTokenType> where TTokenType : struct
 {
-    public IEnumerable<Token<TokenType>> Tokenize(TextReader reader)
+    public IEnumerable<Token<TTokenType>> Tokenize(TextReader reader)
     {
         var lineNumber = 1;
 
@@ -25,14 +25,14 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
         }
     }
 
-    public IEnumerable<Token<TokenType>> Tokenize(string content)
+    public IEnumerable<Token<TTokenType>> Tokenize(string content)
     {
         Definition.Match previousMatch = null;
         foreach (var byStartGroup in definitions.SelectMany((d, i) => d.FindMatches(content, i))
             .GroupBy(m => m.StartIndex)
             .OrderBy(g => g.Key))
         {
-            var bestMatch = byStartGroup.OrderBy(m => m.Priority).FirstOrDefault();
+            var bestMatch = byStartGroup.OrderBy(m => m.Priority).First();
             if (previousMatch is not null && bestMatch.StartIndex < previousMatch.EndIndex) continue;
 
             yield return new(bestMatch.Type, bestMatch.Value) { CharNumber = bestMatch.StartIndex };
@@ -43,7 +43,7 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
         if (endLineToken.HasValue) yield return new(Nullable.GetValueRefOrDefaultRef(in endLineToken));
     }
 
-    public class Definition(TokenType matchType, string regexPattern, int captureGroup = 1)
+    public class Definition(TTokenType matchType, string regexPattern, int captureGroup = 1)
     {
         readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
@@ -62,7 +62,7 @@ public class RegexTokenizer<TokenType>(IEnumerable<RegexTokenizer<TokenType>.Def
         public record Match
         {
             public int StartIndex, EndIndex, Priority;
-            public TokenType Type;
+            public TTokenType Type;
             public string Value;
 
             public override string ToString() => $"{Type} <{Value}> from {StartIndex} to {EndIndex}, priority:{Priority}";

@@ -50,11 +50,11 @@ public static class DrawState
         }
     }
 
-    public static void Initialize(ResourceContainer resourceContainer,
-        int width,
-        int height)
+    public static void Initialize(ResourceContainer resourceContainer, int width, int height)
     {
         if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
+        {
+            GL.Enable(EnableCap.DebugOutputSynchronous);
             GL.Arb.DebugMessageCallback((source, type, _, severity, length, message, _) =>
                 {
                     var bytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.NullRef<byte>(), message),
@@ -107,6 +107,7 @@ public static class DrawState
                     if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
                 },
                 0);
+        }
 
         retrieveRendererInfo();
         if (UseSrgb)
@@ -139,13 +140,15 @@ public static class DrawState
 
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
-        WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>(), "whitepixel");
-        TransparentPixel = Texture2d.Create(default, "transparentpixel");
+        WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>());
+        TransparentPixel = Texture2d.Create(default);
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new();
 
         Viewport = new(0, 0, width, height);
+
+        TextureUploadQueue.Initialize();
     }
 
     public static void Cleanup()
@@ -154,6 +157,7 @@ public static class DrawState
         TextFontManager.Dispose();
         TextGenerator.Dispose();
         capabilityCache.Dispose();
+        TextureUploadQueue.Cleanup();
     }
 
     public static int CompleteFrame()
@@ -189,8 +193,8 @@ public static class DrawState
 
     #region Texture states
 
-    public static Texture2dRegion WhitePixel { get; private set; }
-    public static Texture2dRegion TransparentPixel { get; private set; }
+    public static Texture2d WhitePixel { get; private set; }
+    public static Texture2d TransparentPixel { get; private set; }
 
     static int maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
 

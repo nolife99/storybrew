@@ -3,6 +3,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 
@@ -14,7 +15,7 @@ public static class QuadRendererExtensions
         Vector2 origin,
         Vector2 scale,
         float rotation,
-        Rgba32 color,
+        Color color,
         Vector2 texture0,
         Vector2 texture1)
     {
@@ -52,6 +53,7 @@ public static class QuadRendererExtensions
         var textureU0U1 = flip.X > 0 ? textureU0V0 with { Y = textureU1V1.X } : textureU1V1 with { Y = textureU0V0.X };
         var textureV0V1 = flip.Y > 0 ? textureU1V1 with { X = textureU0V0.Y } : textureU0V0 with { X = textureU1V1.Y };
 
+        var rgba = color.ToPixel<Rgba32>();
         QuadPrimitive primitive = new()
         {
             vec1 = cornersRef + xy,
@@ -66,10 +68,10 @@ public static class QuadRendererExtensions
             v2 = textureV0V1.Y,
             v3 = textureV0V1.Y,
             v4 = textureV0V1.X,
-            color1 = color,
-            color2 = color,
-            color3 = color,
-            color4 = color
+            color1 = rgba,
+            color2 = rgba,
+            color3 = rgba,
+            color4 = rgba
         };
 
         renderer.Draw(ref primitive, texture);

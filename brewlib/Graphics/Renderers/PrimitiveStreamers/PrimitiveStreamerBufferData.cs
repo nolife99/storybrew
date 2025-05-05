@@ -5,26 +5,25 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
-using Util;
 
 public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
     where TPrimitive : struct, allows ref struct
 {
-    nint primitives;
+    byte[] primitiveBuffer;
 
-    protected override void AddPrimitiveInternal(ref readonly TPrimitive primitive)
-        => Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), primitives), totalQueuedPrimitives) =
-            primitive;
+    protected override void internalAddPrimitive(ref readonly TPrimitive primitive) => Unsafe.Add(
+        ref Unsafe.As<byte, TPrimitive>(ref MemoryMarshal.GetArrayDataReference(primitiveBuffer)),
+        totalQueuedPrimitives) = primitive;
 
-    protected override void RenderInternal(PrimitiveType type,
+    protected override void internalRender(PrimitiveType type, int vertexCount,
         ReadOnlySpan<int> counts,
         ReadOnlySpan<nint> indices,
         ReadOnlySpan<int> firsts)
     {
         var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
-        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, vertexDataSize, primitives);
+        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, vertexDataSize, primitiveBuffer);
 
         if (IndexBufferId != -1)
             GL.MultiDrawElements(type,
@@ -46,14 +45,8 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         base.initializeVertexBuffer();
 
         var vertexBufferSize = MinRenderableVertexCount * PrimitiveSize;
-        primitives = Native.AllocateMemory(vertexBufferSize);
 
+        primitiveBuffer = GC.AllocateUninitializedArray<byte>(vertexBufferSize);
         GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferStorageFlags.DynamicStorageBit);
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        Native.FreeMemory(primitives);
-        base.Dispose(disposing);
     }
 }
