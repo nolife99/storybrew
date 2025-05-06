@@ -16,8 +16,7 @@ using Textures;
 
 public class QuadRendererBuffered : IQuadRenderer
 {
-    const int IndexPerQuad = 6;
-    const int VertexPerQuad = 6;
+    const int IndexPerQuad = 6, VertexPerQuad = 4;
 
     const string CombinedMatrixUniformName = "u_combinedMatrix", TextureUniformName = "u_texture",
         ClipUniformName = "u_clipRect";
@@ -54,14 +53,14 @@ public class QuadRendererBuffered : IQuadRenderer
 
         this.shader = shader;
 
-        var indicesCount = maxQuadsPerBatch * 6;
+        var indicesCount = maxQuadsPerBatch * IndexPerQuad;
         using (var indicesBuffer = Configuration.Default.MemoryAllocator.Allocate<ushort>(indicesCount))
         {
             var indices = indicesBuffer.Memory.Span;
-            for (var i = 0; i < indicesCount / 6; ++i)
+            for (var i = 0; i < maxQuadsPerBatch; ++i)
             {
-                var triangleIndex = i * 6;
-                var quadIndex = i * 4;
+                var triangleIndex = i * IndexPerQuad;
+                var quadIndex = i * VertexPerQuad;
 
                 indices[triangleIndex] = indices[triangleIndex + 5] = (ushort)quadIndex;
                 indices[triangleIndex + 1] = (ushort)(quadIndex + 1);
@@ -142,7 +141,7 @@ public class QuadRendererBuffered : IQuadRenderer
             if (clipRegion == Rectangle.Empty) clipRegion = DrawState.Viewport;
 
             clipRegions.Add(clipRegion);
-            primitiveStreamer.QueueRender(IndexPerQuad);
+            primitiveStreamer.QueueRender(IndexPerQuad, VertexPerQuad);
         }
 
         var queuedRenders = primitiveStreamer.QueuedRenders;
@@ -171,7 +170,7 @@ public class QuadRendererBuffered : IQuadRenderer
 
         clipRegions.Clear();
 
-        primitiveStreamer.Render(PrimitiveType.Triangles);
+        primitiveStreamer.Render(PrimitiveType.Triangles, VertexPerQuad);
     }
 
     public void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)

@@ -13,7 +13,7 @@ public interface IPrimitiveStreamer<TPrimitive> : IDisposable where TPrimitive :
     void Bind(Shader shader);
     void Unbind();
 
-    void Render(PrimitiveType type);
+    void Render(PrimitiveType type, int vertexCount);
 
-    void QueueRender(int vertexCount);
+    void QueueRender(int indexCount, int vertexCount);
 }

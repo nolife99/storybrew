@@ -6,7 +6,7 @@ using Collections.Pooled;
 using Memory;
 using OpenTK.Graphics.OpenGL;
 
-public static class GpuCommandSync
+public class GpuCommandSync : IDisposable
 {
     static readonly Lazy<Pool<SyncRange>> syncRangePool = new(() => new(obj =>
         {
@@ -16,15 +16,15 @@ public static class GpuCommandSync
         }),
         LazyThreadSafetyMode.None);
 
-    static readonly PooledList<SyncRange> syncRanges = new();
+    readonly PooledList<SyncRange> syncRanges = new();
 
-    public static void DeleteFences()
+    public void Dispose()
     {
         foreach (var range in syncRanges) syncRangePool.Value.Release(range);
         syncRanges.Dispose();
     }
 
-    public static bool WaitForAll()
+    public bool WaitForAll()
     {
         if (syncRanges.Count == 0) return false;
 
@@ -36,8 +36,10 @@ public static class GpuCommandSync
         return blocked;
     }
 
-    public static bool WaitForRange(int index, int length)
+    public bool WaitForRange(int index, int length)
     {
+        if (syncRanges.Count == 0) return false;
+
         trimExpiredRanges();
         for (var i = syncRanges.Count - 1; i >= 0; --i)
         {
@@ -52,7 +54,7 @@ public static class GpuCommandSync
         return false;
     }
 
-    public static void LockRange(int index, int length)
+    public void LockRange(int index, int length)
     {
         var item = syncRangePool.Value.Retrieve();
 
@@ -62,7 +64,7 @@ public static class GpuCommandSync
         syncRanges.Add(item);
     }
 
-    static void trimExpiredRanges()
+    void trimExpiredRanges()
     {
         var left = 0;
         var right = syncRanges.Count - 1;
@@ -82,7 +84,7 @@ public static class GpuCommandSync
         if (unblockedIndex >= 0) clearToIndex(unblockedIndex);
     }
 
-    static void clearToIndex(int index)
+    void clearToIndex(int index)
     {
         for (var i = 0; i <= index; ++i) syncRangePool.Value.Release(syncRanges[i]);
         syncRanges.RemoveRange(0, index + 1);

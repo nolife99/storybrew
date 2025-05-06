@@ -17,25 +17,14 @@ public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDec
         ref Unsafe.As<byte, TPrimitive>(ref MemoryMarshal.GetArrayDataReference(primitiveBuffer)),
         totalQueuedPrimitives) = primitive;
 
-    protected override void internalRender(PrimitiveType type, int vertexCount,
-        ReadOnlySpan<int> counts,
-        ReadOnlySpan<nint> indices,
-        ReadOnlySpan<int> firsts)
+    protected override void internalRender(PrimitiveType type, int vertexCount)
     {
         var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
         GL.BufferSubData(BufferTarget.ArrayBuffer, 0, vertexDataSize, primitiveBuffer);
 
         if (IndexBufferId != -1)
-            GL.MultiDrawElements(type,
-                ref MemoryMarshal.GetReference(counts),
-                DrawElementsType.UnsignedShort,
-                ref MemoryMarshal.GetReference(indices),
-                counts.Length);
-        else
-            GL.MultiDrawArrays(type,
-                ref MemoryMarshal.GetReference(firsts),
-                ref MemoryMarshal.GetReference(counts),
-                counts.Length);
+            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandPtrOffset, queuedRenders, 0);
+        else GL.MultiDrawArraysIndirect(type, commandPtrOffset, queuedRenders, 0);
     }
 
     protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);

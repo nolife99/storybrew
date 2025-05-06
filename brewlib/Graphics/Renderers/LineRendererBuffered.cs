@@ -48,7 +48,7 @@ public class LineRendererBuffered : ILineRenderer
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
             int.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine,
-            ReadOnlySpan<ushort>.Empty);
+            default);
 
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, combinedMatricesBuffer = GL.GenBuffer());
         GL.BufferStorage(BufferTarget.ShaderStorageBuffer,
@@ -110,7 +110,7 @@ public class LineRendererBuffered : ILineRenderer
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
             combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
-            primitiveStreamer.QueueRender(VertexPerLine);
+            primitiveStreamer.QueueRender(VertexPerLine, VertexPerLine);
         }
 
         var queuedRenders = primitiveStreamer.QueuedRenders;
@@ -123,7 +123,7 @@ public class LineRendererBuffered : ILineRenderer
 
         combinedMatrices.Clear();
 
-        primitiveStreamer.Render(PrimitiveType.Lines);
+        primitiveStreamer.Render(PrimitiveType.Lines, VertexPerLine);
     }
 
     public void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color)

@@ -1,11 +1,10 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System.Collections.Concurrent;
-using Collections.Pooled;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using System.Windows.Documents;
+using Collections.Pooled;
 using IO;
 using OpenTK.Windowing.Desktop;
 using SixLabors.ImageSharp;
@@ -54,7 +53,10 @@ public sealed class TextureContainerAsync(ResourceContainer resourceContainer = 
     {
         if (disposed) return;
 
-        foreach (var texture in textures.Values) if (texture.IsLoaded) texture.Result.Dispose();
+        foreach (var texture in textures.Values)
+            if (texture.IsLoaded)
+                texture.Result.Dispose();
+
         textures.Dispose();
         disposed = true;
     }
@@ -66,6 +68,9 @@ internal static class TextureUploadQueue
 {
     const int UPLOAD_THREAD_COUNT = 2;
     static readonly ConcurrentBag<QueuedUpload> queuedUploads = [];
+
+    static readonly PooledList<Task> threads = new();
+    static readonly PooledList<NativeWindow> contexts = new();
 
     public static void Initialize()
     {
@@ -82,6 +87,7 @@ internal static class TextureUploadQueue
                 StencilBits = 0,
                 AlphaBits = 0
             });
+
             contexts.Add(window);
 
             window.Context.MakeNoneCurrent();
@@ -123,9 +129,6 @@ internal static class TextureUploadQueue
         Native.Window.Context.MakeCurrent();
     }
 
-    static readonly PooledList<Task> threads = new();
-    static readonly PooledList<NativeWindow> contexts = new();
-
     public static void Cleanup()
     {
         queuedUploads.Clear();
@@ -137,16 +140,16 @@ internal static class TextureUploadQueue
         contexts.Dispose();
     }
 
-    public record QueuedUpload(string FileName, ResourceContainer Container, TextureOptions Options)
-    {
-        public Texture2d Result;
-        public bool IsLoaded;
-    }
-
     public static QueuedUpload Queue(string filename, ResourceContainer container, TextureOptions options)
     {
         QueuedUpload toQueue = new(filename, container, options);
         queuedUploads.Add(toQueue);
         return toQueue;
+    }
+
+    public record QueuedUpload(string FileName, ResourceContainer Container, TextureOptions Options)
+    {
+        public bool IsLoaded;
+        public Texture2d Result;
     }
 }

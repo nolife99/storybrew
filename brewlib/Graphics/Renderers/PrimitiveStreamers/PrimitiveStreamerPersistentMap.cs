@@ -3,62 +3,52 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
 
-public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertexDeclaration,
-    int minRenderableVertexCount,
-    ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
+public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive>
     where TPrimitive : struct, allows ref struct
 {
+    readonly int maxBatchSize;
+
+    readonly GpuCommandSync sync = new();
     nint bufferAddr;
     int bufferOffset, vertexBufferSize, baseVertex;
 
-    readonly PooledList<int> baseVertexList = new();
+    public PrimitiveStreamerPersistentMap(VertexDeclaration vertexDeclaration,
+        int minRenderableVertexCount,
+        ReadOnlySpan<ushort> indices) : base(vertexDeclaration, minRenderableVertexCount, indices)
+        => maxBatchSize = minRenderableVertexCount * PrimitiveSize;
 
-    protected override void internalQueueRender(ref int baseIndex) => baseVertexList.Add(baseVertex);
+    protected override void internalQueueRender(ref int baseIndex) => baseIndex += baseVertex;
 
     protected override void internalAddPrimitive(ref readonly TPrimitive primitive)
     {
-        if (GpuCommandSync.WaitForRange(bufferOffset, PrimitiveSize)) expandVertexBuffer();
+        if (sync.WaitForRange(bufferOffset, PrimitiveSize)) expandVertexBuffer(MinRenderableVertexCount);
         Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), bufferAddr + bufferOffset),
             totalQueuedPrimitives) = primitive;
     }
 
-    protected override void internalRender(PrimitiveType type, int vertexCount,
-        ReadOnlySpan<int> counts,
-        ReadOnlySpan<nint> indices,
-        ReadOnlySpan<int> firsts)
+    protected override void internalRender(PrimitiveType type, int vertexCount)
     {
         var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
         GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, vertexDataSize);
 
         if (IndexBufferId != -1)
-            GL.MultiDrawElementsBaseVertex(type,
-                ref MemoryMarshal.GetReference(counts),
-                DrawElementsType.UnsignedShort,
-                ref MemoryMarshal.GetReference(indices),
-                counts.Length, ref MemoryMarshal.GetReference(baseVertexList.Span));
-        else
-            GL.MultiDrawArrays(type,
-                ref MemoryMarshal.GetReference(firsts),
-                ref MemoryMarshal.GetReference(counts),
-                counts.Length);
+            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandPtrOffset, queuedRenders, 0);
+        else GL.MultiDrawArraysIndirect(type, commandPtrOffset, queuedRenders, 0);
 
-        GpuCommandSync.LockRange(bufferOffset, vertexDataSize);
+        sync.LockRange(bufferOffset, vertexDataSize);
 
-        if (bufferOffset + MinRenderableVertexCount * PrimitiveSize > vertexBufferSize)
+        if (bufferOffset + maxBatchSize > vertexBufferSize)
         {
             bufferOffset = 0;
             baseVertex = 0;
-            baseVertexList.Clear();
         }
         else
         {
             bufferOffset += vertexDataSize;
-            baseVertex += totalQueuedPrimitives;
+            baseVertex += totalQueuedPrimitives * vertexCount;
         }
     }
 
@@ -84,19 +74,19 @@ public class PrimitiveStreamerPersistentMap<TPrimitive>(VertexDeclaration vertex
 
     protected override void Dispose(bool disposing)
     {
-        GpuCommandSync.DeleteFences();
+        sync.Dispose();
         base.Dispose(disposing);
     }
 
-    void expandVertexBuffer()
+    void expandVertexBuffer(int minRenderableVertexCount)
     {
         // Prevent the vertex buffer from becoming too large (maxes at 4mb * grow factor)
-        if (IndexBufferId != -1 || MinRenderableVertexCount * PrimitiveSize > 4194304) return;
+        if (minRenderableVertexCount * PrimitiveSize > 4194304) return;
 
-        MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.5f);
-        Trace.WriteLine($"[OpenGL] Expanding vertex buffer to {MinRenderableVertexCount * PrimitiveSize} bytes");
+        minRenderableVertexCount = (int)(minRenderableVertexCount * 1.5f);
+        Trace.WriteLine($"[OpenGL] Expanding vertex buffer to {minRenderableVertexCount * PrimitiveSize} bytes");
 
-        GpuCommandSync.WaitForAll();
+        sync.WaitForAll();
 
         Unbind();
 
