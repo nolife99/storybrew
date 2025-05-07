@@ -11,9 +11,11 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
     where TPrimitive : struct, allows ref struct
 {
     readonly int commandSize;
+
+    readonly GpuCommandSync commandSync = new();
     bool Bound;
 
-    nint commandsPtr, commandSync;
+    nint commandsPtr;
     protected int totalQueuedPrimitives, queuedRenders, commandPtrOffset;
     int vertexArrayId = -1, commandBufferId = -1, commandBufferSize;
 
@@ -58,9 +60,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         if (Bound || shader is null) return;
 
         if (CurrentShader != shader) setupVertexArray(shader);
-        GL.BindVertexArray(vertexArrayId);
 
         GL.BindBuffer(BufferTarget.DrawIndirectBuffer, commandBufferId);
+        GL.BindVertexArray(vertexArrayId);
 
         internalBind();
 
@@ -81,7 +83,7 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         GL.FlushMappedBufferRange(BufferTarget.DrawIndirectBuffer, commandPtrOffset, dataSize);
 
         internalRender(type, vertexCount);
-        commandSync = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+        commandSync.LockRange(commandPtrOffset, dataSize);
 
         commandPtrOffset += dataSize;
         if (commandPtrOffset + MinRenderableVertexCount * commandSize > commandBufferSize) commandPtrOffset = 0;
@@ -98,12 +100,10 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         var baseIndex = (totalQueuedPrimitives - PrimitivesInBatch) * vertexCount;
         internalQueueRender(ref baseIndex);
 
-        if (commandSync != 0)
+        if (commandSync.WaitForRange(commandPtrOffset, commandSize) && commandBufferSize < 1048576)
         {
-            GL.ClientWaitSync(commandSync, ClientWaitSyncFlags.SyncFlushCommandsBit, long.MaxValue);
-            GL.DeleteSync(commandSync);
-
-            commandSync = 0;
+            initializeDrawCommandBuffer((int)(commandBufferSize / commandSize * 1.5f));
+            commandPtrOffset = 0;
         }
 
         if (IndexBufferId != -1)
@@ -180,7 +180,6 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
             MapBufferAccessMask.MapWriteBit |
             MapBufferAccessMask.MapUnsynchronizedBit |
             MapBufferAccessMask.MapPersistentBit |
-            MapBufferAccessMask.MapInvalidateBufferBit |
             MapBufferAccessMask.MapFlushExplicitBit);
     }
 
@@ -212,10 +211,11 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
 
         if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
 
-        if (commandSync != 0) GL.DeleteSync(commandSync);
+        if (disposing) commandSync.Dispose();
     }
 
     public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&
         GLFW.ExtensionSupported("GL_ARB_shader_storage_buffer_object") &&
+        GLFW.ExtensionSupported("GL_ARB_draw_indirect") &&
         GLFW.ExtensionSupported("GL_ARB_multi_draw_indirect");
 }

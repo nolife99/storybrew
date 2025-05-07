@@ -24,7 +24,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
 
     protected override void internalAddPrimitive(ref readonly TPrimitive primitive)
     {
-        if (sync.WaitForRange(bufferOffset, PrimitiveSize)) expandVertexBuffer(MinRenderableVertexCount);
+        if (sync.WaitForRange(bufferOffset, PrimitiveSize)) expandVertexBuffer();
         Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<TPrimitive>(), bufferAddr + bufferOffset),
             totalQueuedPrimitives) = primitive;
     }
@@ -40,16 +40,13 @@ public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
 
         sync.LockRange(bufferOffset, vertexDataSize);
 
+        bufferOffset += vertexDataSize;
         if (bufferOffset + maxBatchSize > vertexBufferSize)
         {
             bufferOffset = 0;
             baseVertex = 0;
         }
-        else
-        {
-            bufferOffset += vertexDataSize;
-            baseVertex += totalQueuedPrimitives * vertexCount;
-        }
+        else baseVertex += totalQueuedPrimitives * vertexCount;
     }
 
     protected override void initializeVertexBuffer()
@@ -68,8 +65,7 @@ public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
             MapBufferAccessMask.MapWriteBit |
             MapBufferAccessMask.MapPersistentBit |
             MapBufferAccessMask.MapFlushExplicitBit |
-            MapBufferAccessMask.MapUnsynchronizedBit |
-            MapBufferAccessMask.MapInvalidateBufferBit);
+            MapBufferAccessMask.MapUnsynchronizedBit);
     }
 
     protected override void Dispose(bool disposing)
@@ -78,13 +74,13 @@ public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
         base.Dispose(disposing);
     }
 
-    void expandVertexBuffer(int minRenderableVertexCount)
+    void expandVertexBuffer()
     {
         // Prevent the vertex buffer from becoming too large (maxes at 4mb * grow factor)
-        if (minRenderableVertexCount * PrimitiveSize > 4194304) return;
+        if (MinRenderableVertexCount * PrimitiveSize > 4194304) return;
 
-        minRenderableVertexCount = (int)(minRenderableVertexCount * 1.5f);
-        Trace.WriteLine($"[OpenGL] Expanding vertex buffer to {minRenderableVertexCount * PrimitiveSize} bytes");
+        MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.5f);
+        Trace.WriteLine($"[OpenGL] Expanding vertex buffer to {MinRenderableVertexCount * PrimitiveSize} bytes");
 
         sync.WaitForAll();
 

@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
-using OpenTK.Core;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -144,7 +143,7 @@ public static class Program
 
     static void runMainLoop(NativeWindow window, Editor editor, double fixedRateUpdate, double targetFrame)
     {
-        double prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0;
+        double prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0, statsUpdate = targetFrame * 5;
 
         var windowContext = window.Context;
         while (!window.IsExiting)
@@ -185,18 +184,18 @@ public static class Program
             var active = GLFW.GetTime() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Utils.AccurateSleep(sleepTime, 8);
+            if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
 
             var frameTime = cur - prev;
             prev = cur;
-            if (lastStat + .1 > cur) continue;
+            if (lastStat + statsUpdate > cur) continue;
 
             av = (frameTime + av) * .5;
             avActive = (active + avActive) * .5;
             longest = Math.Max(frameTime, longest);
 
             Stats =
-                $"fps:{1 / av:0}/{1 / avActive:0} (act:{avActive * 1000:0} avg:{av * 1000:0} hi:{longest * 1000:0})\n{draws} draws";
+                $"{1 / av:0}/{1 / avActive:0}fps (act:{avActive * 1000:f2} avg:{av * 1000:f2} hi:{longest * 1000:f2})\n{draws} draws";
 
             longest = 0;
             lastStat = cur;

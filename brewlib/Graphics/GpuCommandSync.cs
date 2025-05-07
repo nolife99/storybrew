@@ -1,27 +1,30 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Collections.Pooled;
-using Memory;
 using OpenTK.Graphics.OpenGL;
 
 public class GpuCommandSync : IDisposable
 {
-    static readonly Lazy<Pool<SyncRange>> syncRangePool = new(() => new(obj =>
-        {
-            GL.DeleteSync(obj.Fence);
-            obj.Fence = 0;
-            obj.Expired = false;
-        }),
-        LazyThreadSafetyMode.None);
+    static readonly Stack<SyncRange> syncRangePool = [];
 
     readonly PooledList<SyncRange> syncRanges = new();
 
     public void Dispose()
     {
-        foreach (var range in syncRanges) syncRangePool.Value.Release(range);
+        foreach (var range in syncRanges) ReturnRange(range);
         syncRanges.Dispose();
+    }
+
+    static void ReturnRange(SyncRange syncRange)
+    {
+        GL.DeleteSync(syncRange.Fence);
+        syncRange.Fence = 0;
+        syncRange.Expired = false;
+
+        syncRangePool.Push(syncRange);
     }
 
     public bool WaitForAll()
@@ -30,7 +33,7 @@ public class GpuCommandSync : IDisposable
 
         var blocked = syncRanges[^1].Wait(true);
 
-        foreach (var range in syncRanges) syncRangePool.Value.Release(range);
+        foreach (var range in syncRanges) ReturnRange(range);
         syncRanges.Clear();
 
         return blocked;
@@ -38,8 +41,6 @@ public class GpuCommandSync : IDisposable
 
     public bool WaitForRange(int index, int length)
     {
-        if (syncRanges.Count == 0) return false;
-
         trimExpiredRanges();
         for (var i = syncRanges.Count - 1; i >= 0; --i)
         {
@@ -56,7 +57,7 @@ public class GpuCommandSync : IDisposable
 
     public void LockRange(int index, int length)
     {
-        var item = syncRangePool.Value.Retrieve();
+        if (!syncRangePool.TryPop(out var item)) item = new();
 
         item.Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
         item.Index = index;
@@ -86,7 +87,7 @@ public class GpuCommandSync : IDisposable
 
     void clearToIndex(int index)
     {
-        for (var i = 0; i <= index; ++i) syncRangePool.Value.Release(syncRanges[i]);
+        for (var i = 0; i <= index; ++i) ReturnRange(syncRanges[i]);
         syncRanges.RemoveRange(0, index + 1);
     }
 
