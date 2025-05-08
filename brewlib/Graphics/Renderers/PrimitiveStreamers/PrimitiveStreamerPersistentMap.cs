@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
 
-public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive>
+internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive>
     where TPrimitive : struct, allows ref struct
 {
     readonly int maxBatchSize;
@@ -64,23 +64,27 @@ public class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<T
             vertexBufferSize,
             MapBufferAccessMask.MapWriteBit |
             MapBufferAccessMask.MapPersistentBit |
+            MapBufferAccessMask.MapInvalidateBufferBit |
             MapBufferAccessMask.MapFlushExplicitBit |
             MapBufferAccessMask.MapUnsynchronizedBit);
     }
 
     protected override void Dispose(bool disposing)
     {
-        sync.Dispose();
         base.Dispose(disposing);
+        if (disposing) sync.Dispose();
     }
 
     void expandVertexBuffer()
     {
-        // Prevent the vertex buffer from becoming too large (maxes at 4mb * grow factor)
-        if (MinRenderableVertexCount * PrimitiveSize > 4194304) return;
+        var originalSize = MinRenderableVertexCount * PrimitiveSize;
 
-        MinRenderableVertexCount = (int)(MinRenderableVertexCount * 1.5f);
-        Trace.WriteLine($"[OpenGL] Expanding vertex buffer to {MinRenderableVertexCount * PrimitiveSize} bytes");
+        // Prevent the vertex buffer from becoming too large (maxes at 2mb * grow factor)
+        if (originalSize > 1 << 21) return;
+
+        MinRenderableVertexCount *= 2;
+        Trace.WriteLine(
+            $"[OpenGL] Expanding vertex buffer from {originalSize} to {MinRenderableVertexCount * PrimitiveSize} bytes");
 
         sync.WaitForAll();
 

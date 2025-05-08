@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Collections.Pooled;
 using SixLabors.ImageSharp;
@@ -37,7 +36,7 @@ public class TextLayout : IDisposable
 
     public Vector2 Size { get; }
 
-    public IReadOnlyList<TextLayoutLine> Lines => _lines;
+    public IReadOnlyPooledList<TextLayoutLine> Lines => _lines;
 
     public void Dispose()
     {
@@ -156,7 +155,7 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
     readonly PooledList<TextLayoutGlyph> _glyphs = new();
     bool advance = advanceOnEmptyGlyph;
 
-    public IReadOnlyList<TextLayoutGlyph> Glyphs => _glyphs;
+    public IReadOnlyPooledList<TextLayoutGlyph> Glyphs => _glyphs;
     public int GlyphCount => _glyphs.Count;
 
     public int Width { get; private set; }

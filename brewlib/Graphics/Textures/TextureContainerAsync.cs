@@ -3,7 +3,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
+using System.Threading;
 using Collections.Pooled;
 using IO;
 using OpenTK.Windowing.Desktop;
@@ -69,7 +69,7 @@ internal static class TextureUploadQueue
     const int UPLOAD_THREAD_COUNT = 2;
     static readonly ConcurrentBag<QueuedUpload> queuedUploads = [];
 
-    static readonly PooledList<Task> threads = new();
+    static readonly PooledList<Thread> threads = new();
     static readonly PooledList<NativeWindow> contexts = new();
 
     public static void Initialize()
@@ -92,38 +92,41 @@ internal static class TextureUploadQueue
 
             window.Context.MakeNoneCurrent();
 
-            threads.Add(Task.Factory.StartNew(() =>
+            Thread thread = new(context =>
+            {
+                ((IGLFWGraphicsContext)context)?.MakeCurrent();
+
+                Trace.WriteLine("Started texture upload thread");
+
+                DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone() };
+                decoderOptions.Configuration.PreferContiguousImageBuffers = true;
+
+                while (!Native.Window.IsExiting)
                 {
-                    window.Context.MakeCurrent();
+                    if (!queuedUploads.TryTake(out var queued)) continue;
 
-                    Trace.WriteLine("Started texture upload thread");
+                    var filename = queued.FileName;
 
-                    DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone() };
-                    decoderOptions.Configuration.PreferContiguousImageBuffers = true;
+                    using var stream = File.Exists(filename) ?
+                        File.OpenRead(filename) :
+                        queued.Container?.GetStream(filename, ResourceSource.Embedded);
 
-                    while (!Native.Window.IsExiting)
+                    if (stream is null)
                     {
-                        if (!queuedUploads.TryTake(out var queued)) continue;
-
-                        var filename = queued.FileName;
-
-                        using var stream = File.Exists(filename) ?
-                            File.OpenRead(filename) :
-                            queued.Container?.GetStream(filename, ResourceSource.Embedded);
-
-                        if (stream is null)
-                        {
-                            Trace.TraceWarning($"Texture not found: {filename}");
-                            continue;
-                        }
-
-                        using (var bitmap = Image.Load<Rgba32>(decoderOptions, stream))
-                            queued.Result = Texture2d.Load(bitmap, queued.Options);
-
-                        queued.IsLoaded = true;
+                        Trace.TraceWarning($"Texture not found: {filename}");
+                        continue;
                     }
-                },
-                TaskCreationOptions.LongRunning));
+
+                    using (var bitmap = Image.Load<Rgba32>(decoderOptions, stream))
+                        queued.Result = Texture2d.Load(bitmap, queued.Options);
+
+                    queued.IsLoaded = true;
+                }
+            }) { IsBackground = true };
+
+            threads.Add(thread);
+
+            thread.UnsafeStart(window.Context);
         }
 
         Native.Window.Context.MakeCurrent();
@@ -133,7 +136,7 @@ internal static class TextureUploadQueue
     {
         queuedUploads.Clear();
 
-        Task.WhenAll(threads).Wait();
+        foreach (var thread in threads) thread.Join();
         foreach (var context in contexts) context.Dispose();
 
         threads.Dispose();

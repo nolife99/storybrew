@@ -14,7 +14,6 @@ public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCom
     public float StartTime => command.StartTime;
     public float EndTime => command.EndTime;
     public bool Active { get; set; }
-    public int Cost => throw new NotSupportedException();
 
     public TValue ValueAtTime(float time)
     {

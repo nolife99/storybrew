@@ -111,7 +111,7 @@ public class QuadRendererBuffered : IQuadRenderer
         }
     }
 
-    public void BeginRendering()
+    void IRenderer.BeginRendering()
     {
         shader.Begin();
         GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, ssbo);
@@ -121,7 +121,7 @@ public class QuadRendererBuffered : IQuadRenderer
         rendering = true;
     }
 
-    public void EndRendering()
+    void IRenderer.EndRendering()
     {
         primitiveStreamer.Unbind();
         shader.End();
@@ -130,7 +130,7 @@ public class QuadRendererBuffered : IQuadRenderer
         rendering = false;
     }
 
-    public void Flush(bool canBuffer = false)
+    void IRenderer.Flush(bool canBuffer)
     {
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
@@ -173,7 +173,7 @@ public class QuadRendererBuffered : IQuadRenderer
         primitiveStreamer.Render(PrimitiveType.Triangles, VertexPerQuad);
     }
 
-    public void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
+    void IQuadRenderer.Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
         var textureId = texture.BindableTexture.BindlessTextureHandle;
         if (currentTextureHandle != textureId)
@@ -239,7 +239,7 @@ public class QuadRendererBuffered : IQuadRenderer
     {
         if (disposed) return;
 
-        if (rendering) EndRendering();
+        if (rendering) ((IRenderer)this).EndRendering();
         GL.DeleteBuffer(ssbo);
 
         combinedMatrices.Dispose();

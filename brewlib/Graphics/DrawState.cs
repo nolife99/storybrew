@@ -22,7 +22,7 @@ public static class DrawState
 {
     public static readonly bool UseSrgb;
 
-    static Renderer renderer;
+    static IRenderer renderer;
 
     static bool flushingRenderer;
     static int drawCalls;
@@ -31,7 +31,7 @@ public static class DrawState
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
 
-    public static Renderer Renderer
+    public static IRenderer Renderer
     {
         get => renderer;
         set
@@ -183,7 +183,7 @@ public static class DrawState
         flushingRenderer = false;
     }
 
-    public static T Prepare<T>(T nextRenderer, ICamera camera, RenderStates renderStates) where T : Renderer
+    public static T Prepare<T>(T nextRenderer, ICamera camera, RenderStates renderStates) where T : IRenderer
     {
         Renderer = nextRenderer;
         renderer.Camera = camera;

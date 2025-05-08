@@ -7,7 +7,7 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
 
-public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
+internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
     where TPrimitive : struct, allows ref struct
 {
     readonly int commandSize;
@@ -100,9 +100,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
         var baseIndex = (totalQueuedPrimitives - PrimitivesInBatch) * vertexCount;
         internalQueueRender(ref baseIndex);
 
-        if (commandSync.WaitForRange(commandPtrOffset, commandSize) && commandBufferSize < 1048576)
+        if (commandSync.WaitForRange(commandPtrOffset, commandSize) && commandBufferSize < 1 << 21)
         {
-            initializeDrawCommandBuffer((int)(commandBufferSize / commandSize * 1.5f));
+            initializeDrawCommandBuffer(commandBufferSize / commandSize * 2);
             commandPtrOffset = 0;
         }
 
@@ -178,8 +178,9 @@ public abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPri
             0,
             commandBufferSize,
             MapBufferAccessMask.MapWriteBit |
-            MapBufferAccessMask.MapUnsynchronizedBit |
             MapBufferAccessMask.MapPersistentBit |
+            MapBufferAccessMask.MapInvalidateBufferBit |
+            MapBufferAccessMask.MapUnsynchronizedBit |
             MapBufferAccessMask.MapFlushExplicitBit);
     }
 

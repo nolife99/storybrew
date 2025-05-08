@@ -11,8 +11,8 @@ using Util;
 
 public class IntegratedCompressor : ImageCompressor
 {
-    readonly PooledList<Task> tasks = [];
-    readonly PooledSet<string> toCleanup = [];
+    readonly PooledList<Task> tasks = new();
+    readonly PooledSet<string> toCleanup = new();
 
     public IntegratedCompressor(string utilityPath = null) : base(utilityPath)
         => container = new AssemblyResourceContainer(typeof(Argument).Assembly, "BrewLib");

@@ -6,13 +6,13 @@ using System.Runtime.InteropServices;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-public interface ILineRenderer : Renderer, IDisposable
+public interface ILineRenderer : IRenderer, IDisposable
 {
-    void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color);
+    internal void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color);
 }
 
 [StructLayout(LayoutKind.Sequential, Size = 16)]
-public ref struct LinePrimitive
+internal ref struct LinePrimitive
 {
     public Vector3 from;
     public Rgba32 color1;

@@ -7,8 +7,7 @@ using Commands;
 using CommandValues;
 using Display;
 
-/// <summary> Base class for writing and exporting an <see cref="OsbAnimation"/>. </summary>
-public sealed class OsbAnimationWriter(OsbAnimation animation,
+internal sealed class OsbAnimationWriter(OsbAnimation animation,
     AnimatedValue<CommandPosition> move,
     AnimatedValue<CommandDecimal> moveX,
     AnimatedValue<CommandDecimal> moveY,

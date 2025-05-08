@@ -2,11 +2,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 
-public class GpuCommandSync : IDisposable
+internal sealed class GpuCommandSync : IDisposable
 {
     static readonly Stack<SyncRange> syncRangePool = [];
 
@@ -101,9 +100,18 @@ public class GpuCommandSync : IDisposable
         {
             if (Expired || Fence == 0) return false;
 
+            if (!canBlock)
+            {
+                GL.GetSync(Fence, SyncParameterName.SyncStatus, sizeof(int), out _, out var values);
+                var unsignaled = values == 0x9118;
+                if (!unsignaled) Expired = true;
+
+                return unsignaled;
+            }
+
             var blocked = false;
             var waitSyncFlags = ClientWaitSyncFlags.None;
-            var timeout = 0L;
+            ulong timeout = 0;
 
             while (true)
                 switch (GL.ClientWaitSync(Fence, waitSyncFlags, timeout))
@@ -117,14 +125,12 @@ public class GpuCommandSync : IDisposable
                         return true;
 
                     case WaitSyncStatus.TimeoutExpired:
-                        if (!canBlock) return true;
-
-                        blocked = true;
                         waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
-                        timeout = 1000000000L;
+                        blocked = true;
+                        timeout = ulong.MaxValue;
                         break;
 
-                    case WaitSyncStatus.WaitFailed: throw new SynchronizationLockException("ClientWaitSync failed");
+                    case WaitSyncStatus.WaitFailed: throw new InvalidOperationException("ClientWaitSync failed");
                 }
         }
     }

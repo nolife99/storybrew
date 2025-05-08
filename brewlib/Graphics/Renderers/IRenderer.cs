@@ -2,7 +2,7 @@
 
 using Cameras;
 
-public interface Renderer
+public interface IRenderer
 {
     ICamera Camera { get; set; }
 

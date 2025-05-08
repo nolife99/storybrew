@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
 
-public class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
+internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int minRenderableVertexCount,
     ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
     where TPrimitive : struct, allows ref struct

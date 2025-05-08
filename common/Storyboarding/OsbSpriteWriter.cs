@@ -9,8 +9,7 @@ using Commands;
 using CommandValues;
 using Display;
 
-///<summary> Writes a sprite to text in .osb format. </summary>
-public class OsbSpriteWriter(OsbSprite sprite,
+internal class OsbSpriteWriter(OsbSprite sprite,
     AnimatedValue<CommandPosition> move,
     AnimatedValue<CommandDecimal> moveX,
     AnimatedValue<CommandDecimal> moveY,
@@ -212,7 +211,7 @@ public class OsbSpriteWriter(OsbSprite sprite,
     }
 }
 
-public static class OsbWriterFactory
+internal static class OsbWriterFactory
 {
     public static OsbSpriteWriter CreateWriter(OsbSprite sprite,
         AnimatedValue<CommandPosition> move,

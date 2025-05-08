@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using Collections.Pooled;
 using SixLabors.ImageSharp;
 
@@ -25,11 +24,11 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
     /// <inheritdoc/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
-        var linearSegments = BSplineToPiecewiseLinear(points, points.Length - 1);
-        distancePosition.EnsureCapacity(distancePosition.Count + linearSegments.Length - 1);
+        using var linearSegments = BSplineToPiecewiseLinear(points, points.Length - 1);
+        distancePosition.EnsureCapacity(distancePosition.Count + linearSegments.Count - 1);
 
         length = 0;
-        for (var i = 0; i < linearSegments.Length - 1; ++i)
+        for (var i = 0; i < linearSegments.Count - 1; ++i)
         {
             var cur = linearSegments[i];
 
@@ -39,9 +38,9 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
     }
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static ReadOnlySpan<Vector2> BSplineToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, int degree)
+    static PooledList<Vector2> BSplineToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, int degree)
     {
-        List<Vector2> output = [];
+        PooledList<Vector2> output = [];
         var pointCount = controlPoints.Length - 1;
 
         using var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
@@ -73,7 +72,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         }
 
         output.Add(controlPoints[pointCount]);
-        return CollectionsMarshal.AsSpan(output);
+        return output;
     }
 
     static PooledStack<IMemoryOwner<Vector2>> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
@@ -153,7 +152,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
     }
 
     static void bezierApproximate(ReadOnlySpan<Vector2> controlPoints,
-        List<Vector2> output,
+        PooledList<Vector2> output,
         Span<Vector2> subdivisionBuffer1,
         Span<Vector2> subdivisionBuffer2,
         int count)

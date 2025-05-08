@@ -31,6 +31,9 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
 
             GL.DeleteSync(texFence);
 
+            if (!BitConverter.IsLittleEndian)
+                bindlessId = (long)(uint)(bindlessId & 0xFFFFFFFF) << 32 | (uint)(bindlessId >> 32 & 0xFFFFFFFF);
+
             return bindlessId;
         }
     }
@@ -146,8 +149,8 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
                 GL.MapBufferRange(BufferTarget.PixelUnpackBuffer,
                     0,
                     dataSize,
-                    MapBufferAccessMask.MapInvalidateBufferBit |
                     MapBufferAccessMask.MapWriteBit |
+                    MapBufferAccessMask.MapInvalidateBufferBit |
                     MapBufferAccessMask.MapUnsynchronizedBit));
 
             for (var i = 0; i < height; ++i)

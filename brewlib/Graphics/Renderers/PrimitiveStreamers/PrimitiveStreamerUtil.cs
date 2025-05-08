@@ -3,7 +3,7 @@
 using System;
 using Shaders;
 
-public static class PrimitiveStreamerUtil
+internal static class PrimitiveStreamerUtil
 {
     public static IPrimitiveStreamer<TPrimitive> DefaultCreatePrimitiveStreamer<TPrimitive>(VertexDeclaration vertDec,
         int minVert,

@@ -6,13 +6,13 @@ using System.Runtime.InteropServices;
 using SixLabors.ImageSharp.PixelFormats;
 using Textures;
 
-public interface IQuadRenderer : Renderer, IDisposable
+public interface IQuadRenderer : IRenderer, IDisposable
 {
-    void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture);
+    internal void Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture);
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public ref struct QuadPrimitive
+internal ref struct QuadPrimitive
 {
     public Vector2 vec1;
     public float u1, v1;

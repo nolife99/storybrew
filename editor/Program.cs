@@ -109,7 +109,7 @@ public static class Program
 #if DEBUG
             ContextFlags.Debug | ContextFlags.ForwardCompatible;
 #else
-            ContextFlags.Debug | ContextFlags.ForwardCompatible;
+            ContextFlags.ForwardCompatible;
 
         GLFW.WindowHint(WindowHintBool.ContextNoError, true);
 #endif

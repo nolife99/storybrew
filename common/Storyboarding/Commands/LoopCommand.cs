@@ -19,7 +19,7 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
     public override float EndTime
     {
         get => StartTime + CommandsEndTime * LoopCount;
-        set => LoopCount = (int)((value - StartTime) / CommandsEndTime);
+        protected set => LoopCount = (int)((value - StartTime) / CommandsEndTime);
     }
 
     public override int GetHashCode()

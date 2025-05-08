@@ -17,7 +17,6 @@ public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTim
     public TValue StartValue => command.StartValue;
     public TValue EndValue => command.EndValue;
     public bool Active => true;
-    public int Cost => throw new InvalidOperationException();
 
     public TValue ValueAtTime(float time)
     {

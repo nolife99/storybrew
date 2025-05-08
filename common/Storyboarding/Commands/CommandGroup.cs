@@ -8,7 +8,7 @@ using Collections.Pooled;
 #pragma warning disable CS1591
 public abstract class CommandGroup : ICommand
 {
-    protected readonly PooledSet<ICommand> commands = [];
+    protected readonly PooledSet<ICommand> commands = new();
     public IReadOnlyCollection<ICommand> Commands => commands;
 
     public float CommandsStartTime
@@ -51,10 +51,9 @@ public abstract class CommandGroup : ICommand
         }
     }
 
-    public float StartTime { get; set; }
-    public virtual float EndTime { get; set; }
+    public float StartTime { get; protected set; }
+    public virtual float EndTime { get; protected set; }
     public virtual bool Active => true;
-    public int Cost => commands.Count;
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
     public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)

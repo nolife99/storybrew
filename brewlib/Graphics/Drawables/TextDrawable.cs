@@ -121,8 +121,8 @@ public sealed class TextDrawable : Drawable
             new(new(camera.ExtendedViewport.X + camera.Position.X, camera.ExtendedViewport.Y + camera.Position.Y),
                 camera.ExtendedViewport.Size);
 
-        foreach (var line in textLayout.Lines)
-        foreach (var layoutGlyph in line.Glyphs)
+        foreach (ref readonly var line in textLayout.Lines.Span)
+        foreach (ref readonly var layoutGlyph in line.Glyphs.Span)
         {
             var glyph = layoutGlyph.Glyph;
             if (glyph.IsEmpty) continue;

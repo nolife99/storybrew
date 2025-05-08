@@ -40,7 +40,6 @@ public abstract record Command<TValue>(string identifier,
     public TValue StartValue { get; set; } = startValue;
     public TValue EndValue { get; set; } = endValue;
     public bool Active => true;
-    public int Cost => 1;
 
     public TValue ValueAtTime(float time)
     {

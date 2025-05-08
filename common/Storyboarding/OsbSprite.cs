@@ -70,15 +70,7 @@ public class OsbSprite : StoryboardObject
     public int CommandCount => commands.Count;
 
     /// <returns> The total amount of commands, including loops, being run on this instance of the <see cref="OsbSprite"/>. </returns>
-    public int CommandCost
-    {
-        get
-        {
-            var total = 0;
-            foreach (var c in commands) total += c.Cost;
-            return total;
-        }
-    }
+    public int CommandCost { get; private set; }
 
     /// <returns> True if the <see cref="OsbSprite"/> has incompatible commands, else returns false. </returns>
     public bool HasIncompatibleCommands
@@ -913,6 +905,8 @@ public class OsbSprite : StoryboardObject
 
     void addDisplayCommand(ICommand command)
     {
+        ++CommandCost;
+
         foreach (var builders in displayValueBuilders)
             if (builders.Item1(command))
                 builders.Item2.Add(command);

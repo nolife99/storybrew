@@ -73,8 +73,6 @@ public class LineRendererBuffered : ILineRenderer
         }
     }
 
-    public int TotalQueuedPrimitives => primitiveStreamer.QueuedRenders;
-
     public ICamera Camera
     {
         get => camera;
@@ -87,7 +85,7 @@ public class LineRendererBuffered : ILineRenderer
         }
     }
 
-    public void BeginRendering()
+    void IRenderer.BeginRendering()
     {
         shader.Begin();
         GL.BindBufferBase(BufferRangeTarget.ShaderStorageBuffer, 0, combinedMatricesBuffer);
@@ -97,7 +95,7 @@ public class LineRendererBuffered : ILineRenderer
         rendering = true;
     }
 
-    public void EndRendering()
+    void IRenderer.EndRendering()
     {
         primitiveStreamer.Unbind();
         shader.End();
@@ -105,7 +103,7 @@ public class LineRendererBuffered : ILineRenderer
         rendering = false;
     }
 
-    public void Flush(bool canBuffer = false)
+    void IRenderer.Flush(bool canBuffer)
     {
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
@@ -126,7 +124,7 @@ public class LineRendererBuffered : ILineRenderer
         primitiveStreamer.Render(PrimitiveType.Lines, VertexPerLine);
     }
 
-    public void Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color)
+    void ILineRenderer.Draw(ref readonly Vector3 start, ref readonly Vector3 end, ref readonly Color color)
     {
         var rgba = color.ToPixel<Rgba32>();
         LinePrimitive primitive = new() { from = start, to = end, color1 = rgba, color2 = rgba };
@@ -171,7 +169,7 @@ public class LineRendererBuffered : ILineRenderer
     {
         if (disposed) return;
 
-        if (rendering) EndRendering();
+        if (rendering) ((IRenderer)this).EndRendering();
         GL.DeleteBuffer(combinedMatricesBuffer);
 
         combinedMatrices.Dispose();
