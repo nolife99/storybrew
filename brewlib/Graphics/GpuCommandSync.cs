@@ -38,7 +38,7 @@ internal sealed class GpuCommandSync : IDisposable
         return blocked;
     }
 
-    public bool WaitForRange(int index, int length)
+    public bool WaitForRange(nint index, int length)
     {
         trimExpiredRanges();
         for (var i = syncRanges.Count - 1; i >= 0; --i)
@@ -54,11 +54,13 @@ internal sealed class GpuCommandSync : IDisposable
         return false;
     }
 
-    public void LockRange(int index, int length)
+    public void LockRange(nint index, int length)
     {
         if (!syncRangePool.TryPop(out var item)) item = new();
 
         item.Fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+        GL.Flush();
+
         item.Index = index;
         item.Length = length;
         syncRanges.Add(item);
@@ -93,8 +95,8 @@ internal sealed class GpuCommandSync : IDisposable
     sealed class SyncRange
     {
         public bool Expired;
-        public nint Fence;
-        public int Index, Length;
+        public nint Fence, Index;
+        public int Length;
 
         public bool Wait(bool canBlock)
         {
@@ -110,11 +112,10 @@ internal sealed class GpuCommandSync : IDisposable
             }
 
             var blocked = false;
-            var waitSyncFlags = ClientWaitSyncFlags.None;
             ulong timeout = 0;
 
             while (true)
-                switch (GL.ClientWaitSync(Fence, waitSyncFlags, timeout))
+                switch (GL.ClientWaitSync(Fence, ClientWaitSyncFlags.None, timeout))
                 {
                     case WaitSyncStatus.AlreadySignaled:
                         Expired = true;
@@ -125,7 +126,6 @@ internal sealed class GpuCommandSync : IDisposable
                         return true;
 
                     case WaitSyncStatus.TimeoutExpired:
-                        waitSyncFlags = ClientWaitSyncFlags.SyncFlushCommandsBit;
                         blocked = true;
                         timeout = ulong.MaxValue;
                         break;

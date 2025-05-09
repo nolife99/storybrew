@@ -93,8 +93,8 @@ public static class Program
                 using (AudioManager = createAudioManager())
                     runMainLoop(window,
                         editor,
-                        1d / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
-                        1d / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
+                        1f / (Settings.UpdateRate > 0 ? Settings.UpdateRate : displayDevice.CurrentVideoMode.RefreshRate),
+                        1f / (Settings.FrameRate > 0 ? Settings.FrameRate : displayDevice.CurrentVideoMode.RefreshRate));
             }
 
             window.Refresh -= refreshCallback;
@@ -109,7 +109,7 @@ public static class Program
 #if DEBUG
             ContextFlags.Debug | ContextFlags.ForwardCompatible;
 #else
-            ContextFlags.ForwardCompatible;
+            ContextFlags.Debug | ContextFlags.ForwardCompatible;
 
         GLFW.WindowHint(WindowHintBool.ContextNoError, true);
 #endif
@@ -141,14 +141,14 @@ public static class Program
         return audioManager;
     }
 
-    static void runMainLoop(NativeWindow window, Editor editor, double fixedRateUpdate, double targetFrame)
+    static void runMainLoop(NativeWindow window, Editor editor, float fixedRateUpdate, float targetFrame)
     {
-        double prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0, statsUpdate = targetFrame * 5;
+        float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0, statsUpdate = targetFrame * 5;
 
         var windowContext = window.Context;
         while (!window.IsExiting)
         {
-            var cur = GLFW.GetTime();
+            var cur = (float)GLFW.GetTime();
             var fixedUpdates = 0;
 
             window.NewInputFrame();
@@ -159,7 +159,7 @@ public static class Program
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
             {
                 fixedRate += fixedRateUpdate;
-                editor.Update((float)fixedRate);
+                editor.Update(fixedRate);
             }
 
             if (!window.Exists || window.IsExiting) return;
@@ -181,7 +181,7 @@ public static class Program
                     action.Task.TrySetException(e);
                 }
 
-            var active = GLFW.GetTime() - cur;
+            var active = (float)GLFW.GetTime() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
             if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
@@ -190,8 +190,8 @@ public static class Program
             prev = cur;
             if (lastStat + statsUpdate > cur) continue;
 
-            av = (frameTime + av) * .5;
-            avActive = (active + avActive) * .5;
+            av = (frameTime + av) * .5f;
+            avActive = (active + avActive) * .5f;
             longest = Math.Max(frameTime, longest);
 
             Stats =

@@ -27,6 +27,7 @@ public static class DrawState
     static bool flushingRenderer;
     static int drawCalls;
     public static bool UseTextureCompression { get; set; }
+    public static bool BindlessTexturesSupported { get; } = GLFW.ExtensionSupported("GL_ARB_bindless_texture");
 
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
@@ -50,7 +51,10 @@ public static class DrawState
         }
     }
 
-    public static void Initialize(ResourceContainer resourceContainer, int width, int height)
+    public static void Initialize(ResourceContainer resourceContainer,
+        TextureContainer textureContainer,
+        int width,
+        int height)
     {
         if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
         {
@@ -125,6 +129,8 @@ public static class DrawState
             else Trace.TraceWarning("The default framebuffer isn't sRgb");
         }
 
+        UseTextureCompression &= GLFW.ExtensionSupported("GL_EXT_texture_compression_s3tc");
+
         // glActiveTexture requires opengl 1.3
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
@@ -140,11 +146,17 @@ public static class DrawState
 
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
+        if (!BindlessTexturesSupported)
+        {
+            samplerTextureIds = new int[maxTextureImageUnits];
+            samplerTexturingModes = new TextureTarget[maxTextureImageUnits];
+        }
+
         WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>());
         TransparentPixel = Texture2d.Create(default);
 
         TextGenerator = new(resourceContainer);
-        TextFontManager = new();
+        TextFontManager = new(textureContainer);
 
         Viewport = new(0, 0, width, height);
 
@@ -196,7 +208,92 @@ public static class DrawState
     public static Texture2d WhitePixel { get; private set; }
     public static Texture2d TransparentPixel { get; private set; }
 
-    static int maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits, maxCombinedTextureImageUnits;
+    static int[] samplerTextureIds;
+    static TextureTarget[] samplerTexturingModes;
+
+    static int lastRecycledTextureUnit = -1, maxTextureImageUnits, maxVertexTextureImageUnits, maxGeometryTextureImageUnits,
+        maxCombinedTextureImageUnits;
+
+    static void SetTexturingMode(int samplerIndex, TextureTarget mode)
+    {
+        ref var previousMode = ref samplerTexturingModes[samplerIndex];
+        if (previousMode == mode) return;
+
+        if (samplerTextureIds[samplerIndex] != 0) UnbindTexture(samplerTextureIds[samplerIndex]);
+        previousMode = mode;
+    }
+
+    static void BindTexture(int textureId, int samplerIndex, TextureTarget mode = TextureTarget.Texture2D)
+    {
+        SetTexturingMode(samplerIndex, mode);
+
+        ref var samplerTextureId = ref samplerTextureIds[samplerIndex];
+        if (samplerTextureId == textureId) return;
+
+        GL.BindTextureUnit(samplerIndex, textureId);
+        samplerTextureId = textureId;
+    }
+
+    public static int BindTexture(int textureId) => BindTextures([textureId]);
+
+    static int BindTextures(ReadOnlySpan<int> textures)
+    {
+        Span<int> samplerIndexes = stackalloc int[textures.Length];
+        for (var i = 0; i < textures.Length; ++i)
+        {
+            var textureId = textures[i];
+
+            samplerIndexes[i] = -1;
+            for (var j = 0; j < samplerTextureIds.Length; ++j)
+                if (samplerTextureIds[j] == textureId)
+                {
+                    samplerIndexes[i] = j;
+                    break;
+                }
+        }
+
+        var samplerCount = samplerTextureIds.Length;
+        for (var i = 0; i < textures.Length; ++i)
+        {
+            if (samplerIndexes[i] != -1) continue;
+
+            var first = true;
+            var samplerStartIndex = (lastRecycledTextureUnit + 1) % samplerCount;
+            for (var samplerIndex = samplerStartIndex;
+                first || samplerIndex != samplerStartIndex;
+                samplerIndex = (samplerIndex + 1) % samplerCount)
+            {
+                first = false;
+
+                var isFreeSamplerUnit = true;
+                foreach (var usedIndex in samplerIndexes)
+                {
+                    if (usedIndex != samplerIndex) continue;
+
+                    isFreeSamplerUnit = false;
+                    break;
+                }
+
+                if (!isFreeSamplerUnit) continue;
+
+                BindTexture(textures[i], samplerIndex);
+                samplerIndexes[i] = samplerIndex;
+                lastRecycledTextureUnit = samplerIndex;
+                break;
+            }
+        }
+
+        return samplerIndexes[0];
+    }
+
+    public static void UnbindTexture(int textureId)
+    {
+        var i = Array.IndexOf(samplerTextureIds, textureId, 0, samplerTextureIds.Length);
+        if (i == -1) return;
+
+        GL.BindTextureUnit(i, 0);
+        samplerTextureIds[i] = 0;
+    }
 
     #endregion
 

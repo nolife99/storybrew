@@ -12,7 +12,7 @@ public interface IQuadRenderer : IRenderer, IDisposable
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-internal ref struct QuadPrimitive
+internal struct QuadPrimitive
 {
     public Vector2 vec1;
     public float u1, v1;

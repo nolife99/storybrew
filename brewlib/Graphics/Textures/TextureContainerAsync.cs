@@ -45,6 +45,9 @@ public sealed class TextureContainerAsync(ResourceContainer resourceContainer = 
         return DrawState.TransparentPixel;
     }
 
+    public Texture2dRegion Add(Image<Rgba32> bitmap, TextureOptions options = null)
+        => Texture2d.Load(bitmap, textureOptions);
+
     #region IDisposable Support
 
     bool disposed;

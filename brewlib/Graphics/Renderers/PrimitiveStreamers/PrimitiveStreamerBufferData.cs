@@ -7,9 +7,9 @@ using OpenTK.Graphics.OpenGL;
 using Shaders;
 
 internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
-    int minRenderableVertexCount,
-    ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, minRenderableVertexCount, indices)
-    where TPrimitive : struct, allows ref struct
+    int maxPrimitivesPerBatch,
+    ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices)
+    where TPrimitive : struct
 {
     byte[] primitiveBuffer;
 
@@ -33,7 +33,7 @@ internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration 
     {
         base.initializeVertexBuffer();
 
-        var vertexBufferSize = MinRenderableVertexCount * PrimitiveSize;
+        var vertexBufferSize = MaxPrimitivesPerBatch * PrimitiveSize;
 
         primitiveBuffer = GC.AllocateUninitializedArray<byte>(vertexBufferSize);
         GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferStorageFlags.DynamicStorageBit);

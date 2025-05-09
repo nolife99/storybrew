@@ -1,13 +1,11 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
 
-internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive>
-    where TPrimitive : struct, allows ref struct
+internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStreamerVao<TPrimitive> where TPrimitive : struct
 {
     readonly int maxBatchSize;
 
@@ -52,7 +50,7 @@ internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStre
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
-        vertexBufferSize = MinRenderableVertexCount * PrimitiveSize;
+        vertexBufferSize = MaxPrimitivesPerBatch * PrimitiveSize;
 
         GL.BufferStorage(BufferTarget.ArrayBuffer,
             vertexBufferSize,
@@ -77,14 +75,12 @@ internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStre
 
     void expandVertexBuffer()
     {
-        var originalSize = MinRenderableVertexCount * PrimitiveSize;
+        var originalSize = MaxPrimitivesPerBatch * PrimitiveSize;
 
         // Prevent the vertex buffer from becoming too large (maxes at 2mb * grow factor)
         if (originalSize > 1 << 21) return;
 
-        MinRenderableVertexCount *= 2;
-        Trace.WriteLine(
-            $"[OpenGL] Expanding vertex buffer from {originalSize} to {MinRenderableVertexCount * PrimitiveSize} bytes");
+        MaxPrimitivesPerBatch *= 2;
 
         sync.WaitForAll();
 

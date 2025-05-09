@@ -56,14 +56,18 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(new TextureContainerSeparate(ResourceContainer), true);
+        drawContext.Register<TextureContainer>(DrawState.BindlessTexturesSupported ?
+                new TextureContainerSeparate(ResourceContainer) :
+                new TextureContainerAtlas(ResourceContainer),
+            true);
+
         drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
         drawContext.Freeze();
 
         var size = window.ClientSize;
         DrawState.UseTextureCompression = Program.Settings.TextureCompression;
-        DrawState.Initialize(ResourceContainer, size.X, size.Y);
+        DrawState.Initialize(ResourceContainer, drawContext.Get<TextureContainer>(), size.X, size.Y);
 
         try
         {

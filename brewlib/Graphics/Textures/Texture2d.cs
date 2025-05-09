@@ -20,6 +20,8 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
 
     long bindlessId = -1;
 
+    public int TextureId => textureId;
+
     public long BindlessTextureHandle
     {
         get
@@ -38,7 +40,65 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         }
     }
 
-    static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
+    public void Update(Rgba32 color, int x, int y, int width, int height)
+    {
+        if (useGlClearTex)
+            GL.ClearTexSubImage(textureId,
+                0,
+                x,
+                y,
+                0,
+                width,
+                height,
+                1,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                ref color);
+        else
+        {
+            using var spanOwner = Configuration.Default.MemoryAllocator.Allocate<Rgba32>(width * height);
+            var span = spanOwner.Memory.Span;
+
+            span.Fill(color);
+            GL.TextureSubImage2D(textureId,
+                0,
+                x,
+                y,
+                width,
+                height,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                ref MemoryMarshal.GetReference(span));
+        }
+    }
+
+    public void Update(Image<Rgba32> bitmap, int x, int y)
+    {
+        var buffer = bitmap.Frames.RootFrame.PixelBuffer;
+        if (buffer.MemoryGroup.Count == 1)
+            GL.TextureSubImage2D(textureId,
+                0,
+                x,
+                y,
+                buffer.Width,
+                buffer.Height,
+                PixelFormat.Rgba,
+                PixelType.UnsignedByte,
+                ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
+        else
+            for (var i = 0; i < buffer.Height; ++i)
+                GL.TextureSubImage2D(textureId,
+                    0,
+                    0,
+                    y + i,
+                    buffer.Width,
+                    1,
+                    PixelFormat.Rgba,
+                    PixelType.UnsignedByte,
+                    ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(i)));
+    }
+
+    public static Image<Rgba32> LoadBitmap(string filename, ResourceContainer resourceContainer = null)
     {
         using var stream = File.Exists(filename) ?
             File.OpenRead(filename) :
@@ -103,7 +163,10 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        return new(textureId, width, height, GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None));
+        var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+        GL.Flush();
+
+        return new(textureId, width, height, fence);
     }
 
     public static Texture2d Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
@@ -166,7 +229,10 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        return new(textureId, width, height, GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None));
+        var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
+        GL.Flush();
+
+        return new(textureId, width, height, fence);
     }
 
     #region IDisposable Support

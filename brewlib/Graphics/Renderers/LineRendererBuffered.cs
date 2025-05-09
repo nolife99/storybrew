@@ -47,7 +47,7 @@ public class LineRendererBuffered : ILineRenderer
         this.shader = shader;
 
         primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<LinePrimitive>(VertexDeclaration,
-            int.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)) * VertexPerLine,
+            int.Max(maxLinesPerBatch, primitiveBufferSize / (VertexPerLine * VertexDeclaration.VertexSize)),
             default);
 
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, combinedMatricesBuffer = GL.GenBuffer());
@@ -128,7 +128,7 @@ public class LineRendererBuffered : ILineRenderer
     {
         var rgba = color.ToPixel<Rgba32>();
         LinePrimitive primitive = new() { from = start, to = end, color1 = rgba, color2 = rgba };
-        primitiveStreamer.AddPrimitive(ref primitive, VertexPerLine);
+        primitiveStreamer.AddPrimitive(ref primitive);
     }
 
     public void Dispose()

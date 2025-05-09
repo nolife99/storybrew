@@ -45,10 +45,4 @@
         <ProjectReference Include="..\tiny\tiny.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <None Remove="Util\BitmapHelper.cs~"/>
-        <None Remove="Graphics\DrawState.cs~"/>
-        <None Remove="Graphics\Cameras\CameraOrtho.cs~"/>
-    </ItemGroup>
-
 </Project>

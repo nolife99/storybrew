@@ -7,26 +7,27 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
 
-internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive>
-    where TPrimitive : struct, allows ref struct
+internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : struct
 {
     readonly int commandSize;
 
     readonly GpuCommandSync commandSync = new();
+    readonly VertexDeclaration vertexDeclaration;
     bool Bound;
+    protected nint commandPtrOffset;
 
     nint commandsPtr;
-    protected int totalQueuedPrimitives, queuedRenders, commandPtrOffset;
+    protected int totalQueuedPrimitives, queuedRenders;
     int vertexArrayId = -1, commandBufferId = -1, commandBufferSize;
 
     protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration,
-        int minRenderableVertexCount,
+        int maxPrimitivesPerBatch,
         ReadOnlySpan<ushort> indices)
     {
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
 
-        MinRenderableVertexCount = minRenderableVertexCount;
-        VertexDeclaration = vertexDeclaration;
+        MaxPrimitivesPerBatch = maxPrimitivesPerBatch;
+        this.vertexDeclaration = vertexDeclaration;
         PrimitiveSize = Unsafe.SizeOf<TPrimitive>();
 
         commandSize = indices.IsEmpty ?
@@ -34,7 +35,7 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
             Unsafe.SizeOf<MultiDrawElementsIndirectCommand>();
 
         initializeVertexBuffer();
-        initializeDrawCommandBuffer(minRenderableVertexCount);
+        initializeDrawCommandBuffer(maxPrimitivesPerBatch);
 
         if (!indices.IsEmpty) initializeIndexBuffer(indices);
     }
@@ -43,12 +44,11 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
     protected int VertexBufferId { get; private set; } = -1;
     protected int IndexBufferId { get; private set; } = -1;
     protected int PrimitiveSize { get; }
-    protected int MinRenderableVertexCount { get; set; }
-    protected VertexDeclaration VertexDeclaration { get; }
+    protected int MaxPrimitivesPerBatch { get; set; }
 
-    public void AddPrimitive(ref readonly TPrimitive primitive, int vertexCount)
+    public void AddPrimitive(ref readonly TPrimitive primitive)
     {
-        if (totalQueuedPrimitives == MinRenderableVertexCount / vertexCount) DrawState.FlushRenderer(true);
+        if (totalQueuedPrimitives == MaxPrimitivesPerBatch) DrawState.FlushRenderer(true);
         internalAddPrimitive(in primitive);
 
         ++PrimitivesInBatch;
@@ -86,7 +86,7 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         commandSync.LockRange(commandPtrOffset, dataSize);
 
         commandPtrOffset += dataSize;
-        if (commandPtrOffset + MinRenderableVertexCount * commandSize > commandBufferSize) commandPtrOffset = 0;
+        if (commandPtrOffset + MaxPrimitivesPerBatch * commandSize > commandBufferSize) commandPtrOffset = 0;
 
         queuedRenders = 0;
         totalQueuedPrimitives = 0;
@@ -192,8 +192,8 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         GL.BindVertexArray(vertexArrayId);
         GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);
 
-        if (!initial) VertexDeclaration.DeactivateAttributes(CurrentShader);
-        VertexDeclaration.ActivateAttributes(shader);
+        if (!initial) vertexDeclaration.DeactivateAttributes(CurrentShader);
+        vertexDeclaration.ActivateAttributes(shader);
 
         if (initial && IndexBufferId != -1) GL.BindBuffer(BufferTarget.ElementArrayBuffer, IndexBufferId);
 

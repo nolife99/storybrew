@@ -33,9 +33,10 @@ public class QuadRendererBuffered : IQuadRenderer
 
     readonly IPrimitiveStreamer<QuadPrimitive> primitiveStreamer;
     readonly Shader shader;
-    readonly int ssbo, maxQuadsPerBatch;
+    readonly int ssbo, maxQuadsPerBatch, textureUniformLocation;
 
     ICamera camera;
+    int currentTexture, currentSamplerUnit;
     long currentTextureHandle;
 
     bool disposed, rendering;
@@ -53,6 +54,14 @@ public class QuadRendererBuffered : IQuadRenderer
 
         this.shader = shader;
 
+        var ssboSize = (Unsafe.SizeOf<Matrix4x4>() + Unsafe.SizeOf<Vector4>()) * maxQuadsPerBatch;
+        if (DrawState.BindlessTexturesSupported)
+        {
+            ssboSize += Unsafe.SizeOf<long>() * maxQuadsPerBatch;
+            bindlessTextures = new();
+        }
+        else textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
+
         var indicesCount = maxQuadsPerBatch * IndexPerQuad;
         using (var indicesBuffer = Configuration.Default.MemoryAllocator.Allocate<ushort>(indicesCount))
         {
@@ -69,19 +78,14 @@ public class QuadRendererBuffered : IQuadRenderer
             }
 
             primitiveStreamer = PrimitiveStreamerUtil.DefaultCreatePrimitiveStreamer<QuadPrimitive>(VertexDeclaration,
-                int.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)) *
-                VertexPerQuad,
+                int.Max(maxQuadsPerBatch, primitiveBufferSize / (VertexPerQuad * VertexDeclaration.VertexSize)),
                 indices);
         }
 
         GL.BindBuffer(BufferTarget.ShaderStorageBuffer, ssbo = GL.GenBuffer());
-        GL.BufferStorage(BufferTarget.ShaderStorageBuffer,
-            (Unsafe.SizeOf<Matrix4x4>() + sizeof(long) + Unsafe.SizeOf<Vector4>()) * maxQuadsPerBatch,
-            0,
-            BufferStorageFlags.DynamicStorageBit);
+        GL.BufferStorage(BufferTarget.ShaderStorageBuffer, ssboSize, 0, BufferStorageFlags.DynamicStorageBit);
 
         combinedMatrices = new();
-        bindlessTextures = new();
         clipRegions = new();
 
         Trace.WriteLine($"Initialized {nameof(QuadRendererBuffered)} using {primitiveStreamer.GetType().Name}");
@@ -135,7 +139,7 @@ public class QuadRendererBuffered : IQuadRenderer
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
             combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
-            bindlessTextures.Add(currentTextureHandle);
+            if (DrawState.BindlessTexturesSupported) bindlessTextures.Add(currentTextureHandle);
 
             var clipRegion = Rectangle.Intersect(DrawState.ClipRegion ?? Rectangle.Empty, DrawState.Viewport);
             if (clipRegion == Rectangle.Empty) clipRegion = DrawState.Viewport;
@@ -156,15 +160,27 @@ public class QuadRendererBuffered : IQuadRenderer
 
         combinedMatrices.Clear();
 
-        GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
-            maxQuadsPerBatch * Unsafe.SizeOf<Matrix4x4>(),
-            queuedRenders * sizeof(long),
-            ref MemoryMarshal.GetReference(bindlessTextures.Span));
+        if (DrawState.BindlessTexturesSupported)
+        {
+            GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
+                maxQuadsPerBatch * Unsafe.SizeOf<Matrix4x4>(),
+                queuedRenders * sizeof(long),
+                ref MemoryMarshal.GetReference(bindlessTextures.Span));
 
-        bindlessTextures.Clear();
+            bindlessTextures.Clear();
+        }
+        else
+        {
+            var samplerUnit = DrawState.BindTexture(currentTexture);
+            if (currentSamplerUnit != samplerUnit)
+            {
+                GL.Uniform1(textureUniformLocation, samplerUnit);
+                currentSamplerUnit = samplerUnit;
+            }
+        }
 
         GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
-            maxQuadsPerBatch * (sizeof(long) + Unsafe.SizeOf<Matrix4x4>()),
+            maxQuadsPerBatch * ((DrawState.BindlessTexturesSupported ? sizeof(long) : 0) + Unsafe.SizeOf<Matrix4x4>()),
             queuedRenders * Unsafe.SizeOf<Vector4>(),
             ref MemoryMarshal.GetReference(clipRegions.Span));
 
@@ -175,14 +191,26 @@ public class QuadRendererBuffered : IQuadRenderer
 
     void IQuadRenderer.Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
-        var textureId = texture.BindableTexture.BindlessTextureHandle;
-        if (currentTextureHandle != textureId)
+        if (DrawState.BindlessTexturesSupported)
         {
-            DrawState.FlushRenderer();
-            currentTextureHandle = textureId;
+            var textureId = texture.BindableTexture.BindlessTextureHandle;
+            if (currentTextureHandle != textureId)
+            {
+                DrawState.FlushRenderer();
+                currentTextureHandle = textureId;
+            }
+        }
+        else
+        {
+            var textureId = texture.BindableTexture.TextureId;
+            if (currentTexture != textureId)
+            {
+                DrawState.FlushRenderer(true);
+                currentTexture = textureId;
+            }
         }
 
-        primitiveStreamer.AddPrimitive(in quad, VertexPerQuad);
+        primitiveStreamer.AddPrimitive(in quad);
     }
 
     public void Dispose()
@@ -194,9 +222,9 @@ public class QuadRendererBuffered : IQuadRenderer
     Shader CreateDefaultShader()
     {
         ShaderBuilder sb = new(VertexDeclaration);
-        sb.AddRequiredExtension("GL_ARB_bindless_texture",
-            "GL_ARB_shader_draw_parameters",
-            "GL_ARB_shader_storage_buffer_object");
+        sb.AddRequiredExtension("GL_ARB_shader_draw_parameters", "GL_ARB_shader_storage_buffer_object");
+
+        if (DrawState.BindlessTexturesSupported) sb.AddRequiredExtension("GL_ARB_bindless_texture");
 
         var allSsbo = sb.AddSSBO(0);
 
@@ -204,9 +232,10 @@ public class QuadRendererBuffered : IQuadRenderer
             new(sb.Context, allSsbo.Name, ActiveUniformType.FloatMat4, maxQuadsPerBatch),
             allSsbo.AddField(CombinedMatrixUniformName, ActiveUniformType.FloatMat4, maxQuadsPerBatch));
 
-        var texture =
+        var texture = DrawState.BindlessTexturesSupported ?
             allSsbo.FieldAsVariable(new(sb.Context, allSsbo.Name, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch),
-                allSsbo.AddField(TextureUniformName, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch));
+                allSsbo.AddField(TextureUniformName, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch)) :
+            sb.AddUniform(TextureUniformName, ActiveUniformType.Sampler2D);
 
         var clipRects =
             allSsbo.FieldAsVariable(new(sb.Context, allSsbo.Name, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch),
@@ -225,10 +254,18 @@ public class QuadRendererBuffered : IQuadRenderer
             new Assign(color, () => $"{sb.VertexDeclaration.GetAttribute(AttributeUsage.Color).Name}"));
 
         var clipRect = sb.AddFragmentVariable(ActiveUniformType.FloatVec4);
+
         sb.FragmentShader = new Sequence(new Assign(clipRect, () => $"{clipRects.Ref[drawId.Ref.ToString()]}"),
             new Assign(sb.GlFragColor,
-                ()
-                    => $"{color.Ref} * texture(sampler2D({texture.Ref[drawId.Ref.ToString()]}), {textureCoord.Ref}) * float({sb.GlFragCoord.Ref}.x > {clipRect.Ref}.x && {sb.GlFragCoord.Ref}.x < ({clipRect.Ref}.x + {clipRect.Ref}.z) && {sb.GlFragCoord.Ref}.y > {clipRect.Ref}.y && {sb.GlFragCoord.Ref}.y < ({clipRect.Ref}.y + {clipRect.Ref}.w))"));
+                () =>
+                {
+                    var texRef = DrawState.BindlessTexturesSupported ?
+                        $"sampler2D({texture.Ref[drawId.Ref.ToString()]})" :
+                        texture.Ref.ToString();
+
+                    return
+                        $"{color.Ref} * texture({texRef}, {textureCoord.Ref}) * float({sb.GlFragCoord.Ref}.x > {clipRect.Ref}.x && {sb.GlFragCoord.Ref}.x < ({clipRect.Ref}.x + {clipRect.Ref}.z) && {sb.GlFragCoord.Ref}.y > {clipRect.Ref}.y && {sb.GlFragCoord.Ref}.y < ({clipRect.Ref}.y + {clipRect.Ref}.w))";
+                }));
 
         return sb.Build();
     }
@@ -243,7 +280,7 @@ public class QuadRendererBuffered : IQuadRenderer
         GL.DeleteBuffer(ssbo);
 
         combinedMatrices.Dispose();
-        bindlessTextures.Dispose();
+        if (DrawState.BindlessTexturesSupported) bindlessTextures.Dispose();
         clipRegions.Dispose();
 
         if (!disposing) return;
