@@ -79,6 +79,8 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
 
     public void Render(PrimitiveType type, int vertexCount)
     {
+        if (!Bound) return;
+
         var dataSize = queuedRenders * commandSize;
         GL.FlushMappedBufferRange(BufferTarget.DrawIndirectBuffer, commandPtrOffset, dataSize);
 

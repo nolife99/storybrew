@@ -91,8 +91,8 @@ public class Button : Widget, Field
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) clickBehavior.Dispose();
         base.Dispose(disposing);
+        if (disposing) clickBehavior.Dispose();
     }
 
     protected override void ApplyStyle(WidgetStyle style)

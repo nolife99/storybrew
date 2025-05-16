@@ -22,13 +22,13 @@ public class ScriptedEffect : Effect
     EffectStatus status = EffectStatus.Initializing;
     string statusMessage;
 
-    double statusStopwatch;
+    long statusStopwatch;
 
     public ScriptedEffect(Project project,
         ScriptContainer<StoryboardObjectGenerator> scriptContainer,
         bool multithreaded = false) : base(project)
     {
-        statusStopwatch = GLFW.GetTime();
+        statusStopwatch = Stopwatch.GetTimestamp();
 
         this.scriptContainer = scriptContainer;
         scriptContainer.OnScriptChanged += scriptContainer_OnScriptChanged;
@@ -147,8 +147,8 @@ public class ScriptedEffect : Effect
 
     void changeStatus(EffectStatus status, string message = null, string log = null)
     {
-        var duration = GLFW.GetTime() - statusStopwatch;
-        if (duration > 0)
+        var duration = Stopwatch.GetElapsedTime(statusStopwatch);
+        if (duration > TimeSpan.Zero)
             switch (this.status)
             {
                 case EffectStatus.Ready:
@@ -156,7 +156,7 @@ public class ScriptedEffect : Effect
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: break;
 
-                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration * 1000:f0}ms"); break;
+                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration.Milliseconds}ms"); break;
             }
 
         this.status = status;
@@ -177,7 +177,7 @@ public class ScriptedEffect : Effect
         StringHelper.StringBuilderPool.Release(statusMessageBuilder);
 
         Program.Schedule(RaiseChanged);
-        statusStopwatch = GLFW.GetTime();
+        statusStopwatch = Stopwatch.GetTimestamp();
     }
 
     string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?

@@ -56,21 +56,21 @@ public static class DrawState
         int width,
         int height)
     {
-        if (GLFW.ExtensionSupported("GL_ARB_debug_output"))
+        if (GLFW.ExtensionSupported("GL_KHR_debug"))
         {
             GL.Enable(EnableCap.DebugOutputSynchronous);
-            GL.Arb.DebugMessageCallback((source, type, _, severity, length, message, _) =>
+            GL.Khr.DebugMessageCallback((source, type, _, severity, length, message, _) =>
                 {
                     var bytes = MemoryMarshal.CreateReadOnlySpan(ref Unsafe.Add(ref Unsafe.NullRef<byte>(), message),
                         length);
 
-                    Span<char> chars = stackalloc char[Encoding.ASCII.GetCharCount(bytes) + 1];
-                    Encoding.ASCII.GetChars(bytes, chars);
+                    Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
+                    Encoding.UTF8.GetChars(bytes, chars);
 
                     var str = StringHelper.StringBuilderPool.Retrieve();
                     str.Append("[OpenGL] ");
                     str.Append(chars);
-                    str.Append('(');
+                    str.Append(" (");
 
                     switch (source)
                     {
@@ -131,7 +131,6 @@ public static class DrawState
 
         UseTextureCompression &= GLFW.ExtensionSupported("GL_EXT_texture_compression_s3tc");
 
-        // glActiveTexture requires opengl 1.3
         maxTextureImageUnits = GL.GetInteger(GetPName.MaxTextureImageUnits);
         maxVertexTextureImageUnits = GL.GetInteger(GetPName.MaxVertexTextureImageUnits);
         maxGeometryTextureImageUnits = GLFW.ExtensionSupported("GL_ARB_geometry_shader4") ?
@@ -286,7 +285,7 @@ public static class DrawState
         return samplerIndexes[0];
     }
 
-    public static void UnbindTexture(int textureId)
+    static void UnbindTexture(int textureId)
     {
         var i = Array.IndexOf(samplerTextureIds, textureId, 0, samplerTextureIds.Length);
         if (i == -1) return;

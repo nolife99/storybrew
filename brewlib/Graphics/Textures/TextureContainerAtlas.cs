@@ -34,8 +34,6 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
 
     public Texture2dRegion Get(string filename)
     {
-        // TODO: Fix the shit performance of this??
-
         PathHelper.WithStandardSeparatorsUnsafe(filename);
         if (textures.TryGetValue(filename, out var texture)) return texture;
 

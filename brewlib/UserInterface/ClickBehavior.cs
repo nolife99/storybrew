@@ -2,7 +2,9 @@
 
 using System;
 using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Common.Input;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Util;
 
 public sealed class ClickBehavior : IDisposable
 {
@@ -13,6 +15,8 @@ public sealed class ClickBehavior : IDisposable
 
     public ClickBehavior(Widget widget)
     {
+        Native.Window.Cursor = MouseCursor.Default;
+
         this.widget = widget;
 
         widget.OnHovered += widget_OnHovered;
@@ -45,6 +49,8 @@ public sealed class ClickBehavior : IDisposable
 
         hovered = e.Hovered;
         if (!disabled) OnStateChanged?.Invoke(this, e);
+
+        Native.Window.Cursor = Hovered ? MouseCursor.PointingHand : MouseCursor.Default;
     }
 
     bool widget_OnClickDown(WidgetEvent evt, MouseButtonEventArgs e)
@@ -78,6 +84,8 @@ public sealed class ClickBehavior : IDisposable
         widget.OnHovered -= widget_OnHovered;
         widget.OnClickDown -= widget_OnClickDown;
         widget.OnClickUp -= widget_OnClickUp;
+
+        Native.Window.Cursor = MouseCursor.Default;
 
         disposed = true;
     }

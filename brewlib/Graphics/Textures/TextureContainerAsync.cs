@@ -70,7 +70,7 @@ public sealed class TextureContainerAsync(ResourceContainer resourceContainer = 
 internal static class TextureUploadQueue
 {
     const int UPLOAD_THREAD_COUNT = 2;
-    static readonly ConcurrentBag<QueuedUpload> queuedUploads = [];
+    static readonly ConcurrentQueue<QueuedUpload> queuedUploads = [];
 
     static readonly PooledList<Thread> threads = new();
     static readonly PooledList<NativeWindow> contexts = new();
@@ -106,7 +106,7 @@ internal static class TextureUploadQueue
 
                 while (!Native.Window.IsExiting)
                 {
-                    if (!queuedUploads.TryTake(out var queued)) continue;
+                    if (!queuedUploads.TryDequeue(out var queued)) continue;
 
                     var filename = queued.FileName;
 
@@ -149,7 +149,7 @@ internal static class TextureUploadQueue
     public static QueuedUpload Queue(string filename, ResourceContainer container, TextureOptions options)
     {
         QueuedUpload toQueue = new(filename, container, options);
-        queuedUploads.Add(toQueue);
+        queuedUploads.Enqueue(toQueue);
         return toQueue;
     }
 

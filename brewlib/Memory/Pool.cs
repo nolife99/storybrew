@@ -6,7 +6,7 @@ using Microsoft.IO;
 
 public sealed class Pool<T>(Action<T> disposer = null) where T : new()
 {
-    readonly IProducerConsumerCollection<T> queue = new ConcurrentQueue<T>();
+    readonly IProducerConsumerCollection<T> queue = new ConcurrentBag<T>();
 
     public T Retrieve()
     {

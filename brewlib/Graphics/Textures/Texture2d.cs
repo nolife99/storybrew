@@ -27,6 +27,7 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         get
         {
             if (bindlessId != -1) return bindlessId;
+            if (!DrawState.BindlessTexturesSupported) throw new InvalidOperationException();
 
             GL.WaitSync(texFence, WaitSyncFlags.None, -1);
             GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(textureId));
@@ -163,6 +164,12 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
+        if (!DrawState.BindlessTexturesSupported)
+        {
+            GL.Finish();
+            return new(textureId, width, height, 0);
+        }
+
         var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
         GL.Flush();
 
@@ -228,6 +235,12 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
 
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
+
+        if (!DrawState.BindlessTexturesSupported)
+        {
+            GL.Finish();
+            return new(textureId, width, height, 0);
+        }
 
         var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
         GL.Flush();

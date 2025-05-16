@@ -4,6 +4,7 @@ using System;
 using System.Numerics;
 using Graphics;
 using Graphics.Drawables;
+using OpenTK.Windowing.Common.Input;
 using SixLabors.ImageSharp;
 using Skinning.Styles;
 using Util;
@@ -46,6 +47,8 @@ public class Textbox : Widget, Field
         OnHovered += (_, e) =>
         {
             hovered = e.Hovered;
+            Native.Window.Cursor = hovered ? MouseCursor.IBeam : MouseCursor.Default;
+
             RefreshStyle();
         };
 
@@ -332,7 +335,11 @@ public class Textbox : Widget, Field
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) cursorLine.Dispose();
+        if (disposing)
+        {
+            cursorLine.Dispose();
+            Native.Window.Cursor = MouseCursor.Default;
+        }
         base.Dispose(disposing);
     }
 }
