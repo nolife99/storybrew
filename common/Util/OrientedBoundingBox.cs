@@ -1,15 +1,15 @@
 ﻿namespace StorybrewCommon.Util;
 
 using System;
-using System.Buffers;
 using System.Numerics;
 using SixLabors.ImageSharp;
 
 #pragma warning disable CS1591
-public readonly ref struct OrientedBoundingBox : IDisposable
+public readonly struct OrientedBoundingBox
 {
-    readonly Vector2[] corners = ArrayPool<Vector2>.Shared.Rent(4), axis = ArrayPool<Vector2>.Shared.Rent(2);
-    readonly float[] origins = ArrayPool<float>.Shared.Rent(4);
+    readonly Vector2 corner0, corner1, corner2, corner3;
+    readonly Vector2 axis0, axis1;
+    readonly float origin0, origin1;
 
     public OrientedBoundingBox(Vector2 position, Vector2 origin, float width, float height, float angle)
     {
@@ -21,69 +21,72 @@ public readonly ref struct OrientedBoundingBox : IDisposable
         var left = unitRight * -origin.X;
         var down = unitUp * -origin.Y;
 
-        corners[0] = position + left + down;
-        corners[1] = position + right + down;
-        corners[2] = position + right + up;
-        corners[3] = position + left + up;
+        corner0 = position + left + down;
+        corner1 = position + right + down;
+        corner2 = position + right + up;
+        corner3 = position + left + up;
 
-        axis[0] = corners[1] - corners[0];
-        axis[1] = corners[3] - corners[0];
-        for (var a = 0; a < 2; ++a)
-        {
-            axis[a] /= axis[a].LengthSquared();
-            origins[a] = Vector2.Dot(corners[0], axis[a]);
-        }
+        axis0 = corner1 - corner0;
+        axis1 = corner3 - corner0;
+
+        axis0 /= axis0.LengthSquared();
+        axis1 /= axis1.LengthSquared();
+
+        origin0 = Vector2.Dot(corner0, axis0);
+        origin1 = Vector2.Dot(corner0, axis1);
     }
 
-    public void Dispose()
-    {
-        ArrayPool<Vector2>.Shared.Return(corners);
-        ArrayPool<Vector2>.Shared.Return(axis);
-        ArrayPool<float>.Shared.Return(origins);
-    }
-
-    public RectangleF GetAABB()
-    {
-        float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
-
-        foreach (var corner in corners)
-        {
-            minX = float.Min(minX, corner.X);
-            maxX = float.Max(maxX, corner.X);
-            minY = float.Min(minY, corner.Y);
-            maxY = float.Max(maxY, corner.Y);
-        }
-
-        return RectangleF.FromLTRB(minX, minY, maxX, maxY);
-    }
+    public RectangleF GetAABB() => RectangleF.FromLTRB(float.Min(float.Min(corner0.X, corner1.X), float.Min(corner2.X, corner3.X)), float.Min(float.Min(corner0.Y, corner1.Y), float.Min(corner2.Y, corner3.Y)), float.Max(float.Max(corner0.X, corner1.X), float.Max(corner2.X, corner3.X)), float.Max(float.Max(corner0.Y, corner1.Y), float.Max(corner2.Y, corner3.Y)));
 
     bool Intersects(ref readonly OrientedBoundingBox other) => intersects1Way(in other) && other.intersects1Way(in this);
 
     public bool Intersects(ref readonly RectangleF other)
     {
-        using OrientedBoundingBox otherBox = new(other.Location, Vector2.Zero, other.Width, other.Height, 0);
-
+        OrientedBoundingBox otherBox = new(new Vector2(other.X, other.Y), Vector2.Zero, other.Width, other.Height, 0);
         return Intersects(in otherBox);
     }
 
     bool intersects1Way(ref readonly OrientedBoundingBox other)
     {
-        for (var a = 0; a < 2; ++a)
         {
-            var axis = this.axis[a];
-            var t = Vector2.Dot(other.corners[0], axis);
+            var axis = axis0;
+            var t = Vector2.Dot(other.corner0, axis);
             var tMin = t;
             var tMax = t;
 
-            for (var c = 1; c < 4; ++c)
-            {
-                t = Vector2.Dot(other.corners[c], axis);
-                if (t < tMin) tMin = t;
-                else if (t > tMax) tMax = t;
-            }
+            t = Vector2.Dot(other.corner1, axis);
+            if (t < tMin) tMin = t;
+            else if (t > tMax) tMax = t;
 
-            var origin = origins[a];
-            if (tMin > 1 + origin || tMax < origin) return false;
+            t = Vector2.Dot(other.corner2, axis);
+            if (t < tMin) tMin = t;
+            else if (t > tMax) tMax = t;
+
+            t = Vector2.Dot(other.corner3, axis);
+            if (t < tMin) tMin = t;
+            else if (t > tMax) tMax = t;
+
+            if (tMin > 1 + origin0 || tMax < origin0) return false;
+        }
+        {
+            var axis = axis1;
+            var t = Vector2.Dot(other.corner0, axis);
+            var tMin = t;
+            var tMax = t;
+
+            t = Vector2.Dot(other.corner1, axis);
+            if (t < tMin) tMin = t;
+            else if (t > tMax) tMax = t;
+
+            t = Vector2.Dot(other.corner2, axis);
+            if (t < tMin) tMin = t;
+            else if (t > tMax) tMax = t;
+
+            t = Vector2.Dot(other.corner3, axis);
+            if (t < tMin) tMin = t;
+            else if (t > tMax) tMax = t;
+
+            if (tMin > 1 + origin1 || tMax < origin1) return false;
         }
 
         return true;

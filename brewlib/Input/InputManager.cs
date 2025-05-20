@@ -85,7 +85,7 @@ public sealed class InputManager : IDisposable
     void window_MouseMove(MouseMoveEventArgs e)
     {
         var pos = e.Position;
-        MousePosition = Unsafe.ReadUnaligned<Vector2>(ref Unsafe.As<float, byte>(ref pos.X));
+        MousePosition = new(pos.X, pos.Y);
 
         handler.OnMouseMove(e);
     }

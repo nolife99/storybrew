@@ -105,7 +105,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         if (frameStats is not null)
         {
             var size = texture.Size * scale;
-            using (OrientedBoundingBox spriteBox = new(position, origin * scale, size.X, size.Y, rotation))
+            OrientedBoundingBox spriteBox = new(position, origin * scale, size.X, size.Y, rotation);
                 if (spriteBox.Intersects(in OsuHitObject.WidescreenStoryboardBounds))
                 {
                     frameStats.EffectiveCommandCount += sprite.CommandCost;

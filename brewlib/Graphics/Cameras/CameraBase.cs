@@ -165,11 +165,8 @@ public abstract class CameraBase : ICamera
 
         Vector2 device = new(2 * (screenCoords.X / viewport.Width) - 1, -2 * (screenCoords.Y / viewport.Height) + 1);
 
-        var nearBase = Vector4.Transform(new Vector4(device, NearPlane, 1), invertedProjectionView);
-        ref var near = ref Unsafe.As<Vector4, Vector3>(ref nearBase);
-
-        var farBase = Vector4.Transform(new Vector4(device, FarPlane, 1), invertedProjectionView);
-        ref var far = ref Unsafe.As<Vector4, Vector3>(ref farBase);
+        var near = Vector4.Transform(new Vector4(device, NearPlane, 1), invertedProjectionView).AsVector3();
+        var far = Vector4.Transform(new Vector4(device, FarPlane, 1), invertedProjectionView).AsVector3();
 
         var direction = Vector3.Normalize(far - near);
         if (direction.Z == 0) return Vector3.Zero;
@@ -191,7 +188,7 @@ public abstract class CameraBase : ICamera
         // TODO Vector3.Project() ?
 
         var transformedPosition = Vector4.Transform(new Vector4(worldCoords, 1), projectionView);
-        var devicePosition = Unsafe.As<Vector4, Vector3>(ref transformedPosition) / float.Abs(transformedPosition.W);
+        var devicePosition = transformedPosition.AsVector3() / float.Abs(transformedPosition.W);
 
         return new((devicePosition.X + 1) * .5f * viewport.Width,
             (-devicePosition.Y + 1) * .5f * viewport.Height,

@@ -804,11 +804,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="size"> The image dimensions of the sprite texture. </param>
     /// <param name="rotation"> The rotation, in radians, of the sprite. </param>
     /// <param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
-    public static bool InScreenBounds(CommandPosition position, CommandScale size, CommandDecimal rotation, OsbOrigin origin)
-    {
-        using OrientedBoundingBox box = new(position, GetOriginVector(origin, size), size.X, size.Y, rotation);
-        return box.Intersects(in OsuHitObject.WidescreenStoryboardBounds);
-    }
+    public static bool InScreenBounds(CommandPosition position, CommandScale size, CommandDecimal rotation, OsbOrigin origin) => new OrientedBoundingBox(position, GetOriginVector(origin, size), size.X, size.Y, rotation).Intersects(in OsuHitObject.WidescreenStoryboardBounds);
 
     /// <summary> Gets the origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
     /// <param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>

@@ -38,11 +38,11 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ProgressBarStyle>(StyleName);
 
-    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<float>(value); }
+    public object FieldValue { get => Value; set => Value = (float)value; }
 
     public event EventHandler OnValueChanged;
 
-    public void SetValueSilent(float value) => this.value = Math.Clamp(value, MinValue, MaxValue);
+    public void SetValueSilent(float val) => value = Math.Clamp(val, MinValue, MaxValue);
 
     protected override void Dispose(bool disposing)
     {

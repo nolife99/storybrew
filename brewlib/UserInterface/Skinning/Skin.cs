@@ -161,8 +161,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             }
         }
 
-        var drawableB = Unsafe.As<Drawable>(Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type")) ??
-            throw new InvalidDataException($"Drawable '{data}' must declare a type")));
+        var drawableB = (Drawable)Activator.CreateInstance(ResolveDrawableType(data.Value<string>("_type")) ??
+            throw new InvalidDataException($"Drawable '{data}' must declare a type"));
 
         parseFields(drawableB, data.Value<TinyObject>(), null, constants);
         return drawableB;
@@ -186,7 +186,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     var styleObject = tinyToken.Value<TinyObject>();
                     try
                     {
-                        var style = Unsafe.As<WidgetStyle>(Activator.CreateInstance(styleType));
+                        var style = (WidgetStyle)Activator.CreateInstance(styleType);
 
                         var parentStyle = defaultStyle;
                         var implicitParentStyleName = getImplicitParentStyleName(styleName);
@@ -339,7 +339,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                     if (value.StartsWith('#')) return Color.ParseHex(value);
 
                     var colorField = typeof(Color).GetField(value);
-                    if (colorField?.FieldType == typeof(Color)) return Unsafe.Unbox<Color>(colorField.GetValue(null));
+                    if (colorField?.FieldType == typeof(Color)) return (Color)colorField.GetValue(null);
                 }
 
                 if (data is TinyArray tinyArray)

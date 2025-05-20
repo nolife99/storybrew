@@ -2,8 +2,7 @@
 
 using Commands;
 
-#pragma warning disable CS1591
-public interface IAnimatedValueBuilder
+internal interface IAnimatedValueBuilder
 {
     void Add(ICommand command);
     void StartDisplayLoop(LoopCommand loopCommand);

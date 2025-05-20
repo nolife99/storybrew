@@ -148,54 +148,7 @@ public class TimelineSlider : Slider
                 actualOpacity);
         }
 
-        // Ticks
-        project.MainBeatmap.ForEachTick(leftTime,
-            rightTime,
-            SnapDivisor,
-            (timingPoint, time, beatCount, tickCount) =>
-            {
-                var tickColor = tickGrey;
-                Vector2 lineSize = new(pixelSize, Bounds.Height * .3f);
-
-                var snap = tickCount % SnapDivisor;
-                if (snap == 0) tickColor = tickWhite;
-                else if (snap * 2 % SnapDivisor == 0)
-                {
-                    lineSize.Y *= .8f;
-                    tickColor = tickRed;
-                }
-                else if (snap * 3 % SnapDivisor == 0)
-                {
-                    lineSize.Y *= .4f;
-                    tickColor = tickViolet;
-                }
-                else if (snap * 4 % SnapDivisor == 0)
-                {
-                    lineSize.Y *= .4f;
-                    tickColor = tickBlue;
-                }
-                else if (snap * 6 % SnapDivisor == 0)
-                {
-                    lineSize.Y *= .4f;
-                    tickColor = tickMagenta;
-                }
-                else if (snap * 8 % SnapDivisor == 0)
-                {
-                    lineSize.Y *= .4f;
-                    tickColor = tickYellow;
-                }
-                else lineSize.Y *= .4f;
-
-                if (snap != 0 ||
-                    tickCount == 0 && timingPoint.OmitFirstBarLine ||
-                    beatCount % timingPoint.BeatPerMeasure != 0)
-                    lineSize.Y *= .5f;
-
-                var tickX = offset.X + Manager.SnapToPixel((time - leftTime) * timeScale);
-                var tickOpacity = tickX > beatmapLabel.TextBounds.Left - 8 ? actualOpacity * .2f : actualOpacity;
-
-                drawLine(drawContext, new(tickX, offset.Y + lineBottomY), lineSize, tickColor, tickOpacity);
-            });
+        drawTicks(drawContext, offset, leftTime, rightTime, timeScale, pixelSize, lineBottomY, actualOpacity);
 
         // HitObjects
         if (project.ShowHitObjects)
@@ -281,6 +234,96 @@ public class TimelineSlider : Slider
     {
         line.Color = color;
         line.Draw(drawContext, Manager.Camera, new(position.X, position.Y, size.X, size.Y), opacity);
+    }
+
+    void drawTicks(DrawContext drawContext, Vector2 offset, float leftTime, float rightTime, float timeScale, float pixelSize, float lineBottomY, float actualOpacity)
+    {
+        var beatmap = project.MainBeatmap;
+
+        var leftTimingPoint = beatmap.GetTimingPointAt(leftTime);
+        using var timingPoints = beatmap.TimingPoints.GetEnumerator();
+
+        if (!timingPoints.MoveNext()) return;
+
+        var timingPoint = timingPoints.Current;
+
+        while (timingPoint is not null)
+        {
+            var nextTimingPoint = timingPoints.MoveNext() ? timingPoints.Current : null;
+            if (timingPoint.Offset < leftTimingPoint.Offset)
+            {
+                timingPoint = nextTimingPoint;
+                continue;
+            }
+
+            if (timingPoint != leftTimingPoint && rightTime + Beatmap.ControlPointLeniency < timingPoint.Offset) break;
+
+            int tickCount = 0, beatCount = 0;
+            var step = Math.Max(1, timingPoint.BeatDuration / SnapDivisor);
+            var sectionStartTime = timingPoint.Offset;
+            var sectionEndTime = Math.Min(nextTimingPoint?.Offset ?? rightTime, rightTime);
+
+            if (timingPoint == leftTimingPoint)
+                while (leftTime < sectionStartTime)
+                {
+                    sectionStartTime -= step;
+                    --tickCount;
+                    if (tickCount % SnapDivisor == 0) --beatCount;
+                }
+
+            for (var time = sectionStartTime; time < sectionEndTime + Beatmap.ControlPointLeniency; time += step)
+            {
+                if (leftTime < time)
+                {
+                    var tickColor = tickGrey;
+                    Vector2 lineSize = new(pixelSize, Bounds.Height * .3f);
+
+                    var snap = tickCount % SnapDivisor;
+                    if (snap == 0) tickColor = tickWhite;
+                    else if (snap * 2 % SnapDivisor == 0)
+                    {
+                        lineSize.Y *= .8f;
+                        tickColor = tickRed;
+                    }
+                    else if (snap * 3 % SnapDivisor == 0)
+                    {
+                        lineSize.Y *= .4f;
+                        tickColor = tickViolet;
+                    }
+                    else if (snap * 4 % SnapDivisor == 0)
+                    {
+                        lineSize.Y *= .4f;
+                        tickColor = tickBlue;
+                    }
+                    else if (snap * 6 % SnapDivisor == 0)
+                    {
+                        lineSize.Y *= .4f;
+                        tickColor = tickMagenta;
+                    }
+                    else if (snap * 8 % SnapDivisor == 0)
+                    {
+                        lineSize.Y *= .4f;
+                        tickColor = tickYellow;
+                    }
+                    else lineSize.Y *= .4f;
+
+                    if (snap != 0 ||
+                        tickCount == 0 && timingPoint.OmitFirstBarLine ||
+                        beatCount % timingPoint.BeatPerMeasure != 0)
+                        lineSize.Y *= .5f;
+
+                    var tickX = offset.X + Manager.SnapToPixel((time - leftTime) * timeScale);
+                    var tickOpacity = tickX > beatmapLabel.TextBounds.Left - 8 ? actualOpacity * .2f : actualOpacity;
+
+                    drawLine(drawContext, new(tickX, offset.Y + lineBottomY), lineSize, tickColor, tickOpacity);
+                }
+
+                if (tickCount % SnapDivisor == 0) ++beatCount;
+                ++tickCount;
+            }
+
+            timingPoint = nextTimingPoint;
+        }
     }
 
     public void Scroll(float direction)

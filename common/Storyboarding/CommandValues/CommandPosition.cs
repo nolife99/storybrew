@@ -74,10 +74,10 @@ using Vector2 = System.Numerics.Vector2;
     public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => left.internalVec / right;
 
     public static implicit operator OpenTK.Mathematics.Vector2(CommandPosition position)
-        => Unsafe.As<CommandPosition, OpenTK.Mathematics.Vector2>(ref position);
+        => new(position.internalVec.X, position.internalVec.Y);
 
     public static implicit operator CommandPosition(OpenTK.Mathematics.Vector2 vector)
-        => Unsafe.As<OpenTK.Mathematics.Vector2, CommandPosition>(ref vector);
+        => new(vector.X, vector.Y);
 
     public static implicit operator CommandPosition(Vector2d vector) => new(vector.X, vector.Y);
     public static implicit operator Vector2d(CommandPosition position) => new(position.X, position.Y);
@@ -85,6 +85,9 @@ using Vector2 = System.Numerics.Vector2;
     public static implicit operator PointF(CommandPosition position) => position.internalVec;
     public static implicit operator CommandPosition(PointF vector) => (Vector2)vector;
 
-    public static implicit operator Vector2(CommandPosition position) => Unsafe.As<CommandPosition, Vector2>(ref position);
-    public static implicit operator CommandPosition(Vector2 vector) => Unsafe.As<Vector2, CommandPosition>(ref vector);
+    public static implicit operator Vector2(CommandPosition position)
+        => new(position.internalVec.X, position.internalVec.Y);
+
+    public static implicit operator CommandPosition(Vector2 vector)
+        => new(vector.X, vector.Y);
 }

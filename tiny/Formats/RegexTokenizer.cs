@@ -47,15 +47,18 @@ public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.D
     {
         readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        public IEnumerable<Match> FindMatches(string input, int priority) => regex.Matches(input)
-            .Select(match => new Match
-            {
-                StartIndex = match.Index,
-                EndIndex = match.Index + match.Length,
-                Priority = priority,
-                Type = matchType,
-                Value = match.Groups.Count > captureGroup ? match.Groups[captureGroup].Value : match.Value
-            });
+        public IEnumerable<Match> FindMatches(string input, int priority)
+        {
+            foreach (System.Text.RegularExpressions.Match match in regex.Matches(input))
+                yield return new()
+                {
+                    StartIndex = match.Index,
+                    EndIndex = match.Index + match.Length,
+                    Priority = priority,
+                    Type = matchType,
+                    Value = match.Groups.Count > captureGroup ? match.Groups[captureGroup].Value : match.Value
+                };
+        }
 
         public override string ToString() => $"regex:{regex}, matchType:{matchType}, captureGroup:{captureGroup}";
 

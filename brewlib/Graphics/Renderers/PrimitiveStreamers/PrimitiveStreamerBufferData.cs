@@ -3,6 +3,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
 
@@ -11,16 +12,14 @@ internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration 
     ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices)
     where TPrimitive : struct
 {
-    byte[] primitiveBuffer;
+    readonly PooledList<TPrimitive> primitiveBuffer = new();
 
-    protected override void internalAddPrimitive(ref readonly TPrimitive primitive) => Unsafe.Add(
-        ref Unsafe.As<byte, TPrimitive>(ref MemoryMarshal.GetArrayDataReference(primitiveBuffer)),
-        totalQueuedPrimitives) = primitive;
+    protected override void internalAddPrimitive(ref readonly TPrimitive primitive) => primitiveBuffer.Add(primitive);
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {
-        var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
-        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, vertexDataSize, primitiveBuffer);
+        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, totalQueuedPrimitives * PrimitiveSize, ref MemoryMarshal.GetReference(primitiveBuffer.Span));
+        primitiveBuffer.Clear();
 
         if (IndexBufferId != -1)
             GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandPtrOffset, queuedRenders, 0);
@@ -32,10 +31,6 @@ internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration 
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
-
-        var vertexBufferSize = MaxPrimitivesPerBatch * PrimitiveSize;
-
-        primitiveBuffer = GC.AllocateUninitializedArray<byte>(vertexBufferSize);
-        GL.BufferStorage(BufferTarget.ArrayBuffer, vertexBufferSize, 0, BufferStorageFlags.DynamicStorageBit);
+        GL.BufferStorage(BufferTarget.ArrayBuffer, MaxPrimitivesPerBatch * PrimitiveSize, 0, BufferStorageFlags.DynamicStorageBit);
     }
 }

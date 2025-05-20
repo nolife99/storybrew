@@ -123,7 +123,7 @@ public class LayerManager
     void layer_OnChanged(object sender, ChangedEventArgs e)
     {
         if (e.PropertyName is null or nameof(EditorStoryboardLayer.OsbLayer) or nameof(EditorStoryboardLayer.DiffSpecific))
-            sortLayer(Unsafe.As<EditorStoryboardLayer>(sender));
+            sortLayer((EditorStoryboardLayer)sender);
     }
 
     void sortLayer(EditorStoryboardLayer layer)

@@ -5,13 +5,10 @@ using System.IO;
 using Commands;
 using CommandValues;
 
-#pragma warning disable CS1591
-public class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTime, float repeatDuration, int repeats)
+internal class LoopDecorator<TValue>(ITypedCommand<TValue> command, float startTime, float repeatDuration, int repeats)
     : ITypedCommand<TValue> where TValue : CommandValue
 {
-    public float Duration => EndTime - StartTime;
     public float RepeatDuration => repeatDuration < 0 ? command.EndTime : repeatDuration;
-    public OsbEasing Easing => throw new InvalidOperationException();
     public float StartTime => startTime;
     public float EndTime => StartTime + RepeatDuration * repeats;
     public TValue StartValue => command.StartValue;

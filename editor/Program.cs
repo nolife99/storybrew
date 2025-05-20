@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
+using OpenTK.Core;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -184,7 +185,7 @@ public static class Program
             var active = (float)GLFW.GetTime() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
+            if (sleepTime > 0) Utils.AccurateSleep(sleepTime, 8);
 
             var frameTime = cur - prev;
             prev = cur;

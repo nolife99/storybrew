@@ -16,7 +16,7 @@ public class TextLayout : IDisposable
         var width = 0f;
         var height = 0f;
 
-        foreach (var (start, length) in LineBreaker.Split(text, float.Ceiling(maxSize.X), c => font.GetGlyph(c).Width))
+        foreach (var (start, length) in LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).Width))
         {
             TextLayoutLine line = new(this, height, alignment, _lines.Count == 0);
             foreach (var c in text.AsSpan(start, length)) line.Add(font.GetGlyph(c), glyphIndex++);

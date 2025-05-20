@@ -60,7 +60,7 @@ public abstract class TinyToken
             case IDictionary dictionary:
             {
                 TinyObject o = [];
-                foreach (var key in dictionary.Keys) o.Add(Unsafe.As<string>(key), ToToken(dictionary[key]));
+                foreach (var key in dictionary.Keys) o.Add((string)key, ToToken(dictionary[key]));
                 return o;
             }
 

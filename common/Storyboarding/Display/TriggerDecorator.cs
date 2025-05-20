@@ -5,8 +5,7 @@ using System.IO;
 using Commands;
 using CommandValues;
 
-#pragma warning disable CS1591
-public class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCommand<TValue> where TValue : CommandValue
+internal class TriggerDecorator<TValue>(ITypedCommand<TValue> command) : ITypedCommand<TValue> where TValue : CommandValue
 {
     float triggerTime;
     public TValue StartValue => command.StartValue;

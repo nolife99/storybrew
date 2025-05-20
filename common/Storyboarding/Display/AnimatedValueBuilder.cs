@@ -4,11 +4,12 @@ using System;
 using Commands;
 using CommandValues;
 
-#pragma warning disable CS1591
-public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimatedValueBuilder where TValue : CommandValue
+internal class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimatedValueBuilder where TValue : CommandValue
 {
     CompositeCommand<TValue> composite;
-    Func<ITypedCommand<TValue>, ITypedCommand<TValue>> decorate;
+    LoopCommand _loopCommand;
+
+    Func<LoopCommand, ITypedCommand<TValue>, ITypedCommand<TValue>> decorate;
     public void Add(ICommand command) => Add(command as Command<TValue>);
 
     public void StartDisplayLoop(LoopCommand loopCommand)
@@ -16,16 +17,17 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
         if (composite is not null)
             throw new InvalidOperationException("Cannot start loop: already inside a loop or trigger");
 
-        decorate = command =>
+        _loopCommand = loopCommand;
+        decorate = (loop, command) =>
         {
-            if (loopCommand.CommandsStartTime != 0)
+            if (loop.CommandsStartTime != 0)
                 throw new InvalidOperationException(
-                    $"Commands in a loop must start at 0ms, but start at {loopCommand.CommandsStartTime}ms");
+                    $"Commands in a loop must start at 0ms, but start at {loop.CommandsStartTime}ms");
 
             return new LoopDecorator<TValue>(command,
-                loopCommand.StartTime,
-                loopCommand.CommandsDuration,
-                loopCommand.LoopCount);
+                loop.StartTime,
+                loop.CommandsDuration,
+                loop.LoopCount);
         };
 
         composite = new();
@@ -36,7 +38,7 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
         if (composite is not null)
             throw new InvalidOperationException("Cannot start trigger: already inside a loop or trigger");
 
-        decorate = command => new TriggerDecorator<TValue>(command);
+        decorate = (_, command) => new TriggerDecorator<TValue>(command);
         composite = new();
     }
 
@@ -44,7 +46,7 @@ public class AnimatedValueBuilder<TValue>(AnimatedValue<TValue> value) : IAnimat
     {
         if (composite is null) throw new InvalidOperationException("Cannot complete loop or trigger: Not inside one");
 
-        if (composite.HasCommands) value.Add(decorate(composite));
+        if (composite.HasCommands) value.Add(decorate(_loopCommand, composite));
 
         composite = null;
         decorate = null;

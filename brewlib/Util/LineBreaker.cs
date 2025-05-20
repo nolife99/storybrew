@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using Graphics.Text;
 
 public static class LineBreaker
 {
@@ -180,11 +181,11 @@ public static class LineBreaker
         0x0085 // NEXT LINE
     ];
 
-    public static IEnumerable<(int Start, int Length)> Split(string text, float maxWidth, Func<char, int> measure)
+    public static IEnumerable<(int Start, int Length)> Split(string text, TextFont font, float maxWidth, Func<char, TextFont, int> measure)
     {
         for (int i = 0, startIndex = 0, lineWidth = 0; i < text.Length; ++i)
         {
-            var characterWidth = measure(text[i]);
+            var characterWidth = measure(text[i], font);
 
             if (maxWidth > 0 && i > startIndex && lineWidth + characterWidth > maxWidth)
             {

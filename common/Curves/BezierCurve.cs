@@ -45,8 +45,11 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
 
         using var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
 
-        Span<Vector2> subdivisionBuffer1 = stackalloc Vector2[degree + 1];
-        Span<Vector2> subdivisionBuffer2 = stackalloc Vector2[degree * 2 + 1];
+        using var subBuffer1 = Configuration.Default.MemoryAllocator.Allocate<Vector2>(degree + 1);
+        using var subBuffer2 = Configuration.Default.MemoryAllocator.Allocate<Vector2>(degree * 2 + 1);
+
+        var subdivisionBuffer1 = subBuffer1.Memory.Span;
+        var subdivisionBuffer2 = subBuffer2.Memory.Span;
 
         while (toFlatten.Count > 0)
         {
@@ -116,9 +119,8 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
 
             result.Push(memoryOwner);
 
-            var old = result;
+            using var old = result;
             result = new(old);
-            old.Dispose();
         }
 
         return result;

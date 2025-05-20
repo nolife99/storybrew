@@ -1,6 +1,7 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System.IO;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
@@ -101,20 +102,16 @@ using Vector4 = System.Numerics.Vector4;
     public static implicit operator Color4(CommandColor obj)
         => new(obj.internalVec.X, obj.internalVec.Y, obj.internalVec.Z, 1);
 
-    public static implicit operator CommandColor(Color4 obj) => Unsafe.As<Color4, CommandColor>(ref obj);
+    public static implicit operator CommandColor(Color4 obj) => new(obj.R, obj.G, obj.B);
     public static implicit operator Rgba32(CommandColor obj) => new(obj.internalVec);
-    public static implicit operator CommandColor(Rgba32 obj) => new Vector3(obj.R, obj.G, obj.B) / 255;
+    public static implicit operator CommandColor(Rgba32 obj) => obj.ToVector4().AsVector3();
     public static implicit operator Color(CommandColor obj) => Color.FromScaledVector(new Vector4(obj.internalVec, 1));
 
-    public static implicit operator CommandColor(Color obj)
-    {
-        var rgba = obj.ToScaledVector4();
-        return Unsafe.As<Vector4, CommandColor>(ref rgba);
-    }
+    public static implicit operator CommandColor(Color obj) => obj.ToScaledVector4().AsVector3();
 
     public static implicit operator CommandColor(string hexCode) => FromHtml(hexCode);
-    public static implicit operator Vector3(CommandColor obj) => Unsafe.As<CommandColor, Vector3>(ref obj);
-    public static implicit operator CommandColor(Vector3 obj) => Unsafe.As<Vector3, CommandColor>(ref obj);
+    public static implicit operator Vector3(CommandColor obj) => obj.internalVec;
+    public static implicit operator CommandColor(Vector3 obj) => new(obj.X, obj.Y, obj.Z);
 
     public static CommandColor operator +(CommandColor left, CommandColor right) => left.internalVec + right.internalVec;
     public static CommandColor operator -(CommandColor left, CommandColor right) => left.internalVec - right.internalVec;

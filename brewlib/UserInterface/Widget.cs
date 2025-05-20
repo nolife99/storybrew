@@ -263,8 +263,13 @@ public class Widget(WidgetManager manager) : IDisposable
         return Parent == widget || Parent.HasAncestor(widget);
     }
 
-    public bool HasDescendant(Widget widget) => children.Exists(c => c == widget || c.HasDescendant(widget));
-
+    public bool HasDescendant(Widget widget)
+    {
+        foreach (var child in children)
+            if (child == widget || child.HasDescendant(widget))
+                return true;
+        return false;
+    }
     #endregion
 
     #region Placement

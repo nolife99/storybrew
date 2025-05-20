@@ -12,7 +12,7 @@ public class AnimatedValue<TValue> where TValue : CommandValue
     readonly PooledList<ITypedCommand<TValue>> commands = new();
     public AnimatedValue() { }
     public AnimatedValue(TValue defaultValue) => DefaultValue = defaultValue;
-    public IReadOnlyList<ITypedCommand<TValue>> Commands => commands;
+    public IReadOnlyPooledList<ITypedCommand<TValue>> Commands => commands;
     public TValue DefaultValue { get; internal set; }
     public bool HasCommands => commands.Count > 0;
     public bool HasOverlap { get; private set; }

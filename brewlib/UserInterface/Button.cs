@@ -78,7 +78,7 @@ public class Button : Widget, Field
         clickBehavior.Hovered ? "hover" : null,
         clickBehavior.Pressed || isChecked ? "pressed" : null));
 
-    public object FieldValue { get => Checked; set => Checked = Unsafe.Unbox<bool>(value); }
+    public object FieldValue { get => Checked; set => Checked = (bool)value; }
 
     public event EventHandler OnValueChanged;
     public event EventHandler<MouseButton> OnClick;

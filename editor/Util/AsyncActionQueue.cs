@@ -108,12 +108,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
             context.Signal();
 
             if (await localThread.WaitAsync(TimeSpan.FromMilliseconds(400)).ContinueWith(t => t.IsFaulted))
-            {
                 await tokenSrc.CancelAsync();
-                await localThread;
-            }
 
-            localThread.Dispose();
             tokenSrc.Dispose();
         }
 

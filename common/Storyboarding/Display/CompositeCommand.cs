@@ -5,10 +5,8 @@ using System.IO;
 using Commands;
 using CommandValues;
 
-#pragma warning disable CS1591
-public class CompositeCommand<TValue> : AnimatedValue<TValue>, ITypedCommand<TValue> where TValue : CommandValue
+internal class CompositeCommand<TValue> : AnimatedValue<TValue>, ITypedCommand<TValue> where TValue : CommandValue
 {
-    public OsbEasing Easing => throw new InvalidOperationException();
     public bool Active => true;
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 

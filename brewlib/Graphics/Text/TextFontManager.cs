@@ -19,12 +19,12 @@ public sealed class TextFontManager(TextureContainer container) : IDisposable
         else references[identifier] = 1;
 
         return new TextFontProxy(font,
-            () =>
+            f =>
             {
                 if (--references[identifier] != 0) return;
 
                 fonts.Remove(identifier);
-                font.Dispose();
+                f.Dispose();
             });
     }
 
