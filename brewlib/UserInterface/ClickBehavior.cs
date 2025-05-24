@@ -85,7 +85,7 @@ public sealed class ClickBehavior : IDisposable
         widget.OnClickDown -= widget_OnClickDown;
         widget.OnClickUp -= widget_OnClickUp;
 
-        Native.Window.Cursor = MouseCursor.Default;
+        if (hovered) Native.Window.Cursor = MouseCursor.Default;
 
         disposed = true;
     }

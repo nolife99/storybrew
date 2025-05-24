@@ -557,8 +557,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
             warningsLabel.Text = buildWarningMessage();
             warningsLabel.Displayed = warningsLabel.Text.Length != 0;
-            warningsLabel.Pack(600);
-            warningsLabel.Pack();
+
+            warningsLabel.Pack(650, recursive: false);
+            warningsLabel.Pack(height: warningsLabel.Height, recursive: false);
         }
 
         if (timeSource.Playing && storyboardDrawable.Time < time) proj.TriggerEvents(storyboardDrawable.Time, time);
@@ -579,6 +580,19 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             warnings.Append(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites\n");
         else if (activeSprites >= 1500)
             warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {activeSprites:n0} Sprites\n");
+
+        if (stats.ProlongedSprites.Count != 0)
+        {
+            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {stats.ProlongedSprites.Count:n0} Prolonged Sprites");
+            if (proj.DisplayDebugWarning)
+            {
+                warnings.Append(" (");
+                warnings.AppendJoin(", ", stats.ProlongedSprites.Select(s => s.TexturePath));
+                warnings.Append(')');
+            }
+
+            warnings.Append('\n');
+        }
 
         var batches = proj.FrameStats.Batches;
         if (proj.DisplayDebugWarning && batches < 500)
@@ -625,12 +639,29 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         if (stats.OverlappedSprites.Count != 0)
         {
-            warnings.Append("\ue002 Overlapped Commands (");
-            warnings.AppendJoin(", ", stats.OverlappedSprites.Select(s => s.TexturePath));
-            warnings.Append(")\n");
+            warnings.Append("\ue002 Overlapped Commands");
+            if (proj.DisplayDebugWarning)
+            {
+                warnings.Append(" (");
+                warnings.AppendJoin(", ", stats.OverlappedSprites.Select(s => s.TexturePath));
+                warnings.Append(')');
+            }
+
+            warnings.Append('\n');
         }
 
-        if (stats.IncompatibleCommands) warnings.Append("\ue002 Incompatible Commands");
+        if (stats.IncompatibleSprites.Count != 0)
+        {
+            warnings.Append("\ue002 Incompatible Commands");
+            if (proj.DisplayDebugWarning)
+            {
+                warnings.Append(" (");
+                warnings.AppendJoin(", ", stats.IncompatibleSprites.Select(s => s.TexturePath));
+                warnings.Append(')');
+            }
+
+            warnings.Append('\n');
+        }
 
         var str = warnings.TrimEnd().ToString();
         StringHelper.StringBuilderPool.Release(warnings);

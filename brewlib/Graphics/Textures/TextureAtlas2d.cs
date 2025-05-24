@@ -1,10 +1,8 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using System.Collections.Generic;
 using Collections.Pooled;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 
 public sealed class TextureAtlas2d(int width,
@@ -62,8 +60,7 @@ public sealed class TextureAtlas2d(int width,
 
     void MergeRectangles()
     {
-        if (_freeRegions.Count <= 1)
-            return;
+        if (_freeRegions.Count <= 1) return;
 
         _freeRegions.Sort((a, b) => a.Y == b.Y ? a.X.CompareTo(b.X) : a.Y.CompareTo(b.Y));
 
@@ -94,9 +91,11 @@ public sealed class TextureAtlas2d(int width,
                     _freeRegions.RemoveAt(j);
                     break;
                 }
+
                 if (merged) break;
             }
-        } while (merged);
+        }
+        while (merged);
     }
 
     class Texture2dAtlasRegion(Texture2d texture, Rectangle bounds, TextureAtlas2d parent) : Texture2dRegion(texture, bounds)

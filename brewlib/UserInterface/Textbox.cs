@@ -338,8 +338,9 @@ public class Textbox : Widget, Field
         if (disposing)
         {
             cursorLine.Dispose();
-            Native.Window.Cursor = MouseCursor.Default;
+            if (hovered) Native.Window.Cursor = MouseCursor.Default;
         }
+
         base.Dispose(disposing);
     }
 }

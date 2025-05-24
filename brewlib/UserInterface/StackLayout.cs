@@ -41,7 +41,7 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<StackLayoutStyle>(StyleName);
 
-    public override void InvalidateLayout()
+    protected override void InvalidateLayout()
     {
         base.InvalidateLayout();
         invalidSizes = true;

@@ -64,7 +64,8 @@ public class CatmullCurve(Vector2[] points) : BaseCurve
             (2 * vec2.X +
                 (-vec1.X + vec3.X) * t +
                 (2 * vec1.X - 5 * vec2.X + 4 * vec3.X - vec4.X) * t2 +
-                (-vec1.X + 3f * vec2.X - 3f * vec3.X + vec4.X) * t3), .5f *
+                (-vec1.X + 3f * vec2.X - 3f * vec3.X + vec4.X) * t3),
+            .5f *
             (2 * vec2.Y +
                 (-vec1.Y + vec3.Y) * t +
                 (2 * vec1.Y - 5 * vec2.Y + 4 * vec3.Y - vec4.Y) * t2 +

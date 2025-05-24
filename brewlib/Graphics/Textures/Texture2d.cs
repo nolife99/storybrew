@@ -27,6 +27,7 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         get
         {
             if (bindlessId != -1) return bindlessId;
+
             if (!DrawState.BindlessTexturesSupported) throw new InvalidOperationException();
 
             GL.WaitSync(texFence, WaitSyncFlags.None, -1);

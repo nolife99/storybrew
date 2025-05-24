@@ -13,7 +13,7 @@ public static class StringHelper
     static readonly string[] sizeOrders = ["b", "kb", "mb", "gb", "tb"];
     static readonly string utf8Bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
 
-    public static readonly Pool<StringBuilder> StringBuilderPool = new(obj => obj.Clear());
+    public static readonly Pool<StringBuilder> StringBuilderPool = new(obj => obj.Length = 0);
 
     public static string ToByteSize(float byteCount, string format = "{0:0.##} {1}")
     {

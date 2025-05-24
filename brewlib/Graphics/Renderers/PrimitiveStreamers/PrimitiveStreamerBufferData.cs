@@ -1,7 +1,6 @@
 ﻿namespace BrewLib.Graphics.Renderers.PrimitiveStreamers;
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
@@ -18,7 +17,11 @@ internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration 
 
     protected override void internalRender(PrimitiveType type, int vertexCount)
     {
-        GL.BufferSubData(BufferTarget.ArrayBuffer, 0, totalQueuedPrimitives * PrimitiveSize, ref MemoryMarshal.GetReference(primitiveBuffer.Span));
+        GL.BufferSubData(BufferTarget.ArrayBuffer,
+            0,
+            totalQueuedPrimitives * PrimitiveSize,
+            ref MemoryMarshal.GetReference(primitiveBuffer.Span));
+
         primitiveBuffer.Clear();
 
         if (IndexBufferId != -1)
@@ -31,6 +34,9 @@ internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration 
     protected override void initializeVertexBuffer()
     {
         base.initializeVertexBuffer();
-        GL.BufferStorage(BufferTarget.ArrayBuffer, MaxPrimitivesPerBatch * PrimitiveSize, 0, BufferStorageFlags.DynamicStorageBit);
+        GL.BufferStorage(BufferTarget.ArrayBuffer,
+            MaxPrimitivesPerBatch * PrimitiveSize,
+            0,
+            BufferStorageFlags.DynamicStorageBit);
     }
 }

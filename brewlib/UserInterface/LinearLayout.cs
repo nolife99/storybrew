@@ -102,7 +102,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         Spacing = layoutStyle.Spacing;
     }
 
-    public override void InvalidateLayout()
+    protected override void InvalidateLayout()
     {
         base.InvalidateLayout();
         invalidSizes = true;

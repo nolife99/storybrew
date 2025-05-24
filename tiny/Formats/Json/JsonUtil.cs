@@ -1,29 +1,22 @@
 ﻿namespace Tiny.Formats.Json;
 
-using System.Text;
-
-public class JsonUtil
+public static class JsonUtil
 {
-    public static string UnescapeString(string value)
-    {
-        var special = false;
-
-        StringBuilder sb = new(value.Length);
-        foreach (var c in value)
-            if (special)
+    public static string UnescapeString(string value) => string.Create(value.Length,
+        value,
+        (span, state) =>
+        {
+            var special = false;
+            for (var i = 0; i < state.Length; ++i)
             {
-                switch (c)
+                var c = state[i];
+                if (special)
                 {
-                    case 'r': sb.Append('\r'); break;
-                    case 'n': sb.Append('\n'); break;
-                    default: sb.Append(c); break;
+                    span[i] = c switch { 'r' => '\r', 'n' => '\n', _ => c };
+                    special = false;
                 }
-
-                special = false;
+                else if (c == '\\') special = true;
+                else span[i] = c;
             }
-            else if (c == '\\') special = true;
-            else sb.Append(c);
-
-        return sb.ToString();
-    }
+        });
 }

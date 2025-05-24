@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Collections.Pooled;
 using Graphics;
@@ -103,7 +102,8 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
         DisableGamepadEvents(widget);
 
-        foreach (var key in clickTargets.Keys)
+        using var buttons = clickTargets.Keys.ToPooledList();
+        foreach (var key in buttons)
             if (clickTargets[key] == widget)
                 clickTargets.Remove(key);
     }
@@ -242,7 +242,17 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     Widget hoveredDraggableWidget;
     readonly PooledDictionary<MouseButton, object> dragData = [];
 
-    public bool IsDragging => dragData.Values.Any(v => v is not null);
+    public bool IsDragging
+    {
+        get
+        {
+            foreach (var v in dragData)
+                if (v.Value is not null)
+                    return true;
+
+            return false;
+        }
+    }
 
     void startDragAndDrop(MouseButton button)
     {
@@ -369,9 +379,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         ObjectDisposedException.ThrowIf(target.IsDisposed, target);
 
         WidgetEvent widgetEvent = new(relatedTarget) { Listener = target };
-        if (notify(target, widgetEvent)) return widgetEvent;
-
-        if (!bubbles) return widgetEvent;
+        if (notify(target, widgetEvent) || !bubbles) return widgetEvent;
 
         for (var ancestor = target.Parent; ancestor is not null; ancestor = ancestor.Parent)
         {

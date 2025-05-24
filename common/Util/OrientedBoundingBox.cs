@@ -1,6 +1,5 @@
 ﻿namespace StorybrewCommon.Util;
 
-using System;
 using System.Numerics;
 using SixLabors.ImageSharp;
 
@@ -36,7 +35,11 @@ public readonly struct OrientedBoundingBox
         origin1 = Vector2.Dot(corner0, axis1);
     }
 
-    public RectangleF GetAABB() => RectangleF.FromLTRB(float.Min(float.Min(corner0.X, corner1.X), float.Min(corner2.X, corner3.X)), float.Min(float.Min(corner0.Y, corner1.Y), float.Min(corner2.Y, corner3.Y)), float.Max(float.Max(corner0.X, corner1.X), float.Max(corner2.X, corner3.X)), float.Max(float.Max(corner0.Y, corner1.Y), float.Max(corner2.Y, corner3.Y)));
+    public RectangleF GetAABB() => RectangleF.FromLTRB(
+        float.Min(float.Min(corner0.X, corner1.X), float.Min(corner2.X, corner3.X)),
+        float.Min(float.Min(corner0.Y, corner1.Y), float.Min(corner2.Y, corner3.Y)),
+        float.Max(float.Max(corner0.X, corner1.X), float.Max(corner2.X, corner3.X)),
+        float.Max(float.Max(corner0.Y, corner1.Y), float.Max(corner2.Y, corner3.Y)));
 
     bool Intersects(ref readonly OrientedBoundingBox other) => intersects1Way(in other) && other.intersects1Way(in this);
 
@@ -68,6 +71,7 @@ public readonly struct OrientedBoundingBox
 
             if (tMin > 1 + origin0 || tMax < origin0) return false;
         }
+
         {
             var axis = axis1;
             var t = Vector2.Dot(other.corner0, axis);

@@ -2,7 +2,6 @@
 
 using System;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;

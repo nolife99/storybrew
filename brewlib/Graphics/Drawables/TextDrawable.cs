@@ -50,7 +50,7 @@ public sealed class TextDrawable : Drawable
         get => text;
         set
         {
-            if (text == value) return;
+            if (text is not null && text.Equals(value, StringComparison.Ordinal)) return;
 
             text = value;
             invalidate();

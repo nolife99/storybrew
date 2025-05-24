@@ -49,7 +49,9 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         {
             ++frameStats.SpriteCount;
             frameStats.CommandCount += sprite.CommandCost;
-            frameStats.IncompatibleCommands |= sprite.HasIncompatibleCommands;
+
+            if (!sprite.ShouldBeActive(time)) frameStats.ProlongedSprites.Add(sprite);
+            if (sprite.HasIncompatibleCommands) frameStats.IncompatibleSprites.Add(sprite);
             if (sprite.HasOverlappedCommands) frameStats.OverlappedSprites.Add(sprite);
         }
 
@@ -57,7 +59,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         if (fade < .00001f) return;
 
         var scale = (Vector2)sprite.ScaleAt(time);
-        if (scale == default) return;
+        if (scale.X == 0 || scale.Y == 0) return;
 
         Span<char> span = stackalloc char[project.MapsetPath.Length + texturePath.Length + 1];
         Path.TryJoin(project.MapsetPath, texturePath, span, out _);
@@ -106,20 +108,20 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         {
             var size = texture.Size * scale;
             OrientedBoundingBox spriteBox = new(position, origin * scale, size.X, size.Y, rotation);
-                if (spriteBox.Intersects(in OsuHitObject.WidescreenStoryboardBounds))
-                {
-                    frameStats.EffectiveCommandCount += sprite.CommandCost;
+            if (spriteBox.Intersects(in OsuHitObject.WidescreenStoryboardBounds))
+            {
+                frameStats.EffectiveCommandCount += sprite.CommandCost;
 
-                    var aabb = spriteBox.GetAABB();
-                    var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);
+                var aabb = spriteBox.GetAABB();
+                var intersection = RectangleF.Intersect(aabb, OsuHitObject.WidescreenStoryboardBounds);
 
-                    var intersectionArea =
-                        size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
+                var intersectionArea =
+                    size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
 
-                    if (float.IsFinite(intersectionArea))
-                        frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
-                            OsuHitObject.WidescreenStoryboardArea;
-                }
+                if (float.IsFinite(intersectionArea))
+                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
+                        OsuHitObject.WidescreenStoryboardArea;
+            }
 
             if (frameStats.LastTexture != fullPath)
             {

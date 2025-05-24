@@ -253,7 +253,8 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public void ClearWidgets()
     {
-        foreach (var child in children.ToArray()) child.Dispose();
+        using var state = children.ToPooledList();
+        foreach (var child in state) child.Dispose();
     }
 
     public bool HasAncestor(Widget widget)
@@ -268,8 +269,10 @@ public class Widget(WidgetManager manager) : IDisposable
         foreach (var child in children)
             if (child == widget || child.HasDescendant(widget))
                 return true;
+
         return false;
     }
+
     #endregion
 
     #region Placement
@@ -405,12 +408,12 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public Vector2 DefaultSize { get; init; }
 
-    bool canGrow = true;
+    readonly bool canGrow = true;
 
     public bool CanGrow
     {
         get => canGrow;
-        set
+        init
         {
             if (canGrow == value) return;
 
@@ -419,11 +422,11 @@ public class Widget(WidgetManager manager) : IDisposable
         }
     }
 
-    public bool NeedsLayout { get; private set; } = true;
+    protected bool NeedsLayout { get; private set; } = true;
 
-    public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
+    public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0, bool recursive = true)
     {
-        while (true)
+        do
         {
             var preferredSize = PreferredSize;
 
@@ -436,27 +439,27 @@ public class Widget(WidgetManager manager) : IDisposable
             if (maxHeight > 0 && newSize.Y > maxHeight) newSize.Y = maxHeight;
             Size = newSize;
 
-            // Flow layouts and labels don't know their height until they know their width
             manager.RefreshAnchors();
             if (preferredSize != PreferredSize) continue;
 
             break;
         }
+        while (recursive);
     }
 
-    public void InvalidateAncestorLayout()
+    protected void InvalidateAncestorLayout()
     {
         InvalidateLayout();
         Parent?.InvalidateAncestorLayout();
     }
 
-    public virtual void InvalidateLayout()
+    protected virtual void InvalidateLayout()
     {
         NeedsLayout = true;
         manager.InvalidateAnchors();
     }
 
-    public void ValidateLayout()
+    void ValidateLayout()
     {
         if (!NeedsLayout) return;
 

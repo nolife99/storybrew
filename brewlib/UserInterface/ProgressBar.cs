@@ -2,7 +2,6 @@
 
 using System;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using Graphics;
 using Graphics.Drawables;
 using Skinning.Styles;

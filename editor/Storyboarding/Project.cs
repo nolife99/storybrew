@@ -165,8 +165,11 @@ public sealed partial class Project : IDisposable
     {
         obj.LoadedPaths.Clear();
         obj.OverlappedSprites.Clear();
+        obj.IncompatibleSprites.Clear();
+        obj.ProlongedSprites.Clear();
+
         obj.GpuPixelsFrame = 0;
-        obj.LastBlendingMode = obj.IncompatibleCommands = false;
+        obj.LastBlendingMode = false;
 
         obj.LastTexture = null;
         obj.ScreenFill = 0;

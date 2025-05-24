@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Frozen;
-using System.Collections.Generic;
+using Collections.Pooled;
 using Graphics.Text;
 
 public static class LineBreaker
@@ -181,8 +181,9 @@ public static class LineBreaker
         0x0085 // NEXT LINE
     ];
 
-    public static IEnumerable<(int Start, int Length)> Split(string text, TextFont font, float maxWidth, Func<char, TextFont, int> measure)
+    public static PooledList<(int, int)> Split(string text, TextFont font, float maxWidth, Func<char, TextFont, int> measure)
     {
+        PooledList<(int, int)> list = new();
         for (int i = 0, startIndex = 0, lineWidth = 0; i < text.Length; ++i)
         {
             var characterWidth = measure(text[i], font);
@@ -191,7 +192,7 @@ public static class LineBreaker
             {
                 i = findBreakIndex(text, startIndex, i);
 
-                yield return (startIndex, i - startIndex + 1);
+                list.Add((startIndex, i - startIndex + 1));
 
                 startIndex = i + 1;
                 i = startIndex;
@@ -202,7 +203,7 @@ public static class LineBreaker
 
             if (!mustBreakAfter(text, i)) continue;
 
-            yield return (startIndex, i - startIndex + 1);
+            list.Add((startIndex, i - startIndex + 1));
 
             startIndex = i + 1;
             i = startIndex;
@@ -211,7 +212,8 @@ public static class LineBreaker
             --i;
         }
 
-        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) yield return (0, 0);
+        if (text.Length > 0 && mustBreakAfter(text, text.Length - 1, true)) list.Add((0, 0));
+        return list;
     }
 
     static int findBreakIndex(ReadOnlySpan<char> text, int startIndex, int endIndex)

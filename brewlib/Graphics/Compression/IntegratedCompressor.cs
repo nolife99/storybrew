@@ -26,15 +26,14 @@ public class IntegratedCompressor : ImageCompressor
         var path = GetUtility();
         ensureTool();
 
+        ProcessStartInfo info = new(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+        {
+            CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
+        };
+
         tasks.Add(Task.Run(async () =>
         {
-            using var localProc = Process.Start(
-                new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
-                {
-                    CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(UtilityPath),
-                    RedirectStandardError = true
-                });
+            using var localProc = Process.Start(info);
 
             using (var errorStream = localProc.StandardError)
             {

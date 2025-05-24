@@ -4,12 +4,16 @@ using System.IO;
 
 public class JsonFormat : Format<JsonTokenType>
 {
-    public const string BooleanTrue = "true", BooleanFalse = "false";
-
     static readonly RegexTokenizer<JsonTokenType>.Definition[] definitions =
     [
-        new(JsonTokenType.PropertyQuoted, @"""((?:[^""\\]|\\.)*)"" *:"),
-        new(JsonTokenType.WordQuoted, @"""((?:[^""\\]|\\.)*)"""),
+        new(JsonTokenType.PropertyQuoted,
+            """
+            "((?:[^"\\]|\\.)*)" *:
+            """),
+        new(JsonTokenType.WordQuoted,
+            """
+            "((?:[^"\\]|\\.)*)"
+            """),
         new(JsonTokenType.ObjectStart, "{"),
         new(JsonTokenType.ObjectEnd, "}"),
         new(JsonTokenType.ArrayStart, "\\["),

@@ -7,19 +7,33 @@ using System.Text;
 using Animations;
 using BrewLib.Util;
 using CommandValues;
+using Display;
 
 #pragma warning disable CS1591
-public abstract record Command<TValue>(string identifier,
-    OsbEasing easing,
-    float startTime,
-    float endTime,
-    TValue startValue,
-    TValue endValue) : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable where TValue : CommandValue
+public abstract record Command<TValue> : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable
+    where TValue : struct, CommandValue
 {
-    public OsbEasing Easing { get; set; } = easing;
+    readonly string identifier;
+
+    protected internal Command(string identifier,
+        OsbEasing easing,
+        float startTime,
+        float endTime,
+        TValue startValue,
+        TValue endValue)
+    {
+        this.identifier = identifier;
+        Easing = easing;
+        StartTime = startTime;
+        EndTime = endTime;
+        StartValue = startValue;
+        EndValue = endValue;
+    }
+
+    public OsbEasing Easing { get; set; }
     protected virtual bool MaintainValue => true;
     protected virtual bool ExportEndValue => true;
-    protected bool IsFragmentable => StartTime == EndTime || easing is OsbEasing.None;
+    protected bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
     public abstract IFragmentableCommand GetFragment(float startTime, float endTime);
 
     public IEnumerable<int> GetNonFragmentableTimes()
@@ -35,11 +49,12 @@ public abstract record Command<TValue>(string identifier,
         EndTime += offset;
     }
 
-    public float StartTime { get; set; } = startTime;
-    public float EndTime { get; set; } = endTime;
-    public TValue StartValue { get; set; } = startValue;
-    public TValue EndValue { get; set; } = endValue;
-    public bool Active => true;
+    public CommandResult<TValue> AsResult(float timeOffset) => new(this, timeOffset);
+
+    public float StartTime { get; set; }
+    public float EndTime { get; set; }
+    public TValue StartValue { get; set; }
+    public TValue EndValue { get; set; }
 
     public TValue ValueAtTime(float time)
     {
@@ -47,7 +62,7 @@ public abstract record Command<TValue>(string identifier,
         if (EndTime < time) return MaintainValue ? ValueAtProgress(1) : default;
 
         var duration = EndTime - StartTime;
-        return ValueAtProgress(duration > 0 ? easing.Ease((time - StartTime) / duration) : 0);
+        return ValueAtProgress(duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0);
     }
 
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
@@ -71,7 +86,6 @@ public abstract record Command<TValue>(string identifier,
     public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
     public virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
     public abstract TValue ValueAtProgress(float progress);
-    public abstract TValue Midpoint(Command<TValue> endCommand, float progress);
 
     public StringBuilder ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
     {

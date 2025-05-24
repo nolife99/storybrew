@@ -109,6 +109,8 @@ public static class DrawState
 
                     Trace.Write(str);
                     if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
+
+                    StringHelper.StringBuilderPool.Release(str);
                 },
                 0);
         }

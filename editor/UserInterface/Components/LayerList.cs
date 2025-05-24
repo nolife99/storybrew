@@ -1,6 +1,7 @@
 ﻿namespace StorybrewEditor.UserInterface.Components;
 
 using System;
+using System.Linq;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -82,10 +83,7 @@ public class LayerList : Widget
 
     void buildLayers(OsbLayer osbLayer, bool diffSpecific)
     {
-        var layers = layerManager.FindLayers(l => l.OsbLayer == osbLayer && l.DiffSpecific == diffSpecific);
-
-        var index = 0;
-        foreach (var layer in layers)
+        foreach (var layer in layerManager.Layers.Where(l => l.OsbLayer == osbLayer && l.DiffSpecific == diffSpecific))
         {
             var effect = layer.Effect;
 
@@ -221,8 +219,6 @@ public class LayerList : Widget
             diffSpecificButton.OnClick += (_, _) => layer.DiffSpecific = !layer.DiffSpecific;
 
             showHideButton.OnValueChanged += (_, _) => layer.Visible = showHideButton.Checked;
-
-            ++index;
         }
     }
 

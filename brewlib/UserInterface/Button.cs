@@ -2,7 +2,6 @@
 
 using System;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Skinning.Styles;
 using Util;

@@ -51,9 +51,10 @@ public abstract class CommandGroup : ICommand
         }
     }
 
+    public virtual bool Active => true;
+
     public float StartTime { get; protected set; }
     public virtual float EndTime { get; protected set; }
-    public virtual bool Active => true;
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
     public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)

@@ -5,9 +5,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using Collections.Pooled;
 using Graphics.Drawables;
 using Graphics.Textures;
@@ -107,7 +105,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         var includes = data.Value<TinyArray>("include");
         if (includes is null) return data;
 
-        var snapshot = includes.ToArray();
+        using var snapshot = includes.ToPooledList();
         foreach (var t in snapshot) data.Merge(loadJson(t.Value<string>(), resourceContainer));
 
         return data;

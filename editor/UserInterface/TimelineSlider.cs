@@ -236,7 +236,14 @@ public class TimelineSlider : Slider
         line.Draw(drawContext, Manager.Camera, new(position.X, position.Y, size.X, size.Y), opacity);
     }
 
-    void drawTicks(DrawContext drawContext, Vector2 offset, float leftTime, float rightTime, float timeScale, float pixelSize, float lineBottomY, float actualOpacity)
+    void drawTicks(DrawContext drawContext,
+        Vector2 offset,
+        float leftTime,
+        float rightTime,
+        float timeScale,
+        float pixelSize,
+        float lineBottomY,
+        float actualOpacity)
     {
         var beatmap = project.MainBeatmap;
 
@@ -309,8 +316,7 @@ public class TimelineSlider : Slider
 
                     if (snap != 0 ||
                         tickCount == 0 && timingPoint.OmitFirstBarLine ||
-                        beatCount % timingPoint.BeatPerMeasure != 0)
-                        lineSize.Y *= .5f;
+                        beatCount % timingPoint.BeatPerMeasure != 0) lineSize.Y *= .5f;
 
                     var tickX = offset.X + Manager.SnapToPixel((time - leftTime) * timeScale);
                     var tickOpacity = tickX > beatmapLabel.TextBounds.Left - 8 ? actualOpacity * .2f : actualOpacity;

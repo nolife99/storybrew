@@ -5,11 +5,12 @@ using System.Collections.Generic;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using Collections.Pooled;
 
 public class ContextMenu<T> : UiScreenLayer
 {
     readonly Action<T> callback;
-    readonly Option[] options;
+    readonly PooledList<Option> options;
     readonly string title;
 
     Button cancelButton;
@@ -21,19 +22,15 @@ public class ContextMenu<T> : UiScreenLayer
         this.title = title;
         this.callback = callback;
 
-        this.options = new Option[options.Length];
-        for (var i = 0; i < options.Length; ++i)
-        {
-            var option = options[i];
-            this.options[i] = new(option.ToString(), option);
-        }
+        this.options = new(options.Length);
+        foreach (var option in options) this.options.Add(new(option.ToString(), option));
     }
 
     public ContextMenu(string title, Action<T> callback, IEnumerable<T> options)
     {
         this.title = title;
         this.callback = callback;
-        this.options = options.Select(option => new Option(option.ToString(), option)).ToArray();
+        this.options = options.Select(option => new Option(option.ToString(), option)).ToPooledList();
     }
 
     public override bool IsPopup => true;
@@ -112,6 +109,12 @@ public class ContextMenu<T> : UiScreenLayer
     {
         base.Resize(width, height);
         mainLayout.Pack(400, 0, 0, 600);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (disposing) options.Dispose();
     }
 
     readonly struct Option(string name, T value)

@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using BrewLib.Util;
-using OpenTK.Windowing.GraphicsLibraryFramework;
 using Scripting;
 using StorybrewCommon.Scripting;
 using Util;

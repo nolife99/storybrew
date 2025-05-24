@@ -8,9 +8,6 @@ public record ColorCommand(OsbEasing easing, float startTime, float endTime, Com
 {
     public override CommandColor ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 
-    public override CommandColor Midpoint(Command<CommandColor> endCommand, float progress)
-        => StartValue + (endCommand.EndValue - StartValue) * progress;
-
     public override IFragmentableCommand GetFragment(float startTime, float endTime)
     {
         if (!IsFragmentable) return this;

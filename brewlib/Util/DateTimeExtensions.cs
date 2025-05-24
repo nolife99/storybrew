@@ -25,7 +25,8 @@ public static class DateTimeExtensions
         var timeSpan = DateTimeOffset.Now - date;
         foreach (var threshold in thresholds)
             if (timeSpan < threshold.Item1)
-                return string.Format(CultureInfo.InvariantCulture, threshold.Item2,
+                return string.Format(CultureInfo.InvariantCulture,
+                    threshold.Item2,
                     (timeSpan.Days > 365 ? timeSpan.Days / 365 :
                         timeSpan.Days > 30 ? timeSpan.Days / 30 :
                         timeSpan.Days > 0 ? timeSpan.Days :

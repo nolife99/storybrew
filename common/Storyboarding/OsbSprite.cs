@@ -24,6 +24,10 @@ public class OsbSprite : StoryboardObject
     float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue;
     CommandGroup currentCommandGroup;
 
+    float displayEndTime = float.MaxValue;
+
+    float displayStartTime = float.MinValue;
+
     CommandPosition initialPosition;
 
     ///<summary> Origin of this sprite. </summary>
@@ -37,6 +41,8 @@ public class OsbSprite : StoryboardObject
         initializeDisplayValueBuilders();
         InitialPosition = DefaultPosition;
     }
+
+    public bool HasTrigger { get; private set; }
 
     /// <summary> If the sprite has more commands than this amount, they will be split between multiple sprites. </summary>
     /// <remarks> Does not apply when the sprite has triggers. </remarks>
@@ -113,6 +119,24 @@ public class OsbSprite : StoryboardObject
         }
     }
 
+    public float DisplayStartTime
+    {
+        get
+        {
+            if (displayStartTime == float.MinValue) refreshStartEndTimes();
+            return displayStartTime;
+        }
+    }
+
+    public float DisplayEndTime
+    {
+        get
+        {
+            if (displayEndTime == float.MaxValue) refreshStartEndTimes();
+            return displayEndTime;
+        }
+    }
+
     /// <returns> Image of the sprite at <paramref name="time"/>. </returns>
     public virtual string GetTexturePathAt(float time) => texturePath;
 
@@ -120,17 +144,52 @@ public class OsbSprite : StoryboardObject
     {
         clearStartEndTimes();
         foreach (var command in commands)
-            if (command.Active)
+        {
+            commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
+            commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
+        }
+
+        if (!HasTrigger)
+        {
+            if (FadeTimeline.HasCommands)
             {
-                commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
-                commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
+                var start = FadeTimeline.StartResult;
+                if (start.StartValue == 0) displayStartTime = Math.Max(displayStartTime, start.StartTime);
+
+                var end = FadeTimeline.EndResult;
+                if (end.EndValue == 0) displayEndTime = Math.Min(displayEndTime, end.EndTime);
             }
+
+            if (ScaleTimeline.HasCommands)
+            {
+                var start = ScaleTimeline.StartResult;
+                if (start.StartValue == 0) displayStartTime = Math.Max(displayStartTime, start.StartTime);
+
+                var end = ScaleTimeline.EndResult;
+                if (end.EndValue == 0) displayEndTime = Math.Min(displayEndTime, end.EndTime);
+            }
+
+            if (ScaleVecTimeline.HasCommands)
+            {
+                var start = ScaleVecTimeline.StartResult;
+                if (start.StartValue.X <= 0 || start.StartValue.Y <= 0)
+                    displayStartTime = Math.Max(displayStartTime, start.StartTime);
+
+                var end = ScaleVecTimeline.EndResult;
+                if (end.EndValue.X <= 0 || end.EndValue.Y <= 0) displayEndTime = Math.Min(displayEndTime, end.EndTime);
+            }
+        }
+
+        displayStartTime = Math.Max(displayStartTime, commandsStartTime);
+        displayEndTime = Math.Min(displayEndTime, commandsEndTime);
     }
 
     void clearStartEndTimes()
     {
         commandsStartTime = float.MaxValue;
         commandsEndTime = float.MinValue;
+        displayStartTime = float.MinValue;
+        displayEndTime = float.MaxValue;
     }
 
     //==========M==========//
@@ -699,6 +758,7 @@ public class OsbSprite : StoryboardObject
         TriggerCommand triggerCommand = new(triggerName, startTime, endTime, group);
         addCommand(triggerCommand);
         startDisplayTrigger(triggerCommand);
+        HasTrigger = true;
         return triggerCommand;
     }
 
@@ -777,6 +837,8 @@ public class OsbSprite : StoryboardObject
     /// <returns> True if the sprite is active at <paramref name="time"/>, else returns false. </returns>
     public bool IsActive(float time) => StartTime <= time && time <= EndTime;
 
+    public bool ShouldBeActive(float time) => DisplayStartTime <= time && time <= DisplayEndTime;
+
     ///<summary> Writes this sprite's data to a stream. </summary>
     public override void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
@@ -804,7 +866,9 @@ public class OsbSprite : StoryboardObject
     /// <param name="size"> The image dimensions of the sprite texture. </param>
     /// <param name="rotation"> The rotation, in radians, of the sprite. </param>
     /// <param name="origin"> The <see cref="OsbOrigin"/> of the sprite. </param>
-    public static bool InScreenBounds(CommandPosition position, CommandScale size, CommandDecimal rotation, OsbOrigin origin) => new OrientedBoundingBox(position, GetOriginVector(origin, size), size.X, size.Y, rotation).Intersects(in OsuHitObject.WidescreenStoryboardBounds);
+    public static bool InScreenBounds(CommandPosition position, CommandScale size, CommandDecimal rotation, OsbOrigin origin)
+        => new OrientedBoundingBox(position, GetOriginVector(origin, size), size.X, size.Y, rotation).Intersects(
+            in OsuHitObject.WidescreenStoryboardBounds);
 
     /// <summary> Gets the origin of a sprite based on its <see cref="OsbOrigin"/> </summary>
     /// <param name="origin"> The <see cref="OsbOrigin"/> to be taken into account. </param>
@@ -825,16 +889,16 @@ public class OsbSprite : StoryboardObject
 
     #region Display
 
-    (Func<ICommand, bool>, IAnimatedValueBuilder)[] displayValueBuilders;
-    public readonly AnimatedValue<CommandPosition> MoveTimeline = new();
+    (Func<ICommand, bool>, CommandTimeline)[] displayValueBuilders;
+    public readonly CommandTimeline<CommandPosition> MoveTimeline = new();
 
-    public readonly AnimatedValue<CommandDecimal> MoveXTimeline = new(), MoveYTimeline = new(), ScaleTimeline = new(1),
+    public readonly CommandTimeline<CommandDecimal> MoveXTimeline = new(), MoveYTimeline = new(), ScaleTimeline = new(1),
         RotateTimeline = new(), FadeTimeline = new(1);
 
-    public readonly AnimatedValue<CommandScale> ScaleVecTimeline = new(Vector2.One);
-    public readonly AnimatedValue<CommandColor> ColorTimeline = new(CommandColor.White);
+    public readonly CommandTimeline<CommandScale> ScaleVecTimeline = new(Vector2.One);
+    public readonly CommandTimeline<CommandColor> ColorTimeline = new(CommandColor.White);
 
-    public readonly AnimatedValue<CommandParameter> AdditiveTimeline = new(CommandParameter.None),
+    public readonly CommandTimeline<CommandParameter> AdditiveTimeline = new(CommandParameter.None),
         FlipHTimeline = new(CommandParameter.None), FlipVTimeline = new(CommandParameter.None);
 
     /// <summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
@@ -883,20 +947,17 @@ public class OsbSprite : StoryboardObject
 
     void initializeDisplayValueBuilders() => displayValueBuilders =
     [
-        (c => c is MoveCommand, new AnimatedValueBuilder<CommandPosition>(MoveTimeline)),
-        (c => c is MoveXCommand, new AnimatedValueBuilder<CommandDecimal>(MoveXTimeline)),
-        (c => c is MoveYCommand, new AnimatedValueBuilder<CommandDecimal>(MoveYTimeline)),
-        (c => c is ScaleCommand, new AnimatedValueBuilder<CommandDecimal>(ScaleTimeline)),
-        (c => c is VScaleCommand, new AnimatedValueBuilder<CommandScale>(ScaleVecTimeline)),
-        (c => c is RotateCommand, new AnimatedValueBuilder<CommandDecimal>(RotateTimeline)),
-        (c => c is FadeCommand, new AnimatedValueBuilder<CommandDecimal>(FadeTimeline)),
-        (c => c is ColorCommand, new AnimatedValueBuilder<CommandColor>(ColorTimeline)),
-        (c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending },
-            new AnimatedValueBuilder<CommandParameter>(AdditiveTimeline)),
-        (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal },
-            new AnimatedValueBuilder<CommandParameter>(FlipHTimeline)),
-        (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical },
-            new AnimatedValueBuilder<CommandParameter>(FlipVTimeline))
+        (c => c is MoveCommand, MoveTimeline),
+        (c => c is MoveXCommand, MoveXTimeline),
+        (c => c is MoveYCommand, MoveYTimeline),
+        (c => c is ScaleCommand, ScaleTimeline),
+        (c => c is VScaleCommand, ScaleVecTimeline),
+        (c => c is RotateCommand, RotateTimeline),
+        (c => c is FadeCommand, FadeTimeline),
+        (c => c is ColorCommand, ColorTimeline),
+        (c => c is ParameterCommand { StartValue.Type: ParameterType.AdditiveBlending }, AdditiveTimeline),
+        (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipHorizontal }, FlipHTimeline),
+        (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, FlipVTimeline)
     ];
 
     void addDisplayCommand(ICommand command)
@@ -910,17 +971,17 @@ public class OsbSprite : StoryboardObject
 
     void startDisplayLoop(LoopCommand loopCommand)
     {
-        foreach (var builders in displayValueBuilders) builders.Item2.StartDisplayLoop(loopCommand);
+        foreach (var builders in displayValueBuilders) builders.Item2.StartGroup(loopCommand);
     }
 
     void startDisplayTrigger(TriggerCommand triggerCommand)
     {
-        foreach (var builders in displayValueBuilders) builders.Item2.StartDisplayTrigger(triggerCommand);
+        foreach (var builders in displayValueBuilders) builders.Item2.StartGroup(triggerCommand);
     }
 
     void endDisplayComposites()
     {
-        foreach (var builders in displayValueBuilders) builders.Item2.EndDisplayComposite();
+        foreach (var builders in displayValueBuilders) builders.Item2.EndGroup();
     }
 
     #endregion

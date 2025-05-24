@@ -16,20 +16,23 @@ public class TextLayout : IDisposable
         var width = 0f;
         var height = 0f;
 
-        foreach (var (start, length) in LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).Width))
-        {
-            TextLayoutLine line = new(this, height, alignment, _lines.Count == 0);
-            foreach (var c in text.AsSpan(start, length)) line.Add(font.GetGlyph(c), glyphIndex++);
+        using (var lineBreaks = LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).Width))
+            foreach (var (start, length) in lineBreaks)
+            {
+                TextLayoutLine line = new(this, height, alignment, _lines.Count == 0);
 
-            _lines.Add(line);
-            width = float.Max(width, line.Width);
-            height += line.Height;
-        }
+                var span = text.AsSpan(start, length);
+                foreach (var c in span) line.Add(font.GetGlyph(c), c, glyphIndex++);
+
+                _lines.Add(line);
+                width = float.Max(width, line.Width);
+                height += line.Height;
+            }
 
         if (_lines.Count == 0) _lines.Add(new(this, 0, alignment, true));
         var lastLine = _lines[^1];
         if (lastLine.GlyphCount == 0) height += font.LineHeight;
-        lastLine.Add(new(null, 0, font.LineHeight), glyphIndex);
+        lastLine.Add(new(null, 0, font.LineHeight), '\0', glyphIndex);
 
         Size = new(width, height);
     }
@@ -153,9 +156,21 @@ public class TextLayout : IDisposable
 public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph) : IDisposable
 {
     readonly PooledList<TextLayoutGlyph> _glyphs = new();
-    bool advance = advanceOnEmptyGlyph;
+    bool advance = advanceOnEmptyGlyph, sorted;
 
-    public IReadOnlyPooledList<TextLayoutGlyph> Glyphs => _glyphs;
+    public IReadOnlyPooledList<TextLayoutGlyph> Glyphs
+    {
+        get
+        {
+            if (sorted) return _glyphs;
+
+            _glyphs.Sort();
+            sorted = true;
+
+            return _glyphs;
+        }
+    }
+
     public int GlyphCount => _glyphs.Count;
 
     public int Width { get; private set; }
@@ -167,19 +182,22 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
 
     public void Dispose() => _glyphs.Dispose();
 
-    public void Add(FontGlyph glyph, int glyphIndex)
+    public void Add(FontGlyph glyph, char character, int glyphIndex)
     {
         if (!glyph.IsEmpty) advance = true;
 
-        _glyphs.Add(new(this, glyph, glyphIndex, Width));
+        _glyphs.Add(new(this, glyph, character, glyphIndex, Width));
         if (advance) Width += glyph.Width;
-        Height = int.Max(Height, glyph.Height);
+        if (glyph.Height > Height) Height = glyph.Height;
+
+        sorted = false;
     }
 
     public TextLayoutGlyph GetGlyph(int index) => _glyphs[index];
 }
 
-public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, int Index, float X)
+public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, char Character, int Index, float X)
+    : IComparable<TextLayoutGlyph>
 {
     public Vector2 Position
     {
@@ -189,4 +207,6 @@ public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Gly
             return linePosition with { X = linePosition.X + X };
         }
     }
+
+    public int CompareTo(TextLayoutGlyph other) => Character.CompareTo(other.Character);
 }
