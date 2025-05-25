@@ -13,14 +13,26 @@ using SixLabors.ImageSharp.PixelFormats;
 using Util;
 using Image = SixLabors.ImageSharp.Image;
 
-public sealed class Texture2d(int textureId, int width, int height, nint texFence) : Texture2dRegion(null,
-    new(0, 0, width, height))
+public sealed class Texture2d(int textureId, int width, int height) : Texture2dRegion(null, new(0, 0, width, height))
 {
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
+    int _textureId = textureId;
 
     long bindlessId = -1;
 
-    public int TextureId => textureId;
+    public int TextureId
+    {
+        get
+        {
+            if (_textureId == 0)
+            {
+                Trace.WriteLine($"!!!!!!!!!!!!!!!{width},{height},{BindableTexture}");
+                throw new InvalidOperationException("Texture not created");
+            }
+
+            return _textureId;
+        }
+    }
 
     public long BindlessTextureHandle
     {
@@ -28,13 +40,9 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         {
             if (bindlessId != -1) return bindlessId;
 
-            if (!DrawState.BindlessTexturesSupported) throw new InvalidOperationException();
+            if (!DrawState.BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
 
-            GL.WaitSync(texFence, WaitSyncFlags.None, -1);
-            GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(textureId));
-
-            GL.DeleteSync(texFence);
-
+            GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(TextureId));
             if (!BitConverter.IsLittleEndian)
                 bindlessId = (long)(uint)(bindlessId & 0xFFFFFFFF) << 32 | (uint)(bindlessId >> 32 & 0xFFFFFFFF);
 
@@ -45,7 +53,7 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
     public void Update(Rgba32 color, int x, int y, int width, int height)
     {
         if (useGlClearTex)
-            GL.ClearTexSubImage(textureId,
+            GL.ClearTexSubImage(_textureId,
                 0,
                 x,
                 y,
@@ -62,7 +70,7 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
             var span = spanOwner.Memory.Span;
 
             span.Fill(color);
-            GL.TextureSubImage2D(textureId,
+            GL.TextureSubImage2D(_textureId,
                 0,
                 x,
                 y,
@@ -76,9 +84,11 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
 
     public void Update(Image<Rgba32> bitmap, int x, int y)
     {
+        ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
+
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1)
-            GL.TextureSubImage2D(textureId,
+            GL.TextureSubImage2D(_textureId,
                 0,
                 x,
                 y,
@@ -89,7 +99,7 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
                 ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
         else
             for (var i = 0; i < buffer.Height; ++i)
-                GL.TextureSubImage2D(textureId,
+                GL.TextureSubImage2D(_textureId,
                     0,
                     0,
                     y + i,
@@ -165,16 +175,8 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        if (!DrawState.BindlessTexturesSupported)
-        {
-            GL.Finish();
-            return new(textureId, width, height, 0);
-        }
-
-        var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
-        GL.Flush();
-
-        return new(textureId, width, height, fence);
+        GL.Finish();
+        return new(textureId, width, height);
     }
 
     public static Texture2d Load(Image<Rgba32> bitmap, TextureOptions textureOptions = null)
@@ -237,16 +239,8 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
         if (textureOptions.GenerateMipmaps) GL.GenerateMipmap(GenerateMipmapTarget.Texture2D);
         textureOptions.ApplyParameters(TextureTarget.Texture2D);
 
-        if (!DrawState.BindlessTexturesSupported)
-        {
-            GL.Finish();
-            return new(textureId, width, height, 0);
-        }
-
-        var fence = GL.FenceSync(SyncCondition.SyncGpuCommandsComplete, WaitSyncFlags.None);
-        GL.Flush();
-
-        return new(textureId, width, height, fence);
+        GL.Finish();
+        return new(textureId, width, height);
     }
 
     #region IDisposable Support
@@ -255,8 +249,12 @@ public sealed class Texture2d(int textureId, int width, int height, nint texFenc
     {
         if (!disposed)
         {
-            Native.MainThreadScheduler(() => GL.DeleteTexture(textureId)).Wait();
-            if (disposing) disposed = true;
+            Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId)).Wait();
+            if (disposing)
+            {
+                _textureId = 0;
+                bindlessId = -1;
+            }
         }
 
         base.Dispose(disposing);

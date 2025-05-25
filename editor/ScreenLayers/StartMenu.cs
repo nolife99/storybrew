@@ -173,27 +173,30 @@ public class StartMenu : UiScreenLayer
                     else break;
                 }
 
-                if (Program.Version < latestVersion)
+                await Program.Schedule(() =>
                 {
-                    updateButton.Text = "Version " + latestVersion + " available!";
-                    updateButton.Tooltip = $"What's new:\n\n{description.AsSpan().TrimEnd('\n')}";
-                    updateButton.OnClick += (_, _) =>
+                    if (Program.Version < latestVersion)
                     {
-                        if (downloadUrl is not null && latestVersion >= new Version(1, 4))
-                            Manager.Add(new UpdateMenu(downloadUrl));
-                        else Updater.OpenLatestReleasePage();
-                    };
+                        updateButton.Text = "Version " + latestVersion + " available!";
+                        updateButton.Tooltip = $"What's new:\n\n{description.AsSpan().TrimEnd('\n')}";
+                        updateButton.OnClick += (_, _) =>
+                        {
+                            if (downloadUrl is not null && latestVersion >= new Version(1, 4))
+                                Manager.Add(new UpdateMenu(downloadUrl));
+                            else Updater.OpenLatestReleasePage();
+                        };
 
-                    updateButton.StyleName = "";
-                    updateButton.Disabled = false;
-                }
-                else
-                {
-                    versionLabel.Tooltip = $"Recent changes:\n\n{description.AsSpan().TrimEnd('\n')}";
-                    updateButton.Displayed = false;
-                }
+                        updateButton.StyleName = "";
+                        updateButton.Disabled = false;
+                    }
+                    else
+                    {
+                        versionLabel.Tooltip = $"Recent changes:\n\n{description.AsSpan().TrimEnd('\n')}";
+                        updateButton.Displayed = false;
+                    }
 
-                await Program.Schedule(() => bottomLayout.Pack(600));
+                    bottomLayout.Pack(600);
+                });
             }
             catch (Exception ex)
             {

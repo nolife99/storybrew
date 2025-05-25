@@ -64,13 +64,13 @@ public class Textbox : Widget, Field
                     break;
 
                 case Keys.Backspace:
-                    if (selectionStart > 0 && selectionStart == cursorPosition) selectionStart--;
+                    if (selectionStart > 0 && selectionStart == cursorPosition) --selectionStart;
 
                     ReplaceSelection("");
                     break;
 
                 case Keys.Delete:
-                    if (selectionStart < Value.Length && selectionStart == cursorPosition) cursorPosition++;
+                    if (selectionStart < Value.Length && selectionStart == cursorPosition) ++cursorPosition;
 
                     ReplaceSelection("");
                     break;
@@ -115,7 +115,7 @@ public class Textbox : Widget, Field
                 case Keys.Left:
                     if (inputManager.Shift)
                     {
-                        if (cursorPosition > 0) cursorPosition--;
+                        if (cursorPosition > 0) --cursorPosition;
                     }
                     else if (selectionStart != cursorPosition) SelectionRight = SelectionLeft;
                     else if (cursorPosition > 0) cursorPosition = --selectionStart;
@@ -301,7 +301,7 @@ public class Textbox : Widget, Field
                 selectionBounds => cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
 
         var bounds = content.GetCharacterBounds(cursorPosition);
-        Vector2 position = new(bounds.X, bounds.Y + bounds.Height * .2f),
+        Vector2 position = new(bounds.X, bounds.Y + bounds.Height * .15f),
             scale = new(Manager.PixelSize, bounds.Height * .8f);
 
         cursorLine.Draw(drawContext, Manager.Camera, new(position.X, position.Y, scale.X, scale.Y), actualOpacity);

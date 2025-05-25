@@ -3,7 +3,6 @@
 using System;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using BrewLib.UserInterface;
 
 public class Vector3Picker : Widget, Field
@@ -81,7 +80,7 @@ public class Vector3Picker : Widget, Field
         }
     }
 
-    public object FieldValue { get => Value; set => Value = Unsafe.As<float[]>(value); }
+    public object FieldValue { get => Value; set => Value = (float[])value; }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 

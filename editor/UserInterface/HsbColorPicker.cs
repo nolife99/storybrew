@@ -2,7 +2,6 @@
 
 using System;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Drawables;
 using BrewLib.UserInterface;
@@ -80,7 +79,7 @@ public class HsbColorPicker : Widget, Field
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<ColorPickerStyle>(BuildStyleName());
 
-    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<Rgba32>(value); }
+    public object FieldValue { get => Value; set => Value = (Rgba32)value; }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 

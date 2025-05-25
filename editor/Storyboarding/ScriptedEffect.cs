@@ -3,6 +3,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime;
+using System.Threading;
 using BrewLib.Util;
 using Scripting;
 using StorybrewCommon.Scripting;
@@ -22,6 +24,7 @@ public class ScriptedEffect : Effect
     string statusMessage;
 
     long statusStopwatch;
+    CancellationTokenSource token;
 
     public ScriptedEffect(Project project,
         ScriptContainer<StoryboardObjectGenerator> scriptContainer,
@@ -42,7 +45,7 @@ public class ScriptedEffect : Effect
     public override bool Multithreaded => multithreaded;
     public override bool BeatmapDependent => beatmapDependent;
 
-    public override void Update()
+    public override void Update(CancellationTokenSource token)
     {
         if (!scriptContainer.HasScript) return;
 
@@ -63,8 +66,10 @@ public class ScriptedEffect : Effect
         var success = false;
         try
         {
+            Interlocked.Exchange(ref this.token, token);
+
             changeStatus(EffectStatus.Loading);
-            var script = scriptContainer.CreateScript();
+            var script = scriptContainer.CreateScript(token);
 
             changeStatus(EffectStatus.Configuring);
             Program.Schedule(() =>
@@ -83,7 +88,8 @@ public class ScriptedEffect : Effect
 
             changeStatus(EffectStatus.Updating);
 
-            script.Generate(context);
+            ControlledExecution.Run(() => script.Generate(context), token.Token);
+
             foreach (var layer in context.EditorLayers) layer.PostProcess();
 
             success = true;
@@ -104,6 +110,18 @@ public class ScriptedEffect : Effect
         }
         catch (Exception e)
         {
+            var inner = e;
+            while (inner is not null)
+            {
+                if (inner is OperationCanceledException)
+                {
+                    changeStatus(EffectStatus.UpdateCanceled);
+                    return;
+                }
+
+                inner = e.InnerException;
+            }
+
             changeStatus(EffectStatus.ExecutionFailed, getExecutionFailedMessage(e), context.Log);
 
             return;
@@ -142,6 +160,16 @@ public class ScriptedEffect : Effect
         Program.Schedule(() => UpdateLayers(context.EditorLayers));
     }
 
+    public override void CancelUpdate()
+    {
+        if (token is null) return;
+
+        var localToken = token;
+        Interlocked.Exchange(ref token, null);
+
+        localToken.Cancel(true);
+    }
+
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
 
     void changeStatus(EffectStatus status, string message = null, string log = null)
@@ -151,6 +179,7 @@ public class ScriptedEffect : Effect
             switch (this.status)
             {
                 case EffectStatus.Ready:
+                case EffectStatus.UpdateCanceled:
                 case EffectStatus.CompilationFailed:
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: break;
@@ -175,7 +204,7 @@ public class ScriptedEffect : Effect
 
         StringHelper.StringBuilderPool.Release(statusMessageBuilder);
 
-        Program.Schedule(RaiseChanged);
+        Program.Schedule(RaiseChanged).Wait();
         statusStopwatch = Stopwatch.GetTimestamp();
     }
 

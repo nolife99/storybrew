@@ -5,10 +5,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using BrewLib.Audio;
 using BrewLib.Util;
 using OpenTK.Core;
@@ -253,12 +251,12 @@ public static class Program
 
         domain.FirstChanceException += (_, e) => logError(e.Exception, exceptionPath, false);
 
-        domain.UnhandledException += (_, e) => logError(Unsafe.As<Exception>(e.ExceptionObject), crashPath, true);
+        domain.UnhandledException += (_, e) => logError((Exception)e.ExceptionObject, crashPath, true);
 
         Trace.Listeners.Add(listener);
         Trace.WriteLine($"{FullName}\n");
 
-        Timer timer = new(s => Unsafe.As<TraceListener>(s)!.Flush(), listener, 5000, 1000);
+        Timer timer = new(s => ((TraceListener)s)!.Flush(), listener, 5000, 1000);
 
         domain.ProcessExit += (_, _) => timer.Dispose();
     }
@@ -282,12 +280,7 @@ public static class Program
 
                 Trace.Flush();
 
-                if (show &&
-                    MessageBox.Show($"An error occurred:\n\n{e.Message} ({e.GetType().Name
-                    })\n\nClick Ok if you want to receive and invitation to a Discord server where you can get help with this problem.",
-                        FullName,
-                        MessageBoxButton.OKCancel,
-                        MessageBoxImage.Error) is MessageBoxResult.OK) NetHelper.OpenUrl(DiscordUrl);
+                if (show) Environment.FailFast(null, e);
             }
             catch (Exception e2)
             {

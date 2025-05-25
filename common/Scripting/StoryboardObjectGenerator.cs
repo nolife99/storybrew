@@ -336,7 +336,7 @@ public abstract class StoryboardObjectGenerator : Script
 
     #region Configuration
 
-    /// <summary/>
+    /// <summary>Updates the configuration fields for the storyboard object generator using the provided effect configuration.</summary>
     public void UpdateConfiguration(EffectConfig config)
     {
         if (context is not null) throw new InvalidOperationException();

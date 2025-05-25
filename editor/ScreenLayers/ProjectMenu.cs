@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime;
+using System.Text;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -556,10 +557,13 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 TimeSpan.FromSeconds(time).ToString(@"mm\:ss\.fff", CultureInfo.InvariantCulture);
 
             warningsLabel.Text = buildWarningMessage();
-            warningsLabel.Displayed = warningsLabel.Text.Length != 0;
+            if (warningsLabel.NeedsLayout)
+            {
+                warningsLabel.Pack(650);
+                warningsLabel.Pack();
+            }
 
-            warningsLabel.Pack(650, recursive: false);
-            warningsLabel.Pack(height: warningsLabel.Height, recursive: false);
+            warningsLabel.Displayed = warningsLabel.Text.Length != 0;
         }
 
         if (timeSource.Playing && storyboardDrawable.Time < time) proj.TriggerEvents(storyboardDrawable.Time, time);
@@ -576,66 +580,53 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
-        if (proj.DisplayDebugWarning && activeSprites < 1500)
-            warnings.Append(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprites\n");
-        else if (activeSprites >= 1500)
-            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {activeSprites:n0} Sprites\n");
+        var prolongedSprites = stats.ProlongedSprites.Count;
 
-        if (stats.ProlongedSprites.Count != 0)
+        if (activeSprites >= 1500 || prolongedSprites != 0)
         {
-            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {stats.ProlongedSprites.Count:n0} Prolonged Sprites");
-            if (proj.DisplayDebugWarning)
+            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {activeSprites:n0} Sprite"), activeSprites);
+
+            if (prolongedSprites != 0)
             {
-                warnings.Append(" (");
-                warnings.AppendJoin(", ", stats.ProlongedSprites.Select(s => s.TexturePath));
+                AppendPlural(warnings.Append(" (")
+                        .Append(CultureInfo.InvariantCulture, $"{prolongedSprites:n0} Prolonged Sprite"),
+                    prolongedSprites);
+
+                if (proj.DisplayDebugWarning)
+                    warnings.Append(" (").AppendJoin(", ", stats.ProlongedSprites.Select(s => s.TexturePath)).Append(')');
+
                 warnings.Append(')');
             }
 
             warnings.Append('\n');
         }
+        else if (proj.DisplayDebugWarning && activeSprites > 0)
+            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprite"), activeSprites)
+                .Append('\n');
 
-        var batches = proj.FrameStats.Batches;
-        if (proj.DisplayDebugWarning && batches < 500)
-            warnings.Append(CultureInfo.InvariantCulture, $"{batches:0} Batches\n");
-        else if (batches >= 500) warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {batches:0} Batches\n");
+        int commands = stats.CommandCount, activeCommands = stats.EffectiveCommandCount,
+            unusedCommands = commands - activeCommands;
 
-        var commands = stats.CommandCount;
-        if (proj.DisplayDebugWarning && commands < 15000)
-            warnings.Append(CultureInfo.InvariantCulture, $"{commands:n0} Commands\n");
-        else if (commands >= 15000) warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {commands:n0} Commands\n");
+        var unusedRatio = unusedCommands / float.Max(1, commands);
 
-        float activeCommands = stats.EffectiveCommandCount, unusedCommands = commands - activeCommands,
-            unusedRatio = unusedCommands / Math.Max(1, commands);
-
-        if (unusedCommands >= 5000 && unusedRatio > .5f ||
+        var hiddenCommands = unusedCommands >= 5000 && unusedRatio > .5f ||
             unusedCommands >= 10000 && unusedRatio > .2f ||
-            unusedCommands >= 15000)
-            warnings.Append(CultureInfo.InvariantCulture,
-                $"\ue002 {unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
-        else if (proj.DisplayDebugWarning)
-            warnings.Append(CultureInfo.InvariantCulture,
-                $"{unusedCommands:n0} ({unusedRatio:0%}) Commands on Hidden Sprites\n");
+            unusedCommands >= 15000;
 
-        var sbLoad = stats.ScreenFill;
-        switch (sbLoad)
+        var showWarning = commands >= 15000 || hiddenCommands;
+        if (showWarning || proj.DisplayDebugWarning && commands > 0)
         {
-            case > 0 and < 5 when proj.DisplayDebugWarning:
-                warnings.Append(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill\n"); break;
+            if (showWarning) warnings.Append("\ue002 ");
 
-            case >= 5: warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {sbLoad:f2}x Screen Fill\n"); break;
+            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"{commands:n0} Command"), commands);
+            if (unusedCommands > 0)
+                AppendPlural(warnings.Append(" (")
+                            .Append(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Command"),
+                        unusedCommands)
+                    .Append(" on Hidden Sprites)");
+
+            warnings.Append('\n');
         }
-
-        var frameGpuMemory = stats.GpuMemoryFrameMb;
-        if (proj.DisplayDebugWarning && frameGpuMemory < 32)
-            warnings.Append(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory\n");
-        else if (frameGpuMemory >= 32)
-            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {frameGpuMemory:0.0}MB Frame Texture Memory\n");
-
-        var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
-        if (proj.DisplayDebugWarning && totalGpuMemory < 256)
-            warnings.Append(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory\n");
-        else if (totalGpuMemory >= 256)
-            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {totalGpuMemory:0.0}MB Total Texture Memory\n");
 
         if (stats.OverlappedSprites.Count != 0)
         {
@@ -663,9 +654,43 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             warnings.Append('\n');
         }
 
+        var sbLoad = stats.ScreenFill;
+        switch (sbLoad)
+        {
+            case > 0 and < 5 when proj.DisplayDebugWarning:
+                warnings.Append(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill\n"); break;
+
+            case >= 5: warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {sbLoad:f2}x Screen Fill\n"); break;
+        }
+
+        var batches = proj.FrameStats.Batches;
+        if (proj.DisplayDebugWarning && batches is > 0 and < 500)
+            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"{batches:0} Batch"), batches, "es").Append('\n');
+        else if (batches >= 500)
+            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {batches:0} Batch"), batches, "es")
+                .Append('\n');
+
+        var frameGpuMemory = stats.GpuMemoryFrameMb;
+        if (proj.DisplayDebugWarning && frameGpuMemory < 32)
+            warnings.Append(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory\n");
+        else if (frameGpuMemory >= 32)
+            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {frameGpuMemory:0.0}MB Frame Texture Memory\n");
+
+        var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
+        if (proj.DisplayDebugWarning && totalGpuMemory < 256)
+            warnings.Append(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory\n");
+        else if (totalGpuMemory >= 256)
+            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {totalGpuMemory:0.0}MB Total Texture Memory\n");
+
         var str = warnings.TrimEnd().ToString();
         StringHelper.StringBuilderPool.Release(warnings);
         return str;
+
+        StringBuilder AppendPlural(StringBuilder builder, int count, string plural = "s")
+        {
+            if (count != 1) builder.Append(plural);
+            return builder;
+        }
     }
 
     public override void Resize(int width, int height)

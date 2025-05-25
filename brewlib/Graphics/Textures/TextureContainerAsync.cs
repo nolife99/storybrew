@@ -106,7 +106,11 @@ internal static class TextureUploadQueue
 
                 while (!Native.Window.IsExiting)
                 {
-                    if (!queuedUploads.TryDequeue(out var queued)) continue;
+                    if (!queuedUploads.TryDequeue(out var queued))
+                    {
+                        Thread.Sleep(200);
+                        continue;
+                    }
 
                     var filename = queued.FileName;
 

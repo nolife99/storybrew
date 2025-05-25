@@ -28,6 +28,8 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IFragmentableCom
         EndTime = endTime;
         StartValue = startValue;
         EndValue = endValue;
+
+        if (startTime > endTime) EndTime = startTime;
     }
 
     public OsbEasing Easing { get; set; }
@@ -102,7 +104,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IFragmentableCom
         var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
 
         var result = StringHelper.StringBuilderPool.Retrieve();
-        if (startTimeString.Equals(endTimeString, StringComparison.Ordinal)) endTimeString = "";
+        if (startTimeString == endTimeString) endTimeString = "";
 
         result.AppendJoin(',',
             identifier,
@@ -111,7 +113,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IFragmentableCom
             endTimeString,
             startValueString);
 
-        if (startValueString.Equals(endValueString, StringComparison.Ordinal)) return result;
+        if (startValueString == endValueString) return result;
 
         result.Append(',');
         return result.Append(endValueString);

@@ -5,13 +5,12 @@ using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime;
 using System.Threading;
 using System.Threading.Tasks;
 
 public sealed class AsyncActionQueue<T> : IDisposable
 {
-    readonly ActionRunner[] actionRunners;
+    readonly Lazy<ActionRunner>[] actionRunners;
     readonly bool allowDuplicates;
     readonly ActionQueueContext context;
 
@@ -22,8 +21,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (runnerCount == 0) runnerCount = Math.Max(1, Environment.ProcessorCount - 1);
         context = new();
 
-        actionRunners = ArrayPool<ActionRunner>.Shared.Rent(runnerCount);
-        for (var i = 0; i < runnerCount; ++i) actionRunners[i] = new(context);
+        actionRunners = ArrayPool<Lazy<ActionRunner>>.Shared.Rent(runnerCount);
+        for (var i = 0; i < runnerCount; ++i) actionRunners[i] = new(() => new(context));
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
@@ -36,9 +35,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
         remove => context.OnActionFailed -= value;
     }
 
-    public void Queue(T target, int uniqueKey, Action action, bool mustRunAlone = false)
+    public void Queue(T target, int uniqueKey, Action<CancellationTokenSource> action, bool mustRunAlone = false)
     {
-        foreach (var runner in actionRunners) runner?.EnsureThreadAlive();
+        for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Length); ++i)
+            actionRunners[i]?.Value.EnsureThreadAlive();
 
         if (!allowDuplicates && context.Queue.Any(q => q.UniqueKey == uniqueKey)) return;
 
@@ -51,11 +51,11 @@ public sealed class AsyncActionQueue<T> : IDisposable
         context.Queue.Clear();
         return stopThreads ?
             Task.WhenAll(actionRunners.Where(runner => runner is not null)
-                .Select(runner => runner.DisposeAsync().AsTask())) :
+                .Select(runner => runner.Value.DisposeAsync().AsTask())) :
             Task.CompletedTask;
     }
 
-    sealed record ActionContainer(T Target, int UniqueKey, Action Action, bool MustRunAlone);
+    sealed record ActionContainer(T Target, int UniqueKey, Action<CancellationTokenSource> Action, bool MustRunAlone);
 
     sealed class ActionQueueContext
     {
@@ -94,8 +94,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     sealed class ActionRunner(ActionQueueContext context) : IAsyncDisposable
     {
+        CancellationTokenRegistration registration;
         Task thread;
         int threadId;
+
         CancellationTokenSource tokenSrc;
 
         public async ValueTask DisposeAsync()
@@ -111,6 +113,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 await tokenSrc.CancelAsync();
 
             tokenSrc.Dispose();
+            await registration.DisposeAsync();
         }
 
         internal void EnsureThreadAlive()
@@ -122,8 +125,14 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
             thread = Task.Factory.StartNew(async () =>
                 {
+                    threadId = Environment.CurrentManagedThreadId;
+                    Trace.WriteLine($"Started thread {threadId}");
+
+                    registration =
+                        tokenSrc.Token.UnsafeRegister(t => Trace.WriteLine($"Aborting thread {(int)t}"), threadId);
+
                     var mustSleep = false;
-                    while (!tokenSrc.IsCancellationRequested)
+                    while (true)
                     {
                         if (mustSleep)
                         {
@@ -172,9 +181,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
                         try
                         {
-#pragma warning disable SYSLIB0046
-                            ControlledExecution.Run(task.Action, tokenSrc.Token);
-#pragma warning restore SYSLIB0046
+                            task.Action(tokenSrc);
                         }
                         catch (Exception e)
                         {
@@ -185,10 +192,9 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         if (task.MustRunAlone) context.RunningLoneTask = false;
                     }
                 },
-                TaskCreationOptions.LongRunning);
-
-            threadId = thread.Id;
-            Trace.WriteLine($"Started thread {threadId}");
+                tokenSrc.Token,
+                TaskCreationOptions.LongRunning,
+                TaskScheduler.Default);
         }
     }
 
@@ -203,7 +209,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         context.Enabled = false;
         CancelQueuedActions(true).Wait();
 
-        ArrayPool<ActionRunner>.Shared.Return(actionRunners);
+        ArrayPool<Lazy<ActionRunner>>.Shared.Return(actionRunners);
 
         disposed = true;
     }

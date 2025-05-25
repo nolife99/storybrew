@@ -2,11 +2,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Threading;
 using BrewLib.Memory;
 using BrewLib.Util;
 using Collections.Pooled;
@@ -21,40 +21,47 @@ public static class ScriptCompiler
     public static Assembly Compile(AssemblyLoadContext context,
         IEnumerable<string> sourcePaths,
         string asmName,
-        IEnumerable<string> referencedAssemblies)
+        IEnumerable<string> referencedAssemblies,
+        CancellationTokenSource token)
     {
+        var tokenSource = token?.Token ?? CancellationToken.None;
+
         using PooledDictionary<SyntaxTree, (string SourcePath, SourceText SourceText)> trees = new();
         foreach (var src in sourcePaths)
         {
             using var sourceStream = File.OpenRead(src);
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-            trees[CSharpSyntaxTree.ParseText(sourceText, new(LanguageVersion.Preview))] = (src, sourceText);
+            trees[CSharpSyntaxTree.ParseText(sourceText, new(LanguageVersion.Preview), cancellationToken: tokenSource)] =
+                (src, sourceText);
         }
 
         EmitResult result;
         using (var assemblyStream = Pool.PooledMemoryStreamManager.GetStream())
         {
-            result = CSharpCompilation.Create(asmName,
+            using PooledList<MetadataReference> assemblies = new();
+            foreach (var asmPath in referencedAssemblies)
+            {
+                using var stream = File.OpenRead(asmPath);
+                if (!Project.DefaultAssemblies.Contains(asmPath))
+                {
+                    context.LoadFromStream(stream);
+                    stream.Position = 0;
+                }
+
+                assemblies.Add(MetadataReference.CreateFromStream(stream));
+            }
+
+            result = CSharpCompilation
+                .Create(asmName,
                     trees.Keys,
-                    referencedAssemblies.Select(asmPath =>
-                    {
-                        using var stream = File.OpenRead(asmPath);
-                        if (!Project.DefaultAssemblies.Contains(asmPath))
-                        {
-                            var assembly = context.LoadFromStream(stream);
-                            stream.Position = 0;
-
-                            Trace.WriteLine($"Loaded user-provided assembly: {assembly.GetName().Name}");
-                        }
-
-                        return MetadataReference.CreateFromStream(stream);
-                    }),
+                    assemblies,
                     new(OutputKind.DynamicallyLinkedLibrary,
                         allowUnsafe: true,
                         optimizationLevel: OptimizationLevel.Release))
                 .Emit(assemblyStream,
                     embeddedTexts: trees.Values.Select(k => EmbeddedText.FromSource(k.SourcePath, k.SourceText)),
-                    options: new(debugInformationFormat: DebugInformationFormat.Embedded));
+                    options: new(debugInformationFormat: DebugInformationFormat.Embedded),
+                    cancellationToken: tokenSource);
 
             if (result.Success)
             {
@@ -80,7 +87,8 @@ public static class ScriptCompiler
             foreach (var diagnostic in diagnostics)
             {
                 error.Append("--");
-                error.AppendLine(diagnostic.ToString());
+                error.Append(diagnostic);
+                error.Append('\n');
             }
         }
 

@@ -172,7 +172,7 @@ public class YamlTokenParser : TokenParser<YamlTokenType>
                     else if ((match = integerRegex.Match(value)).Success)
                         Callback(new TinyValue(value, TinyTokenType.Integer));
                     else if ((match = boolRegex.Match(value)).Success)
-                        Callback(new TinyValue(value.Equals(YamlFormat.BooleanTrue, StringComparison.OrdinalIgnoreCase)));
+                        Callback(new TinyValue(value == YamlFormat.BooleanTrue));
                     else Callback(new TinyValue(value));
 
                     context.ConsumeToken();

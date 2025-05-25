@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using StorybrewCommon.Storyboarding;
 
 public abstract class Effect : IDisposable
@@ -70,9 +71,9 @@ public abstract class Effect : IDisposable
         }
     }
 
-    public event EventHandler OnChanged;
+    public event EventHandler OnChanged, OnConfigFieldsChanged;
+
     protected void RaiseChanged() => OnChanged?.Invoke(this, EventArgs.Empty);
-    public event EventHandler OnConfigFieldsChanged;
     protected void RaiseConfigFieldsChanged() => OnConfigFieldsChanged?.Invoke(this, EventArgs.Empty);
 
     public void AddPlaceholder(EditorStoryboardLayer layer)
@@ -113,7 +114,8 @@ public abstract class Effect : IDisposable
         Project.QueueEffectUpdate(this);
     }
 
-    public abstract void Update();
+    public abstract void Update(CancellationTokenSource token);
+    public abstract void CancelUpdate();
 
     void refreshLayerNames()
     {
@@ -144,5 +146,14 @@ public abstract class Effect : IDisposable
 
 public enum EffectStatus
 {
-    Initializing, Loading, Configuring, Updating, ReloadPending, Ready, CompilationFailed, LoadingFailed, ExecutionFailed
+    Initializing,
+    Loading,
+    Configuring,
+    Updating,
+    ReloadPending,
+    Ready,
+    CompilationFailed,
+    LoadingFailed,
+    ExecutionFailed,
+    UpdateCanceled
 }

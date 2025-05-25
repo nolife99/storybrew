@@ -8,6 +8,7 @@
         <Version>1.92</Version>
         <TargetFramework>net9.0-windows</TargetFramework>
         <PublishReadyToRun>true</PublishReadyToRun>
+        <UseWpf>true</UseWpf>
         <LangVersion>default</LangVersion>
         <DebugType>embedded</DebugType>
     </PropertyGroup>

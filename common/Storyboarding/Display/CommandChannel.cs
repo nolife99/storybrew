@@ -1,7 +1,6 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
 using System.Collections.Generic;
-using System.IO;
 using Collections.Pooled;
 using Commands;
 using CommandValues;
@@ -20,8 +19,6 @@ internal class CommandChannel<TValue> where TValue : struct, CommandValue
 
     public void Add(ITypedCommand<TValue> command)
     {
-        if (command.EndTime < command.StartTime) throw new InvalidDataException($"'{command}' ends before it starts");
-
         findCommandIndex(command.StartTime, out var index);
         while (index < commands.Count)
         {

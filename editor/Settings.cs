@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using BrewLib.IO;
 using BrewLib.UserInterface;
 using Storyboarding;
@@ -49,7 +48,7 @@ public class Settings
 
                 try
                 {
-                    Unsafe.As<Setting>(field.GetValue(this)).Set(value);
+                    ((Setting)field.GetValue(this)).Set(value);
                 }
                 catch (Exception e)
                 {
@@ -76,7 +75,7 @@ public class Settings
             if (!field.FieldType.IsGenericType ||
                 !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) continue;
 
-            writer.WriteLine($"{field.Name}: {Unsafe.As<Setting>(field.GetValue(this))}");
+            writer.WriteLine($"{field.Name}: {(Setting)field.GetValue(this)}");
         }
 
         stream.Commit();

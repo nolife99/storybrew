@@ -48,7 +48,7 @@ public class Texture2dRegion : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposed && disposing) disposed = true;
+        if (!disposed) disposed = true;
     }
 
     #endregion

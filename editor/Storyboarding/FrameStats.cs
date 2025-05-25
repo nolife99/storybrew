@@ -9,7 +9,7 @@ public class FrameStats
     public readonly PooledList<OsbSprite> OverlappedSprites = [], IncompatibleSprites = [], ProlongedSprites = [];
     public float GpuPixelsFrame, ScreenFill;
     public bool LastBlendingMode;
-    public string LastTexture;
+    public string LastTexture = "";
 
     public int SpriteCount, Batches, CommandCount, EffectiveCommandCount;
     public float GpuMemoryFrameMb => GpuPixelsFrame / 1024 / 1024 * 4;

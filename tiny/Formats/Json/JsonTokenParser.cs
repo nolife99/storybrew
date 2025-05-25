@@ -125,8 +125,7 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
                     var value = context.CurrentToken.Value;
                     if (floatRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Float));
                     else if (integerRegex().Match(value).Success) Callback(new TinyValue(value, TinyTokenType.Integer));
-                    else if (boolRegex().Match(value).Success)
-                        Callback(new TinyValue(value.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase)));
+                    else if (boolRegex().Match(value).Success) Callback(new TinyValue(value == bool.TrueString));
                     else Callback(new TinyValue(value));
 
                     context.ConsumeToken();

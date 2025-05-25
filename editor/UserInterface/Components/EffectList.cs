@@ -224,18 +224,38 @@ public partial class EffectList : Widget
 
         statusButton.OnClick += (_, _) =>
         {
-            var sb = StringHelper.StringBuilderPool.Retrieve();
-            sb.Append("Status: ");
-            sb.Append(effect.Status);
-
-            if (!string.IsNullOrWhiteSpace(effect.StatusMessage))
+            switch (effect.Status)
             {
-                sb.Append("\n\n");
-                sb.Append(effect.StatusMessage);
-            }
+                case EffectStatus.Loading:
+                case EffectStatus.Configuring:
+                case EffectStatus.Updating:
+                    effect.CancelUpdate();
+                    statusButton.Tooltip = "Cancelling";
+                    statusButton.Disabled = true;
+                    break;
 
-            Manager.ScreenLayerManager.ShowMessage(sb.ToString());
-            StringHelper.StringBuilderPool.Release(sb);
+                case EffectStatus.UpdateCanceled:
+                    effect.Refresh();
+                    statusButton.Tooltip = "Refreshing";
+                    statusButton.Disabled = true;
+                    break;
+
+                default:
+                    var sb = StringHelper.StringBuilderPool.Retrieve();
+                    sb.Append("Status: ");
+                    sb.Append(effect.Status);
+
+                    if (!string.IsNullOrWhiteSpace(effect.StatusMessage))
+                    {
+                        sb.Append("\n\n");
+                        sb.Append(effect.StatusMessage);
+                    }
+
+                    Manager.ScreenLayerManager.ShowMessage(sb.ToString());
+                    StringHelper.StringBuilderPool.Release(sb);
+
+                    break;
+            }
         };
 
         renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name",
@@ -267,8 +287,6 @@ public partial class EffectList : Widget
     static void updateStatusButton(Button button, Effect effect)
     {
         button.Disabled = string.IsNullOrWhiteSpace(effect.StatusMessage);
-        button.Displayed = effect.Status != EffectStatus.Ready || !button.Disabled;
-
         button.Tooltip = effect.Status.ToString();
 
         switch (effect.Status)
@@ -276,8 +294,15 @@ public partial class EffectList : Widget
             case EffectStatus.Loading:
             case EffectStatus.Configuring:
             case EffectStatus.Updating:
-                button.Icon = IconFont.Sync;
-                button.Disabled = true;
+                button.Icon = IconFont.StopCircle;
+                button.Tooltip += " (Cancel)";
+                button.Disabled = false;
+                break;
+
+            case EffectStatus.UpdateCanceled:
+                button.Icon = IconFont.Refresh;
+                button.Tooltip = "Refresh";
+                button.Disabled = false;
                 break;
 
             case EffectStatus.ReloadPending:
@@ -294,6 +319,8 @@ public partial class EffectList : Widget
                 button.Tooltip = "Open log";
                 break;
         }
+
+        button.Displayed = effect.Status != EffectStatus.Ready || !button.Disabled;
     }
 
     void createScript(string name)

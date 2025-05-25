@@ -10,12 +10,7 @@ public static class ColorExtensions
     public static Color LerpColor(this Color color, ref readonly Color otherColor, float blend)
     {
         var rgba = color.ToScaledVector4();
-        var otherRgba = otherColor.ToScaledVector4();
-
-        var invBlend = 1 - blend;
-        return Color.FromScaledVector(new(rgba.X * invBlend + otherRgba.X * blend,
-            rgba.Y * invBlend + otherRgba.Y * blend,
-            rgba.Z * invBlend + otherRgba.Z * blend,
+        return Color.FromScaledVector(new(rgba.AsVector3() * (1 - blend) + otherColor.ToScaledVector4().AsVector3() * blend,
             rgba.W));
     }
 

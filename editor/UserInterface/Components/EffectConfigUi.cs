@@ -145,7 +145,7 @@ public class EffectConfigUi : Widget
         configFieldsLayout.ClearWidgets();
         if (effect is null) return;
 
-        var currentGroup = (string)null;
+        string currentGroup = null;
         foreach (var field in effect.Config.SortedFields)
         {
             if (!string.IsNullOrWhiteSpace(field.BeginsGroup))
@@ -255,12 +255,7 @@ public class EffectConfigUi : Widget
 
             Vector3Picker widget = new(Manager)
             {
-                Value =
-                [
-                    Unsafe.Unbox<float>(x.GetValue(field.Value)),
-                    Unsafe.Unbox<float>(y.GetValue(field.Value)),
-                    Unsafe.Unbox<float>(z.GetValue(field.Value))
-                ],
+                Value = [(float)x.GetValue(field.Value), (float)y.GetValue(field.Value), (float)z.GetValue(field.Value)],
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -273,12 +268,7 @@ public class EffectConfigUi : Widget
                 setFieldValue(field, ctor.Invoke([widget.Value[0], widget.Value[1], widget.Value[2]]));
 
                 var configVal = effect.Config.GetValue(field.Name);
-                widget.Value =
-                [
-                    Unsafe.Unbox<float>(x.GetValue(configVal)),
-                    Unsafe.Unbox<float>(y.GetValue(configVal)),
-                    Unsafe.Unbox<float>(z.GetValue(configVal))
-                ];
+                widget.Value = [(float)x.GetValue(configVal), (float)y.GetValue(configVal), (float)z.GetValue(configVal)];
             };
         }
         else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color4) || field.Type == typeof(Rgba32))
@@ -329,10 +319,7 @@ public class EffectConfigUi : Widget
         {
             Vector2Picker widget = new(Manager)
             {
-                Value = field.Type == typeof(Vector2) ?
-                    Unsafe.As<Vector2, CommandPosition>(ref Unsafe.Unbox<Vector2>(field.Value)) :
-                    Unsafe.As<OpenTK.Mathematics.Vector2, CommandPosition>(
-                        ref Unsafe.Unbox<OpenTK.Mathematics.Vector2>(field.Value)),
+                Value = field.Type == typeof(Vector2) ? (Vector2)field.Value : (OpenTK.Mathematics.Vector2)field.Value,
                 AnchorFrom = BoxAlignment.Right,
                 AnchorTo = BoxAlignment.Right,
                 CanGrow = false
@@ -456,7 +443,7 @@ public class EffectConfigUi : Widget
         var changed = false;
         try
         {
-            using BinaryReader reader = new(Unsafe.As<Stream>(ClipboardHelper.GetData()), Encoding.UTF8, true);
+            using BinaryReader reader = new((Stream)ClipboardHelper.GetData(), Encoding.UTF8, true);
 
             var fieldCount = reader.ReadInt32();
             for (var i = 0; i < fieldCount; ++i)

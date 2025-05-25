@@ -422,11 +422,11 @@ public class Widget(WidgetManager manager) : IDisposable
         }
     }
 
-    protected bool NeedsLayout { get; private set; } = true;
+    public bool NeedsLayout { get; private set; } = true;
 
-    public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0, bool recursive = true)
+    public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
     {
-        do
+        while (true)
         {
             var preferredSize = PreferredSize;
 
@@ -440,11 +440,8 @@ public class Widget(WidgetManager manager) : IDisposable
             Size = newSize;
 
             manager.RefreshAnchors();
-            if (preferredSize != PreferredSize) continue;
-
-            break;
+            if (preferredSize == PreferredSize) break;
         }
-        while (recursive);
     }
 
     protected void InvalidateAncestorLayout()

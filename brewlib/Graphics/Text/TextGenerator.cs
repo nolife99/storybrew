@@ -72,11 +72,8 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback },
             shadowTextOptions = new(textOptions) { Origin = padding + Vector2.One };
 
-        bitmap.Mutate(b =>
-        {
-            b.DrawText(drawOptions, shadowTextOptions, text, shadow, null)
-                .DrawText(drawOptions, textOptions, text, fill, null);
-        });
+        bitmap.Mutate(b => b.DrawText(drawOptions, shadowTextOptions, text, shadow, null)
+            .DrawText(drawOptions, textOptions, text, fill, null));
 
         return bitmap;
     }

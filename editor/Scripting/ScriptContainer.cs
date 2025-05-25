@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.Loader;
+using System.Threading;
 using Collections.Pooled;
 using StorybrewCommon.Scripting;
 
@@ -18,7 +19,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
 
     volatile int currentVersion, targetVersion = 1;
 
-    PooledList<string> referencedAssemblies = new();
+    PooledList<string> referencedAssemblies;
     Type scriptType;
 
     public ScriptContainer(string scriptTypeName,
@@ -62,11 +63,14 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         get => referencedAssemblies;
         set
         {
-            var newReferencedAssemblies = value as PooledList<string> ?? value.ToPooledList();
-            if (newReferencedAssemblies.Count == referencedAssemblies.Count &&
+            var newReferencedAssemblies = value.Distinct().ToPooledList();
+            if (referencedAssemblies is not null &&
+                newReferencedAssemblies.Count == referencedAssemblies.Count &&
                 newReferencedAssemblies.TrueForAll(referencedAssemblies.Contains)) return;
 
+            referencedAssemblies?.Dispose();
             referencedAssemblies = newReferencedAssemblies;
+
             ReloadScript();
         }
     }
@@ -76,12 +80,12 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
     public void Dispose()
     {
         appDomain?.Unload();
-        referencedAssemblies.Dispose();
+        referencedAssemblies?.Dispose();
     }
 
     public event EventHandler OnScriptChanged;
 
-    public TScript CreateScript()
+    public TScript CreateScript(CancellationTokenSource token)
     {
         var localTargetVersion = targetVersion;
         if (currentVersion < localTargetVersion)
@@ -95,20 +99,17 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
                         scriptDomain,
                         SourcePaths,
                         Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture),
-                        referencedAssemblies)
+                        referencedAssemblies,
+                        token)
                     .GetType(ScriptTypeName, true);
 
                 appDomain?.Unload();
                 appDomain = scriptDomain;
             }
-            catch (ScriptCompilationException)
-            {
-                scriptDomain.Unload();
-                throw;
-            }
             catch (Exception e)
             {
                 scriptDomain.Unload();
+                if (e is ScriptCompilationException or OperationCanceledException) throw;
 
                 var details = "";
                 if (e is TypeLoadException) details = "Make sure the script's class name is the same as the file name.\n";

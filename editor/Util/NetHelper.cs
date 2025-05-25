@@ -21,7 +21,7 @@ public static class NetHelper
         {
             Trace.WriteLine($"Requesting {url}");
 
-            var result = await Client.GetStringAsync(url).ConfigureAwait(false);
+            var result = await Client.GetStringAsync(url);
             await action.Invoke(result, null);
         }
         catch (Exception e)

@@ -156,20 +156,9 @@ public class TextLayout : IDisposable
 public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph) : IDisposable
 {
     readonly PooledList<TextLayoutGlyph> _glyphs = new();
-    bool advance = advanceOnEmptyGlyph, sorted;
+    bool advance = advanceOnEmptyGlyph;
 
-    public IReadOnlyPooledList<TextLayoutGlyph> Glyphs
-    {
-        get
-        {
-            if (sorted) return _glyphs;
-
-            _glyphs.Sort();
-            sorted = true;
-
-            return _glyphs;
-        }
-    }
+    public IReadOnlyPooledList<TextLayoutGlyph> Glyphs => _glyphs;
 
     public int GlyphCount => _glyphs.Count;
 
@@ -189,8 +178,6 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
         _glyphs.Add(new(this, glyph, character, glyphIndex, Width));
         if (advance) Width += glyph.Width;
         if (glyph.Height > Height) Height = glyph.Height;
-
-        sorted = false;
     }
 
     public TextLayoutGlyph GetGlyph(int index) => _glyphs[index];

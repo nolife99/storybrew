@@ -4,7 +4,7 @@
         <OutputType>Library</OutputType>
         <RootNamespace>StorybrewCommon</RootNamespace>
         <AssemblyName>StorybrewCommon</AssemblyName>
-        <TargetFramework>net9.0-windows</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
         <Company>storybrew</Company>
         <Copyright>Copyright © Damnae 2016</Copyright>
         <Version>1.1</Version>

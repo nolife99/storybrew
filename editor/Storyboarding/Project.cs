@@ -309,7 +309,8 @@ public sealed partial class Project : IDisposable
                 case EffectStatus.ExecutionFailed: hasError = true; break;
 
                 case EffectStatus.Initializing:
-                case EffectStatus.Ready: break;
+                case EffectStatus.Ready:
+                case EffectStatus.UpdateCanceled: break;
             }
 
         EffectsStatus = hasError ? EffectStatus.ExecutionFailed :

@@ -115,26 +115,13 @@ public class Label(WidgetManager manager) : Widget(manager)
             textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
     }
 
-    public RectangleF GetCharacterBounds(int index)
-    {
-        var position = AbsolutePosition;
-        var bounds = textDrawable.GetCharacterBounds(index);
-        return RectangleF.FromLTRB(position.X + bounds.X,
-            position.Y + bounds.Y,
-            position.X + bounds.Right,
-            position.Y + bounds.Bottom);
-    }
+    public RectangleF GetCharacterBounds(int index) => RectangleF.Transform(textDrawable.GetCharacterBounds(index),
+        Matrix3x2.CreateTranslation(AbsolutePosition));
 
-    public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
-    {
-        var position = AbsolutePosition;
-        textDrawable.ForTextBounds(startIndex,
-            endIndex,
-            bounds => action(RectangleF.FromLTRB(position.X + bounds.X,
-                position.Y + bounds.Y,
-                position.X + bounds.Right,
-                position.Y + bounds.Bottom)));
-    }
+    public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action) => textDrawable.ForTextBounds(
+        startIndex,
+        endIndex,
+        bounds => action(RectangleF.Transform(bounds, Matrix3x2.CreateTranslation(AbsolutePosition))));
 
     public int GetCharacterIndexAt(Vector2 position) => textDrawable.GetCharacterIndexAt(position - AbsolutePosition);
     public int GetCharacterIndexAbove(int index) => textDrawable.GetCharacterIndexAbove(index);

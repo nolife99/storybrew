@@ -50,7 +50,7 @@ public sealed class TextDrawable : Drawable
         get => text;
         set
         {
-            if (text is not null && text.Equals(value, StringComparison.Ordinal)) return;
+            if (text == value) return;
 
             text = value;
             invalidate();
@@ -169,8 +169,8 @@ public sealed class TextDrawable : Drawable
         var inverseScaling = 1 / scaling;
         textLayout.ForTextBounds(startIndex,
             endIndex,
-            bounds => action(RectangleF.FromLTRB(bounds.X * inverseScaling,
-                bounds.Y * inverseScaling,
+            bounds => action(RectangleF.FromLTRB(bounds.Left * inverseScaling,
+                bounds.Top * inverseScaling,
                 bounds.Right * inverseScaling,
                 bounds.Bottom * inverseScaling)));
     }

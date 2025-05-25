@@ -3,7 +3,6 @@
 using System;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using BrewLib.UserInterface;
 using StorybrewCommon.Storyboarding.CommandValues;
 
@@ -70,7 +69,7 @@ public class Vector2Picker : Widget, Field
         }
     }
 
-    public object FieldValue { get => Value; set => Value = Unsafe.Unbox<CommandPosition>(value); }
+    public object FieldValue { get => Value; set => Value = (CommandPosition)value; }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 

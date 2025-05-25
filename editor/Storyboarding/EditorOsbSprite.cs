@@ -1,14 +1,17 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using BrewLib.Audio;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
 using BrewLib.Memory;
 using BrewLib.Util;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding;
@@ -16,6 +19,8 @@ using StorybrewCommon.Util;
 
 public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
 {
+    static readonly long timestamp = Stopwatch.GetTimestamp();
+
     static readonly RenderStates AlphaBlendStates = new(),
         AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
@@ -55,11 +60,19 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             if (sprite.HasOverlappedCommands) frameStats.OverlappedSprites.Add(sprite);
         }
 
+        var forceVisible = !sprite.ShouldBeActive(time) && Native.Window.IsKeyDown(Keys.LeftAlt);
+
         var fade = (float)sprite.OpacityAt(time);
-        if (fade < .00001f) return;
+        if (forceVisible) fade = float.Max(fade, .5f);
+        else if (fade < .00001f) return;
 
         var scale = (Vector2)sprite.ScaleAt(time);
-        if (scale.X == 0 || scale.Y == 0) return;
+        if (forceVisible)
+        {
+            if (scale.X == 0) scale.X = 1;
+            if (scale.Y == 0) scale.Y = 1;
+        }
+        else if (scale.X == 0 || scale.Y == 0) return;
 
         Span<char> span = stackalloc char[project.MapsetPath.Length + texturePath.Length + 1];
         Path.TryJoin(project.MapsetPath, texturePath, span, out _);
@@ -104,7 +117,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             if (sprite.HasScalingCommands) scale = transform.ApplyToScale(scale);
         }
 
-        if (frameStats is not null)
+        if (frameStats is not null && !forceVisible)
         {
             var size = texture.Size * scale;
             OrientedBoundingBox spriteBox = new(position, origin * scale, size.X, size.Y, rotation);
@@ -140,6 +153,15 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var boundsScaling = bounds.Height / 480;
         scale *= boundsScaling;
 
+        var color = (Color)sprite.ColorAt(time);
+        if (forceVisible)
+            color = SixLabors.ImageSharp.Color.FromScaledVector(color.ToScaledVector4() *
+                ColorExtensions.FromHsb(new(
+                    SoundUtil.TriangleWave((float)Stopwatch.GetElapsedTime(timestamp).TotalSeconds / 4) / 2 + .5f,
+                    1,
+                    1,
+                    1)));
+
         DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
             .Draw(texture,
                 new Vector2(bounds.X + bounds.Width * .5f, bounds.Y) +
@@ -147,8 +169,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                 origin,
                 scale,
                 rotation,
-                ((Color)sprite.ColorAt(time)).LerpColor(in SixLabors.ImageSharp.Color.Black, project.DimFactor)
-                .WithOpacity(opacity * fade),
+                color.LerpColor(in SixLabors.ImageSharp.Color.Black, project.DimFactor).WithOpacity(opacity * fade),
                 Vector2.Zero,
                 texture.Size);
     }

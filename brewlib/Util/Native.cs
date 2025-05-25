@@ -11,8 +11,6 @@ using Image = OpenTK.Windowing.Common.Input.Image;
 
 public static class Native
 {
-    #region Win32
-
     public static NativeWindow Window { get; private set; }
 
     public static Func<Action, Task> MainThreadScheduler { get; set; }
@@ -35,6 +33,4 @@ public static class Native
         Window.Icon = new(new Image(image.Width, image.Height, bytes));
         ArrayPool<byte>.Shared.Return(bytes);
     }
-
-    #endregion
 }

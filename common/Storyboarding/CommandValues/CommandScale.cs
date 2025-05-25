@@ -1,7 +1,6 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
@@ -56,24 +55,20 @@ using Vector2 = System.Numerics.Vector2;
     public static CommandScale operator /(CommandScale left, CommandScale right) => left.internalVec / right.internalVec;
     public static CommandScale operator /(CommandScale left, CommandDecimal right) => left.internalVec / right;
 
-    public static implicit operator CommandScale(OpenTK.Mathematics.Vector2 vector)
-        => Unsafe.As<OpenTK.Mathematics.Vector2, CommandScale>(ref vector);
+    public static implicit operator CommandScale(OpenTK.Mathematics.Vector2 obj) => new(obj.X, obj.Y);
 
     public static implicit operator OpenTK.Mathematics.Vector2(CommandScale obj)
-        => Unsafe.As<CommandScale, OpenTK.Mathematics.Vector2>(ref obj);
+        => new(obj.internalVec.X, obj.internalVec.Y);
 
-    public static implicit operator CommandScale(Vector2d vector) => new(vector.X, vector.Y);
-    public static implicit operator Vector2d(CommandScale obj) => new(obj.X, obj.Y);
+    public static implicit operator CommandScale(Vector2d obj) => new(obj.X, obj.Y);
+    public static implicit operator Vector2d(CommandScale obj) => new(obj.internalVec.X, obj.internalVec.Y);
 
-    public static implicit operator CommandScale(SizeF vector) => (Vector2)vector;
-    public static implicit operator SizeF(CommandScale vector) => new(vector.internalVec.X, vector.internalVec.Y);
+    public static implicit operator CommandScale(SizeF obj) => new(obj.Width, obj.Height);
+    public static implicit operator SizeF(CommandScale obj) => new(obj.internalVec.X, obj.internalVec.Y);
 
-    public static implicit operator CommandScale(CommandPosition position)
-        => Unsafe.As<CommandPosition, CommandScale>(ref position);
+    public static implicit operator CommandScale(CommandPosition obj) => new(obj.X, obj.Y);
+    public static implicit operator CommandPosition(CommandScale obj) => new(obj.internalVec.X, obj.internalVec.Y);
 
-    public static implicit operator CommandPosition(CommandScale position)
-        => Unsafe.As<CommandScale, CommandPosition>(ref position);
-
-    public static implicit operator Vector2(CommandScale obj) => Unsafe.As<CommandScale, Vector2>(ref obj);
-    public static implicit operator CommandScale(Vector2 vector) => Unsafe.As<Vector2, CommandScale>(ref vector);
+    public static implicit operator CommandScale(Vector2 obj) => new(obj.X, obj.Y);
+    public static implicit operator Vector2(CommandScale obj) => new(obj.internalVec.X, obj.internalVec.Y);
 }
