@@ -1,8 +1,8 @@
 ﻿namespace BrewLib.Audio;
 
 using System;
-using Collections.Pooled;
 using IO;
+using Tiny.PooledCollections.Generic;
 
 public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer container = null) : IDisposable
 {

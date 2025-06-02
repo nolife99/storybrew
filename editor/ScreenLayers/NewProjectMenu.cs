@@ -1,11 +1,14 @@
 ﻿namespace StorybrewEditor.ScreenLayers;
 
+using System;
 using System.IO;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using Storyboarding;
 using StorybrewEditor.Util;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 using UserInterface;
 
 public class NewProjectMenu : UiScreenLayer
@@ -62,13 +65,24 @@ public class NewProjectMenu : UiScreenLayer
         });
 
         projectNameTextbox.OnValueChanged += (_, _) => updateButtonsState();
-        projectNameTextbox.OnValueCommited += (_, _) => projectNameTextbox.Value = Path.GetInvalidFileNameChars()
-            .Aggregate(projectNameTextbox.Value, (current, character) => current.Replace(character, '_'));
+        projectNameTextbox.OnValueCommited += (_, _) =>
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+
+            var charArray = TempArray<char>.Create(projectNameTextbox.Value);
+            for (var i = 0; i < charArray.Length; i++)
+                if (invalidChars.Contains(charArray[i]))
+                    charArray[i] = '_';
+
+            using TempArrayInternals<char> internals = new(charArray);
+            projectNameTextbox.Value = internals.Array.AsSpan(0, internals.Length);
+        };
 
         mapsetPathSelector.OnValueChanged += (_, _) => updateButtonsState();
         mapsetPathSelector.OnValueCommited += (_, _) =>
         {
-            if (!Directory.Exists(mapsetPathSelector.Value) && File.Exists(mapsetPathSelector.Value))
+            var mapsetPath = mapsetPathSelector.Value.ToString();
+            if (!Directory.Exists(mapsetPath) && File.Exists(mapsetPath))
             {
                 mapsetPathSelector.Value = Path.GetDirectoryName(mapsetPathSelector.Value);
                 return;
@@ -92,8 +106,8 @@ public class NewProjectMenu : UiScreenLayer
     void createProject() => Manager.AsyncLoading("Creating project",
         async () =>
         {
-            var project = await Project.Create(projectNameTextbox.Value,
-                mapsetPathSelector.Value,
+            var project = await Project.Create(projectNameTextbox.Value.ToString(),
+                mapsetPathSelector.Value.ToString(),
                 true,
                 Manager.GetContext<Editor>().ResourceContainer);
 
@@ -105,26 +119,27 @@ public class NewProjectMenu : UiScreenLayer
     bool updateFieldsValid()
     {
         var projectFolderName = projectNameTextbox.Value;
-        if (string.IsNullOrWhiteSpace(projectFolderName))
+        if (projectFolderName.IsNullOrWhiteSpace())
         {
             startButton.Tooltip = "The project name isn't valid";
             return false;
         }
 
-        var projectFolderPath = Path.Combine(Project.ProjectsFolder, projectFolderName);
+        var projectFolderPath = Path.Combine(Project.ProjectsFolder, projectFolderName.ToString());
         if (Directory.Exists(projectFolderPath))
         {
             startButton.Tooltip = $"A project named '{projectFolderName}' already exists";
             return false;
         }
 
-        if (!Directory.Exists(mapsetPathSelector.Value))
+        var mapsetPath = mapsetPathSelector.Value.ToString();
+        if (!Directory.Exists(mapsetPath))
         {
             startButton.Tooltip = "The selected mapset folder does not exist";
             return false;
         }
 
-        if (!Directory.EnumerateFiles(mapsetPathSelector.Value, "*.osu", SearchOption.TopDirectoryOnly).Any())
+        if (!Directory.EnumerateFiles(mapsetPath, "*.osu", SearchOption.TopDirectoryOnly).Any())
         {
             startButton.Tooltip = "No .osu found in the selected mapset folder";
             return false;

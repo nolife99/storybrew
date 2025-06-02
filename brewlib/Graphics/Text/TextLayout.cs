@@ -2,26 +2,29 @@
 
 using System;
 using System.Numerics;
-using Collections.Pooled;
 using SixLabors.ImageSharp;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
 using Util;
 
 public class TextLayout : IDisposable
 {
-    readonly PooledList<TextLayoutLine> _lines = new();
+    readonly PooledList<TextLayoutLine> _lines;
 
-    public TextLayout(string text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
+    public TextLayout(ReadOnlySpan<char> text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
         var glyphIndex = 0;
         var width = 0f;
         var height = 0f;
+
+        _lines = new();
 
         using (var lineBreaks = LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).Width))
             foreach (var (start, length) in lineBreaks)
             {
                 TextLayoutLine line = new(this, height, alignment, _lines.Count == 0);
 
-                var span = text.AsSpan(start, length);
+                var span = text.Slice(start, length);
                 foreach (var c in span) line.Add(font.GetGlyph(c), c, glyphIndex++);
 
                 _lines.Add(line);
@@ -39,7 +42,7 @@ public class TextLayout : IDisposable
 
     public Vector2 Size { get; }
 
-    public IReadOnlyPooledList<TextLayoutLine> Lines => _lines;
+    public ReadOnlySpan<TextLayoutLine> Lines => _lines.AsReadOnlySpan();
 
     public void Dispose()
     {
@@ -158,7 +161,7 @@ public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, 
     readonly PooledList<TextLayoutGlyph> _glyphs = new();
     bool advance = advanceOnEmptyGlyph;
 
-    public IReadOnlyPooledList<TextLayoutGlyph> Glyphs => _glyphs;
+    public ReadOnlySpan<TextLayoutGlyph> Glyphs => _glyphs.AsReadOnlySpan();
 
     public int GlyphCount => _glyphs.Count;
 

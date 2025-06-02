@@ -9,9 +9,9 @@ using System.Reflection;
 using System.Xml;
 using BrewLib.IO;
 using BrewLib.Util;
-using Collections.Pooled;
 using Storyboarding;
 using StorybrewCommon.Scripting;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
@@ -82,7 +82,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         get => referencedAssemblies;
         set
         {
-            referencedAssemblies = value as PooledList<string> ?? value.ToPooledList();
+            referencedAssemblies = value as PooledList<string> ?? new(value);
             foreach (var container in scriptContainers.Values) container.ReferencedAssemblies = referencedAssemblies;
             updateSolutionFiles();
         }

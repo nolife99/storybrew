@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using BrewLib.Util;
-using Collections.Pooled;
 using Scripting;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
@@ -15,6 +14,7 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Storyboarding;
+using Tiny.PooledCollections.Generic;
 using Path = System.IO.Path;
 
 /// <summary> Stores information about a font image. </summary>
@@ -223,7 +223,14 @@ public sealed class FontGenerator : IDisposable
 
         if (description.TrimTransparency)
         {
-            var foundTrim = cache.Keys.FirstOrDefault(s => s.AsSpan().Trim().SequenceEqual(trimmedText));
+            string foundTrim = null;
+            foreach (var s in cache.Keys)
+                if (s.AsSpan().Trim().SequenceEqual(trimmedText))
+                {
+                    foundTrim = s;
+                    break;
+                }
+
             if (foundTrim is not null)
             {
                 trimExist = true;
@@ -236,7 +243,7 @@ public sealed class FontGenerator : IDisposable
                 ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') :
                 char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture).ToString() + '_' :
                     char.ToString(text[0]))}.png" :
-            $"_{cache.Count(l => l.Key.AsSpan().Trim().Length > 1)
+            $"_{cache.Keys.Count(l => l.AsSpan().Trim().Length > 1)
                 .ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
 
         var texturePath = Path.Combine(Directory, filename);

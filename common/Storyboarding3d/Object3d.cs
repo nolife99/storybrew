@@ -70,20 +70,20 @@ public class Object3d
     public void GenerateTreeStates(float time, Camera camera) => GenerateTreeStates(
         time,
         camera.StateAt(time),
-        Object3dState.InitialState);
+        in Object3dState.InitialState);
 
     /// <summary>
     ///     Queues <see cref="State"/>s for this <see cref="Object3d"/> and its children at <paramref name="time"/> based on
     ///     the given <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
-    public void GenerateTreeStates(float time, CameraState camState, Object3dState parentState)
+    public void GenerateTreeStates(float time, CameraState camState, in Object3dState parentState)
     {
         Object3dState state = new(Matrix4x4.Multiply(WorldTransformAt(time), parentState.WorldTransform),
             Coloring.ValueAt(time) * (InheritsColor ? parentState.Color : CommandColor.White),
             Opacity.ValueAt(time) * (InheritsOpacity ? parentState.Opacity : 1));
 
         GenerateStates(time, camState, state);
-        foreach (var child in children) child.GenerateTreeStates(time, camState, state);
+        foreach (var child in children) child.GenerateTreeStates(time, camState, in state);
     }
 
     /// <summary>
@@ -146,7 +146,7 @@ public class Object3d
     ///     Queues <see cref="State"/>s for this <see cref="Object3d"/> at <paramref name="time"/> based on the given
     ///     <see cref="CameraState"/> and <see cref="Object3dState"/>.
     /// </summary>
-    public virtual void GenerateStates(float time, CameraState cameraState, Object3dState object3dState) { }
+    public virtual void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState) { }
 
     /// <summary>Generates commands on this <see cref="Object3d"/>'s sprites based on its queued <see cref="State"/>s.</summary>
     /// <param name="action"> Runs an action on this object's sprites. </param>

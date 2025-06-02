@@ -11,13 +11,14 @@ using System.Threading;
 using Animations;
 using BrewLib.Graphics.Compression;
 using BrewLib.Util;
-using Collections.Pooled;
 using Mapset;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using Subtitles;
 using Subtitles.Parsers;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 ///<summary> Defines a storyboard script to be generated. </summary>
@@ -260,7 +261,7 @@ public abstract class StoryboardObjectGenerator : Script
             (int)(frequencyCutOff / (context.GetFftFrequency(path) * .5f) * fft.Length) :
             fft.Length;
 
-        var resultFft = Configuration.Default.MemoryAllocator.Allocate<float>(magnitudes);
+        var resultFft = MemoryAllocator.Default.Allocate<float>(magnitudes);
         disposables.Add(resultFft);
 
         var resultSpan = resultFft.Memory.Span;

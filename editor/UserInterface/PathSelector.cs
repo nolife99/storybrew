@@ -48,18 +48,23 @@ public class PathSelector : Widget
             switch (mode)
             {
                 case PathSelectorMode.Folder:
-                    Manager.ScreenLayerManager.OpenFolderPicker(textbox.Value, path => textbox.Value = path); break;
+                    Manager.ScreenLayerManager.OpenFolderPicker(textbox.Value.ToString(), path => textbox.Value = path);
+                    break;
 
                 case PathSelectorMode.OpenFile:
-                    Manager.ScreenLayerManager.OpenFilePicker(textbox.Value, "", Filter, path => textbox.Value = path);
-                    break;
+                    Manager.ScreenLayerManager.OpenFilePicker(textbox.Value.ToString(),
+                        "",
+                        Filter,
+                        path => textbox.Value = path); break;
 
                 case PathSelectorMode.OpenDirectory:
-                    Manager.ScreenLayerManager.OpenFilePicker("", textbox.Value, Filter, path => textbox.Value = path);
-                    break;
+                    Manager.ScreenLayerManager.OpenFilePicker("",
+                        textbox.Value.ToString(),
+                        Filter,
+                        path => textbox.Value = path); break;
 
                 case PathSelectorMode.SaveFile:
-                    Manager.ScreenLayerManager.OpenSaveLocationPicker(textbox.Value,
+                    Manager.ScreenLayerManager.OpenSaveLocationPicker(textbox.Value.ToString(),
                         SaveExtension,
                         Filter,
                         path => textbox.Value = path); break;
@@ -71,9 +76,9 @@ public class PathSelector : Widget
     public override Vector2 MaxSize => layout.MaxSize;
     public override Vector2 PreferredSize => layout.PreferredSize;
 
-    public string LabelText { get => textbox.LabelText; init => textbox.LabelText = value; }
+    public ReadOnlySpan<char> LabelText { get => textbox.LabelText; init => textbox.LabelText = value; }
 
-    public string Value { get => textbox.Value; set => textbox.Value = value; }
+    public ReadOnlySpan<char> Value { get => textbox.Value; set => textbox.Value = value; }
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<PathSelectorStyle>(BuildStyleName());
 

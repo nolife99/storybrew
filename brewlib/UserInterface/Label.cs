@@ -17,12 +17,12 @@ public class Label(WidgetManager manager) : Widget(manager)
 
     public override Vector2 PreferredSize => textDrawable.Size;
 
-    public string Text
+    public ReadOnlySpan<char> Text
     {
         get => textDrawable.Text;
         set
         {
-            if (textDrawable.Text == value) return;
+            if (textDrawable.Text.Equals(value, StringComparison.Ordinal)) return;
 
             textDrawable.Text = value;
             InvalidateAncestorLayout();
@@ -111,7 +111,7 @@ public class Label(WidgetManager manager) : Widget(manager)
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
-        if (!string.IsNullOrWhiteSpace(textDrawable.Text))
+        if (!textDrawable.Text.IsNullOrWhiteSpace())
             textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
     }
 

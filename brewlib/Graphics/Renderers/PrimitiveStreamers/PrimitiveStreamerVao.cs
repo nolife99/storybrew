@@ -6,17 +6,18 @@ using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
 
 internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : struct
 {
     readonly int commandSize;
 
-    readonly GpuCommandSync commandSync = new();
     readonly VertexDeclaration vertexDeclaration;
     bool Bound;
-    protected nint commandPtrOffset;
 
-    nint commandsPtr;
+    PooledList<byte> commandBuffer;
+
     protected int totalQueuedPrimitives, queuedRenders;
     int vertexArrayId = -1, commandBufferId = -1, commandBufferSize;
 
@@ -34,7 +35,6 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
             Unsafe.SizeOf<MultiDrawArraysIndirectCommand>() :
             Unsafe.SizeOf<MultiDrawElementsIndirectCommand>();
 
-        initializeVertexBuffer();
         initializeDrawCommandBuffer(maxPrimitivesPerBatch);
 
         if (!indices.IsEmpty) initializeIndexBuffer(indices);
@@ -81,14 +81,14 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
     {
         if (!Bound) return;
 
-        var dataSize = queuedRenders * commandSize;
-        GL.FlushMappedBufferRange(BufferTarget.DrawIndirectBuffer, commandPtrOffset, dataSize);
+        GL.BufferSubData(BufferTarget.DrawIndirectBuffer,
+            0,
+            commandBuffer.Count,
+            ref MemoryMarshal.GetReference(commandBuffer.AsReadOnlySpan()));
 
         internalRender(type, vertexCount);
-        commandSync.LockRange(commandPtrOffset, dataSize);
 
-        commandPtrOffset += dataSize;
-        if (commandPtrOffset + MaxPrimitivesPerBatch * commandSize > commandBufferSize) commandPtrOffset = 0;
+        commandBuffer.Clear();
 
         queuedRenders = 0;
         totalQueuedPrimitives = 0;
@@ -102,17 +102,11 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         var baseIndex = (totalQueuedPrimitives - PrimitivesInBatch) * vertexCount;
         internalQueueRender(ref baseIndex);
 
-        if (commandSync.WaitForRange(commandPtrOffset, commandSize) && commandBufferSize < 1 << 21)
-        {
-            initializeDrawCommandBuffer(commandBufferSize / commandSize * 2);
-            commandPtrOffset = 0;
-        }
-
+        var commandBytes = commandBuffer.GetInsertSpan(commandBuffer.Count, commandSize, false);
         if (IndexBufferId != -1)
         {
-            ref var command = ref Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<MultiDrawElementsIndirectCommand>(),
-                    commandsPtr + commandPtrOffset),
-                queuedRenders);
+            ref var command =
+                ref Unsafe.As<byte, MultiDrawElementsIndirectCommand>(ref MemoryMarshal.GetReference(commandBytes));
 
             command.Count = (uint)(PrimitivesInBatch * indexCount);
             command.InstanceCount = 1;
@@ -122,9 +116,8 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         }
         else
         {
-            ref var command = ref Unsafe.Add(ref Unsafe.AddByteOffset(ref Unsafe.NullRef<MultiDrawArraysIndirectCommand>(),
-                    commandsPtr + commandPtrOffset),
-                queuedRenders);
+            ref var command =
+                ref Unsafe.As<byte, MultiDrawArraysIndirectCommand>(ref MemoryMarshal.GetReference(commandBytes));
 
             command.Count = (uint)(PrimitivesInBatch * indexCount);
             command.InstanceCount = 1;
@@ -170,20 +163,12 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         commandBufferId = GL.GenBuffer();
         commandBufferSize = minRenderableVertexCount * commandSize;
 
-        GL.BindBuffer(BufferTarget.DrawIndirectBuffer, commandBufferId);
-        GL.BufferStorage(BufferTarget.DrawIndirectBuffer,
-            commandBufferSize,
-            0,
-            BufferStorageFlags.MapWriteBit | BufferStorageFlags.MapPersistentBit);
+        commandBuffer = new(minRenderableVertexCount);
 
-        commandsPtr = GL.MapBufferRange(BufferTarget.DrawIndirectBuffer,
-            0,
-            commandBufferSize,
-            MapBufferAccessMask.MapWriteBit |
-            MapBufferAccessMask.MapPersistentBit |
-            MapBufferAccessMask.MapInvalidateBufferBit |
-            MapBufferAccessMask.MapUnsynchronizedBit |
-            MapBufferAccessMask.MapFlushExplicitBit);
+        GL.BindBuffer(BufferTarget.DrawIndirectBuffer, commandBufferId);
+        GL.BufferStorage(BufferTarget.DrawIndirectBuffer, commandBufferSize, 0, BufferStorageFlags.DynamicStorageBit);
+
+        initializeVertexBuffer();
     }
 
     void setupVertexArray(Shader shader)
@@ -214,7 +199,7 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
 
         if (IndexBufferId != -1) GL.DeleteBuffer(IndexBufferId);
 
-        if (disposing) commandSync.Dispose();
+        if (disposing) commandBuffer.Dispose();
     }
 
     public static bool HasCapabilities() => GLFW.ExtensionSupported("GL_ARB_buffer_storage") &&

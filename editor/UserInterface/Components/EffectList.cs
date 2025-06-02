@@ -14,6 +14,7 @@ using BrewLib.Util;
 using ScreenLayers;
 using Storyboarding;
 using Util;
+using ZLinq;
 
 public partial class EffectList : Widget
 {
@@ -69,7 +70,7 @@ public partial class EffectList : Widget
             project.GetEffectNames());
 
         newScriptButton.OnClick += (_, _)
-            => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name));
+            => Manager.ScreenLayerManager.ShowPrompt("Script name", name => createScript(name.ToString()));
 
         project.OnEffectsChanged += project_OnEffectsChanged;
         refreshEffects();
@@ -99,7 +100,8 @@ public partial class EffectList : Widget
     void refreshEffects()
     {
         effectsLayout.ClearWidgets();
-        foreach (var effect in project.Effects.OrderBy(e => e.Name)) effectsLayout.Add(createEffectWidget(effect));
+        foreach (var effect in project.Effects.AsValueEnumerable().OrderBy(e => e.Name))
+            effectsLayout.Add(createEffectWidget(effect));
     }
 
     LinearLayout createEffectWidget(Effect effect)
@@ -263,7 +265,7 @@ public partial class EffectList : Widget
             effect.Name,
             newName =>
             {
-                effect.Name = newName;
+                effect.Name = newName.ToString();
                 refreshEffects();
             });
 

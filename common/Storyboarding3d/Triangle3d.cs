@@ -80,7 +80,7 @@ public class Triangle3d : Node3d, HasOsbSprites
     }
 
     /// <inheritdoc/>
-    public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
+    public override void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState)
     {
         var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
 

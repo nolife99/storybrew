@@ -5,14 +5,14 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
-using Collections.Pooled;
 using IO;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 public class IntegratedCompressor : ImageCompressor
 {
     readonly PooledList<Task> tasks = new();
-    readonly PooledSet<string> toCleanup = new();
+    readonly PooledHashSet<string> toCleanup = new();
 
     public IntegratedCompressor(string utilityPath = null) : base(utilityPath)
         => container = new AssemblyResourceContainer(typeof(Argument).Assembly, "BrewLib");

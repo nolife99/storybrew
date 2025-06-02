@@ -29,7 +29,7 @@ public class Button : Widget, Field
         label.PreferredSize.X + padding.Horizontal,
         label.PreferredSize.Y + padding.Vertical);
 
-    public string Text { get => label.Text; set => label.Text = value; }
+    public ReadOnlySpan<char> Text { get => label.Text; set => label.Text = value; }
 
     public IconFont Icon { get => label.Icon; set => label.Icon = value; }
 

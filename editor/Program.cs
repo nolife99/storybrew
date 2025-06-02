@@ -1,18 +1,20 @@
-﻿namespace StorybrewEditor;
+namespace StorybrewEditor;
 
 using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Util;
-using OpenTK.Core;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 using Util;
 using Vector = System.Numerics.Vector;
 
@@ -89,6 +91,8 @@ public static class Program
                 NetHelper.Client.DefaultRequestHeaders.Add("user-agent", Name);
                 editor.Initialize(displayDevice);
 
+                Native.SetWindowIcon(typeof(Editor), "icon.ico");
+
                 using (AudioManager = createAudioManager())
                     runMainLoop(window,
                         editor,
@@ -124,7 +128,6 @@ public static class Program
         });
 
         Native.InitializeHandle(window);
-        Native.SetWindowIcon(typeof(Editor), "icon.ico");
 
         if (Vector.IsHardwareAccelerated) Trace.WriteLine($"SIMD Vector Alignment: {Vector<byte>.Count} bytes");
 
@@ -150,9 +153,7 @@ public static class Program
             var cur = (float)GLFW.GetTime();
             var fixedUpdates = 0;
 
-            window.NewInputFrame();
-            GLFW.PollEvents();
-
+            window.ProcessEvents(0);
             AudioManager.Update();
 
             while (cur - fixedRate >= fixedRateUpdate && fixedUpdates++ < 2)
@@ -183,7 +184,7 @@ public static class Program
             var active = (float)GLFW.GetTime() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Utils.AccurateSleep(sleepTime, 8);
+            if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
 
             var frameTime = cur - prev;
             prev = cur;
@@ -193,12 +194,39 @@ public static class Program
             avActive = (active + avActive) * .5f;
             longest = Math.Max(frameTime, longest);
 
-            Stats =
-                $"{1 / av:0}/{1 / avActive:0}fps (act:{avActive * 1000:f2} avg:{av * 1000:f2} hi:{longest * 1000:f2})\n{draws} draws";
+            buildStatsMessage(editor, av, avActive, longest, draws);
 
             longest = 0;
             lastStat = cur;
         }
+    }
+
+    static void buildStatsMessage(Editor editor, float av, float avActive, float longest, int draws)
+    {
+        if (!editor.statsLabel.Visible) return;
+
+        var result = TempList<char>.Create(128);
+
+        result.AddRangeFormatted(1 / av, "f0", CultureInfo.CurrentCulture);
+        result.Add('/');
+        result.AddRangeFormatted(1 / avActive, "f0", CultureInfo.CurrentCulture);
+
+        result.AddRange("fps (act:".AsSpan());
+        result.AddRangeFormatted(avActive * 1000, "f2", CultureInfo.CurrentCulture);
+
+        result.AddRange(" avg:".AsSpan());
+        result.AddRangeFormatted(av * 1000, "f2", CultureInfo.CurrentCulture);
+
+        result.AddRange(" hi:".AsSpan());
+        result.AddRangeFormatted(longest * 1000, "f2", CultureInfo.CurrentCulture);
+
+        result.AddRange(")\n".AsSpan());
+
+        result.AddRangeFormatted(draws, "", CultureInfo.CurrentCulture);
+        result.AddRange(" draws".AsSpan());
+
+        using TempListInternals<char> internals = new(result);
+        editor.statsLabel.Text = internals.Items.AsSpan(0, internals.Size);
     }
 
     #endregion

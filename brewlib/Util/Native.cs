@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using OpenTK.Windowing.Desktop;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 using Image = OpenTK.Windowing.Common.Input.Image;
 
 public static class Native
@@ -25,12 +26,15 @@ public static class Native
             if (iconResource is null) return;
 
             image = SixLabors.ImageSharp.Image.Load<Rgba32>(iconResource);
+            image.Mutate(x => x.Resize(new(48), KnownResamplers.Triangle, false));
         }
 
         var bytes = ArrayPool<byte>.Shared.Rent(image.Width * image.Height * Unsafe.SizeOf<Rgba32>());
         image.CopyPixelDataTo(bytes);
 
         Window.Icon = new(new Image(image.Width, image.Height, bytes));
+
+        image.Dispose();
         ArrayPool<byte>.Shared.Return(bytes);
     }
 }

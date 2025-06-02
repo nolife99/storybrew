@@ -2,8 +2,9 @@
 
 using System;
 using System.Numerics;
-using Collections.Pooled;
 using Skinning.Styles;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Unsafe;
 using Util;
 
 public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
@@ -119,7 +120,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         var usedSpace = 0f;
 
         // Create a list to hold layout items
-        using PooledList<LayoutItem> items = new(Children.Length);
+        using var items = TempList<LayoutItem>.Create(Children.Length);
         foreach (var child in Children)
         {
             // Ignore anchored children
@@ -158,7 +159,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             usedSpace = totalSpacing;
             scalableItems = 0;
 
-            foreach (ref var item in items.Span)
+            foreach (ref var item in items.AsSpan())
             {
                 // Adjust item length if scalable
                 if (!item.Widget.CanGrow && adjustment > 0) item.Scalable = false;

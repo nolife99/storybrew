@@ -2,7 +2,7 @@
 
 using CommandValues;
 
-internal class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, CommandValue
+internal class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     public int LoopCount = 1;
     public float LoopStartTime, LoopDuration;

@@ -221,7 +221,7 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 
     public int CalculateSize(OsbLayer osbLayer)
     {
-        ExportSettings exportSettings = new() { OptimiseSprites = false };
+        var exportSettings = ExportSettings.Default;
 
         using ByteCounterStream stream = new();
         using StreamWriter writer = new(stream, Project.Encoding);

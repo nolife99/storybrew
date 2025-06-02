@@ -94,10 +94,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     sealed class ActionRunner(ActionQueueContext context) : IAsyncDisposable
     {
-        CancellationTokenRegistration registration;
         Task thread;
-        int threadId;
-
         CancellationTokenSource tokenSrc;
 
         public async ValueTask DisposeAsync()
@@ -113,7 +110,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 await tokenSrc.CancelAsync();
 
             tokenSrc.Dispose();
-            await registration.DisposeAsync();
         }
 
         internal void EnsureThreadAlive()
@@ -123,20 +119,21 @@ public sealed class AsyncActionQueue<T> : IDisposable
             tokenSrc?.Dispose();
             tokenSrc = new();
 
-            thread = Task.Factory.StartNew(async () =>
+            thread = Task.Factory.StartNew(async cancellationToken =>
                 {
-                    threadId = Environment.CurrentManagedThreadId;
-                    Trace.WriteLine($"Started thread {threadId}");
+                    var localToken = (CancellationTokenSource)cancellationToken;
+                    Trace.WriteLine($"Started thread {Environment.CurrentManagedThreadId}");
 
-                    registration =
-                        tokenSrc.Token.UnsafeRegister(t => Trace.WriteLine($"Aborting thread {(int)t}"), threadId);
+                    await using var registration = localToken.Token.UnsafeRegister(_
+                            => Trace.WriteLine($"Aborting thread {Environment.CurrentManagedThreadId}"),
+                        null);
 
                     var mustSleep = false;
-                    while (true)
+                    while (!localToken.IsCancellationRequested)
                     {
                         if (mustSleep)
                         {
-                            await Task.Delay(200);
+                            await Task.Delay(200, localToken.Token);
                             mustSleep = false;
                         }
 
@@ -144,7 +141,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         {
                             if (thread is null)
                             {
-                                Trace.WriteLine($"Exiting thread {threadId}");
+                                Trace.WriteLine($"Exiting thread {Environment.CurrentManagedThreadId}");
                                 return;
                             }
 
@@ -181,17 +178,18 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
                         try
                         {
-                            task.Action(tokenSrc);
+                            task.Action(localToken);
                         }
                         catch (Exception e)
                         {
-                            if (!tokenSrc.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
+                            if (!localToken.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
                         }
 
                         Interlocked.Decrement(ref context.Running);
                         if (task.MustRunAlone) context.RunningLoneTask = false;
                     }
                 },
+                tokenSrc,
                 tokenSrc.Token,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);

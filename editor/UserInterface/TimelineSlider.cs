@@ -11,6 +11,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using StorybrewCommon.Mapset;
+using ZLinq;
 
 public class TimelineSlider : Slider
 {
@@ -248,7 +249,7 @@ public class TimelineSlider : Slider
         var beatmap = project.MainBeatmap;
 
         var leftTimingPoint = beatmap.GetTimingPointAt(leftTime);
-        using var timingPoints = beatmap.TimingPoints.GetEnumerator();
+        using var timingPoints = beatmap.TimingPoints.AsValueEnumerable().GetEnumerator();
 
         if (!timingPoints.MoveNext()) return;
 

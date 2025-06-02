@@ -32,9 +32,8 @@ internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStre
         var vertexDataSize = totalQueuedPrimitives * PrimitiveSize;
         GL.FlushMappedBufferRange(BufferTarget.ArrayBuffer, bufferOffset, vertexDataSize);
 
-        if (IndexBufferId != -1)
-            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandPtrOffset, queuedRenders, 0);
-        else GL.MultiDrawArraysIndirect(type, commandPtrOffset, queuedRenders, 0);
+        if (IndexBufferId != -1) GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
+        else GL.MultiDrawArraysIndirect(type, 0, queuedRenders, 0);
 
         sync.LockRange(bufferOffset, vertexDataSize);
 

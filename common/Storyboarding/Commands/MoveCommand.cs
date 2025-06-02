@@ -9,17 +9,13 @@ public record MoveCommand(OsbEasing easing,
     CommandPosition startValue,
     CommandPosition endValue) : Command<CommandPosition>("M", easing, startTime, endTime, startValue, endValue)
 {
-    public override CommandPosition GetTransformedStartValue(StoryboardTransform transform)
+    protected override CommandPosition GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToPosition(StartValue);
 
-    public override CommandPosition GetTransformedEndValue(StoryboardTransform transform)
+    protected override CommandPosition GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToPosition(EndValue);
 
     public override CommandPosition ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
-    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
-        new MoveCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) :
-        this;
 }
 
 public record MoveXCommand(OsbEasing easing,
@@ -28,17 +24,13 @@ public record MoveXCommand(OsbEasing easing,
     CommandDecimal startValue,
     CommandDecimal endValue) : Command<CommandDecimal>("MX", easing, startTime, endTime, startValue, endValue)
 {
-    public override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
+    protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToPositionX(StartValue);
 
-    public override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
+    protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToPositionX(EndValue);
 
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
-    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
-        new MoveXCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) :
-        this;
 }
 
 public record MoveYCommand(OsbEasing easing,
@@ -47,15 +39,11 @@ public record MoveYCommand(OsbEasing easing,
     CommandDecimal startValue,
     CommandDecimal endValue) : Command<CommandDecimal>("MY", easing, startTime, endTime, startValue, endValue)
 {
-    public override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
+    protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToPositionY(StartValue);
 
-    public override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
+    protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToPositionY(EndValue);
 
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
-    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
-        new MoveYCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) :
-        this;
 }

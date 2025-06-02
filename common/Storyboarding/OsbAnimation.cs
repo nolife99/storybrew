@@ -2,7 +2,9 @@
 
 using System;
 using System.Globalization;
+using System.IO;
 using BrewLib.Memory;
+using BrewLib.Util;
 
 /// <summary> A type of <see cref="OsbSprite"/> that loops through given frames, or animates. </summary>
 public class OsbAnimation : OsbSprite
@@ -28,7 +30,7 @@ public class OsbAnimation : OsbSprite
         var span = TexturePath.AsSpan();
         var dotIndex = span.LastIndexOf('.');
         var frame = GetFrameAt(time);
-        var digits = frame == 0 ? 1 : (int)float.Floor(float.Log10(frame) + 1);
+        var digits = StringHelper.GetDigitCount(frame);
 
         Span<char> chars = stackalloc char[span.Length + digits];
         if (dotIndex < 0)
@@ -56,5 +58,21 @@ public class OsbAnimation : OsbSprite
         }
 
         return Math.Max(0, (int)frame);
+    }
+
+    internal override void WriteHeader(TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer layer,
+        StoryboardTransform transform)
+    {
+        writer.Write("Animation,");
+        WriteHeaderCommon(writer, exportSettings, layer, transform);
+
+        var builder = StringHelper.StringBuilderPool.Retrieve();
+        builder.Append(exportSettings.NumberFormat, $",{FrameCount},{FrameDelay},{LoopType}");
+
+        writer.WriteLine(builder);
+
+        StringHelper.StringBuilderPool.Release(builder);
     }
 }

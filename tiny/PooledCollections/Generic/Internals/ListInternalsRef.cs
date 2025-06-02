@@ -1,0 +1,36 @@
+﻿namespace Tiny.PooledCollections.Generic.Internals.Safe;
+
+using System;
+using System.Runtime.CompilerServices;
+
+public readonly ref struct ListInternalsRef<T>
+{
+    [NonSerialized] public readonly int Size;
+    [NonSerialized] public readonly int Version;
+    [NonSerialized] public readonly bool ClearItems;
+    [NonSerialized] public readonly ReadOnlySpan<T> Items;
+
+    public ListInternalsRef(PooledList<T> source)
+    {
+        Size = source._size;
+        Version = source._version;
+        ClearItems = PooledList<T>.s_clearItems;
+        Items = source._items;
+    }
+}
+
+partial class CollectionInternals
+{
+    /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ListInternalsRef<T> GetRef<T>(PooledList<T> source) => new(source);
+
+    /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this PooledList<T> source) => source._items.AsSpan(0, source._size);
+
+    /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this PooledList<T> source)
+        => source._items.AsMemory(0, source._size);
+}

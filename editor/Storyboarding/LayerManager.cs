@@ -1,19 +1,22 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
-using System.Collections.Generic;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
+using Tiny.PooledCollections.Generic;
 
-public class LayerManager
+public class LayerManager : IDisposable
 {
     public int LayersCount => Layers.Count;
-    public List<EditorStoryboardLayer> Layers { get; } = [];
+    public PooledList<EditorStoryboardLayer> Layers { get; } = [];
 
-    public List<EditorStoryboardLayer> FindLayers(Predicate<EditorStoryboardLayer> predicate) => Layers.FindAll(predicate);
+    public void Dispose() => Layers.Dispose();
+
+    public PooledList<EditorStoryboardLayer> FindLayers(Predicate<EditorStoryboardLayer> predicate)
+        => Layers.FindAll(predicate);
 
     public event EventHandler OnLayersChanged;
 
@@ -24,7 +27,7 @@ public class LayerManager
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Replace(List<EditorStoryboardLayer> oldLayers, List<EditorStoryboardLayer> newLayers)
+    public void Replace(PooledList<EditorStoryboardLayer> oldLayers, PooledList<EditorStoryboardLayer> newLayers)
     {
         oldLayers = [..oldLayers];
         foreach (var newLayer in newLayers)
@@ -55,7 +58,7 @@ public class LayerManager
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Replace(EditorStoryboardLayer oldLayer, List<EditorStoryboardLayer> newLayers)
+    public void Replace(EditorStoryboardLayer oldLayer, PooledList<EditorStoryboardLayer> newLayers)
     {
         var index = Layers.IndexOf(oldLayer);
         if (index != -1)

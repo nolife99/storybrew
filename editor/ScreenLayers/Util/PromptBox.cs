@@ -4,7 +4,8 @@ using System;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 
-public class PromptBox(string title, string description, string initialText, Action<string> action) : UiScreenLayer
+public class PromptBox(string title, string description, string initialText, Action<ReadOnlySpan<char>> action)
+    : UiScreenLayer
 {
     LinearLayout mainLayout;
     Button okButton, cancelButton;

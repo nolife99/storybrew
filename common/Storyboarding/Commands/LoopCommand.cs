@@ -1,11 +1,13 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using CommandValues;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 
 #pragma warning disable CS1591
-public class LoopCommand : CommandGroup, IFragmentableCommand
+public class LoopCommand : CommandGroup
 {
     public LoopCommand(float startTime, int loopCount)
     {
@@ -32,28 +34,6 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
         return header.ToHashCode();
     }
 
-    public IFragmentableCommand GetFragment(float startTime, float endTime)
-    {
-        if (!IsFragmentable ||
-            (endTime - startTime) % CommandsDuration != 0 ||
-            (startTime - StartTime) % CommandsDuration != 0) return this;
-
-        var loopCount = (int)float.Round((endTime - startTime) / CommandsDuration);
-        LoopCommand loopFragment = new(startTime, loopCount);
-        foreach (var c in commands) loopFragment.Add(c);
-        return loopFragment;
-    }
-
-    public IEnumerable<int> GetNonFragmentableTimes()
-    {
-        var nonFragmentableTimes = new HashSet<int>(LoopCount * (int)(CommandsDuration - 1));
-        for (var i = 0; i < LoopCount; i++)
-        for (var j = 0; j < CommandsDuration - 1; ++j)
-            nonFragmentableTimes.Add((int)StartTime + i * (int)CommandsDuration + 1 + j);
-
-        return nonFragmentableTimes;
-    }
-
     public override void EndGroup()
     {
         var commandsStartTime = CommandsStartTime;
@@ -66,8 +46,21 @@ public class LoopCommand : CommandGroup, IFragmentableCommand
         base.EndGroup();
     }
 
-    protected override string GetCommandGroupHeader(ExportSettings exportSettings)
-        => $"L,{(exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat)},{LoopCount.ToString(exportSettings.NumberFormat)}";
+    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
+    {
+        var list = TempList<char>.Create();
+        list.AddRange(['L', ',']);
+
+        using (var startTimeString =
+            (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(StartTime))
+            .ToOsbString(exportSettings)) list.AddRange(startTimeString.AsReadOnlySpan());
+
+        list.Add(',');
+        using (var groupString = ((CommandDecimal)LoopCount).ToOsbString(exportSettings))
+            list.AddRange(groupString.AsReadOnlySpan());
+
+        return list;
+    }
 
     public override bool Equals(object obj) => obj is LoopCommand loop && Equals(loop);
 

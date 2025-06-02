@@ -1,11 +1,11 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
-using Collections.Pooled;
 using StorybrewCommon.Storyboarding;
+using Tiny.PooledCollections.Generic;
 
 public class FrameStats
 {
-    public readonly PooledSet<string> LoadedPaths = [];
+    public readonly PooledHashSet<string> LoadedPaths = [];
     public readonly PooledList<OsbSprite> OverlappedSprites = [], IncompatibleSprites = [], ProlongedSprites = [];
     public float GpuPixelsFrame, ScreenFill;
     public bool LastBlendingMode;

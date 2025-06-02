@@ -2,8 +2,8 @@
 
 using System;
 using System.Collections.Frozen;
-using Collections.Pooled;
 using Graphics.Text;
+using Tiny.PooledCollections.Generic.Temporary;
 
 public static class LineBreaker
 {
@@ -181,9 +181,12 @@ public static class LineBreaker
         0x0085 // NEXT LINE
     ];
 
-    public static PooledList<(int, int)> Split(string text, TextFont font, float maxWidth, Func<char, TextFont, int> measure)
+    public static TempList<(int, int)> Split(ReadOnlySpan<char> text,
+        TextFont font,
+        float maxWidth,
+        Func<char, TextFont, int> measure)
     {
-        PooledList<(int, int)> list = new();
+        var list = TempList<(int, int)>.Create();
         for (int i = 0, startIndex = 0, lineWidth = 0; i < text.Length; ++i)
         {
             var characterWidth = measure(text[i], font);

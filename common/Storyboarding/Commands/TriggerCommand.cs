@@ -2,6 +2,9 @@
 
 using System;
 using System.Linq;
+using CommandValues;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 
 #pragma warning disable CS1591
 public class TriggerCommand : CommandGroup
@@ -16,10 +19,28 @@ public class TriggerCommand : CommandGroup
 
     public string TriggerName { get; set; }
     public int Group { get; set; }
-    public override bool Active => false;
 
-    protected override string GetCommandGroupHeader(ExportSettings exportSettings)
-        => $"T,{TriggerName},{((int)StartTime).ToString(exportSettings.NumberFormat)},{((int)EndTime).ToString(exportSettings.NumberFormat)},{Group.ToString(exportSettings.NumberFormat)}";
+    protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
+    {
+        var list = TempList<char>.Create();
+        list.AddRange(['T', ',']);
+        list.AddRange(TriggerName.AsSpan());
+
+        using (var startTimeString =
+            (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(StartTime))
+            .ToOsbString(exportSettings)) list.AddRange(startTimeString.AsReadOnlySpan());
+
+        list.Add(',');
+        using (var endTimeString =
+            (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(EndTime)).ToOsbString(
+                exportSettings)) list.AddRange(endTimeString.AsReadOnlySpan());
+
+        list.Add(',');
+        using (var groupString = ((CommandDecimal)Group).ToOsbString(exportSettings))
+            list.AddRange(groupString.AsReadOnlySpan());
+
+        return list;
+    }
 
     public override int GetHashCode()
     {

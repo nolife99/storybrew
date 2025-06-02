@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
-using Collections.Pooled;
+using Tiny.PooledCollections.Generic;
 
 public class ContextMenu<T> : UiScreenLayer
 {
@@ -17,7 +17,7 @@ public class ContextMenu<T> : UiScreenLayer
     LinearLayout mainLayout, optionsLayout;
     Textbox searchTextbox;
 
-    public ContextMenu(string title, Action<T> callback, params T[] options)
+    public ContextMenu(string title, Action<T> callback, params ReadOnlySpan<T> options)
     {
         this.title = title;
         this.callback = callback;
@@ -30,7 +30,7 @@ public class ContextMenu<T> : UiScreenLayer
     {
         this.title = title;
         this.callback = callback;
-        this.options = options.Select(option => new Option(option.ToString(), option)).ToPooledList();
+        this.options = new(options.Select(option => new Option(option.ToString(), option)));
     }
 
     public override bool IsPopup => true;
@@ -84,8 +84,8 @@ public class ContextMenu<T> : UiScreenLayer
         optionsLayout.ClearWidgets();
         foreach (var option in options)
         {
-            if (!string.IsNullOrEmpty(searchTextbox.Value) &&
-                !option.Name.Contains(searchTextbox.Value, StringComparison.Ordinal)) continue;
+            if (!searchTextbox.Value.IsEmpty &&
+                !option.Name.AsSpan().Contains(searchTextbox.Value, StringComparison.Ordinal)) continue;
 
             Button button = new(WidgetManager) { StyleName = "small", Text = option.Name, AnchorFrom = BoxAlignment.Centre };
             optionsLayout.Add(button);

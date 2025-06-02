@@ -3,12 +3,14 @@
 using System;
 using System.Diagnostics;
 using System.Numerics;
-using Collections.Pooled;
 using Graphics;
 using Graphics.Drawables;
 using OpenTK.Windowing.Common;
 using SixLabors.ImageSharp;
 using Skinning.Styles;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary;
 using Util;
 
 public class Widget(WidgetManager manager) : IDisposable
@@ -216,7 +218,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public ReadOnlySpan<Widget> Children
     {
-        get => children.Span;
+        get => children.AsReadOnlySpan();
         init
         {
             ClearWidgets();
@@ -253,7 +255,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public void ClearWidgets()
     {
-        using var state = children.ToPooledList();
+        using var state = TempArray<Widget>.Create(children.AsReadOnlySpan());
         foreach (var child in state) child.Dispose();
     }
 
@@ -426,7 +428,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
     {
-        while (true)
+        for (var i = 0; i < 10; ++i)
         {
             var preferredSize = PreferredSize;
 

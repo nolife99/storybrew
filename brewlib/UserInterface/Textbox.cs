@@ -7,6 +7,8 @@ using Graphics.Drawables;
 using OpenTK.Windowing.Common.Input;
 using SixLabors.ImageSharp;
 using Skinning.Styles;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 using Util;
 using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;
 
@@ -82,7 +84,7 @@ public class Textbox : Widget, Field
                 case Keys.C:
                     if (inputManager.ControlOnly)
                         ClipboardHelper.SetText(selectionStart != cursorPosition ?
-                            Value.AsSpan(SelectionLeft, SelectionLength) :
+                            Value.Slice(SelectionLeft, SelectionLength) :
                             Value);
 
                     break;
@@ -105,7 +107,7 @@ public class Textbox : Widget, Field
                     if (inputManager.ControlOnly)
                     {
                         if (selectionStart == cursorPosition) SelectAll();
-                        ClipboardHelper.SetText(Value.AsSpan(SelectionLeft, SelectionLength));
+                        ClipboardHelper.SetText(Value.Slice(SelectionLeft, SelectionLength));
 
                         ReplaceSelection("");
                     }
@@ -228,17 +230,16 @@ public class Textbox : Widget, Field
         get
         {
             var contentSize = content.PreferredSize;
-            if (string.IsNullOrWhiteSpace(label.Text))
-                return contentSize with { X = Math.Max(contentSize.X, DefaultSize.X) };
+            if (label.Text.IsNullOrWhiteSpace()) return contentSize with { X = Math.Max(contentSize.X, DefaultSize.X) };
 
             var labelSize = label.PreferredSize;
             return new(Math.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);
         }
     }
 
-    public string LabelText { get => label.Text; set => label.Text = value; }
+    public ReadOnlySpan<char> LabelText { get => label.Text; set => label.Text = value; }
 
-    public string Value
+    public ReadOnlySpan<char> Value
     {
         get => content.Text;
         set
@@ -262,20 +263,26 @@ public class Textbox : Widget, Field
 
             acceptMultiline = value;
 
-            if (!acceptMultiline) Value = Value.Replace("\n", "");
+            if (acceptMultiline) return;
+
+            var temp = TempList<char>.Create(Value);
+            temp.RemoveAll(c => c == '\n');
+
+            using TempListInternals<char> internals = new(temp);
+            Value = internals.Items.AsSpan(0, internals.Size);
         }
     }
 
     protected override WidgetStyle Style => Manager.Skin.GetStyle<TextboxStyle>(
         BuildStyleName(hovered ? "hover" : null, hasFocus ? "focus" : null));
 
-    public object FieldValue { get => Value; set => Value = (string)value; }
+    public object FieldValue { get => Value.ToString(); set => Value = (string)value; }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 
-    public void SetValueSilent(string value)
+    public void SetValueSilent(ReadOnlySpan<char> value)
     {
-        content.Text = value ?? "";
+        content.Text = value;
         if (selectionStart > content.Text.Length) selectionStart = content.Text.Length;
 
         if (cursorPosition > content.Text.Length) cursorPosition = content.Text.Length;
@@ -320,16 +327,18 @@ public class Textbox : Widget, Field
         cursorPosition = Value.Length;
     }
 
-    void ReplaceSelection(string text)
+    void ReplaceSelection(ReadOnlySpan<char> text)
     {
         var left = SelectionLeft;
         var right = SelectionRight;
 
-        var newValue = Value;
-        if (left != right) newValue = newValue.Remove(left, right - left);
-        newValue = newValue.Insert(left, text);
+        var newValue = TempList<char>.Create(Value);
+        if (left != right) newValue.RemoveRange(left, right - left);
+        newValue.InsertRange(left, text);
 
-        Value = newValue;
+        using TempListInternals<char> internals = new(newValue);
+        Value = internals.Items.AsSpan(0, internals.Size);
+
         cursorPosition = selectionStart = SelectionLeft + text.Length;
     }
 

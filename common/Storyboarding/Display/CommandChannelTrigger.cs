@@ -2,7 +2,7 @@
 
 using CommandValues;
 
-internal class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, CommandValue
+internal class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     public bool Active;
     public float TriggerTime;

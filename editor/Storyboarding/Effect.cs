@@ -1,14 +1,14 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using StorybrewCommon.Storyboarding;
+using Tiny.PooledCollections.Generic;
 
 public abstract class Effect : IDisposable
 {
-    List<EditorStoryboardLayer> layers;
+    PooledList<EditorStoryboardLayer> layers;
 
     string name = "Unnamed Effect";
     EditorStoryboardLayer placeHolderLayer;
@@ -91,7 +91,7 @@ public abstract class Effect : IDisposable
         Project.LayerManager.Add(layer);
     }
 
-    protected void UpdateLayers(List<EditorStoryboardLayer> newLayers)
+    protected void UpdateLayers(PooledList<EditorStoryboardLayer> newLayers)
     {
         if (placeHolderLayer is not null)
         {
@@ -114,7 +114,7 @@ public abstract class Effect : IDisposable
         Project.QueueEffectUpdate(this);
     }
 
-    public abstract void Update(CancellationTokenSource token);
+    public abstract void Update(CancellationTokenSource cts);
     public abstract void CancelUpdate();
 
     void refreshLayerNames()
@@ -132,6 +132,8 @@ public abstract class Effect : IDisposable
         if (Disposed || !disposing) return;
 
         foreach (var l in layers) Project.LayerManager.Remove(l);
+        layers.Dispose();
+
         Disposed = true;
     }
 

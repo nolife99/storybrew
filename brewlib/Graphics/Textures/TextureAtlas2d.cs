@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
 using System;
-using Collections.Pooled;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Tiny.PooledCollections.Generic;
 
 public sealed class TextureAtlas2d(int width,
     int height,

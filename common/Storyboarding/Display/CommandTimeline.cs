@@ -17,7 +17,7 @@ public interface CommandTimeline
     void EndGroup();
 }
 
-public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, CommandValue
+public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, ICommandValue
 {
     readonly List<CommandChannel<TValue>> channels = [];
 

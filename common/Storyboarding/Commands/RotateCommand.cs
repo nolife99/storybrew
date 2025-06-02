@@ -9,15 +9,11 @@ public record RotateCommand(OsbEasing easing,
     CommandDecimal startValue,
     CommandDecimal endValue) : Command<CommandDecimal>("R", easing, startTime, endTime, startValue, endValue)
 {
-    public override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
+    protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToRotation(StartValue);
 
-    public override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
+    protected override CommandDecimal GetTransformedEndValue(StoryboardTransform transform)
         => transform.ApplyToRotation(EndValue);
 
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
-
-    public override IFragmentableCommand GetFragment(float startTime, float endTime) => IsFragmentable ?
-        new RotateCommand(Easing, startTime, endTime, ValueAtTime(startTime), ValueAtTime(endTime)) :
-        this;
 }

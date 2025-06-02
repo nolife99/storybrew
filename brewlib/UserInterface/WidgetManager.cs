@@ -1,9 +1,7 @@
 ﻿namespace BrewLib.UserInterface;
 
 using System;
-using System.Collections.Generic;
 using System.Numerics;
-using Collections.Pooled;
 using Graphics;
 using Graphics.Cameras;
 using Graphics.Drawables;
@@ -12,11 +10,16 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using ScreenLayers;
 using Skinning;
+using Tiny.PooledCollections;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary;
 using Util;
+using ZLinq;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {
-    readonly PooledDictionary<MouseButton, Widget> clickTargets = new();
+    readonly ArrayDictionary<MouseButton, Widget> clickTargets = new();
 
     public readonly InputManager InputManager;
     public readonly Widget Root;
@@ -102,10 +105,10 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
         DisableGamepadEvents(widget);
 
-        using var buttons = clickTargets.Keys.ToPooledList();
+        using var buttons = TempArray<ArrayEntry<MouseButton>>.Create(clickTargets.KeysAsReadOnlySpan());
         foreach (var key in buttons)
-            if (clickTargets[key] == widget)
-                clickTargets.Remove(key);
+            if (clickTargets[key.Key] == widget)
+                clickTargets.Remove(key.Key);
     }
 
     public void Draw(DrawContext drawContext)
@@ -118,7 +121,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     #region Tooltip
 
-    readonly Dictionary<Widget, Widget> tooltips = new();
+    readonly PooledDictionary<Widget, Widget> tooltips = new();
 
     public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget,
         new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
@@ -138,7 +141,6 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     public void UnregisterTooltip(Widget widget)
     {
-        // TODO: Fix the DivideByZeroException thrown when using pooled dictionary
         if (!tooltips.Remove(widget, out var tooltip)) return;
 
         tooltip.Dispose();
@@ -242,17 +244,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     Widget hoveredDraggableWidget;
     readonly PooledDictionary<MouseButton, object> dragData = [];
 
-    public bool IsDragging
-    {
-        get
-        {
-            foreach (var v in dragData)
-                if (v.Value is not null)
-                    return true;
-
-            return false;
-        }
-    }
+    public bool IsDragging => dragData.AsValueEnumerable().Any(v => v.Value is not null);
 
     void startDragAndDrop(MouseButton button)
     {

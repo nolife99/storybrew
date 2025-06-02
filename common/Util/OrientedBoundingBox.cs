@@ -6,8 +6,7 @@ using SixLabors.ImageSharp;
 #pragma warning disable CS1591
 public readonly struct OrientedBoundingBox
 {
-    readonly Vector2 corner0, corner1, corner2, corner3;
-    readonly Vector2 axis0, axis1;
+    readonly Vector2 corner0, corner1, corner2, corner3, axis0, axis1;
     readonly float origin0, origin1;
 
     public OrientedBoundingBox(Vector2 position, Vector2 origin, float width, float height, float angle)

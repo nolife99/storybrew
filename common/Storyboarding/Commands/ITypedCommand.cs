@@ -4,7 +4,7 @@ using CommandValues;
 using Display;
 
 #pragma warning disable CS1591
-public interface ITypedCommand<TValue> : ICommand where TValue : struct, CommandValue
+public interface ITypedCommand<TValue> : ICommand where TValue : struct, ICommandValue
 {
     TValue StartValue { get; }
     TValue EndValue { get; }

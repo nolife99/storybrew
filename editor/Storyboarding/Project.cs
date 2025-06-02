@@ -19,7 +19,6 @@ using BrewLib.Graphics.Textures;
 using BrewLib.IO;
 using BrewLib.Memory;
 using BrewLib.Util;
-using Collections.Pooled;
 using Mapset;
 using OpenTK.Mathematics;
 using Scripting;
@@ -31,6 +30,8 @@ using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
 using Tiny;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
 using Util;
 using Path = System.IO.Path;
 
@@ -42,7 +43,7 @@ public sealed partial class Project : IDisposable
 
     public static readonly string ProjectsFolder = Path.GetFullPath("projects");
 
-    public static readonly IReadOnlyCollection<KeyValuePair<string, string>> FileFilter =
+    public static readonly KeyValuePair<string, string>[] FileFilter =
     [
         new("project files", string.Join(',', BinaryExtension.TrimStart('.'), TextExtension.TrimStart('.')))
     ];
@@ -207,8 +208,8 @@ public sealed partial class Project : IDisposable
 
     #region Effects
 
-    readonly List<Effect> effects = [];
-    public IReadOnlyCollection<Effect> Effects => effects;
+    readonly PooledList<Effect> effects = [];
+    public ReadOnlySpan<Effect> Effects => effects.AsReadOnlySpan();
 
     public event EventHandler OnEffectsChanged, OnEffectsStatusChanged, OnEffectsContentChanged;
 
@@ -250,9 +251,10 @@ public sealed partial class Project : IDisposable
         Changed = true;
 
         effect.OnChanged += effect_OnChanged;
+        QueueEffectUpdate(effect);
+
         OnEffectsChanged?.Invoke(this, EventArgs.Empty);
 
-        QueueEffectUpdate(effect);
         return effect;
     }
 
@@ -481,7 +483,7 @@ public sealed partial class Project : IDisposable
                 "*.dll"))
     ];
 
-    HashSet<string> importedAssemblies = [];
+    PooledHashSet<string> importedAssemblies = [];
 
     public ICollection<string> ImportedAssemblies
     {
@@ -490,7 +492,7 @@ public sealed partial class Project : IDisposable
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
 
-            importedAssemblies = value as HashSet<string> ?? value.ToHashSet();
+            importedAssemblies = value as PooledHashSet<string> ?? new(value);
             scriptManager.ReferencedAssemblies = ReferencedAssemblies;
         }
     }
@@ -654,7 +656,7 @@ public sealed partial class Project : IDisposable
         }
 
         var assemblyCount = r.ReadInt32();
-        HashSet<string> imported = new(assemblyCount);
+        PooledHashSet<string> imported = new(assemblyCount);
         for (var i = 0; i < assemblyCount; ++i) imported.Add(r.ReadString());
 
         ImportedAssemblies = imported;
@@ -815,13 +817,12 @@ public sealed partial class Project : IDisposable
             var configRoot = effectRoot.Value<TinyObject>("Config");
             var fieldIndex = 0;
 
-            foreach (var fieldProperty in configRoot)
+            foreach (var (key, fieldRoot) in configRoot)
             {
-                var fieldRoot = fieldProperty.Value;
                 var fieldTypeName = fieldRoot.Value<string>("Type");
                 var fieldValue = ObjectSerializer.FromString(fieldTypeName, fieldRoot.Value<string>("Value"));
 
-                effect.Config.UpdateField(fieldProperty.Key,
+                effect.Config.UpdateField(key,
                     fieldRoot.Value<string>("DisplayName"),
                     null,
                     fieldIndex++,
@@ -891,7 +892,7 @@ public sealed partial class Project : IDisposable
         ObjectDisposedException.ThrowIf(Disposed, this);
 
         string osuPath = null, osbPath = null;
-        List<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
+        PooledList<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
 
         await Program.Schedule(() =>
         {
@@ -907,8 +908,9 @@ public sealed partial class Project : IDisposable
         });
 
         var usesOverlayLayer = localLayers.Exists(l => l.OsbLayer is OsbLayer.Overlay);
-
         var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
+
+        localLayers.Dispose();
 
         if (!string.IsNullOrEmpty(osuPath) && diffSpecific.Count != 0)
         {
@@ -956,6 +958,7 @@ public sealed partial class Project : IDisposable
             stream.Commit();
         }
 
+        diffSpecific.Dispose();
         if (exportOsb && sbLayer.Count != 0)
         {
             Trace.WriteLine($"Exporting osb to {osbPath}");
@@ -976,6 +979,8 @@ public sealed partial class Project : IDisposable
 
             await writer.WriteLineAsync("//Storyboard Sound Samples");
         }
+
+        sbLayer.Dispose();
     }
 
     #endregion
@@ -1002,6 +1007,8 @@ public sealed partial class Project : IDisposable
         scriptManager.Dispose();
         TextureContainer.Dispose();
         AudioContainer.Dispose();
+
+        LayerManager.Dispose();
 
         Disposed = true;
     }

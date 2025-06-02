@@ -4,8 +4,8 @@ using System;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 public sealed partial class Shader : IDisposable
@@ -204,7 +204,7 @@ public sealed partial class Shader : IDisposable
 
             sb.Append("> ");
             sb.AppendLine(splitCode[lineNumber]);
-            sb.Append(new string(' ', character + 2));
+            sb.Append(' ', character + 2);
             sb.AppendLine("^");
         }
 

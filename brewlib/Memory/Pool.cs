@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
-using Microsoft.IO;
 
 public sealed class Pool<T>(Action<T> disposer = null) where T : class, new()
 {
@@ -25,9 +24,4 @@ public sealed class Pool<T>(Action<T> disposer = null) where T : class, new()
 
         if (fastItem is not null || Interlocked.CompareExchange(ref fastItem, obj, null) is not null) queue.Enqueue(obj);
     }
-}
-
-public static class Pool
-{
-    public static readonly RecyclableMemoryStreamManager PooledMemoryStreamManager = new();
 }

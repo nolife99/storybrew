@@ -102,7 +102,7 @@ public class HsbColorPicker : Widget, Field
 
     void htmlTextbox_OnValueCommited(object sender, EventArgs e)
     {
-        var success = Rgba32.TryParseHex(htmlTextbox.Value, out var color);
+        var success = Rgba32.TryParseHex(htmlTextbox.Value.ToString(), out var color);
         if (!success)
         {
             updateWidgets();

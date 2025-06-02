@@ -1,5 +1,6 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
+using System;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -7,11 +8,12 @@ using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Tiny.PooledCollections.Generic.Temporary;
 using Vector3 = System.Numerics.Vector3;
 using Vector4 = System.Numerics.Vector4;
 
 ///<summary> Base struct for coloring commands. </summary>
-[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandColor : CommandValue
+[StructLayout(LayoutKind.Sequential)] public readonly record struct CommandColor : ICommandValue
 {
     /// <summary> Represents a <see cref="CommandColor"/> value as the color black. </summary>
     public static readonly CommandColor Black = new(0, 0, 0);
@@ -59,11 +61,24 @@ using Vector4 = System.Numerics.Vector4;
     /// <remarks> Some color information could be lost. </remarks>
     public override int GetHashCode() => 0 | B << 16 | G << 8 | R;
 
-    ///<summary> Converts this instance into a string, formatted as "R, G, B". </summary>
-    public override string ToString() => $"{R}, {G}, {B}";
+    TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings)
+    {
+        Span<char> temp = stackalloc char[3];
+        var list = TempList<char>.Create();
 
-    ///<summary> Converts this instance into a .osb formatted string, formatted as "R,G,B". </summary>
-    public string ToOsbString(ExportSettings exportSettings) => $"{R},{G},{B}";
+        R.TryFormat(temp, out var written, provider: exportSettings.NumberFormat);
+        list.AddRange(temp[..written]);
+        list.Add(',');
+
+        G.TryFormat(temp, out written, provider: exportSettings.NumberFormat);
+        list.AddRange(temp[..written]);
+        list.Add(',');
+
+        B.TryFormat(temp, out written, provider: exportSettings.NumberFormat);
+        list.AddRange(temp[..written]);
+
+        return list;
+    }
 
     /// <summary> Creates a <see cref="CommandColor"/> from RGB byte values. </summary>
     public static CommandColor FromRgb(int r, int g, int b) => new Vector3(r / 255f, g / 255f, b / 255f);

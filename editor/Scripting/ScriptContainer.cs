@@ -7,8 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Loader;
 using System.Threading;
-using Collections.Pooled;
 using StorybrewCommon.Scripting;
+using Tiny.PooledCollections.Generic;
 
 public sealed class ScriptContainer<TScript> : IDisposable where TScript : Script
 {
@@ -63,7 +63,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         get => referencedAssemblies;
         set
         {
-            var newReferencedAssemblies = value.Distinct().ToPooledList();
+            PooledList<string> newReferencedAssemblies = new(value.Distinct());
             if (referencedAssemblies is not null &&
                 newReferencedAssemblies.Count == referencedAssemblies.Count &&
                 newReferencedAssemblies.TrueForAll(referencedAssemblies.Contains)) return;

@@ -6,13 +6,15 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Cameras;
-using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
 using Shaders.Snippets;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Memory;
 using Textures;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
 
 public class QuadRendererBuffered : IQuadRenderer
 {
@@ -63,7 +65,7 @@ public class QuadRendererBuffered : IQuadRenderer
         else textureUniformLocation = shader.GetUniformLocation(TextureUniformName);
 
         var indicesCount = maxQuadsPerBatch * IndexPerQuad;
-        using (var indicesBuffer = Configuration.Default.MemoryAllocator.Allocate<ushort>(indicesCount))
+        using (var indicesBuffer = MemoryAllocator.Default.Allocate<ushort>(indicesCount))
         {
             var indices = indicesBuffer.Memory.Span;
             for (var i = 0; i < maxQuadsPerBatch; ++i)
@@ -151,12 +153,10 @@ public class QuadRendererBuffered : IQuadRenderer
         var queuedRenders = primitiveStreamer.QueuedRenders;
         if (!canBuffer || queuedRenders == 0) return;
 
-        // TODO: Buffer everything at once or map (will save ~15% frametime)
-
         GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             0,
             queuedRenders * Unsafe.SizeOf<Matrix4x4>(),
-            ref MemoryMarshal.GetReference(combinedMatrices.Span));
+            ref MemoryMarshal.GetReference(combinedMatrices.AsReadOnlySpan()));
 
         combinedMatrices.Clear();
 
@@ -165,7 +165,7 @@ public class QuadRendererBuffered : IQuadRenderer
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
                 maxQuadsPerBatch * Unsafe.SizeOf<Matrix4x4>(),
                 queuedRenders * sizeof(long),
-                ref MemoryMarshal.GetReference(bindlessTextures.Span));
+                ref MemoryMarshal.GetReference(bindlessTextures.AsReadOnlySpan()));
 
             bindlessTextures.Clear();
         }
@@ -182,7 +182,7 @@ public class QuadRendererBuffered : IQuadRenderer
         GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             maxQuadsPerBatch * ((DrawState.BindlessTexturesSupported ? sizeof(long) : 0) + Unsafe.SizeOf<Matrix4x4>()),
             queuedRenders * Unsafe.SizeOf<Vector4>(),
-            ref MemoryMarshal.GetReference(clipRegions.Span));
+            ref MemoryMarshal.GetReference(clipRegions.AsReadOnlySpan()));
 
         clipRegions.Clear();
 

@@ -1,17 +1,16 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using Animations;
 using BrewLib.Util;
 using CommandValues;
 using Display;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 
 #pragma warning disable CS1591
-public abstract record Command<TValue> : ITypedCommand<TValue>, IFragmentableCommand, IOffsetable
-    where TValue : struct, CommandValue
+public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable where TValue : struct, ICommandValue
 {
     readonly string identifier;
 
@@ -35,15 +34,6 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IFragmentableCom
     public OsbEasing Easing { get; set; }
     protected virtual bool MaintainValue => true;
     protected virtual bool ExportEndValue => true;
-    protected bool IsFragmentable => StartTime == EndTime || Easing is OsbEasing.None;
-    public abstract IFragmentableCommand GetFragment(float startTime, float endTime);
-
-    public IEnumerable<int> GetNonFragmentableTimes()
-    {
-        if (IsFragmentable) yield break;
-
-        for (var i = 0; i < EndTime - StartTime - 1; ++i) yield return (int)(StartTime + 1 + i);
-    }
 
     public void Offset(float offset)
     {
@@ -80,50 +70,59 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IFragmentableCom
 
         writer.Write(indent);
 
-        var str = ToOsbString(exportSettings, transform);
-        writer.WriteLine(str);
-        StringHelper.StringBuilderPool.Release(str);
+        using var str = ToOsbString(exportSettings, transform);
+        writer.WriteLine(str.AsReadOnlySpan());
     }
 
-    public virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
-    public virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
+    protected virtual TValue GetTransformedStartValue(StoryboardTransform transform) => StartValue;
+    protected virtual TValue GetTransformedEndValue(StoryboardTransform transform) => EndValue;
     public abstract TValue ValueAtProgress(float progress);
 
-    public StringBuilder ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
+    TempList<char> ToOsbString(ExportSettings exportSettings, StoryboardTransform transform)
     {
-        var startTimeString =
-            (exportSettings.UseFloatForTime ? StartTime : (int)StartTime).ToString(exportSettings.NumberFormat);
+        using var startTimeString =
+            (exportSettings.UseFloatForTime ? StartTime : (int)float.Round(StartTime)).ToCharArray(
+                provider: exportSettings.NumberFormat);
 
-        var endTimeString = (exportSettings.UseFloatForTime ? EndTime : (int)EndTime).ToString(exportSettings.NumberFormat);
+        using var endTimeString =
+            (exportSettings.UseFloatForTime ? EndTime : (int)float.Round(EndTime)).ToCharArray(
+                provider: exportSettings.NumberFormat);
 
-        var identity = !transform.IsIdentity;
+        var tranformedStartValue = GetTransformedStartValue(transform);
+        using var startValueString = tranformedStartValue.ToOsbString(exportSettings);
+        using var endValueString =
+            (ExportEndValue ? GetTransformedEndValue(transform) : tranformedStartValue).ToOsbString(exportSettings);
 
-        var tranformedStartValue = identity ? GetTransformedStartValue(transform) : StartValue;
-        var tranformedEndValue = identity ? GetTransformedEndValue(transform) : EndValue;
-        var startValueString = tranformedStartValue.ToOsbString(exportSettings);
-        var endValueString = (ExportEndValue ? tranformedEndValue : tranformedStartValue).ToOsbString(exportSettings);
+        var excludeEnd = startTimeString.AsReadOnlySpan().Equals(endTimeString.AsReadOnlySpan(), StringComparison.Ordinal);
 
-        var result = StringHelper.StringBuilderPool.Retrieve();
-        if (startTimeString == endTimeString) endTimeString = "";
+        var result = TempList<char>.Create();
+        result.AddRange(identifier.AsSpan());
+        result.Add(',');
 
-        result.AppendJoin(',',
-            identifier,
-            ((int)Easing).ToString(exportSettings.NumberFormat),
-            startTimeString,
-            endTimeString,
-            startValueString);
+        using (var easingChars = ((int)Easing).ToCharArray(provider: exportSettings.NumberFormat))
+            result.AddRange(easingChars.AsReadOnlySpan());
 
-        if (startValueString == endValueString) return result;
+        result.Add(',');
+        result.AddRange(startTimeString.AsReadOnlySpan());
 
-        result.Append(',');
-        return result.Append(endValueString);
+        result.Add(',');
+        if (!excludeEnd) result.AddRange(endTimeString.AsReadOnlySpan());
+
+        result.Add(',');
+        result.AddRange(startValueString.AsReadOnlySpan());
+
+        if (!startValueString.AsReadOnlySpan().Equals(endValueString.AsReadOnlySpan(), StringComparison.Ordinal))
+        {
+            result.Add(',');
+            result.AddRange(endValueString.AsReadOnlySpan());
+        }
+
+        return result;
     }
 
     public override string ToString()
     {
-        var str = ToOsbString(ExportSettings.Default, default);
-        var result = str.ToString();
-        StringHelper.StringBuilderPool.Release(str);
-        return result;
+        using var str = ToOsbString(ExportSettings.Default, default);
+        return str.AsReadOnlySpan().ToString();
     }
 }

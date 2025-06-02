@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Frozen;
 using System.Runtime.CompilerServices;
-using Collections.Pooled;
+using Tiny.PooledCollections.Generic;
 
 public sealed class DrawContext : IDisposable
 {

@@ -25,8 +25,12 @@ public class TinyObject : TinyToken, IEnumerable<KeyValuePair<string, TinyToken>
 
     public int Count => items.Count;
 
-    public IEnumerator<KeyValuePair<string, TinyToken>> GetEnumerator() => items.GetEnumerator();
+    IEnumerator<KeyValuePair<string, TinyToken>> IEnumerable<KeyValuePair<string, TinyToken>>.GetEnumerator()
+        => items.GetEnumerator();
+
     IEnumerator IEnumerable.GetEnumerator() => items.GetEnumerator();
+
+    public List<KeyValuePair<string, TinyToken>>.Enumerator GetEnumerator() => items.GetEnumerator();
 
     public void Add(string key, object value) => Add(key, ToToken(value));
 

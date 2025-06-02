@@ -1,11 +1,11 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
 using System.Collections.Generic;
-using Collections.Pooled;
 using Commands;
 using CommandValues;
+using Tiny.PooledCollections.Generic;
 
-internal class CommandChannel<TValue> where TValue : struct, CommandValue
+internal class CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     readonly PooledList<ITypedCommand<TValue>> commands = [];
     public IReadOnlyList<ITypedCommand<TValue>> Commands => commands;

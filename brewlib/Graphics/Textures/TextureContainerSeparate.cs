@@ -1,9 +1,9 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
-using Collections.Pooled;
 using IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Tiny.PooledCollections.Generic;
 
 public sealed class TextureContainerSeparate(ResourceContainer resourceContainer = null,
     TextureOptions textureOptions = null) : TextureContainer

@@ -1,5 +1,6 @@
 ﻿namespace StorybrewCommon.Subtitles.Parsers;
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,7 +31,7 @@ public record SrtParser : SubtitleParser
         StringBuilder sb = new();
 
         while (reader.ReadLine() is { } line)
-            if (string.IsNullOrEmpty(line.Trim()))
+            if (line.AsSpan().Trim().Length == 0)
             {
                 var block = sb.TrimEnd();
                 if (block.Length > 0) yield return block.ToString();

@@ -7,11 +7,13 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Animations;
-using Collections.Pooled;
 using Commands;
 using CommandValues;
 using Scripting;
 using SixLabors.ImageSharp;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Unsafe;
+using ZLinq;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
@@ -34,7 +36,7 @@ public class CommandGenerator
     readonly KeyframedValue<CommandScale> scales = new(InterpolatingFunctions.Scale),
         finalScales = new(InterpolatingFunctions.Scale);
 
-    readonly PooledList<State> states = new();
+    PooledList<State> states = new();
 
     ///<summary> The tolerance threshold for coloring keyframe simplification. </summary>
     public float ColorTolerance { get; set; } = 1;
@@ -65,11 +67,11 @@ public class CommandGenerator
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s start state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State StartState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.Span[0];
+    public ref State StartState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.AsSpan()[0];
 
     /// <summary> Gets the <see cref="CommandGenerator"/>'s end state. </summary>
     /// <remarks> If there are no states, returns a null reference. It is up to the caller to check for this. </remarks>
-    public ref State EndState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.Span[states.Count - 1];
+    public ref State EndState => ref states.Count == 0 ? ref Unsafe.NullRef<State>() : ref states.AsSpan()[states.Count - 1];
 
     /// <summary> Adds a <see cref="State"/> to this instance that will be automatically sorted. </summary>
     public void Add(State state)
@@ -82,7 +84,7 @@ public class CommandGenerator
             return;
         }
 
-        var i = states.BinarySearch(state, state);
+        var i = states.BinarySearch(state, State.Comparer);
         if (i >= 0)
             while (i < count - 1 && states[i + 1].Time <= state.Time)
                 ++i;
@@ -118,7 +120,7 @@ public class CommandGenerator
         bool wasVisible = false, everVisible = false, stateAdded = false;
         var imageSize = BitmapDimensions(sprite.TexturePath);
 
-        foreach (ref var state in states.Span)
+        foreach (ref var state in states.AsSpan())
         {
             var time = state.Time + timeOffset;
             if (sprite is OsbAnimation) imageSize = BitmapDimensions(sprite.GetTexturePathAt(time));
@@ -191,24 +193,11 @@ public class CommandGenerator
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        bool moveX = true, moveY = true;
-        var posSpan = finalPositions.keyframes.Span;
+        var moveX = finalPositions.keyframes.AsValueEnumerable()
+            .All(keyframe => checkPos(keyframe.Value.Y) == checkPos(finalPositions.StartValue.Y));
 
-        foreach (ref var keyframe in posSpan)
-        {
-            if (checkPos(keyframe.Value.Y) == checkPos(finalPositions.StartValue.Y)) continue;
-
-            moveX = false;
-            break;
-        }
-
-        foreach (ref var keyframe in posSpan)
-        {
-            if (checkPos(keyframe.Value.X) == checkPos(finalPositions.StartValue.X)) continue;
-
-            moveY = false;
-            break;
-        }
+        var moveY = finalPositions.keyframes.AsValueEnumerable()
+            .All(keyframe => checkPos(keyframe.Value.X) == checkPos(finalPositions.StartValue.X));
 
         finalPositions.ForEachPair((s, e) =>
             {
@@ -231,7 +220,7 @@ public class CommandGenerator
             loopable);
 
         var scalar = true;
-        foreach (var keyframe in finalScales.keyframes.Span)
+        foreach (var keyframe in finalScales.keyframes)
         {
             if (Math.Abs(checkScale(keyframe.Value.X) - checkScale(keyframe.Value.Y)) < 1) continue;
 
@@ -286,7 +275,7 @@ public class CommandGenerator
         float checkPos(float value) => float.Round(value, PositionDecimals);
     }
 
-    void addKeyframes(ref State state, float time)
+    void addKeyframes(ref readonly State state, float time)
     {
         positions.Add(time, state.Position);
         scales.Add(time, state.Scale);
@@ -315,6 +304,7 @@ public class CommandGenerator
         additive.keyframes.Dispose();
 
         states.Dispose();
+        states = new();
     }
 
     internal static Vector2 BitmapDimensions(string path)
@@ -334,8 +324,10 @@ public class CommandGenerator
 }
 
 /// <summary> Defines all of an <see cref="OsbSprite"/>'s states as a class. </summary>
-public record struct State : IComparer<State>
+public record struct State
 {
+    internal static readonly Comparer<State> Comparer = Comparer<State>.Create((a, b) => float.Sign(a.Time - b.Time));
+
     ///<summary> Represents the additive toggle condition of this state. </summary>
     public bool Additive;
 
@@ -372,8 +364,6 @@ public record struct State : IComparer<State>
         Scale = CommandScale.One;
         Color = CommandColor.White;
     }
-
-    int IComparer<State>.Compare(State x, State y) => Math.Sign(x.Time - y.Time);
 
     /// <summary>
     ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and

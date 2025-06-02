@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime;
 using System.Text;
 using System.Threading.Tasks;
 using BrewLib.Audio;
@@ -18,6 +17,9 @@ using Scripting;
 using Storyboarding;
 using StorybrewCommon.Mapset;
 using StorybrewEditor.Util;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Unsafe;
 using UserInterface;
 using UserInterface.Components;
 using UserInterface.Drawables;
@@ -552,11 +554,20 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         timeline.SetValueSilent(time);
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
-            timeB.Text = Manager.GetContext<Editor>().InputManager.Alt ?
-                $"{storyboardPosition.X:f0}, {storyboardPosition.Y:f0}" :
-                TimeSpan.FromSeconds(time).ToString(@"mm\:ss\.fff", CultureInfo.InvariantCulture);
+            var temp = TempList<char>.Create();
+            if (Manager.GetContext<Editor>().InputManager.Alt)
+            {
+                temp.AddRangeFormatted(storyboardPosition.X, "f0");
+                temp.AddRange(", ".AsSpan());
+                temp.AddRangeFormatted(storyboardPosition.Y, "f0");
+            }
+            else temp.AddRangeFormatted(TimeSpan.FromSeconds(time), @"mm\:ss\.fff");
 
-            warningsLabel.Text = buildWarningMessage();
+            using (TempListInternals<char> internals = new(temp)) timeB.Text = internals.Items.AsSpan(0, internals.Size);
+
+            using (TempArrayInternals<char> internals = new(buildWarningMessage()))
+                warningsLabel.Text = internals.Array.AsSpan(0, internals.Length);
+
             if (warningsLabel.NeedsLayout)
             {
                 warningsLabel.Pack(650);
@@ -574,7 +585,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             previewDrawable.Time = timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
     }
 
-    string buildWarningMessage()
+    TempArray<char> buildWarningMessage()
     {
         var warnings = StringHelper.StringBuilderPool.Retrieve();
         var stats = proj.FrameStats;
@@ -682,7 +693,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         else if (totalGpuMemory >= 256)
             warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {totalGpuMemory:0.0}MB Total Texture Memory\n");
 
-        var str = warnings.TrimEnd().ToString();
+        var str = TempArray<char>.Create(warnings.TrimEnd().Length);
+        warnings.CopyTo(0, str.AsSpan(), warnings.Length);
+
         StringHelper.StringBuilderPool.Release(warnings);
         return str;
 
@@ -697,7 +710,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
     {
         base.Resize(width, height);
 
-        var bottomRightWidth = 374;
+        const int bottomRightWidth = 374;
         bottomRightLayout.Pack(bottomRightWidth / 1.6f);
         bottomLeftLayout.Pack(WidgetManager.Size.X - bottomRightWidth);
 
@@ -739,7 +752,6 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
                 await Task.Delay(5000);
 
-                GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
                 GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, true, true);
             });
     });

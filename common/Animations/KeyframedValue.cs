@@ -1,12 +1,14 @@
-﻿namespace StorybrewCommon.Animations;
+namespace StorybrewCommon.Animations;
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using Collections.Pooled;
 using Scripting;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Unsafe;
+using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary>A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.</summary>
 /// <typeparam name="TValue"> The type of values of the keyframes. </typeparam>
@@ -51,6 +53,8 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
     IEnumerator<Keyframe<TValue>> IEnumerable<Keyframe<TValue>>.GetEnumerator() => keyframes.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => keyframes.GetEnumerator();
+
+    public PooledList<Keyframe<TValue>>.Enumerator GetEnumerator() => keyframes.GetEnumerator();
 
     /// <summary>Adds a keyframe to the keyframed value.</summary>
     /// <param name="keyframe"> The keyframe to add. </param>
@@ -160,7 +164,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     {
         if (keyframes.Count == 0) return;
 
-        var span = keyframes.Span;
+        var span = keyframes.AsSpan();
 
         var startTime = explicitStartTime ?? span[0].Time;
         var endTime = explicitEndTime ?? span[^1].Time;
@@ -260,16 +264,14 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
     int indexFor(Keyframe<TValue> keyframe, bool before)
     {
-        var span = keyframes.Span;
-
-        var i = span.BinarySearch(keyframe, Keyframe<TValue>.Comparer);
+        var i = keyframes.BinarySearch(keyframe, Keyframe<TValue>.Comparer);
         if (i >= 0)
         {
             if (before)
-                while (i > 0 && span[i].Time >= keyframe.Time)
+                while (i > 0 && keyframes[i].Time >= keyframe.Time)
                     --i;
             else
-                while (i < span.Length && span[i].Time <= keyframe.Time)
+                while (i < keyframes.Count && keyframes[i].Time <= keyframe.Time)
                     ++i;
         }
         else i = ~i;
@@ -338,30 +340,28 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
     void SimplifyKeyframes(float tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
     {
-        var span = keyframes.Span;
-
         if (tolerance <= .00001f)
         {
             PooledList<Keyframe<TValue>> unionKeyframes = new();
             var comparer = EqualityComparer<TValue>.Default;
 
-            for (var i = 0; i < span.Length; ++i)
+            for (var i = 0; i < keyframes.Count; ++i)
             {
-                var startKeyframe = span[i];
+                var startKeyframe = keyframes[i];
                 unionKeyframes.Add(startKeyframe);
 
-                for (var j = i + 1; j < span.Length; j++)
+                for (var j = i + 1; j < keyframes.Count; j++)
                 {
-                    var endKeyframe = span[j];
+                    var endKeyframe = keyframes[j];
                     if (!comparer.Equals(startKeyframe.Value, endKeyframe.Value))
                     {
-                        if (i < j - 1) unionKeyframes.Add(span[j - 1]);
+                        if (i < j - 1) unionKeyframes.Add(keyframes[j - 1]);
                         unionKeyframes.Add(endKeyframe);
                         i = j;
                         break;
                     }
 
-                    if (j == span.Length - 1) i = j;
+                    if (j == keyframes.Count - 1) i = j;
                 }
             }
 
@@ -370,30 +370,46 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             return;
         }
 
-        if (span.Length < 3) return;
+        if (keyframes.Count < 3) return;
 
-        var lastPoint = span.Length - 1;
-        using PooledList<int> keep = [0, lastPoint];
-        getSimplifiedKeyframeIndices(ref span, keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
-        if (keep.Count == span.Length) return;
+        var lastPoint = keyframes.Count - 1;
+
+        var keep = TempList<int>.Create([0, lastPoint]);
+        getSimplifiedKeyframeIndices(keyframes, ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
+
+        if (keep.Count == keyframes.Count)
+        {
+            keep.Dispose();
+            return;
+        }
 
         PooledList<Keyframe<TValue>> simplifiedKeyframes = new(keep.Count);
         keep.Sort();
-        foreach (var t in keep) simplifiedKeyframes.Add(span[t]);
+        foreach (var t in keep) simplifiedKeyframes.Add(keyframes[t]);
+        keep.Dispose();
+
+        if (StoryboardObjectGenerator.Current is not null)
+        {
+            StoryboardObjectGenerator.Current.disposables.Remove(keyframes);
+            StoryboardObjectGenerator.Current.disposables.Add(simplifiedKeyframes);
+        }
 
         keyframes.Dispose();
         keyframes = simplifiedKeyframes;
     }
 
-    static void getSimplifiedKeyframeIndices(ref Span<Keyframe<TValue>> span,
-        PooledList<int> keep,
+    static void getSimplifiedKeyframeIndices(PooledList<Keyframe<TValue>> span,
+        ref TempList<int> keep,
         int first,
         int last,
         float epsilonSq,
         Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
     {
-        while (true)
+        using var stack = TempStack<(int, int)>.Create([(first, last)]);
+        while (stack.Count > 0)
         {
+            (first, last) = stack.Pop();
+
             var start = span[first];
             var end = span[last];
 
@@ -409,11 +425,11 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
                 indexFar = i;
             }
 
-            if (maxDistSq < epsilonSq || indexFar <= 0) return;
+            if (maxDistSq < epsilonSq || indexFar <= 0) continue;
 
-            getSimplifiedKeyframeIndices(ref span, keep, first, indexFar, epsilonSq, getDistance);
+            stack.Push((first, indexFar));
             keep.Add(indexFar);
-            first = indexFar;
+            stack.Push((indexFar, last));
         }
     }
 

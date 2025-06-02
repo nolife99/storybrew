@@ -61,7 +61,7 @@ public class Sprite3d : Node3d, HasOsbSprites
         => sprite ??= segment.CreateSprite(SpritePath, SpriteOrigin);
 
     /// <inheritdoc/>
-    public override void GenerateStates(float time, CameraState cameraState, Object3dState object3dState)
+    public override void GenerateStates(float time, CameraState cameraState, in Object3dState object3dState)
     {
         var wvp = Matrix4x4.Multiply(object3dState.WorldTransform, cameraState.ViewProjection);
         var screenPosition = CameraState.ToScreen(wvp, Vector3.Zero);

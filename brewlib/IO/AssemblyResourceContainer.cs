@@ -6,7 +6,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
-using Memory;
 using Util;
 
 public class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
@@ -47,8 +46,8 @@ public class AssemblyResourceContainer(Assembly assembly, string baseNamespace =
                     var entry = archive.GetEntry(path);
                     if (entry is not null)
                     {
-                        var bytes = Pool.PooledMemoryStreamManager.GetStream();
-                        using (var entryStream = entry.Open()) entryStream.CopyTo(bytes);
+                        MemoryStream bytes = new();
+                        using (var entryStream = entry.Open()) entryStream.CopyTo(bytes, 65536);
 
                         bytes.Position = 0;
                         return bytes;

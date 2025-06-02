@@ -1,13 +1,12 @@
 ﻿namespace BrewLib.Graphics;
 
 using System;
-using System.Collections.Generic;
-using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
+using Tiny.PooledCollections.Generic;
 
 internal sealed class GpuCommandSync : IDisposable
 {
-    static readonly Stack<SyncRange> syncRangePool = [];
+    static readonly PooledStack<SyncRange> syncRangePool = new();
 
     readonly PooledList<SyncRange> syncRanges = new();
 

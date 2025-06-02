@@ -3,13 +3,14 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Threading;
-using Collections.Pooled;
 using IO;
 using OpenTK.Windowing.Desktop;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 public sealed class TextureContainerAsync(ResourceContainer resourceContainer = null,
@@ -77,15 +78,22 @@ internal static class TextureUploadQueue
 
     public static void Initialize()
     {
+        var allocator = MemoryAllocator.Default;
+        allocator.GetType()
+            .GetField("sharedArrayPoolThresholdInBytes", BindingFlags.NonPublic | BindingFlags.Instance)
+            .SetValue(allocator, 65536);
+
         Native.Window.Context.MakeNoneCurrent();
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)
         {
             NativeWindow window = new(new()
             {
+                Title = "storybrew texture loader",
                 Flags = Native.Window.Flags,
                 StartVisible = false,
                 SharedContext = Native.Window.Context,
+                IsEventDriven = true,
                 DepthBits = 0,
                 StencilBits = 0,
                 AlphaBits = 0
@@ -97,18 +105,15 @@ internal static class TextureUploadQueue
 
             Thread thread = new(context =>
             {
-                ((IGLFWGraphicsContext)context)?.MakeCurrent();
+                ((IGLFWGraphicsContext)context)!.MakeCurrent();
 
                 Trace.WriteLine("Started texture upload thread");
-
-                DecoderOptions decoderOptions = new() { Configuration = Configuration.Default.Clone() };
-                decoderOptions.Configuration.PreferContiguousImageBuffers = true;
 
                 while (!Native.Window.IsExiting)
                 {
                     if (!queuedUploads.TryDequeue(out var queued))
                     {
-                        Thread.Sleep(200);
+                        Thread.Yield();
                         continue;
                     }
 
@@ -124,8 +129,7 @@ internal static class TextureUploadQueue
                         continue;
                     }
 
-                    using (var bitmap = Image.Load<Rgba32>(decoderOptions, stream))
-                        queued.Result = Texture2d.Load(bitmap, queued.Options);
+                    using (var bitmap = Image.Load<Rgba32>(stream)) queued.Result = Texture2d.Load(bitmap, queued.Options);
 
                     queued.IsLoaded = true;
                 }

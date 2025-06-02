@@ -2,16 +2,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using BrewLib.Util;
-using Collections.Pooled;
 using Commands;
 using CommandValues;
 using Display;
 using Mapset;
 using StorybrewCommon.Util;
+using Tiny.PooledCollections.Generic;
 
 ///<summary> Base sprite in storyboards. </summary>
 public class OsbSprite : StoryboardObject
@@ -19,7 +20,7 @@ public class OsbSprite : StoryboardObject
     ///<summary> Default position of sprites, unless modified elsewhere. </summary>
     public static readonly CommandPosition DefaultPosition = new(320, 240);
 
-    readonly PooledSet<ICommand> commands = new();
+    readonly PooledHashSet<ICommand> commands = new();
 
     float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue;
     CommandGroup currentCommandGroup;
@@ -845,20 +846,45 @@ public class OsbSprite : StoryboardObject
         OsbLayer layer,
         StoryboardTransform transform)
     {
-        if (commands.Count != 0)
-            OsbWriterFactory.CreateWriter(this,
-                    MoveTimeline,
-                    MoveXTimeline,
-                    MoveYTimeline,
-                    ScaleTimeline,
-                    ScaleVecTimeline,
-                    RotateTimeline,
-                    FadeTimeline,
-                    ColorTimeline,
-                    writer,
-                    exportSettings,
-                    layer)
-                .WriteOsb(ref transform);
+        if (commands.Count == 0) return;
+
+        WriteHeader(writer, exportSettings, layer, transform);
+        foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, 1);
+    }
+
+    internal virtual void WriteHeader(TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer layer,
+        StoryboardTransform transform)
+    {
+        writer.Write("Sprite,");
+        WriteHeaderCommon(writer, exportSettings, layer, transform);
+        writer.WriteLine();
+    }
+
+    internal virtual void WriteHeaderCommon(TextWriter writer,
+        ExportSettings exportSettings,
+        OsbLayer layer,
+        StoryboardTransform transform)
+    {
+        var transformedInitialPosition = transform.IsIdentity ? (Vector2)InitialPosition :
+            MoveXTimeline.HasCommands || MoveYTimeline.HasCommands ? transform.ApplyToPositionXY(InitialPosition) :
+            transform.ApplyToPosition(InitialPosition);
+
+        var builder = StringHelper.StringBuilderPool.Retrieve();
+        builder.Append(CultureInfo.InvariantCulture, $"{layer},{Origin},\"{TexturePath.Trim()}\"");
+
+        if (!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands)
+            builder.Append(exportSettings.NumberFormat, $",{transformedInitialPosition.X}");
+        else builder.Append(",0");
+
+        if (!MoveTimeline.HasCommands && !MoveYTimeline.HasCommands)
+            builder.Append(exportSettings.NumberFormat, $",{transformedInitialPosition.Y}");
+        else builder.Append(",0");
+
+        writer.Write(builder);
+
+        StringHelper.StringBuilderPool.Release(builder);
     }
 
     /// <summary> Returns whether the sprite is within widescreen storyboard bounds. </summary>

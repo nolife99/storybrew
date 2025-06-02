@@ -1,12 +1,13 @@
-﻿namespace BrewLib.Util;
+namespace BrewLib.Util;
 
 using System;
 using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using Memory;
+using Tiny.PooledCollections.Generic.Temporary;
 
 public static class StringHelper
 {
@@ -62,7 +63,8 @@ public static class StringHelper
         return MD5.HashData(stream);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsNullOrWhiteSpace(this ReadOnlySpan<char> str) => str.IsEmpty || str.IsWhiteSpace();
+
     public static StringBuilder TrimEnd(this StringBuilder sb)
     {
         var i = sb.Length - 1;
@@ -72,5 +74,44 @@ public static class StringHelper
 
         if (i < sb.Length - 1) sb.Length = i + 1;
         return sb;
+    }
+
+    public static TempArray<char> ToCharArray<T>(this T value, string format = null, IFormatProvider provider = null)
+        where T : ISpanFormattable
+    {
+        Span<char> temp = stackalloc char[128];
+        value.TryFormat(temp, out var written, format, provider);
+
+        return TempArray<char>.Create(temp[..written]);
+    }
+
+    public static void AddRangeFormatted<T>(this ref TempList<char> list,
+        T value,
+        string format = null,
+        IFormatProvider provider = null) where T : ISpanFormattable
+    {
+        Span<char> temp = stackalloc char[128];
+        value.TryFormat(temp, out var written, format, provider);
+
+        list.AddRange(temp[..written]);
+    }
+
+    public static int GetDigitCount<T>(T value) where T : IBinaryInteger<T>
+    {
+        var result = 1;
+        switch (value)
+        {
+            case 0: return 1;
+
+            case < 0:
+            {
+                value = T.Abs(value);
+                ++result;
+
+                break;
+            }
+        }
+
+        return (int)float.Log10(float.CreateChecked(value)) + result;
     }
 }

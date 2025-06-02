@@ -8,13 +8,14 @@ using System.Reflection;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using Storyboarding;
+using Tiny.PooledCollections.Generic;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
     static readonly KeyValuePair<string, string>[] fileFilter = [new(".NET Assemblies", "dll")];
 
-    readonly HashSet<string> selectedAssemblies =
-        project.ImportedAssemblies as HashSet<string> ?? project.ImportedAssemblies.ToHashSet();
+    readonly PooledHashSet<string> selectedAssemblies =
+        project.ImportedAssemblies as PooledHashSet<string> ?? new(project.ImportedAssemblies);
 
     LinearLayout layout, assembliesLayout;
     Button okButton, cancelButton;
@@ -253,4 +254,10 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             selectedAssemblies.Add(newPath);
             refreshAssemblies();
         });
+
+    protected override void Dispose(bool disposing)
+    {
+        selectedAssemblies.Dispose();
+        base.Dispose(disposing);
+    }
 }

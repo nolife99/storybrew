@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using Collections.Pooled;
+using Tiny.PooledCollections.Generic;
 
 public sealed class MultiFileWatcher : IDisposable
 {
@@ -14,7 +14,7 @@ public sealed class MultiFileWatcher : IDisposable
     readonly ThrottledActionScheduler scheduler = new();
 
     bool disposed;
-    HashSet<string> watchedFilenames = [];
+    PooledHashSet<string> watchedFilenames = [];
 
     public IEnumerable<string> WatchedFilenames => watchedFilenames;
 

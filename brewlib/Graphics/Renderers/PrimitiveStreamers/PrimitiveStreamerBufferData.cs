@@ -2,16 +2,17 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
 
 internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
     ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices)
     where TPrimitive : struct
 {
-    readonly PooledList<TPrimitive> primitiveBuffer = new();
+    readonly PooledList<TPrimitive> primitiveBuffer = new(maxPrimitivesPerBatch);
 
     protected override void internalAddPrimitive(ref readonly TPrimitive primitive) => primitiveBuffer.Add(primitive);
 
@@ -20,13 +21,12 @@ internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration 
         GL.BufferSubData(BufferTarget.ArrayBuffer,
             0,
             totalQueuedPrimitives * PrimitiveSize,
-            ref MemoryMarshal.GetReference(primitiveBuffer.Span));
+            ref MemoryMarshal.GetReference(primitiveBuffer.AsReadOnlySpan()));
 
         primitiveBuffer.Clear();
 
-        if (IndexBufferId != -1)
-            GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, commandPtrOffset, queuedRenders, 0);
-        else GL.MultiDrawArraysIndirect(type, commandPtrOffset, queuedRenders, 0);
+        if (IndexBufferId != -1) GL.MultiDrawElementsIndirect(type, DrawElementsType.UnsignedShort, 0, queuedRenders, 0);
+        else GL.MultiDrawArraysIndirect(type, 0, queuedRenders, 0);
     }
 
     protected override void internalBind() => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId);

@@ -3,12 +3,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Collections.Pooled;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 
 #pragma warning disable CS1591
 public abstract class CommandGroup : ICommand
 {
-    protected readonly PooledSet<ICommand> commands = new();
+    protected readonly PooledHashSet<ICommand> commands = new();
     public IReadOnlyCollection<ICommand> Commands => commands;
 
     public float CommandsStartTime
@@ -51,23 +53,31 @@ public abstract class CommandGroup : ICommand
         }
     }
 
-    public virtual bool Active => true;
-
     public float StartTime { get; protected set; }
     public virtual float EndTime { get; protected set; }
     public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
 
-    public void WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
+    void ICommand.WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
     {
         if (commands.Count <= 0) return;
 
-        writer.WriteLine(new string(' ', indentation) + GetCommandGroupHeader(exportSettings));
+        Span<char> indent = stackalloc char[indentation];
+        indent.Fill(' ');
+
+        writer.Write(indent);
+
+        using (var header = GetCommandGroupHeader(ExportSettings.Default)) writer.WriteLine(header.AsReadOnlySpan());
 
         foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, indentation + 1);
     }
 
     public bool Add(ICommand command) => commands.Add(command);
     public virtual void EndGroup() { }
-    protected abstract string GetCommandGroupHeader(ExportSettings exportSettings);
-    public override string ToString() => $"{GetCommandGroupHeader(ExportSettings.Default)} ({commands.Count} commands)";
+    protected abstract TempList<char> GetCommandGroupHeader(ExportSettings exportSettings);
+
+    public override string ToString()
+    {
+        using var header = GetCommandGroupHeader(ExportSettings.Default);
+        return $"{header.AsReadOnlySpan()} ({commands.Count} commands)";
+    }
 }

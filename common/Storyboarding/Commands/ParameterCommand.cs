@@ -16,7 +16,4 @@ public record ParameterCommand : Command<CommandParameter>
     protected override bool ExportEndValue => false;
 
     public override CommandParameter ValueAtProgress(float progress) => StartValue;
-
-    public override IFragmentableCommand GetFragment(float startTime, float endTime)
-        => new ParameterCommand(startTime, endTime, ValueAtTime(startTime));
 }

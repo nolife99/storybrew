@@ -3,7 +3,7 @@
 using Commands;
 using CommandValues;
 
-public readonly struct CommandResult<TValue> where TValue : struct, CommandValue
+public readonly struct CommandResult<TValue> where TValue : struct, ICommandValue
 {
     readonly Command<TValue> command;
     readonly float timeOffset;

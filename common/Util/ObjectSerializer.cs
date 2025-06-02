@@ -4,7 +4,6 @@ using System;
 using System.Collections.Frozen;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -288,7 +287,13 @@ public abstract class ObjectSerializer
     }
 
     static ObjectSerializer GetSerializer(string typeName)
-        => serializers.FirstOrDefault(serializer => serializer.CanSerialize(typeName));
+    {
+        foreach (var serializer in serializers)
+            if (serializer.CanSerialize(typeName))
+                return serializer;
+
+        return null;
+    }
 }
 
 public class SimpleObjectSerializer<T>(Func<BinaryReader, object> read,

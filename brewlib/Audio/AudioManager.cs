@@ -2,9 +2,9 @@
 
 using System;
 using System.Diagnostics;
-using Collections.Pooled;
 using IO;
 using ManagedBass;
+using Tiny.PooledCollections.Generic;
 
 public sealed class AudioManager : IDisposable
 {

@@ -2,11 +2,9 @@
 
 using System;
 using System.Collections.Frozen;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
-using Collections.Pooled;
 using Graphics.Drawables;
 using Graphics.Textures;
 using IO;
@@ -14,6 +12,7 @@ using SixLabors.ImageSharp;
 using Styles;
 using Tiny;
 using Tiny.Formats.Json;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 public sealed class Skin(TextureContainer textureContainer) : IDisposable
@@ -105,8 +104,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
         var includes = data.Value<TinyArray>("include");
         if (includes is null) return data;
 
-        using var snapshot = includes.ToPooledList();
-        foreach (var t in snapshot) data.Merge(loadJson(t.Value<string>(), resourceContainer));
+        foreach (var t in includes.AsReadOnlySpan()) data.Merge(loadJson(t.Value<string>(), resourceContainer));
 
         return data;
     }
@@ -313,7 +311,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     }
 
     static readonly FrozenDictionary<Type, Func<TinyToken, TinyObject, Skin, object>> fieldParsers =
-        new Dictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
+        new PooledDictionary<Type, Func<TinyToken, TinyObject, Skin, object>>
         {
             [typeof(string)] = (data, _, _) => data.Value<string>(),
             [typeof(float)] = (data, _, _) => data.Value<float>(),

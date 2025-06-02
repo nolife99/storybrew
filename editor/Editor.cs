@@ -195,7 +195,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
     CameraOrtho overlayCamera;
     LinearLayout overlayTop, altOverlayTop;
     Slider volumeSlider;
-    Label statsLabel;
+    internal Label statsLabel;
 
     WidgetManager createOverlay(ScreenLayerManager manager)
         => overlay = new(manager, InputManager, Skin) { Camera = overlayCamera = new() };
@@ -273,8 +273,6 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         altOverlayTop.Opacity = altOpacity;
         altOverlayTop.Displayed = altOpacity > 0;
-
-        if (statsLabel.Visible) statsLabel.Text = Program.Stats;
     }
 
     #endregion

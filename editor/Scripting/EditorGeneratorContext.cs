@@ -6,12 +6,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using BrewLib.Audio;
-using Collections.Pooled;
 using Mapset;
 using Storyboarding;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 public sealed class EditorGeneratorContext(Effect effect,

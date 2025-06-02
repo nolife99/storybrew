@@ -6,13 +6,14 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Cameras;
-using Collections.Pooled;
 using OpenTK.Graphics.OpenGL;
 using PrimitiveStreamers;
 using Shaders;
 using Shaders.Snippets;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals.Safe;
 
 public class LineRendererBuffered : ILineRenderer
 {
@@ -117,7 +118,7 @@ public class LineRendererBuffered : ILineRenderer
         GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
             0,
             Unsafe.SizeOf<Matrix4x4>() * queuedRenders,
-            ref MemoryMarshal.GetReference(combinedMatrices.Span));
+            ref MemoryMarshal.GetReference(combinedMatrices.AsReadOnlySpan()));
 
         combinedMatrices.Clear();
 

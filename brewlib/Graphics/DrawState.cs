@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Cameras;
-using Collections.Pooled;
 using IO;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -16,7 +15,9 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Text;
 using Textures;
-using Util;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
 
 public static class DrawState
 {
@@ -67,50 +68,57 @@ public static class DrawState
                     Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
                     Encoding.UTF8.GetChars(bytes, chars);
 
-                    var str = StringHelper.StringBuilderPool.Retrieve();
-                    str.Append("[OpenGL] ");
-                    str.Append(chars);
-                    str.Append(" (");
+                    using var str = TempList<char>.Create();
+                    str.AddRange("[OpenGL] ".AsSpan());
+                    str.AddRange(chars);
+                    str.AddRange(" (".AsSpan());
 
-                    switch (source)
+                    ReadOnlySpan<char> sourceString = source switch
                     {
-                        case DebugSource.DebugSourceApi: str.Append("Source: API"); break;
-                        case DebugSource.DebugSourceWindowSystem: str.Append("Source: Window System"); break;
-                        case DebugSource.DebugSourceShaderCompiler: str.Append("Source: Shader Compiler"); break;
-                        case DebugSource.DebugSourceThirdParty: str.Append("Source: Third Party"); break;
-                        case DebugSource.DebugSourceApplication: str.Append("Source: Application"); break;
-                        case DebugSource.DebugSourceOther: str.Append("Source: Other"); break;
-                    }
+                        DebugSource.DebugSourceApi => "Source: API",
+                        DebugSource.DebugSourceWindowSystem => "Source: Window System",
+                        DebugSource.DebugSourceShaderCompiler => "Source: Shader Compiler",
+                        DebugSource.DebugSourceThirdParty => "Source: Third Party",
+                        DebugSource.DebugSourceApplication => "Source: Application",
+                        DebugSource.DebugSourceOther => "Source: Other",
+                        _ => null
+                    };
 
-                    str.Append(", ");
-                    switch (type)
+                    str.AddRange(sourceString);
+                    str.AddRange(", ".AsSpan());
+
+                    ReadOnlySpan<char> typeString = type switch
                     {
-                        case DebugType.DebugTypeError: str.Append("Type: Error"); break;
-                        case DebugType.DebugTypeDeprecatedBehavior: str.Append("Type: Deprecated Behaviour"); break;
-                        case DebugType.DebugTypeUndefinedBehavior: str.Append("Type: Undefined Behaviour"); break;
-                        case DebugType.DebugTypePortability: str.Append("Type: Portability"); break;
-                        case DebugType.DebugTypePerformance: str.Append("Type: Performance"); break;
-                        case DebugType.DebugTypeMarker: str.Append("Type: Marker"); break;
-                        case DebugType.DebugTypePushGroup: str.Append("Type: Push Group"); break;
-                        case DebugType.DebugTypePopGroup: str.Append("Type: Pop Group"); break;
-                        case DebugType.DebugTypeOther: str.Append("Type: Other"); break;
-                    }
+                        DebugType.DebugTypeError => "Type: Error",
+                        DebugType.DebugTypeDeprecatedBehavior => "Type: Deprecated Behaviour",
+                        DebugType.DebugTypeUndefinedBehavior => "Type: Undefined Behaviour",
+                        DebugType.DebugTypePortability => "Type: Portability",
+                        DebugType.DebugTypePerformance => "Type: Performance",
+                        DebugType.DebugTypeMarker => "Type: Marker",
+                        DebugType.DebugTypePushGroup => "Type: Push Group",
+                        DebugType.DebugTypePopGroup => "Type: Pop Group",
+                        DebugType.DebugTypeOther => "Type: Other",
+                        _ => null
+                    };
 
-                    str.Append(", ");
-                    switch (severity)
+                    str.AddRange(typeString);
+                    str.AddRange(", ".AsSpan());
+
+                    ReadOnlySpan<char> severityString = severity switch
                     {
-                        case DebugSeverity.DebugSeverityHigh: str.Append("Severity: High"); break;
-                        case DebugSeverity.DebugSeverityMedium: str.Append("Severity: Medium"); break;
-                        case DebugSeverity.DebugSeverityLow: str.Append("Severity: Low"); break;
-                        case DebugSeverity.DebugSeverityNotification: str.Append("Severity: Notification"); break;
-                    }
+                        DebugSeverity.DebugSeverityHigh => "Severity: High",
+                        DebugSeverity.DebugSeverityMedium => "Severity: Medium",
+                        DebugSeverity.DebugSeverityLow => "Severity: Low",
+                        DebugSeverity.DebugSeverityNotification => "Severity: Notification",
+                        _ => null
+                    };
 
-                    str.Append(")\n");
+                    str.AddRange(severityString);
+                    str.AddRange(")\n".AsSpan());
 
-                    Trace.Write(str);
-                    if (severity is DebugSeverity.DebugSeverityHigh) throw new InvalidDataException("OpenGL error: " + str);
-
-                    StringHelper.StringBuilderPool.Release(str);
+                    Trace.Write(str.AsReadOnlySpan().ToString());
+                    if (severity is DebugSeverity.DebugSeverityHigh)
+                        throw new InvalidDataException($"OpenGL error: {str.AsReadOnlySpan()}");
                 },
                 0);
         }

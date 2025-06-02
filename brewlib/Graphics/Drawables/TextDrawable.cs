@@ -6,6 +6,8 @@ using Cameras;
 using Renderers;
 using SixLabors.ImageSharp;
 using Text;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals.Safe;
 using Util;
 
 public sealed class TextDrawable : Drawable
@@ -17,9 +19,10 @@ public sealed class TextDrawable : Drawable
 
     TextFont font;
 
-    string fontName = "Tahoma", text = "";
+    string fontName = "Tahoma";
 
     Vector2 maxSize;
+    ValueArray<char> text = ValueArray<char>.Empty();
     TextLayout textLayout;
 
     public Vector2 Size
@@ -27,7 +30,7 @@ public sealed class TextDrawable : Drawable
         get
         {
             validate();
-            return text?.Length > 0 ? textLayout.Size / scaling : font.GetGlyph(' ').Size / scaling;
+            return text.Length > 0 ? textLayout.Size / scaling : font.GetGlyph(' ').Size / scaling;
         }
     }
 
@@ -43,16 +46,31 @@ public sealed class TextDrawable : Drawable
         }
     }
 
-    public IconFont Icon { get => text.Length == 0 ? 0 : (IconFont)text[0]; set => text = char.ToString((char)value); }
-
-    public string Text
+    public IconFont Icon
     {
-        get => text;
+        get => text.Length == 0 ? 0 : (IconFont)text[0];
         set
         {
-            if (text == value) return;
+            var character = (char)value;
+            if (text.AsReadOnlySpan().Equals([character], StringComparison.Ordinal)) return;
 
-            text = value;
+            text.Dispose();
+            text = ValueArray<char>.Create([character]);
+
+            invalidate();
+        }
+    }
+
+    public ReadOnlySpan<char> Text
+    {
+        get => text.AsReadOnlySpan();
+        set
+        {
+            if (text.AsReadOnlySpan().Equals(value, StringComparison.Ordinal)) return;
+
+            text.Dispose();
+            text = ValueArray<char>.Create(value);
+
             invalidate();
         }
     }
@@ -121,8 +139,8 @@ public sealed class TextDrawable : Drawable
             new(new(camera.ExtendedViewport.X + camera.Position.X, camera.ExtendedViewport.Y + camera.Position.Y),
                 camera.ExtendedViewport.Size);
 
-        foreach (var line in textLayout.Lines.Span)
-        foreach (var layoutGlyph in line.Glyphs.Span)
+        foreach (var line in textLayout.Lines)
+        foreach (var layoutGlyph in line.Glyphs)
         {
             var glyph = layoutGlyph.Glyph;
             if (glyph.IsEmpty) continue;
@@ -212,6 +230,6 @@ public sealed class TextDrawable : Drawable
             currentScaling = scaling;
         }
 
-        textLayout = new(text ?? "", font, alignment, maxSize * scaling);
+        textLayout = new(text.AsReadOnlySpan(), font, alignment, maxSize * scaling);
     }
 }

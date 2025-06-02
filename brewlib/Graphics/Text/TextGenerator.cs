@@ -1,17 +1,16 @@
 ﻿namespace BrewLib.Graphics.Text;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
-using Collections.Pooled;
 using IO;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using Tiny.PooledCollections.Generic;
 using Util;
 
 public sealed class TextGenerator(ResourceContainer resourceContainer) : IDisposable
@@ -22,7 +21,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
 
     readonly FontCollection fontCollection = new();
     readonly PooledDictionary<int, Font> fonts = new();
-    IReadOnlyList<FontFamily> fallback;
+    FontFamily[] fallback;
 
     public void Dispose()
     {
@@ -30,7 +29,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         fonts.Dispose();
     }
 
-    public Image<Rgba32> CreateBitmap(string text,
+    public Image<Rgba32> CreateBitmap(ReadOnlySpan<char> text,
         string fontName,
         float fontSize,
         Vector2 padding,
@@ -38,7 +37,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         out Vector2 textureSize,
         bool measureOnly)
     {
-        if (string.IsNullOrEmpty(text)) text = " ";
+        if (text.IsEmpty) text = " ";
 
         var font = getFont(fontName, 96 * fontSize / 72, FontStyle.Regular);
         TextOptions options = new(font)
@@ -72,8 +71,9 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         RichTextOptions textOptions = new(font) { Origin = padding, FallbackFontFamilies = fallback },
             shadowTextOptions = new(textOptions) { Origin = padding + Vector2.One };
 
-        bitmap.Mutate(b => b.DrawText(drawOptions, shadowTextOptions, text, shadow, null)
-            .DrawText(drawOptions, textOptions, text, fill, null));
+        var str = text.ToString();
+        bitmap.Mutate(b => b.DrawText(drawOptions, shadowTextOptions, str, shadow, null)
+            .DrawText(drawOptions, textOptions, str, fill, null));
 
         return bitmap;
     }

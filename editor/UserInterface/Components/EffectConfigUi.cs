@@ -235,7 +235,7 @@ public class EffectConfigUi : Widget
 
             widget.OnValueCommited += (_, _) =>
             {
-                setFieldValue(field, widget.Value);
+                setFieldValue(field, widget.Value.ToString());
                 widget.Value = effect.Config.GetValue(field.Name).ToString();
             };
 
@@ -287,7 +287,7 @@ public class EffectConfigUi : Widget
             {
                 try
                 {
-                    var value = Convert.ChangeType(widget.Value, field.Type, CultureInfo.InvariantCulture);
+                    var value = Convert.ChangeType(widget.Value.ToString(), field.Type, CultureInfo.InvariantCulture);
 
                     setFieldValue(field, value);
                 }

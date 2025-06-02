@@ -1,12 +1,12 @@
 ﻿namespace BrewLib.IO;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
+using Tiny.PooledCollections.Generic;
 
 public sealed class SafeDirectoryWriter : IDisposable
 {
-    readonly HashSet<string> paths = [];
+    readonly PooledHashSet<string> paths = new();
     readonly string targetDirectory, tempDirectory, backupDirectory;
     bool committed;
 
@@ -22,6 +22,8 @@ public sealed class SafeDirectoryWriter : IDisposable
 
     public void Dispose()
     {
+        paths.Dispose();
+
         if (committed)
         {
             if (Directory.Exists(targetDirectory))

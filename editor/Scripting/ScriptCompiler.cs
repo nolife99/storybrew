@@ -7,14 +7,13 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading;
-using BrewLib.Memory;
 using BrewLib.Util;
-using Collections.Pooled;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using Storyboarding;
+using Tiny.PooledCollections.Generic.StructBased;
 
 public static class ScriptCompiler
 {
@@ -26,19 +25,20 @@ public static class ScriptCompiler
     {
         var tokenSource = token?.Token ?? CancellationToken.None;
 
-        using PooledDictionary<SyntaxTree, (string SourcePath, SourceText SourceText)> trees = new();
+        using var trees = ValueDictionary<SyntaxTree, (string SourcePath, SourceText SourceText)>.Create();
         foreach (var src in sourcePaths)
         {
             using var sourceStream = File.OpenRead(src);
             var sourceText = SourceText.From(sourceStream, canBeEmbedded: true);
-            trees[CSharpSyntaxTree.ParseText(sourceText, new(LanguageVersion.Preview), cancellationToken: tokenSource)] =
-                (src, sourceText);
+
+            trees.Add(CSharpSyntaxTree.ParseText(sourceText, new(LanguageVersion.Preview), cancellationToken: tokenSource),
+                (src, sourceText));
         }
 
         EmitResult result;
-        using (var assemblyStream = Pool.PooledMemoryStreamManager.GetStream())
+        using (MemoryStream assemblyStream = new())
         {
-            using PooledList<MetadataReference> assemblies = new();
+            using var assemblies = ValueList<MetadataReference>.Create();
             foreach (var asmPath in referencedAssemblies)
             {
                 using var stream = File.OpenRead(asmPath);

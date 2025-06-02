@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using IO;
 using ManagedBass;
-using Configuration = SixLabors.ImageSharp.Configuration;
+using SixLabors.ImageSharp.Memory;
 
 public class AudioSample : IDisposable
 {
@@ -26,7 +26,7 @@ public class AudioSample : IDisposable
 
         if (stream is null) throw new BassException(Bass.LastError);
 
-        using (var bytes = Configuration.Default.MemoryAllocator.Allocate<byte>((int)stream.Length))
+        using (var bytes = MemoryAllocator.Default.Allocate<byte>((int)stream.Length))
         using (bytes.Memory.Pin())
         {
             var span = bytes.Memory.Span;

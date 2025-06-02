@@ -5,7 +5,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ManagedBass;
-using Configuration = SixLabors.ImageSharp.Configuration;
+using SixLabors.ImageSharp.Memory;
 
 public class FftStream : IDisposable
 {
@@ -35,7 +35,7 @@ public class FftStream : IDisposable
             flags |= DataFlags.FFTIndividual;
         }
 
-        var data = Configuration.Default.MemoryAllocator.Allocate<float>(size);
+        var data = MemoryAllocator.Default.Allocate<float>(size);
         using (data.Memory.Pin())
             if (Bass.ChannelGetData(stream,
                     Unsafe.ByteOffset(ref Unsafe.NullRef<float>(), ref MemoryMarshal.GetReference(data.Memory.Span)),
