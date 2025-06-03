@@ -2,8 +2,10 @@
 
 using System;
 using System.Globalization;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
 using Storyboarding.CommandValues;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 ///<summary> Represents a hit object in osu!. </summary>
 public record OsuHitObject
@@ -100,15 +102,15 @@ public record OsuHitObject
     public override string ToString() => $"{StartTime}, {Flags}";
 
     ///<summary> Parses a hit object from a given beatmap and line. </summary>
-    public static OsuHitObject Parse(Beatmap beatmap, string line)
+    public static OsuHitObject Parse(Beatmap beatmap, ReadOnlySpan<char> line)
     {
-        var values = line.Split(',');
+        using var values = line.Split([',']);
 
-        var x = int.Parse(values[0], CultureInfo.InvariantCulture);
-        var y = int.Parse(values[1], CultureInfo.InvariantCulture);
-        var startTime = int.Parse(values[2], CultureInfo.InvariantCulture);
-        var flags = (HitObjectFlag)int.Parse(values[3], CultureInfo.InvariantCulture);
-        var additions = (HitSoundAddition)int.Parse(values[4], CultureInfo.InvariantCulture);
+        var x = int.Parse(values[0].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+        var y = int.Parse(values[1].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+        var startTime = int.Parse(values[2].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+        var flags = (HitObjectFlag)int.Parse(values[3].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+        var additions = (HitSoundAddition)int.Parse(values[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
 
         var timingPoint = beatmap.GetTimingPointAt(startTime);
         var controlPoint = beatmap.GetControlPointAt(startTime);
@@ -118,8 +120,9 @@ public record OsuHitObject
         var customSampleSet = controlPoint.CustomSampleSet;
         var volume = controlPoint.Volume;
 
+        OsuHitObject result = null;
         if ((flags & HitObjectFlag.Circle) != 0)
-            return OsuCircle.Parse(values,
+            result = OsuCircle.Parse(values,
                 x,
                 y,
                 startTime,
@@ -130,8 +133,8 @@ public record OsuHitObject
                 customSampleSet,
                 volume);
 
-        if ((flags & HitObjectFlag.Slider) != 0)
-            return OsuSlider.Parse(beatmap,
+        else if ((flags & HitObjectFlag.Slider) != 0)
+            result = OsuSlider.Parse(beatmap,
                 values,
                 x,
                 y,
@@ -145,8 +148,8 @@ public record OsuHitObject
                 customSampleSet,
                 volume);
 
-        if ((flags & HitObjectFlag.Hold) != 0)
-            return OsuHold.Parse(values,
+        else if ((flags & HitObjectFlag.Hold) != 0)
+            result = OsuHold.Parse(values,
                 x,
                 y,
                 startTime,
@@ -157,8 +160,8 @@ public record OsuHitObject
                 customSampleSet,
                 volume);
 
-        if ((flags & HitObjectFlag.Spinner) != 0)
-            return OsuSpinner.Parse(values,
+        else if ((flags & HitObjectFlag.Spinner) != 0)
+            result = OsuSpinner.Parse(values,
                 x,
                 y,
                 startTime,
@@ -169,8 +172,13 @@ public record OsuHitObject
                 customSampleSet,
                 volume);
 
-        throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line
-        }");
+        foreach (var value in values) value.Dispose();
+
+        if (result is null)
+            throw new NotSupportedException($"Parsing failed - the line does not contain valid hit object information: {line
+            }");
+
+        return result;
     }
 }
 

@@ -4,7 +4,6 @@ using System.Numerics;
 using Cameras;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic;
-using ZLinq;
 
 public sealed class CompositeDrawable : Drawable
 {
@@ -17,8 +16,9 @@ public sealed class CompositeDrawable : Drawable
             var minWidth = 0f;
             var minHeight = 0f;
 
-            foreach (var minSize in Drawables.AsValueEnumerable().Select(drawable => drawable.MinSize))
+            foreach (var drawable in Drawables)
             {
+                var minSize = drawable.MinSize;
                 minWidth = float.Min(minWidth, minSize.X);
                 minHeight = float.Min(minWidth, minSize.Y);
             }
@@ -34,8 +34,9 @@ public sealed class CompositeDrawable : Drawable
             var maxWidth = 0f;
             var maxHeight = 0f;
 
-            foreach (var preferredSize in Drawables.AsValueEnumerable().Select(drawable => drawable.PreferredSize))
+            foreach (var drawable in Drawables)
             {
+                var preferredSize = drawable.PreferredSize;
                 maxWidth = float.Min(maxWidth, preferredSize.X);
                 maxHeight = float.Min(maxHeight, preferredSize.Y);
             }

@@ -14,7 +14,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 using Vector = System.Numerics.Vector;
 

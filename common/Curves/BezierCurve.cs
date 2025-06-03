@@ -5,10 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals.Safe;
-using Tiny.PooledCollections.Generic.StructBased.Internals.Unsafe;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary>Represents a bézier curve defined by a set of control points.</summary>
 public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
@@ -87,7 +86,7 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
         if (degree == pointCount) result.Push(points);
         else
         {
-            for (var i = 0; i < pointCount - degree; i++)
+            for (var i = 0; i < pointCount - degree; ++i)
             {
                 var subBezier = ValueArray<Vector2>.Create(degree + 1);
                 subBezier[0] = points[i];
@@ -111,10 +110,11 @@ public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
             var memoryOwner = ValueArray<Vector2>.Create(pointSpan.Length);
             pointSpan.CopyTo(memoryOwner.AsSpan());
 
+            points.Dispose();
             result.Push(memoryOwner);
 
             using var old = result;
-            result = new(old.AsReadOnlySpan());
+            result = TempStack<ValueArray<Vector2>>.Create(old.AsReadOnlySpan());
         }
 
         return result;

@@ -6,16 +6,10 @@ using System.Runtime.CompilerServices;
 
 partial struct TempStack<T>
 {
-    public TempStack(T[] items) : this(items.AsSpan(), ArrayPool<T>.Shared) { }
-
-    public TempStack(T[] items, ArrayPool<T> pool) : this(items.AsSpan(), pool) { }
-
-    public TempStack(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
-
-    public TempStack(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    TempStack(ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
-        _size = default;
-        _version = default;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
 
         var count = span.Length;

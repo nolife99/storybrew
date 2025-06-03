@@ -38,7 +38,7 @@ public partial class JsonTokenParser : TokenParser<JsonTokenType>
                             context.CurrentToken);
 
                     var key = context.CurrentToken.Value;
-                    if (context.CurrentToken.Type == JsonTokenType.PropertyQuoted) key = JsonUtil.UnescapeString(key);
+                    if (context.CurrentToken.Type is JsonTokenType.PropertyQuoted) key = JsonUtil.UnescapeString(key);
 
                     switch (context.LookaheadToken.Type)
                     {

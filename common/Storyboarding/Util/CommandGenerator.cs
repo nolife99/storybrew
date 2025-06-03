@@ -12,7 +12,7 @@ using CommandValues;
 using Scripting;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Unsafe;
+using Tiny.PooledCollections.Generic.Internals;
 using ZLinq;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>

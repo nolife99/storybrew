@@ -8,8 +8,8 @@ partial struct ValueStack<T> : IDisposable
 {
     internal ValueStack(ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
-        _size = default;
-        _version = default;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
 
         var count = span.Length;

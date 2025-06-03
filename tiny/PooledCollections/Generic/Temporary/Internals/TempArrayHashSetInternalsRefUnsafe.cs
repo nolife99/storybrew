@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8632
 
-namespace Tiny.PooledCollections.Generic.Temporary.Internals.Unsafe;
+namespace Tiny.PooledCollections.Generic.Temporary.Internals;
 
 using System;
 using System.Buffers;

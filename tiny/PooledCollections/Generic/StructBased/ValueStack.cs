@@ -36,7 +36,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     [NonSerialized] internal ArrayPool<T> _pool;
 
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
@@ -48,8 +48,8 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     {
         if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
 
-        _size = default;
-        _version = default;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
     }
@@ -60,8 +60,8 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     {
         if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
 
-        _size = default;
-        _version = default;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = EnumerableHelpers.ToArray(collection, s_emptyArray, _pool, out _size);
     }

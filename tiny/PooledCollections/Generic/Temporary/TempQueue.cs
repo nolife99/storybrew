@@ -31,7 +31,7 @@ public ref partial struct TempQueue<T>
 
     [NonSerialized] internal ArrayPool<T> _pool;
 
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
@@ -41,10 +41,10 @@ public ref partial struct TempQueue<T>
     {
         if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
 
-        _head = default;
-        _tail = default;
-        _size = default;
-        _version = default;
+        _head = 0;
+        _tail = 0;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
     }
@@ -55,10 +55,10 @@ public ref partial struct TempQueue<T>
     {
         if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
 
-        _head = default;
-        _tail = default;
-        _size = default;
-        _version = default;
+        _head = 0;
+        _tail = 0;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = EnumerableHelpers.ToArray(collection, s_emptyArray, _pool, out _size);
         if (_size != _array.Length) _tail = _size;

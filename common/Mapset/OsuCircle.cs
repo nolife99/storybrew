@@ -1,12 +1,16 @@
 ﻿namespace StorybrewCommon.Mapset;
 
 using System.Globalization;
+using BrewLib.Util;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary>Represents an osu! hit circle.</summary>
 public record OsuCircle : OsuHitObject
 {
     ///<summary> Parses an osu! hit circle from the given strings. </summary>
-    public static OsuCircle Parse(string[] values,
+    public static OsuCircle Parse(TempList<ValueList<char>> values,
         int x,
         int y,
         int startTime,
@@ -18,7 +22,7 @@ public record OsuCircle : OsuHitObject
         float volume)
     {
         var samplePath = "";
-        if (values.Length <= 5)
+        if (values.Count <= 5)
             return new()
             {
                 PlayfieldPosition = new(x, y),
@@ -33,19 +37,23 @@ public record OsuCircle : OsuHitObject
             };
 
         var special = values[5];
-        var specialValues = special.Split(':');
+        using var specialValues = special.AsReadOnlySpan().Split([':']);
 
-        var objectSampleSet = (SampleSet)int.Parse(specialValues[0], CultureInfo.InvariantCulture);
+        var objectSampleSet = (SampleSet)int.Parse(specialValues[0].AsReadOnlySpan(), CultureInfo.InvariantCulture);
 
-        var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1], CultureInfo.InvariantCulture);
+        var objectAdditionsSampleSet = (SampleSet)int.Parse(specialValues[1].AsReadOnlySpan(), CultureInfo.InvariantCulture);
 
         var objectCustomSampleSet = 0;
-        if (specialValues.Length > 2) objectCustomSampleSet = int.Parse(specialValues[2], CultureInfo.InvariantCulture);
+        if (specialValues.Count > 2)
+            objectCustomSampleSet = int.Parse(specialValues[2].AsReadOnlySpan(), CultureInfo.InvariantCulture);
 
         var objectVolume = 0f;
-        if (specialValues.Length > 3) objectVolume = int.Parse(specialValues[3], CultureInfo.InvariantCulture);
+        if (specialValues.Count > 3)
+            objectVolume = int.Parse(specialValues[3].AsReadOnlySpan(), CultureInfo.InvariantCulture);
 
-        if (specialValues.Length > 4) samplePath = specialValues[4];
+        if (specialValues.Count > 4) samplePath = specialValues[4].AsReadOnlySpan().ToString();
+
+        foreach (var value in specialValues) value.Dispose();
 
         if (objectSampleSet != 0)
         {

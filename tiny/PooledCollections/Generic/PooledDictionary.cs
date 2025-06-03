@@ -27,8 +27,8 @@ public partial class PooledDictionary<TKey, TValue>
     const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
     const string ComparerName = "Comparer"; // Do not rename (binary serialization)
 
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
-    static readonly Entry<TKey, TValue>[] s_emptyEntries = Array.Empty<Entry<TKey, TValue>>();
+    static readonly int[] s_emptyBuckets = [];
+    static readonly Entry<TKey, TValue>[] s_emptyEntries = [];
 
     internal int[]? _buckets;
     internal Entry<TKey, TValue>[]? _entries;

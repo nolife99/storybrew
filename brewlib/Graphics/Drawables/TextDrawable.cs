@@ -7,7 +7,7 @@ using Renderers;
 using SixLabors.ImageSharp;
 using Text;
 using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals.Safe;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Util;
 
 public sealed class TextDrawable : Drawable
@@ -52,7 +52,7 @@ public sealed class TextDrawable : Drawable
         set
         {
             var character = (char)value;
-            if (text.AsReadOnlySpan().Equals([character], StringComparison.Ordinal)) return;
+            if (text.AsReadOnlySpan().SequenceEqual([character])) return;
 
             text.Dispose();
             text = ValueArray<char>.Create([character]);
@@ -66,7 +66,7 @@ public sealed class TextDrawable : Drawable
         get => text.AsReadOnlySpan();
         set
         {
-            if (text.AsReadOnlySpan().Equals(value, StringComparison.Ordinal)) return;
+            if (text.AsReadOnlySpan().SequenceEqual(value)) return;
 
             text.Dispose();
             text = ValueArray<char>.Create(value);
@@ -167,6 +167,8 @@ public sealed class TextDrawable : Drawable
     {
         textLayout?.Dispose();
         font?.Dispose();
+
+        text.Dispose();
     }
 
     public RectangleF GetCharacterBounds(int index)

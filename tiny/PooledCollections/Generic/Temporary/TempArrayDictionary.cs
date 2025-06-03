@@ -32,9 +32,9 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
     internal static readonly bool s_clearValues = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
 
     static readonly Type s_typeOfKey = typeof(TKey);
-    static readonly ArrayEntry<TKey>[] s_emptyEntries = Array.Empty<ArrayEntry<TKey>>();
-    static readonly TValue[] s_emptyValues = Array.Empty<TValue>();
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
+    static readonly ArrayEntry<TKey>[] s_emptyEntries = [];
+    static readonly TValue[] s_emptyValues = [];
+    static readonly int[] s_emptyBuckets = [];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArrayDictionary<TKey, TValue> Create() => new(0,
@@ -819,7 +819,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             value = default;
             return false; //not found!
         }
@@ -915,7 +915,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             value = default;
             return false; //not found!
         }
@@ -1030,42 +1030,6 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex, int count) => CopyTo(dest.AsSpan(), destIndex, count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex, int count)
-    {
-        if (destIndex < 0 || destIndex > dest.Length)
-            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-
-        var keys = _entries.AsSpan();
-        var values = _values.AsSpan();
-
-        if (keys.Length == 0 || values.Length == 0) return;
-
-        for (int i = 0, len = Count; i < len && count > 0; i++)
-        {
-            dest[destIndex++] = new KVPair<TKey, TValue>(keys[i].Key, values[i]);
-            count--;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1102,7 +1066,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         }
     }
 
-    public void Intersect<UValue>(in TempArrayDictionary<TKey, UValue> other)
+    public void Intersect<TOther>(in TempArrayDictionary<TKey, TOther> other)
     {
         var keys = _entries;
 
@@ -1113,7 +1077,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         }
     }
 
-    public void Exclude<UValue>(in TempArrayDictionary<TKey, UValue> otherDicKeys)
+    public void Exclude<TOther>(in TempArrayDictionary<TKey, TOther> otherDicKeys)
     {
         var keys = _entries;
 

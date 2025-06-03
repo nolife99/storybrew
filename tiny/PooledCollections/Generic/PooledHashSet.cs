@@ -41,8 +41,8 @@ public partial class PooledHashSet<T>
 
     const int StartOfFreeList = -3;
 
-    static readonly int[] s_emptyBuckets = new int[0];
-    static readonly Entry<T>[] s_emptyEntries = new Entry<T>[0];
+    static readonly int[] s_emptyBuckets = [];
+    static readonly Entry<T>[] s_emptyEntries = [];
 
     internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 

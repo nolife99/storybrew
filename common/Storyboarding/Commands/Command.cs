@@ -7,7 +7,7 @@ using BrewLib.Util;
 using CommandValues;
 using Display;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
 public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable where TValue : struct, ICommandValue
@@ -93,7 +93,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         using var endValueString =
             (ExportEndValue ? GetTransformedEndValue(transform) : tranformedStartValue).ToOsbString(exportSettings);
 
-        var excludeEnd = startTimeString.AsReadOnlySpan().Equals(endTimeString.AsReadOnlySpan(), StringComparison.Ordinal);
+        var excludeEnd = startTimeString.AsReadOnlySpan().SequenceEqual(endTimeString.AsReadOnlySpan());
 
         var result = TempList<char>.Create();
         result.AddRange(identifier.AsSpan());
@@ -111,7 +111,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         result.Add(',');
         result.AddRange(startValueString.AsReadOnlySpan());
 
-        if (!startValueString.AsReadOnlySpan().Equals(endValueString.AsReadOnlySpan(), StringComparison.Ordinal))
+        if (!startValueString.AsReadOnlySpan().SequenceEqual(endValueString.AsReadOnlySpan()))
         {
             result.Add(',');
             result.AddRange(endValueString.AsReadOnlySpan());

@@ -29,16 +29,6 @@ partial class PooledDictionary<TKey, TValue> : IDisposable
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(array.AsSpan(), comparer, bucketPool, entryPool) { }
 
-    public PooledDictionary(KVPair<TKey, TValue>[] array, IEqualityComparer<TKey>? comparer) : this(array.AsSpan(),
-        comparer,
-        ArrayPool<int>.Shared,
-        ArrayPool<Entry<TKey, TValue>>.Shared) { }
-
-    public PooledDictionary(KVPair<TKey, TValue>[] array,
-        IEqualityComparer<TKey>? comparer,
-        ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) : this(array.AsSpan(), comparer, bucketPool, entryPool) { }
-
     public PooledDictionary(ReadOnlySpan<(TKey Key, TValue Value)> span,
         IEqualityComparer<TKey>? comparer,
         ArrayPool<int> bucketPool,
@@ -48,14 +38,6 @@ partial class PooledDictionary<TKey, TValue> : IDisposable
     }
 
     public PooledDictionary(ReadOnlySpan<KeyValuePair<TKey, TValue>> span,
-        IEqualityComparer<TKey>? comparer,
-        ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
-    {
-        foreach (var pair in span) TryInsert(pair.Key, pair.Value, InsertionBehavior.ThrowOnExisting);
-    }
-
-    public PooledDictionary(ReadOnlySpan<KVPair<TKey, TValue>> span,
         IEqualityComparer<TKey>? comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
@@ -79,18 +61,6 @@ partial class PooledDictionary<TKey, TValue> : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
     public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
@@ -110,37 +80,6 @@ partial class PooledDictionary<TKey, TValue> : IDisposable
             if (entry.Next >= -1)
             {
                 dest[destIndex++] = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
-                count--;
-            }
-        }
-    }
-
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex, int count)
-    {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
-
-        CopyTo(dest.AsSpan(), destIndex, count);
-    }
-
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex, int count)
-    {
-        if (destIndex < 0 || destIndex > dest.Length)
-            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-
-        var src = _entries.AsSpan();
-
-        if (src.Length == 0) return;
-
-        for (int i = 0, len = src.Length; i < len && count > 0; i++)
-        {
-            ref var entry = ref src[i];
-            if (entry.Next >= -1)
-            {
-                dest[destIndex++] = new KVPair<TKey, TValue>(entry.Key, entry.Value);
                 count--;
             }
         }

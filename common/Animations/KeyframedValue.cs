@@ -7,7 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Scripting;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Unsafe;
+using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary>A set of keyframes, each with a time and value of type <typeparamref name="TValue"/>.</summary>

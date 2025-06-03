@@ -26,9 +26,13 @@
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <Optimize>True</Optimize>
+        <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
         <Optimize>True</Optimize>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+        <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>

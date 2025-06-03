@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 using Shaders;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Internals;
 
 internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,

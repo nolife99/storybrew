@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Security.Cryptography;
 using System.Text;
 using Memory;
+using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 
 public static class StringHelper
@@ -63,7 +64,7 @@ public static class StringHelper
         return MD5.HashData(stream);
     }
 
-    public static bool IsNullOrWhiteSpace(this ReadOnlySpan<char> str) => str.IsEmpty || str.IsWhiteSpace();
+    public static bool IsNullOrWhiteSpace(this scoped ReadOnlySpan<char> str) => str.IsEmpty || str.IsWhiteSpace();
 
     public static StringBuilder TrimEnd(this StringBuilder sb)
     {
@@ -85,13 +86,22 @@ public static class StringHelper
         return TempArray<char>.Create(temp[..written]);
     }
 
-    public static void AddRangeFormatted<T>(this ref TempList<char> list,
+    public static void AddRangeFormatted<T>(this scoped ref TempList<char> list,
         T value,
         string format = null,
         IFormatProvider provider = null) where T : ISpanFormattable
     {
         Span<char> temp = stackalloc char[128];
         value.TryFormat(temp, out var written, format, provider);
+
+        list.AddRange(temp[..written]);
+    }
+
+    public static void AddRangeEnum<T>(this scoped ref TempList<char> list, T value, string format = null)
+        where T : struct, Enum
+    {
+        Span<char> temp = stackalloc char[128];
+        Enum.TryFormat(value, temp, out var written, format);
 
         list.AddRange(temp[..written]);
     }
@@ -113,5 +123,15 @@ public static class StringHelper
         }
 
         return (int)float.Log10(float.CreateChecked(value)) + result;
+    }
+
+    public static TempList<ValueList<char>> Split(this scoped ReadOnlySpan<char> value, ReadOnlySpan<char> separator)
+    {
+        var enumerator = MemoryExtensions.Split(value, separator);
+        var list = TempList<ValueList<char>>.Create();
+
+        foreach (var s in enumerator) list.Add(ValueList<char>.Create(value[s]));
+
+        return list;
     }
 }

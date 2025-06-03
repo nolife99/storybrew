@@ -29,9 +29,9 @@ public partial class ArrayDictionary<TKey, TValue>
     internal static readonly bool s_clearValues = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
 
     static readonly Type s_typeOfKey = typeof(TKey);
-    static readonly ArrayEntry<TKey>[] s_emptyEntries = Array.Empty<ArrayEntry<TKey>>();
-    static readonly TValue[] s_emptyValues = Array.Empty<TValue>();
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
+    static readonly ArrayEntry<TKey>[] s_emptyEntries = [];
+    static readonly TValue[] s_emptyValues = [];
+    static readonly int[] s_emptyBuckets = [];
     [NonSerialized] internal ArrayPool<int> _bucketPool;
     internal int[] _buckets;
     internal int _collisions;
@@ -477,7 +477,7 @@ public partial class ArrayDictionary<TKey, TValue>
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             value = default;
             return false; //not found!
         }
@@ -573,7 +573,7 @@ public partial class ArrayDictionary<TKey, TValue>
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             value = default;
             return false; //not found!
         }
@@ -685,60 +685,10 @@ public partial class ArrayDictionary<TKey, TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex, int count) => CopyTo(dest.AsSpan(), destIndex, count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex, int count)
-    {
-        if (destIndex < 0 || destIndex > dest.Length)
-            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-
-        var keys = _entries.AsSpan();
-        var values = _values.AsSpan();
-
-        if (keys.Length == 0 || values.Length == 0) return;
-
-        for (int i = 0, len = Count; i < len && count > 0; i++)
-        {
-            dest[destIndex++] = new KVPair<TKey, TValue>(keys[i].Key, values[i]);
-            count--;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
 
-    bool ICollection<KVPair<TKey, TValue>>.IsReadOnly => false;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<KVPair<TKey, TValue>>.Add(KVPair<TKey, TValue> item) => Add(item.Key, item.Value);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<KVPair<TKey, TValue>>.Contains(KVPair<TKey, TValue> item) => ContainsKey(item.Key);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<KVPair<TKey, TValue>>.Remove(KVPair<TKey, TValue> item) => Remove(item.Key);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator() => new KVPairEnumerator(this);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator IEnumerable.GetEnumerator() => new KVPairEnumerator(this);
+    IEnumerator IEnumerable.GetEnumerator() => new KeyValuePairEnumerator(this);
 
     bool ICollection<ArrayKVPair<TKey, TValue>>.IsReadOnly => false;
 
@@ -808,6 +758,40 @@ public partial class ArrayDictionary<TKey, TValue>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         => new KeyValuePairEnumerator(this);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
+        => CopyTo(dest.AsSpan(), destIndex, count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+
+    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
+    {
+        if (destIndex < 0 || destIndex > dest.Length)
+            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+
+        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
+
+        var keys = _entries.AsSpan();
+        var values = _values.AsSpan();
+
+        if (keys.Length == 0 || values.Length == 0) return;
+
+        for (int i = 0, len = Count; i < len && count > 0; i++)
+        {
+            dest[destIndex++] = new KeyValuePair<TKey, TValue>(keys[i].Key, values[i]);
+            count--;
+        }
+    }
 
     public virtual void OnDeserialization(object sender)
     {
@@ -1203,40 +1187,6 @@ public partial class ArrayDictionary<TKey, TValue>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void TrimExcess() => Resize(Count, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
-        => CopyTo(dest.AsSpan(), destIndex, count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
-    {
-        if (destIndex < 0 || destIndex > dest.Length)
-            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-
-        var keys = _entries.AsSpan();
-        var values = _values.AsSpan();
-
-        if (keys.Length == 0 || values.Length == 0) return;
-
-        for (int i = 0, len = Count; i < len && count > 0; i++)
-        {
-            dest[destIndex++] = new KeyValuePair<TKey, TValue>(keys[i].Key, values[i]);
-            count--;
-        }
-    }
 
     void RenewBuckets(int newSize)
     {

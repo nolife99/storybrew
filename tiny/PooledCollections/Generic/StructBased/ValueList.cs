@@ -33,7 +33,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     [NonSerialized] internal ArrayPool<T> _pool;
 
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearItems = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
@@ -83,9 +83,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
         {
             _size = 0;
             _items = s_emptyArray;
-            using (var en = collection!.GetEnumerator())
-                while (en.MoveNext())
-                    Add(en.Current);
+            using var en = collection!.GetEnumerator();
+            while (en.MoveNext()) Add(en.Current);
         }
     }
 

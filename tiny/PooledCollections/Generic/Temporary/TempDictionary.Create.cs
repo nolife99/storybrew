@@ -110,16 +110,6 @@ partial struct TempDictionary<TKey, TValue>
         ArrayPool<Entry<TKey, TValue>> entryPool) => new(array.AsSpan(), comparer, bucketPool, entryPool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempDictionary<TKey, TValue> Create(KVPair<TKey, TValue>[] array, IEqualityComparer<TKey>? comparer)
-        => new(array.AsSpan(), comparer, ArrayPool<int>.Shared, ArrayPool<Entry<TKey, TValue>>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempDictionary<TKey, TValue> Create(KVPair<TKey, TValue>[] array,
-        IEqualityComparer<TKey>? comparer,
-        ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(array.AsSpan(), comparer, bucketPool, entryPool);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create(ReadOnlySpan<(TKey Key, TValue Value)> span,
         IEqualityComparer<TKey>? comparer,
         ArrayPool<int> bucketPool,
@@ -127,12 +117,6 @@ partial struct TempDictionary<TKey, TValue>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempDictionary<TKey, TValue> Create(ReadOnlySpan<KeyValuePair<TKey, TValue>> span,
-        IEqualityComparer<TKey>? comparer,
-        ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) => new(span, comparer, bucketPool, entryPool);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempDictionary<TKey, TValue> Create(ReadOnlySpan<KVPair<TKey, TValue>> span,
         IEqualityComparer<TKey>? comparer,
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<TKey, TValue>> entryPool) => new(span, comparer, bucketPool, entryPool);

@@ -12,10 +12,10 @@ using System.Runtime.Serialization;
 public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCallback
 {
     internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
-    internal T[] _array; // Do not rename (binary serialization)
-    internal int _length; // Do not rename (binary serialization)
+    internal T[] _array;
+    internal int _length;
 
     [NonSerialized] internal ArrayPool<T> _pool;
 
@@ -78,7 +78,6 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
         get => _array[index];
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _length);
 
@@ -95,7 +94,6 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(in ValueArray<T> dest) => CopyTo(0, dest, 0, _length);
 
@@ -109,19 +107,16 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
     public void CopyTo(int index, in ValueArray<T> dest, int destIndex, int count)
         => CopyTo(index, dest._array.AsSpan(), destIndex, count);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, _length);
+    public void CopyTo(scoped in Span<T> dest) => CopyTo(0, in dest, 0, _length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
+    public void CopyTo(scoped in Span<T> dest, int destIndex) => CopyTo(0, in dest, destIndex, _length);
 
-    /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(scoped in Span<T> dest, int destIndex, int count) => CopyTo(0, in dest, destIndex, count);
 
-    public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
+    public void CopyTo(int index, scoped in Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -140,12 +135,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_array.IsNullOrEmpty() == false)
-            try
-            {
-                _pool.Return(_array, s_clearArray);
-            }
-            catch { }
+        if (!_array.IsNullOrEmpty()) _pool.Return(_array, s_clearArray);
 
         _array = replaceWith ?? s_emptyArray;
     }
@@ -166,10 +156,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(this);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => new Enumerator(this);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
     public struct Enumerator : IEnumerator<T>
@@ -177,7 +164,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
         readonly ValueArray<T> _array;
         int _index;
 
-        public Enumerator(in ValueArray<T> array)
+        internal Enumerator(in ValueArray<T> array)
         {
             _array = array;
             _index = 0;
@@ -189,7 +176,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
             if ((uint)_index < (uint)_array.Length)
             {
                 Current = _array._array[_index];
-                _index++;
+                ++_index;
                 return true;
             }
 

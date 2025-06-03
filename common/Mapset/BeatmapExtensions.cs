@@ -1,6 +1,7 @@
 ﻿namespace StorybrewCommon.Mapset;
 
 using System;
+using ZLinq;
 
 #pragma warning disable CS1591
 public static class BeatmapExtensions
@@ -16,7 +17,7 @@ public static class BeatmapExtensions
         Action<ControlPoint, float, int, int> tickAction)
     {
         var leftTimingPoint = beatmap.GetTimingPointAt(startTime);
-        using var timingPoints = beatmap.TimingPoints.GetEnumerator();
+        using var timingPoints = beatmap.TimingPoints.AsValueEnumerable().Where(c => !c.IsInherited).GetEnumerator();
 
         if (!timingPoints.MoveNext()) return;
 

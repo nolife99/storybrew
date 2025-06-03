@@ -1,8 +1,7 @@
-﻿namespace StorybrewCommon.Storyboarding;
+namespace StorybrewCommon.Storyboarding;
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -13,6 +12,8 @@ using Display;
 using Mapset;
 using StorybrewCommon.Util;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 ///<summary> Base sprite in storyboards. </summary>
 public class OsbSprite : StoryboardObject
@@ -816,7 +817,7 @@ public class OsbSprite : StoryboardObject
             case LoopCommand loop:
             {
                 StartLoopGroup(loop.StartTime, loop.LoopCount);
-                foreach (var cmd in loop.Commands) AddCommand(cmd);
+                foreach (var cmd in loop.commands) addCommand(cmd);
                 EndGroup();
                 break;
             }
@@ -824,7 +825,7 @@ public class OsbSprite : StoryboardObject
             case TriggerCommand trigger:
             {
                 StartTriggerGroup(trigger.TriggerName, trigger.StartTime, trigger.EndTime, trigger.Group);
-                foreach (var cmd in trigger.Commands) AddCommand(cmd);
+                foreach (var cmd in trigger.commands) addCommand(cmd);
                 EndGroup();
                 break;
             }
@@ -871,20 +872,34 @@ public class OsbSprite : StoryboardObject
             MoveXTimeline.HasCommands || MoveYTimeline.HasCommands ? transform.ApplyToPositionXY(InitialPosition) :
             transform.ApplyToPosition(InitialPosition);
 
-        var builder = StringHelper.StringBuilderPool.Retrieve();
-        builder.Append(CultureInfo.InvariantCulture, $"{layer},{Origin},\"{TexturePath.Trim()}\"");
+        var builder = TempList<char>.Create();
+        builder.AddRangeEnum(layer);
+        builder.Add(',');
 
+        builder.AddRangeEnum(Origin);
+        builder.Add(',');
+
+        builder.Add('"');
+        builder.AddRange(TexturePath.AsSpan().Trim());
+        builder.Add('"');
+
+        builder.Add(',');
         if (!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands)
-            builder.Append(exportSettings.NumberFormat, $",{transformedInitialPosition.X}");
-        else builder.Append(",0");
+            builder.AddRangeFormatted(transformedInitialPosition.X,
+                transformedInitialPosition.X == 0 ? "" : "#.#####",
+                exportSettings.NumberFormat);
+        else builder.Add('0');
 
+        builder.Add(',');
         if (!MoveTimeline.HasCommands && !MoveYTimeline.HasCommands)
-            builder.Append(exportSettings.NumberFormat, $",{transformedInitialPosition.Y}");
-        else builder.Append(",0");
+            builder.AddRangeFormatted(transformedInitialPosition.Y,
+                transformedInitialPosition.Y == 0 ? "" : "#.#####",
+                exportSettings.NumberFormat);
+        else builder.Add('0');
 
-        writer.Write(builder);
+        writer.Write(builder.AsReadOnlySpan());
 
-        StringHelper.StringBuilderPool.Release(builder);
+        builder.Dispose();
     }
 
     /// <summary> Returns whether the sprite is within widescreen storyboard bounds. </summary>

@@ -3,8 +3,12 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
+using BrewLib.Util;
 using Curves;
 using Storyboarding.CommandValues;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary>Represents an osu! slider.</summary>
 public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHitObject
@@ -178,7 +182,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
 
     ///<summary> Parses an osu! slider from the given strings. </summary>
     public static OsuSlider Parse(Beatmap beatmap,
-        string[] values,
+        TempList<ValueList<char>> values,
         int x,
         int y,
         int startTime,
@@ -192,9 +196,9 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         float volume)
     {
         var slider = values[5];
-        var sliderValues = slider.Split('|');
+        using var sliderValues = slider.AsReadOnlySpan().Split(['|']);
 
-        var curveType = sliderValues[0] switch
+        var curveType = sliderValues[0].AsReadOnlySpan() switch
         {
             "L" => SliderCurveType.Linear,
             "C" => SliderCurveType.Catmull,
@@ -203,19 +207,18 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             _ => SliderCurveType.Unknown
         };
 
-        var sliderControlPointCount = sliderValues.Length - 1;
-        var sliderControlPoints = new Vector2[sliderControlPointCount];
-
+        var sliderControlPoints = new Vector2[sliderValues.Count - 1];
         for (var i = 0; i < sliderControlPoints.Length; ++i)
         {
-            var controlPointValues = sliderValues[i + 1].Split(':');
-            var controlPointX = float.Parse(controlPointValues[0], CultureInfo.InvariantCulture);
-            var controlPointY = float.Parse(controlPointValues[1], CultureInfo.InvariantCulture);
-            sliderControlPoints[i] = new(controlPointX, controlPointY);
+            using var controlPointValues = sliderValues[i + 1].AsReadOnlySpan().Split([':']);
+            sliderControlPoints[i] = new(float.Parse(controlPointValues[0].AsReadOnlySpan(), CultureInfo.InvariantCulture),
+                float.Parse(controlPointValues[1].AsReadOnlySpan(), CultureInfo.InvariantCulture));
+
+            foreach (var value in controlPointValues) value.Dispose();
         }
 
-        var nodeCount = int.Parse(values[6], CultureInfo.InvariantCulture) + 1;
-        var length = float.Parse(values[7], CultureInfo.InvariantCulture);
+        var nodeCount = int.Parse(values[6].AsReadOnlySpan(), CultureInfo.InvariantCulture) + 1;
+        var length = float.Parse(values[7].AsReadOnlySpan(), CultureInfo.InvariantCulture);
 
         var sliderMultiplierLessLength = length / beatmap.SliderMultiplier;
         var travelDurationBeats = sliderMultiplierLessLength / 100 * controlPoint.SliderMultiplier;
@@ -237,28 +240,37 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             };
         }
 
-        if (values.Length > 8)
+        if (values.Count > 8)
         {
             var sliderAddition = values[8];
-            var sliderAdditionValues = sliderAddition.Split('|');
-            for (var i = 0; i < sliderAdditionValues.Length; i++)
+            using var sliderAdditionValues = sliderAddition.AsReadOnlySpan().Split(['|']);
+            for (var i = 0; i < sliderAdditionValues.Count; i++)
             {
-                var node = sliderNodes[i];
-                var nodeAdditions = (HitSoundAddition)int.Parse(sliderAdditionValues[i], CultureInfo.InvariantCulture);
-                node.Additions = nodeAdditions;
+                sliderNodes[i].Additions =
+                    (HitSoundAddition)int.Parse(sliderAdditionValues[i].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+
+                sliderAdditionValues[i].Dispose();
             }
         }
 
-        if (values.Length > 9)
+        if (values.Count > 9)
         {
             var sampleAndAdditionSampleSet = values[9];
-            var sampleAndAdditionSampleSetValues = sampleAndAdditionSampleSet.Split('|');
-            for (var i = 0; i < sampleAndAdditionSampleSetValues.Length; i++)
+            using var sampleAndAdditionSampleSetValues = sampleAndAdditionSampleSet.AsReadOnlySpan().Split(['|']);
+            for (var i = 0; i < sampleAndAdditionSampleSetValues.Count; i++)
             {
                 var node = sliderNodes[i];
-                var sampleAndAdditionSampleSetValues2 = sampleAndAdditionSampleSetValues[i].Split(':');
-                var nodeSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0], CultureInfo.InvariantCulture);
-                var nodeAdditionsSampleSet = int.Parse(sampleAndAdditionSampleSetValues2[1], CultureInfo.InvariantCulture);
+
+                using var sampleAndAdditionSampleSetValue = sampleAndAdditionSampleSetValues[i];
+                using var sampleAndAdditionSampleSetValues2 = sampleAndAdditionSampleSetValue.AsReadOnlySpan().Split([':']);
+
+                var nodeSampleSet = (SampleSet)int.Parse(sampleAndAdditionSampleSetValues2[0].AsReadOnlySpan(),
+                    CultureInfo.InvariantCulture);
+
+                var nodeAdditionsSampleSet = int.Parse(sampleAndAdditionSampleSetValues2[1].AsReadOnlySpan(),
+                    CultureInfo.InvariantCulture);
+
+                foreach (var value in sampleAndAdditionSampleSetValues2) value.Dispose();
 
                 if (nodeSampleSet != 0)
                 {
@@ -271,7 +283,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         }
 
         var samplePath = "";
-        if (values.Length < 11)
+        if (values.Count < 11)
             return new(sliderNodes, sliderControlPoints)
             {
                 PlayfieldPosition = new(x, y),
@@ -290,15 +302,21 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             };
 
         var special = values[10];
-        var specialValues = special.Split(':');
+        using var specialValues = special.AsReadOnlySpan().Split([':']);
 
-        var objectSampleSet = (SampleSet)int.Parse(specialValues[0], CultureInfo.InvariantCulture);
-        var objectAdditionsSampleSet = int.Parse(specialValues[1], CultureInfo.InvariantCulture);
+        var objectSampleSet = (SampleSet)int.Parse(specialValues[0].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+        var objectAdditionsSampleSet = int.Parse(specialValues[1].AsReadOnlySpan(), CultureInfo.InvariantCulture);
         var objectCustomSampleSet = 0;
-        if (specialValues.Length > 2) objectCustomSampleSet = int.Parse(specialValues[2], CultureInfo.InvariantCulture);
+        if (specialValues.Count > 2)
+            objectCustomSampleSet = int.Parse(specialValues[2].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+
         var objectVolume = 0f;
-        if (specialValues.Length > 3) objectVolume = int.Parse(specialValues[3], CultureInfo.InvariantCulture);
-        if (specialValues.Length > 4) samplePath = specialValues[4];
+        if (specialValues.Count > 3)
+            objectVolume = int.Parse(specialValues[3].AsReadOnlySpan(), CultureInfo.InvariantCulture);
+
+        if (specialValues.Count > 4) samplePath = specialValues[4].AsReadOnlySpan().ToString();
+
+        foreach (var value in specialValues) value.Dispose();
 
         if (objectSampleSet != 0)
         {

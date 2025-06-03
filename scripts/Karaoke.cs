@@ -15,7 +15,7 @@ using StorybrewCommon.Subtitles;
 internal class Karaoke : StoryboardObjectGenerator
 {
     [Configurable] public bool EffectsOnly = false;
-    [Configurable] public Rgba32 FontColor = Color.White;
+    [Configurable] public Rgba32 FontColor = Color.White.ToPixel<Rgba32>();
 
     [Group("Font"),
      Description(
@@ -66,18 +66,18 @@ internal class Karaoke : StoryboardObjectGenerator
     protected override void Generate()
     {
         var font = LoadFont(SpritesPath,
-            new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, EffectsOnly),
-            new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, GlowColor),
-            new FontOutline(OutlineThickness, OutlineColor),
-            new FontShadow(ShadowThickness, ShadowColor));
+            new(FontName, FontSize, Color.FromPixel(FontColor), Padding, FontStyle, TrimTransparency, EffectsOnly),
+            new FontGlow(GlowAdditive ? 0 : GlowRadius, 0, Color.FromPixel(GlowColor)),
+            new FontOutline(OutlineThickness, Color.FromPixel(OutlineColor)),
+            new FontShadow(ShadowThickness, Color.FromPixel(ShadowColor)));
 
         var subtitles = LoadSubtitles(SubtitlesPath);
 
         if (GlowRadius > 0 && GlowAdditive)
         {
             var glowFont = LoadFont(Path.Combine(SpritesPath, "glow"),
-                new(FontName, FontSize, FontColor, Padding, FontStyle, TrimTransparency, true),
-                new FontGlow(GlowRadius, 0, GlowColor));
+                new(FontName, FontSize, Color.FromPixel(FontColor), Padding, FontStyle, TrimTransparency, true),
+                new FontGlow(GlowRadius, 0, Color.FromPixel(GlowColor)));
 
             generateLyrics(glowFont, subtitles, "glow", true);
         }

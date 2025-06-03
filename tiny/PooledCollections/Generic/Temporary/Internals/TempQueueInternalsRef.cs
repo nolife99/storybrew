@@ -1,4 +1,4 @@
-﻿namespace Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+﻿namespace Tiny.PooledCollections.Generic.Temporary.Internals;
 
 using System;
 using System.Runtime.CompilerServices;

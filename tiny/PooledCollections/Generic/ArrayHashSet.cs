@@ -26,8 +26,8 @@ using System.Runtime.Serialization;
     internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     static readonly Type s_typeOfKey = typeof(T);
-    static readonly ArrayEntry<T>[] s_emptyEntries = Array.Empty<ArrayEntry<T>>();
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
+    static readonly ArrayEntry<T>[] s_emptyEntries = [];
+    static readonly int[] s_emptyBuckets = [];
     [NonSerialized] internal ArrayPool<int> _bucketPool;
     internal int[] _buckets;
     internal int _collisions;
@@ -164,7 +164,7 @@ using System.Runtime.Serialization;
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             return false; //not found!
         }
 
@@ -257,7 +257,7 @@ using System.Runtime.Serialization;
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             return false; //not found!
         }
 

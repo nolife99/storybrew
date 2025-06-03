@@ -35,10 +35,11 @@ public class IntegratedCompressor : ImageCompressor
         {
             using var localProc = Process.Start(info);
 
-            using (var errorStream = localProc.StandardError)
+            if (localProc.ExitCode != 0)
             {
+                using var errorStream = localProc.StandardError;
                 var error = await errorStream.ReadToEndAsync();
-                if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
+                if (!string.IsNullOrWhiteSpace(error))
                     Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
             }
 

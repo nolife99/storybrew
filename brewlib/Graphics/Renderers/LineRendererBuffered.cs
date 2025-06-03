@@ -13,7 +13,7 @@ using Shaders.Snippets;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Internals;
 
 public class LineRendererBuffered : ILineRenderer
 {

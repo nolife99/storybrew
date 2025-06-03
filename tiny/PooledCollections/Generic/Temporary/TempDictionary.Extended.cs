@@ -25,31 +25,11 @@ partial struct TempDictionary<TKey, TValue>
         foreach (var pair in span) TryInsert(pair.Key, pair.Value, InsertionBehavior.ThrowOnExisting);
     }
 
-    internal TempDictionary(ReadOnlySpan<KVPair<TKey, TValue>> span,
-        IEqualityComparer<TKey>? comparer,
-        ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) : this(span.Length, comparer, bucketPool, entryPool)
-    {
-        foreach (var pair in span) TryInsert(pair.Key, pair.Value, InsertionBehavior.ThrowOnExisting);
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
 
     public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
     {
@@ -70,37 +50,6 @@ partial struct TempDictionary<TKey, TValue>
             if (entry.Next >= -1)
             {
                 dest[destIndex++] = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
-                count--;
-            }
-        }
-    }
-
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex, int count)
-    {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
-
-        CopyTo(dest.AsSpan(), destIndex, count);
-    }
-
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex, int count)
-    {
-        if (destIndex < 0 || destIndex > dest.Length)
-            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-
-        var src = _entries.AsSpan();
-
-        if (src.Length == 0) return;
-
-        for (int i = 0, len = src.Length; i < len && count > 0; i++)
-        {
-            ref var entry = ref src[i];
-            if (entry.Next >= -1)
-            {
-                dest[destIndex++] = new KVPair<TKey, TValue>(entry.Key, entry.Value);
                 count--;
             }
         }

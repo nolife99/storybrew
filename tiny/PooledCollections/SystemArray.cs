@@ -1,5 +1,6 @@
 ﻿namespace Tiny.PooledCollections;
 
+using System;
 using System.Runtime.CompilerServices;
 
 public static class SystemArray
@@ -23,5 +24,5 @@ public static class SystemArray
         0X7FFFFFC7;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsNullOrEmpty<T>(this T[] array) => array is null || array.Length == 0;
+    public static bool IsNullOrEmpty(this Array array) => array is null || array.Length == 0;
 }

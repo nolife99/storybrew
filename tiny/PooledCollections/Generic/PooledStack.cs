@@ -32,7 +32,7 @@ public partial class PooledStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 {
     const int DefaultCapacity = 4;
 
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
     internal T[] _array; // Storage for stack elements. Do not rename (binary serialization)

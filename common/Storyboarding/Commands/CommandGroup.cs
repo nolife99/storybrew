@@ -5,12 +5,12 @@ using System.Collections.Generic;
 using System.IO;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
 public abstract class CommandGroup : ICommand
 {
-    protected readonly PooledHashSet<ICommand> commands = new();
+    protected internal readonly PooledHashSet<ICommand> commands = new();
     public IReadOnlyCollection<ICommand> Commands => commands;
 
     public float CommandsStartTime

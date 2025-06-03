@@ -58,7 +58,7 @@ internal class Tetris : StoryboardObjectGenerator
         var brightness = Random(.3f, 1);
         CommandColor color = new(Color.R * brightness, Color.G * brightness, Color.B * brightness);
 
-        var heightMap = new int[GridWidth];
+        Span<int> heightMap = stackalloc int[GridWidth];
         var bottom = 0;
         for (var x = 0; x < GridWidth; ++x)
         {
@@ -80,7 +80,7 @@ internal class Tetris : StoryboardObjectGenerator
         fillCell(startTime, endTime, dropX, dropY, color);
         for (var i = 1; i < BlockLength; ++i)
         {
-            int[] options = [0, 1, 2, 3];
+            Span<int> options = [0, 1, 2, 3];
             shuffle(options);
 
             foreach (var option in options)
@@ -204,7 +204,7 @@ internal class Tetris : StoryboardObjectGenerator
         new(position.X - GridWidth * CellSize * .5f, position.Y - GridHeight * CellSize),
         Quaternion.CreateFromYawPitchRoll(0, float.DegreesToRadians(Rotation), 0));
 
-    void shuffle(int[] array)
+    void shuffle(Span<int> array)
     {
         var n = array.Length;
         while (n > 1)

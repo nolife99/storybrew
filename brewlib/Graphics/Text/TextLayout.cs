@@ -4,7 +4,7 @@ using System;
 using System.Numerics;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Internals;
 using Util;
 
 public class TextLayout : IDisposable

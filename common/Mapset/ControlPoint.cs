@@ -2,6 +2,8 @@
 
 using System;
 using System.Globalization;
+using BrewLib.Util;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 ///<summary> Represents a control point in an osu! beatmap. </summary>
 public record ControlPoint : IComparable<ControlPoint>
@@ -64,24 +66,31 @@ public record ControlPoint : IComparable<ControlPoint>
     public override int GetHashCode() => ToString().GetHashCode();
 
     ///<summary> Parses a control point from a given line. </summary>
-    public static ControlPoint Parse(string line)
+    public static ControlPoint Parse(ReadOnlySpan<char> line)
     {
-        var values = line.Split(',');
-        if (values.Length < 2)
+        using var values = line.Split([',']);
+        if (values.Count < 2)
             throw new InvalidOperationException($"Control point has less than the 2 required parameters: {line}");
 
-        return new()
+        ControlPoint result = new()
         {
-            Offset = float.Parse(values[0], CultureInfo.InvariantCulture),
-            beatDurationSV = float.Parse(values[1], CultureInfo.InvariantCulture),
-            BeatPerMeasure = values.Length > 2 ? int.Parse(values[2], CultureInfo.InvariantCulture) : 4,
+            Offset = float.Parse(values[0].AsReadOnlySpan(), CultureInfo.InvariantCulture),
+            beatDurationSV = float.Parse(values[1].AsReadOnlySpan(), CultureInfo.InvariantCulture),
+            BeatPerMeasure = values.Count > 2 ? int.Parse(values[2].AsReadOnlySpan(), CultureInfo.InvariantCulture) : 4,
             SampleSet =
-                values.Length > 3 ? (SampleSet)int.Parse(values[3], CultureInfo.InvariantCulture) : SampleSet.Normal,
-            CustomSampleSet = values.Length > 4 ? int.Parse(values[4], CultureInfo.InvariantCulture) : 0,
-            Volume = values.Length > 5 ? int.Parse(values[5], CultureInfo.InvariantCulture) : 100,
-            IsInherited = values.Length > 6 && int.Parse(values[6], CultureInfo.InvariantCulture) == 0,
-            IsKiai = values.Length > 7 && (int.Parse(values[7], CultureInfo.InvariantCulture) & 1) != 0,
-            OmitFirstBarLine = values.Length > 7 && (int.Parse(values[7], CultureInfo.InvariantCulture) & 8) != 0
+                values.Count > 3 ?
+                    (SampleSet)int.Parse(values[3].AsReadOnlySpan(), CultureInfo.InvariantCulture) :
+                    SampleSet.Normal,
+            CustomSampleSet = values.Count > 4 ? int.Parse(values[4].AsReadOnlySpan(), CultureInfo.InvariantCulture) : 0,
+            Volume = values.Count > 5 ? int.Parse(values[5].AsReadOnlySpan(), CultureInfo.InvariantCulture) : 100,
+            IsInherited = values.Count > 6 && int.Parse(values[6].AsReadOnlySpan(), CultureInfo.InvariantCulture) == 0,
+            IsKiai = values.Count > 7 && (int.Parse(values[7].AsReadOnlySpan(), CultureInfo.InvariantCulture) & 1) != 0,
+            OmitFirstBarLine = values.Count > 7 &&
+                (int.Parse(values[7].AsReadOnlySpan(), CultureInfo.InvariantCulture) & 8) != 0
         };
+
+        foreach (var value in values) value.Dispose();
+
+        return result;
     }
 }

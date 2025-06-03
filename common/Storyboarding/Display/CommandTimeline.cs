@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Commands;
 using CommandValues;
+using ZLinq;
 
 public interface CommandTimeline
 {
@@ -28,16 +29,21 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
     public CommandTimeline() { }
     public CommandTimeline(TValue defaultValue) => DefaultValue = defaultValue;
 
-    public CommandResult<TValue> StartResult
-        => HasCommands ? channels.Select(c => c.StartResult).MinBy(r => r.StartTime) : default;
+    public CommandResult<TValue> StartResult => HasCommands ?
+        channels.AsValueEnumerable().Select(c => c.StartResult).MinBy(r => r.StartTime) :
+        default;
 
     public CommandResult<TValue> EndResult
-        => HasCommands ? channels.Select(c => c.EndResult).MaxBy(r => r.StartTime) : default;
+        => HasCommands ? channels.AsValueEnumerable().Select(c => c.EndResult).MaxBy(r => r.StartTime) : default;
 
-    public TValue StartValue
-        => HasCommands ? channels.Select(c => c.StartResult).MinBy(r => r.StartTime).StartValue : DefaultValue;
+    public TValue StartValue => HasCommands ?
+        channels.AsValueEnumerable().Select(c => c.StartResult).MinBy(r => r.StartTime).StartValue :
+        DefaultValue;
 
-    public TValue EndValue => HasCommands ? channels.Select(c => c.EndResult).MaxBy(r => r.EndTime).EndValue : DefaultValue;
+    public TValue EndValue => HasCommands ?
+        channels.AsValueEnumerable().Select(c => c.EndResult).MaxBy(r => r.EndTime).EndValue :
+        DefaultValue;
+
     public bool HasCommands => channels.Count > 0;
     public bool HasOverlap => channels.Any(c => c.HasOverlap);
 

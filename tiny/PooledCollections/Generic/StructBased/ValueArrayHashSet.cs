@@ -36,8 +36,8 @@ using System.Runtime.Serialization;
     internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     static readonly Type s_typeOfKey = typeof(T);
-    static readonly ArrayEntry<T>[] s_emptyEntries = Array.Empty<ArrayEntry<T>>();
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
+    static readonly ArrayEntry<T>[] s_emptyEntries = [];
+    static readonly int[] s_emptyBuckets = [];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayHashSet<T> Create() => new(0, ArrayPool<ArrayEntry<T>>.Shared, ArrayPool<int>.Shared);
@@ -580,7 +580,7 @@ using System.Runtime.Serialization;
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             return false; //not found!
         }
 
@@ -673,7 +673,7 @@ using System.Runtime.Serialization;
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             return false; //not found!
         }
 
@@ -794,12 +794,12 @@ using System.Runtime.Serialization;
     public void CopyTo(T[] dest, int destIndex, int count) => CopyTo(dest.AsSpan(), destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(dest, 0, Count);
+    public void CopyTo(scoped in Span<T> dest) => CopyTo(in dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public void CopyTo(scoped in Span<T> dest, int destIndex) => CopyTo(in dest, destIndex, Count);
 
-    public void CopyTo(in Span<T> dest, int destIndex, int count)
+    public void CopyTo(scoped in Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();

@@ -17,7 +17,7 @@ using Text;
 using Textures;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public static class DrawState
 {

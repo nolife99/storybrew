@@ -22,7 +22,7 @@ public class Label(WidgetManager manager) : Widget(manager)
         get => textDrawable.Text;
         set
         {
-            if (textDrawable.Text.Equals(value, StringComparison.Ordinal)) return;
+            if (textDrawable.Text.SequenceEqual(value)) return;
 
             textDrawable.Text = value;
             InvalidateAncestorLayout();

@@ -1,10 +1,14 @@
 ﻿namespace StorybrewCommon.Subtitles.Parsers;
 
-using System.Collections.Generic;
+using System;
 using System.IO;
-using System.Linq;
 using System.Text;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
+using ZLinq;
 
 ///<summary> Parsing methods for .ass subtitle files. </summary>
 public record AssParser : SubtitleParser
@@ -19,7 +23,7 @@ public record AssParser : SubtitleParser
     /// <inheritdoc/>
     public SubtitleSet Parse(Stream stream)
     {
-        List<SubtitleLine> lines = [];
+        using var lines = ValueList<SubtitleLine>.Create();
         using (StreamReader reader = new(stream, Encoding.ASCII))
             reader.ParseSections(sectionName =>
             {
@@ -31,17 +35,31 @@ public record AssParser : SubtitleParser
                             switch (key)
                             {
                                 case "Dialogue":
-                                    var arguments = value.Split(',');
-                                    var startTime = SubtitleParser.ParseTimestamp(arguments[1]);
-                                    var endTime = SubtitleParser.ParseTimestamp(arguments[2]);
-                                    var text = string.Join('\n', string.Join(',', arguments.Skip(9)).Split("\\N"));
-                                    lines.Add(new(startTime, endTime, text));
+                                {
+                                    using var arguments = TempList<ValueList<char>>.Create();
+                                    foreach (var arg in value.Split(',')) arguments.Add(ValueList<char>.Create(value[arg]));
+
+                                    string text;
+                                    using (var argsArr = arguments.AsReadOnlySpan()
+                                        .AsValueEnumerable()
+                                        .Skip(9)
+                                        .Select(c => c.AsReadOnlySpan().ToString())
+                                        .ToArrayPool())
+                                        text = string.Join('\n', string.Join(',', argsArr.Span).Split("\\N"));
+
+                                    lines.Add(new(SubtitleParser.ParseTimestamp(arguments[1].AsReadOnlySpan()),
+                                        SubtitleParser.ParseTimestamp(arguments[2].AsReadOnlySpan()),
+                                        text));
+
+                                    foreach (var arg in arguments) arg.Dispose();
+
                                     break;
+                                }
                             }
                         }); break;
                 }
             });
 
-        return new(lines);
+        return new(lines.ToArray());
     }
 }

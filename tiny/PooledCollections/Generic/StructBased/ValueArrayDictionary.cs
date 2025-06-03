@@ -18,8 +18,7 @@ using System.Runtime.Serialization;
 /// <remarks>To iterate over <see cref="Keys"/> or <see cref="Values"/> as arrays, they must be get through unsafe APIs.</remarks>
 [Serializable]
 public partial struct ValueArrayDictionary<TKey, TValue>
-    : IArrayDictionary<TKey, TValue>, IDictionary<TKey, TValue>, ISerializable, IDeserializationCallback, IDisposable
-    where TKey : notnull
+    : IArrayDictionary<TKey, TValue>, ISerializable, IDeserializationCallback, IDisposable where TKey : notnull
 {
     // constants for serialization
     const string CountName = "Count"; // Do not rename (binary serialization). Must save buckets.Length
@@ -41,9 +40,9 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     internal static readonly bool s_clearValues = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
 
     static readonly Type s_typeOfKey = typeof(TKey);
-    static readonly ArrayEntry<TKey>[] s_emptyEntries = Array.Empty<ArrayEntry<TKey>>();
-    static readonly TValue[] s_emptyValues = Array.Empty<TValue>();
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
+    static readonly ArrayEntry<TKey>[] s_emptyEntries = [];
+    static readonly TValue[] s_emptyValues = [];
+    static readonly int[] s_emptyBuckets = [];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueArrayDictionary<TKey, TValue> Create() => new(0,
@@ -876,7 +875,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             value = default;
             return false; //not found!
         }
@@ -972,7 +971,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             value = default;
             return false; //not found!
         }
@@ -1087,42 +1086,6 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest.AsSpan(), destIndex, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex, int count) => CopyTo(dest.AsSpan(), destIndex, count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
-
-    public void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex, int count)
-    {
-        if (destIndex < 0 || destIndex > dest.Length)
-            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
-        if (dest.Length - destIndex < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
-
-        var keys = _entries.AsSpan();
-        var values = _values.AsSpan();
-
-        if (keys.Length == 0 || values.Length == 0) return;
-
-        for (int i = 0, len = Count; i < len && count > 0; i++)
-        {
-            dest[destIndex++] = new KVPair<TKey, TValue>(keys[i].Key, values[i]);
-            count--;
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest.AsSpan(), 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1133,12 +1096,12 @@ public partial struct ValueArrayDictionary<TKey, TValue>
         => CopyTo(dest.AsSpan(), destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
+    public void CopyTo(scoped in Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(in dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public void CopyTo(scoped in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(in dest, destIndex, Count);
 
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
+    public void CopyTo(scoped in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -1159,7 +1122,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
         }
     }
 
-    public void Intersect<UValue>(in ValueArrayDictionary<TKey, UValue> other)
+    public void Intersect<TOther>(in ValueArrayDictionary<TKey, TOther> other)
     {
         var keys = _entries;
 
@@ -1170,7 +1133,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
         }
     }
 
-    public void Exclude<UValue>(in ValueArrayDictionary<TKey, UValue> otherDicKeys)
+    public void Exclude<TOther>(in ValueArrayDictionary<TKey, TOther> otherDicKeys)
     {
         var keys = _entries;
 
@@ -1195,12 +1158,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (!_buckets.IsNullOrEmpty()) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -1262,22 +1220,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
         if (previous != -1) valuesInfo[previous].Next = next;
     }
 
-    bool ICollection<KVPair<TKey, TValue>>.IsReadOnly => false;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<KVPair<TKey, TValue>>.Add(KVPair<TKey, TValue> item) => Add(item.Key, item.Value);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<KVPair<TKey, TValue>>.Contains(KVPair<TKey, TValue> item) => ContainsKey(item.Key);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<KVPair<TKey, TValue>>.Remove(KVPair<TKey, TValue> item) => Remove(item.Key);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator<KVPair<TKey, TValue>> IEnumerable<KVPair<TKey, TValue>>.GetEnumerator() => new KVPairEnumerator(this);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator IEnumerable.GetEnumerator() => new KVPairEnumerator(this);
+    IEnumerator IEnumerable.GetEnumerator() => new KeyValuePairEnumerator(this);
 
     bool ICollection<ArrayKVPair<TKey, TValue>>.IsReadOnly => false;
 
@@ -1300,13 +1243,12 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
         if (keys.Length == 0 || values.Length == 0) return;
 
-        for (int i = 0, len = Count; i < len; i++) dest[destIndex++] = new ArrayKVPair<TKey, TValue>(keys[i].Key, values, i);
+        for (int i = 0, len = Count; i < len; i++) dest[destIndex++] = new(keys[i].Key, values, i);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     bool ICollection<ArrayKVPair<TKey, TValue>>.Remove(ArrayKVPair<TKey, TValue> item) => Remove(item.Key);
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<ArrayKVPair<TKey, TValue>> IEnumerable<ArrayKVPair<TKey, TValue>>.GetEnumerator() => new Enumerator(this);
 
     ICollection<TKey> IDictionary<TKey, TValue>.Keys

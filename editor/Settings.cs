@@ -41,14 +41,14 @@ public class Settings
             using var reader = File.OpenText(path);
             reader.ParseKeyValueSection((key, value) =>
             {
-                var field = type.GetField(key);
+                var field = type.GetField(key.ToString());
                 if (field is null ||
                     !field.FieldType.IsGenericType ||
                     !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
 
                 try
                 {
-                    ((Setting)field.GetValue(this)).Set(value);
+                    ((Setting)field.GetValue(this)).Set(value.ToString());
                 }
                 catch (Exception e)
                 {

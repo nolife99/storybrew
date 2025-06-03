@@ -8,10 +8,10 @@ partial struct TempQueue<T>
 {
     internal TempQueue(ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
-        _head = default;
-        _tail = default;
-        _size = default;
-        _version = default;
+        _head = 0;
+        _tail = 0;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
 
         var count = span.Length;

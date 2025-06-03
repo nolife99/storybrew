@@ -56,10 +56,10 @@ public sealed partial class Shader : IDisposable
         started = false;
     }
 
-    public int GetAttributeLocation(ReadOnlySpan<char> name)
+    public int GetAttributeLocation(scoped ReadOnlySpan<char> name)
         => attributes.TryGetValue(string.GetHashCode(name), out var property) ? property.Location : -1;
 
-    public int GetUniformLocation(ReadOnlySpan<char> name, int index = -1, string field = null)
+    public int GetUniformLocation(scoped ReadOnlySpan<char> name, int index = -1, string field = null)
     {
         Span<char> buffer = stackalloc char[256];
         buffer = buffer[..(GetUniformIdentifier(buffer, name, index, field) - 1)];
@@ -71,7 +71,7 @@ public sealed partial class Shader : IDisposable
         return location;
     }
 
-    static int GetUniformIdentifier(Span<char> buffer, ReadOnlySpan<char> name, int index, string field)
+    static int GetUniformIdentifier(scoped Span<char> buffer, scoped ReadOnlySpan<char> name, int index, string field)
     {
         var total = 0;
 

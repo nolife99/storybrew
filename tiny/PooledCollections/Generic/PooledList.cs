@@ -15,6 +15,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using ZLinq;
 
 // Implements a variable-size List that uses an array of objects to store the
 // elements. A List has a capacity, which is the allocated length
@@ -27,7 +28,7 @@ public partial class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 {
     internal const int DefaultCapacity = 4;
 
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearItems = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
@@ -93,9 +94,8 @@ public partial class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
         {
             _size = 0;
             _items = s_emptyArray;
-            using (var en = collection!.GetEnumerator())
-                while (en.MoveNext())
-                    Add(en.Current);
+            using var en = collection!.AsValueEnumerable().GetEnumerator();
+            while (en.MoveNext()) Add(en.Current);
         }
     }
 

@@ -27,6 +27,9 @@
         <Reference Include="BrewLib">
             <HintPath>..\..\BrewLib.dll</HintPath>
         </Reference>
+        <Reference Include="Tiny">
+            <HintPath>..\..\Tiny.dll</HintPath>
+        </Reference>
         <Reference Include="StorybrewCommon">
             <HintPath>..\..\StorybrewCommon.dll</HintPath>
         </Reference>

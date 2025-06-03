@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 
 public readonly struct ReadOnlyArray<T> : IReadOnlyList<T>
 {
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal readonly T[] _array;
 

@@ -29,7 +29,7 @@ public ref partial struct TempStack<T>
 
     [NonSerialized] internal ArrayPool<T> _pool;
 
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
@@ -41,8 +41,8 @@ public ref partial struct TempStack<T>
 
     public TempStack(ArrayPool<T> pool)
     {
-        _size = default;
-        _version = default;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = s_emptyArray;
     }
@@ -53,8 +53,8 @@ public ref partial struct TempStack<T>
     {
         if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
 
-        _size = default;
-        _version = default;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
     }
@@ -65,8 +65,8 @@ public ref partial struct TempStack<T>
     {
         if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
 
-        _size = default;
-        _version = default;
+        _size = 0;
+        _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = EnumerableHelpers.ToArray(collection, s_emptyArray, _pool, out _size);
     }

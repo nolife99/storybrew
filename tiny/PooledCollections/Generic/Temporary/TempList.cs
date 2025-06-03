@@ -12,30 +12,20 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-// Implements a variable-size List that uses an array of objects to store the
-// elements. A List has a capacity, which is the allocated length
-// of the internal array. As elements are added to a List, the capacity
-// of the List is automatically increased as required by reallocating the
-// internal array.
-//
 public ref struct TempList<T>
 {
     internal const int DefaultCapacity = 4;
 
-    internal T[] _items; // Do not rename (binary serialization)
-    internal int _size; // Do not rename (binary serialization)
-    internal int _version; // Do not rename (binary serialization)
+    internal T[] _items;
+    internal int _size;
+    internal int _version;
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    [NonSerialized] internal readonly ArrayPool<T> _pool;
 
-    static readonly T[] s_emptyArray = Array.Empty<T>();
+    static readonly T[] s_emptyArray = [];
 
     internal static readonly bool s_clearItems = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
-    // Constructs a List with a given initial capacity. The list is
-    // initially empty, but will have room for the given number of elements
-    // before any reallocations are required.
-    //
     internal TempList(int capacity, ArrayPool<T> pool)
     {
         if (capacity < 0)
@@ -48,11 +38,7 @@ public ref struct TempList<T>
         _version = 0;
     }
 
-    // Constructs a List, copying the contents of the given collection. The
-    // size and capacity of the new list will both be equal to the size of the
-    // given collection.
-    //
-    internal TempList(IEnumerable<T> collection, ArrayPool<T> pool)
+    TempList(IEnumerable<T> collection, ArrayPool<T> pool)
     {
         if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
 
@@ -78,16 +64,11 @@ public ref struct TempList<T>
         {
             _size = 0;
             _items = s_emptyArray;
-            using (var en = collection!.GetEnumerator())
-                while (en.MoveNext())
-                    Add(en.Current);
+            using var en = collection!.GetEnumerator();
+            while (en.MoveNext()) Add(en.Current);
         }
     }
 
-    // Gets and sets the capacity of this list.  The capacity is the size of
-    // the internal array used to hold items.  When set, the internal
-    // array of the list is reallocated to the given capacity.
-    //
     public int Capacity
     {
         get => _items.Length;
@@ -122,7 +103,6 @@ public ref struct TempList<T>
         }
     }
 
-    // Read-only property describing how many elements are in the List.
     public int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -135,12 +115,10 @@ public ref struct TempList<T>
         get => _items != null;
     }
 
-    // Sets or Gets the element at the given index.
     public T this[int index]
     {
         get
         {
-            // Following trick can reduce the range check by one
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             return _items[index];
         }
@@ -152,10 +130,6 @@ public ref struct TempList<T>
         }
     }
 
-    // Adds the given object to the end of this list. The size of the list is
-    // increased by one. If required, the capacity of the list is doubled
-    // before adding the new element.
-    //
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Add(T item)
     {
@@ -170,43 +144,17 @@ public ref struct TempList<T>
         else AddWithResize(item);
     }
 
-    // Non-inline from List.Add to improve its code quality as uncommon path
     [MethodImpl(MethodImplOptions.NoInlining)]
     void AddWithResize(T item)
     {
-        SystemDebug.Assert(_size == _items.Length);
         var size = _size;
         Grow(size + 1);
         _size = size + 1;
         _items[size] = item;
     }
 
-    // Adds the elements of the given collection to the end of this list. If
-    // required, the capacity of the list is increased to twice the previous
-    // capacity or the new size, whichever is larger.
-    //
     public void AddRange(IEnumerable<T> collection) => InsertRange(_size, collection);
 
-    // Searches a section of the list for a given element using a binary search
-    // algorithm. Elements of the list are compared to the search value using
-    // the given IComparer interface. If comparer is null, elements of
-    // the list are compared to the search value using the IComparable
-    // interface, which in that case must be implemented by all elements of the
-    // list and the given search value. This method assumes that the given
-    // section of the list is already sorted; if this is not the case, the
-    // result will be incorrect.
-    //
-    // The method returns the index of the given value in the list. If the
-    // list does not contain the given value, the method returns a negative
-    // integer. The bitwise complement operator (~) can be applied to a
-    // negative result to produce the index of the first element (if any) that
-    // is larger than the given search value. This is also the index at which
-    // the search value should be inserted into the list in order for the list
-    // to remain sorted.
-    //
-    // The method uses the Array.BinarySearch method to perform the
-    // search.
-    //
     public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
     {
         if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -223,7 +171,6 @@ public ref struct TempList<T>
 
     public int BinarySearch(T item, IComparer<T>? comparer) => BinarySearch(0, Count, item, comparer);
 
-    // Clears the contents of List.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
@@ -232,25 +179,12 @@ public ref struct TempList<T>
         {
             var size = _size;
             _size = 0;
-            if (size > 0) Array.Clear(_items, 0, size); // Clear the elements so that the gc can reclaim the references.
+            if (size > 0) Array.Clear(_items, 0, size);
         }
         else _size = 0;
     }
 
-    // Contains returns true if the specified element is in the List.
-    // It does a linear, O(n) search.  Equality is determined by calling
-    // EqualityComparer<T>.Default.Equals().
-    //
-    public bool Contains(T item) =>
-
-        // PERF: IndexOf calls Array.IndexOf, which internally
-        // calls EqualityComparer<T>.Default.IndexOf, which
-        // is specialized for different types. This
-        // boosts performance since instead of making a
-        // virtual method call each iteration of the loop,
-        // via EqualityComparer<T>.Default.Equals, we
-        // only make one virtual call to EqualityComparer.IndexOf.
-        _size != 0 && IndexOf(item) >= 0;
+    public bool Contains(T item) => _size != 0 && IndexOf(item) >= 0;
 
     public TempList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter, ArrayPool<TOut> pool = null)
     {
@@ -265,7 +199,6 @@ public ref struct TempList<T>
         return list;
     }
 
-    /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _size);
 
@@ -282,13 +215,6 @@ public ref struct TempList<T>
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
 
-    /// <summary>
-    ///     Ensures that the capacity of this list is at least the specified <paramref name="capacity"/>. If the current
-    ///     capacity of the list is less than specified <paramref name="capacity"/>, the capacity is increased by continuously twice
-    ///     current capacity until it is at least the specified <paramref name="capacity"/>.
-    /// </summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
-    /// <returns>The new capacity of this list.</returns>
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0)
@@ -304,20 +230,10 @@ public ref struct TempList<T>
         return _items.Length;
     }
 
-    /// <summary>Increase the capacity of this list to at least the specified <paramref name="capacity"/>.</summary>
-    /// <param name="capacity">The minimum capacity to ensure.</param>
     void Grow(int capacity)
     {
-        SystemDebug.Assert(_items.Length < capacity);
-
         var newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
-
-        // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
-        // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
         if ((uint)newcapacity > SystemArray.MaxLength) newcapacity = SystemArray.MaxLength;
-
-        // If the computed capacity is still less than specified, set to the original argument.
-        // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
         if (newcapacity < capacity) newcapacity = capacity;
 
         Capacity = newcapacity;
@@ -327,7 +243,7 @@ public ref struct TempList<T>
 
     public T? Find(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -340,7 +256,7 @@ public ref struct TempList<T>
 
     public TempList<T> FindAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var list = new TempList<T>();
         var items = _items;

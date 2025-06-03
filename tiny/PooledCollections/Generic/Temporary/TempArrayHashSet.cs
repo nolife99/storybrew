@@ -29,8 +29,8 @@ using System.Runtime.CompilerServices;
     internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     static readonly Type s_typeOfKey = typeof(T);
-    static readonly ArrayEntry<T>[] s_emptyEntries = Array.Empty<ArrayEntry<T>>();
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
+    static readonly ArrayEntry<T>[] s_emptyEntries = [];
+    static readonly int[] s_emptyBuckets = [];
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArrayHashSet<T> Create() => new(0, ArrayPool<ArrayEntry<T>>.Shared, ArrayPool<int>.Shared);
@@ -526,7 +526,7 @@ using System.Runtime.CompilerServices;
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             return false; //not found!
         }
 
@@ -619,7 +619,7 @@ using System.Runtime.CompilerServices;
 
         if (indexToValueToRemove == -1)
         {
-            index = default;
+            index = 0;
             return false; //not found!
         }
 

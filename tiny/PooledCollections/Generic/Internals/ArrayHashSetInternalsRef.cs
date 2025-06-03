@@ -1,4 +1,4 @@
-﻿namespace Tiny.PooledCollections.Generic.Internals.Safe;
+﻿namespace Tiny.PooledCollections.Generic.Internals;
 
 using System;
 using System.Buffers;

@@ -103,7 +103,7 @@ public class TimelineSlider : Slider
         var kiaiStartTime = 0f;
 
         line.Color = kiaiColor;
-        foreach (var controlPoint in project.MainBeatmap.ControlPoints)
+        foreach (var controlPoint in project.MainBeatmap.ControlPoints.AsValueEnumerable())
         {
             if (controlPoint.IsKiai == inKiai) continue;
 
@@ -125,7 +125,7 @@ public class TimelineSlider : Slider
 
         // Breaks
         line.Color = breakColor;
-        foreach (var osuBreak in project.MainBeatmap.Breaks)
+        foreach (var osuBreak in project.MainBeatmap.Breaks.AsValueEnumerable())
         {
             var breakLeft = timeToXTop(osuBreak.StartTime * .001f);
             var breakRight = timeToXTop(osuBreak.EndTime * .001f);
@@ -153,7 +153,7 @@ public class TimelineSlider : Slider
 
         // HitObjects
         if (project.ShowHitObjects)
-            foreach (var hitObject in project.MainBeatmap.HitObjects)
+            foreach (var hitObject in project.MainBeatmap.HitObjects.AsValueEnumerable())
                 if (leftTime < hitObject.EndTime && hitObject.StartTime < rightTime)
                 {
                     var left = Math.Max(0, (hitObject.StartTime - leftTime) * timeScale);
@@ -168,7 +168,7 @@ public class TimelineSlider : Slider
                 }
 
         // Bookmarks
-        foreach (var bookmark in project.MainBeatmap.Bookmarks)
+        foreach (var bookmark in project.MainBeatmap.Bookmarks.AsValueEnumerable())
         {
             drawLine(drawContext,
                 new(timeToXTop(bookmark * .001f), offset.Y + Bounds.Height * .1f),
@@ -249,7 +249,7 @@ public class TimelineSlider : Slider
         var beatmap = project.MainBeatmap;
 
         var leftTimingPoint = beatmap.GetTimingPointAt(leftTime);
-        using var timingPoints = beatmap.TimingPoints.AsValueEnumerable().GetEnumerator();
+        using var timingPoints = beatmap.ControlPoints.AsValueEnumerable().Where(c => !c.IsInherited).GetEnumerator();
 
         if (!timingPoints.MoveNext()) return;
 

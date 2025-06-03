@@ -22,8 +22,8 @@ public ref partial struct TempDictionary<TKey, TValue>
     const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
     const string ComparerName = "Comparer"; // Do not rename (binary serialization)
 
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
-    static readonly Entry<TKey, TValue>[] s_emptyEntries = Array.Empty<Entry<TKey, TValue>>();
+    static readonly int[] s_emptyBuckets = [];
+    static readonly Entry<TKey, TValue>[] s_emptyEntries = [];
 
     internal int[]? _buckets;
     internal Entry<TKey, TValue>[]? _entries;
@@ -57,11 +57,11 @@ public ref partial struct TempDictionary<TKey, TValue>
         _fastModMultiplier = default;
 #endif
 
-        _count = default;
-        _freeList = default;
-        _freeCount = default;
-        _version = default;
-        _comparer = default;
+        _count = 0;
+        _freeList = 0;
+        _freeCount = 0;
+        _version = 0;
+        _comparer = null;
 
         _bucketPool = bucketPool ?? ArrayPool<int>.Shared;
         _entryPool = entryPool ?? ArrayPool<Entry<TKey, TValue>>.Shared;

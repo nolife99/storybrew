@@ -1,5 +1,6 @@
 ﻿namespace StorybrewCommon.Mapset;
 
+using System;
 using System.Globalization;
 
 /// <summary>Represents an osu! break, a time period without hit objects.</summary>
@@ -15,13 +16,22 @@ public class OsuBreak
     public override string ToString() => $"Break from {StartTime}ms to {EndTime}ms";
 
     ///<summary> Parses an osu! break from a given line. </summary>
-    public static OsuBreak Parse(string line)
+    public static OsuBreak Parse(ReadOnlySpan<char> line)
     {
         var values = line.Split(',');
+
+        values.MoveNext();
+        values.MoveNext();
+
+        var startTime = values.Current;
+
+        values.MoveNext();
+        var endTime = values.Current;
+
         return new()
         {
-            StartTime = int.Parse(values[1], CultureInfo.InvariantCulture),
-            EndTime = int.Parse(values[2], CultureInfo.InvariantCulture)
+            StartTime = int.Parse(line[startTime], CultureInfo.InvariantCulture),
+            EndTime = int.Parse(line[endTime], CultureInfo.InvariantCulture)
         };
     }
 }

@@ -7,7 +7,7 @@ using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Shaders;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Internals;
 
 internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TPrimitive> where TPrimitive : struct
 {

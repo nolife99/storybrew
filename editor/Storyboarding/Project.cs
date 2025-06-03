@@ -31,7 +31,8 @@ using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Util;
 using Tiny;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.StructBased;
 using Util;
 using Path = System.IO.Path;
 
@@ -474,6 +475,7 @@ public sealed partial class Project : IDisposable
         typeof(Rgba32).Assembly.Location,
         typeof(MathHelper).Assembly.Location,
         typeof(Script).Assembly.Location,
+        typeof(ValueArray<>).Assembly.Location,
         typeof(Pool<>).Assembly.Location,
         .. Directory
             .EnumerateFiles(string.Format(CultureInfo.InvariantCulture, runtimePath, "Microsoft.WindowsDesktop.App.Ref"),

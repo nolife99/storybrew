@@ -33,7 +33,5 @@ public readonly struct ArrayKVPair<TKey, TValue>
         value = _values[_index];
     }
 
-    public static implicit operator KVPair<TKey, TValue>(in ArrayKVPair<TKey, TValue> kvp) => new(kvp.Key, kvp.Value);
-
     public static implicit operator KeyValuePair<TKey, TValue>(in ArrayKVPair<TKey, TValue> kvp) => new(kvp.Key, kvp.Value);
 }

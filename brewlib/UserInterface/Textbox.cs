@@ -8,7 +8,7 @@ using OpenTK.Windowing.Common.Input;
 using SixLabors.ImageSharp;
 using Skinning.Styles;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;
 

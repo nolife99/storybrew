@@ -1,4 +1,4 @@
-﻿namespace Tiny.PooledCollections.Generic.Internals.Unsafe;
+﻿namespace Tiny.PooledCollections.Generic.Internals;
 
 using System;
 using System.Collections.Generic;

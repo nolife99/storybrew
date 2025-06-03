@@ -91,7 +91,7 @@ public class FastRandom
 
     /// <inheritdoc cref="Random.NextBytes(Span{byte})"/>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void NextBytes(Span<byte> buffer)
+    public void NextBytes(scoped Span<byte> buffer)
     {
         uint x = this.x, y = this.y, z = this.z, w = this.w, t;
         var i = 0;

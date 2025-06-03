@@ -4,8 +4,7 @@ using System;
 using System.Collections.Generic;
 
 public interface IReadOnlyArrayDictionary<TKey, TValue>
-    : IReadOnlyDictionary<TKey, TValue>, IReadOnlyCollection<ArrayKVPair<TKey, TValue>>,
-        IReadOnlyCollection<KVPair<TKey, TValue>>
+    : IReadOnlyDictionary<TKey, TValue>, IReadOnlyCollection<ArrayKVPair<TKey, TValue>>
 {
     TValue this[in TKey key] { get; set; }
 
@@ -25,13 +24,13 @@ public interface IReadOnlyArrayDictionary<TKey, TValue>
 
     bool TryGetValue(in TKey key, out TValue result);
 
-    void CopyTo(KVPair<TKey, TValue>[] dest);
+    void CopyTo(KeyValuePair<TKey, TValue>[] dest);
 
-    void CopyTo(KVPair<TKey, TValue>[] dest, int destIndex, int count);
+    void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count);
 
-    void CopyTo(in Span<KVPair<TKey, TValue>> dest);
+    void CopyTo(scoped in Span<KeyValuePair<TKey, TValue>> dest);
 
-    void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex);
+    void CopyTo(scoped in Span<KeyValuePair<TKey, TValue>> dest, int destIndex);
 
-    void CopyTo(in Span<KVPair<TKey, TValue>> dest, int destIndex, int count);
+    void CopyTo(scoped in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count);
 }

@@ -4,7 +4,7 @@ using System;
 using System.Linq;
 using CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
 public class TriggerCommand : CommandGroup

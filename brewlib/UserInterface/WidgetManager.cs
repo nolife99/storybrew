@@ -12,10 +12,9 @@ using ScreenLayers;
 using Skinning;
 using Tiny.PooledCollections;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals.Safe;
+using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Util;
-using ZLinq;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {
@@ -244,7 +243,17 @@ public sealed class WidgetManager : IInputHandler, IDisposable
     Widget hoveredDraggableWidget;
     readonly PooledDictionary<MouseButton, object> dragData = [];
 
-    public bool IsDragging => dragData.AsValueEnumerable().Any(v => v.Value is not null);
+    public bool IsDragging
+    {
+        get
+        {
+            foreach (var value in dragData.Values)
+                if (value is not null)
+                    return true;
+
+            return false;
+        }
+    }
 
     void startDragAndDrop(MouseButton button)
     {

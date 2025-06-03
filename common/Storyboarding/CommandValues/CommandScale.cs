@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for scale commands. </summary>

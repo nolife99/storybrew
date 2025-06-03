@@ -22,7 +22,7 @@ public class EditorBeatmap(string path) : Beatmap
         Color.FromPixel(new Rgba32(242, 24, 57))
     ];
 
-    readonly HashSet<int> bookmarks = [];
+    readonly List<int> bookmarks = [];
 
     readonly List<OsuBreak> breaks = [];
     readonly List<Color> comboColors = [..defaultComboColors];
@@ -128,7 +128,7 @@ public class EditorBeatmap(string path) : Beatmap
                         {
                             switch (key)
                             {
-                                case "AudioFilename": beatmap.audioFilename = value; break;
+                                case "AudioFilename": beatmap.audioFilename = value.ToString(); break;
 
                                 case "StackLeniency":
                                     beatmap.stackLeniency = float.Parse(value, CultureInfo.InvariantCulture); break;
@@ -143,7 +143,12 @@ public class EditorBeatmap(string path) : Beatmap
                                 case "Bookmarks":
                                     foreach (var bookmark in value.Split(','))
                                         if (value.Length > 0)
-                                            beatmap.bookmarks.Add(int.Parse(bookmark, CultureInfo.InvariantCulture));
+                                        {
+                                            var time = int.Parse(value[bookmark], CultureInfo.InvariantCulture);
+                                            if (!beatmap.bookmarks.Contains(time))
+                                                beatmap.bookmarks.Add(int.Parse(value[bookmark],
+                                                    CultureInfo.InvariantCulture));
+                                        }
 
                                     break;
                             }
@@ -154,7 +159,7 @@ public class EditorBeatmap(string path) : Beatmap
                         {
                             switch (key)
                             {
-                                case "Version": beatmap.name = value; break;
+                                case "Version": beatmap.name = value.ToString(); break;
 
                                 case "BeatmapID": beatmap.id = long.Parse(value, CultureInfo.InvariantCulture); break;
                             }
@@ -193,9 +198,19 @@ public class EditorBeatmap(string path) : Beatmap
                                 if (line.StartsWith(' ')) return;
 
                                 var values = line.Split(',');
-                                switch (values[0])
+                                values.MoveNext();
+
+                                switch (line[values.Current])
                                 {
-                                    case "0": beatmap.backgroundPath = removePathQuotes(values[2]); break;
+                                    case "0":
+                                    {
+                                        values.MoveNext();
+                                        values.MoveNext();
+
+                                        beatmap.backgroundPath = removePathQuotes(line[values.Current]);
+                                        break;
+                                    }
+
                                     case "2": beatmap.breaks.Add(OsuBreak.Parse(line)); break;
                                 }
                             },
@@ -217,10 +232,20 @@ public class EditorBeatmap(string path) : Beatmap
                             if (!key.StartsWith("Combo", StringComparison.Ordinal)) return;
 
                             var rgb = value.Split(',');
+                            rgb.MoveNext();
+
+                            var r = rgb.Current;
+                            rgb.MoveNext();
+
+                            var g = rgb.Current;
+                            rgb.MoveNext();
+
+                            var b = rgb.Current;
+
                             beatmap.comboColors.Add(Color.FromPixel(new Rgba32(
-                                byte.Parse(rgb[0], CultureInfo.InvariantCulture),
-                                byte.Parse(rgb[1], CultureInfo.InvariantCulture),
-                                byte.Parse(rgb[2], CultureInfo.InvariantCulture))));
+                                byte.Parse(value[r], CultureInfo.InvariantCulture),
+                                byte.Parse(value[g], CultureInfo.InvariantCulture),
+                                byte.Parse(value[b], CultureInfo.InvariantCulture))));
                         });
 
                         if (beatmap.comboColors.Count == 0) beatmap.comboColors.AddRange(defaultComboColors);
@@ -353,7 +378,8 @@ public class EditorBeatmap(string path) : Beatmap
         foreach (var h in hitObjects) h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex;
     }
 
-    static string removePathQuotes(string path) => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1] : path;
+    static string removePathQuotes(ReadOnlySpan<char> path)
+        => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1].ToString() : path.ToString();
 
     #endregion
 }

@@ -8,7 +8,7 @@ using BrewLib.Util;
 using Storyboarding;
 using StorybrewEditor.Util;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals.Safe;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using UserInterface;
 
 public class NewProjectMenu : UiScreenLayer

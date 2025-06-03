@@ -42,8 +42,8 @@ public partial struct ValueHashSet<T>
 
     const int StartOfFreeList = -3;
 
-    static readonly int[] s_emptyBuckets = Array.Empty<int>();
-    static readonly Entry<T>[] s_emptyEntries = Array.Empty<Entry<T>>();
+    static readonly int[] s_emptyBuckets = [];
+    static readonly Entry<T>[] s_emptyEntries = [];
 
     internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
@@ -71,11 +71,11 @@ public partial struct ValueHashSet<T>
         _fastModMultiplier = default;
 #endif
 
-        _count = default;
-        _freeList = default;
-        _freeCount = default;
-        _version = default;
-        _comparer = default;
+        _count = 0;
+        _freeList = 0;
+        _freeCount = 0;
+        _version = 0;
+        _comparer = null;
 
         _bucketPool = bucketPool ?? ArrayPool<int>.Shared;
         _entryPool = entryPool ?? ArrayPool<Entry<T>>.Shared;
@@ -140,11 +140,11 @@ public partial struct ValueHashSet<T>
         _fastModMultiplier = default;
 #endif
 
-        _count = default;
-        _freeList = default;
-        _freeCount = default;
-        _version = default;
-        _comparer = default;
+        _count = 0;
+        _freeList = 0;
+        _freeCount = 0;
+        _version = 0;
+        _comparer = null;
 
         _bucketPool = ArrayPool<int>.Shared;
         _entryPool = ArrayPool<Entry<T>>.Shared;
