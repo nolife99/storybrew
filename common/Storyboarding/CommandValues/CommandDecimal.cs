@@ -1,5 +1,6 @@
 namespace StorybrewCommon.Storyboarding.CommandValues;
 
+using System;
 using System.Runtime.InteropServices;
 using BrewLib.Util;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -23,8 +24,10 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
     public TempList<char> ToOsbString(ExportSettings exportSettings)
     {
-        using var arr = value.ToCharArray(value == 0 ? "" : "#.#####", exportSettings.NumberFormat);
-        return TempList<char>.Create(arr.AsReadOnlySpan());
+        using var arr = ((float)value).ToCharArray(provider: exportSettings.NumberFormat);
+        var span = arr.AsReadOnlySpan();
+
+        return TempList<char>.Create(span[(span.StartsWith("0.") ? 1 : 0)..]);
     }
 
     public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => left.value - right.value;

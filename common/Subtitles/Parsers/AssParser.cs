@@ -40,9 +40,8 @@ public record AssParser : SubtitleParser
                                     foreach (var arg in value.Split(',')) arguments.Add(ValueList<char>.Create(value[arg]));
 
                                     string text;
-                                    using (var argsArr = arguments.AsReadOnlySpan()
+                                    using (var argsArr = arguments.AsReadOnlySpan()[9..]
                                         .AsValueEnumerable()
-                                        .Skip(9)
                                         .Select(c => c.AsReadOnlySpan().ToString())
                                         .ToArrayPool())
                                         text = string.Join('\n', string.Join(',', argsArr.Span).Split("\\N"));

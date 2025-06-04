@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Commands;
 using CommandValues;
-using ZLinq;
 
 public interface CommandTimeline
 {
@@ -29,20 +28,73 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
     public CommandTimeline() { }
     public CommandTimeline(TValue defaultValue) => DefaultValue = defaultValue;
 
-    public CommandResult<TValue> StartResult => HasCommands ?
-        channels.AsValueEnumerable().Select(c => c.StartResult).MinBy(r => r.StartTime) :
-        default;
+    public CommandResult<TValue> StartResult
+    {
+        get
+        {
+            if (!HasCommands) return default;
+
+            var earliestResult = channels[0].StartResult;
+            foreach (var channel in channels)
+            {
+                var result = channel.StartResult;
+                if (result.StartTime < earliestResult.StartTime) earliestResult = result;
+            }
+
+            return earliestResult;
+        }
+    }
 
     public CommandResult<TValue> EndResult
-        => HasCommands ? channels.AsValueEnumerable().Select(c => c.EndResult).MaxBy(r => r.StartTime) : default;
+    {
+        get
+        {
+            if (!HasCommands) return default;
 
-    public TValue StartValue => HasCommands ?
-        channels.AsValueEnumerable().Select(c => c.StartResult).MinBy(r => r.StartTime).StartValue :
-        DefaultValue;
+            var latestResult = channels[0].EndResult;
+            foreach (var channel in channels)
+            {
+                var result = channel.EndResult;
+                if (result.StartTime > latestResult.StartTime) latestResult = result;
+            }
 
-    public TValue EndValue => HasCommands ?
-        channels.AsValueEnumerable().Select(c => c.EndResult).MaxBy(r => r.EndTime).EndValue :
-        DefaultValue;
+            return latestResult;
+        }
+    }
+
+    public TValue StartValue
+    {
+        get
+        {
+            if (!HasCommands) return DefaultValue;
+
+            var earliestResult = channels[0].StartResult;
+            foreach (var channel in channels)
+            {
+                var result = channel.StartResult;
+                if (result.StartTime < earliestResult.StartTime) earliestResult = result;
+            }
+
+            return earliestResult.StartValue;
+        }
+    }
+
+    public TValue EndValue
+    {
+        get
+        {
+            if (!HasCommands) return DefaultValue;
+
+            var latestResult = channels[0].EndResult;
+            foreach (var channel in channels)
+            {
+                var result = channel.EndResult;
+                if (result.EndTime > latestResult.EndTime) latestResult = result;
+            }
+
+            return latestResult.EndValue;
+        }
+    }
 
     public bool HasCommands => channels.Count > 0;
     public bool HasOverlap => channels.Any(c => c.HasOverlap);

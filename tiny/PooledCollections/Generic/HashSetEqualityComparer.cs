@@ -61,4 +61,8 @@ public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHash
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is HashSetEqualityComparer<T>;
 
     public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
+
+    public static bool operator ==(HashSetEqualityComparer<T> left, HashSetEqualityComparer<T> right) => left.Equals(right);
+
+    public static bool operator !=(HashSetEqualityComparer<T> left, HashSetEqualityComparer<T> right) => !(left == right);
 }

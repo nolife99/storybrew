@@ -29,8 +29,8 @@ public sealed class NonRandomizedStringEqualityComparer : EqualityComparer<strin
     void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         => info.SetType(typeof(NonRandomizedStringEqualityComparer));
 
-    public override bool Equals(string x, string y) => string.Equals(x, y);
+    public override bool Equals(string x, string y) => string.Equals(x, y, StringComparison.Ordinal);
 
-    public override int GetHashCode(string str) => str is null ? 0 :
-        str.Length == 0 ? s_empyStringHashCode : HashHelpers.GetNonRandomizedHashCode(str);
+    public override int GetHashCode(string str)
+        => str.Length == 0 ? s_empyStringHashCode : HashHelpers.GetNonRandomizedHashCode(str);
 }

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 
 public interface IReadOnlyArrayDictionary<TKey, TValue>
-    : IReadOnlyDictionary<TKey, TValue>, IReadOnlyCollection<ArrayKVPair<TKey, TValue>>
+    : IReadOnlyDictionary<TKey, TValue>, IReadOnlyCollection<ArrayKeyValuePair<TKey, TValue>>
 {
     TValue this[in TKey key] { get; set; }
 

@@ -1,7 +1,6 @@
 namespace StorybrewScripts;
 
 using System;
-using System.Linq;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;

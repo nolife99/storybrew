@@ -48,13 +48,13 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
         CircularArcProperties pr = new(controlPoints);
         amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
             2 :
-            Math.Max(2, (int)MathF.Ceiling(pr.ThetaRange / (2 * MathF.Acos(1 - circular_arc_tolerance / pr.Radius))));
+            Math.Max(2, (int)float.Ceiling(pr.ThetaRange / (2 * float.Acos(1 - circular_arc_tolerance / pr.Radius))));
 
         var output = ArrayPool<Vector2>.Shared.Rent(amountPoints);
         for (var i = 0; i < amountPoints; ++i)
         {
             var fract = i / (amountPoints - 1f);
-            var (sin, cos) = MathF.SinCos(pr.ThetaStart + pr.Direction * fract * pr.ThetaRange);
+            var (sin, cos) = float.SinCos(pr.ThetaStart + pr.Direction * fract * pr.ThetaRange);
             output[i] = pr.Centre + new Vector2(cos, sin) * pr.Radius;
         }
 
@@ -89,22 +89,21 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
 
             Radius = dA.Length();
 
-            ThetaStart = MathF.Atan2(dA.Y, dA.X);
-            var thetaEnd = MathF.Atan2(dC.Y, dC.X);
+            ThetaStart = float.Atan2(dA.Y, dA.X);
+            var thetaEnd = float.Atan2(dC.Y, dC.X);
 
-            while (thetaEnd < ThetaStart) thetaEnd += MathF.Tau;
+            while (thetaEnd < ThetaStart) thetaEnd += float.Tau;
 
             Direction = 1;
             ThetaRange = thetaEnd - ThetaStart;
 
             var orthoAtoC = c - a;
-            orthoAtoC = new Vector2(orthoAtoC.Y, -orthoAtoC.X);
+            orthoAtoC = new(orthoAtoC.Y, -orthoAtoC.X);
 
-            if (Vector2.Dot(orthoAtoC, b - a) < 0)
-            {
-                Direction = -Direction;
-                ThetaRange = MathF.Tau - ThetaRange;
-            }
+            if (!(Vector2.Dot(orthoAtoC, b - a) < 0)) return;
+
+            Direction = -Direction;
+            ThetaRange = float.Tau - ThetaRange;
         }
     }
 }

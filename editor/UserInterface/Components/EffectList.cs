@@ -13,8 +13,8 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using ScreenLayers;
 using Storyboarding;
+using Tiny.PooledCollections.Generic.Temporary;
 using Util;
-using ZLinq;
 
 public partial class EffectList : Widget
 {
@@ -100,8 +100,11 @@ public partial class EffectList : Widget
     void refreshEffects()
     {
         effectsLayout.ClearWidgets();
-        foreach (var effect in project.Effects.AsValueEnumerable().OrderBy(e => e.Name))
-            effectsLayout.Add(createEffectWidget(effect));
+
+        using var temp = TempList<Effect>.Create(project.Effects);
+        temp.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+
+        foreach (var effect in temp) effectsLayout.Add(createEffectWidget(effect));
     }
 
     LinearLayout createEffectWidget(Effect effect)

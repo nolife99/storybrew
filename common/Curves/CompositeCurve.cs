@@ -1,13 +1,13 @@
 ﻿namespace StorybrewCommon.Curves;
 
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Numerics;
 
 /// <summary>Represents a composite curve made up of multiple other curves.</summary>
-public class CompositeCurve(IEnumerable<Curve> curves) : Curve
+public class CompositeCurve(ReadOnlySpan<Curve> curves) : Curve
 {
-    readonly Curve[] curves = curves as Curve[] ?? curves.ToArray();
+    readonly Curve[] curves = curves.ToArray();
 
     /// <inheritdoc/>
     public Vector2 StartPosition => curves[0].StartPosition;

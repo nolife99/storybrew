@@ -17,9 +17,8 @@ using System.Runtime.Serialization;
 /// </summary>
 /// <remarks>To iterate over <see cref="Keys"/> or <see cref="Values"/> as arrays, they must be get through unsafe APIs.</remarks>
 [Serializable]
-public partial class ArrayDictionary<TKey, TValue>
-    : IArrayDictionary<TKey, TValue>, IDictionary<TKey, TValue>, ISerializable, IDeserializationCallback, IDisposable
-    where TKey : notnull
+public class ArrayDictionary<TKey, TValue>
+    : IArrayDictionary<TKey, TValue>, ISerializable, IDeserializationCallback, IDisposable where TKey : notnull
 {
     // constants for serialization
     const string CountName = "Count"; // Do not rename (binary serialization). Must save buckets.Length
@@ -690,16 +689,17 @@ public partial class ArrayDictionary<TKey, TValue>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator() => new KeyValuePairEnumerator(this);
 
-    bool ICollection<ArrayKVPair<TKey, TValue>>.IsReadOnly => false;
+    bool ICollection<ArrayKeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<ArrayKVPair<TKey, TValue>>.Add(ArrayKVPair<TKey, TValue> item) => Add(item.Key, item.Value);
+    void ICollection<ArrayKeyValuePair<TKey, TValue>>.Add(ArrayKeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<ArrayKVPair<TKey, TValue>>.Contains(ArrayKVPair<TKey, TValue> item) => ContainsKey(item.Key);
+    bool ICollection<ArrayKeyValuePair<TKey, TValue>>.Contains(ArrayKeyValuePair<TKey, TValue> item)
+        => ContainsKey(item.Key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<ArrayKVPair<TKey, TValue>>.CopyTo(ArrayKVPair<TKey, TValue>[] dest, int destIndex)
+    void ICollection<ArrayKeyValuePair<TKey, TValue>>.CopyTo(ArrayKeyValuePair<TKey, TValue>[] dest, int destIndex)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -711,14 +711,16 @@ public partial class ArrayDictionary<TKey, TValue>
 
         if (keys.Length == 0 || values.Length == 0) return;
 
-        for (int i = 0, len = Count; i < len; i++) dest[destIndex++] = new ArrayKVPair<TKey, TValue>(keys[i].Key, values, i);
+        for (int i = 0, len = Count; i < len; i++)
+            dest[destIndex++] = new ArrayKeyValuePair<TKey, TValue>(keys[i].Key, values, i);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<ArrayKVPair<TKey, TValue>>.Remove(ArrayKVPair<TKey, TValue> item) => Remove(item.Key);
+    bool ICollection<ArrayKeyValuePair<TKey, TValue>>.Remove(ArrayKeyValuePair<TKey, TValue> item) => Remove(item.Key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IEnumerator<ArrayKVPair<TKey, TValue>> IEnumerable<ArrayKVPair<TKey, TValue>>.GetEnumerator() => new Enumerator(this);
+    IEnumerator<ArrayKeyValuePair<TKey, TValue>> IEnumerable<ArrayKeyValuePair<TKey, TValue>>.GetEnumerator()
+        => new Enumerator(this);
 
     ICollection<TKey> IDictionary<TKey, TValue>.Keys
     {
@@ -1255,5 +1257,316 @@ public partial class ArrayDictionary<TKey, TValue>
 
         if (next != -1) valuesInfo[next].Previous = previous;
         if (previous != -1) valuesInfo[previous].Next = next;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd(TKey key)
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        _values[findIndex] = default;
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd(in TKey key)
+    {
+        if (TryFindIndex(in key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(in key, out findIndex);
+
+        _values[findIndex] = default;
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd(TKey key, Func<TValue> builder)
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        _values[findIndex] = builder();
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd(in TKey key, Func<TValue> builder)
+    {
+        if (TryFindIndex(in key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(in key, out findIndex);
+
+        _values[findIndex] = builder();
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd<W>(TKey key, FuncRef<W, TValue> builder, ref W parameter)
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        _values[findIndex] = builder(ref parameter);
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetOrAdd<W>(in TKey key, FuncRef<W, TValue> builder, ref W parameter)
+    {
+        if (TryFindIndex(in key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(in key, out findIndex);
+
+        _values[findIndex] = builder(ref parameter);
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue RecycleOrAdd<TValueProxy>(TKey key, Func<TValueProxy> builder, ActionRef<TValueProxy> recycler)
+        where TValueProxy : class, TValue
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        if (_values[findIndex] == null) _values[findIndex] = builder();
+        else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]));
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue RecycleOrAdd<TValueProxy>(in TKey key, Func<TValueProxy> builder, ActionRef<TValueProxy> recycler)
+        where TValueProxy : class, TValue
+    {
+        if (TryFindIndex(in key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(in key, out findIndex);
+
+        if (_values[findIndex] == null) _values[findIndex] = builder();
+        else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]));
+
+        return ref _values[findIndex];
+    }
+
+    /// <summary>
+    ///     RecycledOrCreate makes sense to use on dictionaries that are fast cleared and use objects as value. Once the
+    ///     dictionary is fast cleared, it will try to reuse object values that are recycled during the fast clearing.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="builder"></param>
+    /// <param name="recycler"></param>
+    /// <param name="parameter"></param>
+    /// <typeparam name="TValueProxy"></typeparam>
+    /// <typeparam name="U"></typeparam>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue RecycleOrAdd<TValueProxy, U>(TKey key,
+        FuncRef<U, TValue> builder,
+        ActionRef<TValueProxy, U> recycler,
+        ref U parameter) where TValueProxy : class, TValue
+    {
+        if (TryFindIndex(key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(key, out findIndex);
+
+        if (_values[findIndex] == null) _values[findIndex] = builder(ref parameter);
+        else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]), ref parameter);
+
+        return ref _values[findIndex];
+    }
+
+    /// <summary>
+    ///     RecycledOrCreate makes sense to use on dictionaries that are fast cleared and use objects as value. Once the
+    ///     dictionary is fast cleared, it will try to reuse object values that are recycled during the fast clearing.
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="builder"></param>
+    /// <param name="recycler"></param>
+    /// <param name="parameter"></param>
+    /// <typeparam name="TValueProxy"></typeparam>
+    /// <typeparam name="U"></typeparam>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue RecycleOrAdd<TValueProxy, U>(in TKey key,
+        FuncRef<U, TValue> builder,
+        ActionRef<TValueProxy, U> recycler,
+        ref U parameter) where TValueProxy : class, TValue
+    {
+        if (TryFindIndex(in key, out var findIndex)) return ref _values[findIndex];
+
+        TryGetIndex(in key, out findIndex);
+
+        if (_values[findIndex] == null) _values[findIndex] = builder(ref parameter);
+        else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]), ref parameter);
+
+        return ref _values[findIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+    //WARNING this method must stay stateless (not relying on states that can change, it's ok to read
+    //constant states) because it will be used in multi-threaded parallel code
+    public ref TValue GetIndexedValueByRef(int index) => ref _values[index];
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetValueByRef(TKey key)
+    {
+#if DEBUG
+        if (TryFindIndex(key, out var findIndex) == true) return ref _values[findIndex];
+
+        ThrowHelper.ThrowKeyNotFoundException(key);
+        return ref Unsafe.NullRef<TValue>();
+#else
+
+        //Burst is not able to vectorise code if throw is found, regardless if it's actually ever thrown
+        TryFindIndex(key, out var findIndex);
+
+        return ref _values[findIndex];
+#endif
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref TValue GetValueByRef(in TKey key)
+    {
+#if DEBUG
+        if (TryFindIndex(in key, out var findIndex) == true) return ref _values[findIndex];
+
+        ThrowHelper.ThrowKeyNotFoundException(key);
+        return ref Unsafe.NullRef<TValue>();
+#else
+
+        //Burst is not able to vectorise code if throw is found, regardless if it's actually ever thrown
+        TryFindIndex(in key, out var findIndex);
+
+        return ref _values[findIndex];
+#endif
+    }
+
+    public struct Enumerator : IEnumerator<ArrayKeyValuePair<TKey, TValue>>
+    {
+        readonly ArrayDictionary<TKey, TValue> _dictionary;
+
+#if DEBUG
+        private int _startCount;
+#endif
+
+        int _count;
+        int _index;
+
+        public Enumerator(ArrayDictionary<TKey, TValue> dictionary)
+        {
+            _dictionary = dictionary;
+            _index = -1;
+            _count = dictionary.Count;
+#if DEBUG
+            _startCount = dictionary.Count;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext()
+        {
+#if DEBUG
+            if (_count != _startCount) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+#endif
+            if (_index < _count - 1)
+            {
+                ++_index;
+                return true;
+            }
+
+            return false;
+        }
+
+        public ArrayKeyValuePair<TKey, TValue> Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new(_dictionary._entries[_index].Key, _dictionary._values, _index);
+        }
+
+        object IEnumerator.Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new ArrayKeyValuePair<TKey, TValue>(_dictionary._entries[_index].Key, _dictionary._values, _index);
+        }
+
+        public void SetRange(int startIndex, int count)
+        {
+            _index = startIndex - 1;
+            _count = count;
+#if DEBUG
+            if (_count > _startCount) throw new InvalidOperationException("Cannot set a count greater than its starting value");
+
+            _startCount = count;
+#endif
+        }
+
+        public void Reset() => _index = -1;
+
+        public void Dispose() { }
+    }
+
+    struct KeyValuePairEnumerator : IEnumerator<KeyValuePair<TKey, TValue>>
+    {
+        readonly ArrayDictionary<TKey, TValue> _dictionary;
+
+#if DEBUG
+        private int _startCount;
+#endif
+
+        readonly int _count;
+        int _index;
+
+        public KeyValuePairEnumerator(ArrayDictionary<TKey, TValue> dictionary)
+        {
+            _dictionary = dictionary;
+            _index = -1;
+            _count = dictionary.Count;
+#if DEBUG
+            _startCount = dictionary.Count;
+#endif
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext()
+        {
+#if DEBUG
+            if (_count != _startCount) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+#endif
+            if (_index < _count - 1)
+            {
+                ++_index;
+                return true;
+            }
+
+            return false;
+        }
+
+        public KeyValuePair<TKey, TValue> Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new(_dictionary._entries[_index].Key, _dictionary._values[_index]);
+        }
+
+        object IEnumerator.Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new KeyValuePair<TKey, TValue>(_dictionary._entries[_index].Key, _dictionary._values[_index]);
+        }
+
+        public void Reset() => _index = -1;
+
+        public void Dispose() { }
     }
 }

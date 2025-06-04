@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
@@ -10,11 +9,11 @@ using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary>Represents a bézier curve defined by a set of control points.</summary>
-public class BezierCurve(IEnumerable<Vector2> points) : BaseCurve
+public class BezierCurve(ReadOnlySpan<Vector2> points) : BaseCurve
 {
     const float BEZIER_TOLERANCE = .25f;
 
-    readonly Vector2[] points = points as Vector2[] ?? points.ToArray();
+    readonly Vector2[] points = points.ToArray();
 
     /// <inheritdoc/>
     public override Vector2 StartPosition => points[0];

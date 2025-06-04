@@ -13,7 +13,6 @@ using Scripting;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
-using ZLinq;
 
 /// <summary> Generates commands on an <see cref="OsbSprite"/> based on the states of that sprite. </summary>
 public class CommandGenerator
@@ -193,11 +192,11 @@ public class CommandGenerator
         float? startState = loopable ? (startTime ?? StartState.Time) + timeOffset : null,
             endState = loopable ? (endTime ?? EndState.Time) + timeOffset : null;
 
-        var moveX = finalPositions.keyframes.AsValueEnumerable()
-            .All(keyframe => checkPos(keyframe.Value.Y) == checkPos(finalPositions.StartValue.Y));
+        var moveX = finalPositions.keyframes.TrueForAll(keyframe
+            => checkPos(keyframe.Value.Y) == checkPos(finalPositions.StartValue.Y));
 
-        var moveY = finalPositions.keyframes.AsValueEnumerable()
-            .All(keyframe => checkPos(keyframe.Value.X) == checkPos(finalPositions.StartValue.X));
+        var moveY = finalPositions.keyframes.TrueForAll(keyframe
+            => checkPos(keyframe.Value.X) == checkPos(finalPositions.StartValue.X));
 
         finalPositions.ForEachPair((s, e) =>
             {

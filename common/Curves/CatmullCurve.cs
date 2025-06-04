@@ -6,9 +6,11 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 
 /// <summary>Represents a Catmull-Rom curve defined by a set of control points.</summary>
-public class CatmullCurve(Vector2[] points) : BaseCurve
+public class CatmullCurve(ReadOnlySpan<Vector2> points) : BaseCurve
 {
     const int catmull_detail = 50;
+
+    readonly Vector2[] points = points.ToArray();
 
     /// <inheritdoc/>
     public override Vector2 StartPosition => points[0];

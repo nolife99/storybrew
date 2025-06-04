@@ -1,16 +1,16 @@
 ﻿namespace StorybrewEditor.Mapset;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using StorybrewCommon.Mapset;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 
 public class EditorBeatmap(string path) : Beatmap
 {
@@ -22,11 +22,11 @@ public class EditorBeatmap(string path) : Beatmap
         Color.FromPixel(new Rgba32(242, 24, 57))
     ];
 
-    readonly List<int> bookmarks = [];
+    readonly PooledList<int> bookmarks = [];
 
-    readonly List<OsuBreak> breaks = [];
-    readonly List<Color> comboColors = [..defaultComboColors];
-    readonly List<OsuHitObject> hitObjects = [];
+    readonly PooledList<OsuBreak> breaks = [];
+    readonly PooledList<Color> comboColors = [..defaultComboColors];
+    readonly PooledList<OsuHitObject> hitObjects = [];
     public readonly string Path = path;
 
     float approachRate = 5;
@@ -56,7 +56,7 @@ public class EditorBeatmap(string path) : Beatmap
     public override string Name => name;
     public override long Id => id;
     public override float StackLeniency => stackLeniency;
-    public override IEnumerable<int> Bookmarks => bookmarks;
+    public override ReadOnlySpan<int> Bookmarks => bookmarks.AsReadOnlySpan();
     public override float HpDrainRate => hpDrainRate;
     public override float CircleSize => circleSize;
     public override float OverallDifficulty => overallDifficulty;
@@ -64,48 +64,50 @@ public class EditorBeatmap(string path) : Beatmap
     public override float SliderMultiplier => sliderMultiplier;
     public override float SliderTickRate => sliderTickRate;
 
-    public override IEnumerable<OsuHitObject> HitObjects
+    public override ReadOnlySpan<OsuHitObject> HitObjects
     {
         get
         {
             if (!hitObjectsPostProcessed) postProcessHitObjects();
-            return hitObjects;
+            return hitObjects.AsReadOnlySpan();
         }
     }
 
-    public override IEnumerable<Color> ComboColors => comboColors;
+    public override ReadOnlySpan<Color> ComboColors => comboColors.AsReadOnlySpan();
     public override string BackgroundPath => backgroundPath;
-    public override IEnumerable<OsuBreak> Breaks => breaks;
+    public override ReadOnlySpan<OsuBreak> Breaks => breaks.AsReadOnlySpan();
 
     public override string ToString() => Name;
 
     #region Timing
 
-    readonly List<ControlPoint> controlPoints = [];
+    readonly PooledList<ControlPoint> controlPoints = [], timingPoints = [];
 
-    public override IEnumerable<ControlPoint> ControlPoints => controlPoints;
+    public override ReadOnlySpan<ControlPoint> ControlPoints => controlPoints.AsReadOnlySpan();
 
-    public override IEnumerable<ControlPoint> TimingPoints => controlPoints.Where(c => !c.IsInherited);
+    public override ReadOnlySpan<ControlPoint> TimingPoints => timingPoints.AsReadOnlySpan();
 
-    public ControlPoint GetControlPointAt(float time, Func<ControlPoint, bool> predicate)
+    public override ControlPoint GetControlPointAt(float time)
     {
-        if (controlPoints is null) return null;
-
         ControlPoint closestTimingPoint = null;
         foreach (var controlPoint in controlPoints)
-        {
-            if (predicate is not null && !predicate(controlPoint)) continue;
-
             if (closestTimingPoint is null || controlPoint.Offset - time <= ControlPointLeniency)
                 closestTimingPoint = controlPoint;
             else break;
-        }
 
         return closestTimingPoint ?? ControlPoint.Default;
     }
 
-    public override ControlPoint GetControlPointAt(float time) => GetControlPointAt(time, null);
-    public override ControlPoint GetTimingPointAt(float time) => GetControlPointAt(time, cp => !cp.IsInherited);
+    public override ControlPoint GetTimingPointAt(float time)
+    {
+        ControlPoint closestTimingPoint = null;
+        foreach (var controlPoint in timingPoints)
+            if (closestTimingPoint is null || controlPoint.Offset - time <= ControlPointLeniency)
+                closestTimingPoint = controlPoint;
+            else break;
+
+        return closestTimingPoint ?? ControlPoint.Default;
+    }
 
     #endregion
 
@@ -221,6 +223,10 @@ public class EditorBeatmap(string path) : Beatmap
                         reader.ParseSectionLines(line => beatmap.controlPoints.Add(ControlPoint.Parse(line)));
 
                         beatmap.controlPoints.Sort();
+                        foreach (var cp in beatmap.controlPoints)
+                            if (!cp.IsInherited)
+                                beatmap.timingPoints.Add(cp);
+
                         break;
                     }
 

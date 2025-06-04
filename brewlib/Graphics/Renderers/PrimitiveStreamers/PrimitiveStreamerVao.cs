@@ -102,7 +102,7 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
         var baseIndex = (totalQueuedPrimitives - PrimitivesInBatch) * vertexCount;
         internalQueueRender(ref baseIndex);
 
-        var commandBytes = commandBuffer.GetInsertSpan(commandBuffer.Count, commandSize, false);
+        Span<byte> commandBytes = stackalloc byte[commandSize];
         if (IndexBufferId != -1)
         {
             ref var command =
@@ -124,6 +124,8 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
             command.FirstVertex = (uint)baseIndex;
             command.BaseInstance = 0;
         }
+
+        commandBuffer.AddRange(commandBytes);
 
         ++queuedRenders;
         PrimitivesInBatch = 0;

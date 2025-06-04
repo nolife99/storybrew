@@ -11,7 +11,6 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding;
 using StorybrewCommon.Mapset;
-using ZLinq;
 
 public class TimelineSlider : Slider
 {
@@ -103,7 +102,7 @@ public class TimelineSlider : Slider
         var kiaiStartTime = 0f;
 
         line.Color = kiaiColor;
-        foreach (var controlPoint in project.MainBeatmap.ControlPoints.AsValueEnumerable())
+        foreach (var controlPoint in project.MainBeatmap.ControlPoints)
         {
             if (controlPoint.IsKiai == inKiai) continue;
 
@@ -125,7 +124,7 @@ public class TimelineSlider : Slider
 
         // Breaks
         line.Color = breakColor;
-        foreach (var osuBreak in project.MainBeatmap.Breaks.AsValueEnumerable())
+        foreach (var osuBreak in project.MainBeatmap.Breaks)
         {
             var breakLeft = timeToXTop(osuBreak.StartTime * .001f);
             var breakRight = timeToXTop(osuBreak.EndTime * .001f);
@@ -153,7 +152,7 @@ public class TimelineSlider : Slider
 
         // HitObjects
         if (project.ShowHitObjects)
-            foreach (var hitObject in project.MainBeatmap.HitObjects.AsValueEnumerable())
+            foreach (var hitObject in project.MainBeatmap.HitObjects)
                 if (leftTime < hitObject.EndTime && hitObject.StartTime < rightTime)
                 {
                     var left = Math.Max(0, (hitObject.StartTime - leftTime) * timeScale);
@@ -168,7 +167,7 @@ public class TimelineSlider : Slider
                 }
 
         // Bookmarks
-        foreach (var bookmark in project.MainBeatmap.Bookmarks.AsValueEnumerable())
+        foreach (var bookmark in project.MainBeatmap.Bookmarks)
         {
             drawLine(drawContext,
                 new(timeToXTop(bookmark * .001f), offset.Y + Bounds.Height * .1f),
@@ -249,7 +248,7 @@ public class TimelineSlider : Slider
         var beatmap = project.MainBeatmap;
 
         var leftTimingPoint = beatmap.GetTimingPointAt(leftTime);
-        using var timingPoints = beatmap.ControlPoints.AsValueEnumerable().Where(c => !c.IsInherited).GetEnumerator();
+        var timingPoints = beatmap.TimingPoints.GetEnumerator();
 
         if (!timingPoints.MoveNext()) return;
 

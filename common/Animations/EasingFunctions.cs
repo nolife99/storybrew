@@ -7,7 +7,7 @@ using Storyboarding;
 ///<summary> A static class providing keyframing easing functions. </summary>
 public static class EasingFunctions
 {
-    ///<summary> An easing function that represents the floor value of the progression. </summary>
+    ///<summary> An easing function that represents the integer value of the progression. </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static float Step(float x) => x >= 1 ? 1 : 0;
 

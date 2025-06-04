@@ -308,7 +308,7 @@ public static class Program
 
                 Trace.Flush();
 
-                if (show) Environment.FailFast(null, e);
+                if (show) Environment.FailFast(e.Message, e);
             }
             catch (Exception e2)
             {

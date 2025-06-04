@@ -41,7 +41,7 @@ partial struct TempArrayDictionary<TKey, TValue>
             return false;
         }
 
-        public ArrayKVPair<TKey, TValue> Current
+        public ArrayKeyValuePair<TKey, TValue> Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => new(_dictionary._entries[_index].Key, _dictionary._values, _index);

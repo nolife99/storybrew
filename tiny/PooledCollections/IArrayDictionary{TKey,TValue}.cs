@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 
 public interface IArrayDictionary<TKey, TValue>
-    : IDictionary<TKey, TValue>, IReadOnlyArrayDictionary<TKey, TValue>, ICollection<ArrayKVPair<TKey, TValue>>
+    : IDictionary<TKey, TValue>, IReadOnlyArrayDictionary<TKey, TValue>, ICollection<ArrayKeyValuePair<TKey, TValue>>
 {
     void Add(in TKey key, in TValue value);
 

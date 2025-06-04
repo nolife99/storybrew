@@ -1,6 +1,6 @@
 ﻿namespace StorybrewCommon.Mapset;
 
-using System.Collections.Generic;
+using System;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.Util;
@@ -9,6 +9,7 @@ using Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary>Represents an osu! slider.</summary>
 public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHitObject
@@ -33,13 +34,13 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     ///     Gets an enumeration of nodes that make up the slider. Each node contains the sample set and sample volume at a
     ///     specific time in the slider.
     /// </summary>
-    public IEnumerable<OsuSliderNode> Nodes => nodes;
+    public ReadOnlySpan<OsuSliderNode> Nodes => nodes;
 
     /// <summary>Gets the number of nodes in this slider.</summary>
     public int NodeCount => nodes.Length;
 
     /// <summary>Gets an enumeration of control points that make up the slider's curve.</summary>
-    public IEnumerable<Vector2> ControlPoints => controlPoints;
+    public ReadOnlySpan<Vector2> ControlPoints => controlPoints;
 
     /// <summary>Gets the number of control points in this slider.</summary>
     public int ControlPointCount => controlPoints.Length;
@@ -122,7 +123,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
                 if (controlPoints.Length < 2 || !CircleCurve.IsValid(PlayfieldPosition, controlPoints[0], controlPoints[1]))
                     goto case SliderCurveType.Linear;
 
-                curve = generateCircleCurve();
+                curve = new CircleCurve(PlayfieldPosition, controlPoints[0], controlPoints[1]);
                 break;
 
             case SliderCurveType.Linear:
@@ -132,12 +133,10 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         playfieldTipPosition = curve.PositionAtDistance(Length);
     }
 
-    CircleCurve generateCircleCurve() => new(PlayfieldPosition, controlPoints[0], controlPoints[1]);
-
     CompositeCurve generateBezierCurve()
     {
-        List<BezierCurve> curves = [];
-        List<Vector2> curvePoints = [];
+        using var curves = TempList<Curve>.Create();
+        using var curvePoints = TempList<Vector2>.Create();
 
         var previousPosition = (Vector2)PlayfieldPosition;
         curvePoints.Add(previousPosition);
@@ -146,7 +145,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         {
             if (controlPoint == previousPosition)
             {
-                if (curvePoints.Count > 1) curves.Add(new(curvePoints));
+                if (curvePoints.Count > 1) curves.Add(new BezierCurve(curvePoints.AsReadOnlySpan()));
                 curvePoints.Clear();
             }
 
@@ -154,30 +153,32 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
             previousPosition = controlPoint;
         }
 
-        if (curvePoints.Count > 1) curves.Add(new(curvePoints));
-        return new(curves);
+        if (curvePoints.Count > 1) curves.Add(new BezierCurve(curvePoints.AsReadOnlySpan()));
+        return new(curves.AsReadOnlySpan());
     }
 
     CatmullCurve generateCatmullCurve()
     {
-        var curvePoints = new Vector2[controlPoints.Length + 1];
-        curvePoints[0] = PlayfieldPosition;
-        for (var i = 0; i < controlPoints.Length; ++i) curvePoints[i + 1] = controlPoints[i];
-        return new(curvePoints);
+        using var curvePoints = TempList<Vector2>.Create(controlPoints.Length + 1);
+        curvePoints.Add(PlayfieldPosition);
+
+        foreach (var t in controlPoints) curvePoints.Add(t);
+
+        return new(curvePoints.AsReadOnlySpan());
     }
 
     CompositeCurve generateLinearCurve()
     {
-        var curves = new BezierCurve[controlPoints.Length];
+        using var curves = TempArray<Curve>.Create(controlPoints.Length);
 
         var previousPoint = PlayfieldPosition;
         for (var i = 0; i < controlPoints.Length; ++i)
         {
-            curves[i] = new([previousPoint, controlPoints[i]]);
+            curves[i] = new BezierCurve([previousPoint, controlPoints[i]]);
             previousPoint = controlPoints[i];
         }
 
-        return new(curves);
+        return new(curves.AsReadOnlySpan());
     }
 
     ///<summary> Parses an osu! slider from the given strings. </summary>

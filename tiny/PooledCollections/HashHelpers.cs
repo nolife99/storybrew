@@ -6,8 +6,11 @@ namespace Tiny.PooledCollections;
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
+using System.Threading;
 
-public static partial class HashHelpers
+public static class HashHelpers
 {
     public const int HashCollisionThreshold = 100;
 
@@ -15,6 +18,7 @@ public static partial class HashHelpers
     public const int MaxPrimeArrayLength = 0x7FEFFFFD;
 
     public const int HashPrime = 101;
+    static ConditionalWeakTable<object, SerializationInfo> s_serializationInfoTable;
 
     // Table of prime numbers to use as hash table sizes.
     // A typical resize algorithm would pick the smallest prime number in this array
@@ -105,6 +109,48 @@ public static partial class HashHelpers
         5999471,
         7199369
     ];
+
+    public static ConditionalWeakTable<object, SerializationInfo> SerializationInfoTable
+    {
+        get
+        {
+            if (s_serializationInfoTable == null)
+                Interlocked.CompareExchange(ref s_serializationInfoTable,
+                    new ConditionalWeakTable<object, SerializationInfo>(),
+                    null);
+
+            return s_serializationInfoTable;
+        }
+    }
+
+    // https://github.com/dotnet/runtime/blob/50c3df750a2ad6996159100245645d010c693d87/src/libraries/System.Private.CoreLib/src/System/String.Comparison.cs#L820
+    public static int GetNonRandomizedHashCode(ReadOnlySpan<char> chars)
+    {
+        ref var src = ref MemoryMarshal.GetReference(chars);
+
+        uint hash1 = (5381 << 16) + 5381;
+        var hash2 = hash1;
+
+        ref var ptr = ref Unsafe.As<char, uint>(ref src);
+        var length = chars.Length;
+
+        while (length > 2)
+        {
+            length -= 4;
+
+            // Where length is 4n-1 (e.g. 3,7,11,15,19) this additionally consumes the null terminator
+            hash1 = BitOperations.RotateLeft(hash1, 5) + hash1 ^ ptr;
+            hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ Unsafe.Add(ref ptr, 1);
+            ptr = ref Unsafe.AddByteOffset(ref ptr, 2);
+        }
+
+        if (length > 0)
+
+            // Where length is 4n-3 (e.g. 1,5,9,13,17) this additionally consumes the null terminator
+            hash2 = BitOperations.RotateLeft(hash2, 5) + hash2 ^ ptr;
+
+        return (int)(hash1 + hash2 * 1566083941);
+    }
 
     public static bool IsPrime(int candidate)
     {

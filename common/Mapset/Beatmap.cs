@@ -1,6 +1,6 @@
 ﻿namespace StorybrewCommon.Mapset;
 
-using System.Collections.Generic;
+using System;
 using SixLabors.ImageSharp;
 
 ///<summary> Represents an osu! beatmap difficulty. </summary>
@@ -43,22 +43,22 @@ public abstract class Beatmap
     public abstract float StackLeniency { get; }
 
     ///<summary> Hit objects of this difficulty. </summary>
-    public abstract IEnumerable<OsuHitObject> HitObjects { get; }
+    public abstract ReadOnlySpan<OsuHitObject> HitObjects { get; }
 
     ///<summary> Timestamps in milliseconds of bookmarks </summary>
-    public abstract IEnumerable<int> Bookmarks { get; }
+    public abstract ReadOnlySpan<int> Bookmarks { get; }
 
     ///<summary> Returns all controls points (red or green lines). </summary>
-    public abstract IEnumerable<ControlPoint> ControlPoints { get; }
+    public abstract ReadOnlySpan<ControlPoint> ControlPoints { get; }
 
     ///<summary> Returns all timing points (red lines). </summary>
-    public abstract IEnumerable<ControlPoint> TimingPoints { get; }
+    public abstract ReadOnlySpan<ControlPoint> TimingPoints { get; }
 
     ///<summary> Returns the hit circle combo colors of this difficulty. </summary>
-    public abstract IEnumerable<Color> ComboColors { get; }
+    public abstract ReadOnlySpan<Color> ComboColors { get; }
 
     ///<summary> Returns the breaks of this difficulty. </summary>
-    public abstract IEnumerable<OsuBreak> Breaks { get; }
+    public abstract ReadOnlySpan<OsuBreak> Breaks { get; }
 
     ///<summary> Finds the control point (red or green line) active at a specific time. </summary>
     public abstract ControlPoint GetControlPointAt(float time);

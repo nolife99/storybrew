@@ -1,7 +1,6 @@
 ﻿namespace StorybrewScripts;
 
 using System;
-using System.Linq;
 using System.Numerics;
 using StorybrewCommon.Animations;
 using StorybrewCommon.Scripting;

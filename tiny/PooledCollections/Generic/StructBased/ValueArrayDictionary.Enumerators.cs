@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 partial struct ValueArrayDictionary<TKey, TValue>
 {
-    public struct Enumerator : IEnumerator<ArrayKVPair<TKey, TValue>>
+    public struct Enumerator : IEnumerator<ArrayKeyValuePair<TKey, TValue>>
     {
         readonly ValueArrayDictionary<TKey, TValue> _dictionary;
 
@@ -42,7 +42,7 @@ partial struct ValueArrayDictionary<TKey, TValue>
             return false;
         }
 
-        public ArrayKVPair<TKey, TValue> Current
+        public ArrayKeyValuePair<TKey, TValue> Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => new(_dictionary._entries[_index].Key, _dictionary._values, _index);
@@ -51,7 +51,7 @@ partial struct ValueArrayDictionary<TKey, TValue>
         object IEnumerator.Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => new ArrayKVPair<TKey, TValue>(_dictionary._entries[_index].Key, _dictionary._values, _index);
+            get => new ArrayKeyValuePair<TKey, TValue>(_dictionary._entries[_index].Key, _dictionary._values, _index);
         }
 
         public void SetRange(int startIndex, int count)

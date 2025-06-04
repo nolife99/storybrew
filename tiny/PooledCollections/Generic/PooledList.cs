@@ -15,7 +15,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using ZLinq;
 
 // Implements a variable-size List that uses an array of objects to store the
 // elements. A List has a capacity, which is the allocated length
@@ -24,7 +23,7 @@ using ZLinq;
 // internal array.
 //
 [DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallback
+public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallback, IDisposable
 {
     internal const int DefaultCapacity = 4;
 
@@ -94,8 +93,29 @@ public partial class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
         {
             _size = 0;
             _items = s_emptyArray;
-            using var en = collection!.AsValueEnumerable().GetEnumerator();
+            using var en = collection!.GetEnumerator();
             while (en.MoveNext()) Add(en.Current);
+        }
+    }
+
+    public PooledList(T[] items) : this(items.AsSpan(), ArrayPool<T>.Shared) { }
+
+    public PooledList(T[] items, ArrayPool<T> pool) : this(items.AsSpan(), pool) { }
+
+    public PooledList(ReadOnlySpan<T> span) : this(span, ArrayPool<T>.Shared) { }
+
+    public PooledList(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    {
+        _pool = pool ?? ArrayPool<T>.Shared;
+
+        var count = span.Length;
+
+        if (count == 0) _items = s_emptyArray;
+        else
+        {
+            _items = _pool.Rent(count);
+            span.CopyTo(_items);
+            _size = count;
         }
     }
 
@@ -143,6 +163,13 @@ public partial class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
         // have to use the shared pool, even if they were using a custom pool
         // before serialization.
         _pool = ArrayPool<T>.Shared;
+
+    public void Dispose()
+    {
+        ReturnArray(s_emptyArray);
+        _size = 0;
+        _version++;
+    }
 
     // Read-only property describing how many elements are in the List.
     public int Count
@@ -834,6 +861,162 @@ public partial class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
                 return false;
 
         return true;
+    }
+
+    /// <summary>
+    ///     Advances the <see cref="Count"/> by the number of items specified, increasing the capacity if required, then
+    ///     returns a <see cref="Span{T}"/> representing the set of items to be added, allowing direct writes to that section of the
+    ///     collection.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal Span<T> GetInsertSpan(int index, int count) => GetInsertSpan(index, count, true);
+
+    internal Span<T> GetInsertSpan(int index, int count, bool clearSpan)
+    {
+        EnsureCapacity(_size + count);
+
+        if (index < _size) Array.Copy(_items, index, _items, index + count, _size - index);
+
+        _size += count;
+        _version++;
+
+        var output = _items.AsSpan(index, count);
+
+        if (clearSpan && s_clearItems) output.Clear();
+
+        return output;
+    }
+
+    public void InsertRange(int index, T[] array)
+    {
+        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+        InsertRange(index, array.AsSpan());
+    }
+
+    public void InsertRange(int index, ReadOnlySpan<T> span)
+    {
+        if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+
+        var newSpan = GetInsertSpan(index, span.Length, false);
+        span.CopyTo(newSpan);
+    }
+
+    /// <summary>
+    ///     Adds the elements of the given array to the end of this list. If required, the capacity of the list is increased to
+    ///     twice the previous capacity or the new size, whichever is larger.
+    /// </summary>
+    public void AddRange(T[] array)
+    {
+        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+
+        AddRange(array.AsSpan());
+    }
+
+    /// <summary>
+    ///     Adds the elements of the given <see cref="ReadOnlySpan{T}"/> to the end of this list. If required, the capacity of
+    ///     the list is increased to twice the previous capacity or the new size, whichever is larger.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddRange(ReadOnlySpan<T> span) => span.CopyTo(GetInsertSpan(_size, span.Length, false));
+
+    /// <summary>Copies this List into the given span.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, _size);
+
+    /// <summary>Copies this List into the given span.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
+
+    /// <summary>Copies this List into the given span.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+
+    public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
+    {
+        if (destIndex < 0 || destIndex > dest.Length)
+            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
+
+        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+
+        if (dest.Length - destIndex < count || _size - index < count)
+            ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
+
+        var src = _items.AsSpan(0, _size);
+
+        if (src.Length == 0) return;
+
+        src.Slice(index, count).CopyTo(dest.Slice(destIndex, count));
+    }
+
+    public void ConvertAll<TOut>(PooledList<TOut> output, Converter<T, TOut> converter)
+    {
+        if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+
+        if (output == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+
+        var items = _items;
+
+        for (var i = 0; i < _size; i++) output.Add(converter(items[i]));
+    }
+
+    public void FindAll(PooledList<T> output, Predicate<T> match)
+    {
+        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+
+        if (output == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+
+        var items = _items;
+
+        for (var i = 0; i < _size; i++)
+            if (match(items[i]))
+                output.Add(items[i]);
+    }
+
+    public bool TryFind(Predicate<T> match, out T result)
+    {
+        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+
+        var items = _items;
+
+        for (var i = 0; i < _size; i++)
+            if (match(items[i]))
+            {
+                result = items[i];
+                return true;
+            }
+
+        result = default;
+        return false;
+    }
+
+    public bool TryFindLast(Predicate<T> match, out T result)
+    {
+        if (match is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+
+        var items = _items;
+
+        for (var i = _size - 1; i >= 0; i--)
+            if (match(items[i]))
+            {
+                result = items[i];
+                return true;
+            }
+
+        result = default;
+        return false;
+    }
+
+    void ReturnArray(T[] replaceWith)
+    {
+        if (_items.IsNullOrEmpty() == false)
+            try
+            {
+                _pool.Return(_items, s_clearItems);
+            }
+            catch { }
+
+        _items = replaceWith ?? s_emptyArray;
     }
 
     public struct Enumerator : IEnumerator<T>, IEnumerator

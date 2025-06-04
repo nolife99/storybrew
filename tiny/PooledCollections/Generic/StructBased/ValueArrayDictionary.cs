@@ -1222,16 +1222,17 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
     IEnumerator IEnumerable.GetEnumerator() => new KeyValuePairEnumerator(this);
 
-    bool ICollection<ArrayKVPair<TKey, TValue>>.IsReadOnly => false;
+    bool ICollection<ArrayKeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<ArrayKVPair<TKey, TValue>>.Add(ArrayKVPair<TKey, TValue> item) => Add(item.Key, item.Value);
+    void ICollection<ArrayKeyValuePair<TKey, TValue>>.Add(ArrayKeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<ArrayKVPair<TKey, TValue>>.Contains(ArrayKVPair<TKey, TValue> item) => ContainsKey(item.Key);
+    bool ICollection<ArrayKeyValuePair<TKey, TValue>>.Contains(ArrayKeyValuePair<TKey, TValue> item)
+        => ContainsKey(item.Key);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    void ICollection<ArrayKVPair<TKey, TValue>>.CopyTo(ArrayKVPair<TKey, TValue>[] dest, int destIndex)
+    void ICollection<ArrayKeyValuePair<TKey, TValue>>.CopyTo(ArrayKeyValuePair<TKey, TValue>[] dest, int destIndex)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -1247,9 +1248,10 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    bool ICollection<ArrayKVPair<TKey, TValue>>.Remove(ArrayKVPair<TKey, TValue> item) => Remove(item.Key);
+    bool ICollection<ArrayKeyValuePair<TKey, TValue>>.Remove(ArrayKeyValuePair<TKey, TValue> item) => Remove(item.Key);
 
-    IEnumerator<ArrayKVPair<TKey, TValue>> IEnumerable<ArrayKVPair<TKey, TValue>>.GetEnumerator() => new Enumerator(this);
+    IEnumerator<ArrayKeyValuePair<TKey, TValue>> IEnumerable<ArrayKeyValuePair<TKey, TValue>>.GetEnumerator()
+        => new Enumerator(this);
 
     ICollection<TKey> IDictionary<TKey, TValue>.Keys
     {

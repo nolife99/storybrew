@@ -2,6 +2,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using BrewLib.Util;
 using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -46,12 +47,14 @@ using Vector2 = System.Numerics.Vector2;
     {
         var list = TempList<char>.Create();
 
-        using (var x = (exportSettings.UseFloatForMove ? X : (CommandDecimal)double.Round(X)).ToOsbString(exportSettings))
-            list.AddRange(x.AsReadOnlySpan());
+        using (var x =
+            (exportSettings.UseFloatForMove ? (float)X : (int)double.Round(X)).ToCharArray(
+                provider: exportSettings.NumberFormat)) list.AddRange(x.AsReadOnlySpan());
 
         list.Add(',');
-        using (var y = (exportSettings.UseFloatForMove ? Y : (CommandDecimal)double.Round(Y)).ToOsbString(exportSettings))
-            list.AddRange(y.AsReadOnlySpan());
+        using (var y =
+            (exportSettings.UseFloatForMove ? (float)Y : (int)double.Round(Y)).ToCharArray(
+                provider: exportSettings.NumberFormat)) list.AddRange(y.AsReadOnlySpan());
 
         return list;
     }

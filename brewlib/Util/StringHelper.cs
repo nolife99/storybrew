@@ -77,8 +77,9 @@ public static class StringHelper
         return sb;
     }
 
-    public static TempArray<char> ToCharArray<T>(this T value, string format = null, IFormatProvider provider = null)
-        where T : ISpanFormattable
+    public static TempArray<char> ToCharArray<T>(this T value,
+        ReadOnlySpan<char> format = default,
+        IFormatProvider provider = null) where T : ISpanFormattable
     {
         Span<char> temp = stackalloc char[128];
         value.TryFormat(temp, out var written, format, provider);
@@ -88,7 +89,7 @@ public static class StringHelper
 
     public static void AddRangeFormatted<T>(this scoped ref TempList<char> list,
         T value,
-        string format = null,
+        ReadOnlySpan<char> format = default,
         IFormatProvider provider = null) where T : ISpanFormattable
     {
         Span<char> temp = stackalloc char[128];
@@ -97,7 +98,7 @@ public static class StringHelper
         list.AddRange(temp[..written]);
     }
 
-    public static void AddRangeEnum<T>(this scoped ref TempList<char> list, T value, string format = null)
+    public static void AddRangeEnum<T>(this scoped ref TempList<char> list, T value, ReadOnlySpan<char> format = default)
         where T : struct, Enum
     {
         Span<char> temp = stackalloc char[128];

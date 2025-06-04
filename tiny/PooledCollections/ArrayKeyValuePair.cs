@@ -3,12 +3,12 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-public readonly struct ArrayKVPair<TKey, TValue>
+public readonly struct ArrayKeyValuePair<TKey, TValue>
 {
     readonly TValue[] _values;
     readonly int _index;
 
-    public ArrayKVPair(TKey keys, TValue[] values, int index)
+    public ArrayKeyValuePair(TKey keys, TValue[] values, int index)
     {
         _values = values;
         _index = index;
@@ -33,5 +33,6 @@ public readonly struct ArrayKVPair<TKey, TValue>
         value = _values[_index];
     }
 
-    public static implicit operator KeyValuePair<TKey, TValue>(in ArrayKVPair<TKey, TValue> kvp) => new(kvp.Key, kvp.Value);
+    public static implicit operator KeyValuePair<TKey, TValue>(in ArrayKeyValuePair<TKey, TValue> kvp)
+        => new(kvp.Key, kvp.Value);
 }

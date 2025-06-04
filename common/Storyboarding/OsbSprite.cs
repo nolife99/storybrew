@@ -863,7 +863,7 @@ public class OsbSprite : StoryboardObject
         writer.WriteLine();
     }
 
-    internal virtual void WriteHeaderCommon(TextWriter writer,
+    internal void WriteHeaderCommon(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
         StoryboardTransform transform)
@@ -884,17 +884,24 @@ public class OsbSprite : StoryboardObject
         builder.Add('"');
 
         builder.Add(',');
+
         if (!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands)
-            builder.AddRangeFormatted(transformedInitialPosition.X,
-                transformedInitialPosition.X == 0 ? "" : "#.#####",
-                exportSettings.NumberFormat);
+        {
+            using var str = transformedInitialPosition.X.ToCharArray(provider: exportSettings.NumberFormat);
+            var span = str.AsReadOnlySpan();
+
+            builder.AddRange(span[(span.StartsWith("0.") ? 1 : 0)..]);
+        }
         else builder.Add('0');
 
         builder.Add(',');
         if (!MoveTimeline.HasCommands && !MoveYTimeline.HasCommands)
-            builder.AddRangeFormatted(transformedInitialPosition.Y,
-                transformedInitialPosition.Y == 0 ? "" : "#.#####",
-                exportSettings.NumberFormat);
+        {
+            using var str = transformedInitialPosition.Y.ToCharArray(provider: exportSettings.NumberFormat);
+            var span = str.AsReadOnlySpan();
+
+            builder.AddRange(span[(span.StartsWith("0.") ? 1 : 0)..]);
+        }
         else builder.Add('0');
 
         writer.Write(builder.AsReadOnlySpan());

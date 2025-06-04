@@ -386,11 +386,12 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             case Keys.Right:
                 if (e.Control)
                 {
-                    var nextBookmark =
-                        proj.MainBeatmap.Bookmarks.FirstOrDefault(bookmark
-                            => bookmark > float.Round(timeline.Value * 1000) + 50);
-
-                    if (nextBookmark != 0) timeline.Value = nextBookmark * .001f;
+                    foreach (var bookmark in proj.MainBeatmap.Bookmarks)
+                        if (bookmark > float.Round(timeline.Value * 1000) + 50)
+                        {
+                            timeline.Value = bookmark * .001f;
+                            break;
+                        }
                 }
                 else timeline.Scroll(e.Shift ? 4 : 1);
 
@@ -398,13 +399,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
             case Keys.Left:
                 if (e.Control)
-                {
-                    var prevBookmark =
-                        proj.MainBeatmap.Bookmarks.LastOrDefault(bookmark
-                            => bookmark < float.Round(timeline.Value * 1000) - 500);
+                    for (var i = proj.MainBeatmap.Bookmarks.Length - 1; i >= 0; --i)
+                    {
+                        var bookmark = proj.MainBeatmap.Bookmarks[i];
+                        if (!(bookmark < float.Round(timeline.Value * 1000) - 500)) continue;
 
-                    if (prevBookmark != 0) timeline.Value = prevBookmark * .001f;
-                }
+                        timeline.Value = bookmark * .001f;
+                        break;
+                    }
                 else timeline.Scroll(e.Shift ? -4 : -1);
 
                 return true;
