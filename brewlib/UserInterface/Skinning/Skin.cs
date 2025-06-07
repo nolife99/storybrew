@@ -25,7 +25,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
     public Drawable GetDrawable(string name)
         => drawables.TryGetValue(name, out var drawable) ? drawable : NullDrawable.Instance;
 
-    public T GetStyle<T>(string name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
+    public T GetStyle<T>(ReadOnlySpan<char> name) where T : WidgetStyle => (T)GetStyle(typeof(T), name);
 
     WidgetStyle GetStyle(Type type, ReadOnlySpan<char> name)
     {

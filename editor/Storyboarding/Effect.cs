@@ -46,7 +46,7 @@ public abstract class Effect : IDisposable
     public virtual string Path => null;
 
     public virtual EffectStatus Status { get; }
-    public virtual string StatusMessage { get; }
+    public virtual ReadOnlySpan<char> StatusMessage => default;
 
     public virtual bool Multithreaded { get; }
     public virtual bool BeatmapDependent { get; }

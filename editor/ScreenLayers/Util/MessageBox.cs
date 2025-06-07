@@ -5,9 +5,13 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
-public class MessageBox(string message, Action yesAction, Action noAction, bool cancelable) : UiScreenLayer
+public class MessageBox(scoped ReadOnlySpan<char> message, Action yesAction, Action noAction, bool cancelable)
+    : UiScreenLayer
 {
+    readonly ValueArray<char> message = ValueArray<char>.Create(message);
     LinearLayout mainLayout, buttonsLayout;
 
     public override bool IsPopup => true;
@@ -25,7 +29,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
             Children =
             [
                 new ScrollArea(WidgetManager,
-                    new Label(WidgetManager) { Text = message, AnchorFrom = BoxAlignment.Centre })
+                    new Label(WidgetManager) { Text = message.AsReadOnlySpan(), AnchorFrom = BoxAlignment.Centre })
                 {
                     ScrollsHorizontally = true
                 },
@@ -69,7 +73,7 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
     {
         if (e.IsRepeat || e.Key is not Keys.C || !e.Control) return base.OnKeyDown(e);
 
-        ClipboardHelper.SetText(message);
+        ClipboardHelper.SetText(message.AsReadOnlySpan());
         return true;
     }
 
@@ -77,5 +81,11 @@ public class MessageBox(string message, Action yesAction, Action noAction, bool 
     {
         base.Resize(width, height);
         mainLayout.Pack(400, 0, 1024 - 32, 768 - 32);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) message.Dispose();
+        base.Dispose(disposing);
     }
 }

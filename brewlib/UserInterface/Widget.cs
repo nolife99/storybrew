@@ -186,9 +186,9 @@ public class Widget(WidgetManager manager) : IDisposable
         Foreground = style.Foreground;
     }
 
-    protected string BuildStyleName(params string[] modifiers) => buildStyleName(StyleName, modifiers);
+    protected string BuildStyleName(params ReadOnlySpan<string> modifiers) => buildStyleName(StyleName, modifiers);
 
-    static string buildStyleName(string baseName, string[] modifiers)
+    static string buildStyleName(string baseName, ReadOnlySpan<string> modifiers)
     {
         if (modifiers.Length == 0) return baseName;
 
@@ -476,14 +476,10 @@ public class Widget(WidgetManager manager) : IDisposable
 
     #region Events
 
-    public delegate void WidgetEventHandler<in TEventArgs>(WidgetEvent evt, TEventArgs e);
-
-    public delegate bool HandleableWidgetEventHandler<in TEventArgs>(WidgetEvent evt, TEventArgs e);
-
-    public event HandleableWidgetEventHandler<MouseButtonEventArgs> OnClickDown;
+    public event Func<WidgetEvent, MouseButtonEventArgs, bool> OnClickDown;
     public bool NotifyClickDown(WidgetEvent evt, MouseButtonEventArgs e) => Raise(OnClickDown, evt, e);
 
-    public event WidgetEventHandler<MouseButtonEventArgs> OnClickUp;
+    public event Action<WidgetEvent, MouseButtonEventArgs> OnClickUp;
 
     public bool NotifyClickUp(WidgetEvent evt, MouseButtonEventArgs e)
     {
@@ -491,7 +487,7 @@ public class Widget(WidgetManager manager) : IDisposable
         return false;
     }
 
-    public event WidgetEventHandler<MouseMoveEventArgs> OnClickMove;
+    public event Action<WidgetEvent, MouseMoveEventArgs> OnClickMove;
 
     public bool NotifyClickMove(WidgetEvent evt, MouseMoveEventArgs e)
     {
@@ -499,19 +495,19 @@ public class Widget(WidgetManager manager) : IDisposable
         return false;
     }
 
-    public event HandleableWidgetEventHandler<MouseWheelEventArgs> OnMouseWheel;
+    public event Func<WidgetEvent, MouseWheelEventArgs, bool> OnMouseWheel;
     public bool NotifyMouseWheel(WidgetEvent evt, MouseWheelEventArgs e) => Raise(OnMouseWheel, evt, e);
 
-    public event HandleableWidgetEventHandler<KeyboardKeyEventArgs> OnKeyDown;
+    public event Func<WidgetEvent, KeyboardKeyEventArgs, bool> OnKeyDown;
     public bool NotifyKeyDown(WidgetEvent evt, KeyboardKeyEventArgs e) => Raise(OnKeyDown, evt, e);
 
-    public event HandleableWidgetEventHandler<KeyboardKeyEventArgs> OnKeyUp;
+    public event Func<WidgetEvent, KeyboardKeyEventArgs, bool> OnKeyUp;
     public bool NotifyKeyUp(WidgetEvent evt, KeyboardKeyEventArgs e) => Raise(OnKeyUp, evt, e);
 
-    public event HandleableWidgetEventHandler<TextInputEventArgs> OnKeyPress;
+    public event Func<WidgetEvent, TextInputEventArgs, bool> OnKeyPress;
     public bool NotifyKeyPress(WidgetEvent evt, TextInputEventArgs e) => Raise(OnKeyPress, evt, e);
 
-    public event WidgetEventHandler<WidgetHoveredEventArgs> OnHovered;
+    public event Action<WidgetEvent, WidgetHoveredEventArgs> OnHovered;
 
     public bool NotifyHoveredWidgetChange(WidgetEvent evt, WidgetHoveredEventArgs e)
     {
@@ -522,7 +518,7 @@ public class Widget(WidgetManager manager) : IDisposable
         return false;
     }
 
-    public event WidgetEventHandler<WidgetFocusEventArgs> OnFocusChange;
+    public event Action<WidgetEvent, WidgetFocusEventArgs> OnFocusChange;
 
     public bool NotifyFocusChange(WidgetEvent evt, WidgetFocusEventArgs e)
     {
@@ -530,7 +526,7 @@ public class Widget(WidgetManager manager) : IDisposable
         return false;
     }
 
-    static bool Raise<T>(HandleableWidgetEventHandler<T> handler, WidgetEvent evt, T e)
+    static bool Raise<T>(Func<WidgetEvent, T, bool> handler, WidgetEvent evt, T e)
     {
         if (handler is null) return evt.Handled;
 

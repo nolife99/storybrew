@@ -1,20 +1,18 @@
 ﻿namespace BrewLib.UserInterface;
 
-using System;
-
 public sealed class WidgetEvent(Widget relatedTarget)
 {
-    public readonly Widget RelatedTarget = relatedTarget;
     public bool Handled;
     public Widget Listener;
+    public Widget RelatedTarget => relatedTarget;
 }
 
-public sealed class WidgetHoveredEventArgs(bool hovered) : EventArgs
+public readonly struct WidgetHoveredEventArgs(bool hovered)
 {
-    public readonly bool Hovered = hovered;
+    public bool Hovered => hovered;
 }
 
-public sealed class WidgetFocusEventArgs(bool hasFocus) : EventArgs
+public readonly struct WidgetFocusEventArgs(bool hasFocus)
 {
-    public readonly bool HasFocus = hasFocus;
+    public bool HasFocus => hasFocus;
 }

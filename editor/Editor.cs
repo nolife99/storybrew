@@ -146,11 +146,11 @@ public sealed class Editor(NativeWindow window) : IDisposable
         Restart();
     }
 
-    public void Restart(ScreenLayer initialLayer = null, string message = null)
+    public void Restart(ScreenLayer initialLayer = null, ReadOnlySpan<char> message = default)
     {
         initializeOverlay();
         screenLayerManager.Set(initialLayer ?? new StartMenu());
-        if (message is not null) screenLayerManager.ShowMessage(message);
+        if (!message.IsEmpty) screenLayerManager.ShowMessage(message);
     }
 
     public void Update(float time, bool isFixedRateUpdate = true)

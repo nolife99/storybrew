@@ -14,6 +14,7 @@ using BrewLib.Util;
 using ScreenLayers;
 using Storyboarding;
 using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 
 public partial class EffectList : Widget
@@ -207,11 +208,7 @@ public partial class EffectList : Widget
         };
 
         var handledClick = false;
-        effectWidget.OnClickDown += (_, _) =>
-        {
-            handledClick = true;
-            return true;
-        };
+        effectWidget.OnClickDown += (_, _) => handledClick = true;
 
         effectWidget.OnClickUp += (evt, _) =>
         {
@@ -246,20 +243,22 @@ public partial class EffectList : Widget
                     break;
 
                 default:
-                    var sb = StringHelper.StringBuilderPool.Retrieve();
-                    sb.Append("Status: ");
-                    sb.Append(effect.Status);
+                {
+                    var sb = TempList<char>.Create();
+                    sb.AddRange("Status: ".AsSpan());
+                    sb.AddRangeEnum(effect.Status);
 
-                    if (!string.IsNullOrWhiteSpace(effect.StatusMessage))
+                    if (!effect.StatusMessage.IsWhiteSpace())
                     {
-                        sb.Append("\n\n");
-                        sb.Append(effect.StatusMessage);
+                        sb.AddRange("\n\n".AsSpan());
+                        sb.AddRange(effect.StatusMessage);
                     }
 
-                    Manager.ScreenLayerManager.ShowMessage(sb.ToString());
-                    StringHelper.StringBuilderPool.Release(sb);
+                    Manager.ScreenLayerManager.ShowMessage(sb.AsReadOnlySpan());
+                    sb.Dispose();
 
                     break;
+                }
             }
         };
 
@@ -291,7 +290,7 @@ public partial class EffectList : Widget
 
     static void updateStatusButton(Button button, Effect effect)
     {
-        button.Disabled = string.IsNullOrWhiteSpace(effect.StatusMessage);
+        button.Disabled = effect.StatusMessage.IsWhiteSpace();
         button.Tooltip = effect.Status.ToString();
 
         switch (effect.Status)

@@ -27,6 +27,8 @@ public static class Program
 
     public static readonly string FullName = $"{Name} {Version} ({Repository})";
 
+    static Process currentProcess;
+
     public static AudioManager AudioManager { get; private set; }
     public static Settings Settings { get; private set; }
 
@@ -35,6 +37,7 @@ public static class Program
         if (args.Length != 0 && handleArguments(args)) return;
 
         MainThread = Thread.CurrentThread;
+        currentProcess = Process.GetCurrentProcess();
 
         setupLogging();
         startEditor();
@@ -224,6 +227,7 @@ public static class Program
 
         result.AddRangeFormatted(draws, "", CultureInfo.CurrentCulture);
         result.AddRange(" draws".AsSpan());
+        result.Add('\n');
 
         using TempListInternals<char> internals = new(result);
         editor.statsLabel.Text = internals.Items.AsSpan(0, internals.Size);

@@ -5,9 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime;
 using System.Threading;
-using BrewLib.Util;
 using Scripting;
 using StorybrewCommon.Scripting;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Util;
 
 public class ScriptedEffect : Effect
@@ -21,7 +22,7 @@ public class ScriptedEffect : Effect
     bool multithreaded;
 
     EffectStatus status = EffectStatus.Initializing;
-    string statusMessage;
+    ValueList<char> statusMessage;
 
     long statusStopwatch;
     CancellationTokenSource token;
@@ -41,7 +42,7 @@ public class ScriptedEffect : Effect
     public override string BaseName => scriptContainer?.Name;
     public override string Path => scriptContainer?.MainSourcePath;
     public override EffectStatus Status => status;
-    public override string StatusMessage => statusMessage;
+    public override ReadOnlySpan<char> StatusMessage => statusMessage.AsReadOnlySpan();
     public override bool Multithreaded => multithreaded;
     public override bool BeatmapDependent => beatmapDependent;
 
@@ -161,7 +162,7 @@ public class ScriptedEffect : Effect
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
 
-    void changeStatus(EffectStatus status, string message = null, string log = null)
+    void changeStatus(EffectStatus status, ReadOnlySpan<char> message = default, ReadOnlySpan<char> log = default)
     {
         var duration = Stopwatch.GetElapsedTime(statusStopwatch);
         if (duration > TimeSpan.Zero)
@@ -177,20 +178,19 @@ public class ScriptedEffect : Effect
 
         this.status = status;
 
-        var statusMessageBuilder = StringHelper.StringBuilderPool.Retrieve();
-        if (message is not null) statusMessageBuilder.Append(message);
+        var statusMessageBuilder = ValueList<char>.Create();
+        if (!message.IsEmpty) statusMessageBuilder.AddRange(message);
 
-        if (!string.IsNullOrWhiteSpace(log))
+        if (!log.IsWhiteSpace())
         {
-            if (statusMessageBuilder.Length > 0) statusMessageBuilder.Append("\n\n");
+            if (statusMessageBuilder.Count > 0) statusMessageBuilder.AddRange("\n\n".AsSpan());
 
-            statusMessageBuilder.Append("Log:\n\n");
-            statusMessageBuilder.Append(log);
+            statusMessageBuilder.AddRange("Log:\n\n".AsSpan());
+            statusMessageBuilder.AddRange(log);
         }
 
-        statusMessage = statusMessageBuilder.ToString();
-
-        StringHelper.StringBuilderPool.Release(statusMessageBuilder);
+        statusMessage.Dispose();
+        statusMessage = statusMessageBuilder;
 
         Program.Schedule(RaiseChanged).Wait();
         statusStopwatch = Stopwatch.GetTimestamp();
@@ -210,6 +210,7 @@ public class ScriptedEffect : Effect
         {
             if (disposing)
             {
+                statusMessage.Dispose();
                 dependencyWatcher?.Dispose();
                 scriptContainer.OnScriptChanged -= scriptContainer_OnScriptChanged;
             }

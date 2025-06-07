@@ -230,7 +230,7 @@ public class Textbox : Widget, Field
         get
         {
             var contentSize = content.PreferredSize;
-            if (label.Text.IsNullOrWhiteSpace()) return contentSize with { X = Math.Max(contentSize.X, DefaultSize.X) };
+            if (label.Text.IsWhiteSpace()) return contentSize with { X = Math.Max(contentSize.X, DefaultSize.X) };
 
             var labelSize = label.PreferredSize;
             return new(Math.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);

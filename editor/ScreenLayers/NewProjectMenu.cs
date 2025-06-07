@@ -119,7 +119,7 @@ public class NewProjectMenu : UiScreenLayer
     bool updateFieldsValid()
     {
         var projectFolderName = projectNameTextbox.Value;
-        if (projectFolderName.IsNullOrWhiteSpace())
+        if (projectFolderName.IsWhiteSpace())
         {
             startButton.Tooltip = "The project name isn't valid";
             return false;

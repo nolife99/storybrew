@@ -66,11 +66,13 @@ public static class ScreenLayerManagerExtensions
     public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Func<Task> action)
         => screenLayer.Add(new LoadingScreen(message, action));
 
-    public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action ok = null)
+    public static void ShowMessage(this ScreenLayerManager screenLayer, scoped ReadOnlySpan<char> message, Action ok = null)
         => screenLayer.Add(new MessageBox(message, ok, null, false));
 
-    public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action ok, bool cancel)
-        => screenLayer.Add(new MessageBox(message, ok, null, cancel));
+    public static void ShowMessage(this ScreenLayerManager screenLayer,
+        scoped ReadOnlySpan<char> message,
+        Action ok,
+        bool cancel) => screenLayer.Add(new MessageBox(message, ok, null, cancel));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action yes, Action no, bool cancel)
         => screenLayer.Add(new MessageBox(message, yes, no, cancel));

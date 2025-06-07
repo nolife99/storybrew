@@ -7,10 +7,12 @@ using System.IO;
 using System.Threading.Tasks;
 using IO;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Util;
 
 public class IntegratedCompressor : ImageCompressor
 {
+    readonly PooledList<char> errorData = new();
     readonly PooledList<Task> tasks = new();
     readonly PooledHashSet<string> toCleanup = new();
 
@@ -26,24 +28,21 @@ public class IntegratedCompressor : ImageCompressor
         var path = GetUtility();
         ensureTool();
 
-        ProcessStartInfo info = new(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
+        var process = Process.Start(new ProcessStartInfo(path, appendArgs(arg.path, useLossy, arg.lossy, arg.lossless))
         {
             CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(UtilityPath), RedirectStandardError = true
-        };
+        });
 
-        tasks.Add(Task.Run(async () =>
-        {
-            using var localProc = Process.Start(info);
+        process.BeginErrorReadLine();
 
-            using (var errorStream = localProc.StandardError)
+        process.ErrorDataReceived += (_, e) => errorData.AddRange(e.Data.AsSpan());
+
+        tasks.Add(process.WaitForExitAsync()
+            .ContinueWith(_ =>
             {
-                var error = await errorStream.ReadToEndAsync();
-                if (!string.IsNullOrWhiteSpace(error) && localProc.ExitCode != 0)
-                    Trace.TraceError($"Image compression - Code {localProc.ExitCode}: {error}");
-            }
-
-            await localProc.WaitForExitAsync();
-        }));
+                if (!errorData.AsReadOnlySpan().IsEmpty && process.ExitCode != 0)
+                    Trace.TraceError($"Image compression - Code {process.ExitCode}: {errorData.AsReadOnlySpan()}");
+            }));
     }
 
     protected override string appendArgs(string path,
@@ -57,7 +56,12 @@ public class IntegratedCompressor : ImageCompressor
         if (Environment.Is64BitOperatingSystem && useLossy)
         {
             str.AppendFormat(CultureInfo.InvariantCulture, "{0} -o {0} -f --skip-if-larger --strip", input);
-            if (lossy is null) return str.ToString();
+            if (lossy is null)
+            {
+                var temp = str.ToString();
+                StringHelper.StringBuilderPool.Release(str);
+                return temp;
+            }
 
             if (lossy.MinQuality >= 0 && lossy.MaxQuality is >= 0 and <= 100)
                 str.Append(CultureInfo.InvariantCulture, $" --quality {lossy.MinQuality}-{lossy.MaxQuality} ");

@@ -537,7 +537,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         mapB.Disabled = proj.MapsetManager.BeatmapCount < 2;
         playB.Icon = timeSource.Playing ? IconFont.PauseCircle : IconFont.PlayCircle;
         saveB.Disabled = !proj.Changed;
-        exportB.Disabled = !proj.MapsetPathIsValid;
+        exportB.Disabled = !proj.MapsetPathIsValid ||
+            proj.EffectsStatus is not EffectStatus.Ready and not EffectStatus.UpdateCanceled;
+
         audio.Volume = WidgetManager.Root.Opacity;
 
         if (timeSource.Playing)

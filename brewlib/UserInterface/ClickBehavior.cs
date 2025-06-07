@@ -48,7 +48,7 @@ public sealed class ClickBehavior : IDisposable
         if (hovered == e.Hovered) return;
 
         hovered = e.Hovered;
-        if (!disabled) OnStateChanged?.Invoke(this, e);
+        if (!disabled) OnStateChanged?.Invoke(this, EventArgs.Empty);
 
         Native.Window.Cursor = Hovered ? MouseCursor.PointingHand : MouseCursor.Default;
     }

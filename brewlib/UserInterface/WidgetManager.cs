@@ -58,13 +58,14 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         {
             if (keyboardFocus == value) return;
 
-            if (keyboardFocus is not null) fire((w, evt) => w.NotifyFocusChange(evt, new(false)), keyboardFocus, value);
+            if (keyboardFocus is not null)
+                fire((w, evt, _) => w.NotifyFocusChange(evt, new(false)), keyboardFocus, value, 0);
 
             var previousFocus = keyboardFocus;
             keyboardFocus = value;
 
             if (keyboardFocus is not null)
-                fire((w, evt) => w.NotifyFocusChange(evt, new(true)), keyboardFocus, previousFocus);
+                fire((w, evt, _) => w.NotifyFocusChange(evt, new(true)), keyboardFocus, previousFocus, 0);
         }
     }
 
@@ -312,7 +313,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         var target = HoveredWidget ?? rootContainer;
         if (keyboardFocus is not null && target != keyboardFocus && !target.HasAncestor(keyboardFocus)) KeyboardFocus = null;
 
-        var widgetEvent = fire((w, evt) => w.NotifyClickDown(evt, e), target);
+        var widgetEvent = fire((w, evt, ev) => w.NotifyClickDown(evt, ev), target, state: e);
         if (widgetEvent.Handled) clickTargets[e.Button] = widgetEvent.Listener;
 
         return widgetEvent.Handled;
@@ -324,7 +325,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
         if (clickTargets.TryGetValue(e.Button, out var clickTarget)) clickTargets[e.Button] = null;
 
         var target = clickTarget ?? HoveredWidget ?? rootContainer;
-        return fire((w, evt) => w.NotifyClickUp(evt, e), target, HoveredWidget ?? rootContainer).Handled;
+        return fire((w, evt, ev) => w.NotifyClickUp(evt, ev), target, HoveredWidget ?? rootContainer, e).Handled;
     }
 
     public void OnMouseMove(MouseMoveEventArgs e)
@@ -335,57 +336,60 @@ public sealed class WidgetManager : IInputHandler, IDisposable
             if (clickTarget is null) continue;
 
             startDragAndDrop(key);
-            fire((w, evt) => w.NotifyClickMove(evt, e), clickTarget, HoveredWidget);
+            fire((w, evt, ev) => w.NotifyClickMove(evt, ev), clickTarget, HoveredWidget, e);
         }
     }
 
     public bool OnMouseWheel(MouseWheelEventArgs e) => fire(
-            (w, evt) => w.NotifyMouseWheel(evt, e),
-            HoveredWidget ?? rootContainer)
+            (w, evt, ev) => w.NotifyMouseWheel(evt, ev),
+            HoveredWidget ?? rootContainer,
+            state: e)
         .Handled;
 
-    public bool OnKeyDown(KeyboardKeyEventArgs e) => fire(
-            (w, evt) => w.NotifyKeyDown(evt, e),
-            keyboardFocus ?? HoveredWidget ?? rootContainer)
+    public bool OnKeyDown(KeyboardKeyEventArgs e) => fire((w, evt, ev) => w.NotifyKeyDown(evt, ev),
+            keyboardFocus ?? HoveredWidget ?? rootContainer,
+            state: e)
         .Handled;
 
-    public bool OnKeyUp(KeyboardKeyEventArgs e) => fire(
-            (w, evt) => w.NotifyKeyUp(evt, e),
-            keyboardFocus ?? HoveredWidget ?? rootContainer)
+    public bool OnKeyUp(KeyboardKeyEventArgs e) => fire((w, evt, ev) => w.NotifyKeyUp(evt, ev),
+            keyboardFocus ?? HoveredWidget ?? rootContainer,
+            state: e)
         .Handled;
 
-    public bool OnKeyPress(TextInputEventArgs e) => fire(
-            (w, evt) => w.NotifyKeyPress(evt, e),
-            keyboardFocus ?? HoveredWidget ?? rootContainer)
+    public bool OnKeyPress(TextInputEventArgs e) => fire((w, evt, ev) => w.NotifyKeyPress(evt, ev),
+            keyboardFocus ?? HoveredWidget ?? rootContainer,
+            state: e)
         .Handled;
 
     void changeHoveredWidget(Widget widget)
     {
         if (widget == HoveredWidget) return;
 
-        if (HoveredWidget is not null) fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(false)), HoveredWidget, widget);
+        if (HoveredWidget is not null)
+            fire((w, evt, _) => w.NotifyHoveredWidgetChange(evt, new(false)), HoveredWidget, widget, 0);
 
         var previousWidget = HoveredWidget;
         HoveredWidget = widget;
 
         if (HoveredWidget is not null)
-            fire((w, evt) => w.NotifyHoveredWidgetChange(evt, new(true)), HoveredWidget, previousWidget);
+            fire((w, evt, _) => w.NotifyHoveredWidgetChange(evt, new(true)), HoveredWidget, previousWidget, 0);
     }
 
-    static WidgetEvent fire(Func<Widget, WidgetEvent, bool> notify,
+    static WidgetEvent fire<TState>(Func<Widget, WidgetEvent, TState, bool> notify,
         Widget target,
         Widget relatedTarget = null,
+        TState state = default,
         bool bubbles = true)
     {
         ObjectDisposedException.ThrowIf(target.IsDisposed, target);
 
         WidgetEvent widgetEvent = new(relatedTarget) { Listener = target };
-        if (notify(target, widgetEvent) || !bubbles) return widgetEvent;
+        if (notify(target, widgetEvent, state) || !bubbles) return widgetEvent;
 
         for (var ancestor = target.Parent; ancestor is not null; ancestor = ancestor.Parent)
         {
             widgetEvent.Listener = ancestor;
-            if (notify(ancestor, widgetEvent)) return widgetEvent;
+            if (notify(ancestor, widgetEvent, state)) return widgetEvent;
         }
 
         return widgetEvent;

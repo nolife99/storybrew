@@ -111,8 +111,7 @@ public class Label(WidgetManager manager) : Widget(manager)
     protected override void DrawBackground(DrawContext drawContext, float actualOpacity)
     {
         base.DrawBackground(drawContext, actualOpacity);
-        if (!textDrawable.Text.IsNullOrWhiteSpace())
-            textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
+        if (!textDrawable.Text.IsWhiteSpace()) textDrawable.Draw(drawContext, Manager.Camera, TextBounds, actualOpacity);
     }
 
     public RectangleF GetCharacterBounds(int index) => RectangleF.Transform(textDrawable.GetCharacterBounds(index),

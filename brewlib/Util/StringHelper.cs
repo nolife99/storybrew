@@ -64,8 +64,6 @@ public static class StringHelper
         return MD5.HashData(stream);
     }
 
-    public static bool IsNullOrWhiteSpace(this scoped ReadOnlySpan<char> str) => str.IsEmpty || str.IsWhiteSpace();
-
     public static StringBuilder TrimEnd(this StringBuilder sb)
     {
         var i = sb.Length - 1;

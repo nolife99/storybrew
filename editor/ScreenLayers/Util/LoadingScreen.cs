@@ -5,9 +5,14 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-public class LoadingScreen(string title, Func<Task> action) : UiScreenLayer
+public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) : UiScreenLayer
 {
+    readonly ValueArray<char> title = ValueArray<char>.Create(title);
     LinearLayout mainLayout;
 
     public override bool IsPopup => true;
@@ -32,35 +37,40 @@ public class LoadingScreen(string title, Func<Task> action) : UiScreenLayer
                 return;
             }
 
-            Trace.TraceError($"{title} failed ({action.Method.Name}): {ex}");
+            Trace.TraceError($"{title.AsReadOnlySpan()} failed ({action.Method.Name}): {ex}");
 
-            var sb = StringHelper.StringBuilderPool.Retrieve();
-            sb.Append(ex.Message);
-            sb.Append(" (");
-            sb.Append(ex.GetType().Name);
-            sb.Append(")\n");
+            using var sb = ValueList<char>.Create();
+            sb.AddRange(ex.Message.AsSpan());
+            sb.AddRange(" (".AsSpan());
+            sb.AddRange(ex.GetType().Name.AsSpan());
+            sb.AddRange(")\n".AsSpan());
 
             var innerEx = ex.InnerException;
             while (innerEx is not null)
             {
-                sb.Append("Caused by: ");
-                sb.Append(innerEx.Message);
-                sb.Append(" (");
-                sb.Append(innerEx.GetType().Name);
-                sb.Append(")\n ");
+                sb.AddRange("Caused by: ".AsSpan());
+                sb.AddRange(innerEx.Message.AsSpan());
+                sb.AddRange(" (".AsSpan());
+                sb.AddRange(innerEx.GetType().Name.AsSpan());
+                sb.AddRange(")\n ".AsSpan());
 
                 innerEx = innerEx.InnerException;
             }
 
             await Program.Schedule(() =>
             {
-                Manager.ShowMessage($"{title} failed:\n \n{sb}\n \nDetails:\n{ex.GetBaseException()}");
-                StringHelper.StringBuilderPool.Release(sb);
+                Manager.ShowMessage(
+                    $"{title.AsReadOnlySpan()} failed:\n \n{sb.AsReadOnlySpan()}\n \nDetails:\n{ex.GetBaseException()}");
+
                 Exit();
             });
         });
 
         base.Load();
+
+        using var tempTitle = TempList<char>.Create(title);
+        tempTitle.AddRange("...".AsSpan());
+
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)
         {
             AnchorTarget = WidgetManager.Root,
@@ -70,7 +80,7 @@ public class LoadingScreen(string title, Func<Task> action) : UiScreenLayer
             Padding = new(16),
             FitChildren = true,
             Horizontal = true,
-            Children = [new Label(WidgetManager) { Text = title + "..." }]
+            Children = [new Label(WidgetManager) { Text = tempTitle.AsReadOnlySpan() }]
         });
     }
 
@@ -78,5 +88,11 @@ public class LoadingScreen(string title, Func<Task> action) : UiScreenLayer
     {
         base.Resize(width, height);
         mainLayout.Pack(1024);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) title.Dispose();
+        base.Dispose(disposing);
     }
 }
