@@ -11,6 +11,8 @@ using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Storyboarding;
@@ -258,12 +260,18 @@ public sealed class FontGenerator : IDisposable
         if (validBounds) realText.Mutate(b => b.Crop(bounds));
 
         var path = Path.Combine(assetDirectory, texturePath);
-        using (var stream = File.Create(path)) realText.SaveAsPng(stream);
+        using (var stream = File.Create(path))
+            realText.SaveAsPng(stream,
+                new()
+                {
+                    ColorType = PngColorType.Palette,
+                    FilterMethod = PngFilterMethod.Adaptive,
+                    ChunkFilter = PngChunkFilter.ExcludeAll,
+                    CompressionLevel = PngCompressionLevel.BestCompression,
+                    TransparentColorMode = TransparentColorMode.Clear
+                });
 
         StoryboardObjectGenerator.Current.bitmaps[path] = realText;
-        if (path.Contains(StoryboardObjectGenerator.Current.MapsetPath) ||
-            path.Contains(StoryboardObjectGenerator.Current.AssetPath))
-            StoryboardObjectGenerator.Current.Compressor.Compress(path, new(0, 80, 10));
 
         return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
     }

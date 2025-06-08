@@ -39,22 +39,23 @@ public class Settings
         try
         {
             using var reader = File.OpenText(path);
-            reader.ParseKeyValueSection((key, value) =>
-            {
-                var field = type.GetField(key.ToString());
-                if (field is null ||
-                    !field.FieldType.IsGenericType ||
-                    !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
+            reader.ParseKeyValueSection((key, value, state) =>
+                {
+                    var field = state.type.GetField(key.ToString());
+                    if (field is null ||
+                        !field.FieldType.IsGenericType ||
+                        !typeof(Setting).IsAssignableFrom(field.FieldType.GetGenericTypeDefinition())) return;
 
-                try
-                {
-                    ((Setting)field.GetValue(this)).Set(value.ToString());
-                }
-                catch (Exception e)
-                {
-                    Trace.TraceError($"Loading setting {key} with value {value}: {e}");
-                }
-            });
+                    try
+                    {
+                        ((Setting)field.GetValue(state.Item2)).Set(value.ToString());
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.TraceError($"Loading setting {key} with value {value}: {e}");
+                    }
+                },
+                (type, this));
         }
         catch (Exception e)
         {

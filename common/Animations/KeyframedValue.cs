@@ -289,26 +289,27 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     /// <param name="getComponent"> A function that extracts a <see cref="float"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 1D parameters. </remarks>
     public void Simplify1dKeyframes(float tolerance, Func<TValue, float> getComponent) => SimplifyKeyframes(tolerance,
-        (startKeyframe, middleKeyframe, endKeyframe) =>
+        (startKeyframe, middleKeyframe, endKeyframe, d) =>
         {
-            Vector2 start = new(startKeyframe.Time, getComponent(startKeyframe.Value)),
-                middle = new(middleKeyframe.Time, getComponent(middleKeyframe.Value)),
-                end = new(endKeyframe.Time, getComponent(endKeyframe.Value));
+            Vector2 start = new(startKeyframe.Time, d(startKeyframe.Value)),
+                middle = new(middleKeyframe.Time, d(middleKeyframe.Value)),
+                end = new(endKeyframe.Time, d(endKeyframe.Value));
 
             Vector2 startToMiddle = middle - start, startToEnd = end - start;
             return (startToMiddle - Vector2.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd)
                 .LengthSquared();
-        });
+        },
+        getComponent);
 
     /// <summary>Flattens keyframes in the set.</summary>
     /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector2"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 2D parameters. </remarks>
     public void Simplify2dKeyframes(float tolerance, Func<TValue, Vector2> getComponent) => SimplifyKeyframes(tolerance,
-        (startKeyframe, middleKeyframe, endKeyframe) =>
+        (startKeyframe, middleKeyframe, endKeyframe, d) =>
         {
-            Vector2 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value),
-                endComponent = getComponent(endKeyframe.Value);
+            Vector2 startComponent = d(startKeyframe.Value), middleComponent = d(middleKeyframe.Value),
+                endComponent = d(endKeyframe.Value);
 
             Vector3 start = new(startKeyframe.Time, startComponent.X, startComponent.Y),
                 middle = new(middleKeyframe.Time, middleComponent.X, middleComponent.Y),
@@ -317,17 +318,18 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             Vector3 startToMiddle = middle - start, startToEnd = end - start;
             return (startToMiddle - Vector3.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd)
                 .LengthSquared();
-        });
+        },
+        getComponent);
 
     /// <summary>Flattens keyframes in the set.</summary>
     /// <param name="tolerance">The tolerance of the keyframe simplification. Values closer to 0 will result in more keyframes.</param>
     /// <param name="getComponent"> A function that extracts a <see cref="Vector3"/> component from the value of a keyframe. </param>
     /// <remarks> This function operates on 3D parameters. </remarks>
     public void Simplify3dKeyframes(float tolerance, Func<TValue, Vector3> getComponent) => SimplifyKeyframes(tolerance,
-        (startKeyframe, middleKeyframe, endKeyframe) =>
+        (startKeyframe, middleKeyframe, endKeyframe, d) =>
         {
-            Vector3 startComponent = getComponent(startKeyframe.Value), middleComponent = getComponent(middleKeyframe.Value),
-                endComponent = getComponent(endKeyframe.Value);
+            Vector3 startComponent = d(startKeyframe.Value), middleComponent = d(middleKeyframe.Value),
+                endComponent = d(endKeyframe.Value);
 
             Vector4 start = new(startKeyframe.Time, startComponent.X, startComponent.Y, startComponent.Z),
                 middle = new(middleKeyframe.Time, middleComponent.X, middleComponent.Y, middleComponent.Z),
@@ -336,9 +338,12 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
             Vector4 startToMiddle = middle - start, startToEnd = end - start;
             return (startToMiddle - Vector4.Dot(startToMiddle, startToEnd) / startToEnd.LengthSquared() * startToEnd)
                 .LengthSquared();
-        });
+        },
+        getComponent);
 
-    void SimplifyKeyframes(float tolerance, Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistanceSq)
+    void SimplifyKeyframes<TState>(float tolerance,
+        Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, TState, float> getDistanceSq,
+        TState state)
     {
         if (tolerance <= .00001f)
         {
@@ -375,7 +380,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         var lastPoint = keyframes.Count - 1;
 
         var keep = TempList<int>.Create([0, lastPoint]);
-        getSimplifiedKeyframeIndices(keyframes, ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq);
+        getSimplifiedKeyframeIndices(keyframes, ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq, state);
 
         if (keep.Count == keyframes.Count)
         {
@@ -398,12 +403,13 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         keyframes = simplifiedKeyframes;
     }
 
-    static void getSimplifiedKeyframeIndices(PooledList<Keyframe<TValue>> span,
+    static void getSimplifiedKeyframeIndices<TState>(PooledList<Keyframe<TValue>> span,
         ref TempList<int> keep,
         int first,
         int last,
         float epsilonSq,
-        Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, float> getDistance)
+        Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, TState, float> getDistance,
+        TState state)
     {
         using var stack = TempStack<(int, int)>.Create([(first, last)]);
         while (stack.Count > 0)
@@ -418,7 +424,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
             for (var i = first; i < last; ++i)
             {
-                var distanceSq = getDistance(start, span[i], end);
+                var distanceSq = getDistance(start, span[i], end, state);
                 if (distanceSq < maxDistSq) continue;
 
                 maxDistSq = distanceSq;

@@ -25,39 +25,42 @@ public record AssParser : SubtitleParser
     {
         using var lines = ValueList<SubtitleLine>.Create();
         using (StreamReader reader = new(stream, Encoding.ASCII))
-            reader.ParseSections(sectionName =>
-            {
-                switch (sectionName)
+            reader.ParseSections((sectionName, state) =>
                 {
-                    case "Events":
-                        reader.ParseKeyValueSection((key, value) =>
-                        {
-                            switch (key)
-                            {
-                                case "Dialogue":
+                    switch (sectionName)
+                    {
+                        case "Events":
+                            state.reader.ParseKeyValueSection((key, value, l) =>
                                 {
-                                    using var arguments = TempList<ValueList<char>>.Create();
-                                    foreach (var arg in value.Split(',')) arguments.Add(ValueList<char>.Create(value[arg]));
+                                    switch (key)
+                                    {
+                                        case "Dialogue":
+                                        {
+                                            using var arguments = TempList<ValueList<char>>.Create();
+                                            foreach (var arg in value.Split(','))
+                                                arguments.Add(ValueList<char>.Create(value[arg]));
 
-                                    string text;
-                                    using (var argsArr = arguments.AsReadOnlySpan()[9..]
-                                        .AsValueEnumerable()
-                                        .Select(c => c.AsReadOnlySpan().ToString())
-                                        .ToArrayPool())
-                                        text = string.Join('\n', string.Join(',', argsArr.Span).Split("\\N"));
+                                            string text;
+                                            using (var argsArr = arguments.AsReadOnlySpan()[9..]
+                                                .AsValueEnumerable()
+                                                .Select(c => c.AsReadOnlySpan().ToString())
+                                                .ToArrayPool())
+                                                text = string.Join('\n', string.Join(',', argsArr.Span).Split("\\N"));
 
-                                    lines.Add(new(SubtitleParser.ParseTimestamp(arguments[1].AsReadOnlySpan()),
-                                        SubtitleParser.ParseTimestamp(arguments[2].AsReadOnlySpan()),
-                                        text));
+                                            l.Add(new(SubtitleParser.ParseTimestamp(arguments[1].AsReadOnlySpan()),
+                                                SubtitleParser.ParseTimestamp(arguments[2].AsReadOnlySpan()),
+                                                text));
 
-                                    foreach (var arg in arguments) arg.Dispose();
+                                            foreach (var arg in arguments) arg.Dispose();
 
-                                    break;
-                                }
-                            }
-                        }); break;
-                }
-            });
+                                            break;
+                                        }
+                                    }
+                                },
+                                state.lines); break;
+                    }
+                },
+                (reader, lines));
 
         return new(lines.ToArray());
     }

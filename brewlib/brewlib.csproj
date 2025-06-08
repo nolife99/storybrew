@@ -20,11 +20,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="oxipng32.exe"/>
-        <EmbeddedResource Include="pngquant.exe"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <PackageReference Include="ErrorProne.NET.CoreAnalyzers" Version="0.7.0-beta.1">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -36,7 +31,7 @@
         <PackageReference Include="ManagedBass.Fx" Version="3.1.1"/>
         <PackageReference Include="OpenTK.Graphics" Version="4.9.4"/>
         <PackageReference Include="OpenTK.Windowing.Desktop" Version="4.9.4"/>
-        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.1"/>
+        <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="3.0.0-alpha.0.2"/>
     </ItemGroup>
 
     <ItemGroup>

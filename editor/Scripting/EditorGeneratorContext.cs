@@ -2,7 +2,6 @@
 
 using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using BrewLib.Audio;
@@ -12,6 +11,9 @@ using StorybrewCommon.Mapset;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Util;
 
 public sealed class EditorGeneratorContext(Effect effect,
@@ -19,11 +21,12 @@ public sealed class EditorGeneratorContext(Effect effect,
     string projectAssetPath,
     string mapsetPath,
     EditorBeatmap beatmap,
-    IEnumerable<EditorBeatmap> beatmaps,
+    ReadOnlySpan<EditorBeatmap> beatmaps,
     MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {
+    readonly ValueArray<Beatmap> _beatmaps = getBeatmaps(beatmaps);
     readonly StringBuilder log = new();
-    public List<EditorStoryboardLayer> EditorLayers { get; } = [];
+    public ReadOnlySpan<EditorStoryboardLayer> EditorLayers => _editorLayers.AsReadOnlySpan();
     public override string ProjectPath => projectPath;
     public override string ProjectAssetPath => projectAssetPath;
 
@@ -40,12 +43,12 @@ public sealed class EditorGeneratorContext(Effect effect,
         }
     }
 
-    public override IEnumerable<Beatmap> Beatmaps
+    public override ReadOnlySpan<Beatmap> Beatmaps
     {
         get
         {
             BeatmapDependent = true;
-            return beatmaps;
+            return _beatmaps.AsReadOnlySpan();
         }
     }
 
@@ -57,16 +60,27 @@ public sealed class EditorGeneratorContext(Effect effect,
     {
         foreach (var audioStream in fftAudioStreams.Values) audioStream.Dispose();
         fftAudioStreams.Dispose();
+
+        _beatmaps.Dispose();
+        _editorLayers.Dispose();
+    }
+
+    static ValueArray<Beatmap> getBeatmaps(ReadOnlySpan<EditorBeatmap> beatmaps)
+    {
+        var result = ValueArray<Beatmap>.Create(beatmaps.Length);
+        for (var i = 0; i < beatmaps.Length; ++i) result[i] = beatmaps[i];
+
+        return result;
     }
 
     public override StoryboardLayer GetLayer(string name)
     {
-        foreach (var layer in EditorLayers)
+        foreach (var layer in _editorLayers)
             if (name == layer.Name)
                 return layer;
 
         EditorStoryboardLayer newLayer = new(name, effect);
-        EditorLayers.Add(newLayer);
+        _editorLayers.Add(newLayer);
         return newLayer;
     }
 
@@ -76,6 +90,7 @@ public sealed class EditorGeneratorContext(Effect effect,
     #region Audio data
 
     readonly PooledDictionary<string, FftStream> fftAudioStreams = new();
+    readonly PooledList<EditorStoryboardLayer> _editorLayers = new();
 
     FftStream getFftStream(string path)
     {

@@ -12,7 +12,9 @@ public static class StreamReaderExtensions
     ///     Calls <paramref name="action"/> with the content of a .osu file, until it finds a blank line or reaches the end of
     ///     the file.
     /// </summary>
-    public static void ParseSections(this StreamReader reader, Action<ReadOnlySpan<char>> action)
+    public static void ParseSections<TState>(this StreamReader reader,
+        Action<ReadOnlySpan<char>, TState> action,
+        TState state)
     {
         while (ReadLine(reader, out var read))
             using (read)
@@ -20,7 +22,7 @@ public static class StreamReaderExtensions
                 var line = read.AsReadOnlySpan().Trim();
                 if (line.Length == 0 || line[0] != '[' || line[^1] != ']') continue;
 
-                action(line[1..^1]);
+                action(line[1..^1], state);
             }
     }
 
@@ -28,7 +30,10 @@ public static class StreamReaderExtensions
     ///     Calls <paramref name="action"/> with the content of a line, until it finds a blank line or reaches the end of the
     ///     file.
     /// </summary>
-    public static void ParseSectionLines(this StreamReader reader, Action<ReadOnlySpan<char>> action, bool trimLines = true)
+    public static void ParseSectionLines<TState>(this StreamReader reader,
+        Action<ReadOnlySpan<char>, TState> action,
+        TState state,
+        bool trimLines = true)
     {
         while (ReadLine(reader, out var read))
             using (read)
@@ -37,12 +42,14 @@ public static class StreamReaderExtensions
                 if (trimLines) line = line.Trim();
                 if (line.Length == 0) return;
 
-                action(line);
+                action(line, state);
             }
     }
 
     /// <summary>Calls <paramref name="action"/> with key and value, until it finds a blank line or reaches the end of the file.</summary>
-    public static void ParseKeyValueSection(this StreamReader reader, Action<ReadOnlySpan<char>, ReadOnlySpan<char>> action)
+    public static void ParseKeyValueSection<TState>(this StreamReader reader,
+        Action<ReadOnlySpan<char>, ReadOnlySpan<char>, TState> action,
+        TState state)
     {
         while (ReadLine(reader, out var read))
             using (read)
@@ -53,7 +60,7 @@ public static class StreamReaderExtensions
                 var separatorIndex = line.IndexOf(':');
                 if (separatorIndex == -1) throw new InvalidDataException($"{line} is not a key/value");
 
-                action(line[..separatorIndex].Trim(), line[(separatorIndex + 1)..].Trim());
+                action(line[..separatorIndex].Trim(), line[(separatorIndex + 1)..].Trim(), state);
             }
     }
 

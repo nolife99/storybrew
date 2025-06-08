@@ -1,7 +1,7 @@
 ﻿namespace StorybrewCommon.Scripting;
 
+using System;
 using System.Buffers;
-using System.Collections.Generic;
 using Mapset;
 using Storyboarding;
 
@@ -24,7 +24,7 @@ public abstract class GeneratorContext
     public abstract Beatmap Beatmap { get; }
 
     /// <summary>All beatmaps in the mapset.</summary>
-    public abstract IEnumerable<Beatmap> Beatmaps { get; }
+    public abstract ReadOnlySpan<Beatmap> Beatmaps { get; }
 
     /// <summary>The duration of the audio.</summary>
     public abstract float AudioDuration { get; }

@@ -1,14 +1,16 @@
 ﻿namespace StorybrewEditor.Mapset;
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
 using Util;
 
 public sealed class MapsetManager : IDisposable
 {
-    readonly List<EditorBeatmap> beatmaps = [];
+    readonly PooledList<EditorBeatmap> beatmaps = new();
     readonly bool logLoadingExceptions;
     readonly string path;
 
@@ -25,7 +27,7 @@ public sealed class MapsetManager : IDisposable
         initializeMapsetWatcher();
     }
 
-    public IReadOnlyList<EditorBeatmap> Beatmaps => beatmaps;
+    public ReadOnlySpan<EditorBeatmap> Beatmaps => beatmaps.AsReadOnlySpan();
     public int BeatmapCount => beatmaps.Count;
     public void Dispose() => Dispose(true);
 
@@ -35,10 +37,9 @@ public sealed class MapsetManager : IDisposable
     {
         if (!Directory.Exists(path)) return;
 
-        var maps = Directory.GetFiles(path, "*.osu", SearchOption.TopDirectoryOnly);
+        using var maps = TempList<string>.Create(Directory.EnumerateFiles(path, "*.osu", SearchOption.TopDirectoryOnly));
 
-        Array.Sort(maps);
-
+        maps.Sort();
         foreach (var beatmapPath in maps)
             try
             {
@@ -61,7 +62,7 @@ public sealed class MapsetManager : IDisposable
 
         if (!disposing) return;
 
-        beatmaps.Clear();
+        beatmaps.Dispose();
 
         fileWatcher = null;
         disposed = true;
