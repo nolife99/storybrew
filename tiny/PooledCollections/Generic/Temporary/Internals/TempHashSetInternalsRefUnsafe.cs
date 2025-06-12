@@ -20,7 +20,7 @@ public readonly struct TempHashSetInternalsRefUnsafe<T>
     [NonSerialized] public readonly Entry<T>[] Entries;
     [NonSerialized] public readonly IEqualityComparer<T> Comparer;
 
-    public TempHashSetInternalsRefUnsafe(in TempHashSet<T> source)
+    internal TempHashSetInternalsRefUnsafe(scoped ref readonly TempHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -41,18 +41,21 @@ partial class TempCollectionInternalsUnsafe
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempHashSetInternalsRefUnsafe<T> GetRef<T>(in TempHashSet<T> source) => new(source);
+    public static TempHashSetInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempHashSet<T> source)
+        => new(in source);
 
     /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<Entry<T>> AsSpan<T>(in this TempHashSet<T> source) => source._entries.AsSpan(0, source._count);
+    public static Span<Entry<T>> AsSpan<T>(this scoped ref readonly TempHashSet<T> source)
+        => source._entries.AsSpan(0, source._count);
 
     /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<Entry<T>> AsMemory<T>(in this TempHashSet<T> source) => source._entries.AsMemory(0, source._count);
+    public static Memory<Entry<T>> AsMemory<T>(this scoped ref readonly TempHashSet<T> source)
+        => source._entries.AsMemory(0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(in this TempHashSet<T> source, out Entry<T>[] entries, out int count)
+    public static void GetUnsafe<T>(this scoped ref readonly TempHashSet<T> source, out Entry<T>[] entries, out int count)
     {
         entries = source._entries;
         count = source._count;
@@ -69,7 +72,7 @@ partial class TempCollectionInternalsUnsafe
     ///     is in use. The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref T GetValueRefOrNullRef<T>(in TempHashSet<T> set, T equalValue) where T : notnull
+    public static ref T GetValueRefOrNullRef<T>(this scoped ref TempHashSet<T> set, T equalValue) where T : notnull
         => ref set.FindValue(equalValue);
 
     /// <summary>Adds the specified element to the set if it's not already contained.</summary>
@@ -77,6 +80,6 @@ partial class TempCollectionInternalsUnsafe
     /// <param name="location">The index into <see cref="_entries"/> of the element.</param>
     /// <returns>true if the element is added to the <see cref="TempHashSet{T}"/> object; false if the element is already present.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool AddIfNotPresent<T>(ref TempHashSet<T> set, T value, out int location)
+    public static bool AddIfNotPresent<T>(this scoped ref TempHashSet<T> set, T value, out int location)
         => set.AddIfNotPresent(value, out location);
 }

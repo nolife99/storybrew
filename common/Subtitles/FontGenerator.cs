@@ -17,6 +17,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.StructBased;
 using Path = System.IO.Path;
 
 /// <summary> Stores information about a font image. </summary>
@@ -94,16 +95,16 @@ public sealed class FontGenerator : IDisposable
 
     readonly FastRandom debugRandom;
     readonly FontDescription description;
-    readonly FontEffect[] effects;
+    readonly ValueArray<FontEffect> effects;
 
     readonly TextOptions format;
     readonly SolidBrush textBrush;
 
-    internal FontGenerator(string dir, FontDescription desc, FontEffect[] fx, string projDir, string assetDir)
+    internal FontGenerator(string dir, FontDescription desc, ReadOnlySpan<FontEffect> fx, string projDir, string assetDir)
     {
         Directory = dir;
         description = desc;
-        effects = fx;
+        effects = ValueArray<FontEffect>.Create(fx);
         assetDirectory = assetDir;
 
         textBrush = new(description.Color);
@@ -139,7 +140,11 @@ public sealed class FontGenerator : IDisposable
     /// <summary> The directory to the font textures. </summary>
     public string Directory { get; }
 
-    public void Dispose() => cache.Dispose();
+    public void Dispose()
+    {
+        cache.Dispose();
+        effects.Dispose();
+    }
 
     ///<summary> Gets the texture path of the matching item's string representation. </summary>
     public FontTexture GetTexture(object obj)
@@ -155,8 +160,8 @@ public sealed class FontGenerator : IDisposable
         foreach (var t in effects)
         {
             var effectSize = t.Measure;
-            effectsWidth = Math.Max(effectsWidth, effectSize.Width);
-            effectsHeight = Math.Max(effectsHeight, effectSize.Height);
+            effectsWidth = float.Max(effectsWidth, effectSize.Width);
+            effectsHeight = float.Max(effectsHeight, effectSize.Height);
         }
 
         var padding = description.Padding;
@@ -241,12 +246,12 @@ public sealed class FontGenerator : IDisposable
         }
 
         filename ??= (trimmedText ?? text).Length == 1 ?
-            $"{(!PathHelper.IsValidFilename(char.ToString(text[0])) ?
-                ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).TrimStart('0') :
+            $"{(!PathHelper.IsValidFilename(text[0]) ?
+                ((int)text[0]).ToString("x4", CultureInfo.InvariantCulture).AsSpan().TrimStart('0') :
                 char.IsUpper(text[0]) ? char.ToLower(text[0], CultureInfo.InvariantCulture).ToString() + '_' :
-                    char.ToString(text[0]))}.png" :
+                    [text[0]])}.png" :
             $"_{cache.Keys.Count(l => l.AsSpan().Trim().Length > 1)
-                .ToString("x3", CultureInfo.InvariantCulture).TrimStart('0')}.png";
+                .ToString("x3", CultureInfo.InvariantCulture).AsSpan().TrimStart('0')}.png";
 
         var texturePath = Path.Combine(Directory, filename);
         PathHelper.WithStandardSeparatorsUnsafe(texturePath);

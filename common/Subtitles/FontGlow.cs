@@ -1,6 +1,5 @@
 ﻿namespace StorybrewCommon.Subtitles;
 
-using System;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Drawing.Processing;
@@ -14,7 +13,7 @@ using SixLabors.ImageSharp.Processing.Processors.Convolution;
 /// <param name="color"> The coloring tint of the glow. </param>
 public record FontGlow(int radius = 6, float power = 0, Color color = default) : FontEffect
 {
-    readonly GaussianBlurProcessor blur = new(power >= 1 ? power : radius * .5f, Math.Min(radius, 24));
+    readonly GaussianBlurProcessor blur = new(power >= 1 ? power : radius * .5f, int.Min(radius, 24));
 
     /// <inheritdoc/>
     public bool Overlay => false;

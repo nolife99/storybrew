@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.UserInterface;
 
-using System;
 using System.Numerics;
 using Graphics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -127,8 +126,8 @@ public class ScrollArea : Widget
         }
     }
 
-    float ScrollableX => Math.Max(0, scrollContainer.Width - Width);
-    float ScrollableY => Math.Max(0, scrollContainer.Height - Height);
+    float ScrollableX => float.Max(0, scrollContainer.Width - Width);
+    float ScrollableY => float.Max(0, scrollContainer.Height - Height);
 
     protected override void DrawChildren(DrawContext drawContext, float actualOpacity)
     {
@@ -139,8 +138,8 @@ public class ScrollArea : Widget
     protected override void Layout()
     {
         base.Layout();
-        var width = scrollsHorizontally ? Math.Max(Size.X, scrollContainer.PreferredSize.X) : Size.X;
-        var height = scrollsVertically ? Math.Max(Size.Y, scrollContainer.PreferredSize.Y) : Size.Y;
+        var width = scrollsHorizontally ? float.Max(Size.X, scrollContainer.PreferredSize.X) : Size.X;
+        var height = scrollsVertically ? float.Max(Size.Y, scrollContainer.PreferredSize.Y) : Size.Y;
         scrollContainer.Size = new(width, height);
     }
 
@@ -149,8 +148,8 @@ public class ScrollArea : Widget
         if (!scrollsHorizontally) x = 0;
         if (!scrollsVertically) y = 0;
 
-        scrollContainer.Offset = new(Math.Max(-ScrollableX, Math.Min(scrollContainer.Offset.X + x, 0)),
-            Math.Max(-ScrollableY, Math.Min(scrollContainer.Offset.Y + y, 0)));
+        scrollContainer.Offset = new(float.Max(-ScrollableX, float.Min(scrollContainer.Offset.X + x, 0)),
+            float.Max(-ScrollableY, float.Min(scrollContainer.Offset.Y + y, 0)));
 
         updateScrollIndicators();
     }

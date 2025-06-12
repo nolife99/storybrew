@@ -4,11 +4,13 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using Memory;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public static class StringHelper
 {
@@ -38,24 +40,20 @@ public static class StringHelper
     {
         data = MD5.HashData(data);
 
-        var chars = StringBuilderPool.Retrieve();
-        foreach (var t in data) chars.Append(t.ToString("x2", CultureInfo.InvariantCulture));
+        using var chars = TempList<char>.Create();
+        foreach (var t in data) chars.AddRangeFormatted(t, "x2", CultureInfo.InvariantCulture);
 
-        var str = chars.ToString();
-        StringBuilderPool.Release(chars);
-        return str;
+        return chars.AsReadOnlySpan().ToString();
     }
 
     public static string GetFileMd5(string path)
     {
         var data = GetFileMd5Bytes(path);
 
-        var chars = StringBuilderPool.Retrieve();
-        foreach (var t in data) chars.Append(t.ToString("x2", CultureInfo.InvariantCulture));
+        using var chars = TempList<char>.Create();
+        foreach (var t in data) chars.AddRangeFormatted(t, "x2", CultureInfo.InvariantCulture);
 
-        var str = chars.ToString();
-        StringBuilderPool.Release(chars);
-        return str;
+        return chars.AsReadOnlySpan().ToString();
     }
 
     public static byte[] GetFileMd5Bytes(string path)
@@ -85,7 +83,7 @@ public static class StringHelper
         return TempArray<char>.Create(temp[..written]);
     }
 
-    public static void AddRangeFormatted<T>(this scoped ref TempList<char> list,
+    public static void AddRangeFormatted<T>(this scoped ref readonly TempList<char> list,
         T value,
         ReadOnlySpan<char> format = default,
         IFormatProvider provider = null) where T : ISpanFormattable
@@ -93,16 +91,17 @@ public static class StringHelper
         Span<char> temp = stackalloc char[128];
         value.TryFormat(temp, out var written, format, provider);
 
-        list.AddRange(temp[..written]);
+        Unsafe.AsRef(in list).AddRange(temp[..written]);
     }
 
-    public static void AddRangeEnum<T>(this scoped ref TempList<char> list, T value, ReadOnlySpan<char> format = default)
-        where T : struct, Enum
+    public static void AddRangeEnum<T>(this scoped ref readonly TempList<char> list,
+        T value,
+        ReadOnlySpan<char> format = default) where T : struct, Enum
     {
         Span<char> temp = stackalloc char[128];
         Enum.TryFormat(value, temp, out var written, format);
 
-        list.AddRange(temp[..written]);
+        Unsafe.AsRef(in list).AddRange(temp[..written]);
     }
 
     public static int GetDigitCount<T>(T value) where T : IBinaryInteger<T>

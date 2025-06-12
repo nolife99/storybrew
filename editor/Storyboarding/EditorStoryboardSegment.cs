@@ -76,8 +76,8 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
 
         foreach (var sbo in storyboardObjects)
         {
-            startTime = Math.Min(startTime, sbo.StartTime);
-            endTime = Math.Max(endTime, sbo.EndTime);
+            startTime = float.Min(startTime, sbo.StartTime);
+            endTime = float.Max(endTime, sbo.EndTime);
         }
     }
 

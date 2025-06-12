@@ -57,7 +57,7 @@ partial struct TempDictionary<TKey, TValue>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -69,7 +69,7 @@ partial struct TempDictionary<TKey, TValue>
 
     void ReturnEntries(Entry<TKey, TValue>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

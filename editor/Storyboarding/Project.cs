@@ -173,7 +173,7 @@ public sealed partial class Project : IDisposable
         obj.GpuPixelsFrame = 0;
         obj.LastBlendingMode = false;
 
-        obj.LastTexture = null;
+        obj.LastTexture = 0;
         obj.ScreenFill = 0;
         obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
     });

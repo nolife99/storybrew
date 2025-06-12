@@ -27,7 +27,7 @@ public readonly struct ValueDictionaryInternals<TKey, TValue> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
-    public ValueDictionaryInternals(in ValueDictionary<TKey, TValue> source)
+    internal ValueDictionaryInternals(in ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -49,14 +49,14 @@ public readonly struct ValueDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);

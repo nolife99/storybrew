@@ -3,7 +3,6 @@
 using System;
 using System.IO;
 using BrewLib.Audio;
-using BrewLib.Memory;
 using BrewLib.Util;
 using StorybrewCommon.Storyboarding;
 
@@ -19,12 +18,11 @@ public class EditorOsbSample : OsbSample, IEvent
 
         Path.TryJoin(project.MapsetPath, AudioPath, span, out _);
         PathHelper.WithStandardSeparatorsUnsafe(span);
-        var fullPath = StringPool.GetOrAdd(span);
 
         AudioSample sample;
         try
         {
-            sample = project.AudioContainer.Get(fullPath);
+            sample = project.AudioContainer.Get(span);
             if (sample is null)
             {
                 Span<char> span2 = stackalloc char[project.ProjectAssetFolderPath.Length + AudioPath.Length + 1];
@@ -33,8 +31,7 @@ public class EditorOsbSample : OsbSample, IEvent
 
                 PathHelper.WithStandardSeparatorsUnsafe(span2);
 
-                fullPath = StringPool.GetOrAdd(span2);
-                sample = project.AudioContainer.Get(fullPath);
+                sample = project.AudioContainer.Get(span2);
             }
         }
         catch (IOException)

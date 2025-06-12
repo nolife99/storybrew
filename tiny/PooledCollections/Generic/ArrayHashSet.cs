@@ -718,7 +718,7 @@ using System.Runtime.Serialization;
 
                 _entries = newEntries;
 
-                if (entries.IsNullOrEmpty() == false) _entryPool.Return(entries, s_clearEntries);
+                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -825,7 +825,7 @@ using System.Runtime.Serialization;
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -839,7 +839,7 @@ using System.Runtime.Serialization;
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -851,7 +851,7 @@ using System.Runtime.Serialization;
 
     void ReturnEntries(ArrayEntry<T>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

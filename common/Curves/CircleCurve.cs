@@ -48,7 +48,7 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
         CircularArcProperties pr = new(controlPoints);
         amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
             2 :
-            Math.Max(2, (int)float.Ceiling(pr.ThetaRange / (2 * float.Acos(1 - circular_arc_tolerance / pr.Radius))));
+            int.Max(2, (int)float.Ceiling(pr.ThetaRange / (2 * float.Acos(1 - circular_arc_tolerance / pr.Radius))));
 
         var output = ArrayPool<Vector2>.Shared.Rent(amountPoints);
         for (var i = 0; i < amountPoints; ++i)

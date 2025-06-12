@@ -50,7 +50,7 @@ public class TextLayout : IDisposable
         _lines.Dispose();
     }
 
-    public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
+    public void ForTextBounds<TState>(int startIndex, int endIndex, Action<RectangleF, TState> action, TState state)
     {
         var index = 0;
         foreach (var line in _lines)
@@ -71,7 +71,7 @@ public class TextLayout : IDisposable
                 ++index;
             }
 
-            if (hasBounds) action(RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y));
+            if (hasBounds) action(RectangleF.FromLTRB(topLeft.X, topLeft.Y, bottomRight.X, bottomRight.Y), state);
         }
     }
 

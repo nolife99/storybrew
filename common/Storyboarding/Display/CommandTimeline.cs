@@ -2,7 +2,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.CompilerServices;
 using Commands;
 using CommandValues;
 
@@ -11,15 +11,17 @@ public interface CommandTimeline
     bool HasCommands { get; }
     bool HasOverlap { get; }
 
-    void Add(ICommand command);
-    void StartGroup(LoopCommand loop);
-    void StartGroup(TriggerCommand trigger);
-    void EndGroup();
+    ReadOnlySpan<ICommand> Commands { get; }
+
+    internal bool Add(ICommand command);
+    internal void StartGroup(LoopCommand loop);
+    internal void StartGroup(TriggerCommand trigger);
+    internal void EndGroup();
 }
 
 public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, ICommandValue
 {
-    readonly List<CommandChannel<TValue>> channels = [];
+    List<CommandChannel<TValue>> channels;
 
     CommandChannel<TValue> defaultChannel, currentChannel;
     public TValue DefaultValue;
@@ -96,43 +98,61 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         }
     }
 
-    public bool HasCommands => channels.Count > 0;
-    public bool HasOverlap => channels.Any(c => c.HasOverlap);
+    public ReadOnlySpan<ICommand> Commands => defaultChannel is null ?
+        default :
+        Unsafe.BitCast<ReadOnlySpan<ITypedCommand<TValue>>, ReadOnlySpan<ICommand>>(defaultChannel.Commands);
 
-    public void Add(ICommand command) => Add(command as Command<TValue>);
+    public bool HasCommands => channels is not null && channels.Count > 0;
 
-    public void StartGroup(LoopCommand loop)
+    public bool HasOverlap
     {
-        if (groupEndAction is not null) EndGroup();
+        get
+        {
+            if (!HasCommands) return false;
+
+            foreach (var channel in channels)
+                if (channel.HasOverlap)
+                    return true;
+
+            return false;
+        }
+    }
+
+    bool CommandTimeline.Add(ICommand command) => Add(command as Command<TValue>);
+
+    void CommandTimeline.StartGroup(LoopCommand loop)
+    {
+        if (groupEndAction is not null) ((CommandTimeline)this).EndGroup();
 
         CommandChannelLoop<TValue> loopChannel = new();
         currentChannel = loopChannel;
 
         groupEndAction = channel =>
         {
-            var loopChannel = (CommandChannelLoop<TValue>)channel;
+            var c = (CommandChannelLoop<TValue>)channel;
 
-            loopChannel.LoopCount = loop.LoopCount;
-            loopChannel.LoopStartTime = loop.StartTime;
-            loopChannel.LoopDuration = loop.CommandsDuration;
+            c.LoopCount = loop.LoopCount;
+            c.LoopStartTime = loop.StartTime;
+            c.LoopDuration = loop.CommandsDuration;
         };
     }
 
-    public void StartGroup(TriggerCommand trigger)
+    void CommandTimeline.StartGroup(TriggerCommand trigger)
     {
-        if (groupEndAction is not null) EndGroup();
+        if (groupEndAction is not null) ((CommandTimeline)this).EndGroup();
 
-        CommandChannelTrigger<TValue> triggerChannel = new();
-        currentChannel = triggerChannel;
+        currentChannel = new CommandChannelTrigger<TValue>();
     }
 
-    public void EndGroup()
+    void CommandTimeline.EndGroup()
     {
         if (groupEndAction is null) return;
 
-        if (currentChannel.Commands.Count > 0)
+        if (currentChannel.Commands.Length > 0)
         {
             groupEndAction(currentChannel);
+
+            channels ??= [];
             channels.Add(currentChannel);
         }
 
@@ -140,17 +160,23 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         groupEndAction = null;
     }
 
-    public void Add(ITypedCommand<TValue> command)
+    bool Add(ITypedCommand<TValue> command)
     {
-        if (command is null) return;
+        if (command is null) return false;
 
-        if (currentChannel is null) channels.Add(currentChannel = defaultChannel = new());
+        if (currentChannel is null)
+        {
+            channels ??= [];
+            channels.Add(currentChannel = defaultChannel = new());
+        }
 
-        currentChannel.Add(command);
+        return currentChannel.Add(command);
     }
 
     public TValue ValueAtTime(float time)
     {
+        if (!HasCommands) return DefaultValue;
+
         var currentState = ResultState.NoCommand;
         CommandResult<TValue> currentResult = default;
 

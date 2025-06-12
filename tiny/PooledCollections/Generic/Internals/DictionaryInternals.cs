@@ -49,14 +49,14 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);

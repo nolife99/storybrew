@@ -7,7 +7,7 @@ using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
-public class TriggerCommand : CommandGroup
+public sealed class TriggerCommand : CommandGroup
 {
     public TriggerCommand(string triggerName, float startTime, float endTime, int group = 0)
     {
@@ -17,8 +17,8 @@ public class TriggerCommand : CommandGroup
         Group = group;
     }
 
-    public string TriggerName { get; set; }
-    public int Group { get; set; }
+    public string TriggerName { get; }
+    public int Group { get; }
 
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
     {

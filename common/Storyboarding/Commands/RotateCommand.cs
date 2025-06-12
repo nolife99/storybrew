@@ -3,12 +3,16 @@
 using CommandValues;
 
 #pragma warning disable CS1591
-public record RotateCommand(OsbEasing easing,
-    float startTime,
-    float endTime,
-    CommandDecimal startValue,
-    CommandDecimal endValue) : Command<CommandDecimal>("R", easing, startTime, endTime, startValue, endValue)
+public sealed record RotateCommand : Command<CommandDecimal>
 {
+    public RotateCommand(OsbEasing easing,
+        float startTime,
+        float endTime,
+        CommandDecimal startValue,
+        CommandDecimal endValue) : base(easing, startTime, endTime, startValue, endValue) { }
+
+    private protected override string Identifier => "R";
+
     protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToRotation(StartValue);
 

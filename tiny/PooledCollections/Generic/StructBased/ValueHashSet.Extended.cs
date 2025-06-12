@@ -27,7 +27,7 @@ partial struct ValueHashSet<T> : IDisposable
 
     internal ref T FindValue(T equalValue)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var index = FindItemIndex(equalValue);
             if (index >= 0) return ref _entries![index].Value;
@@ -463,7 +463,7 @@ partial struct ValueHashSet<T> : IDisposable
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -475,7 +475,7 @@ partial struct ValueHashSet<T> : IDisposable
 
     void ReturnEntries(Entry<T>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

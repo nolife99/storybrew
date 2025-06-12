@@ -11,6 +11,7 @@ using Skinning.Styles;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 
 public class Widget(WidgetManager manager) : IDisposable
@@ -190,22 +191,20 @@ public class Widget(WidgetManager manager) : IDisposable
 
     static string buildStyleName(string baseName, ReadOnlySpan<string> modifiers)
     {
-        if (modifiers.Length == 0) return baseName;
+        if (modifiers.IsEmpty) return baseName;
 
-        var sb = StringHelper.StringBuilderPool.Retrieve();
-        sb.Append(baseName);
+        using var sb = TempList<char>.Create();
+        sb.AddRange(baseName.AsSpan());
 
         foreach (var modifier in modifiers)
         {
             if (string.IsNullOrEmpty(modifier)) continue;
 
-            sb.Append(" #");
-            sb.Append(modifier);
+            sb.AddRange(" #".AsSpan());
+            sb.AddRange(modifier.AsSpan());
         }
 
-        var str = sb.ToString();
-        StringHelper.StringBuilderPool.Release(sb);
-        return str;
+        return sb.AsReadOnlySpan().ToString();
     }
 
     #endregion

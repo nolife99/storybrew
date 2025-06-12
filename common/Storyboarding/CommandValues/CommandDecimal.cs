@@ -9,14 +9,10 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 ///<summary> Custom decimal handler for storyboarding. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly record struct CommandDecimal : ICommandValue
 {
-    readonly double value;
+    readonly decimal value;
 
 #pragma warning disable CS1591
-    CommandDecimal(double value)
-    {
-        if (double.IsNaN(value) || double.IsInfinity(value)) this.value = 0;
-        else this.value = value;
-    }
+    CommandDecimal(decimal value) => this.value = value;
 
     public bool Equals(CommandDecimal other) => value.Equals(other.value);
 
@@ -24,23 +20,33 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
     public TempList<char> ToOsbString(ExportSettings exportSettings)
     {
-        using var arr = ((float)value).ToCharArray(provider: exportSettings.NumberFormat);
+        using var arr = decimal.Round(value, 6).ToCharArray(provider: exportSettings.NumberFormat);
         var span = arr.AsReadOnlySpan();
 
-        return TempList<char>.Create(span[(span.StartsWith("0.") ? 1 : 0)..]);
+        var result = TempList<char>.Create();
+        if (span.StartsWith('-'))
+        {
+            result.Add('-');
+            span = span.TrimStart('-');
+        }
+
+        if (span.Contains('.')) span = span.Trim('0');
+
+        result.AddRange(span);
+        return result;
     }
 
-    public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => left.value - right.value;
-    public static CommandDecimal operator --(CommandDecimal value) => value.value - 1;
-    public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => left.value + right.value;
-    public static CommandDecimal operator ++(CommandDecimal value) => value.value + 1;
-    public static CommandDecimal operator *(CommandDecimal left, CommandDecimal right) => left.value * right.value;
-    public static CommandDecimal operator /(CommandDecimal left, CommandDecimal right) => left.value / right.value;
+    public static CommandDecimal operator -(CommandDecimal left, CommandDecimal right) => new(left.value - right.value);
+    public static CommandDecimal operator --(CommandDecimal value) => new(value.value - 1);
+    public static CommandDecimal operator +(CommandDecimal left, CommandDecimal right) => new(left.value + right.value);
+    public static CommandDecimal operator ++(CommandDecimal value) => new(value.value + 1);
+    public static CommandDecimal operator *(CommandDecimal left, CommandDecimal right) => new(left.value * right.value);
+    public static CommandDecimal operator /(CommandDecimal left, CommandDecimal right) => new(left.value / right.value);
 
-    public static CommandDecimal operator -(CommandDecimal value) => -value.value;
-    public static CommandDecimal operator +(CommandDecimal value) => value.value;
+    public static CommandDecimal operator -(CommandDecimal value) => new(-value.value);
+    public static CommandDecimal operator +(CommandDecimal value) => new(decimal.Abs(value.value));
 
-    public static implicit operator CommandDecimal(double value) => new(value);
-    public static implicit operator double(CommandDecimal obj) => obj.value;
+    public static implicit operator CommandDecimal(double value) => new((decimal)value);
+    public static implicit operator double(CommandDecimal obj) => (double)obj.value;
     public static implicit operator float(CommandDecimal obj) => (float)obj.value;
 }

@@ -56,10 +56,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         drawContext = new();
         drawContext.Register(this);
-        drawContext.Register<TextureContainer>(DrawState.BindlessTexturesSupported ?
-                new TextureContainerSeparate(ResourceContainer) :
-                new TextureContainerAtlas(ResourceContainer),
-            true);
+        drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
 
         drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);
         drawContext.Register<ILineRenderer>(new LineRendererBuffered(), true);
@@ -181,7 +178,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         DrawState.Viewport = new(0, 0, width, height);
 
-        var virtualHeight = height * Math.Max(1024f / width, 768f / height);
+        var virtualHeight = height * float.Max(1024f / width, 768f / height);
         overlayCamera.VirtualHeight = (int)virtualHeight;
 
         var virtualWidth = width * virtualHeight / height;
@@ -264,9 +261,9 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         var altOpacity = altOverlayTop.Opacity;
         var targetOpacity = showAltOverlayTop ? 1f : 0;
-        altOpacity = Math.Abs(altOpacity - targetOpacity) <= .07f ?
+        altOpacity = float.Abs(altOpacity - targetOpacity) <= .07f ?
             targetOpacity :
-            Math.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
+            float.Clamp(altOpacity + (altOpacity < targetOpacity ? .07f : -.07f), 0, 1);
 
         overlayTop.Opacity = 1 - altOpacity;
         overlayTop.Displayed = altOpacity < 1;

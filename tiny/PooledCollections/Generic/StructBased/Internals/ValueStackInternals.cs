@@ -11,7 +11,7 @@ public readonly struct ValueStackInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Array;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    public ValueStackInternals(in ValueStack<T> source)
+    internal ValueStackInternals(in ValueStack<T> source)
     {
         Size = source._size;
         Version = source._version;
@@ -22,7 +22,7 @@ public readonly struct ValueStackInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array.IsNullOrEmpty() == false)
+        if (!Array.IsNullOrEmpty())
             try
             {
                 Pool?.Return(Array, ClearArray);

@@ -28,7 +28,7 @@ public readonly struct TempDictionaryInternals<TKey, TValue> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
-    public TempDictionaryInternals(in TempDictionary<TKey, TValue> source)
+    internal TempDictionaryInternals(in TempDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -50,14 +50,14 @@ public readonly struct TempDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);
@@ -73,9 +73,6 @@ partial class TempCollectionInternals
     public static TempDictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(ref TempDictionary<TKey, TValue> source)
     {
         var internals = new TempDictionaryInternals<TKey, TValue>(source);
-
-        source._buckets = null;
-        source._entries = null;
         source.Dispose();
 
         return internals;
@@ -89,10 +86,9 @@ partial class TempCollectionInternals
     /// <param name="key">The key used for lookup.</param>
     /// <remarks>
     ///     Items should not be added or removed from the <see cref="TempDictionary{TKey, TValue}"/> while the ref
-    ///     <typeparamref name="TValue"/> is in use. The ref null can be detected using
-    ///     System.Runtime.CompilerServices.Unsafe.IsNullRef
+    ///     <typeparamref name="TValue"/> is in use. The ref null can be detected using <see cref="Unsafe.IsNullRef{T}"/>.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(in TempDictionary<TKey, TValue> dictionary, TKey key)
-        where TKey : notnull => ref dictionary.FindValue(key);
+    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
+        TKey key) where TKey : notnull => ref dictionary.FindValue(key);
 }

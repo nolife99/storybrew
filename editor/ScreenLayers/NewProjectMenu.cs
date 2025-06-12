@@ -69,13 +69,12 @@ public class NewProjectMenu : UiScreenLayer
         {
             var invalidChars = Path.GetInvalidFileNameChars();
 
-            var charArray = TempArray<char>.Create(projectNameTextbox.Value);
+            using var charArray = TempArray<char>.Create(projectNameTextbox.Value);
             for (var i = 0; i < charArray.Length; i++)
                 if (invalidChars.Contains(charArray[i]))
                     charArray[i] = '_';
 
-            using TempArrayInternals<char> internals = new(charArray);
-            projectNameTextbox.Value = internals.Array.AsSpan(0, internals.Length);
+            projectNameTextbox.Value = charArray.AsReadOnlySpan();
         };
 
         mapsetPathSelector.OnValueChanged += (_, _) => updateButtonsState();

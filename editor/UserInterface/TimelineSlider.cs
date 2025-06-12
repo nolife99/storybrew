@@ -155,13 +155,15 @@ public class TimelineSlider : Slider
             foreach (var hitObject in project.MainBeatmap.HitObjects)
                 if (leftTime < hitObject.EndTime && hitObject.StartTime < rightTime)
                 {
-                    var left = Math.Max(0, (hitObject.StartTime - leftTime) * timeScale);
-                    var right = Math.Min((hitObject.EndTime - leftTime) * timeScale, Bounds.Width);
-                    var height = Math.Max(Bounds.Height * .1f - pixelSize, pixelSize);
+                    var left = float.Max(0, (hitObject.StartTime - leftTime) * timeScale);
+                    var height = float.Max(Bounds.Height * .1f - pixelSize, pixelSize);
 
                     drawLine(drawContext,
                         offset + new Vector2(Manager.SnapToPixel(left - height / 2), hitObjectsY),
-                        new(Manager.SnapToPixel(right - left + height), height),
+                        new(Manager.SnapToPixel(float.Min((hitObject.EndTime - leftTime) * timeScale, Bounds.Width) -
+                                left +
+                                height),
+                            height),
                         hitObject.Color,
                         actualOpacity);
                 }
@@ -266,9 +268,9 @@ public class TimelineSlider : Slider
             if (timingPoint != leftTimingPoint && rightTime + Beatmap.ControlPointLeniency < timingPoint.Offset) break;
 
             int tickCount = 0, beatCount = 0;
-            var step = Math.Max(1, timingPoint.BeatDuration / SnapDivisor);
+            var step = float.Max(1, timingPoint.BeatDuration / SnapDivisor);
             var sectionStartTime = timingPoint.Offset;
-            var sectionEndTime = Math.Min(nextTimingPoint?.Offset ?? rightTime, rightTime);
+            var sectionEndTime = float.Min(nextTimingPoint?.Offset ?? rightTime, rightTime);
 
             if (timingPoint == leftTimingPoint)
                 while (leftTime < sectionStartTime)

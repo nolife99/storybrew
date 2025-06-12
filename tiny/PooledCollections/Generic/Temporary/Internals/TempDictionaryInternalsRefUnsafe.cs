@@ -24,7 +24,7 @@ public readonly struct TempDictionaryInternalsRefUnsafe<TKey, TValue>
     [NonSerialized] public readonly Entry<TKey, TValue>[] Entries;
     [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
 
-    public TempDictionaryInternalsRefUnsafe(in TempDictionary<TKey, TValue> source)
+    internal TempDictionaryInternalsRefUnsafe(scoped ref readonly TempDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -47,21 +47,21 @@ partial class TempCollectionInternalsUnsafe
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempDictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(in TempDictionary<TKey, TValue> source)
-        => new(source);
+    public static TempDictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(
+        this scoped ref readonly TempDictionary<TKey, TValue> source) => new(in source);
 
     /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(in this TempDictionary<TKey, TValue> source)
-        => source._entries.AsSpan(0, source._count);
+    public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(
+        this scoped ref readonly TempDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source._count);
 
     /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(in this TempDictionary<TKey, TValue> source)
-        => source._entries.AsMemory(0, source._count);
+    public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(
+        this scoped ref readonly TempDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<TKey, TValue>(in this TempDictionary<TKey, TValue> source,
+    public static void GetUnsafe<TKey, TValue>(this scoped ref readonly TempDictionary<TKey, TValue> source,
         out Entry<TKey, TValue>[] entries,
         out int count)
     {
@@ -81,14 +81,13 @@ partial class TempCollectionInternalsUnsafe
     ///     <typeparamref name="TValue"/> is in use.
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(
-        ref TempDictionary<TKey, TValue> dictionary,
+    public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
         TKey key,
         out bool exists) where TKey : notnull
         => ref TempDictionary<TKey, TValue>.CollectionsMarshalHelper.GetValueRefOrAddDefault(dictionary, key, out exists);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool TryInsert<TKey, TValue>(ref TempDictionary<TKey, TValue> dictionary,
+    public static bool TryInsert<TKey, TValue>(this scoped ref TempDictionary<TKey, TValue> dictionary,
         TKey key,
         TValue value,
         InsertionBehavior behavior) => dictionary.TryInsert(key, value, behavior);

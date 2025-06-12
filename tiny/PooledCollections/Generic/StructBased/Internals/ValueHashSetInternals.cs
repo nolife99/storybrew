@@ -23,7 +23,7 @@ public readonly struct ValueHashSetInternals<T> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<T>> EntryPool;
 
-    public ValueHashSetInternals(in ValueHashSet<T> source)
+    internal ValueHashSetInternals(in ValueHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -43,14 +43,14 @@ public readonly struct ValueHashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);

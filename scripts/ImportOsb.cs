@@ -26,14 +26,15 @@ internal class ImportOsb : StoryboardObjectGenerator
     {
         using (var stream = OpenProjectFile(Path))
         using (StreamReader reader = new(stream, Encoding.ASCII))
-            reader.ParseSections(section =>
-            {
-                switch (section)
+            reader.ParseSections((section, state) =>
                 {
-                    case "Variables": parseVariables(reader); break;
-                    case "Events": parseEvents(reader); break;
-                }
-            });
+                    switch (section)
+                    {
+                        case "Variables": state.Item2.parseVariables(state.reader); break;
+                        case "Events": state.Item2.parseEvents(state.reader); break;
+                    }
+                },
+                (reader, this));
 
         foreach (var variable in vars)
         {
@@ -44,26 +45,27 @@ internal class ImportOsb : StoryboardObjectGenerator
         vars.Dispose();
     }
 
-    void parseVariables(StreamReader reader) => reader.ParseSectionLines(line =>
-    {
-        using var v = line.Split(['=']);
-        if (v.Count == 2)
-            vars[ValueArray<char>.Create(v[0].AsReadOnlySpan())] = ValueArray<char>.Create(v[1].AsReadOnlySpan());
-    });
+    void parseVariables(StreamReader reader) => reader.ParseSectionLines((line, state) =>
+        {
+            using var v = line.Split(['=']);
+            if (v.Count == 2)
+                state.vars[ValueArray<char>.Create(v[0].AsReadOnlySpan())] = ValueArray<char>.Create(v[1].AsReadOnlySpan());
+        },
+        this);
 
     void parseEvents(StreamReader reader)
     {
         OsbSprite sprite = null;
         var loopable = false;
 
-        reader.ParseSectionLines(line =>
+        reader.ParseSectionLines((line, state) =>
             {
                 if (line.StartsWith("//")) return;
 
                 var depth = 0;
                 while (line[depth..].StartsWith(' ')) ++depth;
 
-                using var trim = applyVariables(line.Trim());
+                using var trim = state.applyVariables(line.Trim());
                 using var v = trim.AsReadOnlySpan().Split([',']);
 
                 if (loopable && depth < 2)
@@ -80,7 +82,9 @@ internal class ImportOsb : StoryboardObjectGenerator
                         var path = removeQuotes(v[3].AsReadOnlySpan());
                         var x = float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture);
                         var y = float.Parse(v[5].AsReadOnlySpan(), CultureInfo.InvariantCulture);
-                        sprite = GetLayer(v[1].AsReadOnlySpan().ToString()).CreateSprite(path.ToString(), origin, new(x, y));
+                        sprite = state.GetLayer(v[1].AsReadOnlySpan().ToString())
+                            .CreateSprite(path.ToString(), origin, new(x, y));
+
                         break;
                     }
 
@@ -93,14 +97,14 @@ internal class ImportOsb : StoryboardObjectGenerator
                         var frameCount = int.Parse(v[6].AsReadOnlySpan(), CultureInfo.InvariantCulture);
                         var frameDelay = float.Parse(v[7].AsReadOnlySpan(), CultureInfo.InvariantCulture);
                         var loopType = Enum.Parse<OsbLoopType>(v[8].AsReadOnlySpan());
-                        sprite = GetLayer(v[1].AsReadOnlySpan().ToString())
+                        sprite = state.GetLayer(v[1].AsReadOnlySpan().ToString())
                             .CreateAnimation(path.ToString(), frameCount, frameDelay, loopType, origin, new Vector2(x, y));
 
                         break;
                     }
 
                     case "Sample":
-                        GetLayer(v[2].AsReadOnlySpan().ToString())
+                        state.GetLayer(v[2].AsReadOnlySpan().ToString())
                             .CreateSample(removeQuotes(v[3].AsReadOnlySpan()).ToString(),
                                 int.Parse(v[1].AsReadOnlySpan(), CultureInfo.InvariantCulture),
                                 float.Parse(v[4].AsReadOnlySpan(), CultureInfo.InvariantCulture)); break;
@@ -259,6 +263,7 @@ internal class ImportOsb : StoryboardObjectGenerator
 
                 foreach (var value in v) value.Dispose();
             },
+            this,
             false);
 
         if (!loopable) return;

@@ -56,7 +56,7 @@ public abstract class Effect : IDisposable
         get
         {
             var min = float.MaxValue;
-            foreach (var l in layers) min = Math.Min(l.StartTime, min);
+            foreach (var l in layers) min = float.Min(l.StartTime, min);
             return min == float.MaxValue ? 0 : min;
         }
     }
@@ -66,7 +66,7 @@ public abstract class Effect : IDisposable
         get
         {
             var max = float.MinValue;
-            foreach (var l in layers) max = Math.Max(l.EndTime, max);
+            foreach (var l in layers) max = float.Max(l.EndTime, max);
             return max == float.MinValue ? 0 : max;
         }
     }

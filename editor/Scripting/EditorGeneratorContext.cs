@@ -26,6 +26,7 @@ public sealed class EditorGeneratorContext(Effect effect,
 {
     readonly ValueArray<Beatmap> _beatmaps = getBeatmaps(beatmaps);
     readonly StringBuilder log = new();
+
     public ReadOnlySpan<EditorStoryboardLayer> EditorLayers => _editorLayers.AsReadOnlySpan();
     public override string ProjectPath => projectPath;
     public override string ProjectAssetPath => projectAssetPath;

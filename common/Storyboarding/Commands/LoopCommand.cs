@@ -7,7 +7,7 @@ using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
-public class LoopCommand : CommandGroup
+public sealed class LoopCommand : CommandGroup
 {
     public LoopCommand(float startTime, int loopCount)
     {
@@ -15,8 +15,7 @@ public class LoopCommand : CommandGroup
         LoopCount = loopCount;
     }
 
-    public int LoopCount { get; set; }
-    public bool IsFragmentable => LoopCount > 1;
+    public int LoopCount { get; private set; }
 
     public override float EndTime
     {

@@ -12,7 +12,7 @@ public readonly ref struct TempQueueInternalsRef<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly ReadOnlySpan<T> Array;
 
-    internal TempQueueInternalsRef(in TempQueue<T> source)
+    internal TempQueueInternalsRef(scoped ref readonly TempQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;
@@ -27,11 +27,11 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempQueueInternalsRef<T> GetRef<T>(in TempQueue<T> source) => new(source);
+    public static TempQueueInternalsRef<T> GetRef<T>(this scoped ref readonly TempQueue<T> source) => new(in source);
 
     /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this TempQueue<T> source, out int head, out int tail)
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
     {
         head = source._head;
         tail = source._tail;
@@ -40,7 +40,9 @@ partial class TempCollectionInternals
 
     /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this TempQueue<T> source, out int head, out int tail)
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempQueue<T> source,
+        out int head,
+        out int tail)
     {
         head = source._head;
         tail = source._tail;

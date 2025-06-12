@@ -13,7 +13,7 @@ public readonly struct ValueQueueInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Array;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    public ValueQueueInternals(in ValueQueue<T> source)
+    internal ValueQueueInternals(in ValueQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;
@@ -26,7 +26,7 @@ public readonly struct ValueQueueInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array.IsNullOrEmpty() == false)
+        if (!Array.IsNullOrEmpty())
             try
             {
                 Pool?.Return(Array, ClearArray);

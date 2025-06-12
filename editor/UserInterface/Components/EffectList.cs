@@ -244,7 +244,7 @@ public partial class EffectList : Widget
 
                 default:
                 {
-                    var sb = TempList<char>.Create();
+                    using var sb = TempList<char>.Create();
                     sb.AddRange("Status: ".AsSpan());
                     sb.AddRangeEnum(effect.Status);
 
@@ -255,7 +255,6 @@ public partial class EffectList : Widget
                     }
 
                     Manager.ScreenLayerManager.ShowMessage(sb.AsReadOnlySpan());
-                    sb.Dispose();
 
                     break;
                 }

@@ -11,7 +11,7 @@ public readonly struct ValueListInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Items;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    public ValueListInternals(in ValueList<T> source)
+    internal ValueListInternals(in ValueList<T> source)
     {
         Size = source._size;
         Version = source._version;

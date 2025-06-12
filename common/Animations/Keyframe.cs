@@ -12,7 +12,7 @@ using System.Collections.Generic;
 public readonly record struct Keyframe<TValue> : IComparer<Keyframe<TValue>>
 {
     internal static readonly Comparer<Keyframe<TValue>> Comparer =
-        Comparer<Keyframe<TValue>>.Create((x, y) => Math.Sign(x.Time - y.Time));
+        Comparer<Keyframe<TValue>>.Create((x, y) => float.Sign(x.Time - y.Time));
 
     /// <summary>Gets the easing function to apply to this keyframe.</summary>
     /// <remarks>This easing function is used when interpolating between this keyframe and the previous keyframe.</remarks>

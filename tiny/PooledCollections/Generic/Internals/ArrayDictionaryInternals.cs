@@ -42,21 +42,21 @@ public readonly struct ArrayDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);
             }
             catch { }
 
-        if (Values.IsNullOrEmpty() == false)
+        if (!Values.IsNullOrEmpty())
             try
             {
                 ValuePool?.Return(Values, ClearValues);

@@ -1,6 +1,5 @@
 ﻿namespace StorybrewCommon.Storyboarding3d;
 
-using System;
 using System.Numerics;
 using Animations;
 using Mapset;
@@ -27,7 +26,7 @@ public record CameraState(Matrix4x4 ViewProjection,
     public static Vector4 ToScreen(Matrix4x4 transform, Vector3 point)
     {
         var transformed = Vector4.Transform(new Vector4(point, 1), transform);
-        var screenPosition = (new Vector2(transformed.X, transformed.Y) / Math.Abs(transformed.W) + Vector2.One) /
+        var screenPosition = (new Vector2(transformed.X, transformed.Y) / float.Abs(transformed.W) + Vector2.One) /
             2 *
             new Vector2(OsuHitObject.WidescreenStoryboardSize.Width, OsuHitObject.WidescreenStoryboardSize.Height);
 
@@ -39,8 +38,8 @@ public record CameraState(Matrix4x4 ViewProjection,
 
     public float OpacityAt(float distance)
     {
-        if (distance < NearFade) return Math.Clamp((distance - NearClip) / (NearFade - NearClip), 0, 1);
-        if (distance > FarFade) return Math.Clamp((FarClip - distance) / (FarClip - FarFade), 0, 1);
+        if (distance < NearFade) return float.Clamp((distance - NearClip) / (NearFade - NearClip), 0, 1);
+        if (distance > FarFade) return float.Clamp((FarClip - distance) / (FarClip - FarFade), 0, 1);
 
         return 1;
     }
@@ -95,10 +94,10 @@ public class PerspectiveCamera : Camera
         else
             fovY = VerticalFov.Count > 0 ?
                 float.DegreesToRadians(VerticalFov.ValueAt(time)) :
-                2 * float.Atan(Resolution.Y * .5f / Math.Max(.0001f, (cameraPosition - targetPosition).Length()));
+                2 * float.Atan(Resolution.Y * .5f / float.Max(.0001f, (cameraPosition - targetPosition).Length()));
 
         var focusDistance = Resolution.Y * .5f / float.Tan(fovY * .5f);
-        var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : Math.Min(focusDistance * .5f, 1);
+        var nearClip = NearClip.Count > 0 ? NearClip.ValueAt(time) : float.Min(focusDistance * .5f, 1);
         var farClip = FarClip.Count > 0 ? FarClip.ValueAt(time) : focusDistance * 1.5f;
 
         var view = Matrix4x4.CreateLookAt(cameraPosition,

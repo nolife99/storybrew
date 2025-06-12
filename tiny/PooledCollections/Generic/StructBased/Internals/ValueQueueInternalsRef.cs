@@ -12,7 +12,7 @@ public readonly ref struct ValueQueueInternalsRef<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly ReadOnlySpan<T> Array;
 
-    public ValueQueueInternalsRef(in ValueQueue<T> source)
+    internal ValueQueueInternalsRef(in ValueQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;

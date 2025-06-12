@@ -24,7 +24,7 @@ public readonly struct ValueDictionaryInternalsRefUnsafe<TKey, TValue>
     [NonSerialized] public readonly Entry<TKey, TValue>[] Entries;
     [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
 
-    public ValueDictionaryInternalsRefUnsafe(in ValueDictionary<TKey, TValue> source)
+    internal ValueDictionaryInternalsRefUnsafe(in ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;

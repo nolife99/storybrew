@@ -69,7 +69,7 @@ public class Line3d : Node3d, HasOsbSprites
         if (delta.LengthSquared() == 0) return;
 
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
-        if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
+        if (UseDistanceFade) opacity *= float.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
         var endStateRot = Unsafe.IsNullRef(ref gen.EndState) ? 0 : gen.EndState.Rotation;
         gen.Add(new()
@@ -223,8 +223,8 @@ public class Line3dEx : Node3d, HasOsbSprites
 
         var endScale = scaleFactor * (cameraState.FocusDistance / endVector.W) * thickness * EndThickness.ValueAt(time);
 
-        var totalHeight = Math.Max(startScale, endScale);
-        var bodyHeight = Math.Min(startScale, endScale);
+        var totalHeight = float.Max(startScale, endScale);
+        var bodyHeight = float.Min(startScale, endScale);
         var edgeHeight = (totalHeight - bodyHeight) / 2;
         var flip = startScale < endScale;
 
@@ -232,7 +232,7 @@ public class Line3dEx : Node3d, HasOsbSprites
         if (ignoreEdges) bodyHeight += edgeHeight * 2;
 
         var opacity = startVector.W < 0 && endVector.W < 0 ? 0 : object3dState.Opacity;
-        if (UseDistanceFade) opacity *= Math.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
+        if (UseDistanceFade) opacity *= float.Max(cameraState.OpacityAt(startVector.W), cameraState.OpacityAt(endVector.W));
 
         var length = delta.Length();
 

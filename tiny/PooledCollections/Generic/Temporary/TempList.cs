@@ -26,7 +26,7 @@ public ref struct TempList<T>
 
     internal static readonly bool s_clearItems = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
-    internal TempList(int capacity, ArrayPool<T> pool)
+    TempList(int capacity, ArrayPool<T> pool)
     {
         if (capacity < 0)
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
@@ -870,7 +870,7 @@ public ref struct TempList<T>
         InsertRange(index, array.AsSpan());
     }
 
-    public void InsertRange(int index, ReadOnlySpan<T> span)
+    public void InsertRange(int index, scoped ReadOnlySpan<T> span)
     {
         if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
 
@@ -898,17 +898,17 @@ public ref struct TempList<T>
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, _size);
+    public void CopyTo(scoped Span<T> dest) => CopyTo(0, dest, 0, _size);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
+    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(scoped Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
+    public void CopyTo(int index, scoped Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -981,7 +981,7 @@ public ref struct TempList<T>
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_items.IsNullOrEmpty() == false)
+        if (!_items.IsNullOrEmpty())
             try
             {
                 _pool.Return(_items, s_clearItems);

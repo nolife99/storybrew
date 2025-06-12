@@ -23,7 +23,7 @@ public readonly struct TempHashSetInternals<T> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<T>> EntryPool;
 
-    public TempHashSetInternals(in TempHashSet<T> source)
+    internal TempHashSetInternals(scoped ref readonly TempHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -43,14 +43,14 @@ public readonly struct TempHashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);
@@ -63,12 +63,9 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempHashSetInternals<T> TakeOwnership<T>(ref TempHashSet<T> source)
+    public static TempHashSetInternals<T> TakeOwnership<T>(this scoped ref TempHashSet<T> source)
     {
-        var internals = new TempHashSetInternals<T>(source);
-
-        source._buckets = null;
-        source._entries = null;
+        var internals = new TempHashSetInternals<T>(in source);
         source.Dispose();
 
         return internals;

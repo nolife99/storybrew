@@ -252,7 +252,7 @@ public class PooledDictionary<TKey, TValue>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -264,7 +264,7 @@ public class PooledDictionary<TKey, TValue>
 
     void ReturnEntries(Entry<TKey, TValue>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -477,7 +477,7 @@ public class PooledDictionary<TKey, TValue>
         info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
         info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
 
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var array = new KeyValuePair<TKey, TValue>[Count];
             CopyTo(array, 0);
@@ -490,7 +490,7 @@ public class PooledDictionary<TKey, TValue>
         if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
 
         ref var entry = ref Unsafe.NullRef<Entry<TKey, TValue>>();
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             SystemDebug.Assert(_entries != null, "expected entries to be != null");
             var comparer = _comparer;
@@ -1049,7 +1049,7 @@ public class PooledDictionary<TKey, TValue>
 
         if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
 
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             SystemDebug.Assert(_entries != null, "entries should be non-null");
             uint collisionCount = 0;
@@ -1105,7 +1105,7 @@ public class PooledDictionary<TKey, TValue>
 
         if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
 
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             SystemDebug.Assert(_entries != null, "entries should be non-null");
             uint collisionCount = 0;
@@ -1268,7 +1268,7 @@ public class PooledDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);

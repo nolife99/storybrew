@@ -22,7 +22,7 @@ public readonly struct TempArrayDictionaryInternals<TKey, TValue> : IDisposable
     [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public TempArrayDictionaryInternals(in TempArrayDictionary<TKey, TValue> source)
+    internal TempArrayDictionaryInternals(scoped ref readonly TempArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -42,21 +42,21 @@ public readonly struct TempArrayDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);
             }
             catch { }
 
-        if (Values.IsNullOrEmpty() == false)
+        if (!Values.IsNullOrEmpty())
             try
             {
                 ValuePool?.Return(Values, ClearValues);
@@ -70,13 +70,9 @@ partial class TempCollectionInternals
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
     public static TempArrayDictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(
-        ref TempArrayDictionary<TKey, TValue> source)
+        this scoped ref TempArrayDictionary<TKey, TValue> source)
     {
-        var internals = new TempArrayDictionaryInternals<TKey, TValue>(source);
-
-        source._buckets = null;
-        source._entries = null;
-        source._values = null;
+        var internals = new TempArrayDictionaryInternals<TKey, TValue>(ref source);
         source.Dispose();
 
         return internals;

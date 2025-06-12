@@ -3,14 +3,15 @@
 using CommandValues;
 
 #pragma warning disable CS1591
-public record ParameterCommand : Command<CommandParameter>
+public sealed record ParameterCommand : Command<CommandParameter>
 {
-    internal ParameterCommand(float startTime, float endTime, CommandParameter value) : base("P",
-        0,
+    public ParameterCommand(float startTime, float endTime, CommandParameter value) : base(0,
         startTime,
         endTime,
         value,
         value) { }
+
+    private protected override string Identifier => "P";
 
     protected override bool MaintainValue => StartTime == EndTime;
     protected override bool ExportEndValue => false;

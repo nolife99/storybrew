@@ -3,12 +3,16 @@
 using CommandValues;
 
 #pragma warning disable CS1591
-public record MoveCommand(OsbEasing easing,
-    float startTime,
-    float endTime,
-    CommandPosition startValue,
-    CommandPosition endValue) : Command<CommandPosition>("M", easing, startTime, endTime, startValue, endValue)
+public sealed record MoveCommand : Command<CommandPosition>
 {
+    public MoveCommand(OsbEasing easing,
+        float startTime,
+        float endTime,
+        CommandPosition startValue,
+        CommandPosition endValue) : base(easing, startTime, endTime, startValue, endValue) { }
+
+    private protected override string Identifier => "M";
+
     protected override CommandPosition GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToPosition(StartValue);
 
@@ -18,12 +22,13 @@ public record MoveCommand(OsbEasing easing,
     public override CommandPosition ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }
 
-public record MoveXCommand(OsbEasing easing,
-    float startTime,
-    float endTime,
-    CommandDecimal startValue,
-    CommandDecimal endValue) : Command<CommandDecimal>("MX", easing, startTime, endTime, startValue, endValue)
+public sealed record MoveXCommand : Command<CommandDecimal>
 {
+    public MoveXCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+        : base(easing, startTime, endTime, startValue, endValue) { }
+
+    private protected override string Identifier => "MX";
+
     protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToPositionX(StartValue);
 
@@ -33,12 +38,13 @@ public record MoveXCommand(OsbEasing easing,
     public override CommandDecimal ValueAtProgress(float progress) => StartValue + (EndValue - StartValue) * progress;
 }
 
-public record MoveYCommand(OsbEasing easing,
-    float startTime,
-    float endTime,
-    CommandDecimal startValue,
-    CommandDecimal endValue) : Command<CommandDecimal>("MY", easing, startTime, endTime, startValue, endValue)
+public sealed record MoveYCommand : Command<CommandDecimal>
 {
+    public MoveYCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+        : base(easing, startTime, endTime, startValue, endValue) { }
+
+    private protected override string Identifier => "MY";
+
     protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToPositionY(StartValue);
 

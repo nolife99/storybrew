@@ -327,17 +327,10 @@ public record struct State
 {
     internal static readonly Comparer<State> Comparer = Comparer<State>.Create((a, b) => float.Sign(a.Time - b.Time));
 
-    ///<summary> Represents the additive toggle condition of this state. </summary>
-    public bool Additive;
-
     ///<summary> Represents the color, in RGB values, of this state. </summary>
     public CommandColor Color;
 
-    ///<summary> Represents the horizontal flip condition of this state. </summary>
-    public bool FlipH;
-
-    ///<summary> Represents the vertical flip condition of this state. </summary>
-    public bool FlipV;
+    byte flags;
 
     ///<summary> Represents the opacity, from 0 to 1, of this state. </summary>
     public float Opacity;
@@ -363,6 +356,15 @@ public record struct State
         Scale = CommandScale.One;
         Color = CommandColor.White;
     }
+
+    ///<summary> Represents the additive toggle condition of this state. </summary>
+    public bool Additive { get => (flags & 1) != 0; set => flags = (byte)(value ? flags | 1 : flags & ~1); }
+
+    ///<summary> Represents the horizontal flip condition of this state. </summary>
+    public bool FlipH { get => (flags & 2) != 0; set => flags = (byte)(value ? flags | 2 : flags & ~2); }
+
+    ///<summary> Represents the vertical flip condition of this state. </summary>
+    public bool FlipV { get => (flags & 4) != 0; set => flags = (byte)(value ? flags | 4 : flags & ~4); }
 
     /// <summary>
     ///     Determines the visibility of the sprite in the current <see cref="State"/> based on its image dimensions and

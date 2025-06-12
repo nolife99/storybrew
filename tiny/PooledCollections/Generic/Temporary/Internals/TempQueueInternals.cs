@@ -13,7 +13,7 @@ public readonly struct TempQueueInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Array;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    internal TempQueueInternals(in TempQueue<T> source)
+    internal TempQueueInternals(scoped ref readonly TempQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;
@@ -26,12 +26,13 @@ public readonly struct TempQueueInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array.IsNullOrEmpty() == false)
-            try
-            {
-                Pool?.Return(Array, ClearArray);
-            }
-            catch { }
+        if (Array.IsNullOrEmpty()) return;
+
+        try
+        {
+            Pool?.Return(Array, ClearArray);
+        }
+        catch { }
     }
 }
 
@@ -39,11 +40,9 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempQueueInternals<T> TakeOwnership<T>(ref TempQueue<T> source)
+    public static TempQueueInternals<T> TakeOwnership<T>(this scoped ref TempQueue<T> source)
     {
-        var internals = new TempQueueInternals<T>(source);
-
-        source._array = null;
+        var internals = new TempQueueInternals<T>(ref source);
         source.Dispose();
 
         return internals;

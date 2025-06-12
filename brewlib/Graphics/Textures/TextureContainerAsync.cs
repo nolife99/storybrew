@@ -1,5 +1,6 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
+using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
@@ -16,7 +17,7 @@ using Util;
 public sealed class TextureContainerAsync(ResourceContainer resourceContainer = null,
     TextureOptions textureOptions = null) : TextureContainer
 {
-    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload> textures = new();
+    readonly PooledDictionary<int, TextureUploadQueue.QueuedUpload> textures = new();
 
     public float UncompressedMemoryUseMb
     {
@@ -34,13 +35,17 @@ public sealed class TextureContainerAsync(ResourceContainer resourceContainer = 
         }
     }
 
-    public Texture2dRegion Get(string filename)
+    public Texture2dRegion Get(ReadOnlySpan<char> filename)
     {
-        var found = textures.TryGetValue(filename, out var texture);
+        var hashCode = string.GetHashCode(filename);
+
+        var found = textures.TryGetValue(hashCode, out var texture);
         switch (found)
         {
             case true when texture.IsLoaded: return texture.Result;
-            case false: textures[filename] = TextureUploadQueue.Queue(filename, resourceContainer, textureOptions); break;
+
+            case false:
+                textures[hashCode] = TextureUploadQueue.Queue(filename.ToString(), resourceContainer, textureOptions); break;
         }
 
         return DrawState.TransparentPixel;

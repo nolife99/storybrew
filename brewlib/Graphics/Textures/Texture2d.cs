@@ -258,12 +258,11 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (disposing)
             {
-                GL.DeleteTexture(_textureId);
-
                 _textureId = 0;
                 bindlessId = -1;
             }
-            else Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId)).Wait();
+
+            Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId));
         }
 
         base.Dispose(disposing);

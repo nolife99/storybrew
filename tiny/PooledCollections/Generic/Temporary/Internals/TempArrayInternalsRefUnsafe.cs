@@ -9,7 +9,7 @@ public readonly struct TempArrayInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly T[] Array;
 
-    public TempArrayInternalsRefUnsafe(in TempArray<T> source)
+    internal TempArrayInternalsRefUnsafe(in TempArray<T> source)
     {
         Length = source._length;
         ClearArray = TempArray<T>.s_clearArray;

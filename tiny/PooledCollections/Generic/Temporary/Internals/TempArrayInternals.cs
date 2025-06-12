@@ -10,7 +10,7 @@ public readonly struct TempArrayInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Array;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    public TempArrayInternals(in TempArray<T> source)
+    internal TempArrayInternals(scoped ref readonly TempArray<T> source)
     {
         Length = source._length;
         ClearArray = TempArray<T>.s_clearArray;
@@ -20,7 +20,7 @@ public readonly struct TempArrayInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array.IsNullOrEmpty() == false)
+        if (!Array.IsNullOrEmpty())
             try
             {
                 Pool?.Return(Array, ClearArray);
@@ -33,11 +33,9 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempArrayInternals<T> TakeOwnership<T>(ref TempArray<T> source)
+    public static TempArrayInternals<T> TakeOwnership<T>(scoped ref TempArray<T> source)
     {
-        var internals = new TempArrayInternals<T>(source);
-
-        source._array = null;
+        var internals = new TempArrayInternals<T>(in source);
         source.Dispose();
 
         return internals;

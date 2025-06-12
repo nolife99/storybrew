@@ -18,15 +18,15 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
     public override Vector2 MinSize => bar.MinSize;
 
     public override Vector2 PreferredSize => new(
-        Math.Max(200, bar.PreferredSize.X),
-        Math.Max(preferredHeight, bar.PreferredSize.Y));
+        float.Max(200, bar.PreferredSize.X),
+        float.Max(preferredHeight, bar.PreferredSize.Y));
 
     public float Value
     {
         get => value;
         set
         {
-            value = Math.Clamp(value, MinValue, MaxValue);
+            value = float.Clamp(value, MinValue, MaxValue);
 
             if (this.value == value) return;
 
@@ -41,7 +41,7 @@ public class ProgressBar(WidgetManager manager) : Widget(manager), Field
 
     public event EventHandler OnValueChanged;
 
-    public void SetValueSilent(float val) => value = Math.Clamp(val, MinValue, MaxValue);
+    public void SetValueSilent(float val) => value = float.Clamp(val, MinValue, MaxValue);
 
     protected override void Dispose(bool disposing)
     {

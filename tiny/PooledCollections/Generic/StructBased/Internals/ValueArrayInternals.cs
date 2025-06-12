@@ -10,7 +10,7 @@ public readonly struct ValueArrayInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Array;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    public ValueArrayInternals(in ValueArray<T> source)
+    internal ValueArrayInternals(in ValueArray<T> source)
     {
         Length = source._length;
         ClearArray = ValueArray<T>.s_clearArray;
@@ -20,7 +20,7 @@ public readonly struct ValueArrayInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array.IsNullOrEmpty() == false)
+        if (!Array.IsNullOrEmpty())
             try
             {
                 Pool?.Return(Array, ClearArray);

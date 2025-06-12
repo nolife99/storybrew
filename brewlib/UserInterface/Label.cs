@@ -47,7 +47,7 @@ public class Label(WidgetManager manager) : Widget(manager)
         {
             var position = AbsolutePosition;
             var size = Size;
-            Vector2 textSize = new(Math.Min(textDrawable.Size.X, size.X), Math.Min(textDrawable.Size.Y, size.Y));
+            Vector2 textSize = new(float.Min(textDrawable.Size.X, size.X), float.Min(textDrawable.Size.Y, size.Y));
 
             var alignment = textDrawable.Alignment;
             if ((alignment & BoxAlignment.Right) > 0) position.X += size.X - textSize.X;
@@ -117,10 +117,11 @@ public class Label(WidgetManager manager) : Widget(manager)
     public RectangleF GetCharacterBounds(int index) => RectangleF.Transform(textDrawable.GetCharacterBounds(index),
         Matrix3x2.CreateTranslation(AbsolutePosition));
 
-    public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action) => textDrawable.ForTextBounds(
-        startIndex,
-        endIndex,
-        bounds => action(RectangleF.Transform(bounds, Matrix3x2.CreateTranslation(AbsolutePosition))));
+    public void ForTextBounds<TState>(int startIndex, int endIndex, Action<RectangleF, TState> action, TState state)
+        => textDrawable.ForTextBounds(startIndex,
+            endIndex,
+            (bounds, a) => a.action(RectangleF.Transform(bounds, Matrix3x2.CreateTranslation(a.AbsolutePosition)), a.state),
+            (action, AbsolutePosition, state));
 
     public int GetCharacterIndexAt(Vector2 position) => textDrawable.GetCharacterIndexAt(position - AbsolutePosition);
     public int GetCharacterIndexAbove(int index) => textDrawable.GetCharacterIndexAbove(index);

@@ -1,6 +1,5 @@
 ﻿namespace StorybrewEditor.ScreenLayers;
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -98,7 +97,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
     public override void Resize(int width, int height)
     {
         base.Resize(width, height);
-        layout.Pack(Math.Min(400, width), Math.Min(600, height));
+        layout.Pack(int.Min(400, width), int.Min(600, height));
     }
 
     void refreshAssemblies()

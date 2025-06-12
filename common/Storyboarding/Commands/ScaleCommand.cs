@@ -1,15 +1,15 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
-using System;
 using CommandValues;
 
 #pragma warning disable CS1591
-public record ScaleCommand(OsbEasing easing,
-    float startTime,
-    float endTime,
-    CommandDecimal startValue,
-    CommandDecimal endValue) : Command<CommandDecimal>("S", easing, startTime, endTime, startValue, endValue)
+public sealed record ScaleCommand : Command<CommandDecimal>
 {
+    public ScaleCommand(OsbEasing easing, float startTime, float endTime, CommandDecimal startValue, CommandDecimal endValue)
+        : base(easing, startTime, endTime, startValue, endValue) { }
+
+    private protected override string Identifier => "S";
+
     protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToScale(StartValue);
 
@@ -17,12 +17,16 @@ public record ScaleCommand(OsbEasing easing,
         => transform.ApplyToScale(EndValue);
 
     public override CommandDecimal ValueAtProgress(float progress)
-        => Math.Max(0, StartValue + (EndValue - StartValue) * progress);
+        => float.Max(0, StartValue + (EndValue - StartValue) * progress);
 }
 
-public record VScaleCommand(OsbEasing easing, float startTime, float endTime, CommandScale startValue, CommandScale endValue)
-    : Command<CommandScale>("V", easing, startTime, endTime, startValue, endValue)
+public sealed record VScaleCommand : Command<CommandScale>
 {
+    internal VScaleCommand(OsbEasing easing, float startTime, float endTime, CommandScale startValue, CommandScale endValue)
+        : base(easing, startTime, endTime, startValue, endValue) { }
+
+    private protected override string Identifier => "V";
+
     protected override CommandScale GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToScale(StartValue);
 

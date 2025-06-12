@@ -20,7 +20,7 @@ public readonly struct TempArrayHashSetInternalsRefUnsafe<T>
     [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public TempArrayHashSetInternalsRefUnsafe(in TempArrayHashSet<T> source)
+    internal TempArrayHashSetInternalsRefUnsafe(scoped ref readonly TempArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -40,20 +40,23 @@ partial class TempCollectionInternalsUnsafe
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArrayHashSetInternalsRefUnsafe<T> GetRef<T>(in TempArrayHashSet<T> source) => new(source);
+    public static TempArrayHashSetInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempArrayHashSet<T> source)
+        => new(in source);
 
     /// <summary>Returns the internal Keys and Values arrays as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<ArrayEntry<T>> AsSpan<T>(in this TempArrayHashSet<T> source)
+    public static Span<ArrayEntry<T>> AsSpan<T>(this scoped ref readonly TempArrayHashSet<T> source)
         => source._entries.AsSpan(0, source.Count);
 
     /// <summary>Returns the internal Keys and Values arrays as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<ArrayEntry<T>> AsMemory<T>(in this TempArrayHashSet<T> source)
+    public static Memory<ArrayEntry<T>> AsMemory<T>(this scoped ref readonly TempArrayHashSet<T> source)
         => source._entries.AsMemory(0, source.Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(in this TempArrayHashSet<T> source, out ArrayEntry<T>[] entries, out int count)
+    public static void GetUnsafe<T>(this scoped ref readonly TempArrayHashSet<T> source,
+        out ArrayEntry<T>[] entries,
+        out int count)
     {
         entries = source._entries;
         count = source.Count;

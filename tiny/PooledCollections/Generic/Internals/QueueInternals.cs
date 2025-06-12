@@ -26,7 +26,7 @@ public readonly struct QueueInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array.IsNullOrEmpty() == false)
+        if (!Array.IsNullOrEmpty())
             try
             {
                 Pool?.Return(Array, ClearArray);

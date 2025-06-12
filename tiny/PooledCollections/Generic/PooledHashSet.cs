@@ -102,7 +102,7 @@ public class PooledHashSet<T>
 
     internal ref T FindValue(T equalValue)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var index = FindItemIndex(equalValue);
             if (index >= 0) return ref _entries![index].Value;
@@ -538,7 +538,7 @@ public class PooledHashSet<T>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -550,7 +550,7 @@ public class PooledHashSet<T>
 
     void ReturnEntries(Entry<T>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -729,7 +729,7 @@ public class PooledHashSet<T>
     int FindItemIndex(T item)
     {
         var buckets = _buckets;
-        if (buckets.IsNullOrEmpty() == false)
+        if (!buckets.IsNullOrEmpty())
         {
             var entries = _entries;
             SystemDebug.Assert(entries != null, "Expected _entries to be initialized");
@@ -816,7 +816,7 @@ public class PooledHashSet<T>
 
     public bool Remove(T item)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var entries = _entries;
             SystemDebug.Assert(entries != null, "entries should be non-null");
@@ -901,7 +901,7 @@ public class PooledHashSet<T>
         info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
         info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
 
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var array = new T[Count];
             CopyTo(array);
@@ -971,7 +971,7 @@ public class PooledHashSet<T>
     /// </remarks>
     public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var index = FindItemIndex(equalValue);
             if (index >= 0)
@@ -1938,7 +1938,7 @@ public class PooledHashSet<T>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1952,7 +1952,7 @@ public class PooledHashSet<T>
 
     void RenewEntries(int newSize)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

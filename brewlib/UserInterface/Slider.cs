@@ -73,7 +73,7 @@ public class Slider : ProgressBar
     {
         var bounds = Bounds;
         var value = MinValue + (MaxValue - MinValue) * (Manager.Camera.FromScreen(position).X - bounds.Left) / bounds.Width;
-        if (Step != 0) value = Math.Min((int)(value / Step) * Step, MaxValue);
+        if (Step != 0) value = float.Min((int)(value / Step) * Step, MaxValue);
         return value;
     }
 

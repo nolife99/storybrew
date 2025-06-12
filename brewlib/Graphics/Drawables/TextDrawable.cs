@@ -183,16 +183,18 @@ public sealed class TextDrawable : Drawable
         return new(position.X, position.Y, glyph.Width * inverseScaling, glyph.Height * inverseScaling);
     }
 
-    public void ForTextBounds(int startIndex, int endIndex, Action<RectangleF> action)
+    public void ForTextBounds<TState>(int startIndex, int endIndex, Action<RectangleF, TState> action, TState state)
     {
         validate();
         var inverseScaling = 1 / scaling;
         textLayout.ForTextBounds(startIndex,
             endIndex,
-            bounds => action(RectangleF.FromLTRB(bounds.Left * inverseScaling,
-                bounds.Top * inverseScaling,
-                bounds.Right * inverseScaling,
-                bounds.Bottom * inverseScaling)));
+            (bounds, s) => s.action(RectangleF.FromLTRB(bounds.Left * s.inverseScaling,
+                    bounds.Top * s.inverseScaling,
+                    bounds.Right * s.inverseScaling,
+                    bounds.Bottom * s.inverseScaling),
+                s.state),
+            (action, state, inverseScaling));
     }
 
     public int GetCharacterIndexAt(Vector2 position)

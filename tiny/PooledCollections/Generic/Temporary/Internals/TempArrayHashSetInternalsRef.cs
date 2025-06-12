@@ -18,7 +18,7 @@ public readonly ref struct TempArrayHashSetInternalsRef<T>
     [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public TempArrayHashSetInternalsRef(in TempArrayHashSet<T> source)
+    internal TempArrayHashSetInternalsRef(scoped ref readonly TempArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -38,15 +38,16 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArrayHashSetInternalsRef<T> GetRef<T>(in TempArrayHashSet<T> source) => new(source);
+    public static TempArrayHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly TempArrayHashSet<T> source)
+        => new(in source);
 
     /// <summary>Returns the internal Keys and Values arrays as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<ArrayEntry<T>> AsReadOnlySpan<T>(in this TempArrayHashSet<T> source)
+    public static ReadOnlySpan<ArrayEntry<T>> AsReadOnlySpan<T>(this scoped ref readonly TempArrayHashSet<T> source)
         => source._entries.AsSpan(0, source.Count);
 
     /// <summary>Returns the internal Keys and Values arrays as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<ArrayEntry<T>> AsReadOnlyMemory<T>(in this TempArrayHashSet<T> source)
+    public static ReadOnlyMemory<ArrayEntry<T>> AsReadOnlyMemory<T>(this scoped ref readonly TempArrayHashSet<T> source)
         => source._entries.AsMemory(0, source.Count);
 }

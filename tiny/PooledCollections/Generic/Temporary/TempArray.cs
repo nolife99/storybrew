@@ -123,7 +123,7 @@ public ref partial struct TempArray<T>
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_array.IsNullOrEmpty() == false)
+        if (!_array.IsNullOrEmpty())
             try
             {
                 _pool?.Return(_array, s_clearArray);

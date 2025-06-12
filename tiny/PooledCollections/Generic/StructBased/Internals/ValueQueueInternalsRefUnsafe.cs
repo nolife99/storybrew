@@ -12,7 +12,7 @@ public readonly struct ValueQueueInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly T[] Array;
 
-    public ValueQueueInternalsRefUnsafe(in ValueQueue<T> source)
+    internal ValueQueueInternalsRefUnsafe(in ValueQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;

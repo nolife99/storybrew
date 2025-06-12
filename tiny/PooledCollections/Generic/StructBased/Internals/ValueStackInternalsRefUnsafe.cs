@@ -10,7 +10,7 @@ public readonly struct ValueStackInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly T[] Array;
 
-    public ValueStackInternalsRefUnsafe(in ValueStack<T> source)
+    internal ValueStackInternalsRefUnsafe(in ValueStack<T> source)
     {
         Size = source._size;
         Version = source._version;

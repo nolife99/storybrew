@@ -20,7 +20,7 @@ public readonly struct ValueHashSetInternalsRefUnsafe<T>
     [NonSerialized] public readonly Entry<T>[] Entries;
     [NonSerialized] public readonly IEqualityComparer<T> Comparer;
 
-    public ValueHashSetInternalsRefUnsafe(in ValueHashSet<T> source)
+    internal ValueHashSetInternalsRefUnsafe(in ValueHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;

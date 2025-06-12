@@ -303,7 +303,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     void ReturnArray(T[] replaceWith = null)
     {
-        if (_array.IsNullOrEmpty() == false)
+        if (!_array.IsNullOrEmpty())
             try
             {
                 _pool.Return(_array, s_clearArray);

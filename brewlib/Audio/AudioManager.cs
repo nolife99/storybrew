@@ -16,8 +16,9 @@ public sealed class AudioManager : IDisposable
         Trace.WriteLine($"Initializing audio - Bass {Bass.Version}");
         if (Bass.Init())
         {
-            Bass.PlaybackBufferLength = 100;
-            Bass.UpdatePeriod = 10;
+            Bass.PlaybackBufferLength = 6;
+            Bass.UpdatePeriod = 5;
+
             return;
         }
 
@@ -31,6 +32,9 @@ public sealed class AudioManager : IDisposable
 
             if (Bass.Init(i))
             {
+                Bass.PlaybackBufferLength = 6;
+                Bass.UpdatePeriod = 5;
+
                 initialized = true;
                 break;
             }
@@ -58,6 +62,19 @@ public sealed class AudioManager : IDisposable
         for (var i = 0; i < audioChannels.Count; ++i)
         {
             var channel = audioChannels[i];
+            if (Bass.GetDeviceInfo(Bass.ChannelGetDevice(channel.Channel), out var info) && !info.IsDefault)
+            {
+                var device = 0;
+                while (Bass.GetDeviceInfo(device, out info))
+                {
+                    if (info.Driver is not null && info.IsDefault) break;
+
+                    ++device;
+                }
+
+                Bass.ChannelSetDevice(channel.Channel, device);
+            }
+
             if (!channel.Temporary || !channel.Completed) continue;
 
             channel.Dispose();

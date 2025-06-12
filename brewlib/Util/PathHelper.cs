@@ -111,4 +111,7 @@ public static class PathHelper
 
         return true;
     }
+
+    public static bool IsValidFilename(char character) => !invalidChars.Contains(character) &&
+        (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character));
 }

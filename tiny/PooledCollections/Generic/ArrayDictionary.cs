@@ -122,7 +122,7 @@ public class ArrayDictionary<TKey, TValue>
         var ret = TryGetIndex(key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -134,7 +134,7 @@ public class ArrayDictionary<TKey, TValue>
         var ret = TryGetIndex(key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -146,7 +146,7 @@ public class ArrayDictionary<TKey, TValue>
         var ret = TryGetIndex(in key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -158,7 +158,7 @@ public class ArrayDictionary<TKey, TValue>
         var ret = TryGetIndex(in key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -1164,7 +1164,7 @@ public class ArrayDictionary<TKey, TValue>
 
                 _values = newValues;
 
-                if (values.IsNullOrEmpty() == false) _valuePool.Return(values, s_clearValues);
+                if (!values.IsNullOrEmpty()) _valuePool.Return(values, s_clearValues);
             }
             else _valuePool.Return(newValues);
         }
@@ -1181,7 +1181,7 @@ public class ArrayDictionary<TKey, TValue>
 
                 _entries = newEntries;
 
-                if (entries.IsNullOrEmpty() == false) _entryPool.Return(entries, s_clearEntries);
+                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -1192,7 +1192,7 @@ public class ArrayDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1206,7 +1206,7 @@ public class ArrayDictionary<TKey, TValue>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1218,7 +1218,7 @@ public class ArrayDictionary<TKey, TValue>
 
     void ReturnEntries(ArrayEntry<TKey>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -1230,7 +1230,7 @@ public class ArrayDictionary<TKey, TValue>
 
     void ReturnValues(TValue[] replaceWith)
     {
-        if (_values.IsNullOrEmpty() == false)
+        if (!_values.IsNullOrEmpty())
             try
             {
                 _valuePool.Return(_values, s_clearValues);

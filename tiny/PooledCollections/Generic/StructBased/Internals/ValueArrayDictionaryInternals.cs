@@ -4,6 +4,7 @@ namespace Tiny.PooledCollections.Generic.StructBased.Internals;
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct ValueArrayDictionaryInternals<TKey, TValue> : IDisposable
 {
@@ -22,7 +23,7 @@ public readonly struct ValueArrayDictionaryInternals<TKey, TValue> : IDisposable
     [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public ValueArrayDictionaryInternals(in ValueArrayDictionary<TKey, TValue> source)
+    internal ValueArrayDictionaryInternals(scoped ref readonly ValueArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -42,26 +43,11 @@ public readonly struct ValueArrayDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (!Buckets.IsNullOrEmpty()) BucketPool.Return(Buckets);
 
-        if (Entries.IsNullOrEmpty() == false)
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (!Entries.IsNullOrEmpty()) EntryPool.Return(Entries, ClearEntries);
 
-        if (Values.IsNullOrEmpty() == false)
-            try
-            {
-                ValuePool?.Return(Values, ClearValues);
-            }
-            catch { }
+        if (!Values.IsNullOrEmpty()) ValuePool.Return(Values, ClearValues);
     }
 }
 
@@ -70,14 +56,12 @@ partial class ValueCollectionInternals
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
     public static ValueArrayDictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(
-        ref ValueArrayDictionary<TKey, TValue> source)
+        this scoped ref ValueArrayDictionary<TKey, TValue> source)
     {
-        var internals = new ValueArrayDictionaryInternals<TKey, TValue>(source);
-
-        source._buckets = null;
-        source._entries = null;
-        source._values = null;
+        ValueArrayDictionaryInternals<TKey, TValue> internals = new(ref source);
         source.Dispose();
+
+        source = Unsafe.NullRef<ValueArrayDictionary<TKey, TValue>>();
 
         return internals;
     }

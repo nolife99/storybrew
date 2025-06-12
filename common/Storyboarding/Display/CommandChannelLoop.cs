@@ -12,7 +12,7 @@ internal class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue 
 
     public override bool ResultAtTime(float time, out CommandResult<TValue> result)
     {
-        if (Commands.Count == 0)
+        if (Commands.Length == 0)
         {
             result = default;
             return false;

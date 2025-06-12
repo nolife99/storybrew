@@ -196,7 +196,7 @@ public abstract class StoryboardObjectGenerator : Script
     [Group("Common"), Description("Changes the result of Random(...) calls."), Configurable]
     public int RandomSeed;
 
-    FastRandom rnd;
+    Random rnd;
 
     /// <summary> Gets a random integer between <paramref name="minValue"/> and <paramref name="maxValue"/>. </summary>
     public int Random(int minValue, int maxValue) => rnd.Next(minValue, maxValue);
@@ -261,7 +261,7 @@ public abstract class StoryboardObjectGenerator : Script
         for (var i = 0; i < resultSpan.Length; ++i)
         {
             var progress = easing.Ease((float)i / magnitudes);
-            var index = Math.Min((int)Math.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
+            var index = int.Min((int)float.Max(baseIndex + 1, progress * usedFftLength), usedFftLength - 1);
 
             resultSpan[i] = fft[index];
             baseIndex = index;
@@ -296,7 +296,7 @@ public abstract class StoryboardObjectGenerator : Script
     /// <param name="directory"> The path to the font file. </param>
     /// <param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
     /// <param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
-    public FontGenerator LoadFont(string directory, FontDescription description, params FontEffect[] effects)
+    public FontGenerator LoadFont(string directory, FontDescription description, params ReadOnlySpan<FontEffect> effects)
         => LoadFont(directory, false, description, effects);
 
     /// <summary> Returns a <see cref="FontGenerator"/> to create and use textures. </summary>
@@ -305,7 +305,10 @@ public abstract class StoryboardObjectGenerator : Script
     /// <param name="description"> A <see cref="FontDescription"/> class with information of the texture. </param>
     /// <param name="effects"> A list of font effects, such as <see cref="FontGlow"/>. </param>
     /// <exception cref="InvalidOperationException"/>
-    public FontGenerator LoadFont(string directory, bool asAsset, FontDescription description, params FontEffect[] effects)
+    public FontGenerator LoadFont(string directory,
+        bool asAsset,
+        FontDescription description,
+        params ReadOnlySpan<FontEffect> effects)
     {
         var assetDirectory = asAsset ? context.ProjectAssetPath : context.MapsetPath;
         var fontDirectory = Path.GetFullPath(Path.Combine(assetDirectory, directory));

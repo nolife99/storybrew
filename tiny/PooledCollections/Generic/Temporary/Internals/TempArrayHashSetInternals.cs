@@ -19,7 +19,7 @@ public readonly struct TempArrayHashSetInternals<T> : IDisposable
     [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public TempArrayHashSetInternals(in TempArrayHashSet<T> source)
+    internal TempArrayHashSetInternals(in TempArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -36,14 +36,14 @@ public readonly struct TempArrayHashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Buckets.IsNullOrEmpty() == false)
+        if (!Buckets.IsNullOrEmpty())
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (Entries.IsNullOrEmpty() == false)
+        if (!Entries.IsNullOrEmpty())
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);
@@ -59,9 +59,6 @@ partial class TempCollectionInternals
     public static TempArrayHashSetInternals<T> TakeOwnership<T>(ref TempArrayHashSet<T> source)
     {
         var internals = new TempArrayHashSetInternals<T>(source);
-
-        source._buckets = null;
-        source._entries = null;
         source.Dispose();
 
         return internals;

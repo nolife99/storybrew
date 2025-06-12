@@ -9,7 +9,6 @@ using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.Graphics.Renderers;
 using BrewLib.Graphics.Textures;
-using BrewLib.Memory;
 using BrewLib.Util;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
@@ -77,20 +76,19 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         Span<char> span = stackalloc char[project.MapsetPath.Length + texturePath.Length + 1];
         Path.TryJoin(project.MapsetPath, texturePath, span, out _);
         PathHelper.WithStandardSeparatorsUnsafe(span);
-        var fullPath = StringPool.GetOrAdd(span);
 
         Texture2dRegion texture;
         try
         {
-            texture = project.TextureContainer.Get(fullPath);
+            texture = project.TextureContainer.Get(span);
             if (texture is null)
             {
                 Span<char> span2 = stackalloc char[project.ProjectAssetFolderPath.Length + texturePath.Length + 1];
                 Path.TryJoin(project.ProjectAssetFolderPath, texturePath, span2, out _);
                 PathHelper.WithStandardSeparatorsUnsafe(span2);
 
-                fullPath = StringPool.GetOrAdd(span2);
-                texture = project.TextureContainer.Get(fullPath);
+                span = span2;
+                texture = project.TextureContainer.Get(span);
             }
         }
         catch (IOException)
@@ -132,16 +130,17 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                     size.X * size.Y * (intersection.Width * intersection.Height / (aabb.Width * aabb.Height));
 
                 if (float.IsFinite(intersectionArea))
-                    frameStats.ScreenFill += Math.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
+                    frameStats.ScreenFill += float.Min(OsuHitObject.WidescreenStoryboardArea, intersectionArea) /
                         OsuHitObject.WidescreenStoryboardArea;
             }
 
-            if (frameStats.LastTexture != fullPath)
+            var hashCode = string.GetHashCode(span);
+            if (hashCode != frameStats.LastTexture)
             {
-                frameStats.LastTexture = fullPath;
+                frameStats.LastTexture = hashCode;
                 ++frameStats.Batches;
 
-                if (frameStats.LoadedPaths.Add(fullPath)) frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
+                if (frameStats.LoadedPaths.Add(hashCode)) frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
             }
             else if (frameStats.LastBlendingMode != additive)
             {

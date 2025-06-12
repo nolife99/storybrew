@@ -12,7 +12,7 @@ public readonly struct TempQueueInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly T[] Array;
 
-    internal TempQueueInternalsRefUnsafe(in TempQueue<T> source)
+    internal TempQueueInternalsRefUnsafe(scoped ref readonly TempQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;
@@ -27,11 +27,11 @@ partial class TempCollectionInternalsUnsafe
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempQueueInternalsRefUnsafe<T> GetRef<T>(in TempQueue<T> source) => new(source);
+    public static TempQueueInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly TempQueue<T> source) => new(in source);
 
     /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(in this TempQueue<T> source, out int head, out int tail)
+    public static Span<T> AsSpan<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
     {
         head = source._head;
         tail = source._tail;
@@ -40,7 +40,7 @@ partial class TempCollectionInternalsUnsafe
 
     /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(in this TempQueue<T> source, out int head, out int tail)
+    public static Memory<T> AsMemory<T>(this scoped ref readonly TempQueue<T> source, out int head, out int tail)
     {
         head = source._head;
         tail = source._tail;
@@ -48,7 +48,11 @@ partial class TempCollectionInternalsUnsafe
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(in this TempQueue<T> source, out T[] array, out int count, out int head, out int tail)
+    public static void GetUnsafe<T>(this scoped ref readonly TempQueue<T> source,
+        out T[] array,
+        out int count,
+        out int head,
+        out int tail)
     {
         array = source._array;
         count = source._size;

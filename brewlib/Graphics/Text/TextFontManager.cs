@@ -18,14 +18,15 @@ public sealed class TextFontManager(TextureContainer container) : IDisposable
         if (references.TryGetValue(identifier, out var refCount)) references[identifier] = refCount + 1;
         else references[identifier] = 1;
 
-        return new TextFontProxy(font,
-            f =>
+        return new TextFontProxy<(int, TextFontManager)>(font,
+            (f, state) =>
             {
-                if (--references[identifier] != 0) return;
+                if (--state.Item2.references[state.Item1] != 0) return;
 
-                fonts.Remove(identifier);
+                state.Item2.fonts.Remove(state.Item1);
                 f.Dispose();
-            });
+            },
+            (identifier, this));
     }
 
     #region IDisposable Support

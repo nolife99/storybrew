@@ -56,13 +56,13 @@ public class OsbAnimation : OsbSprite
         switch (LoopType)
         {
             case OsbLoopType.LoopForever: frame %= FrameCount; break;
-            case OsbLoopType.LoopOnce: frame = Math.Min(frame, FrameCount - 1); break;
+            case OsbLoopType.LoopOnce: frame = float.Min(frame, FrameCount - 1); break;
         }
 
-        return Math.Max(0, (int)frame);
+        return int.Max(0, (int)frame);
     }
 
-    internal override void WriteHeader(TextWriter writer,
+    private protected override void WriteHeader(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
         StoryboardTransform transform)
@@ -70,7 +70,7 @@ public class OsbAnimation : OsbSprite
         writer.Write("Animation,");
         WriteHeaderCommon(writer, exportSettings, layer, transform);
 
-        var builder = TempList<char>.Create();
+        using var builder = TempList<char>.Create();
 
         builder.Add(',');
         builder.AddRangeFormatted(FrameCount, provider: exportSettings.NumberFormat);
@@ -82,7 +82,5 @@ public class OsbAnimation : OsbSprite
         builder.AddRangeFormatted(LoopType, provider: exportSettings.NumberFormat);
 
         writer.WriteLine(builder.AsReadOnlySpan());
-
-        builder.Dispose();
     }
 }

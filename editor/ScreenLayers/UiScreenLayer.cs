@@ -1,6 +1,5 @@
 ﻿namespace StorybrewEditor.ScreenLayers;
 
-using System;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.ScreenLayers;
@@ -22,7 +21,7 @@ public class UiScreenLayer : ScreenLayer
 
     public override void Resize(int width, int height)
     {
-        var virtualHeight = height * Math.Max(1024f / width, 768f / height);
+        var virtualHeight = height * float.Max(1024f / width, 768f / height);
         uiCamera.VirtualHeight = (int)virtualHeight;
 
         var virtualWidth = width * virtualHeight / height;
@@ -39,9 +38,9 @@ public class UiScreenLayer : ScreenLayer
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
             var targetOpacity = isTop ? 1 : .3f;
-            opacity = Math.Abs(opacity - targetOpacity) <= .07f ?
+            opacity = float.Abs(opacity - targetOpacity) <= .07f ?
                 targetOpacity :
-                Math.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);
+                float.Clamp(opacity + (opacity < targetOpacity ? .07f : -.07f), 0, 1);
         }
 
         WidgetManager.Opacity = opacity * TransitionProgress;

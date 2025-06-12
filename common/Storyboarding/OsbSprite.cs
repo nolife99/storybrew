@@ -1,7 +1,6 @@
 namespace StorybrewCommon.Storyboarding;
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -12,8 +11,10 @@ using Display;
 using Mapset;
 using StorybrewCommon.Util;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using ZLinq;
 
 ///<summary> Base sprite in storyboards. </summary>
 public class OsbSprite : StoryboardObject
@@ -21,14 +22,12 @@ public class OsbSprite : StoryboardObject
     ///<summary> Default position of sprites, unless modified elsewhere. </summary>
     public static readonly CommandPosition DefaultPosition = new(320, 240);
 
-    readonly PooledHashSet<ICommand> commands = new();
+    readonly PooledList<ICommand> commands = [];
 
-    float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue;
+    float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue, displayEndTime = float.MaxValue,
+        displayStartTime = float.MinValue;
+
     CommandGroup currentCommandGroup;
-
-    float displayEndTime = float.MaxValue;
-
-    float displayStartTime = float.MinValue;
 
     CommandPosition initialPosition;
 
@@ -71,35 +70,17 @@ public class OsbSprite : StoryboardObject
         }
     }
 
-    ///<summary> Gets a list of commands on this sprite. </summary>
-    public IEnumerable<ICommand> Commands => commands;
-
-    /// <returns> The total amount of commands being run on this instance of the <see cref="OsbSprite"/>. </returns>
-    public int CommandCount => commands.Count;
-
     /// <returns> The total amount of commands, including loops, being run on this instance of the <see cref="OsbSprite"/>. </returns>
     public int CommandCost { get; private set; }
 
     /// <returns> True if the <see cref="OsbSprite"/> has incompatible commands, else returns false. </returns>
-    public bool HasIncompatibleCommands
-        => MoveTimeline.HasCommands && (MoveXTimeline.HasCommands || MoveYTimeline.HasCommands) ||
-            ScaleTimeline.HasCommands && ScaleVecTimeline.HasCommands;
+    public bool HasIncompatibleCommands { get; private set; }
 
     /// <returns> True if the <see cref="OsbSprite"/> has overlapping commands, else returns false. </returns>
-    public bool HasOverlappedCommands => MoveTimeline.HasOverlap ||
-        MoveXTimeline.HasOverlap ||
-        MoveYTimeline.HasOverlap ||
-        ScaleTimeline.HasOverlap ||
-        ScaleVecTimeline.HasOverlap ||
-        RotateTimeline.HasOverlap ||
-        FadeTimeline.HasOverlap ||
-        ColorTimeline.HasOverlap ||
-        AdditiveTimeline.HasOverlap ||
-        FlipHTimeline.HasOverlap ||
-        FlipVTimeline.HasOverlap;
+    public bool HasOverlappedCommands { get; private set; }
 
-    public bool HasMoveCommands => MoveXTimeline.HasCommands || MoveYTimeline.HasCommands || MoveTimeline.HasCommands;
-    public bool HasScalingCommands => ScaleTimeline.HasCommands || ScaleVecTimeline.HasCommands;
+    public bool HasMoveCommands { get; private set; }
+    public bool HasScalingCommands { get; private set; }
 
     ///<summary> Gets the start time of the first command on this sprite. </summary>
     public override float StartTime
@@ -145,10 +126,12 @@ public class OsbSprite : StoryboardObject
     void refreshStartEndTimes()
     {
         clearStartEndTimes();
-        foreach (var command in commands)
+        foreach (var command in commands.AsReadOnlySpan()
+            .AsValueEnumerable()
+            .Concat(displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
         {
-            commandsStartTime = Math.Min(commandsStartTime, command.StartTime);
-            commandsEndTime = Math.Max(commandsEndTime, command.EndTime);
+            commandsStartTime = float.Min(commandsStartTime, command.StartTime);
+            commandsEndTime = float.Max(commandsEndTime, command.EndTime);
         }
 
         if (!HasTrigger)
@@ -156,34 +139,34 @@ public class OsbSprite : StoryboardObject
             if (FadeTimeline.HasCommands)
             {
                 var start = FadeTimeline.StartResult;
-                if (start.StartValue == 0) displayStartTime = Math.Max(displayStartTime, start.StartTime);
+                if (start.StartValue == 0) displayStartTime = float.Max(displayStartTime, start.StartTime);
 
                 var end = FadeTimeline.EndResult;
-                if (end.EndValue == 0) displayEndTime = Math.Min(displayEndTime, end.EndTime);
+                if (end.EndValue == 0) displayEndTime = float.Min(displayEndTime, end.EndTime);
             }
 
             if (ScaleTimeline.HasCommands)
             {
                 var start = ScaleTimeline.StartResult;
-                if (start.StartValue == 0) displayStartTime = Math.Max(displayStartTime, start.StartTime);
+                if (start.StartValue == 0) displayStartTime = float.Max(displayStartTime, start.StartTime);
 
                 var end = ScaleTimeline.EndResult;
-                if (end.EndValue == 0) displayEndTime = Math.Min(displayEndTime, end.EndTime);
+                if (end.EndValue == 0) displayEndTime = float.Min(displayEndTime, end.EndTime);
             }
 
             if (ScaleVecTimeline.HasCommands)
             {
                 var start = ScaleVecTimeline.StartResult;
                 if (start.StartValue.X <= 0 || start.StartValue.Y <= 0)
-                    displayStartTime = Math.Max(displayStartTime, start.StartTime);
+                    displayStartTime = float.Max(displayStartTime, start.StartTime);
 
                 var end = ScaleVecTimeline.EndResult;
-                if (end.EndValue.X <= 0 || end.EndValue.Y <= 0) displayEndTime = Math.Min(displayEndTime, end.EndTime);
+                if (end.EndValue.X <= 0 || end.EndValue.Y <= 0) displayEndTime = float.Min(displayEndTime, end.EndTime);
             }
         }
 
-        displayStartTime = Math.Max(displayStartTime, commandsStartTime);
-        displayEndTime = Math.Min(displayEndTime, commandsEndTime);
+        displayStartTime = float.Max(displayStartTime, commandsStartTime);
+        displayEndTime = float.Min(displayEndTime, commandsEndTime);
     }
 
     void clearStartEndTimes()
@@ -780,9 +763,31 @@ public class OsbSprite : StoryboardObject
             currentCommandGroup = commandGroup;
             commands.Add(commandGroup);
         }
-        else if (currentCommandGroup?.Add(command) ?? commands.Add(command)) addDisplayCommand(command);
+        else
+        {
+            currentCommandGroup?.Add(command);
+            addDisplayCommand(command);
+        }
 
         clearStartEndTimes();
+
+        HasOverlappedCommands = MoveTimeline.HasOverlap ||
+            MoveXTimeline.HasOverlap ||
+            MoveYTimeline.HasOverlap ||
+            ScaleTimeline.HasOverlap ||
+            ScaleVecTimeline.HasOverlap ||
+            RotateTimeline.HasOverlap ||
+            FadeTimeline.HasOverlap ||
+            ColorTimeline.HasOverlap ||
+            AdditiveTimeline.HasOverlap ||
+            FlipHTimeline.HasOverlap ||
+            FlipVTimeline.HasOverlap;
+
+        HasIncompatibleCommands = MoveTimeline.HasCommands && (MoveXTimeline.HasCommands || MoveYTimeline.HasCommands) ||
+            ScaleTimeline.HasCommands && ScaleVecTimeline.HasCommands;
+
+        HasMoveCommands = MoveXTimeline.HasCommands || MoveYTimeline.HasCommands || MoveTimeline.HasCommands;
+        HasScalingCommands = ScaleTimeline.HasCommands || ScaleVecTimeline.HasCommands;
     }
 
     /// <summary> Adds a command to be run on the sprite. </summary>
@@ -817,7 +822,7 @@ public class OsbSprite : StoryboardObject
             case LoopCommand loop:
             {
                 StartLoopGroup(loop.StartTime, loop.LoopCount);
-                foreach (var cmd in loop.commands) addCommand(cmd);
+                foreach (var cmd in loop.Commands) addCommand(cmd);
                 EndGroup();
                 break;
             }
@@ -825,7 +830,7 @@ public class OsbSprite : StoryboardObject
             case TriggerCommand trigger:
             {
                 StartTriggerGroup(trigger.TriggerName, trigger.StartTime, trigger.EndTime, trigger.Group);
-                foreach (var cmd in trigger.commands) addCommand(cmd);
+                foreach (var cmd in trigger.Commands) addCommand(cmd);
                 EndGroup();
                 break;
             }
@@ -847,13 +852,16 @@ public class OsbSprite : StoryboardObject
         OsbLayer layer,
         StoryboardTransform transform)
     {
-        if (commands.Count == 0) return;
+        if (CommandCost == 0) return;
 
         WriteHeader(writer, exportSettings, layer, transform);
-        foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, 1);
+        foreach (var command in commands.AsReadOnlySpan()
+            .AsValueEnumerable()
+            .Concat(displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
+            command.WriteOsb(writer, exportSettings, transform, 1);
     }
 
-    internal virtual void WriteHeader(TextWriter writer,
+    private protected virtual void WriteHeader(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
         StoryboardTransform transform)
@@ -863,16 +871,16 @@ public class OsbSprite : StoryboardObject
         writer.WriteLine();
     }
 
-    internal void WriteHeaderCommon(TextWriter writer,
+    private protected void WriteHeaderCommon(TextWriter writer,
         ExportSettings exportSettings,
         OsbLayer layer,
         StoryboardTransform transform)
     {
-        var transformedInitialPosition = transform.IsIdentity ? (Vector2)InitialPosition :
-            MoveXTimeline.HasCommands || MoveYTimeline.HasCommands ? transform.ApplyToPositionXY(InitialPosition) :
-            transform.ApplyToPosition(InitialPosition);
+        var transformedInitialPosition = transform.IsIdentity ? InitialPosition :
+            MoveXTimeline.HasCommands || MoveYTimeline.HasCommands ?
+                (CommandPosition)transform.ApplyToPositionXY(InitialPosition) : transform.ApplyToPosition(InitialPosition);
 
-        var builder = TempList<char>.Create();
+        using var builder = TempList<char>.Create();
         builder.AddRangeEnum(layer);
         builder.Add(',');
 
@@ -887,26 +895,20 @@ public class OsbSprite : StoryboardObject
 
         if (!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands)
         {
-            using var str = transformedInitialPosition.X.ToCharArray(provider: exportSettings.NumberFormat);
-            var span = str.AsReadOnlySpan();
-
-            builder.AddRange(span[(span.StartsWith("0.") ? 1 : 0)..]);
+            using var str = transformedInitialPosition.X.ToOsbString(exportSettings);
+            builder.AddRange(str.AsReadOnlySpan());
         }
         else builder.Add('0');
 
         builder.Add(',');
         if (!MoveTimeline.HasCommands && !MoveYTimeline.HasCommands)
         {
-            using var str = transformedInitialPosition.Y.ToCharArray(provider: exportSettings.NumberFormat);
-            var span = str.AsReadOnlySpan();
-
-            builder.AddRange(span[(span.StartsWith("0.") ? 1 : 0)..]);
+            using var str = transformedInitialPosition.Y.ToOsbString(exportSettings);
+            builder.AddRange(str.AsReadOnlySpan());
         }
         else builder.Add('0');
 
         writer.Write(builder.AsReadOnlySpan());
-
-        builder.Dispose();
     }
 
     /// <summary> Returns whether the sprite is within widescreen storyboard bounds. </summary>
@@ -1008,13 +1010,18 @@ public class OsbSprite : StoryboardObject
         (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, FlipVTimeline)
     ];
 
-    void addDisplayCommand(ICommand command)
+    bool addDisplayCommand(ICommand command)
     {
-        ++CommandCost;
+        foreach (var (predicate, timeline) in displayValueBuilders)
+            if (predicate(command))
+            {
+                var result = timeline.Add(command);
+                if (result) ++CommandCost;
 
-        foreach (var builders in displayValueBuilders)
-            if (builders.Item1(command))
-                builders.Item2.Add(command);
+                return result;
+            }
+
+        return false;
     }
 
     void startDisplayLoop(LoopCommand loopCommand)
@@ -1073,7 +1080,7 @@ public enum OsbOrigin
 
 /// <summary> Apply an easing to a command. </summary>
 /// <remarks> Visit <see href="http://easings.net/"/> for more information. </remarks>
-public enum OsbEasing
+public enum OsbEasing : byte
 {
     None,
     Out,
@@ -1113,7 +1120,7 @@ public enum OsbEasing
 }
 
 ///<summary> Define the loop type for an animation. </summary>
-public enum OsbLoopType
+public enum OsbLoopType : byte
 {
     ///<summary> Loops the animation frames for the sprite's lifetime, repeating when the last frame is reached. </summary>
     LoopForever,
@@ -1123,7 +1130,7 @@ public enum OsbLoopType
 }
 
 ///<summary> Define the parameter type for a parameter command. </summary>
-public enum ParameterType
+public enum ParameterType : byte
 {
     ///<exception cref="InvalidOperationException"> Do not pass this value to any parameter. </exception>
     None,

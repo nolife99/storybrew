@@ -143,7 +143,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         var ret = TryGetIndex(key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -155,7 +155,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         var ret = TryGetIndex(key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -167,7 +167,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         var ret = TryGetIndex(in key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -179,7 +179,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         var ret = TryGetIndex(in key, out var index);
 
 #if DEBUG
-        if (ret == false) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+        if (!ret) ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
 #endif
 
         _values[index] = value;
@@ -741,7 +741,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
                 _values = newValues;
 
-                if (values.IsNullOrEmpty() == false) _valuePool.Return(values, s_clearValues);
+                if (!values.IsNullOrEmpty()) _valuePool.Return(values, s_clearValues);
             }
             else _valuePool.Return(newValues);
         }
@@ -758,7 +758,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
                 _entries = newEntries;
 
-                if (entries.IsNullOrEmpty() == false) _entryPool.Return(entries, s_clearEntries);
+                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -1073,7 +1073,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
         for (var i = Count - 1; i >= 0; i--)
         {
             var key = keys[i].Key;
-            if (other.ContainsKey(key) == false) Remove(key);
+            if (!other.ContainsKey(key)) Remove(key);
         }
     }
 
@@ -1102,7 +1102,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1116,7 +1116,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1128,7 +1128,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void ReturnEntries(ArrayEntry<TKey>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -1140,7 +1140,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void ReturnValues(TValue[] replaceWith)
     {
-        if (_values.IsNullOrEmpty() == false)
+        if (!_values.IsNullOrEmpty())
             try
             {
                 _valuePool.Return(_values, s_clearValues);

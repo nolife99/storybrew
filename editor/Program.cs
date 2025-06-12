@@ -195,7 +195,7 @@ public static class Program
 
             av = (frameTime + av) * .5f;
             avActive = (active + avActive) * .5f;
-            longest = Math.Max(frameTime, longest);
+            longest = float.Max(frameTime, longest);
 
             buildStatsMessage(editor, av, avActive, longest, draws);
 
@@ -208,7 +208,7 @@ public static class Program
     {
         if (!editor.statsLabel.Visible) return;
 
-        var result = TempList<char>.Create(128);
+        using var result = TempList<char>.Create(128);
 
         result.AddRangeFormatted(1 / av, "f0", CultureInfo.CurrentCulture);
         result.Add('/');
@@ -229,8 +229,7 @@ public static class Program
         result.AddRange(" draws".AsSpan());
         result.Add('\n');
 
-        using TempListInternals<char> internals = new(result);
-        editor.statsLabel.Text = internals.Items.AsSpan(0, internals.Size);
+        editor.statsLabel.Text = result.AsReadOnlySpan();
     }
 
     #endregion

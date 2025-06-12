@@ -1,6 +1,7 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Animations;
 using BrewLib.Util;
@@ -12,16 +13,8 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 #pragma warning disable CS1591
 public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable where TValue : struct, ICommandValue
 {
-    readonly string identifier;
-
-    protected internal Command(string identifier,
-        OsbEasing easing,
-        float startTime,
-        float endTime,
-        TValue startValue,
-        TValue endValue)
+    private protected Command(OsbEasing easing, float startTime, float endTime, TValue startValue, TValue endValue)
     {
-        this.identifier = identifier;
         Easing = easing;
         StartTime = startTime;
         EndTime = endTime;
@@ -31,7 +24,9 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         if (startTime > endTime) EndTime = startTime;
     }
 
-    public OsbEasing Easing { get; set; }
+    private protected abstract string Identifier { get; }
+
+    public OsbEasing Easing { get; }
     protected virtual bool MaintainValue => true;
     protected virtual bool ExportEndValue => true;
 
@@ -43,10 +38,10 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
 
     public CommandResult<TValue> AsResult(float timeOffset) => new(this, timeOffset);
 
-    public float StartTime { get; set; }
-    public float EndTime { get; set; }
-    public TValue StartValue { get; set; }
-    public TValue EndValue { get; set; }
+    public float StartTime { get; private set; }
+    public float EndTime { get; private set; }
+    public TValue StartValue { get; }
+    public TValue EndValue { get; }
 
     public TValue ValueAtTime(float time)
     {
@@ -57,18 +52,28 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         return ValueAtProgress(duration > 0 ? Easing.Ease((time - StartTime) / duration) : 0);
     }
 
-    public int CompareTo(ICommand other) => CommandComparer.CompareCommands(this, other);
-    public override int GetHashCode() => HashCode.Combine(identifier, StartTime, EndTime, StartValue, EndValue);
+    public int CompareTo(ICommand other)
+    {
+        var result = float.Round(StartTime).CompareTo(float.Round(other.StartTime));
+        if (result == 0) result = float.Round(EndTime).CompareTo(float.Round(other.EndTime));
+
+        if (other is ITypedCommand<TValue> value && result == 0)
+        {
+            result = EqualityComparer<TValue>.Default.Equals(StartValue, value.StartValue) ? 0 : 1;
+            if (result == 0) result = EqualityComparer<TValue>.Default.Equals(EndValue, value.EndValue) ? 0 : 1;
+        }
+
+        return result;
+    }
+
+    public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
 
     public virtual void WriteOsb(TextWriter writer,
         ExportSettings exportSettings,
         StoryboardTransform transform,
         int indentation)
     {
-        Span<char> indent = stackalloc char[indentation];
-        indent.Fill(' ');
-
-        writer.Write(indent);
+        for (var i = 0; i < indentation; ++i) writer.Write(' ');
 
         using var str = ToOsbString(exportSettings, transform);
         writer.WriteLine(str.AsReadOnlySpan());
@@ -96,7 +101,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         var excludeEnd = startTimeString.AsReadOnlySpan().SequenceEqual(endTimeString.AsReadOnlySpan());
 
         var result = TempList<char>.Create();
-        result.AddRange(identifier.AsSpan());
+        result.AddRange(Identifier.AsSpan());
         result.Add(',');
 
         using (var easingChars = ((int)Easing).ToCharArray(provider: exportSettings.NumberFormat))

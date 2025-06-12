@@ -230,7 +230,7 @@ public partial struct ValueHashSet<T>
     int FindItemIndex(T item)
     {
         var buckets = _buckets;
-        if (buckets.IsNullOrEmpty() == false)
+        if (!buckets.IsNullOrEmpty())
         {
             var entries = _entries;
             SystemDebug.Assert(entries != null, "Expected _entries to be initialized");
@@ -317,7 +317,7 @@ public partial struct ValueHashSet<T>
 
     public bool Remove(T item)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var entries = _entries;
             SystemDebug.Assert(entries != null, "entries should be non-null");
@@ -408,7 +408,7 @@ public partial struct ValueHashSet<T>
         info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
         info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
 
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var array = new T[Count];
             CopyTo(array);
@@ -478,7 +478,7 @@ public partial struct ValueHashSet<T>
     /// </remarks>
     public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
         {
             var index = FindItemIndex(equalValue);
             if (index >= 0)
@@ -1451,7 +1451,7 @@ public partial struct ValueHashSet<T>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1465,7 +1465,7 @@ public partial struct ValueHashSet<T>
 
     void RenewEntries(int newSize)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

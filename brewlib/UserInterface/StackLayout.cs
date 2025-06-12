@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.UserInterface;
 
-using System;
 using System.Numerics;
 using Skinning.Styles;
 
@@ -60,14 +59,14 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
             var maxSize = child.MaxSize;
 
             var childWidth = fitChildren ?
-                Math.Max(minSize.X, Size.X) :
-                Math.Max(minSize.X, Math.Min(preferredSize.X, Size.X));
+                float.Max(minSize.X, Size.X) :
+                float.Max(minSize.X, float.Min(preferredSize.X, Size.X));
 
             if (maxSize.X > 0 && childWidth > maxSize.X) childWidth = maxSize.X;
 
             var childHeight = fitChildren ?
-                Math.Max(minSize.Y, Size.Y) :
-                Math.Max(minSize.Y, Math.Min(preferredSize.Y, Size.Y));
+                float.Max(minSize.Y, Size.Y) :
+                float.Max(minSize.Y, float.Min(preferredSize.Y, Size.Y));
 
             if (maxSize.Y > 0 && childHeight > maxSize.Y) childHeight = maxSize.Y;
 
@@ -94,11 +93,11 @@ public sealed class StackLayout(WidgetManager manager) : Widget(manager)
             var childMinSize = child.MinSize;
             var childSize = child.PreferredSize;
 
-            width = Math.Max(width, childSize.X);
-            height = Math.Max(height, childSize.Y);
+            width = float.Max(width, childSize.X);
+            height = float.Max(height, childSize.Y);
 
-            minWidth = Math.Max(minWidth, childMinSize.X);
-            minHeight = Math.Max(minHeight, childMinSize.Y);
+            minWidth = float.Max(minWidth, childMinSize.X);
+            minHeight = float.Max(minHeight, childMinSize.Y);
         }
 
         minSize = new(minWidth, minHeight);

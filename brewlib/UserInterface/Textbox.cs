@@ -5,12 +5,12 @@ using System.Numerics;
 using Graphics;
 using Graphics.Drawables;
 using OpenTK.Windowing.Common.Input;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using SixLabors.ImageSharp;
 using Skinning.Styles;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
-using Keys = OpenTK.Windowing.GraphicsLibraryFramework.Keys;
 
 public class Textbox : Widget, Field
 {
@@ -201,7 +201,7 @@ public class Textbox : Widget, Field
 
     int SelectionLeft
     {
-        get => Math.Min(selectionStart, cursorPosition);
+        get => int.Min(selectionStart, cursorPosition);
         set
         {
             if (selectionStart < cursorPosition) selectionStart = value;
@@ -211,7 +211,7 @@ public class Textbox : Widget, Field
 
     int SelectionRight
     {
-        get => Math.Max(selectionStart, cursorPosition);
+        get => int.Max(selectionStart, cursorPosition);
         set
         {
             if (selectionStart > cursorPosition) selectionStart = value;
@@ -219,7 +219,7 @@ public class Textbox : Widget, Field
         }
     }
 
-    int SelectionLength => Math.Abs(cursorPosition - selectionStart);
+    int SelectionLength => int.Abs(cursorPosition - selectionStart);
 
     public override Vector2 MinSize => PreferredSize with { X = 0 };
 
@@ -230,10 +230,10 @@ public class Textbox : Widget, Field
         get
         {
             var contentSize = content.PreferredSize;
-            if (label.Text.IsWhiteSpace()) return contentSize with { X = Math.Max(contentSize.X, DefaultSize.X) };
+            if (label.Text.IsWhiteSpace()) return contentSize with { X = float.Max(contentSize.X, DefaultSize.X) };
 
             var labelSize = label.PreferredSize;
-            return new(Math.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);
+            return new(float.Max(labelSize.X, DefaultSize.X), labelSize.Y + contentSize.Y);
         }
     }
 
@@ -265,11 +265,10 @@ public class Textbox : Widget, Field
 
             if (acceptMultiline) return;
 
-            var temp = TempList<char>.Create(Value);
+            using var temp = TempList<char>.Create(Value);
             temp.RemoveAll(c => c == '\n');
 
-            using TempListInternals<char> internals = new(temp);
-            Value = internals.Items.AsSpan(0, internals.Size);
+            Value = temp.AsReadOnlySpan();
         }
     }
 
@@ -305,7 +304,11 @@ public class Textbox : Widget, Field
         if (cursorPosition != selectionStart)
             content.ForTextBounds(SelectionLeft,
                 SelectionRight,
-                selectionBounds => cursorLine.Draw(drawContext, Manager.Camera, selectionBounds, actualOpacity * .2f));
+                (selectionBounds, state) => state.Item3.cursorLine.Draw(state.drawContext,
+                    state.Item3.Manager.Camera,
+                    selectionBounds,
+                    state.actualOpacity * .2f),
+                (drawContext, actualOpacity, this));
 
         var bounds = content.GetCharacterBounds(cursorPosition);
         Vector2 position = new(bounds.X, bounds.Y + bounds.Height * .15f),
@@ -332,12 +335,11 @@ public class Textbox : Widget, Field
         var left = SelectionLeft;
         var right = SelectionRight;
 
-        var newValue = TempList<char>.Create(Value);
+        using var newValue = TempList<char>.Create(Value);
         if (left != right) newValue.RemoveRange(left, right - left);
         newValue.InsertRange(left, text);
 
-        using TempListInternals<char> internals = new(newValue);
-        Value = internals.Items.AsSpan(0, internals.Size);
+        Value = newValue.AsReadOnlySpan();
 
         cursorPosition = selectionStart = SelectionLeft + text.Length;
     }

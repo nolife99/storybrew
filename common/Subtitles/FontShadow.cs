@@ -6,12 +6,19 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.Processing;
 
 /// <summary> A font drop shadow effect. </summary>
-/// <remarks> Creates a new <see cref="FontShadow"/> descriptor with information about a drop shadow effect. </remarks>
-/// <param name="thickness"> The thickness of the shadow. </param>
-/// <param name="color"> The color tinting of the shadow. </param>
-public record FontShadow(int thickness = 1, Color color = default) : FontEffect
+public sealed record FontShadow : FontEffect
 {
-    readonly SolidBrush brush = new(color);
+    readonly SolidBrush brush;
+    readonly int thickness;
+
+    /// <summary> Creates a new <see cref="FontShadow"/>. </summary>
+    /// <param name="thickness"> The thickness of the shadow. </param>
+    /// <param name="color"> The color of the shadow. </param>
+    public FontShadow(int thickness = 1, Color color = default)
+    {
+        this.thickness = thickness;
+        brush = new(color);
+    }
 
     /// <inheritdoc/>
     public bool Overlay => false;

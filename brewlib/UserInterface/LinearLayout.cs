@@ -1,6 +1,5 @@
 ﻿namespace BrewLib.UserInterface;
 
-using System;
 using System.Numerics;
 using Skinning.Styles;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -150,7 +149,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 
         // Adjust item lengths to fit within the available space
         var scalableItems = items.Count;
-        while (scalableItems > 0 && Math.Abs(totalSpace - usedSpace) > .001f)
+        while (scalableItems > 0 && float.Abs(totalSpace - usedSpace) > .001f)
         {
             var remainingSpace = totalSpace - usedSpace;
             if (!fill && remainingSpace > 0) break;
@@ -213,8 +212,8 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             {
                 // Determine breadth for horizontal layout
                 var childBreadth = fitChildren ?
-                    Math.Max(minSize.Y, innerSize.Y) :
-                    Math.Max(minSize.Y, Math.Min(item.PreferredSize.Y, innerSize.Y));
+                    float.Max(minSize.Y, innerSize.Y) :
+                    float.Max(minSize.Y, float.Min(item.PreferredSize.Y, innerSize.Y));
 
                 if (maxSize.Y > 0 && childBreadth > maxSize.Y) childBreadth = maxSize.Y;
 
@@ -230,8 +229,8 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             {
                 // Determine breadth for vertical layout
                 var childBreadth = fitChildren ?
-                    Math.Max(minSize.X, innerSize.X) :
-                    Math.Max(minSize.X, Math.Min(item.PreferredSize.X, innerSize.X));
+                    float.Max(minSize.X, innerSize.X) :
+                    float.Max(minSize.X, float.Min(item.PreferredSize.X, innerSize.X));
 
                 if (maxSize.X > 0 && childBreadth > maxSize.X) childBreadth = maxSize.X;
 
@@ -274,10 +273,10 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
 
             if (horizontal)
             {
-                height = Math.Max(height, childSize.Y);
+                height = float.Max(height, childSize.Y);
                 width += childSize.X;
 
-                minHeight = Math.Max(minHeight, childMinSize.Y);
+                minHeight = float.Max(minHeight, childMinSize.Y);
                 minWidth += childMinSize.X;
 
                 if (!firstChild)
@@ -288,10 +287,10 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
             }
             else
             {
-                width = Math.Max(width, childSize.X);
+                width = float.Max(width, childSize.X);
                 height += childSize.Y;
 
-                minWidth = Math.Max(minWidth, childMinSize.X);
+                minWidth = float.Max(minWidth, childMinSize.X);
                 minHeight += childMinSize.Y;
 
                 if (!firstChild)

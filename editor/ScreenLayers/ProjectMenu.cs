@@ -3,9 +3,7 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Numerics;
-using System.Text;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Time;
@@ -22,6 +20,7 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 using UserInterface;
 using UserInterface.Components;
 using UserInterface.Drawables;
+using ZLinq;
 
 public class ProjectMenu(Project proj) : UiScreenLayer
 {
@@ -557,19 +556,20 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         timeline.SetValueSilent(time);
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
-            var temp = TempList<char>.Create();
-            if (Manager.GetContext<Editor>().InputManager.Alt)
+            using (var temp = TempList<char>.Create())
             {
-                temp.AddRangeFormatted(storyboardPosition.X, "f0");
-                temp.AddRange(", ".AsSpan());
-                temp.AddRangeFormatted(storyboardPosition.Y, "f0");
+                if (Manager.GetContext<Editor>().InputManager.Alt)
+                {
+                    temp.AddRangeFormatted(storyboardPosition.X, "f0");
+                    temp.AddRange(", ".AsSpan());
+                    temp.AddRangeFormatted(storyboardPosition.Y, "f0");
+                }
+                else temp.AddRangeFormatted(TimeSpan.FromSeconds(time), @"mm\:ss\.fff");
+
+                timeB.Text = temp.AsReadOnlySpan();
             }
-            else temp.AddRangeFormatted(TimeSpan.FromSeconds(time), @"mm\:ss\.fff");
 
-            using (TempListInternals<char> internals = new(temp)) timeB.Text = internals.Items.AsSpan(0, internals.Size);
-
-            using (TempArrayInternals<char> internals = new(buildWarningMessage()))
-                warningsLabel.Text = internals.Array.AsSpan(0, internals.Length);
+            using (var text = buildWarningMessage()) warningsLabel.Text = text.AsReadOnlySpan();
 
             if (warningsLabel.NeedsLayout)
             {
@@ -588,9 +588,9 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             previewDrawable.Time = timeline.GetValueForPosition(Manager.GetContext<Editor>().InputManager.MousePosition);
     }
 
-    TempArray<char> buildWarningMessage()
+    TempList<char> buildWarningMessage()
     {
-        var warnings = StringHelper.StringBuilderPool.Retrieve();
+        var warnings = TempList<char>.Create(256);
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
@@ -598,25 +598,42 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         if (activeSprites >= 1500 || prolongedSprites != 0)
         {
-            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {activeSprites:n0} Sprite"), activeSprites);
+            warnings.AddRange("\ue002 ".AsSpan());
+            warnings.AddRangeFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
+            warnings.AddRange(" Sprite".AsSpan());
+            AppendPlural(ref warnings, activeSprites);
 
             if (prolongedSprites != 0)
             {
-                AppendPlural(warnings.Append(" (")
-                        .Append(CultureInfo.InvariantCulture, $"{prolongedSprites:n0} Prolonged Sprite"),
-                    prolongedSprites);
+                warnings.AddRange(" (".AsSpan());
+                warnings.AddRangeFormatted(prolongedSprites, "n0", CultureInfo.InvariantCulture);
+                warnings.AddRange(" Prolonged Sprite".AsSpan());
+                AppendPlural(ref warnings, prolongedSprites);
 
                 if (proj.DisplayDebugWarning)
-                    warnings.Append(" (").AppendJoin(", ", stats.ProlongedSprites.Select(s => s.TexturePath)).Append(')');
+                {
+                    warnings.AddRange(" (".AsSpan());
+                    using (var array = stats.ProlongedSprites.AsValueEnumerable()
+                        .SelectMany(x
+                            => ", ".AsSpan().AsValueEnumerable().Concat(x.TexturePath.AsSpan().AsValueEnumerable()))
+                        .Skip(2)
+                        .ToArrayPool()) warnings.AddRange(array.Span);
 
-                warnings.Append(')');
+                    warnings.Add(')');
+                }
+
+                warnings.Add(')');
             }
 
-            warnings.Append('\n');
+            warnings.Add('\n');
         }
         else if (proj.DisplayDebugWarning && activeSprites > 0)
-            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprite"), activeSprites)
-                .Append('\n');
+        {
+            warnings.AddRangeFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
+            warnings.AddRange(" Sprite".AsSpan());
+            AppendPlural(ref warnings, activeSprites);
+            warnings.Add('\n');
+        }
 
         int commands = stats.CommandCount, activeCommands = stats.EffectiveCommandCount,
             unusedCommands = commands - activeCommands;
@@ -630,82 +647,112 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var showWarning = commands >= 15000 || hiddenCommands;
         if (showWarning || proj.DisplayDebugWarning && commands > 0)
         {
-            if (showWarning) warnings.Append("\ue002 ");
+            if (showWarning) warnings.AddRange("\ue002 ".AsSpan());
 
-            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"{commands:n0} Command"), commands);
+            warnings.AddRangeFormatted(commands, "n0", CultureInfo.InvariantCulture);
+            warnings.AddRange(" Command".AsSpan());
+            AppendPlural(ref warnings, commands);
+
             if (unusedCommands > 0)
-                AppendPlural(warnings.Append(" (")
-                            .Append(CultureInfo.InvariantCulture, $"{unusedCommands:n0} ({unusedRatio:0%}) Command"),
-                        unusedCommands)
-                    .Append(" on Hidden Sprites)");
+            {
+                warnings.AddRange(" (".AsSpan());
+                warnings.AddRangeFormatted(unusedCommands, "n0", CultureInfo.InvariantCulture);
 
-            warnings.Append('\n');
+                warnings.AddRange(" (".AsSpan());
+                warnings.AddRangeFormatted(unusedRatio, "0%", CultureInfo.InvariantCulture);
+
+                warnings.AddRange(") Command".AsSpan());
+                AppendPlural(ref warnings, unusedCommands);
+                warnings.AddRange(" on Hidden Sprites)".AsSpan());
+            }
+
+            warnings.Add('\n');
         }
 
         if (stats.OverlappedSprites.Count != 0)
         {
-            warnings.Append("\ue002 Overlapped Commands");
+            warnings.AddRange("\ue002 Overlapped Commands".AsSpan());
             if (proj.DisplayDebugWarning)
             {
-                warnings.Append(" (");
-                warnings.AppendJoin(", ", stats.OverlappedSprites.Select(s => s.TexturePath));
-                warnings.Append(')');
+                warnings.AddRange(" (".AsSpan());
+                using (var array = stats.OverlappedSprites.AsValueEnumerable()
+                    .SelectMany(x => ", ".AsSpan().AsValueEnumerable().Concat(x.TexturePath.AsSpan().AsValueEnumerable()))
+                    .ToArrayPool()) warnings.AddRange(array.Span[2..]);
+
+                warnings.Add(')');
             }
 
-            warnings.Append('\n');
+            warnings.Add('\n');
         }
 
         if (stats.IncompatibleSprites.Count != 0)
         {
-            warnings.Append("\ue002 Incompatible Commands");
+            warnings.AddRange("\ue002 Incompatible Commands".AsSpan());
             if (proj.DisplayDebugWarning)
             {
-                warnings.Append(" (");
-                warnings.AppendJoin(", ", stats.IncompatibleSprites.Select(s => s.TexturePath));
-                warnings.Append(')');
+                warnings.AddRange(" (".AsSpan());
+                using (var array = stats.IncompatibleSprites.AsValueEnumerable()
+                    .SelectMany(x => ", ".AsSpan().AsValueEnumerable().Concat(x.TexturePath.AsSpan().AsValueEnumerable()))
+                    .ToArrayPool()) warnings.AddRange(array.Span[2..]);
+
+                warnings.Add(')');
             }
 
-            warnings.Append('\n');
+            warnings.Add('\n');
         }
 
-        var sbLoad = stats.ScreenFill;
-        switch (sbLoad)
+        var screenFill = stats.ScreenFill;
+        if (screenFill >= 5 || proj.DisplayDebugWarning && screenFill > 0)
         {
-            case > 0 and < 5 when proj.DisplayDebugWarning:
-                warnings.Append(CultureInfo.InvariantCulture, $"{sbLoad:f2}x Screen Fill\n"); break;
-
-            case >= 5: warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {sbLoad:f2}x Screen Fill\n"); break;
+            warnings.AddRange(screenFill >= 5 ? "\ue002 ".AsSpan() : default);
+            warnings.AddRangeFormatted(screenFill, "f2", CultureInfo.InvariantCulture);
+            warnings.AddRange("x Screen Fill\n".AsSpan());
         }
 
         var batches = proj.FrameStats.Batches;
-        if (proj.DisplayDebugWarning && batches is > 0 and < 500)
-            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"{batches:0} Batch"), batches, "es").Append('\n');
-        else if (batches >= 500)
-            AppendPlural(warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {batches:0} Batch"), batches, "es")
-                .Append('\n');
+        if (batches >= 500 || proj.DisplayDebugWarning && batches > 0)
+        {
+            warnings.AddRange(batches >= 500 ? "\ue002 ".AsSpan() : default);
+            warnings.AddRangeFormatted(batches, provider: CultureInfo.InvariantCulture);
+            warnings.AddRange(" Batch".AsSpan());
+            AppendPlural(ref warnings, batches, "es");
+            warnings.Add('\n');
+        }
 
         var frameGpuMemory = stats.GpuMemoryFrameMb;
-        if (proj.DisplayDebugWarning && frameGpuMemory < 32)
-            warnings.Append(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory\n");
-        else if (frameGpuMemory >= 32)
-            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {frameGpuMemory:0.0}MB Frame Texture Memory\n");
-
         var totalGpuMemory = proj.TextureContainer.UncompressedMemoryUseMb;
-        if (proj.DisplayDebugWarning && totalGpuMemory < 256)
-            warnings.Append(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory\n");
-        else if (totalGpuMemory >= 256)
-            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {totalGpuMemory:0.0}MB Total Texture Memory\n");
 
-        var str = TempArray<char>.Create(warnings.TrimEnd().Length);
-        warnings.CopyTo(0, str.AsSpan(), warnings.Length);
-
-        StringHelper.StringBuilderPool.Release(warnings);
-        return str;
-
-        StringBuilder AppendPlural(StringBuilder builder, int count, string plural = "s")
+        var showMemoryWarning = frameGpuMemory >= 32 || totalGpuMemory >= 256;
+        if (showMemoryWarning || proj.DisplayDebugWarning && (frameGpuMemory > 0 || totalGpuMemory > 0))
         {
-            if (count != 1) builder.Append(plural);
-            return builder;
+            if (showMemoryWarning) warnings.AddRange("\ue002 ".AsSpan());
+            if (frameGpuMemory > 0)
+            {
+                warnings.AddRangeFormatted(frameGpuMemory, "0.0", CultureInfo.InvariantCulture);
+                warnings.AddRange("MB Frame Texture Memory".AsSpan());
+
+                if (totalGpuMemory > 0) warnings.AddRange(" (".AsSpan());
+            }
+
+            if (totalGpuMemory > 0)
+            {
+                warnings.AddRangeFormatted(totalGpuMemory, "0.0", CultureInfo.InvariantCulture);
+                warnings.AddRange("MB Total Texture Memory".AsSpan());
+
+                if (frameGpuMemory > 0) warnings.Add(')');
+            }
+
+            warnings.Add('\n');
+        }
+
+        var trim = warnings.Count - warnings.AsReadOnlySpan().TrimEnd().Length;
+        warnings.RemoveRange(warnings.Count - trim, trim);
+
+        return warnings;
+
+        void AppendPlural(scoped ref TempList<char> builder, int count, string plural = "s")
+        {
+            if (count != 1) builder.AddRange(plural.AsSpan());
         }
     }
 
@@ -740,8 +787,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     void resizeTimeline()
     {
-        timeline.MinValue = Math.Min(0, proj.StartTime * .001f);
-        timeline.MaxValue = Math.Max(audio.Duration, proj.EndTime * .001f);
+        timeline.MinValue = float.Min(0, proj.StartTime * .001f);
+        timeline.MaxValue = float.Max(audio.Duration, proj.EndTime * .001f);
     }
 
     public override void Close() => withSavePrompt(() =>

@@ -10,7 +10,7 @@ public readonly ref struct ValueListInternalsRef<T>
     [NonSerialized] public readonly bool ClearItems;
     [NonSerialized] public readonly ReadOnlySpan<T> Items;
 
-    public ValueListInternalsRef(in ValueList<T> source)
+    internal ValueListInternalsRef(in ValueList<T> source)
     {
         Size = source._size;
         Version = source._version;

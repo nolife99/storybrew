@@ -21,7 +21,7 @@ public readonly ref struct TempArrayDictionaryInternalsRef<TKey, TValue>
     [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public TempArrayDictionaryInternalsRef(in TempArrayDictionary<TKey, TValue> source)
+    internal TempArrayDictionaryInternalsRef(scoped ref readonly TempArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -45,11 +45,11 @@ partial class TempCollectionInternals
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArrayDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
-        in TempArrayDictionary<TKey, TValue> source) => new(source);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => new(in source);
 
     /// <summary>Returns the internal Keys and Values arrays as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void AsReadOnlySpan<TKey, TValue>(in this TempArrayDictionary<TKey, TValue> source,
+    public static void AsReadOnlySpan<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
         out ReadOnlySpan<ArrayEntry<TKey>> keys,
         out ReadOnlySpan<TValue> values)
     {
@@ -60,16 +60,16 @@ partial class TempCollectionInternals
     /// <summary>Returns the internal Keys array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<ArrayEntry<TKey>> KeysAsReadOnlySpan<TKey, TValue>(
-        in this TempArrayDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source.Count);
 
     /// <summary>Returns the internal Values array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<TValue> ValuesAsReadOnlySpan<TKey, TValue>(in this TempArrayDictionary<TKey, TValue> source)
-        => source._values.AsSpan(0, source.Count);
+    public static ReadOnlySpan<TValue> ValuesAsReadOnlySpan<TKey, TValue>(
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._values.AsSpan(0, source.Count);
 
     /// <summary>Returns the internal Keys and Values arrays as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void AsReadOnlyMemory<TKey, TValue>(in this TempArrayDictionary<TKey, TValue> source,
+    public static void AsReadOnlyMemory<TKey, TValue>(this scoped ref readonly TempArrayDictionary<TKey, TValue> source,
         out ReadOnlyMemory<ArrayEntry<TKey>> keys,
         out ReadOnlyMemory<TValue> values)
     {
@@ -80,10 +80,10 @@ partial class TempCollectionInternals
     /// <summary>Returns the internal Keys array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<ArrayEntry<TKey>> KeysAsReadOnlyMemory<TKey, TValue>(
-        in this TempArrayDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source.Count);
 
     /// <summary>Returns the internal Values array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<TValue> ValuesAsReadOnlyMemory<TKey, TValue>(
-        in this TempArrayDictionary<TKey, TValue> source) => source._values.AsMemory(0, source.Count);
+        this scoped ref readonly TempArrayDictionary<TKey, TValue> source) => source._values.AsMemory(0, source.Count);
 }

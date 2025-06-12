@@ -51,7 +51,7 @@ public sealed class StringPool
 
         static void FindFactors(int size, int factor, out int x, out int y)
         {
-            var a = MathF.Sqrt((float)size / factor);
+            var a = float.Sqrt((float)size / factor);
             var b = factor * a;
 
             x = (int)BitOperations.RoundUpToPowerOf2((uint)a);

@@ -1,5 +1,6 @@
 ﻿namespace BrewLib.Graphics.Textures;
 
+using System;
 using IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -14,7 +15,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     string atlasDescription = nameof(TextureContainerAtlas)) : TextureContainer
 {
     readonly PooledDictionary<TextureOptions, TextureMultiAtlas2d> atlases = new();
-    readonly PooledDictionary<string, Texture2dRegion> textures = new();
+    readonly PooledDictionary<int, Texture2dRegion> textures = new();
 
     public float UncompressedMemoryUseMb
     {
@@ -32,13 +33,16 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
         }
     }
 
-    public Texture2dRegion Get(string filename)
+    public Texture2dRegion Get(ReadOnlySpan<char> filename)
     {
         PathHelper.WithStandardSeparatorsUnsafe(filename);
-        if (textures.TryGetValue(filename, out var texture)) return texture;
 
-        return textures[filename] = Add(Texture2d.LoadBitmap(filename, resourceContainer),
-            textureOptions ?? Texture2d.LoadTextureOptions(filename, resourceContainer));
+        var hashCode = string.GetHashCode(filename);
+        if (textures.TryGetValue(hashCode, out var texture)) return texture;
+
+        var str = filename.ToString();
+        return textures[hashCode] = Add(Texture2d.LoadBitmap(str, resourceContainer),
+            textureOptions ?? Texture2d.LoadTextureOptions(str, resourceContainer));
     }
 
     public Texture2dRegion Add(Image<Rgba32> bitmap, TextureOptions options)

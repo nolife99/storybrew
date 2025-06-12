@@ -465,7 +465,7 @@ using System.Runtime.CompilerServices;
 
                 _entries = newEntries;
 
-                if (entries.IsNullOrEmpty() == false) _entryPool.Return(entries, s_clearEntries);
+                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -773,7 +773,7 @@ using System.Runtime.CompilerServices;
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -787,7 +787,7 @@ using System.Runtime.CompilerServices;
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (_buckets.IsNullOrEmpty() == false)
+        if (!_buckets.IsNullOrEmpty())
             try
             {
                 _bucketPool.Return(_buckets);
@@ -799,7 +799,7 @@ using System.Runtime.CompilerServices;
 
     void ReturnEntries(ArrayEntry<T>[] replaceWith)
     {
-        if (_entries.IsNullOrEmpty() == false)
+        if (!_entries.IsNullOrEmpty())
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

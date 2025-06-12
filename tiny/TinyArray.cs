@@ -26,7 +26,7 @@ public class TinyArray() : TinyToken, IList<TinyToken>
 
     public void Add(TinyToken item)
     {
-        if (Count == tokens.Length) EnsureCapacity(Math.Max(Count * 2, 4));
+        if (Count == tokens.Length) EnsureCapacity(int.Max(Count * 2, 4));
         tokens[Count++] = item;
     }
 
@@ -101,7 +101,7 @@ public class TinyArray() : TinyToken, IList<TinyToken>
     {
         if (tokens.Length >= capacity) return;
 
-        var newTokens = ArrayPool<TinyToken>.Shared.Rent(Math.Max(capacity, tokens.Length * 2));
+        var newTokens = ArrayPool<TinyToken>.Shared.Rent(int.Max(capacity, tokens.Length * 2));
         Array.Copy(tokens, newTokens, Count);
 
         ArrayPool<TinyToken>.Shared.Return(tokens);

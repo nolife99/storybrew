@@ -169,7 +169,7 @@ partial struct ValueList<T> : IDisposable
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_items.IsNullOrEmpty() == false)
+        if (!_items.IsNullOrEmpty())
             try
             {
                 _pool.Return(_items, s_clearItems);

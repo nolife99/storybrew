@@ -11,7 +11,7 @@ public readonly struct TempListInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Items;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    public TempListInternals(in TempList<T> source)
+    internal TempListInternals(scoped ref readonly TempList<T> source)
     {
         Size = source._size;
         Version = source._version;
@@ -22,12 +22,13 @@ public readonly struct TempListInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Items != null && Items.Length > 0)
-            try
-            {
-                Pool?.Return(Items, ClearItems);
-            }
-            catch { }
+        if (Items is not { Length: > 0 }) return;
+
+        try
+        {
+            Pool?.Return(Items, ClearItems);
+        }
+        catch { }
     }
 }
 
@@ -35,17 +36,15 @@ partial class TempCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static TempListInternals<T> TakeOwnership<T>(ref TempList<T> source)
+    public static TempListInternals<T> TakeOwnership<T>(this scoped ref TempList<T> source)
     {
-        var internals = new TempListInternals<T>(source);
-
-        source._items = null;
+        var internals = new TempListInternals<T>(in source);
         source.Dispose();
 
         return internals;
     }
 
-    public static TempArray<T> ToTempArray<T>(ref TempList<T> source)
+    public static TempArray<T> ToTempArray<T>(this scoped ref TempList<T> source)
     {
         var internals = TakeOwnership(ref source);
 

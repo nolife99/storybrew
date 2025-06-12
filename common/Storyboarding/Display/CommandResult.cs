@@ -8,8 +8,8 @@ public readonly struct CommandResult<TValue> where TValue : struct, ICommandValu
     readonly Command<TValue> command;
     readonly float timeOffset;
 
-    public readonly float StartTime;
-    public readonly float EndTime;
+    public float StartTime { get; }
+    public float EndTime { get; }
 
     public TValue StartValue => command.StartValue;
     public TValue EndValue => command.EndValue;

@@ -9,7 +9,7 @@ public readonly struct ValueArrayInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly T[] Array;
 
-    public ValueArrayInternalsRefUnsafe(in ValueArray<T> source)
+    internal ValueArrayInternalsRefUnsafe(in ValueArray<T> source)
     {
         Length = source._length;
         ClearArray = ValueArray<T>.s_clearArray;

@@ -130,8 +130,6 @@ public class ScriptedEffect : Effect
                     newDependencyWatcher = null;
                 }
                 else dependencyWatcher = newDependencyWatcher;
-
-                context.Dispose();
             }
         }
 
@@ -149,8 +147,11 @@ public class ScriptedEffect : Effect
 
         if (Project.Disposed) return;
 
-        Program.Schedule(() => UpdateLayers(new(context.EditorLayers))).Wait();
-        context.Dispose();
+        Program.Schedule(() =>
+        {
+            UpdateLayers(new(context.EditorLayers));
+            context.Dispose();
+        });
     }
 
     public override void CancelUpdate()

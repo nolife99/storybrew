@@ -10,7 +10,7 @@ public readonly struct ValueListInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearItems;
     [NonSerialized] public readonly T[] Items;
 
-    public ValueListInternalsRefUnsafe(in ValueList<T> source)
+    internal ValueListInternalsRefUnsafe(in ValueList<T> source)
     {
         Size = source._size;
         Version = source._version;

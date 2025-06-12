@@ -301,7 +301,7 @@ public ref partial struct TempStack<T>
 
     void ReturnArray(T[] replaceWith = null)
     {
-        if (_array.IsNullOrEmpty() == false)
+        if (!_array.IsNullOrEmpty())
             try
             {
                 _pool.Return(_array, s_clearArray);

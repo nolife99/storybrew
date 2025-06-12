@@ -34,9 +34,9 @@ public static class BeatmapExtensions
             if (timingPoint != leftTimingPoint && endTime + Beatmap.ControlPointLeniency < timingPoint.Offset) break;
 
             int tickCount = 0, beatCount = 0;
-            var step = Math.Max(1, timingPoint.BeatDuration / snapDivisor);
+            var step = float.Max(1, timingPoint.BeatDuration / snapDivisor);
             var sectionStartTime = timingPoint.Offset;
-            var sectionEndTime = Math.Min(nextTimingPoint?.Offset ?? endTime, endTime);
+            var sectionEndTime = float.Min(nextTimingPoint?.Offset ?? endTime, endTime);
 
             if (timingPoint == leftTimingPoint)
                 while (startTime < sectionStartTime)

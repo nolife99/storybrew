@@ -22,7 +22,7 @@ public readonly ref struct ValueDictionaryInternalsRef<TKey, TValue>
     [NonSerialized] public readonly ReadOnlySpan<Entry<TKey, TValue>> Entries;
     [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
 
-    public ValueDictionaryInternalsRef(in ValueDictionary<TKey, TValue> source)
+    internal ValueDictionaryInternalsRef(in ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;

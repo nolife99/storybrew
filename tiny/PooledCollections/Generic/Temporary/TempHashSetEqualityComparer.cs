@@ -50,7 +50,7 @@ public readonly ref struct TempHashSetEqualityComparer<T>
     {
         var hashCode = 0; // default to 0 for null/empty set
 
-        if (obj._buckets.IsNullOrEmpty() == false)
+        if (!obj._buckets.IsNullOrEmpty())
             foreach (var t in obj)
                 if (t != null)
                     hashCode ^= t.GetHashCode(); // same hashcode as default comparer

@@ -10,7 +10,7 @@ public readonly ref struct ValueStackInternalsRef<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly ReadOnlySpan<T> Array;
 
-    public ValueStackInternalsRef(in ValueStack<T> source)
+    internal ValueStackInternalsRef(in ValueStack<T> source)
     {
         Size = source._size;
         Version = source._version;
