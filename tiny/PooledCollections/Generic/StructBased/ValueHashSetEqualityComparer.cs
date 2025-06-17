@@ -51,7 +51,7 @@ public readonly struct ValueHashSetEqualityComparer<T> : IEqualityComparer<Value
 
         if (!obj._buckets.IsNullOrEmpty())
             foreach (var t in obj)
-                if (t != null)
+                if (t is not null)
                     hashCode ^= t.GetHashCode(); // same hashcode as default comparer
 
         return hashCode;

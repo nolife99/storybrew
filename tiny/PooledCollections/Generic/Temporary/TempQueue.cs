@@ -18,6 +18,7 @@ namespace Tiny.PooledCollections.Generic.Temporary;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -33,13 +34,13 @@ public ref partial struct TempQueue<T>
 
     static readonly T[] s_emptyArray = [];
 
-    internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     // Creates a queue with room for capacity objects. The default grow factor
     // is used.
     internal TempQueue(int capacity, ArrayPool<T> pool)
     {
-        if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _head = 0;
         _tail = 0;
@@ -53,7 +54,7 @@ public ref partial struct TempQueue<T>
     // to get each of the elements.
     internal TempQueue(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         _head = 0;
         _tail = 0;
@@ -73,7 +74,7 @@ public ref partial struct TempQueue<T>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _array != null;
+        get => _array is not null;
     }
 
     // Removes all Objects from the queue.
@@ -107,7 +108,7 @@ public ref partial struct TempQueue<T>
 
     public void CopyTo(T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(dest, destIndex, count);
     }
@@ -260,7 +261,7 @@ public ref partial struct TempQueue<T>
 
     void ThrowForEmptyQueue()
     {
-        SystemDebug.Assert(_size == 0);
+        Debug.Assert(_size == 0);
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyQueue();
     }
 
@@ -286,7 +287,7 @@ public ref partial struct TempQueue<T>
 
     void Grow(int capacity)
     {
-        SystemDebug.Assert(_array.Length < capacity);
+        Debug.Assert(_array.Length < capacity);
 
         const int GrowFactor = 2;
         const int MinimumGrow = 4;
@@ -295,7 +296,7 @@ public ref partial struct TempQueue<T>
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newcapacity > SystemArray.MaxLength) newcapacity = SystemArray.MaxLength;
+        if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
         // Ensure minimum growth is respected.
         newcapacity = Math.Max(newcapacity, _array.Length + MinimumGrow);
@@ -309,7 +310,7 @@ public ref partial struct TempQueue<T>
 
     void ReturnArray(T[] replaceWith)
     {
-        if (!_array.IsNullOrEmpty())
+        if (_array is not null)
             try
             {
                 _pool.Return(_array, s_clearArray);
@@ -391,7 +392,7 @@ public ref partial struct TempQueue<T>
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            SystemDebug.Assert(_index == -1 || _index == -2);
+            Debug.Assert(_index == -1 || _index == -2);
 
             if (_index == -1) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();

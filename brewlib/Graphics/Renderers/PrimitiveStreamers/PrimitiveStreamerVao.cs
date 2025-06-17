@@ -23,7 +23,7 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
 
     protected PrimitiveStreamerVao(VertexDeclaration vertexDeclaration,
         int maxPrimitivesPerBatch,
-        ReadOnlySpan<ushort> indices)
+        scoped ReadOnlySpan<ushort> indices)
     {
         if (vertexDeclaration.AttributeCount < 1) throw new ArgumentException("At least one vertex attribute is required");
 
@@ -147,7 +147,7 @@ internal abstract class PrimitiveStreamerVao<TPrimitive> : IPrimitiveStreamer<TP
     protected virtual void initializeVertexBuffer()
         => GL.BindBuffer(BufferTarget.ArrayBuffer, VertexBufferId = GL.GenBuffer());
 
-    void initializeIndexBuffer(ReadOnlySpan<ushort> indices)
+    void initializeIndexBuffer(scoped ReadOnlySpan<ushort> indices)
     {
         IndexBufferId = GL.GenBuffer();
 

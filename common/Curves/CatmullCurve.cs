@@ -3,10 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
+using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary>Represents a Catmull-Rom curve defined by a set of control points.</summary>
-public class CatmullCurve(ReadOnlySpan<Vector2> points) : BaseCurve
+public class CatmullCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
 {
     const int catmull_detail = 50;
 
@@ -21,10 +21,11 @@ public class CatmullCurve(ReadOnlySpan<Vector2> points) : BaseCurve
     /// <summary/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
-        var linearSegments = CatmullToPiecewiseLinear(points);
+        using var linearSegments = CatmullToPiecewiseLinear(points);
+        distancePosition.EnsureCapacity(distancePosition.Count + linearSegments.Count);
 
         length = 0;
-        for (var i = 0; i < linearSegments.Length - 1; ++i)
+        for (var i = 0; i < linearSegments.Count - 1; ++i)
         {
             var cur = linearSegments[i];
 
@@ -34,9 +35,9 @@ public class CatmullCurve(ReadOnlySpan<Vector2> points) : BaseCurve
     }
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static ReadOnlySpan<Vector2> CatmullToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints)
+    static TempList<Vector2> CatmullToPiecewiseLinear(scoped ReadOnlySpan<Vector2> controlPoints)
     {
-        List<Vector2> result = new((controlPoints.Length - 1) * catmull_detail * 2);
+        var result = TempList.Create<Vector2>((controlPoints.Length - 1) * catmull_detail * 2);
 
         for (var i = 0; i < controlPoints.Length - 1; i++)
         {
@@ -54,7 +55,7 @@ public class CatmullCurve(ReadOnlySpan<Vector2> points) : BaseCurve
             }
         }
 
-        return CollectionsMarshal.AsSpan(result);
+        return result;
     }
 
     static Vector2 catmullFindPoint(ref Vector2 vec1, ref Vector2 vec2, ref Vector2 vec3, ref Vector2 vec4, float t)

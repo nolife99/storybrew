@@ -34,13 +34,13 @@ public static class StringHelper
     public static string StripUtf8Bom(this string s)
         => s.StartsWith(utf8Bom, StringComparison.Ordinal) ? s.Remove(0, utf8Bom.Length) : s;
 
-    public static string GetMd5(string value) => GetMd5(Encoding.ASCII.GetBytes(value));
+    public static string GetMd5(scoped ReadOnlySpan<char> value) => GetMd5(Encoding.ASCII.GetBytes(value.ToString()));
 
     public static string GetMd5(byte[] data)
     {
         data = MD5.HashData(data);
 
-        using var chars = TempList<char>.Create();
+        using var chars = TempList.Create<char>();
         foreach (var t in data) chars.AddRangeFormatted(t, "x2", CultureInfo.InvariantCulture);
 
         return chars.AsReadOnlySpan().ToString();
@@ -50,7 +50,7 @@ public static class StringHelper
     {
         var data = GetFileMd5Bytes(path);
 
-        using var chars = TempList<char>.Create();
+        using var chars = TempList.Create<char>();
         foreach (var t in data) chars.AddRangeFormatted(t, "x2", CultureInfo.InvariantCulture);
 
         return chars.AsReadOnlySpan().ToString();
@@ -74,18 +74,18 @@ public static class StringHelper
     }
 
     public static TempArray<char> ToCharArray<T>(this T value,
-        ReadOnlySpan<char> format = default,
+        scoped ReadOnlySpan<char> format = default,
         IFormatProvider provider = null) where T : ISpanFormattable
     {
         Span<char> temp = stackalloc char[128];
         value.TryFormat(temp, out var written, format, provider);
 
-        return TempArray<char>.Create(temp[..written]);
+        return TempArray.Create<char>(temp[..written]);
     }
 
     public static void AddRangeFormatted<T>(this scoped ref readonly TempList<char> list,
         T value,
-        ReadOnlySpan<char> format = default,
+        scoped ReadOnlySpan<char> format = default,
         IFormatProvider provider = null) where T : ISpanFormattable
     {
         Span<char> temp = stackalloc char[128];
@@ -96,7 +96,7 @@ public static class StringHelper
 
     public static void AddRangeEnum<T>(this scoped ref readonly TempList<char> list,
         T value,
-        ReadOnlySpan<char> format = default) where T : struct, Enum
+        scoped ReadOnlySpan<char> format = default) where T : struct, Enum
     {
         Span<char> temp = stackalloc char[128];
         Enum.TryFormat(value, temp, out var written, format);
@@ -123,12 +123,12 @@ public static class StringHelper
         return (int)float.Log10(float.CreateChecked(value)) + result;
     }
 
-    public static TempList<ValueList<char>> Split(this scoped ReadOnlySpan<char> value, ReadOnlySpan<char> separator)
+    public static TempList<ValueList<char>> Split(this scoped ReadOnlySpan<char> value, scoped ReadOnlySpan<char> separator)
     {
         var enumerator = MemoryExtensions.Split(value, separator);
-        var list = TempList<ValueList<char>>.Create();
+        var list = TempList.Create<ValueList<char>>();
 
-        foreach (var s in enumerator) list.Add(ValueList<char>.Create(value[s]));
+        foreach (var s in enumerator) list.Add(ValueList.Create(value[s]));
 
         return list;
     }

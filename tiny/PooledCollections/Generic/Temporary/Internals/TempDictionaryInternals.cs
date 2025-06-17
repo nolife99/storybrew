@@ -50,14 +50,14 @@ public readonly struct TempDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
+        if (Buckets is not null)
             try
             {
                 BucketPool?.Return(Buckets);
             }
             catch { }
 
-        if (!Entries.IsNullOrEmpty())
+        if (Entries is not null)
             try
             {
                 EntryPool?.Return(Entries, ClearEntries);

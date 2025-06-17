@@ -9,8 +9,8 @@ using Tiny.PooledCollections.Generic.Internals;
 
 internal sealed class PrimitiveStreamerBufferData<TPrimitive>(VertexDeclaration vertexDeclaration,
     int maxPrimitivesPerBatch,
-    ReadOnlySpan<ushort> indices) : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices)
-    where TPrimitive : struct
+    scoped ReadOnlySpan<ushort> indices)
+    : PrimitiveStreamerVao<TPrimitive>(vertexDeclaration, maxPrimitivesPerBatch, indices) where TPrimitive : struct
 {
     readonly PooledList<TPrimitive> primitiveBuffer = new(maxPrimitivesPerBatch);
 

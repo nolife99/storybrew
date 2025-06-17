@@ -12,7 +12,7 @@ public readonly struct ValueQueueInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearArray;
     [NonSerialized] public readonly T[] Array;
 
-    internal ValueQueueInternalsRefUnsafe(in ValueQueue<T> source)
+    internal ValueQueueInternalsRefUnsafe(scoped ref readonly ValueQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;
@@ -27,7 +27,7 @@ partial class ValueCollectionInternalsUnsafe
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueQueueInternalsRefUnsafe<T> GetRef<T>(in ValueQueue<T> source) => new(source);
+    public static ValueQueueInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly ValueQueue<T> source) => new(in source);
 
     /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -22,7 +22,7 @@ public sealed class TriggerCommand : CommandGroup
 
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
     {
-        var list = TempList<char>.Create();
+        var list = TempList.Create<char>();
         list.AddRange(['T', ',']);
         list.AddRange(TriggerName.AsSpan());
 

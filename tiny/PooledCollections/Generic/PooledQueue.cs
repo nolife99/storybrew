@@ -31,7 +31,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 {
     static readonly T[] s_emptyArray = [];
 
-    internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
     internal T[] _array;
     internal int _head; // The index from which to dequeue if the queue isn't empty.
 
@@ -59,7 +59,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     // is used.
     public PooledQueue(int capacity, ArrayPool<T> pool)
     {
-        if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
@@ -69,7 +69,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     // to get each of the elements.
     public PooledQueue(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = EnumerableHelpers.ToArray(collection, s_emptyArray, _pool, out _size);
@@ -127,7 +127,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     public void CopyTo(T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(dest, destIndex, count);
     }
@@ -280,7 +280,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     void ThrowForEmptyQueue()
     {
-        SystemDebug.Assert(_size == 0);
+        Debug.Assert(_size == 0);
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyQueue();
     }
 
@@ -306,7 +306,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     void Grow(int capacity)
     {
-        SystemDebug.Assert(_array.Length < capacity);
+        Debug.Assert(_array.Length < capacity);
 
         const int GrowFactor = 2;
         const int MinimumGrow = 4;
@@ -315,7 +315,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newcapacity > SystemArray.MaxLength) newcapacity = SystemArray.MaxLength;
+        if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
         // Ensure minimum growth is respected.
         newcapacity = Math.Max(newcapacity, _array.Length + MinimumGrow);
@@ -329,7 +329,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     void ReturnArray(T[] replaceWith)
     {
-        if (!_array.IsNullOrEmpty())
+        if (_array is not null)
             try
             {
                 _pool.Return(_array, s_clearArray);
@@ -411,7 +411,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            SystemDebug.Assert(_index == -1 || _index == -2);
+            Debug.Assert(_index == -1 || _index == -2);
 
             if (_index == -1) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();

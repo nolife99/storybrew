@@ -24,7 +24,7 @@ public readonly struct ValueDictionaryInternalsRefUnsafe<TKey, TValue>
     [NonSerialized] public readonly Entry<TKey, TValue>[] Entries;
     [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
 
-    internal ValueDictionaryInternalsRefUnsafe(in ValueDictionary<TKey, TValue> source)
+    internal ValueDictionaryInternalsRefUnsafe(scoped ref readonly ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -48,20 +48,20 @@ partial class ValueCollectionInternalsUnsafe
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ValueDictionaryInternalsRefUnsafe<TKey, TValue> GetRef<TKey, TValue>(
-        in ValueDictionary<TKey, TValue> source) => new(source);
+        this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(in source);
 
     /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(in this ValueDictionary<TKey, TValue> source)
-        => source._entries.AsSpan(0, source._count);
+    public static Span<Entry<TKey, TValue>> AsSpan<TKey, TValue>(
+        this scoped ref readonly ValueDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source._count);
 
     /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(in this ValueDictionary<TKey, TValue> source)
-        => source._entries.AsMemory(0, source._count);
+    public static Memory<Entry<TKey, TValue>> AsMemory<TKey, TValue>(
+        this scoped ref readonly ValueDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<TKey, TValue>(in this ValueDictionary<TKey, TValue> source,
+    public static void GetUnsafe<TKey, TValue>(this scoped ref readonly ValueDictionary<TKey, TValue> source,
         out Entry<TKey, TValue>[] entries,
         out int count)
     {
@@ -81,8 +81,8 @@ partial class ValueCollectionInternalsUnsafe
     ///     System.Runtime.CompilerServices.Unsafe.IsNullRef
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(in ValueDictionary<TKey, TValue> dictionary, TKey key)
-        where TKey : notnull => ref dictionary.FindValue(key);
+    public static ref TValue GetValueRefOrNullRef<TKey, TValue>(this scoped ref ValueDictionary<TKey, TValue> dictionary,
+        TKey key) where TKey : notnull => ref dictionary.FindValue(key);
 
     /// <summary>
     ///     Gets a ref to a <typeparamref name="TValue"/> in the <see cref="ValueDictionary{TKey, TValue}"/>, adding a new

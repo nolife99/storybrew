@@ -709,8 +709,8 @@ public sealed partial class Project : IDisposable
             TinyObject effectRoot = new()
             {
                 { "FormatVersion", Version },
-                { "Name", effect.Name },
-                { "Script", effect.BaseName },
+                { "Name", effect.Name.ToString() },
+                { "Script", effect.BaseName.ToString() },
                 { "Multithreaded", effect.Multithreaded }
             };
 

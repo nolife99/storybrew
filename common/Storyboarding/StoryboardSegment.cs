@@ -3,7 +3,6 @@ namespace StorybrewCommon.Storyboarding;
 using System.Collections.Generic;
 using System.Numerics;
 using CommandValues;
-using MathHelper = OpenTK.Mathematics.MathHelper;
 
 ///<summary> Storyboarding segments for storyboard objects. </summary>
 public abstract class StoryboardSegment : StoryboardObject
@@ -23,8 +22,8 @@ public abstract class StoryboardSegment : StoryboardObject
     ///<summary> Gets or sets the rotation of the storyboard segment in degrees. </summary>
     public float RotationDegrees
     {
-        get => MathHelper.RadiansToDegrees(Rotation);
-        set => Rotation = MathHelper.DegreesToRadians(value);
+        get => float.RadiansToDegrees(Rotation);
+        set => Rotation = float.DegreesToRadians(value);
     }
 
     ///<summary> Gets or sets the scale of the storyboard segment. </summary>

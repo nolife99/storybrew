@@ -373,9 +373,13 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         proj.OnEffectsStatusChanged += project_OnEffectsStatusChanged;
 
         if (!proj.MapsetPathIsValid)
-            Manager.ShowMessage($"The mapset folder cannot be found.\n{proj.MapsetPath}\n\nPlease select a new one.",
-                changeMapsetFolder,
-                true);
+        {
+            using var text = TempList.Create("The mapset folder cannot be found.\n".AsSpan());
+            text.AddRange(proj.MapsetPath.AsSpan());
+            text.AddRange("\n\nPlease select a new one.".AsSpan());
+
+            Manager.ShowMessage(text.AsReadOnlySpan(), changeMapsetFolder, true);
+        }
     }
 
     public override bool OnKeyDown(KeyboardKeyEventArgs e)
@@ -556,7 +560,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         timeline.SetValueSilent(time);
         if (Manager.GetContext<Editor>().IsFixedRateUpdate)
         {
-            using (var temp = TempList<char>.Create())
+            using (var temp = TempList.Create<char>())
             {
                 if (Manager.GetContext<Editor>().InputManager.Alt)
                 {
@@ -590,7 +594,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     TempList<char> buildWarningMessage()
     {
-        var warnings = TempList<char>.Create(256);
+        var warnings = TempList.Create<char>(256);
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;
@@ -616,8 +620,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     using (var array = stats.ProlongedSprites.AsValueEnumerable()
                         .SelectMany(x
                             => ", ".AsSpan().AsValueEnumerable().Concat(x.TexturePath.AsSpan().AsValueEnumerable()))
-                        .Skip(2)
-                        .ToArrayPool()) warnings.AddRange(array.Span);
+                        .ToArrayPool()) warnings.AddRange(array.Span[2..]);
 
                     warnings.Add(')');
                 }

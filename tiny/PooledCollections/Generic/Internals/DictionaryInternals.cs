@@ -27,7 +27,7 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
-    public DictionaryInternals(PooledDictionary<TKey, TValue> source)
+    internal DictionaryInternals(PooledDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -49,19 +49,9 @@ public readonly struct DictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (!Entries.IsNullOrEmpty())
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 

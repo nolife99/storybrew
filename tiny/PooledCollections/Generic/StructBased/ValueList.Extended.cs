@@ -53,7 +53,7 @@ partial struct ValueList<T> : IDisposable
 
     public void InsertRange(int index, T[] array)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         InsertRange(index, array.AsSpan());
     }
@@ -72,7 +72,7 @@ partial struct ValueList<T> : IDisposable
     /// </summary>
     public void AddRange(T[] array)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         AddRange(array.AsSpan());
     }
@@ -115,7 +115,7 @@ partial struct ValueList<T> : IDisposable
 
     public void ConvertAll<TOut>(ValueList<TOut> output, Converter<T, TOut> converter)
     {
-        if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+        ArgumentNullException.ThrowIfNull(converter);
 
         var items = _items;
 
@@ -124,7 +124,7 @@ partial struct ValueList<T> : IDisposable
 
     public void FindAll(ValueList<T> output, Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -135,7 +135,7 @@ partial struct ValueList<T> : IDisposable
 
     public bool TryFind(Predicate<T> match, out T result)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -152,7 +152,7 @@ partial struct ValueList<T> : IDisposable
 
     public bool TryFindLast(Predicate<T> match, out T result)
     {
-        if (match is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -169,7 +169,7 @@ partial struct ValueList<T> : IDisposable
 
     void ReturnArray(T[] replaceWith)
     {
-        if (!_items.IsNullOrEmpty())
+        if (_items is not null)
             try
             {
                 _pool.Return(_items, s_clearItems);

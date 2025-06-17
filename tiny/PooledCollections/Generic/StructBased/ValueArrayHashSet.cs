@@ -33,7 +33,7 @@ using System.Runtime.Serialization;
     [NonSerialized] internal ArrayPool<ArrayEntry<T>> _entryPool;
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     static readonly Type s_typeOfKey = typeof(T);
     static readonly ArrayEntry<T>[] s_emptyEntries = [];
@@ -75,7 +75,7 @@ using System.Runtime.Serialization;
 
     public void GetObjectData(SerializationInfo info, StreamingContext context)
     {
-        if (info == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
+        ArgumentNullException.ThrowIfNull(info);
 
         var count = Count;
 
@@ -93,7 +93,7 @@ using System.Runtime.Serialization;
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
 
-        if (siInfo == null)
+        if (siInfo is null)
 
             // We can return immediately if this function is called twice.
             // Note we remove the serialization info from the table at the end of this method.
@@ -107,11 +107,11 @@ using System.Runtime.Serialization;
 
             var array = (T[]?)siInfo.GetValue(EntriesName, typeof(T[]));
 
-            if (array == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
+            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
 
             for (var i = 0; i < array.Length; i++)
             {
-                if (array[i] == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
+                if (array[i] is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
 
                 Add(array[i]);
             }
@@ -129,7 +129,7 @@ using System.Runtime.Serialization;
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _entries != null && _buckets != null;
+        get => _entries is not null && _buckets is not null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -519,7 +519,7 @@ using System.Runtime.Serialization;
 
                 _entries = newEntries;
 
-                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
+                if (entries is not null) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -827,7 +827,7 @@ using System.Runtime.Serialization;
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -841,7 +841,7 @@ using System.Runtime.Serialization;
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -853,7 +853,7 @@ using System.Runtime.Serialization;
 
     void ReturnEntries(ArrayEntry<T>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
+        if (_entries is not null)
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

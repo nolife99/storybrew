@@ -56,7 +56,7 @@ partial struct ValueDictionary<TKey, TValue> : IDisposable
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -68,7 +68,7 @@ partial struct ValueDictionary<TKey, TValue> : IDisposable
 
     void ReturnEntries(Entry<TKey, TValue>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty()) _entryPool.Return(_entries, s_clearEntries);
+        if (_entries is not null) _entryPool.Return(_entries, s_clearEntries);
 
         _entries = replaceWith ?? s_emptyEntries;
     }

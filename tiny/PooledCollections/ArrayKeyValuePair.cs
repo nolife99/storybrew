@@ -8,7 +8,7 @@ public readonly struct ArrayKeyValuePair<TKey, TValue>
     readonly TValue[] _values;
     readonly int _index;
 
-    public ArrayKeyValuePair(TKey keys, TValue[] values, int index)
+    internal ArrayKeyValuePair(TKey keys, TValue[] values, int index)
     {
         _values = values;
         _index = index;

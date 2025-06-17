@@ -43,11 +43,11 @@ public readonly struct ValueArrayDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty()) BucketPool.Return(Buckets);
+        if (Buckets is not null) BucketPool.Return(Buckets);
 
-        if (!Entries.IsNullOrEmpty()) EntryPool.Return(Entries, ClearEntries);
+        if (Entries is not null) EntryPool.Return(Entries, ClearEntries);
 
-        if (!Values.IsNullOrEmpty()) ValuePool.Return(Values, ClearValues);
+        if (Values is not null) ValuePool.Return(Values, ClearValues);
     }
 }
 

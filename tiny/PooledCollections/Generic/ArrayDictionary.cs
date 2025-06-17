@@ -24,8 +24,8 @@ public class ArrayDictionary<TKey, TValue>
     const string CountName = "Count"; // Do not rename (binary serialization). Must save buckets.Length
     const string KeyValuePairsName = "KeyValuePairs"; // Do not rename (binary serialization)
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
-    internal static readonly bool s_clearValues = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
+    internal static readonly bool s_clearValues = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
 
     static readonly Type s_typeOfKey = typeof(TKey);
     static readonly ArrayEntry<TKey>[] s_emptyEntries = [];
@@ -283,10 +283,10 @@ public class ArrayDictionary<TKey, TValue>
     {
         var values = _values;
 
-        if (value == null)
+        if (value is null)
         {
             foreach (var item in values)
-                if (item == null)
+                if (item is null)
                     return true;
         }
         else if (typeof(TValue).IsValueType)
@@ -314,10 +314,10 @@ public class ArrayDictionary<TKey, TValue>
     {
         var values = _values;
 
-        if (value == null)
+        if (value is null)
         {
             foreach (var item in values)
-                if (item == null)
+                if (item is null)
                     return true;
         }
         else if (typeof(TValue).IsValueType)
@@ -799,7 +799,7 @@ public class ArrayDictionary<TKey, TValue>
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
 
-        if (siInfo == null)
+        if (siInfo is null)
 
             // We can return immediately if this function is called twice.
             // Note we remove the serialization info from the table at the end of this method.
@@ -814,11 +814,11 @@ public class ArrayDictionary<TKey, TValue>
             var array = (KeyValuePair<TKey, TValue>[]?)siInfo.GetValue(KeyValuePairsName,
                 typeof(KeyValuePair<TKey, TValue>[]));
 
-            if (array == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
+            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
 
             for (var i = 0; i < array.Length; i++)
             {
-                if (array[i].Key == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
+                if (array[i].Key is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
 
                 Add(array[i].Key, array[i].Value);
             }
@@ -836,18 +836,15 @@ public class ArrayDictionary<TKey, TValue>
 
     public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
     {
-        if (info == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
-
         var count = Count;
 
         info.AddValue(CountName, count);
 
-        if (count > 0)
-        {
-            var array = new KeyValuePair<TKey, TValue>[count];
-            CopyTo(array);
-            info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
-        }
+        if (count <= 0) return;
+
+        var array = new KeyValuePair<TKey, TValue>[count];
+        CopyTo(array);
+        info.AddValue(KeyValuePairsName, array, typeof(KeyValuePair<TKey, TValue>[]));
     }
 
     void Initialize(int capacity)
@@ -1164,7 +1161,7 @@ public class ArrayDictionary<TKey, TValue>
 
                 _values = newValues;
 
-                if (!values.IsNullOrEmpty()) _valuePool.Return(values, s_clearValues);
+                if (values is not null) _valuePool.Return(values, s_clearValues);
             }
             else _valuePool.Return(newValues);
         }
@@ -1181,7 +1178,7 @@ public class ArrayDictionary<TKey, TValue>
 
                 _entries = newEntries;
 
-                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
+                if (entries is not null) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -1192,12 +1189,7 @@ public class ArrayDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -1206,36 +1198,21 @@ public class ArrayDictionary<TKey, TValue>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         _buckets = replaceWith ?? s_emptyBuckets;
     }
 
     void ReturnEntries(ArrayEntry<TKey>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
-            try
-            {
-                _entryPool.Return(_entries, s_clearEntries);
-            }
-            catch { }
+        if (_entries is not null) _entryPool.Return(_entries, s_clearEntries);
 
         _entries = replaceWith ?? s_emptyEntries;
     }
 
     void ReturnValues(TValue[] replaceWith)
     {
-        if (!_values.IsNullOrEmpty())
-            try
-            {
-                _valuePool.Return(_values, s_clearValues);
-            }
-            catch { }
+        if (_values is not null) _valuePool.Return(_values, s_clearValues);
 
         _values = replaceWith ?? s_emptyValues;
     }
@@ -1339,7 +1316,7 @@ public class ArrayDictionary<TKey, TValue>
 
         TryGetIndex(key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder();
+        if (_values[findIndex] is null) _values[findIndex] = builder();
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]));
 
         return ref _values[findIndex];
@@ -1353,7 +1330,7 @@ public class ArrayDictionary<TKey, TValue>
 
         TryGetIndex(in key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder();
+        if (_values[findIndex] is null) _values[findIndex] = builder();
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]));
 
         return ref _values[findIndex];
@@ -1380,7 +1357,7 @@ public class ArrayDictionary<TKey, TValue>
 
         TryGetIndex(key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder(ref parameter);
+        if (_values[findIndex] is null) _values[findIndex] = builder(ref parameter);
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]), ref parameter);
 
         return ref _values[findIndex];
@@ -1407,7 +1384,7 @@ public class ArrayDictionary<TKey, TValue>
 
         TryGetIndex(in key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder(ref parameter);
+        if (_values[findIndex] is null) _values[findIndex] = builder(ref parameter);
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]), ref parameter);
 
         return ref _values[findIndex];

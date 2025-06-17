@@ -22,13 +22,7 @@ public readonly struct TempListInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Items is not { Length: > 0 }) return;
-
-        try
-        {
-            Pool?.Return(Items, ClearItems);
-        }
-        catch { }
+        if (Items is not null) Pool?.Return(Items, ClearItems);
     }
 }
 

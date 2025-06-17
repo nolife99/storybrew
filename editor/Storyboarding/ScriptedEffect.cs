@@ -7,8 +7,8 @@ using System.Runtime;
 using System.Threading;
 using Scripting;
 using StorybrewCommon.Scripting;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Util;
 
 public class ScriptedEffect : Effect
@@ -22,7 +22,7 @@ public class ScriptedEffect : Effect
     bool multithreaded;
 
     EffectStatus status = EffectStatus.Initializing;
-    ValueList<char> statusMessage;
+    PooledList<char> statusMessage;
 
     long statusStopwatch;
     CancellationTokenSource token;
@@ -39,10 +39,10 @@ public class ScriptedEffect : Effect
         this.multithreaded = multithreaded;
     }
 
-    public override string BaseName => scriptContainer?.Name;
+    public override ReadOnlySpan<char> BaseName => scriptContainer is null ? default : scriptContainer.Name;
     public override string Path => scriptContainer?.MainSourcePath;
     public override EffectStatus Status => status;
-    public override ReadOnlySpan<char> StatusMessage => statusMessage.AsReadOnlySpan();
+    public override ReadOnlySpan<char> StatusMessage => statusMessage is null ? default : statusMessage.AsReadOnlySpan();
     public override bool Multithreaded => multithreaded;
     public override bool BeatmapDependent => beatmapDependent;
 
@@ -180,7 +180,7 @@ public class ScriptedEffect : Effect
 
         this.status = status;
 
-        var statusMessageBuilder = ValueList<char>.Create();
+        PooledList<char> statusMessageBuilder = new();
         if (!message.IsEmpty) statusMessageBuilder.AddRange(message);
 
         if (!log.IsWhiteSpace())
@@ -191,7 +191,7 @@ public class ScriptedEffect : Effect
             statusMessageBuilder.AddRange(log);
         }
 
-        statusMessage.Dispose();
+        statusMessage?.Dispose();
         statusMessage = statusMessageBuilder;
 
         Program.Schedule(RaiseChanged).Wait();

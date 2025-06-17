@@ -19,7 +19,7 @@ public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHash
         if (ReferenceEquals(x, y)) return true;
 
         // They're not both null, so if either is null, they're not equal.
-        if (x == null || y == null) return false;
+        if (x is null || y is null) return false;
 
         var defaultComparer = EqualityComparer<T>.Default;
 
@@ -49,9 +49,9 @@ public readonly struct HashSetEqualityComparer<T> : IEqualityComparer<PooledHash
     {
         var hashCode = 0; // default to 0 for null/empty set
 
-        if (obj != null)
+        if (obj is not null)
             foreach (var t in obj)
-                if (t != null)
+                if (t is not null)
                     hashCode ^= t.GetHashCode(); // same hashcode as default comparer
 
         return hashCode;

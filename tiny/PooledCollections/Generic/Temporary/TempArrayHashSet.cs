@@ -26,7 +26,7 @@ using System.Runtime.CompilerServices;
     [NonSerialized] internal ArrayPool<ArrayEntry<T>> _entryPool;
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     static readonly Type s_typeOfKey = typeof(T);
     static readonly ArrayEntry<T>[] s_emptyEntries = [];
@@ -75,7 +75,7 @@ using System.Runtime.CompilerServices;
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _entries != null && _buckets != null;
+        get => _entries is not null && _buckets is not null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -465,7 +465,7 @@ using System.Runtime.CompilerServices;
 
                 _entries = newEntries;
 
-                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
+                if (entries is not null) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -773,12 +773,7 @@ using System.Runtime.CompilerServices;
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -787,24 +782,14 @@ using System.Runtime.CompilerServices;
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         _buckets = replaceWith ?? s_emptyBuckets;
     }
 
     void ReturnEntries(ArrayEntry<T>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
-            try
-            {
-                _entryPool.Return(_entries, s_clearEntries);
-            }
-            catch { }
+        if (_entries is not null) _entryPool.Return(_entries, s_clearEntries);
 
         _entries = replaceWith ?? s_emptyEntries;
     }
@@ -833,7 +818,7 @@ using System.Runtime.CompilerServices;
         readonly TempArrayHashSet<T> _set;
 
 #if DEBUG
-        private int _startCount;
+        int _startCount;
 #endif
 
         int _count;

@@ -10,6 +10,8 @@ using SixLabors.ImageSharp;
 using Skinning.Styles;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
@@ -25,7 +27,9 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public float Opacity = 1;
 
-    string styleName, tooltip;
+    string styleName;
+
+    ValueArray<char> tooltip = ValueArray.Empty<char>();
     protected WidgetManager Manager => manager;
 
     public bool Displayed
@@ -103,21 +107,27 @@ public class Widget(WidgetManager manager) : IDisposable
         }
     }
 
-    public string Tooltip
+    public ReadOnlySpan<char> Tooltip
     {
-        get => tooltip;
+        get => tooltip.AsReadOnlySpan();
         set
         {
-            if (tooltip == value) return;
+            if (tooltip.AsReadOnlySpan().SequenceEqual(value)) return;
 
-            tooltip = value;
-
-            if (string.IsNullOrWhiteSpace(tooltip))
+            if (value.IsWhiteSpace())
             {
                 Manager.UnregisterTooltip(this);
-                tooltip = null;
+
+                tooltip.Dispose();
+                tooltip = ValueArray.Empty<char>();
             }
-            else Manager.RegisterTooltip(this, tooltip);
+            else
+            {
+                tooltip.Dispose();
+                tooltip = ValueArray.Create(value);
+
+                Manager.RegisterTooltip(this, value);
+            }
         }
     }
 
@@ -189,13 +199,11 @@ public class Widget(WidgetManager manager) : IDisposable
 
     protected string BuildStyleName(params ReadOnlySpan<string> modifiers) => buildStyleName(StyleName, modifiers);
 
-    static string buildStyleName(string baseName, ReadOnlySpan<string> modifiers)
+    static string buildStyleName(string baseName, scoped ReadOnlySpan<string> modifiers)
     {
         if (modifiers.IsEmpty) return baseName;
 
-        using var sb = TempList<char>.Create();
-        sb.AddRange(baseName.AsSpan());
-
+        using var sb = TempList.Create(baseName.AsSpan());
         foreach (var modifier in modifiers)
         {
             if (string.IsNullOrEmpty(modifier)) continue;
@@ -254,7 +262,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public void ClearWidgets()
     {
-        using var state = TempArray<Widget>.Create(children.AsReadOnlySpan());
+        using var state = TempArray.Create(children.AsReadOnlySpan());
         foreach (var child in state) child.Dispose();
     }
 
@@ -569,9 +577,10 @@ public class Widget(WidgetManager manager) : IDisposable
             Parent?.Remove(this);
             manager.NotifyWidgetDisposed(this);
             ClearWidgets();
+
+            children.Dispose();
         }
 
-        children.Dispose();
         Tooltip = null;
 
         if (disposing) OnDisposed?.Invoke(this, EventArgs.Empty);

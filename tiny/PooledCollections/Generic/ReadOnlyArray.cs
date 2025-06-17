@@ -31,7 +31,7 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _array != null;
+        get => _array is not null;
     }
 
     /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
@@ -46,7 +46,7 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T>
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }

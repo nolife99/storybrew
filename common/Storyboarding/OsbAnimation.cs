@@ -70,7 +70,7 @@ public class OsbAnimation : OsbSprite
         writer.Write("Animation,");
         WriteHeaderCommon(writer, exportSettings, layer, transform);
 
-        using var builder = TempList<char>.Create();
+        using var builder = TempList.Create<char>();
 
         builder.Add(',');
         builder.AddRangeFormatted(FrameCount, provider: exportSettings.NumberFormat);

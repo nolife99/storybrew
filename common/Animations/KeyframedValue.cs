@@ -379,7 +379,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
         var lastPoint = keyframes.Count - 1;
 
-        var keep = TempList<int>.Create([0, lastPoint]);
+        var keep = TempList.Create([0, lastPoint]);
         getSimplifiedKeyframeIndices(keyframes, ref keep, 0, lastPoint, tolerance * tolerance, getDistanceSq, state);
 
         if (keep.Count == keyframes.Count)
@@ -411,7 +411,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         Func<Keyframe<TValue>, Keyframe<TValue>, Keyframe<TValue>, TState, float> getDistance,
         TState state)
     {
-        using var stack = TempStack<(int, int)>.Create([(first, last)]);
+        using var stack = TempStack.Create([(first, last)]);
         while (stack.Count > 0)
         {
             (first, last) = stack.Pop();

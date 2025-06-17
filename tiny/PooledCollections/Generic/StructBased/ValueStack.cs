@@ -38,7 +38,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     static readonly T[] s_emptyArray = [];
 
-    internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     const int DefaultCapacity = 4;
 
@@ -46,7 +46,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     // must be a non-negative number.
     internal ValueStack(int capacity, ArrayPool<T> pool)
     {
-        if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         _size = 0;
         _version = 0;
@@ -58,7 +58,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     // pushed onto the stack in the same order they are read by the enumerator.
     internal ValueStack(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         _size = 0;
         _version = 0;
@@ -75,7 +75,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _array != null;
+        get => _array is not null;
     }
 
     // Removes all Objects from the Stack.
@@ -110,7 +110,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     public void CopyTo(T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(dest.AsSpan(), destIndex, count);
     }
@@ -238,7 +238,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     [MethodImpl(MethodImplOptions.NoInlining)]
     void PushWithResize(T item)
     {
-        SystemDebug.Assert(_size == _array.Length);
+        Debug.Assert(_size == _array.Length);
         Grow(_size + 1);
         _array[_size] = item;
         _version++;
@@ -254,7 +254,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     /// <returns>The new capacity of this stack.</returns>
     public int EnsureCapacity(int capacity)
     {
-        if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         if (_array.Length < capacity)
         {
@@ -267,13 +267,13 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     void Grow(int capacity)
     {
-        SystemDebug.Assert(_array.Length < capacity);
+        Debug.Assert(_array.Length < capacity);
 
         var newCapacity = _array.Length == 0 ? DefaultCapacity : 2 * _array.Length;
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast.
-        if ((uint)newCapacity > SystemArray.MaxLength) newCapacity = SystemArray.MaxLength;
+        if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
 
         // If computed capacity is still less than specified, set to the original argument.
         // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
@@ -290,7 +290,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     {
         if (_size == 0) return s_emptyArray;
 
-        var objArray = new T[_size];
+        var objArray = GC.AllocateUninitializedArray<T>(_size);
         var i = 0;
         while (i < _size)
         {
@@ -303,7 +303,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     void ReturnArray(T[] replaceWith = null)
     {
-        if (!_array.IsNullOrEmpty())
+        if (_array is not null)
             try
             {
                 _pool.Return(_array, s_clearArray);
@@ -315,7 +315,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
     void ThrowForEmptyStack()
     {
-        SystemDebug.Assert(_size == 0);
+        Debug.Assert(_size == 0);
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyStack();
     }
 
@@ -379,7 +379,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            SystemDebug.Assert(_index == -1 || _index == -2);
+            Debug.Assert(_index == -1 || _index == -2);
 
             if (_index == -2) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();

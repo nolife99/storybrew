@@ -35,7 +35,7 @@ public sealed class TextureContainerAsync(ResourceContainer resourceContainer = 
         }
     }
 
-    public Texture2dRegion Get(ReadOnlySpan<char> filename)
+    public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
     {
         var hashCode = string.GetHashCode(filename);
 
@@ -86,7 +86,7 @@ internal static class TextureUploadQueue
         var allocator = MemoryAllocator.Default;
         allocator.GetType()
             .GetField("sharedArrayPoolThresholdInBytes", BindingFlags.NonPublic | BindingFlags.Instance)
-            .SetValue(allocator, 65536);
+            ?.SetValue(allocator, 65536); // Prevents LOH allocations
 
         Native.Window.Context.MakeNoneCurrent();
 

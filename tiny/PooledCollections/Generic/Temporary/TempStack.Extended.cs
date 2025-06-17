@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 partial struct TempStack<T>
 {
-    TempStack(ReadOnlySpan<T> span, ArrayPool<T> pool)
+    internal TempStack(ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
         _size = 0;
         _version = 0;

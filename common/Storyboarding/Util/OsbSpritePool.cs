@@ -116,7 +116,11 @@ public class OsbSpritePool : IDisposable
     public int MaxPoolDuration { get; set; }
 
     /// <inheritdoc/>
-    public void Dispose() => Dispose(true);
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     /// <summary> Gets an available sprite from the sprite pool. </summary>
     /// <remarks> You must input the correct start time and end time of the sprite for proper pooling. </remarks>

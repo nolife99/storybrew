@@ -26,13 +26,7 @@ public readonly struct TempQueueInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Array.IsNullOrEmpty()) return;
-
-        try
-        {
-            Pool?.Return(Array, ClearArray);
-        }
-        catch { }
+        if (Array is not null) Pool?.Return(Array, ClearArray);
     }
 }
 

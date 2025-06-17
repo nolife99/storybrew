@@ -47,8 +47,8 @@ public partial struct ValueDictionary<TKey, TValue>
 
     [NonSerialized] internal ArrayPool<Entry<TKey, TValue>> _entryPool;
 
-    internal static readonly bool s_isReferenceKey = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
-    internal static readonly bool s_isReferenceValue = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
+    internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
+    internal static readonly bool s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
     internal static readonly bool s_clearEntries = s_isReferenceKey || s_isReferenceValue;
 
     const int StartOfFreeList = -3;
@@ -102,12 +102,9 @@ public partial struct ValueDictionary<TKey, TValue>
     internal ValueDictionary(IDictionary<TKey, TValue> dictionary,
         IEqualityComparer<TKey>? comparer,
         ArrayPool<int> bucketPool,
-        ArrayPool<Entry<TKey, TValue>> entryPool) : this(dictionary != null ? dictionary.Count : 0,
-        comparer,
-        bucketPool,
-        entryPool)
+        ArrayPool<Entry<TKey, TValue>> entryPool) : this(dictionary?.Count ?? 0, comparer, bucketPool, entryPool)
     {
-        if (dictionary == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
+        ArgumentNullException.ThrowIfNull(dictionary);
 
         AddRange(dictionary);
     }
@@ -120,7 +117,7 @@ public partial struct ValueDictionary<TKey, TValue>
         bucketPool,
         entryPool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         AddRange(collection);
     }
@@ -142,10 +139,10 @@ public partial struct ValueDictionary<TKey, TValue>
 
             // This is not currently a true .AddRange as it needs to be an initialized dictionary
             // of the correct size, and also an empty dictionary with no current entities (and no argument checks).
-            SystemDebug.Assert(source._entries is not null);
-            SystemDebug.Assert(_entries is not null);
-            SystemDebug.Assert(_entries.Length >= source.Count);
-            SystemDebug.Assert(_count == 0);
+            Debug.Assert(source._entries is not null);
+            Debug.Assert(_entries is not null);
+            Debug.Assert(_entries.Length >= source.Count);
+            Debug.Assert(_count == 0);
 
             var oldEntries = source._entries;
             if (source._comparer == _comparer)
@@ -205,7 +202,7 @@ public partial struct ValueDictionary<TKey, TValue>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _entries != null && _buckets != null;
+        get => _entries is not null && _buckets is not null;
     }
 
     public ValueDictionaryKeyCollection<TKey, TValue> Keys => new(this);
@@ -227,21 +224,19 @@ public partial struct ValueDictionary<TKey, TValue>
             ref var value = ref FindValue(key);
             if (!Unsafe.IsNullRef(ref value)) return value;
 
-            ThrowHelper.ThrowKeyNotFoundException(key);
-            return default;
+            throw new KeyNotFoundException(nameof(key));
         }
         set
         {
             var modified = TryInsert(key, value, InsertionBehavior.OverwriteExisting);
-            SystemDebug.Assert(modified);
+            Debug.Assert(modified);
         }
     }
 
     public void Add(TKey key, TValue value)
     {
         var modified = TryInsert(key, value, InsertionBehavior.ThrowOnExisting);
-        SystemDebug.Assert(
-            modified); // If there was an existing key and the Add failed, an exception will already have been thrown.
+        Debug.Assert(modified); // If there was an existing key and the Add failed, an exception will already have been thrown.
     }
 
     void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair)
@@ -272,8 +267,8 @@ public partial struct ValueDictionary<TKey, TValue>
         var count = _count;
         if (count > 0)
         {
-            SystemDebug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
-            SystemDebug.Assert(_entries != null, "_entries should be non-null");
+            Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
+            Debug.Assert(_entries is not null, "_entries should be non-null");
 
             Array.Clear(_buckets, 0, _buckets.Length);
 
@@ -289,10 +284,10 @@ public partial struct ValueDictionary<TKey, TValue>
     public bool ContainsValue(TValue value)
     {
         var entries = _entries;
-        if (value == null)
+        if (value is null)
         {
             for (var i = 0; i < _count; i++)
-                if (entries![i].Next >= -1 && entries[i].Value == null)
+                if (entries![i].Next >= -1 && entries[i].Value is null)
                     return true;
         }
         else if (typeof(TValue).IsValueType)
@@ -324,7 +319,7 @@ public partial struct ValueDictionary<TKey, TValue>
 
     public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(dest.AsSpan(), destIndex, count);
     }
@@ -338,13 +333,13 @@ public partial struct ValueDictionary<TKey, TValue>
 
     public void GetObjectData(SerializationInfo info, StreamingContext context)
     {
-        if (info == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
+        ArgumentNullException.ThrowIfNull(info);
 
         info.AddValue(VersionName, _version);
         info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<TKey>));
-        info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
+        info.AddValue(HashSizeName, _buckets?.Length ?? 0); // This is the length of the bucket array
 
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
             var array = new KeyValuePair<TKey, TValue>[Count];
             CopyTo(array, 0);
@@ -354,14 +349,14 @@ public partial struct ValueDictionary<TKey, TValue>
 
     internal ref TValue FindValue(TKey key)
     {
-        if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+        ArgumentNullException.ThrowIfNull(key);
 
         ref var entry = ref Unsafe.NullRef<Entry<TKey, TValue>>();
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
-            SystemDebug.Assert(_entries != null, "expected entries to be != null");
+            Debug.Assert(_entries is not null, "expected entries to be is not null");
             var comparer = _comparer;
-            if (comparer == null)
+            if (comparer is null)
             {
                 var hashCode = (uint)key.GetHashCode();
                 var i = GetBucket(hashCode);
@@ -486,22 +481,22 @@ public partial struct ValueDictionary<TKey, TValue>
         // NOTE: this method is mirrored in CollectionsMarshal.GetValueRefOrAddDefault below.
         // If you make any changes here, make sure to keep that version in sync as well.
 
-        if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+        ArgumentNullException.ThrowIfNull(key);
 
         if (_buckets.IsNullOrEmpty()) Initialize(0);
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false);
+        Debug.Assert(_buckets.IsNullOrEmpty() == false);
 
         var entries = _entries;
-        SystemDebug.Assert(entries != null, "expected entries to be non-null");
+        Debug.Assert(entries is not null, "expected entries to be non-null");
 
         var comparer = _comparer;
-        var hashCode = (uint)(comparer == null ? key.GetHashCode() : comparer.GetHashCode(key));
+        var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
 
         uint collisionCount = 0;
         ref var bucket = ref GetBucket(hashCode);
         var i = bucket - 1; // Value in _buckets is 1-based
 
-        if (comparer == null)
+        if (comparer is null)
         {
             if (typeof(TKey).IsValueType)
 
@@ -514,14 +509,15 @@ public partial struct ValueDictionary<TKey, TValue>
 
                     if (entries[i].HashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entries[i].Key, key))
                     {
-                        if (behavior == InsertionBehavior.OverwriteExisting)
+                        switch (behavior)
                         {
-                            entries[i].Value = value;
-                            return true;
-                        }
+                            case InsertionBehavior.OverwriteExisting:
+                                entries[i].Value = value;
+                                return true;
 
-                        if (behavior == InsertionBehavior.ThrowOnExisting)
-                            ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key);
+                            case InsertionBehavior.ThrowOnExisting:
+                                ThrowHelper.ThrowAddingDuplicateWithKeyArgumentException(key); break;
+                        }
 
                         return false;
                     }
@@ -607,7 +603,7 @@ public partial struct ValueDictionary<TKey, TValue>
         if (_freeCount > 0)
         {
             index = _freeList;
-            SystemDebug.Assert(StartOfFreeList - entries[_freeList].Next >= -1,
+            Debug.Assert(StartOfFreeList - entries[_freeList].Next >= -1,
                 "shouldn't overflow because `next` cannot underflow");
 
             _freeList = StartOfFreeList - entries[_freeList].Next;
@@ -672,22 +668,22 @@ public partial struct ValueDictionary<TKey, TValue>
             // NOTE: this method is mirrored by Dictionary<TKey, TValue>.TryInsert above.
             // If you make any changes here, make sure to keep that version in sync as well.
 
-            if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+            ArgumentNullException.ThrowIfNull(key);
 
             if (dictionary._buckets.IsNullOrEmpty()) dictionary.Initialize(0);
-            SystemDebug.Assert(dictionary._buckets.IsNullOrEmpty() == false);
+            Debug.Assert(dictionary._buckets.IsNullOrEmpty() == false);
 
             var entries = dictionary._entries;
-            SystemDebug.Assert(entries != null, "expected entries to be non-null");
+            Debug.Assert(entries is not null, "expected entries to be non-null");
 
             var comparer = dictionary._comparer;
-            var hashCode = (uint)(comparer == null ? key.GetHashCode() : comparer.GetHashCode(key));
+            var hashCode = (uint)(comparer?.GetHashCode(key) ?? key.GetHashCode());
 
             uint collisionCount = 0;
             ref var bucket = ref dictionary.GetBucket(hashCode);
             var i = bucket - 1; // Value in _buckets is 1-based
 
-            if (comparer == null)
+            if (comparer is null)
             {
                 if (typeof(TKey).IsValueType)
 
@@ -772,7 +768,7 @@ public partial struct ValueDictionary<TKey, TValue>
             if (dictionary._freeCount > 0)
             {
                 index = dictionary._freeList;
-                SystemDebug.Assert(StartOfFreeList - entries[dictionary._freeList].Next >= -1,
+                Debug.Assert(StartOfFreeList - entries[dictionary._freeList].Next >= -1,
                     "shouldn't overflow because `next` cannot underflow");
 
                 dictionary._freeList = StartOfFreeList - entries[dictionary._freeList].Next;
@@ -816,7 +812,7 @@ public partial struct ValueDictionary<TKey, TValue>
                 // lookup is guaranteed to always find a value though and it will never return a null reference here.
                 ref var value = ref dictionary.FindValue(key)!;
 
-                SystemDebug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
+                Debug.Assert(!Unsafe.IsNullRef(ref value), "the lookup result cannot be a null ref here");
 
                 return ref value;
             }
@@ -831,7 +827,7 @@ public partial struct ValueDictionary<TKey, TValue>
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
 
-        if (siInfo == null)
+        if (siInfo is null)
 
             // We can return immediately if this function is called twice.
             // Note we remove the serialization info from the table at the end of this method.
@@ -849,11 +845,11 @@ public partial struct ValueDictionary<TKey, TValue>
             var array = (KeyValuePair<TKey, TValue>[]?)siInfo.GetValue(KeyValuePairsName,
                 typeof(KeyValuePair<TKey, TValue>[]));
 
-            if (array == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
+            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
 
             for (var i = 0; i < array.Length; i++)
             {
-                if (array[i].Key == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
+                if (array[i].Key is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
 
                 Add(array[i].Key, array[i].Value);
             }
@@ -869,9 +865,9 @@ public partial struct ValueDictionary<TKey, TValue>
     void Resize(int newSize, bool forceNewHashCodes)
     {
         // Value types never rehash
-        SystemDebug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
-        SystemDebug.Assert(_entries != null, "_entries should be non-null");
-        SystemDebug.Assert(newSize >= _entries.Length);
+        Debug.Assert(!forceNewHashCodes || !typeof(TKey).IsValueType);
+        Debug.Assert(_entries is not null, "_entries should be non-null");
+        Debug.Assert(newSize >= _entries.Length);
 
         var count = _count;
         var entries = _entryPool.Rent(newSize);
@@ -879,7 +875,7 @@ public partial struct ValueDictionary<TKey, TValue>
 
         if (!typeof(TKey).IsValueType && forceNewHashCodes)
         {
-            SystemDebug.Assert(_comparer is NonRandomizedStringEqualityComparer);
+            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<TKey>.Default;
 
             for (var i = 0; i < count; i++)
@@ -914,11 +910,11 @@ public partial struct ValueDictionary<TKey, TValue>
         // statement to copy the value for entry being removed into the output parameter.
         // Code has been intentionally duplicated for performance reasons.
 
-        if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+        ArgumentNullException.ThrowIfNull(key);
 
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
-            SystemDebug.Assert(_entries != null, "entries should be non-null");
+            Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
             var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
             ref var bucket = ref GetBucket(hashCode);
@@ -935,7 +931,7 @@ public partial struct ValueDictionary<TKey, TValue>
                     if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
                     else entries[last].Next = entry.Next;
 
-                    SystemDebug.Assert(StartOfFreeList - _freeList < 0,
+                    Debug.Assert(StartOfFreeList - _freeList < 0,
                         "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
@@ -970,11 +966,11 @@ public partial struct ValueDictionary<TKey, TValue>
         // statement to copy the value for entry being removed into the output parameter.
         // Code has been intentionally duplicated for performance reasons.
 
-        if (key == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
+        ArgumentNullException.ThrowIfNull(key);
 
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
-            SystemDebug.Assert(_entries != null, "entries should be non-null");
+            Debug.Assert(_entries is not null, "entries should be non-null");
             uint collisionCount = 0;
             var hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
             ref var bucket = ref GetBucket(hashCode);
@@ -993,7 +989,7 @@ public partial struct ValueDictionary<TKey, TValue>
 
                     value = entry.Value;
 
-                    SystemDebug.Assert(StartOfFreeList - _freeList < 0,
+                    Debug.Assert(StartOfFreeList - _freeList < 0,
                         "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
@@ -1051,7 +1047,7 @@ public partial struct ValueDictionary<TKey, TValue>
     {
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
 
-        var currentCapacity = _entries == null ? 0 : _entries.Length;
+        var currentCapacity = _entries?.Length ?? 0;
         if (currentCapacity >= capacity) return currentCapacity;
 
         _version++;
@@ -1081,7 +1077,7 @@ public partial struct ValueDictionary<TKey, TValue>
 
         var newSize = HashHelpers.GetPrime(capacity);
         var oldEntries = _entries;
-        var currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
+        var currentCapacity = oldEntries?.Length ?? 0;
         if (newSize >= currentCapacity) return;
 
         var oldBuckets = _buckets;
@@ -1090,7 +1086,7 @@ public partial struct ValueDictionary<TKey, TValue>
         _version++;
         Initialize(newSize);
 
-        SystemDebug.Assert(oldEntries is not null);
+        Debug.Assert(oldEntries is not null);
 
         CopyEntries(oldEntries, oldCount);
 
@@ -1100,7 +1096,7 @@ public partial struct ValueDictionary<TKey, TValue>
 
     void CopyEntries(Entry<TKey, TValue>[] entries, int count)
     {
-        SystemDebug.Assert(_entries is not null);
+        Debug.Assert(_entries is not null);
 
         var newEntries = _entries;
         var newCount = 0;
@@ -1135,7 +1131,7 @@ public partial struct ValueDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);

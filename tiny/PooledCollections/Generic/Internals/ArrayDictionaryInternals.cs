@@ -22,7 +22,7 @@ public readonly struct ArrayDictionaryInternals<TKey, TValue> : IDisposable
     [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public ArrayDictionaryInternals(ArrayDictionary<TKey, TValue> source)
+    internal ArrayDictionaryInternals(ArrayDictionary<TKey, TValue> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -42,26 +42,11 @@ public readonly struct ArrayDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (!Entries.IsNullOrEmpty())
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
 
-        if (!Values.IsNullOrEmpty())
-            try
-            {
-                ValuePool?.Return(Values, ClearValues);
-            }
-            catch { }
+        if (Values is not null) ValuePool?.Return(Values, ClearValues);
     }
 }
 

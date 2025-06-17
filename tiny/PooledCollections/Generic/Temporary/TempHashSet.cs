@@ -11,6 +11,7 @@ using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -40,7 +41,7 @@ public ref partial struct TempHashSet<T>
     static readonly int[] s_emptyBuckets = [];
     static readonly Entry<T>[] s_emptyEntries = [];
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     internal int[]? _buckets;
     internal Entry<T>[]? _entries;
@@ -99,7 +100,7 @@ public ref partial struct TempHashSet<T>
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         // To avoid excess resizes, first set size based on collection's count. The collection may
         // contain duplicates, so call TrimExcess if resulting HashSet is larger than the threshold.
@@ -160,7 +161,7 @@ public ref partial struct TempHashSet<T>
             }
         }
 
-        SystemDebug.Assert(Count == source.Count);
+        Debug.Assert(Count == source.Count);
     }
 
     #endregion
@@ -173,8 +174,8 @@ public ref partial struct TempHashSet<T>
         var count = _count;
         if (count > 0)
         {
-            SystemDebug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
-            SystemDebug.Assert(_entries != null, "_entries should be non-null");
+            Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
+            Debug.Assert(_entries is not null, "_entries should be non-null");
 
             Array.Clear(_buckets, 0, _buckets.Length);
             _count = 0;
@@ -193,17 +194,17 @@ public ref partial struct TempHashSet<T>
     int FindItemIndex(T item)
     {
         var buckets = _buckets;
-        if (!buckets.IsNullOrEmpty())
+        if (buckets is not null)
         {
             var entries = _entries;
-            SystemDebug.Assert(entries != null, "Expected _entries to be initialized");
+            Debug.Assert(entries is not null, "Expected _entries to be initialized");
 
             uint collisionCount = 0;
             var comparer = _comparer;
 
-            if (comparer == null)
+            if (comparer is null)
             {
-                var hashCode = item != null ? item.GetHashCode() : 0;
+                var hashCode = item is not null ? item.GetHashCode() : 0;
                 if (typeof(T).IsValueType)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
@@ -245,7 +246,7 @@ public ref partial struct TempHashSet<T>
             }
             else
             {
-                var hashCode = item != null ? comparer.GetHashCode(item) : 0;
+                var hashCode = item is not null ? comparer.GetHashCode(item) : 0;
                 var i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
                 while (i >= 0)
                 {
@@ -280,14 +281,14 @@ public ref partial struct TempHashSet<T>
 
     public bool Remove(T item)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
             var entries = _entries;
-            SystemDebug.Assert(entries != null, "entries should be non-null");
+            Debug.Assert(entries is not null, "entries should be non-null");
 
             uint collisionCount = 0;
             var last = -1;
-            var hashCode = item != null ? _comparer?.GetHashCode(item) ?? item.GetHashCode() : 0;
+            var hashCode = item is not null ? _comparer?.GetHashCode(item) ?? item.GetHashCode() : 0;
 
             ref var bucket = ref GetBucketRef(hashCode);
             var i = bucket - 1; // Value in buckets is 1-based
@@ -302,7 +303,7 @@ public ref partial struct TempHashSet<T>
                     if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
                     else entries[last].Next = entry.Next;
 
-                    SystemDebug.Assert(StartOfFreeList - _freeList < 0,
+                    Debug.Assert(StartOfFreeList - _freeList < 0,
                         "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
@@ -339,7 +340,7 @@ public ref partial struct TempHashSet<T>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _entries != null && _buckets != null;
+        get => _entries is not null && _buckets is not null;
     }
 
     #endregion
@@ -372,7 +373,7 @@ public ref partial struct TempHashSet<T>
     /// </remarks>
     public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
             var index = FindItemIndex(equalValue);
             if (index >= 0)
@@ -393,7 +394,7 @@ public ref partial struct TempHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
     public void UnionWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         foreach (var item in other) AddIfNotPresent(item, out _);
     }
@@ -405,7 +406,7 @@ public ref partial struct TempHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
     public void IntersectWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // Intersection of anything with empty set is empty set, so return if count is 0.
         // Same if the set intersecting with itself is the same set.
@@ -434,7 +435,7 @@ public ref partial struct TempHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
     public void ExceptWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // This is already the empty set; return.
         if (Count == 0) return;
@@ -450,7 +451,7 @@ public ref partial struct TempHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="TempHashSet{T}"/> object.</param>
     public void SymmetricExceptWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // If set is empty, then symmetric difference is other.
         if (Count == 0)
@@ -474,7 +475,7 @@ public ref partial struct TempHashSet<T>
     /// <returns>true if the <see cref="TempHashSet{T}"/> object is a subset of <paramref name="other"/>; otherwise, false.</returns>
     public bool IsSubsetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // The empty set is a subset of any set, and a set is a subset of itself.
         // Set is always a subset of itself
@@ -501,7 +502,7 @@ public ref partial struct TempHashSet<T>
     /// <returns>true if the <see cref="TempHashSet{T}"/> object is a proper subset of <paramref name="other"/>; otherwise, false.</returns>
     public bool IsProperSubsetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         if (other is ICollection<T> otherAsCollection)
         {
@@ -531,7 +532,7 @@ public ref partial struct TempHashSet<T>
     /// <returns>true if the <see cref="TempHashSet{T}"/> object is a superset of <paramref name="other"/>; otherwise, false.</returns>
     public bool IsSupersetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // Try to fall out early based on counts.
         if (other is ICollection<T> otherAsCollection)
@@ -553,7 +554,7 @@ public ref partial struct TempHashSet<T>
     /// <returns>true if the <see cref="TempHashSet{T}"/> object is a proper superset of <paramref name="other"/>; otherwise, false.</returns>
     public bool IsProperSupersetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // The empty set isn't a proper superset of any set, and a set is never a strict superset of itself.
         if (Count == 0) return false;
@@ -592,7 +593,7 @@ public ref partial struct TempHashSet<T>
     /// </returns>
     public bool Overlaps(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         if (Count == 0) return false;
 
@@ -608,7 +609,7 @@ public ref partial struct TempHashSet<T>
     /// <returns>true if the <see cref="TempHashSet{T}"/> object is equal to <paramref name="other"/>; otherwise, false.</returns>
     public bool SetEquals(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         if (other is HashSet<T> otherAsSCGSet && EqualityComparersAreEqual(this, otherAsSCGSet))
         {
@@ -636,7 +637,7 @@ public ref partial struct TempHashSet<T>
 
     public void CopyTo(T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(dest.AsSpan(), destIndex, count);
     }
@@ -647,7 +648,7 @@ public ref partial struct TempHashSet<T>
     /// </summary>
     public int RemoveWhere(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var entries = _entries;
         var numRemoved = 0;
@@ -677,7 +678,7 @@ public ref partial struct TempHashSet<T>
     {
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
 
-        var currentCapacity = _entries == null ? 0 : _entries.Length;
+        var currentCapacity = _entries?.Length ?? 0;
         if (currentCapacity >= capacity) return currentCapacity;
 
         if (_buckets.IsNullOrEmpty()) return Initialize(capacity);
@@ -692,9 +693,9 @@ public ref partial struct TempHashSet<T>
     void Resize(int newSize, bool forceNewHashCodes)
     {
         // Value types never rehash
-        SystemDebug.Assert(!forceNewHashCodes || !typeof(T).IsValueType);
-        SystemDebug.Assert(_entries != null, "_entries should be non-null");
-        SystemDebug.Assert(newSize >= _entries.Length);
+        Debug.Assert(!forceNewHashCodes || !typeof(T).IsValueType);
+        Debug.Assert(_entries is not null, "_entries should be non-null");
+        Debug.Assert(newSize >= _entries.Length);
 
         var count = _count;
         var entries = _entryPool.Rent(newSize);
@@ -702,13 +703,13 @@ public ref partial struct TempHashSet<T>
 
         if (!typeof(T).IsValueType && forceNewHashCodes)
         {
-            SystemDebug.Assert(_comparer is NonRandomizedStringEqualityComparer);
+            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<T>.Default;
 
             for (var i = 0; i < count; i++)
             {
                 ref var entry = ref entries[i];
-                if (entry.Next >= -1) entry.HashCode = entry.Value != null ? _comparer!.GetHashCode(entry.Value) : 0;
+                if (entry.Next >= -1) entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
             }
 
             if (ReferenceEquals(_comparer, EqualityComparer<T>.Default)) _comparer = null;
@@ -745,7 +746,7 @@ public ref partial struct TempHashSet<T>
 
         var newSize = HashHelpers.GetPrime(capacity);
         var oldEntries = _entries;
-        var currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
+        var currentCapacity = oldEntries?.Length ?? 0;
         if (newSize >= currentCapacity) return;
 
         var oldBuckets = _buckets;
@@ -814,10 +815,10 @@ public ref partial struct TempHashSet<T>
     internal bool AddIfNotPresent(T value, out int location)
     {
         if (_buckets.IsNullOrEmpty()) Initialize(0);
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false);
+        Debug.Assert(_buckets.IsNullOrEmpty() == false);
 
         var entries = _entries;
-        SystemDebug.Assert(entries != null, "expected entries to be non-null");
+        Debug.Assert(entries is not null, "expected entries to be non-null");
 
         var comparer = _comparer;
         int hashCode;
@@ -825,9 +826,9 @@ public ref partial struct TempHashSet<T>
         uint collisionCount = 0;
         ref var bucket = ref Unsafe.NullRef<int>();
 
-        if (comparer == null)
+        if (comparer is null)
         {
-            hashCode = value != null ? value.GetHashCode() : 0;
+            hashCode = value is not null ? value.GetHashCode() : 0;
             bucket = ref GetBucketRef(hashCode);
             var i = bucket - 1; // Value in _buckets is 1-based
             if (typeof(T).IsValueType)
@@ -876,7 +877,7 @@ public ref partial struct TempHashSet<T>
         }
         else
         {
-            hashCode = value != null ? comparer.GetHashCode(value) : 0;
+            hashCode = value is not null ? comparer.GetHashCode(value) : 0;
             bucket = ref GetBucketRef(hashCode);
             var i = bucket - 1; // Value in _buckets is 1-based
             while (i >= 0)
@@ -903,7 +904,7 @@ public ref partial struct TempHashSet<T>
         {
             index = _freeList;
             _freeCount--;
-            SystemDebug.Assert(StartOfFreeList - entries![_freeList].Next >= -1,
+            Debug.Assert(StartOfFreeList - entries![_freeList].Next >= -1,
                 "shouldn't overflow because `next` cannot underflow");
 
             _freeList = StartOfFreeList - entries[_freeList].Next;
@@ -941,7 +942,7 @@ public ref partial struct TempHashSet<T>
             // i.e. EqualityComparer<string>.Default.
             Resize(entries.Length, true);
             location = FindItemIndex(value);
-            SystemDebug.Assert(location >= 0);
+            Debug.Assert(location >= 0);
         }
 
         return true;
@@ -1046,7 +1047,7 @@ public ref partial struct TempHashSet<T>
     /// </summary>
     void IntersectWithEnumerable(IEnumerable<T> other)
     {
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
 
         // Keep track of current last index; don't want to move past the end of our bit array
         // (could happen if another thread is modifying the collection).
@@ -1188,7 +1189,7 @@ public ref partial struct TempHashSet<T>
             return (UniqueCount: 0, UnfoundCount: numElementsInOther);
         }
 
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -1246,7 +1247,7 @@ public ref partial struct TempHashSet<T>
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1260,7 +1261,7 @@ public ref partial struct TempHashSet<T>
 
     void RenewEntries(int newSize)
     {
-        if (!_entries.IsNullOrEmpty())
+        if (_entries is not null)
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -1281,7 +1282,7 @@ public ref partial struct TempHashSet<T>
         readonly int _version;
         int _index;
 
-        public Enumerator(TempHashSet<T> hashSet)
+        internal Enumerator(TempHashSet<T> hashSet)
         {
             _hashSet = hashSet;
             _version = hashSet._version;
@@ -1317,7 +1318,5 @@ public ref partial struct TempHashSet<T>
             get;
             private set;
         }
-
-        public void Dispose() { }
     }
 }

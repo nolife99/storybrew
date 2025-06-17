@@ -2,6 +2,7 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct TempArrayInternals<T> : IDisposable
 {
@@ -20,12 +21,7 @@ public readonly struct TempArrayInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (!Array.IsNullOrEmpty())
-            try
-            {
-                Pool?.Return(Array, ClearArray);
-            }
-            catch { }
+        if (Array is not null) Pool?.Return(Array, ClearArray);
     }
 }
 
@@ -35,8 +31,10 @@ partial class TempCollectionInternals
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
     public static TempArrayInternals<T> TakeOwnership<T>(scoped ref TempArray<T> source)
     {
-        var internals = new TempArrayInternals<T>(in source);
+        TempArrayInternals<T> internals = new(in source);
         source.Dispose();
+
+        source = Unsafe.NullRef<TempArray<T>>();
 
         return internals;
     }

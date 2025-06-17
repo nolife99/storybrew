@@ -44,23 +44,23 @@ public class PooledHashSet<T>
     static readonly int[] s_emptyBuckets = [];
     static readonly Entry<T>[] s_emptyEntries = [];
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+
+    [NonSerialized] internal ArrayPool<int> _bucketPool;
 
     internal int[]? _buckets;
+    internal IEqualityComparer<T>? _comparer;
+    internal int _count;
     internal Entry<T>[]? _entries;
+
+    [NonSerialized] internal ArrayPool<Entry<T>> _entryPool;
 
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
     internal ulong _fastModMultiplier;
 #endif
-    internal int _count;
-    internal int _freeList;
     internal int _freeCount;
+    internal int _freeList;
     internal int _version;
-    internal IEqualityComparer<T>? _comparer;
-
-    [NonSerialized] internal ArrayPool<int> _bucketPool;
-
-    [NonSerialized] internal ArrayPool<Entry<T>> _entryPool;
 
     public PooledHashSet(T[] items) : this(items.AsSpan(), null) { }
 
@@ -90,6 +90,45 @@ public class PooledHashSet<T>
         if (_count > 0 && _entries!.Length / _count > ShrinkThreshold) TrimExcess();
     }
 
+    #region IDeserializationCallback methods
+
+    public virtual void OnDeserialization(object? sender)
+    {
+        HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
+        if (siInfo is null)
+
+            // It might be necessary to call OnDeserialization from a container if the
+            // container object also implements OnDeserialization. We can return immediately
+            // if this function is called twice. Note we set _siInfo to null at the end of this method.
+            return;
+
+        var capacity = siInfo.GetInt32(CapacityName);
+        _comparer = (IEqualityComparer<T>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
+        _freeList = -1;
+        _freeCount = 0;
+
+        if (capacity != 0)
+        {
+            Initialize(capacity);
+
+#if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
+#endif
+
+            var array = (T[]?)siInfo.GetValue(ElementsName, typeof(T[]));
+            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
+
+            // There are no resizes here because we already set capacity above.
+            for (var i = 0; i < array.Length; i++) AddIfNotPresent(array[i], out _);
+        }
+        else _buckets = s_emptyBuckets;
+
+        _version = siInfo.GetInt32(VersionName);
+        HashHelpers.SerializationInfoTable.Remove(this);
+    }
+
+    #endregion
+
     public void Dispose()
     {
         ReturnBuckets(s_emptyBuckets);
@@ -100,9 +139,31 @@ public class PooledHashSet<T>
         _version++;
     }
 
+    #region ISerializable methods
+
+    public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        ArgumentNullException.ThrowIfNull(info);
+
+        info.AddValue(VersionName,
+            _version); // need to serialize version to avoid problems with serializing while enumerating
+
+        info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
+        info.AddValue(CapacityName, _buckets?.Length ?? 0);
+
+        if (_buckets is not null)
+        {
+            var array = new T[Count];
+            CopyTo(array);
+            info.AddValue(ElementsName, array, typeof(T[]));
+        }
+    }
+
+    #endregion
+
     internal ref T FindValue(T equalValue)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
             var index = FindItemIndex(equalValue);
             if (index >= 0) return ref _entries![index].Value;
@@ -162,7 +223,7 @@ public class PooledHashSet<T>
     /// <param name="other"></param>
     void IntersectWithSpan(ReadOnlySpan<T> other)
     {
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
 
         // keep track of current last index; don't want to move past the end of our bit array
         // (could happen if another thread is modifying the collection)
@@ -199,8 +260,6 @@ public class PooledHashSet<T>
     /// <param name="other">enumerable with items to remove</param>
     public void ExceptWith(ReadOnlySpan<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-
         // this is already the empty set; return
         if (_count == 0) return;
 
@@ -353,7 +412,7 @@ public class PooledHashSet<T>
             return (UniqueCount: 0, UnfoundCount: numElementsInOther);
         }
 
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -538,7 +597,7 @@ public class PooledHashSet<T>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -550,7 +609,7 @@ public class PooledHashSet<T>
 
     void ReturnEntries(Entry<T>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
+        if (_entries is not null)
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -558,6 +617,72 @@ public class PooledHashSet<T>
             catch { }
 
         _entries = replaceWith ?? s_emptyEntries;
+    }
+
+    public struct Enumerator : IEnumerator<T>
+    {
+        readonly PooledHashSet<T> _hashSet;
+        readonly int _version;
+        int _index;
+
+        public Enumerator(PooledHashSet<T> hashSet)
+        {
+            _hashSet = hashSet;
+            _version = hashSet._version;
+            _index = 0;
+            Current = default!;
+        }
+
+        public bool MoveNext()
+        {
+            if (_version != _hashSet._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
+            // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
+            // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
+            while ((uint)_index < (uint)_hashSet._count)
+            {
+                ref var entry = ref _hashSet._entries![_index++];
+                if (entry.Next >= -1)
+                {
+                    Current = entry.Value;
+                    return true;
+                }
+            }
+
+            _index = _hashSet._count + 1;
+            Current = default!;
+            return false;
+        }
+
+        public T Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get;
+            private set;
+        }
+
+        public void Dispose() { }
+
+        object? IEnumerator.Current
+        {
+            get
+            {
+                if (_index == 0 || _index == _hashSet._count + 1)
+                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
+
+                return Current;
+            }
+        }
+
+        void IEnumerator.Reset()
+        {
+            if (_version != _hashSet._version)
+                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
+
+            _index = 0;
+            Current = default!;
+        }
     }
 
     #region Constructors
@@ -613,7 +738,7 @@ public class PooledHashSet<T>
         ArrayPool<int> bucketPool,
         ArrayPool<Entry<T>> entryPool) : this(comparer, bucketPool, entryPool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         if (collection is PooledHashSet<T> otherAsSet && EqualityComparersAreEqual(this, otherAsSet))
             ConstructFrom(otherAsSet);
@@ -694,7 +819,7 @@ public class PooledHashSet<T>
             }
         }
 
-        SystemDebug.Assert(Count == source.Count);
+        Debug.Assert(Count == source.Count);
     }
 
     #endregion
@@ -709,8 +834,8 @@ public class PooledHashSet<T>
         var count = _count;
         if (count > 0)
         {
-            SystemDebug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
-            SystemDebug.Assert(_entries != null, "_entries should be non-null");
+            Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets should be non-null");
+            Debug.Assert(_entries is not null, "_entries should be non-null");
 
             Array.Clear(_buckets, 0, _buckets.Length);
             _count = 0;
@@ -729,17 +854,17 @@ public class PooledHashSet<T>
     int FindItemIndex(T item)
     {
         var buckets = _buckets;
-        if (!buckets.IsNullOrEmpty())
+        if (buckets is not null)
         {
             var entries = _entries;
-            SystemDebug.Assert(entries != null, "Expected _entries to be initialized");
+            Debug.Assert(entries is not null, "Expected _entries to be initialized");
 
             uint collisionCount = 0;
             var comparer = _comparer;
 
-            if (comparer == null)
+            if (comparer is null)
             {
-                var hashCode = item != null ? item.GetHashCode() : 0;
+                var hashCode = item is not null ? item.GetHashCode() : 0;
                 if (typeof(T).IsValueType)
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
@@ -781,7 +906,7 @@ public class PooledHashSet<T>
             }
             else
             {
-                var hashCode = item != null ? comparer.GetHashCode(item) : 0;
+                var hashCode = item is not null ? comparer.GetHashCode(item) : 0;
                 var i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
                 while (i >= 0)
                 {
@@ -816,14 +941,14 @@ public class PooledHashSet<T>
 
     public bool Remove(T item)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
             var entries = _entries;
-            SystemDebug.Assert(entries != null, "entries should be non-null");
+            Debug.Assert(entries is not null, "entries should be non-null");
 
             uint collisionCount = 0;
             var last = -1;
-            var hashCode = item != null ? _comparer?.GetHashCode(item) ?? item.GetHashCode() : 0;
+            var hashCode = item is not null ? _comparer?.GetHashCode(item) ?? item.GetHashCode() : 0;
 
             ref var bucket = ref GetBucketRef(hashCode);
             var i = bucket - 1; // Value in buckets is 1-based
@@ -838,7 +963,7 @@ public class PooledHashSet<T>
                     if (last < 0) bucket = entry.Next + 1; // Value in buckets is 1-based
                     else entries[last].Next = entry.Next;
 
-                    SystemDebug.Assert(StartOfFreeList - _freeList < 0,
+                    Debug.Assert(StartOfFreeList - _freeList < 0,
                         "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
 
                     entry.Next = StartOfFreeList - _freeList;
@@ -889,67 +1014,6 @@ public class PooledHashSet<T>
 
     #endregion
 
-    #region ISerializable methods
-
-    public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-    {
-        if (info == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
-
-        info.AddValue(VersionName,
-            _version); // need to serialize version to avoid problems with serializing while enumerating
-
-        info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
-        info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
-
-        if (!_buckets.IsNullOrEmpty())
-        {
-            var array = new T[Count];
-            CopyTo(array);
-            info.AddValue(ElementsName, array, typeof(T[]));
-        }
-    }
-
-    #endregion
-
-    #region IDeserializationCallback methods
-
-    public virtual void OnDeserialization(object? sender)
-    {
-        HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
-        if (siInfo == null)
-
-            // It might be necessary to call OnDeserialization from a container if the
-            // container object also implements OnDeserialization. We can return immediately
-            // if this function is called twice. Note we set _siInfo to null at the end of this method.
-            return;
-
-        var capacity = siInfo.GetInt32(CapacityName);
-        _comparer = (IEqualityComparer<T>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
-        _freeList = -1;
-        _freeCount = 0;
-
-        if (capacity != 0)
-        {
-            Initialize(capacity);
-
-#if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)capacity);
-#endif
-
-            var array = (T[]?)siInfo.GetValue(ElementsName, typeof(T[]));
-            if (array == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
-
-            // There are no resizes here because we already set capacity above.
-            for (var i = 0; i < array.Length; i++) AddIfNotPresent(array[i], out _);
-        }
-        else _buckets = s_emptyBuckets;
-
-        _version = siInfo.GetInt32(VersionName);
-        HashHelpers.SerializationInfoTable.Remove(this);
-    }
-
-    #endregion
-
     #region HashSet methods
 
     /// <summary>Adds the specified element to the <see cref="PooledHashSet{T}"/>.</summary>
@@ -971,7 +1035,7 @@ public class PooledHashSet<T>
     /// </remarks>
     public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
         {
             var index = FindItemIndex(equalValue);
             if (index >= 0)
@@ -992,7 +1056,7 @@ public class PooledHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="PooledHashSet{T}"/> object.</param>
     public void UnionWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         foreach (var item in other) AddIfNotPresent(item, out _);
     }
@@ -1004,7 +1068,7 @@ public class PooledHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="PooledHashSet{T}"/> object.</param>
     public void IntersectWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // Intersection of anything with empty set is empty set, so return if count is 0.
         // Same if the set intersecting with itself is the same set.
@@ -1041,7 +1105,7 @@ public class PooledHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="PooledHashSet{T}"/> object.</param>
     public void ExceptWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // This is already the empty set; return.
         if (Count == 0) return;
@@ -1064,7 +1128,7 @@ public class PooledHashSet<T>
     /// <param name="other">The collection to compare to the current <see cref="PooledHashSet{T}"/> object.</param>
     public void SymmetricExceptWith(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // If set is empty, then symmetric difference is other.
         if (Count == 0)
@@ -1097,7 +1161,7 @@ public class PooledHashSet<T>
     /// <returns>true if the <see cref="PooledHashSet{T}"/> object is a subset of <paramref name="other"/>; otherwise, false.</returns>
     public bool IsSubsetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // The empty set is a subset of any set, and a set is a subset of itself.
         // Set is always a subset of itself
@@ -1136,7 +1200,7 @@ public class PooledHashSet<T>
     /// <returns>true if the <see cref="PooledHashSet{T}"/> object is a proper subset of <paramref name="other"/>; otherwise, false.</returns>
     public bool IsProperSubsetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // No set is a proper subset of itself.
         if (other == this) return false;
@@ -1179,7 +1243,7 @@ public class PooledHashSet<T>
     /// <returns>true if the <see cref="PooledHashSet{T}"/> object is a superset of <paramref name="other"/>; otherwise, false.</returns>
     public bool IsSupersetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // A set is always a superset of itself.
         if (other == this) return true;
@@ -1212,7 +1276,7 @@ public class PooledHashSet<T>
     /// </returns>
     public bool IsProperSupersetOf(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // The empty set isn't a proper superset of any set, and a set is never a strict superset of itself.
         if (Count == 0 || other == this) return false;
@@ -1260,7 +1324,7 @@ public class PooledHashSet<T>
     /// </returns>
     public bool Overlaps(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         if (Count == 0) return false;
 
@@ -1279,7 +1343,7 @@ public class PooledHashSet<T>
     /// <returns>true if the <see cref="PooledHashSet{T}"/> object is equal to <paramref name="other"/>; otherwise, false.</returns>
     public bool SetEquals(IEnumerable<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
+        ArgumentNullException.ThrowIfNull(other);
 
         // A set is equal to itself.
         if (other == this) return true;
@@ -1318,11 +1382,11 @@ public class PooledHashSet<T>
     public void CopyTo(T[] dest) => CopyTo(dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public void CopyTo(T[] array, int arrayIndex) => CopyTo(array, arrayIndex, Count);
 
     public void CopyTo(T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(dest.AsSpan(), destIndex, count);
     }
@@ -1333,7 +1397,7 @@ public class PooledHashSet<T>
     /// </summary>
     public int RemoveWhere(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var entries = _entries;
         var numRemoved = 0;
@@ -1363,7 +1427,7 @@ public class PooledHashSet<T>
     {
         if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
 
-        var currentCapacity = _entries == null ? 0 : _entries.Length;
+        var currentCapacity = _entries?.Length ?? 0;
         if (currentCapacity >= capacity) return currentCapacity;
 
         if (_buckets.IsNullOrEmpty()) return Initialize(capacity);
@@ -1378,9 +1442,9 @@ public class PooledHashSet<T>
     void Resize(int newSize, bool forceNewHashCodes)
     {
         // Value types never rehash
-        SystemDebug.Assert(!forceNewHashCodes || !typeof(T).IsValueType);
-        SystemDebug.Assert(_entries != null, "_entries should be non-null");
-        SystemDebug.Assert(newSize >= _entries.Length);
+        Debug.Assert(!forceNewHashCodes || !typeof(T).IsValueType);
+        Debug.Assert(_entries is not null, "_entries should be non-null");
+        Debug.Assert(newSize >= _entries.Length);
 
         var count = _count;
         var entries = _entryPool.Rent(newSize);
@@ -1388,13 +1452,13 @@ public class PooledHashSet<T>
 
         if (!typeof(T).IsValueType && forceNewHashCodes)
         {
-            SystemDebug.Assert(_comparer is NonRandomizedStringEqualityComparer);
+            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<T>.Default;
 
             for (var i = 0; i < count; i++)
             {
                 ref var entry = ref entries[i];
-                if (entry.Next >= -1) entry.HashCode = entry.Value != null ? _comparer!.GetHashCode(entry.Value) : 0;
+                if (entry.Next >= -1) entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
             }
 
             if (ReferenceEquals(_comparer, EqualityComparer<T>.Default)) _comparer = null;
@@ -1431,7 +1495,7 @@ public class PooledHashSet<T>
 
         var newSize = HashHelpers.GetPrime(capacity);
         var oldEntries = _entries;
-        var currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
+        var currentCapacity = oldEntries?.Length ?? 0;
         if (newSize >= currentCapacity) return;
 
         var oldBuckets = _buckets;
@@ -1506,10 +1570,10 @@ public class PooledHashSet<T>
     internal bool AddIfNotPresent(T value, out int location)
     {
         if (_buckets.IsNullOrEmpty()) Initialize(0);
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false);
+        Debug.Assert(_buckets.IsNullOrEmpty() == false);
 
         var entries = _entries;
-        SystemDebug.Assert(entries != null, "expected entries to be non-null");
+        Debug.Assert(entries is not null, "expected entries to be non-null");
 
         var comparer = _comparer;
         int hashCode;
@@ -1517,9 +1581,9 @@ public class PooledHashSet<T>
         uint collisionCount = 0;
         ref var bucket = ref Unsafe.NullRef<int>();
 
-        if (comparer == null)
+        if (comparer is null)
         {
-            hashCode = value != null ? value.GetHashCode() : 0;
+            hashCode = value is not null ? value.GetHashCode() : 0;
             bucket = ref GetBucketRef(hashCode);
             var i = bucket - 1; // Value in _buckets is 1-based
             if (typeof(T).IsValueType)
@@ -1568,7 +1632,7 @@ public class PooledHashSet<T>
         }
         else
         {
-            hashCode = value != null ? comparer.GetHashCode(value) : 0;
+            hashCode = value is not null ? comparer.GetHashCode(value) : 0;
             bucket = ref GetBucketRef(hashCode);
             var i = bucket - 1; // Value in _buckets is 1-based
             while (i >= 0)
@@ -1595,7 +1659,7 @@ public class PooledHashSet<T>
         {
             index = _freeList;
             _freeCount--;
-            SystemDebug.Assert(StartOfFreeList - entries![_freeList].Next >= -1,
+            Debug.Assert(StartOfFreeList - entries![_freeList].Next >= -1,
                 "shouldn't overflow because `next` cannot underflow");
 
             _freeList = StartOfFreeList - entries[_freeList].Next;
@@ -1633,7 +1697,7 @@ public class PooledHashSet<T>
             // i.e. EqualityComparer<string>.Default.
             Resize(entries.Length, true);
             location = FindItemIndex(value);
-            SystemDebug.Assert(location >= 0);
+            Debug.Assert(location >= 0);
         }
 
         return true;
@@ -1738,7 +1802,7 @@ public class PooledHashSet<T>
     /// </summary>
     void IntersectWithEnumerable(IEnumerable<T> other)
     {
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
 
         // Keep track of current last index; don't want to move past the end of our bit array
         // (could happen if another thread is modifying the collection).
@@ -1880,7 +1944,7 @@ public class PooledHashSet<T>
             return (UniqueCount: 0, UnfoundCount: numElementsInOther);
         }
 
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -1938,7 +2002,7 @@ public class PooledHashSet<T>
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1952,7 +2016,7 @@ public class PooledHashSet<T>
 
     void RenewEntries(int newSize)
     {
-        if (!_entries.IsNullOrEmpty())
+        if (_entries is not null)
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -1966,70 +2030,4 @@ public class PooledHashSet<T>
     }
 
     #endregion
-
-    public struct Enumerator : IEnumerator<T>
-    {
-        readonly PooledHashSet<T> _hashSet;
-        readonly int _version;
-        int _index;
-
-        public Enumerator(PooledHashSet<T> hashSet)
-        {
-            _hashSet = hashSet;
-            _version = hashSet._version;
-            _index = 0;
-            Current = default!;
-        }
-
-        public bool MoveNext()
-        {
-            if (_version != _hashSet._version)
-                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-
-            // Use unsigned comparison since we set index to dictionary.count+1 when the enumeration ends.
-            // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
-            while ((uint)_index < (uint)_hashSet._count)
-            {
-                ref var entry = ref _hashSet._entries![_index++];
-                if (entry.Next >= -1)
-                {
-                    Current = entry.Value;
-                    return true;
-                }
-            }
-
-            _index = _hashSet._count + 1;
-            Current = default!;
-            return false;
-        }
-
-        public T Current
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get;
-            private set;
-        }
-
-        public void Dispose() { }
-
-        object? IEnumerator.Current
-        {
-            get
-            {
-                if (_index == 0 || _index == _hashSet._count + 1)
-                    ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
-
-                return Current;
-            }
-        }
-
-        void IEnumerator.Reset()
-        {
-            if (_version != _hashSet._version)
-                ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
-
-            _index = 0;
-            Current = default!;
-        }
-    }
 }

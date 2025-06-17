@@ -12,7 +12,7 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) : UiScreenLayer
 {
-    readonly ValueArray<char> title = ValueArray<char>.Create(title);
+    readonly ValueArray<char> title = ValueArray.Create(title);
     LinearLayout mainLayout;
 
     public override bool IsPopup => true;
@@ -39,8 +39,7 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) :
 
             Trace.TraceError($"{title.AsReadOnlySpan()} failed ({action.Method.Name}): {ex}");
 
-            using var sb = ValueList<char>.Create();
-            sb.AddRange(ex.Message.AsSpan());
+            using var sb = ValueList.Create(ex.Message.AsSpan());
             sb.AddRange(" (".AsSpan());
             sb.AddRange(ex.GetType().Name.AsSpan());
             sb.AddRange(")\n".AsSpan());
@@ -68,7 +67,7 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) :
 
         base.Load();
 
-        using var tempTitle = TempList<char>.Create(title);
+        using var tempTitle = TempList.Create(title);
         tempTitle.AddRange("...".AsSpan());
 
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)

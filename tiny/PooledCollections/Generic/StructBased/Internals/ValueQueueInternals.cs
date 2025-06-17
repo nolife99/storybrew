@@ -2,6 +2,7 @@
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct ValueQueueInternals<T> : IDisposable
 {
@@ -13,7 +14,7 @@ public readonly struct ValueQueueInternals<T> : IDisposable
     [NonSerialized] public readonly T[] Array;
     [NonSerialized] public readonly ArrayPool<T> Pool;
 
-    internal ValueQueueInternals(in ValueQueue<T> source)
+    internal ValueQueueInternals(scoped ref readonly ValueQueue<T> source)
     {
         Head = source._head;
         Tail = source._tail;
@@ -26,12 +27,7 @@ public readonly struct ValueQueueInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (!Array.IsNullOrEmpty())
-            try
-            {
-                Pool?.Return(Array, ClearArray);
-            }
-            catch { }
+        if (Array is not null) Pool?.Return(Array, ClearArray);
     }
 }
 
@@ -39,12 +35,12 @@ partial class ValueCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ValueQueueInternals<T> TakeOwnership<T>(ref ValueQueue<T> source)
+    public static ValueQueueInternals<T> TakeOwnership<T>(this scoped ref ValueQueue<T> source)
     {
-        var internals = new ValueQueueInternals<T>(source);
-
-        source._array = null;
+        ValueQueueInternals<T> internals = new(ref source);
         source.Dispose();
+
+        source = Unsafe.NullRef<ValueQueue<T>>();
 
         return internals;
     }

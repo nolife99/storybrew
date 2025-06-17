@@ -28,8 +28,8 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
     [NonSerialized] internal ArrayPool<TValue> _valuePool;
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
-    internal static readonly bool s_clearValues = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
+    internal static readonly bool s_clearValues = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
 
     static readonly Type s_typeOfKey = typeof(TKey);
     static readonly ArrayEntry<TKey>[] s_emptyEntries = [];
@@ -119,7 +119,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _entries != null && _values != null && _buckets != null;
+        get => _entries is not null && _values is not null && _buckets is not null;
     }
 
     public TempArrayDictionaryKeyCollection<TKey, TValue> Keys
@@ -304,10 +304,10 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
     {
         var values = _values;
 
-        if (value == null)
+        if (value is null)
         {
             foreach (var item in values)
-                if (item == null)
+                if (item is null)
                     return true;
         }
         else if (typeof(TValue).IsValueType)
@@ -335,10 +335,10 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
     {
         var values = _values;
 
-        if (value == null)
+        if (value is null)
         {
             foreach (var item in values)
-                if (item == null)
+                if (item is null)
                     return true;
         }
         else if (typeof(TValue).IsValueType)
@@ -741,7 +741,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
                 _values = newValues;
 
-                if (!values.IsNullOrEmpty()) _valuePool.Return(values, s_clearValues);
+                if (values is not null) _valuePool.Return(values, s_clearValues);
             }
             else _valuePool.Return(newValues);
         }
@@ -758,7 +758,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
                 _entries = newEntries;
 
-                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
+                if (entries is not null) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -971,7 +971,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     //WARNING this method must stay stateless (not relying on states that can change, it's ok to read
     //constant states) because it will be used in multithreaded parallel code
-    public bool TryFindIndex(TKey key, out int findIndex)
+    public readonly bool TryFindIndex(TKey key, out int findIndex)
     {
         var hash = key.GetHashCode();
 
@@ -1102,7 +1102,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1116,7 +1116,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1128,7 +1128,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void ReturnEntries(ArrayEntry<TKey>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
+        if (_entries is not null)
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -1140,7 +1140,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
 
     void ReturnValues(TValue[] replaceWith)
     {
-        if (!_values.IsNullOrEmpty())
+        if (_values is not null)
             try
             {
                 _valuePool.Return(_values, s_clearValues);

@@ -3,6 +3,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public readonly struct ValueHashSetInternals<T> : IDisposable
 {
@@ -23,7 +24,7 @@ public readonly struct ValueHashSetInternals<T> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<T>> EntryPool;
 
-    internal ValueHashSetInternals(in ValueHashSet<T> source)
+    internal ValueHashSetInternals(scoped ref readonly ValueHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -43,19 +44,9 @@ public readonly struct ValueHashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (!Entries.IsNullOrEmpty())
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 
@@ -63,13 +54,12 @@ partial class ValueCollectionInternals
 {
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
-    public static ValueHashSetInternals<T> TakeOwnership<T>(ref ValueHashSet<T> source)
+    public static ValueHashSetInternals<T> TakeOwnership<T>(this scoped ref ValueHashSet<T> source)
     {
-        var internals = new ValueHashSetInternals<T>(source);
-
-        source._buckets = null;
-        source._entries = null;
+        ValueHashSetInternals<T> internals = new(in source);
         source.Dispose();
+
+        source = Unsafe.NullRef<ValueHashSet<T>>();
 
         return internals;
     }

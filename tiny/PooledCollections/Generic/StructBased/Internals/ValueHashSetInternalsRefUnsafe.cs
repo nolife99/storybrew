@@ -20,7 +20,7 @@ public readonly struct ValueHashSetInternalsRefUnsafe<T>
     [NonSerialized] public readonly Entry<T>[] Entries;
     [NonSerialized] public readonly IEqualityComparer<T> Comparer;
 
-    internal ValueHashSetInternalsRefUnsafe(in ValueHashSet<T> source)
+    internal ValueHashSetInternalsRefUnsafe(scoped ref readonly ValueHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -41,18 +41,21 @@ partial class ValueCollectionInternalsUnsafe
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueHashSetInternalsRefUnsafe<T> GetRef<T>(in ValueHashSet<T> source) => new(source);
+    public static ValueHashSetInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly ValueHashSet<T> source)
+        => new(in source);
 
     /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<Entry<T>> AsSpan<T>(in this ValueHashSet<T> source) => source._entries.AsSpan(0, source._count);
+    public static Span<Entry<T>> AsSpan<T>(this scoped ref readonly ValueHashSet<T> source)
+        => source._entries.AsSpan(0, source._count);
 
     /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<Entry<T>> AsMemory<T>(in this ValueHashSet<T> source) => source._entries.AsMemory(0, source._count);
+    public static Memory<Entry<T>> AsMemory<T>(this scoped ref readonly ValueHashSet<T> source)
+        => source._entries.AsMemory(0, source._count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(in this ValueHashSet<T> source, out Entry<T>[] entries, out int count)
+    public static void GetUnsafe<T>(this scoped ref readonly ValueHashSet<T> source, out Entry<T>[] entries, out int count)
     {
         entries = source._entries;
         count = source._count;
@@ -69,14 +72,14 @@ partial class ValueCollectionInternalsUnsafe
     ///     is in use. The ref null can be detected using System.Runtime.CompilerServices.Unsafe.IsNullRef
     /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ref T GetValueRefOrNullRef<T>(in ValueHashSet<T> set, T equalValue) where T : notnull
+    public static ref T GetValueRefOrNullRef<T>(this scoped ref ValueHashSet<T> set, T equalValue) where T : notnull
         => ref set.FindValue(equalValue);
 
     /// <summary>Adds the specified element to the set if it's not already contained.</summary>
     /// <param name="value">The element to add to the set.</param>
-    /// <param name="location">The index into <see cref="_entries"/> of the element.</param>
+    /// <param name="location">The index into <see cref="ValueHashSet{T}._entries"/> of the element.</param>
     /// <returns>true if the element is added to the <see cref="ValueHashSet{T}"/> object; false if the element is already present.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool AddIfNotPresent<T>(ref ValueHashSet<T> set, T value, out int location)
+    public static bool AddIfNotPresent<T>(this scoped ref ValueHashSet<T> set, T value, out int location)
         => set.AddIfNotPresent(value, out location);
 }

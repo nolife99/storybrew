@@ -102,8 +102,8 @@ public partial class EffectList : Widget
     {
         effectsLayout.ClearWidgets();
 
-        using var temp = TempList<Effect>.Create(project.Effects);
-        temp.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+        using var temp = TempList.Create(project.Effects);
+        temp.Sort((a, b) => a.Name.CompareTo(b.Name, StringComparison.Ordinal));
 
         foreach (var effect in temp) effectsLayout.Add(createEffectWidget(effect));
     }
@@ -112,6 +112,8 @@ public partial class EffectList : Widget
     {
         Label nameLabel, detailsLabel;
         Button renameButton, statusButton, configButton, editButton, removeButton;
+
+        using var text = getEffectDetails(effect);
 
         LinearLayout effectWidget = new(Manager)
         {
@@ -146,7 +148,7 @@ public partial class EffectList : Widget
                         detailsLabel = new(Manager)
                         {
                             StyleName = "listItemSecondary",
-                            Text = getEffectDetails(effect),
+                            Text = text.AsReadOnlySpan(),
                             AnchorFrom = BoxAlignment.Left,
                             AnchorTo = BoxAlignment.Left
                         }
@@ -197,7 +199,9 @@ public partial class EffectList : Widget
         effect.OnChanged += changedHandler = (_, _) =>
         {
             nameLabel.Text = effect.Name;
-            detailsLabel.Text = getEffectDetails(effect);
+
+            using var text = getEffectDetails(effect);
+            detailsLabel.Text = text.AsReadOnlySpan();
             updateStatusButton(statusButton, effect);
         };
 
@@ -244,7 +248,7 @@ public partial class EffectList : Widget
 
                 default:
                 {
-                    using var sb = TempList<char>.Create();
+                    using var sb = TempList.Create<char>();
                     sb.AddRange("Status: ".AsSpan());
                     sb.AddRangeEnum(effect.Status);
 
@@ -261,14 +265,20 @@ public partial class EffectList : Widget
             }
         };
 
-        renameButton.OnClick += (_, _) => Manager.ScreenLayerManager.ShowPrompt("Effect name",
-            $"Pick a new name for {effect.Name}",
-            effect.Name,
-            newName =>
-            {
-                effect.Name = newName.ToString();
-                refreshEffects();
-            });
+        renameButton.OnClick += (_, _) =>
+        {
+            using var text = TempList.Create("Pick a new name for ".AsSpan());
+            text.AddRange(effect.Name);
+
+            Manager.ScreenLayerManager.ShowPrompt("Effect name",
+                text.AsReadOnlySpan(),
+                effect.Name,
+                newName =>
+                {
+                    effect.Name = newName.ToString();
+                    refreshEffects();
+                });
+        };
 
         editButton.OnClick += (_, _) => openEffectEditor(effect);
         configButton.OnClick += (_, _) =>
@@ -281,8 +291,14 @@ public partial class EffectList : Widget
             else effectConfigUi.Displayed = false;
         };
 
-        removeButton.OnClick += (_, _)
-            => Manager.ScreenLayerManager.ShowMessage($"Remove {effect.Name}?", () => project.Remove(effect), true);
+        removeButton.OnClick += (_, _) =>
+        {
+            using var text = TempList.Create("Remove ".AsSpan());
+            text.AddRange(effect.Name);
+            text.Add('?');
+
+            Manager.ScreenLayerManager.ShowMessage(text.AsReadOnlySpan(), () => project.Remove(effect), true);
+        };
 
         return effectWidget;
     }
@@ -290,7 +306,11 @@ public partial class EffectList : Widget
     static void updateStatusButton(Button button, Effect effect)
     {
         button.Disabled = effect.StatusMessage.IsWhiteSpace();
-        button.Tooltip = effect.Status.ToString();
+
+        using var tooltip = TempList.Create<char>();
+        tooltip.AddRangeEnum(effect.Status);
+
+        button.Tooltip = tooltip.AsReadOnlySpan();
 
         switch (effect.Status)
         {
@@ -298,7 +318,8 @@ public partial class EffectList : Widget
             case EffectStatus.Configuring:
             case EffectStatus.Updating:
                 button.Icon = IconFont.StopCircle;
-                button.Tooltip += " (Cancel)";
+                tooltip.AddRange(" (Cancel)".AsSpan());
+                button.Tooltip = tooltip.AsReadOnlySpan();
                 button.Disabled = false;
                 break;
 
@@ -426,9 +447,20 @@ public partial class EffectList : Widget
             true);
     }
 
-    static string getEffectDetails(Effect effect) => effect.EstimatedSize > 30720 ?
-        $"using {effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})" :
-        $"using {effect.BaseName}";
+    static TempList<char> getEffectDetails(Effect effect)
+    {
+        var str = TempList.Create("using ".AsSpan());
+        if (effect.EstimatedSize > 30720)
+        {
+            str.AddRange(effect.BaseName);
+            str.AddRange(" (".AsSpan());
+            str.AddRange(StringHelper.ToByteSize(effect.EstimatedSize).AsSpan());
+            str.Add(')');
+        }
+        else str.AddRange(effect.BaseName);
+
+        return str;
+    }
 
     [GeneratedRegex(@"([A-Z])")] private static partial Regex AlphabetRegex();
 

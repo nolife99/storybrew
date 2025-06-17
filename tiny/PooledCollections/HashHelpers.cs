@@ -5,6 +5,7 @@
 namespace Tiny.PooledCollections;
 
 using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -114,7 +115,7 @@ public static class HashHelpers
     {
         get
         {
-            if (s_serializationInfoTable == null)
+            if (s_serializationInfoTable is null)
                 Interlocked.CompareExchange(ref s_serializationInfoTable,
                     new ConditionalWeakTable<object, SerializationInfo>(),
                     null);
@@ -171,7 +172,7 @@ public static class HashHelpers
     {
         if (min < 0) throw new ArgumentException("Cannot get the next prime from a negative number.");
 
-        ReadOnlySpan<int> primes = HashHelpers.primes.AsSpan();
+        var primes = HashHelpers.primes.AsSpan();
 
         for (var i = 0; i < primes.Length; i++)
         {
@@ -197,7 +198,7 @@ public static class HashHelpers
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
         if ((uint)newSize > MaxPrimeArrayLength && MaxPrimeArrayLength > oldSize)
         {
-            SystemDebug.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
+            Debug.Assert(MaxPrimeArrayLength == GetPrime(MaxPrimeArrayLength), "Invalid MaxPrimeArrayLength");
             return MaxPrimeArrayLength;
         }
 
@@ -215,13 +216,13 @@ public static class HashHelpers
     {
         // We use modified Daniel Lemire's fastmod algorithm (https://github.com/dotnet/runtime/pull/406),
         // which allows to avoid the long multiplication if the divisor is less than 2**31.
-        SystemDebug.Assert(divisor <= int.MaxValue);
+        Debug.Assert(divisor <= int.MaxValue);
 
         // This is equivalent of (uint)Math.BigMul(multiplier * value, divisor, out _). This version
         // is faster than BigMul currently because we only need the high bits.
         var highbits = (uint)(((multiplier * value >> 32) + 1) * divisor >> 32);
 
-        SystemDebug.Assert(highbits == value % divisor);
+        Debug.Assert(highbits == value % divisor);
         return highbits;
     }
 }

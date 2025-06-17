@@ -40,30 +40,11 @@ using ER = Tiny.PooledCollections.ExceptionResource;
 namespace Tiny.PooledCollections;
 
 using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 using System.Runtime.Serialization;
-using System.Security;
 
-public static class ThrowHelper
+internal static class ThrowHelper
 {
-    public static void ThrowArrayTypeMismatchException() => throw new ArrayTypeMismatchException();
-
-    public static void ThrowIndexOutOfRangeException() => throw new IndexOutOfRangeException();
-
-    public static void ThrowArgumentOutOfRangeException() => throw new ArgumentOutOfRangeException();
-
-    public static void ThrowArgumentException_DestinationTooShort() => throw new ArgumentException("Destination too short.");
-
-    public static void ThrowArgumentException_OverlapAlignmentMismatch()
-        => throw new ArgumentException("Overlap alignment mismatch.");
-
-    public static void ThrowArgumentOutOfRange_IndexException()
-        => throw GetArgumentOutOfRangeException(EA.index, ER.ArgumentOutOfRange_Index);
-
-    public static void ThrowCapacityArgumentOutOfRange_NeedNonNegNumException()
-        => throw GetArgumentOutOfRangeException(EA.capacity, ER.ArgumentOutOfRange_NeedNonNegNum);
-
     public static void ThrowArgumentOutOfRange_IndexMustBeLessException()
         => throw GetArgumentOutOfRangeException(EA.index, ER.ArgumentOutOfRange_IndexMustBeLess);
 
@@ -75,12 +56,6 @@ public static class ThrowHelper
 
     public static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
         => throw GetArgumentOutOfRangeException(EA.count, ER.ArgumentOutOfRange_NeedNonNegNum);
-
-    public static void ThrowArrayIndexArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
-        => throw GetArgumentOutOfRangeException(EA.arrayIndex, ER.ArgumentOutOfRange_NeedNonNegNum);
-
-    public static void ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
-        => throw GetArgumentOutOfRangeException(EA.destIndex, ER.ArgumentOutOfRange_NeedNonNegNum);
 
     public static void ThrowArrayIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual()
         => throw GetArgumentOutOfRangeException(EA.arrayIndex, ER.ArgumentOutOfRange_IndexMustBeLessOrEqual);
@@ -94,27 +69,11 @@ public static class ThrowHelper
     public static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
         => throw GetArgumentOutOfRangeException(EA.index, ER.ArgumentOutOfRange_NeedNonNegNum);
 
-    public static void ThrowValueArgumentOutOfRange_NeedNonNegNumException()
-        => throw GetArgumentOutOfRangeException(EA.value, ER.ArgumentOutOfRange_NeedNonNegNum);
-
     public static void ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
         => throw GetArgumentOutOfRangeException(EA.length, ER.ArgumentOutOfRange_NeedNonNegNum);
 
-    public static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index()
-        => throw GetArgumentOutOfRangeException(EA.startIndex, ER.ArgumentOutOfRange_Index);
-
     public static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count()
         => throw GetArgumentOutOfRangeException(EA.count, ER.ArgumentOutOfRange_Count);
-
-    public static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType) => throw
-
-        // Generic key to move the boxing to the right hand side of throw
-        GetWrongKeyTypeArgumentException(key, targetType);
-
-    public static void ThrowWrongValueTypeArgumentException<T>(T value, Type targetType) => throw
-
-        // Generic key to move the boxing to the right hand side of throw
-        GetWrongValueTypeArgumentException(value, targetType);
 
     static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
         => new($"Error adding duplicate with key: {key}.");
@@ -124,24 +83,7 @@ public static class ThrowHelper
         // Generic key to move the boxing to the right hand side of throw
         GetAddingDuplicateWithKeyArgumentException(key);
 
-    public static void ThrowKeyNotFoundException<T>(T key) => throw
-
-        // Generic key to move the boxing to the right hand side of throw
-        GetKeyNotFoundException(key);
-
     public static void ThrowArgumentException(ER resource) => throw GetArgumentException(resource);
-
-    public static void ThrowArgumentException(ER resource, EA argument) => throw GetArgumentException(resource, argument);
-
-    static ArgumentNullException GetArgumentNullException(EA argument) => new(GetArgumentName(argument));
-
-    public static void ThrowArgumentNullException(EA argument) => throw GetArgumentNullException(argument);
-
-    public static void ThrowArgumentNullException(ER resource)
-        => throw new ArgumentNullException(GetResourceString(resource));
-
-    public static void ThrowArgumentNullException(EA argument, ER resource)
-        => throw new ArgumentNullException(GetArgumentName(argument), GetResourceString(resource));
 
     public static void ThrowArgumentOutOfRangeException(EA argument)
         => throw new ArgumentOutOfRangeException(GetArgumentName(argument));
@@ -149,41 +91,11 @@ public static class ThrowHelper
     public static void ThrowArgumentOutOfRangeException(EA argument, ER resource)
         => throw GetArgumentOutOfRangeException(argument, resource);
 
-    public static void ThrowArgumentOutOfRangeException(EA argument, int paramNumber, ER resource)
-        => throw GetArgumentOutOfRangeException(argument, paramNumber, resource);
-
-    public static void ThrowInvalidOperationException(ER resource) => throw GetInvalidOperationException(resource);
-
-    public static void ThrowInvalidOperationException(ER resource, Exception e)
-        => throw new InvalidOperationException(GetResourceString(resource), e);
-
     public static void ThrowSerializationException(ER resource)
         => throw new SerializationException(GetResourceString(resource));
 
-    public static void ThrowSecurityException(ER resource) => throw new SecurityException(GetResourceString(resource));
-
-    public static void ThrowRankException(ER resource) => throw new RankException(GetResourceString(resource));
-
     public static void ThrowNotSupportedException(ER resource)
         => throw new NotSupportedException(GetResourceString(resource));
-
-    public static void ThrowUnauthorizedAccessException(ER resource)
-        => throw new UnauthorizedAccessException(GetResourceString(resource));
-
-    public static void ThrowObjectDisposedException(string objectName, ER resource)
-        => throw new ObjectDisposedException(objectName, GetResourceString(resource));
-
-    public static void ThrowObjectDisposedException(ER resource)
-        => throw new ObjectDisposedException(null, GetResourceString(resource));
-
-    public static void ThrowNotSupportedException() => throw new NotSupportedException();
-
-    public static void ThrowAggregateException(List<Exception> exceptions) => throw new AggregateException(exceptions);
-
-    public static void ThrowOutOfMemoryException() => throw new OutOfMemoryException();
-
-    public static void ThrowArgumentException_Argument_InvalidArrayType()
-        => throw new ArgumentException("Invalid array type.");
 
     public static void ThrowInvalidOperationException_InvalidOperation_EmptyQueue()
         => throw new InvalidOperationException("Queue empty.");
@@ -197,89 +109,19 @@ public static class ThrowHelper
     public static void ThrowInvalidOperationException_InvalidOperation_EnumEnded()
         => throw new InvalidOperationException("Enumeration has ended.");
 
-    public static void ThrowInvalidOperationException_EnumCurrent(int index)
-        => throw GetInvalidOperationException_EnumCurrent(index);
-
     public static void ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion()
         => throw new InvalidOperationException("Collection was modified during enumeration.");
 
     public static void ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen()
         => throw new InvalidOperationException("Invalid enumerator state: enumeration cannot proceed.");
 
-    public static void ThrowInvalidOperationException_InvalidOperation_NoValue()
-        => throw new InvalidOperationException("No value provided.");
-
-    public static void ThrowInvalidOperationException_InvalidOperation_SpanOverlappedOperation()
-        => throw new InvalidOperationException("This operation is invalid on overlapping buffers.");
-
     public static void ThrowInvalidOperationException_ConcurrentOperationsNotSupported()
         => throw new InvalidOperationException("Concurrent operations are not supported.");
 
-    public static void ThrowInvalidOperationException_HandleIsNotInitialized()
-        => throw new InvalidOperationException("Handle is not initialized.");
-
-    public static void ThrowFormatException_BadFormatSpecifier() => throw new FormatException("Bad format specifier.");
-
     static ArgumentException GetArgumentException(ER resource) => new(GetResourceString(resource));
-
-    static InvalidOperationException GetInvalidOperationException(ER resource) => new(GetResourceString(resource));
-
-    static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType)
-        => new($"Wrong key type. Expected {targetType}, got: '{key}'.", nameof(key));
-
-    static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
-        => new($"Wrong value type. Expected {targetType}, got: '{value}'.", nameof(value));
-
-    static KeyNotFoundException GetKeyNotFoundException(object key) => new($"Key not found: {key}");
 
     static ArgumentOutOfRangeException GetArgumentOutOfRangeException(EA argument, ER resource)
         => new(GetArgumentName(argument), GetResourceString(resource));
-
-    static ArgumentException GetArgumentException(ER resource, EA argument)
-        => new(GetResourceString(resource), GetArgumentName(argument));
-
-    static ArgumentOutOfRangeException GetArgumentOutOfRangeException(EA argument, int paramNumber, ER resource)
-        => new($"{GetArgumentName(argument)}[{paramNumber}]", GetResourceString(resource));
-
-    static InvalidOperationException GetInvalidOperationException_EnumCurrent(int index) => new(
-        index < 0 ? "Enumeration has not started" : "Enumeration has ended");
-
-    // Allow nulls for reference types and Nullable<U>, but not for value types.
-    // Aggressively inline so the jit evaluates the if in place and either drops the call altogether
-    // Or just leaves null test and call to the Non-returning ThrowHelper.ThrowArgumentNullException
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void IfNullAndNullsAreIllegalThenThrow<T>(object value, EA argName)
-    {
-        // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-        if (!(default(T) == null) && value == null) ThrowArgumentNullException(argName);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void ThrowForUnsupportedVectorBaseType<T>() where T : struct
-    {
-        if (typeof(T) != typeof(byte) &&
-            typeof(T) != typeof(sbyte) &&
-            typeof(T) != typeof(short) &&
-            typeof(T) != typeof(ushort) &&
-            typeof(T) != typeof(int) &&
-            typeof(T) != typeof(uint) &&
-            typeof(T) != typeof(long) &&
-            typeof(T) != typeof(ulong) &&
-            typeof(T) != typeof(float) &&
-            typeof(T) != typeof(double)) ThrowNotSupportedException(ER.Arg_TypeNotSupported);
-    }
-
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
-        // This function will convert an ExceptionArgument enum value to the argument name string.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetArgumentName(ExceptionArgument argument)
-        {
-            SystemDebug.Assert(Enum.IsDefined(typeof(ExceptionArgument), argument),
-                "The enum value is not defined, please check the ExceptionArgument Enum.");
-
-            return argument.ToString();
-        }
-#endif
 
     static string GetArgumentName(EA argument)
     {
@@ -352,22 +194,10 @@ public static class ThrowHelper
             case EA.codePoint: return nameof(EA.codePoint);
 
             default:
-                SystemDebug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
+                Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                 return argument.ToString();
         }
     }
-
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
-        // This function will convert an ExceptionResource enum value to the resource string.
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static string GetResourceString(ExceptionResource resource)
-        {
-            SystemDebug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
-                "The enum value is not defined, please check the ExceptionResource Enum.");
-
-            return SR.GetResourceString(resource.ToString());
-        }
-#endif
 
     static string GetResourceString(ER resource)
     {
@@ -432,7 +262,7 @@ public static class ThrowHelper
             case ER.Enumeration_Ended: return "Enumeration has ended.";
 
             default:
-                SystemDebug.Assert(false, "The enum value is not defined, please check the ExceptionResource Enum.");
+                Debug.Assert(false, "The enum value is not defined, please check the ExceptionResource Enum.");
                 return resource.ToString();
         }
     }
@@ -441,7 +271,7 @@ public static class ThrowHelper
 //
 // The convention for this enum is using the argument name as the enum name
 //
-public enum ExceptionArgument
+internal enum ExceptionArgument
 {
     obj,
     dictionary,
@@ -513,7 +343,7 @@ public enum ExceptionArgument
 //
 // The convention for this enum is using the resource name as the enum name
 //
-public enum ExceptionResource
+internal enum ExceptionResource
 {
     ArgumentOutOfRange_Index,
     ArgumentOutOfRange_IndexMustBeLess,

@@ -10,7 +10,7 @@ public readonly struct ValueListInternalsRefUnsafe<T>
     [NonSerialized] public readonly bool ClearItems;
     [NonSerialized] public readonly T[] Items;
 
-    internal ValueListInternalsRefUnsafe(in ValueList<T> source)
+    internal ValueListInternalsRefUnsafe(scoped ref readonly ValueList<T> source)
     {
         Size = source._size;
         Version = source._version;
@@ -23,18 +23,19 @@ partial class ValueCollectionInternalsUnsafe
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueListInternalsRefUnsafe<T> GetRef<T>(in ValueList<T> source) => new(source);
+    public static ValueListInternalsRefUnsafe<T> GetRef<T>(this scoped ref readonly ValueList<T> source) => new(in source);
 
     /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(in this ValueList<T> source) => source._items.AsSpan(0, source._size);
+    public static Span<T> AsSpan<T>(this scoped ref readonly ValueList<T> source) => source._items.AsSpan(0, source._size);
 
     /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(in this ValueList<T> source) => source._items.AsMemory(0, source._size);
+    public static Memory<T> AsMemory<T>(this scoped ref readonly ValueList<T> source)
+        => source._items.AsMemory(0, source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetUnsafe<T>(in this ValueList<T> source, out T[] items, out int count)
+    public static void GetUnsafe<T>(this scoped ref readonly ValueList<T> source, out T[] items, out int count)
     {
         items = source._items;
         count = source._size;
@@ -46,7 +47,7 @@ partial class ValueCollectionInternalsUnsafe
     ///     collection.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> GetInsertSpan<T>(ref ValueList<T> source, int index, int count)
+    public static Span<T> GetInsertSpan<T>(this scoped ref ValueList<T> source, int index, int count)
         => source.GetInsertSpan(index, count, true);
 
     /// <summary>
@@ -55,6 +56,6 @@ partial class ValueCollectionInternalsUnsafe
     ///     collection.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> GetInsertSpan<T>(ref ValueList<T> source, int index, int count, bool clearSpan)
+    public static Span<T> GetInsertSpan<T>(this scoped ref ValueList<T> source, int index, int count, bool clearSpan)
         => source.GetInsertSpan(index, count, clearSpan);
 }

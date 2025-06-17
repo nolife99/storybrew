@@ -181,12 +181,12 @@ public static class LineBreaker
         0x0085 // NEXT LINE
     ];
 
-    public static TempList<(int, int)> Split(ReadOnlySpan<char> text,
+    public static TempList<(int, int)> Split(scoped ReadOnlySpan<char> text,
         TextFont font,
         float maxWidth,
         Func<char, TextFont, int> measure)
     {
-        var list = TempList<(int, int)>.Create();
+        var list = TempList.Create<(int, int)>();
         for (int i = 0, startIndex = 0, lineWidth = 0; i < text.Length; ++i)
         {
             var characterWidth = measure(text[i], font);
@@ -219,7 +219,7 @@ public static class LineBreaker
         return list;
     }
 
-    static int findBreakIndex(ReadOnlySpan<char> text, int startIndex, int endIndex)
+    static int findBreakIndex(scoped ReadOnlySpan<char> text, int startIndex, int endIndex)
     {
         var firstAllowed = -1;
         for (var i = endIndex; i > startIndex; --i)
@@ -258,7 +258,7 @@ public static class LineBreaker
         return Breakability.Allowed;
     }
 
-    static bool mustBreakAfter(ReadOnlySpan<char> text, int index, bool ignoreLastCharacter = false)
+    static bool mustBreakAfter(scoped ReadOnlySpan<char> text, int index, bool ignoreLastCharacter = false)
     {
         if (!ignoreLastCharacter && index == text.Length - 1) return true;
 

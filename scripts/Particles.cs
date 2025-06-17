@@ -1,11 +1,10 @@
 namespace StorybrewScripts;
 
 using System;
-using OpenTK.Mathematics;
+using BrewLib.Util;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Scripting;
 using StorybrewCommon.Storyboarding;
-using StorybrewCommon.Storyboarding.CommandValues;
 using Vector2 = System.Numerics.Vector2;
 
 internal class Particles : StoryboardObjectGenerator
@@ -21,7 +20,7 @@ internal class Particles : StoryboardObjectGenerator
     [Description("The spread in degrees around Angle."), Configurable]
     public float AngleSpread = 60;
 
-    [Configurable] public Color4 Color = Color4.White;
+    [Configurable] public Color Color = Color.White;
 
     [Description("Varies the saturation and brightness of the selected Color for each particle."), Configurable]
     public float ColorVariance = .6f;
@@ -55,10 +54,10 @@ internal class Particles : StoryboardObjectGenerator
 
     protected override void Generate()
     {
-        if (StartTime == EndTime && Beatmap.HitObjects.FirstOrDefault() is not null)
+        if (StartTime == EndTime && !Beatmap.HitObjects.IsEmpty)
         {
-            StartTime = (int)Beatmap.HitObjects.First().StartTime;
-            EndTime = (int)Beatmap.HitObjects.Last().EndTime;
+            StartTime = (int)Beatmap.HitObjects[0].StartTime;
+            EndTime = (int)Beatmap.HitObjects[^1].EndTime;
         }
 
         EndTime = Math.Min(EndTime, (int)AudioDuration);
@@ -74,10 +73,10 @@ internal class Particles : StoryboardObjectGenerator
             var spawnAngle = Random(MathF.Tau);
             var spawnDistance = SpawnSpread * MathF.Sqrt(Random(1f));
 
-            var moveAngle = MathHelper.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) / 2);
+            var moveAngle = float.DegreesToRadians(Angle + Random(-AngleSpread, AngleSpread) / 2);
             var moveDistance = Speed * Lifetime * .001f;
 
-            var spriteRotation = moveAngle + MathHelper.DegreesToRadians(Rotation);
+            var spriteRotation = moveAngle + float.DegreesToRadians(Rotation);
 
             var startPosition = SpawnOrigin + new Vector2(MathF.Cos(spawnAngle), MathF.Sin(spawnAngle)) * spawnDistance;
             var endPosition = startPosition + new Vector2(MathF.Cos(moveAngle), MathF.Sin(moveAngle)) * moveDistance;
@@ -88,23 +87,23 @@ internal class Particles : StoryboardObjectGenerator
 
             if (!isVisible(bitmap, startPosition, endPosition, spriteRotation, loopDuration)) continue;
 
-            var color = Color;
+            var color = Color.ToScaledVector4();
             if (ColorVariance > 0)
             {
                 ColorVariance = Math.Clamp(ColorVariance, 0, 1);
 
-                var hsba = Color4.ToHsl(color);
+                var hsba = ColorExtensions.ToHsb(color);
                 var sMin = Math.Max(0, hsba.Y - ColorVariance * .5f);
                 var sMax = Math.Min(sMin + ColorVariance, 1);
                 var vMin = Math.Max(0, hsba.Z - ColorVariance * .5f);
                 var vMax = Math.Min(vMin + ColorVariance, 1);
 
-                color = CommandColor.FromHsb(hsba.X, Random(sMin, sMax), Random(vMin, vMax));
+                color = ColorExtensions.FromHsb(new(hsba.X, Random(sMin, sMax), Random(vMin, vMax), color.Z));
             }
 
             var particle = GetLayer("").CreateSprite(Path, Origin);
             if (spriteRotation != 0) particle.Rotate(startTime, spriteRotation);
-            if (color.R != 1 || color.G != 1 || color.B != 1) particle.Color(startTime, color);
+            if (color.X != 1 || color.Y != 1 || color.Z != 1) particle.Color(startTime, Color.FromScaledVector(color));
             if (Scale.X != 1 || Scale.Y != 1)
             {
                 if (Scale.X != Scale.Y) particle.ScaleVec(startTime, Scale.X, Scale.Y);
@@ -114,8 +113,8 @@ internal class Particles : StoryboardObjectGenerator
             if (Additive) particle.Additive(startTime, endTime);
 
             particle.StartLoopGroup(startTime, loopCount);
-            particle.Fade(OsbEasing.Out, 0, loopDuration * .2f, 0, color.A);
-            particle.Fade(OsbEasing.In, loopDuration * .8f, loopDuration, color.A, 0);
+            particle.Fade(OsbEasing.Out, 0, loopDuration * .2f, 0, color.Z);
+            particle.Fade(OsbEasing.In, loopDuration * .8f, loopDuration, color.Z, 0);
             particle.Move(Easing, 0, loopDuration, startPosition, endPosition);
             particle.EndGroup();
         }

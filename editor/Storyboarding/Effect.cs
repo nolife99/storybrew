@@ -5,12 +5,14 @@ using System.Linq;
 using System.Threading;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 public abstract class Effect : IDisposable
 {
     PooledList<EditorStoryboardLayer> layers;
 
-    string name = "Unnamed Effect";
+    ValueArray<char> name = ValueArray.Create("Unnamed Effect".AsSpan());
     EditorStoryboardLayer placeHolderLayer;
 
     public Effect(Project project)
@@ -29,20 +31,20 @@ public abstract class Effect : IDisposable
     public bool Highlight { get; set; }
     public Project Project { get; }
 
-    public string Name
+    public ReadOnlySpan<char> Name
     {
-        get => name;
+        get => name.AsReadOnlySpan();
         set
         {
-            if (name == value) return;
+            if (name.AsReadOnlySpan().SequenceEqual(value)) return;
 
-            name = value;
+            name = ValueArray.Create(value);
             RaiseChanged();
             refreshLayerNames();
         }
     }
 
-    public abstract string BaseName { get; }
+    public abstract ReadOnlySpan<char> BaseName { get; }
     public virtual string Path => null;
 
     public virtual EffectStatus Status { get; }
@@ -120,12 +122,14 @@ public abstract class Effect : IDisposable
     void refreshLayerNames()
     {
         foreach (var layer in layers)
-            layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ? name : $"{name} ({layer.Name})";
+            layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ?
+                name.AsReadOnlySpan().ToString() :
+                $"{name} ({layer.Name})";
     }
 
     #region IDisposable Support
 
-    protected bool Disposed;
+    private protected bool Disposed;
 
     protected virtual void Dispose(bool disposing)
     {
@@ -133,6 +137,8 @@ public abstract class Effect : IDisposable
 
         foreach (var l in layers) Project.LayerManager.Remove(l);
         layers.Dispose();
+
+        name.Dispose();
 
         Disposed = true;
     }

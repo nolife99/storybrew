@@ -13,7 +13,7 @@ public readonly record struct CommandParameter : ICommandValue
     public readonly ParameterType Type;
     CommandParameter(ParameterType type) => Type = type;
 
-    TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings) => TempList<char>.Create([
+    TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings) => TempList.Create([
         Type switch
         {
             ParameterType.FlipHorizontal => 'H',

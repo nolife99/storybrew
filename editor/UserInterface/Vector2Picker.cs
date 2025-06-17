@@ -75,14 +75,7 @@ public class Vector2Picker : Widget, Field
 
     void xTextbox_OnValueCommited(object sender, EventArgs e)
     {
-        var xCommit = xTextbox.Value;
-
-        double x;
-        try
-        {
-            x = double.Parse(xCommit, CultureInfo.InvariantCulture);
-        }
-        catch
+        if (!double.TryParse(xTextbox.Value, CultureInfo.InvariantCulture, out var x))
         {
             updateWidgets();
             return;
@@ -94,14 +87,7 @@ public class Vector2Picker : Widget, Field
 
     void yTextbox_OnValueCommited(object sender, EventArgs e)
     {
-        var yCommit = yTextbox.Value;
-
-        double y;
-        try
-        {
-            y = double.Parse(yCommit, CultureInfo.InvariantCulture);
-        }
-        catch
+        if (!double.TryParse(yTextbox.Value, CultureInfo.InvariantCulture, out var y))
         {
             updateWidgets();
             return;

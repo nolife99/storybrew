@@ -17,9 +17,9 @@ public static class PooledListExtensions
 
         public void ConvertAll<TOut, TOutput>(TOutput output, Converter<T, TOut> converter) where TOutput : ICollection<TOut>
         {
-            if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+            ArgumentNullException.ThrowIfNull(converter);
 
-            if (output == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+            ArgumentNullException.ThrowIfNull(output);
 
             var items = _list._items;
 
@@ -28,9 +28,9 @@ public static class PooledListExtensions
 
         public void FindAll<TOutput>(TOutput output, Predicate<T> match) where TOutput : ICollection<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
-            if (output == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+            ArgumentNullException.ThrowIfNull(output);
 
             var items = _list._items;
 
@@ -41,7 +41,7 @@ public static class PooledListExtensions
 
         public PooledList<TOut> ConvertAll<TOut, TConverter>(TConverter converter) where TConverter : IConverter<T, TOut>
         {
-            if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+            ArgumentNullException.ThrowIfNull(converter);
 
             var list = new PooledList<TOut>(_list._size);
             var src = _list._items;
@@ -56,7 +56,7 @@ public static class PooledListExtensions
 
         public T Find<TPredicate>(TPredicate match) where TPredicate : IPredicate<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var items = _list._items;
 
@@ -69,7 +69,7 @@ public static class PooledListExtensions
 
         public PooledList<T> FindAll<TPredicate>(TPredicate match) where TPredicate : IPredicate<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var list = new PooledList<T>();
             var items = _list._items;
@@ -95,7 +95,7 @@ public static class PooledListExtensions
             if (count < 0 || startIndex > _list._size - count)
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var endIndex = startIndex + count;
             var items = _list._items;
@@ -109,7 +109,7 @@ public static class PooledListExtensions
 
         public T FindLast<TPredicate>(TPredicate match) where TPredicate : IPredicate<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var items = _list._items;
 
@@ -128,7 +128,7 @@ public static class PooledListExtensions
 
         public int FindLastIndex<TPredicate>(int startIndex, int count, TPredicate match) where TPredicate : IPredicate<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             if (_list._size == 0)
             {
@@ -157,7 +157,7 @@ public static class PooledListExtensions
 
         public void ForEach<TAction>(TAction action) where TAction : IAction<T>
         {
-            if (action == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
+            ArgumentNullException.ThrowIfNull(action);
 
             var version = _list._version;
             var items = _list._items;
@@ -174,7 +174,7 @@ public static class PooledListExtensions
 
         public bool TryFind<TPredicate>(TPredicate match, out T result) where TPredicate : IPredicate<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var items = _list._items;
 
@@ -191,7 +191,7 @@ public static class PooledListExtensions
 
         public bool TryFindLast<TPredicate>(TPredicate match, out T result) where TPredicate : IPredicate<T>
         {
-            if (match is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var items = _list._items;
 
@@ -208,7 +208,7 @@ public static class PooledListExtensions
 
         public int RemoveAll<TPredicate>(TPredicate match) where TPredicate : IPredicate<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var freeIndex = 0; // the first free slot in items array
             var items = _list._items;
@@ -242,7 +242,7 @@ public static class PooledListExtensions
 
         public void Sort<TComparison>(TComparison comparison) where TComparison : IComparison<T>
         {
-            if (comparison == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
+            ArgumentNullException.ThrowIfNull(comparison);
 
             if (_list._size > 1) Array.Sort(_list._items, 0, _list._size, new Comparer<TComparison>(comparison));
             _list._version++;
@@ -250,7 +250,7 @@ public static class PooledListExtensions
 
         public bool TrueForAll<TPredicate>(TPredicate match) where TPredicate : IPredicate<T>
         {
-            if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+            ArgumentNullException.ThrowIfNull(match);
 
             var items = _list._items;
 

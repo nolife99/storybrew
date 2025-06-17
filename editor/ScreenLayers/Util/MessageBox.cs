@@ -11,7 +11,7 @@ using Tiny.PooledCollections.Generic.StructBased.Internals;
 public class MessageBox(scoped ReadOnlySpan<char> message, Action yesAction, Action noAction, bool cancelable)
     : UiScreenLayer
 {
-    readonly ValueArray<char> message = ValueArray<char>.Create(message);
+    readonly ValueArray<char> message = ValueArray.Create(message);
     LinearLayout mainLayout, buttonsLayout;
 
     public override bool IsPopup => true;
@@ -19,7 +19,7 @@ public class MessageBox(scoped ReadOnlySpan<char> message, Action yesAction, Act
     public override void Load()
     {
         base.Load();
-        WidgetManager.Root.Add(mainLayout = new LinearLayout(WidgetManager)
+        WidgetManager.Root.Add(mainLayout = new(WidgetManager)
         {
             StyleName = "panel",
             AnchorTarget = WidgetManager.Root,

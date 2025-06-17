@@ -11,7 +11,7 @@ public class TextLayout : IDisposable
 {
     readonly PooledList<TextLayoutLine> _lines;
 
-    public TextLayout(ReadOnlySpan<char> text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
+    public TextLayout(scoped ReadOnlySpan<char> text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
         var glyphIndex = 0;
         var width = 0f;

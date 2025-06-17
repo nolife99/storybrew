@@ -7,10 +7,10 @@ public readonly ref struct ReadOnlyTempArray<T>
 {
     internal readonly TempArray<T> _array;
 
-    internal ReadOnlyTempArray(TempArray<T> array) => _array = array;
+    ReadOnlyTempArray(TempArray<T> array) => _array = array;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyTempArray<T> Empty() => new(TempArray<T>.Empty());
+    public static ReadOnlyTempArray<T> Empty() => new(TempArray.Empty<T>());
 
     public T this[int index]
     {
@@ -42,7 +42,7 @@ public readonly ref struct ReadOnlyTempArray<T>
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }

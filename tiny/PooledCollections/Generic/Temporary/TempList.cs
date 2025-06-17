@@ -11,10 +11,11 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public ref struct TempList<T>
 {
-    internal const int DefaultCapacity = 4;
+    const int DefaultCapacity = 4;
 
     internal T[] _items;
     internal int _size;
@@ -24,23 +25,25 @@ public ref struct TempList<T>
 
     static readonly T[] s_emptyArray = [];
 
-    internal static readonly bool s_clearItems = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearItems = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
-    TempList(int capacity, ArrayPool<T> pool)
+    internal TempList(int capacity, ArrayPool<T> pool)
     {
-        if (capacity < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
         _pool = pool ?? ArrayPool<T>.Shared;
-        _items = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
+        if (capacity <= 0) _items = s_emptyArray;
+        else
+        {
+            _items = _pool.Rent(capacity);
+            _ref = ref MemoryMarshal.GetArrayDataReference(_items);
+        }
+
         _size = 0;
         _version = 0;
     }
 
-    TempList(IEnumerable<T> collection, ArrayPool<T> pool)
+    internal TempList(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         _pool = pool ?? ArrayPool<T>.Shared;
         _version = 0;
@@ -58,6 +61,8 @@ public ref struct TempList<T>
                 _items = _pool.Rent(count);
                 c.CopyTo(_items, 0);
                 _size = count;
+
+                _ref = ref MemoryMarshal.GetArrayDataReference(_items);
             }
         }
         else
@@ -66,6 +71,8 @@ public ref struct TempList<T>
             _items = s_emptyArray;
             using var en = collection!.GetEnumerator();
             while (en.MoveNext()) Add(en.Current);
+
+            _ref = ref MemoryMarshal.GetArrayDataReference(_items);
         }
     }
 
@@ -74,9 +81,7 @@ public ref struct TempList<T>
         get => _items.Length;
         set
         {
-            if (value < _size)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.value,
-                    ExceptionResource.ArgumentOutOfRange_SmallCapacity);
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, _size);
 
             var length = _items.Length;
 
@@ -97,7 +102,10 @@ public ref struct TempList<T>
                 return;
             }
 
-            if (_size > 0) Array.Copy(_items, newItems, _size);
+            if (_size > 0)
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(newItems)),
+                    ref Unsafe.As<T, byte>(ref _ref),
+                    (uint)(_size * Unsafe.SizeOf<T>()));
 
             ReturnArray(newItems);
         }
@@ -112,21 +120,17 @@ public ref struct TempList<T>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _items != null;
+        get => _items is not null;
     }
 
-    public T this[int index]
+    internal ref T _ref;
+
+    public ref T this[int index]
     {
         get
         {
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
-            return _items[index];
-        }
-        set
-        {
-            if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
-            _items[index] = value;
-            _version++;
+            return ref Unsafe.Add(ref _ref, index);
         }
     }
 
@@ -157,10 +161,8 @@ public ref struct TempList<T>
 
     public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -188,7 +190,7 @@ public ref struct TempList<T>
 
     public TempList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter, ArrayPool<TOut> pool = null)
     {
-        if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+        ArgumentNullException.ThrowIfNull(converter);
 
         var list = new TempList<TOut>(_size, pool ?? ArrayPool<TOut>.Shared);
         var src = _items;
@@ -210,16 +212,14 @@ public ref struct TempList<T>
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
-        CopyTo(index, dest.AsSpan(), destIndex, count);
+        CopyTo(index, new Span<T>(dest), destIndex, count);
     }
 
     public int EnsureCapacity(int capacity)
     {
-        if (capacity < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         if (_items.Length < capacity)
         {
@@ -233,7 +233,7 @@ public ref struct TempList<T>
     void Grow(int capacity)
     {
         var newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
-        if ((uint)newcapacity > SystemArray.MaxLength) newcapacity = SystemArray.MaxLength;
+        if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
         if (newcapacity < capacity) newcapacity = capacity;
 
         Capacity = newcapacity;
@@ -279,7 +279,7 @@ public ref struct TempList<T>
 
         if (count < 0 || startIndex > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var endIndex = startIndex + count;
         var items = _items;
@@ -293,7 +293,7 @@ public ref struct TempList<T>
 
     public T? FindLast(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -310,7 +310,7 @@ public ref struct TempList<T>
 
     public int FindLastIndex(int startIndex, int count, Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         if (_size == 0)
         {
@@ -339,19 +339,17 @@ public ref struct TempList<T>
 
     public void ForEach(Action<T> action)
     {
-        if (action == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
+        ArgumentNullException.ThrowIfNull(action);
 
         var version = _version;
         var items = _items;
 
         for (var i = 0; i < _size; i++)
         {
-            if (version != _version) break;
+            if (version != _version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
             action(items[i]);
         }
-
-        if (version != _version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
     }
 
     // Returns an enumerator for this list with the given
@@ -360,15 +358,12 @@ public ref struct TempList<T>
     // GetObject methods of the enumerator will throw an exception.
     //
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public Enumerator GetEnumerator() => new(ref this);
 
     public TempList<T> GetRange(int index, int count, ArrayPool<T> pool = null)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -399,7 +394,7 @@ public ref struct TempList<T>
     //
     public int IndexOf(T item, int index)
     {
-        if (index > _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
         return Array.IndexOf(_items, item, index, _size - index);
     }
 
@@ -414,7 +409,7 @@ public ref struct TempList<T>
     //
     public int IndexOf(T item, int index, int count)
     {
-        if (index > _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
 
         if (count < 0 || index > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
@@ -446,7 +441,7 @@ public ref struct TempList<T>
     //
     public void InsertRange(int index, IEnumerable<T> collection)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
 
@@ -520,7 +515,7 @@ public ref struct TempList<T>
     //
     public int LastIndexOf(T item, int index)
     {
-        if (index >= _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
         return LastIndexOf(item, index, index + 1);
     }
 
@@ -546,9 +541,7 @@ public ref struct TempList<T>
             // Special case for empty list
             return -1;
 
-        if (index >= _size)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index,
-                ExceptionResource.ArgumentOutOfRange_BiggerThanCollection);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
 
         if (count > index + 1)
             ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
@@ -575,7 +568,7 @@ public ref struct TempList<T>
     // The complexity is O(n).
     public int RemoveAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var freeIndex = 0; // the first free slot in items array
         var items = _items;
@@ -621,22 +614,18 @@ public ref struct TempList<T>
     // Removes a range of elements from this list.
     public void RemoveRange(int index, int count)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-        if (count > 0)
-        {
-            _size -= count;
-            if (index < _size) Array.Copy(_items, index + count, _items, index, _size - index);
+        if (count <= 0) return;
 
-            _version++;
-            if (s_clearItems) Array.Clear(_items, _size, count);
-        }
+        _size -= count;
+        if (index < _size) Array.Copy(_items, index + count, _items, index, _size - index);
+
+        ++_version;
+        if (s_clearItems) Array.Clear(_items, _size, count);
     }
 
     // Reverses the elements in this list.
@@ -649,11 +638,8 @@ public ref struct TempList<T>
     //
     public void Reverse(int index, int count)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -679,34 +665,24 @@ public ref struct TempList<T>
     //
     public void Sort(int index, int count, IComparer<T>? comparer)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-        if (count > 1) Array.Sort(_items, index, count, comparer);
+        if (count > 1) _items.AsSpan(index, count).Sort(comparer);
         _version++;
     }
 
     public void Sort(Comparison<T> comparison)
     {
-        if (comparison == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
-
-        if (_size > 1) Array.Sort(_items, 0, _size, new Comparer(comparison));
+        if (_size > 1) _items.AsSpan(0, _size).Sort(new Comparer(comparison));
         _version++;
     }
 
     // ToArray returns an array containing the contents of the List.
     // This requires copying the List, which is an O(n) operation.
-    public T[] ToArray()
-    {
-        if (_size == 0) return s_emptyArray;
-
-        return _items.AsSpan(0, _size).ToArray();
-    }
+    public T[] ToArray() => _size == 0 ? s_emptyArray : _items.AsSpan(0, _size).ToArray();
 
     // Sets the capacity of this list to the size of the list. This method can
     // be used to minimize a list's memory overhead once it is known that no
@@ -719,13 +695,12 @@ public ref struct TempList<T>
     //
     public void TrimExcess()
     {
-        var threshold = (int)(_items.Length * 0.9);
-        if (_size < threshold) Capacity = _size;
+        if (_size < _items.Length * 0.9) Capacity = _size;
     }
 
     public bool TrueForAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         for (var i = 0; i < _size; i++)
             if (!match(_items[i]))
@@ -740,85 +715,37 @@ public ref struct TempList<T>
         int _index;
         readonly int _version;
 
-        public Enumerator(TempList<T> list)
+        internal Enumerator(scoped ref readonly TempList<T> list)
         {
             _list = list;
-            _index = 0;
+            _index = -1;
             _version = list._version;
-            Current = default;
         }
-
-        public void Dispose() { }
 
         public bool MoveNext()
         {
-            if (_version == _list._version && (uint)_index < (uint)_list._size)
-            {
-                Current = _list._items[_index];
-                _index++;
-                return true;
-            }
-
-            return MoveNextRare();
-        }
-
-        bool MoveNextRare()
-        {
             if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            _index = _list._size + 1;
-            Current = default;
-            return false;
+            var index = _index + 1;
+            if (index >= _list._size) return false;
+
+            _index = index;
+            return true;
         }
 
-        public T Current
+        public ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get;
-            private set;
+            get => ref Unsafe.Add(ref _list._ref, _index);
         }
     }
 
-    readonly struct Comparer : IComparer<T>
+    readonly struct Comparer(Comparison<T> comparison) : IComparer<T>
     {
-        readonly Comparison<T> _comparison;
-
-        public Comparer(Comparison<T> comparison) => _comparison = comparison;
-
-        public int Compare(T x, T y) => _comparison(x, y);
+        public int Compare(T x, T y) => comparison(x, y);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create() => new(0, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(int capacity) => new(capacity, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(ArrayPool<T> pool) => new(0, pool);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(int capacity, ArrayPool<T> pool) => new(capacity, pool);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(IEnumerable<T> collection) => new(collection, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(IEnumerable<T> collection, ArrayPool<T> pool) => new(collection, pool);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(T[] items) => new(items.AsSpan(), ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(T[] items, ArrayPool<T> pool) => new(items.AsSpan(), pool);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(scoped ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create(scoped ReadOnlySpan<T> span, ArrayPool<T> pool) => new(span, pool);
-
-    TempList(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
+    internal TempList(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
         _pool = pool ?? ArrayPool<T>.Shared;
 
@@ -832,7 +759,12 @@ public ref struct TempList<T>
         else
         {
             _items = _pool.Rent(count);
-            span.CopyTo(_items);
+            _ref = ref MemoryMarshal.GetArrayDataReference(_items);
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<T, byte>(ref _ref),
+                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                (uint)(span.Length * Unsafe.SizeOf<T>()));
+
             _size = count;
         }
 
@@ -865,9 +797,9 @@ public ref struct TempList<T>
 
     public void InsertRange(int index, T[] array)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
-        InsertRange(index, array.AsSpan());
+        InsertRange(index, new ReadOnlySpan<T>(array));
     }
 
     public void InsertRange(int index, scoped ReadOnlySpan<T> span)
@@ -884,7 +816,7 @@ public ref struct TempList<T>
     /// </summary>
     public void AddRange(T[] array)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         AddRange(array.AsSpan());
     }
@@ -913,7 +845,7 @@ public ref struct TempList<T>
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (dest.Length - destIndex < count || _size - index < count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
@@ -925,18 +857,18 @@ public ref struct TempList<T>
         src.Slice(index, count).CopyTo(dest.Slice(destIndex, count));
     }
 
-    public void ConvertAll<TOut>(TempList<TOut> output, Converter<T, TOut> converter)
+    public void ConvertAll<TOut>(scoped ref TempList<TOut> output, Converter<T, TOut> converter)
     {
-        if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+        ArgumentNullException.ThrowIfNull(converter);
 
         var items = _items;
 
         for (var i = 0; i < _size; i++) output.Add(converter(items[i]));
     }
 
-    public void FindAll(TempList<T> output, Predicate<T> match)
+    public void FindAll(scoped ref TempList<T> output, Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -947,7 +879,7 @@ public ref struct TempList<T>
 
     public bool TryFind(Predicate<T> match, out T result)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -964,7 +896,7 @@ public ref struct TempList<T>
 
     public bool TryFindLast(Predicate<T> match, out T result)
     {
-        if (match is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -981,14 +913,10 @@ public ref struct TempList<T>
 
     void ReturnArray(T[] replaceWith)
     {
-        if (!_items.IsNullOrEmpty())
-            try
-            {
-                _pool.Return(_items, s_clearItems);
-            }
-            catch { }
+        if (IsValid) _pool.Return(_items, s_clearItems);
 
         _items = replaceWith ?? s_emptyArray;
+        _ref = ref MemoryMarshal.GetArrayDataReference(_items);
     }
 
     public void Dispose()

@@ -36,8 +36,8 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     [NonSerialized] internal ArrayPool<TValue> _valuePool;
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
-    internal static readonly bool s_clearValues = SystemRuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
+    internal static readonly bool s_clearValues = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
 
     static readonly Type s_typeOfKey = typeof(TKey);
     static readonly ArrayEntry<TKey>[] s_emptyEntries = [];
@@ -92,7 +92,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
     public void GetObjectData(SerializationInfo info, StreamingContext context)
     {
-        if (info == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
+        ArgumentNullException.ThrowIfNull(info);
 
         var count = Count;
 
@@ -110,7 +110,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
 
-        if (siInfo == null)
+        if (siInfo is null)
 
             // We can return immediately if this function is called twice.
             // Note we remove the serialization info from the table at the end of this method.
@@ -125,11 +125,11 @@ public partial struct ValueArrayDictionary<TKey, TValue>
             var array = (KeyValuePair<TKey, TValue>[]?)siInfo.GetValue(KeyValuePairsName,
                 typeof(KeyValuePair<TKey, TValue>[]));
 
-            if (array == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
+            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
 
             for (var i = 0; i < array.Length; i++)
             {
-                if (array[i].Key == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
+                if (array[i].Key is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
 
                 Add(array[i].Key, array[i].Value);
             }
@@ -175,7 +175,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _entries != null && _values != null && _buckets != null;
+        get => _entries is not null && _values is not null && _buckets is not null;
     }
 
     public ValueArrayDictionaryKeyCollection<TKey, TValue> Keys
@@ -360,10 +360,10 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     {
         var values = _values;
 
-        if (value == null)
+        if (value is null)
         {
             foreach (var item in values)
-                if (item == null)
+                if (item is null)
                     return true;
         }
         else if (typeof(TValue).IsValueType)
@@ -391,10 +391,10 @@ public partial struct ValueArrayDictionary<TKey, TValue>
     {
         var values = _values;
 
-        if (value == null)
+        if (value is null)
         {
             foreach (var item in values)
-                if (item == null)
+                if (item is null)
                     return true;
         }
         else if (typeof(TValue).IsValueType)
@@ -797,7 +797,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
                 _values = newValues;
 
-                if (!values.IsNullOrEmpty()) _valuePool.Return(values, s_clearValues);
+                if (values is not null) _valuePool.Return(values, s_clearValues);
             }
             else _valuePool.Return(newValues);
         }
@@ -814,7 +814,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
                 _entries = newEntries;
 
-                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
+                if (entries is not null) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -1158,7 +1158,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty()) _bucketPool.Return(_buckets);
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -1167,7 +1167,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -1179,7 +1179,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
     void ReturnEntries(ArrayEntry<TKey>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
+        if (_entries is not null)
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);
@@ -1191,7 +1191,7 @@ public partial struct ValueArrayDictionary<TKey, TValue>
 
     void ReturnValues(TValue[] replaceWith)
     {
-        if (!_values.IsNullOrEmpty())
+        if (_values is not null)
             try
             {
                 _valuePool.Return(_values, s_clearValues);

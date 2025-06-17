@@ -16,7 +16,7 @@ public class OsuBreak
     public override string ToString() => $"Break from {StartTime}ms to {EndTime}ms";
 
     ///<summary> Parses an osu! break from a given line. </summary>
-    public static OsuBreak Parse(ReadOnlySpan<char> line)
+    public static OsuBreak Parse(scoped ReadOnlySpan<char> line)
     {
         var values = line.Split(',');
 

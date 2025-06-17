@@ -10,7 +10,7 @@ partial struct TempArrayDictionary<TKey, TValue>
         readonly TempArrayDictionary<TKey, TValue> _dictionary;
 
 #if DEBUG
-        private int _startCount;
+        int _startCount;
 #endif
 
         int _count;
@@ -59,8 +59,6 @@ partial struct TempArrayDictionary<TKey, TValue>
         }
 
         public void Reset() => _index = -1;
-
-        public void Dispose() { }
     }
 
     ref struct KeyValuePairEnumerator
@@ -68,7 +66,7 @@ partial struct TempArrayDictionary<TKey, TValue>
         readonly TempArrayDictionary<TKey, TValue> _dictionary;
 
 #if DEBUG
-        private int _startCount;
+        int _startCount;
 #endif
 
         readonly int _count;
@@ -106,7 +104,5 @@ partial struct TempArrayDictionary<TKey, TValue>
         }
 
         public void Reset() => _index = -1;
-
-        public void Dispose() { }
     }
 }

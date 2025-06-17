@@ -60,7 +60,7 @@ using Vector4 = System.Numerics.Vector4;
     TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings)
     {
         Span<char> temp = stackalloc char[3];
-        var list = TempList<char>.Create();
+        var list = TempList.Create<char>();
 
         R.TryFormat(temp, out var written, provider: exportSettings.NumberFormat);
         list.AddRange(temp[..written]);

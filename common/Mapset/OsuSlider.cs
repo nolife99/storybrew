@@ -135,8 +135,8 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
 
     CompositeCurve generateBezierCurve()
     {
-        using var curves = TempList<Curve>.Create();
-        using var curvePoints = TempList<Vector2>.Create();
+        using var curves = TempList.Create<Curve>();
+        using var curvePoints = TempList.Create<Vector2>();
 
         var previousPosition = (Vector2)PlayfieldPosition;
         curvePoints.Add(previousPosition);
@@ -159,7 +159,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
 
     CatmullCurve generateCatmullCurve()
     {
-        using var curvePoints = TempList<Vector2>.Create(controlPoints.Length + 1);
+        using var curvePoints = TempList.Create<Vector2>(controlPoints.Length + 1);
         curvePoints.Add(PlayfieldPosition);
 
         foreach (var t in controlPoints) curvePoints.Add(t);
@@ -169,7 +169,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
 
     CompositeCurve generateLinearCurve()
     {
-        using var curves = TempArray<Curve>.Create(controlPoints.Length);
+        using var curves = TempArray.Create<Curve>(controlPoints.Length);
 
         var previousPoint = PlayfieldPosition;
         for (var i = 0; i < controlPoints.Length; ++i)
@@ -181,8 +181,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         return new(curves.AsReadOnlySpan());
     }
 
-    ///<summary> Parses an osu! slider from the given strings. </summary>
-    public static OsuSlider Parse(Beatmap beatmap,
+    internal static OsuSlider Parse(Beatmap beatmap,
         TempList<ValueList<char>> values,
         int x,
         int y,

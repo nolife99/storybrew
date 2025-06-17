@@ -8,7 +8,7 @@ public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer
 {
     readonly PooledDictionary<int, AudioSample> samples = new();
 
-    public AudioSample Get(ReadOnlySpan<char> filename)
+    public AudioSample Get(scoped ReadOnlySpan<char> filename)
     {
         var hashCode = string.GetHashCode(filename);
         if (samples.TryGetValue(hashCode, out var sample)) return sample;

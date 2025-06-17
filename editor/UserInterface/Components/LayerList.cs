@@ -7,6 +7,8 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using Storyboarding;
 using StorybrewCommon.Storyboarding;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class LayerList : Widget
 {
@@ -91,6 +93,8 @@ public class LayerList : Widget
             Label nameLabel, detailsLabel;
             Button diffSpecificButton, showHideButton;
 
+            using var text = getLayerDetails(layer, effect);
+
             layersLayout.Add(layerRoot = new(Manager)
             {
                 AnchorFrom = BoxAlignment.Centre,
@@ -124,7 +128,7 @@ public class LayerList : Widget
                             detailsLabel = new(Manager)
                             {
                                 StyleName = "listItemSecondary",
-                                Text = getLayerDetails(layer, effect),
+                                Text = text.AsReadOnlySpan(),
                                 AnchorFrom = BoxAlignment.Left,
                                 AnchorTo = BoxAlignment.Left
                             }
@@ -186,7 +190,11 @@ public class LayerList : Widget
                 showHideButton.Checked = layer.Visible;
             };
 
-            effect.OnChanged += effectChangedHandler = (_, _) => detailsLabel.Text = getLayerDetails(layer, effect);
+            effect.OnChanged += effectChangedHandler = (_, _) =>
+            {
+                using var text = getLayerDetails(layer, effect);
+                detailsLabel.Text = text.AsReadOnlySpan();
+            };
 
             layerRoot.OnHovered += (_, e) =>
             {
@@ -222,7 +230,18 @@ public class LayerList : Widget
         }
     }
 
-    static string getLayerDetails(EditorStoryboardLayer layer, Effect effect) => layer.EstimatedSize > 30720 ?
-        $"using {effect.BaseName} ({StringHelper.ToByteSize(layer.EstimatedSize)})" :
-        "using " + effect.BaseName;
+    static TempList<char> getLayerDetails(EditorStoryboardLayer layer, Effect effect)
+    {
+        var str = TempList.Create("using ".AsSpan());
+        if (layer.EstimatedSize > 30720)
+        {
+            str.AddRange(effect.BaseName);
+            str.AddRange(" (".AsSpan());
+            str.AddRange(StringHelper.ToByteSize(layer.EstimatedSize).AsSpan());
+            str.Add(')');
+        }
+        else str.AddRange(effect.BaseName);
+
+        return str;
+    }
 }

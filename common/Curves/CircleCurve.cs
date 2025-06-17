@@ -1,9 +1,9 @@
 ﻿namespace StorybrewCommon.Curves;
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
+using Tiny.PooledCollections.Generic.Temporary;
 
 /// <summary>Represents a circular arc curve defined by three control points: a start point, a midpoint, and an end point.</summary>
 public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint) : BaseCurve
@@ -19,7 +19,8 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
     /// <summary/>
     protected override void Initialize(List<(float, Vector2)> distancePosition, out float length)
     {
-        var linearSegments = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint], out var amountPoints);
+        using var linearSegments = CircularArcToPiecewiseLinear([startPoint, midPoint, endPoint], out var amountPoints);
+        distancePosition.EnsureCapacity(distancePosition.Count + linearSegments.Length);
 
         length = 0;
         for (var i = 0; i < amountPoints - 1; ++i)
@@ -29,8 +30,6 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
             distancePosition.Add((length, cur));
             length += Vector2.Distance(cur, linearSegments[i + 1]);
         }
-
-        ArrayPool<Vector2>.Shared.Return(linearSegments);
     }
 
     ///<summary> Returns whether or not the curve is a valid circle curve based on given control points. </summary>
@@ -43,14 +42,14 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
         0;
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static Vector2[] CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, out int amountPoints)
+    static TempArray<Vector2> CircularArcToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, out int amountPoints)
     {
         CircularArcProperties pr = new(controlPoints);
         amountPoints = 2 * pr.Radius <= circular_arc_tolerance ?
             2 :
             int.Max(2, (int)float.Ceiling(pr.ThetaRange / (2 * float.Acos(1 - circular_arc_tolerance / pr.Radius))));
 
-        var output = ArrayPool<Vector2>.Shared.Rent(amountPoints);
+        var output = TempArray.Create<Vector2>(amountPoints);
         for (var i = 0; i < amountPoints; ++i)
         {
             var fract = i / (amountPoints - 1f);
@@ -63,13 +62,10 @@ public class CircleCurve(Vector2 startPoint, Vector2 midPoint, Vector2 endPoint)
 
     readonly struct CircularArcProperties
     {
-        public readonly float ThetaStart;
-        public readonly float ThetaRange;
-        public readonly float Direction;
-        public readonly float Radius;
+        public readonly float ThetaStart, ThetaRange, Direction, Radius;
         public readonly Vector2 Centre;
 
-        public CircularArcProperties(ReadOnlySpan<Vector2> controlPoints)
+        public CircularArcProperties(scoped ReadOnlySpan<Vector2> controlPoints)
         {
             var a = controlPoints[0];
             var b = controlPoints[1];

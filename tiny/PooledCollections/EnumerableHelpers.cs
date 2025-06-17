@@ -8,6 +8,7 @@ namespace Tiny.PooledCollections;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 /// <summary>Internal helper functions for working with enumerables.</summary>
 public static class EnumerableHelpers
@@ -46,7 +47,7 @@ public static class EnumerableHelpers
                     var arr = pool.Rent(DefaultCapacity);
                     arr[0] = en.Current;
                     var count = 1;
-                    var clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+                    var clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
                     while (en.MoveNext())
                     {
@@ -59,8 +60,8 @@ public static class EnumerableHelpers
                             // constrain the length to be Array.MaxLength (this overflow check works because of the
                             // cast to uint).
                             var newLength = count << 1;
-                            if ((uint)newLength > SystemArray.MaxLength)
-                                newLength = SystemArray.MaxLength <= count ? count + 1 : SystemArray.MaxLength;
+                            if ((uint)newLength > Array.MaxLength)
+                                newLength = Array.MaxLength <= count ? count + 1 : Array.MaxLength;
 
                             var newArr = pool.Rent(newLength);
                             Array.Copy(arr, newArr, count);

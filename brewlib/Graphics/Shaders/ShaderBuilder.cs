@@ -54,8 +54,14 @@ public class ShaderBuilder
         Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPosition, GlFragCoord, GlPointSize, GlFragDepth);
 
         var commonCode = buildCommon();
-        var vertexShaderCode = buildVertexShader().Insert(0, commonCode);
-        var fragmentShaderCode = buildFragmentShader().Insert(0, commonCode);
+        Span<char> commonCodeSpan = stackalloc char[commonCode.Length];
+
+        commonCode.CopyTo(0, commonCodeSpan, commonCode.Length);
+
+        var vertexShaderCode = buildVertexShader().Insert(0, commonCodeSpan);
+        var fragmentShaderCode = buildFragmentShader().Insert(0, commonCodeSpan);
+
+        StringHelper.StringBuilderPool.Release(commonCode);
 
         if (log)
         {
@@ -69,7 +75,7 @@ public class ShaderBuilder
         return new(vertexShaderCode.ToString(), fragmentShaderCode.ToString());
     }
 
-    ReadOnlySpan<char> buildCommon()
+    StringBuilder buildCommon()
     {
         var code = StringHelper.StringBuilderPool.Retrieve();
         code.AppendLine(CultureInfo.InvariantCulture,
@@ -85,9 +91,7 @@ public class ShaderBuilder
 
         ProgramScope.DeclareTypes(code);
 
-        var codeString = code.ToString();
-        StringHelper.StringBuilderPool.Release(code);
-        return codeString;
+        return code;
     }
 
     StringBuilder buildVertexShader()

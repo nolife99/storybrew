@@ -45,7 +45,7 @@ using Vector2 = System.Numerics.Vector2;
     ///<summary> Converts this instance to a .osb string. </summary>
     TempList<char> ICommandValue.ToOsbString(ExportSettings exportSettings)
     {
-        var list = TempList<char>.Create();
+        var list = TempList.Create<char>();
 
         using (var x =
             (exportSettings.UseFloatForMove ? (float)X : (int)double.Round(X)).ToCharArray(

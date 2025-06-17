@@ -6,12 +6,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 [DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Length}"), Serializable]
-public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCallback
+public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCallback
 {
-    internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
     static readonly T[] s_emptyArray = [];
 
     internal T[] _array;
@@ -28,7 +29,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
         _array = _length == 0 ? s_emptyArray : _pool.Rent(length);
     }
 
-    internal ValueArray(ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
+    internal ValueArray(scoped ref readonly ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
     {
         if (length < 0) ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
 
@@ -38,8 +39,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
 
         if (array.IsEmpty) return;
 
-        var minLength = Math.Min(array.Length, length);
-        array[..minLength].CopyTo(_array);
+        array[..int.Min(array.Length, length)].CopyTo(_array);
     }
 
     public int Length
@@ -57,13 +57,17 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _array != null;
+        get => _array is not null;
     }
 
     public ref T this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref _array[index];
+        get
+        {
+            if ((uint)index >= (uint)_length) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+            return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_array), index);
+        }
     }
 
     int IReadOnlyCollection<T>.Count
@@ -75,7 +79,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
     T IReadOnlyList<T>.this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _array[index];
+        get => this[index];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -89,7 +93,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
@@ -135,7 +139,7 @@ public partial struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializ
 
     void ReturnArray(T[] replaceWith)
     {
-        if (!_array.IsNullOrEmpty()) _pool.Return(_array, s_clearArray);
+        if (_array is not null) _pool.Return(_array, s_clearArray);
 
         _array = replaceWith ?? s_emptyArray;
     }

@@ -34,11 +34,11 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         ReferencedAssemblies = referencedAssemblies;
     }
 
-    public string Name
+    public ReadOnlySpan<char> Name
     {
         get
         {
-            var name = ScriptTypeName;
+            var name = ScriptTypeName.AsSpan();
             if (name.Contains('.')) name = name[(name.LastIndexOf('.') + 1)..];
             return name;
         }
@@ -91,7 +91,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         if (currentVersion < localTargetVersion)
         {
             currentVersion = localTargetVersion;
-            AssemblyLoadContext scriptDomain = new(Name + Id, true);
+            AssemblyLoadContext scriptDomain = new(ScriptTypeName + Id, true);
 
             try
             {

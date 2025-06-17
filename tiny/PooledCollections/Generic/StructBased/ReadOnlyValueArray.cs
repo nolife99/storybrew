@@ -12,12 +12,18 @@ public readonly struct ReadOnlyValueArray<T> : IReadOnlyList<T>, IDisposable
     ReadOnlyValueArray(in ValueArray<T> array) => _array = array;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyValueArray<T> Empty() => new(ValueArray<T>.Empty());
+    public static ReadOnlyValueArray<T> Empty() => new(ValueArray.Empty<T>());
 
-    public T this[int index]
+    T IReadOnlyList<T>.this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _array[index];
+    }
+
+    public ref readonly T this[int index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => ref _array[index];
     }
 
     public int Length
@@ -37,7 +43,7 @@ public readonly struct ReadOnlyValueArray<T> : IReadOnlyList<T>, IDisposable
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }

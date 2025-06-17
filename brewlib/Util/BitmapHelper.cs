@@ -21,7 +21,7 @@ public static class BitmapHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static bool IsFullyTransparentContiguous(ReadOnlySpan<Rgba32> buffer)
+    static bool IsFullyTransparentContiguous(scoped ReadOnlySpan<Rgba32> buffer)
     {
         if (Vector.IsHardwareAccelerated)
         {

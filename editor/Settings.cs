@@ -21,7 +21,7 @@ public class Settings
     public readonly Setting<string> Id = new(Guid.NewGuid().ToString("N")), TimeCopyFormat = new(@"h\:mm\:ss\.ff");
 
     readonly string path;
-    public readonly Setting<float> Volume = new(1);
+    public readonly Setting<float> Volume = new(.5f);
 
     public Settings(string path = DefaultPath)
     {

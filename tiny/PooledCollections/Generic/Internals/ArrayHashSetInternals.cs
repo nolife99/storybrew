@@ -19,7 +19,7 @@ public readonly struct ArrayHashSetInternals<T> : IDisposable
     [NonSerialized] public readonly ArrayPool<ArrayEntry<T>> EntryPool;
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
 
-    public ArrayHashSetInternals(ArrayHashSet<T> source)
+    internal ArrayHashSetInternals(ArrayHashSet<T> source)
     {
         FreeEntryIndex = source._freeEntryIndex;
         Collisions = source._collisions;
@@ -36,19 +36,9 @@ public readonly struct ArrayHashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (!Entries.IsNullOrEmpty())
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 

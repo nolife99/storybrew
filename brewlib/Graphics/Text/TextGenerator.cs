@@ -29,7 +29,7 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
         fonts.Dispose();
     }
 
-    public Image<Rgba32> CreateBitmap(ReadOnlySpan<char> text,
+    public Image<Rgba32> CreateBitmap(scoped ReadOnlySpan<char> text,
         string fontName,
         float fontSize,
         Vector2 padding,

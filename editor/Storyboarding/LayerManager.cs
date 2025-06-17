@@ -8,7 +8,7 @@ using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
 
-public class LayerManager : IDisposable
+public sealed class LayerManager : IDisposable
 {
     public int LayersCount => Layers.Count;
     public PooledList<EditorStoryboardLayer> Layers { get; } = [];

@@ -68,8 +68,7 @@ public static class DrawState
                     Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
                     Encoding.UTF8.GetChars(bytes, chars);
 
-                    using var str = TempList<char>.Create();
-                    str.AddRange("[OpenGL] ".AsSpan());
+                    using var str = TempList.Create("[OpenGL] ".AsSpan());
                     str.AddRange(chars);
                     str.AddRange(" (".AsSpan());
 
@@ -245,7 +244,7 @@ public static class DrawState
 
     public static int BindTexture(int textureId) => BindTextures([textureId]);
 
-    static int BindTextures(ReadOnlySpan<int> textures)
+    static int BindTextures(scoped ReadOnlySpan<int> textures)
     {
         Span<int> samplerIndexes = stackalloc int[textures.Length];
         for (var i = 0; i < textures.Length; ++i)

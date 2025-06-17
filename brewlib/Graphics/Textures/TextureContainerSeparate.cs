@@ -27,7 +27,7 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
         }
     }
 
-    public Texture2dRegion Get(ReadOnlySpan<char> filename)
+    public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
     {
         var hashCode = string.GetHashCode(filename);
         if (textures.TryGetValue(hashCode, out var texture)) return texture;

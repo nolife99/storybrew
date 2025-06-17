@@ -22,7 +22,7 @@ public sealed class TextDrawable : Drawable
     string fontName = "Tahoma";
 
     Vector2 maxSize;
-    ValueArray<char> text = ValueArray<char>.Empty();
+    ValueArray<char> text = ValueArray.Empty<char>();
     TextLayout textLayout;
 
     public Vector2 Size
@@ -55,7 +55,7 @@ public sealed class TextDrawable : Drawable
             if (text.AsReadOnlySpan().SequenceEqual([character])) return;
 
             text.Dispose();
-            text = ValueArray<char>.Create([character]);
+            text = ValueArray.Create([character]);
 
             invalidate();
         }
@@ -69,7 +69,7 @@ public sealed class TextDrawable : Drawable
             if (text.AsReadOnlySpan().SequenceEqual(value)) return;
 
             text.Dispose();
-            text = ValueArray<char>.Create(value);
+            text = ValueArray.Create(value);
 
             invalidate();
         }

@@ -38,7 +38,7 @@ public static class ScriptCompiler
         EmitResult result;
         using (MemoryStream assemblyStream = new())
         {
-            using var assemblies = ValueList<MetadataReference>.Create();
+            using var assemblies = ValueList.Create<MetadataReference>();
             foreach (var asmPath in referencedAssemblies)
             {
                 using var stream = File.OpenRead(asmPath);

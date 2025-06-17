@@ -49,7 +49,7 @@ internal class ImportOsb : StoryboardObjectGenerator
         {
             using var v = line.Split(['=']);
             if (v.Count == 2)
-                state.vars[ValueArray<char>.Create(v[0].AsReadOnlySpan())] = ValueArray<char>.Create(v[1].AsReadOnlySpan());
+                state.vars[ValueArray.Create(v[0].AsReadOnlySpan())] = ValueArray.Create(v[1].AsReadOnlySpan());
         },
         this);
 
@@ -277,9 +277,9 @@ internal class ImportOsb : StoryboardObjectGenerator
 
     TempList<char> applyVariables(ReadOnlySpan<char> line)
     {
-        if (!line.Contains('$')) return TempList<char>.Create(line);
+        if (!line.Contains('$')) return TempList.Create(line);
 
-        var result = TempList<char>.Create();
+        var result = TempList.Create<char>();
 
         var currentPos = 0;
 

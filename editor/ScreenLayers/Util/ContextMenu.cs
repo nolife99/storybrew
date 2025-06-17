@@ -6,29 +6,31 @@ using System.Linq;
 using BrewLib.UserInterface;
 using BrewLib.Util;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 public class ContextMenu<T> : UiScreenLayer
 {
     readonly Action<T> callback;
     readonly PooledList<Option> options;
-    readonly string title;
+    readonly ValueArray<char> title;
 
     Button cancelButton;
     LinearLayout mainLayout, optionsLayout;
     Textbox searchTextbox;
 
-    public ContextMenu(string title, Action<T> callback, params ReadOnlySpan<T> options)
+    public ContextMenu(scoped ReadOnlySpan<char> title, Action<T> callback, params ReadOnlySpan<T> options)
     {
-        this.title = title;
+        this.title = ValueArray.Create(title);
         this.callback = callback;
 
         this.options = new(options.Length);
         foreach (var option in options) this.options.Add(new(option.ToString(), option));
     }
 
-    public ContextMenu(string title, Action<T> callback, IEnumerable<T> options)
+    public ContextMenu(scoped ReadOnlySpan<char> title, Action<T> callback, IEnumerable<T> options)
     {
-        this.title = title;
+        this.title = ValueArray.Create(title);
         this.callback = callback;
         this.options = new(options.Select(option => new Option(option.ToString(), option)));
     }
@@ -55,7 +57,7 @@ public class ContextMenu<T> : UiScreenLayer
                     Fill = true,
                     Children =
                     [
-                        new Label(WidgetManager) { Text = title },
+                        new Label(WidgetManager) { Text = title.AsReadOnlySpan() },
                         searchTextbox = new(WidgetManager)
                         {
                             AnchorFrom = BoxAlignment.Centre, DefaultSize = new(120, 0)
@@ -114,7 +116,10 @@ public class ContextMenu<T> : UiScreenLayer
     protected override void Dispose(bool disposing)
     {
         base.Dispose(disposing);
-        if (disposing) options.Dispose();
+        if (!disposing) return;
+
+        options.Dispose();
+        title.Dispose();
     }
 
     readonly struct Option(string name, T value)

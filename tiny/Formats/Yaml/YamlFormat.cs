@@ -19,10 +19,10 @@ public class YamlFormat : Format<YamlTokenType>
         new(YamlTokenType.EndLine, "\n")
     ];
 
-    protected override Tokenizer<YamlTokenType> Tokenizer { get; } =
+    protected override ITokenizer<YamlTokenType> Tokenizer { get; } =
         new RegexTokenizer<YamlTokenType>(definitions, YamlTokenType.EndLine);
 
-    protected override TokenParser<YamlTokenType> TokenParser { get; } = new YamlTokenParser();
+    protected override ITokenParser<YamlTokenType> TokenParser { get; } = new YamlTokenParser();
 
     public override void Write(TextWriter writer, TinyToken value) => write(writer, value, null, 0);
 

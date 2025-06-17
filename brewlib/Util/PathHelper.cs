@@ -74,7 +74,7 @@ public static class PathHelper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void WithStandardSeparatorsUnsafe(ReadOnlySpan<char> path)
+    public static void WithStandardSeparatorsUnsafe(scoped ReadOnlySpan<char> path)
     {
         var chars = MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(path), path.Length);
 

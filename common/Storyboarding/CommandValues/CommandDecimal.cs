@@ -9,10 +9,14 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 ///<summary> Custom decimal handler for storyboarding. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly record struct CommandDecimal : ICommandValue
 {
-    readonly decimal value;
+    readonly double value;
 
 #pragma warning disable CS1591
-    CommandDecimal(decimal value) => this.value = value;
+    CommandDecimal(double value)
+    {
+        if (!double.IsFinite(this.value)) this.value = 0;
+        else this.value = value;
+    }
 
     public bool Equals(CommandDecimal other) => value.Equals(other.value);
 
@@ -20,10 +24,10 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
     public TempList<char> ToOsbString(ExportSettings exportSettings)
     {
-        using var arr = decimal.Round(value, 6).ToCharArray(provider: exportSettings.NumberFormat);
+        using var arr = double.Round(value, 6).ToCharArray(provider: exportSettings.NumberFormat);
         var span = arr.AsReadOnlySpan();
 
-        var result = TempList<char>.Create();
+        var result = TempList.Create<char>();
         if (span.StartsWith('-'))
         {
             result.Add('-');
@@ -44,9 +48,9 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
     public static CommandDecimal operator /(CommandDecimal left, CommandDecimal right) => new(left.value / right.value);
 
     public static CommandDecimal operator -(CommandDecimal value) => new(-value.value);
-    public static CommandDecimal operator +(CommandDecimal value) => new(decimal.Abs(value.value));
+    public static CommandDecimal operator +(CommandDecimal value) => new(double.Abs(value.value));
 
-    public static implicit operator CommandDecimal(double value) => new((decimal)value);
-    public static implicit operator double(CommandDecimal obj) => (double)obj.value;
+    public static implicit operator CommandDecimal(double value) => new(value);
+    public static implicit operator double(CommandDecimal obj) => obj.value;
     public static implicit operator float(CommandDecimal obj) => (float)obj.value;
 }

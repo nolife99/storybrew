@@ -7,6 +7,8 @@
 
 namespace Tiny.PooledCollections.Generic.Temporary;
 
+using System;
+
 public readonly ref struct TempDictionaryValueCollection<TKey, TValue>
 {
     readonly TempDictionary<TKey, TValue> _dictionary;
@@ -17,7 +19,7 @@ public readonly ref struct TempDictionaryValueCollection<TKey, TValue>
 
     public void CopyTo(TValue[] array, int index)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         if ((uint)index > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 

@@ -66,7 +66,7 @@ public record ControlPoint : IComparable<ControlPoint>
     public override int GetHashCode() => ToString().GetHashCode();
 
     ///<summary> Parses a control point from a given line. </summary>
-    public static ControlPoint Parse(ReadOnlySpan<char> line)
+    public static ControlPoint Parse(scoped ReadOnlySpan<char> line)
     {
         using var values = line.Split([',']);
         if (values.Count < 2)

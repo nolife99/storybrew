@@ -7,6 +7,7 @@
 
 namespace Tiny.PooledCollections.Generic.StructBased;
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,7 +23,7 @@ public readonly struct ValueDictionaryValueCollection<TKey, TValue> : ICollectio
 
     public void CopyTo(TValue[] array, int index)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         if ((uint)index > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 

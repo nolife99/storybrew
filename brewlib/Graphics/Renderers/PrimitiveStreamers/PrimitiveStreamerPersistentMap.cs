@@ -15,7 +15,7 @@ internal sealed class PrimitiveStreamerPersistentMap<TPrimitive> : PrimitiveStre
 
     public PrimitiveStreamerPersistentMap(VertexDeclaration vertexDeclaration,
         int minRenderableVertexCount,
-        ReadOnlySpan<ushort> indices) : base(vertexDeclaration, minRenderableVertexCount, indices)
+        scoped ReadOnlySpan<ushort> indices) : base(vertexDeclaration, minRenderableVertexCount, indices)
         => maxBatchSize = minRenderableVertexCount * PrimitiveSize;
 
     protected override void internalQueueRender(ref int baseIndex) => baseIndex += baseVertex;

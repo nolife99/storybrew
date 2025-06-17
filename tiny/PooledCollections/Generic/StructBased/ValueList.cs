@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
 // Implements a variable-size List that uses an array of objects to store the
@@ -35,7 +36,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     static readonly T[] s_emptyArray = [];
 
-    internal static readonly bool s_clearItems = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearItems = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     // Constructs a List with a given initial capacity. The list is
     // initially empty, but will have room for the given number of elements
@@ -43,12 +44,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     //
     internal ValueList(int capacity, ArrayPool<T> pool)
     {
-        if (capacity < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-
         _pool = pool ?? ArrayPool<T>.Shared;
-        _items = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
+        _items = capacity <= 0 ? s_emptyArray : _pool.Rent(capacity);
         _size = 0;
         _version = 0;
     }
@@ -59,7 +56,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     //
     internal ValueList(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         _pool = pool ?? ArrayPool<T>.Shared;
         _version = 0;
@@ -136,18 +133,17 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _items != null;
+        get => _items is not null;
     }
 
     // Is this List read-only?
     bool ICollection<T>.IsReadOnly => false;
 
     // Sets or Gets the element at the given index.
-    public T this[int index]
+    T IList<T>.this[int index]
     {
         get
         {
-            // Following trick can reduce the range check by one
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             return _items[index];
         }
@@ -156,6 +152,24 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             _items[index] = value;
             _version++;
+        }
+    }
+
+    T IReadOnlyList<T>.this[int index]
+    {
+        get
+        {
+            if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+            return _items[index];
+        }
+    }
+
+    public ref T this[int index]
+    {
+        get
+        {
+            if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+            return ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index);
         }
     }
 
@@ -181,7 +195,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     [MethodImpl(MethodImplOptions.NoInlining)]
     void AddWithResize(T item)
     {
-        SystemDebug.Assert(_size == _items.Length);
+        Debug.Assert(_size == _items.Length);
         var size = _size;
         Grow(size + 1);
         _size = size + 1;
@@ -263,7 +277,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public ValueList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter, ArrayPool<TOut> pool = null)
     {
-        if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+        ArgumentNullException.ThrowIfNull(converter);
 
         var list = new ValueList<TOut>(_size, pool ?? ArrayPool<TOut>.Shared);
         var src = _items;
@@ -286,7 +300,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
@@ -317,13 +331,13 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     /// <param name="capacity">The minimum capacity to ensure.</param>
     void Grow(int capacity)
     {
-        SystemDebug.Assert(_items.Length < capacity);
+        Debug.Assert(_items.Length < capacity);
 
         var newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newcapacity > SystemArray.MaxLength) newcapacity = SystemArray.MaxLength;
+        if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
         // If the computed capacity is still less than specified, set to the original argument.
         // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
@@ -336,7 +350,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public T? Find(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -349,7 +363,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public ValueList<T> FindAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var list = new ValueList<T>();
         var items = _items;
@@ -372,7 +386,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
         if (count < 0 || startIndex > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var endIndex = startIndex + count;
         var items = _items;
@@ -386,7 +400,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public T? FindLast(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -403,7 +417,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public int FindLastIndex(int startIndex, int count, Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         if (_size == 0)
         {
@@ -430,7 +444,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public void ForEach(Action<T> action)
     {
-        if (action == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
+        ArgumentNullException.ThrowIfNull(action);
 
         var version = _version;
         var items = _items;
@@ -494,11 +508,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     // This method uses the Array.IndexOf method to perform the
     // search.
     //
-    public int IndexOf(T item, int index)
-    {
-        if (index > _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
-        return Array.IndexOf(_items, item, index, _size - index);
-    }
+    public int IndexOf(T item, int index) => Array.IndexOf(_items, item, index, _size - index);
 
     // Returns the index of the first occurrence of a given value in a range of
     // this list. The list is searched forwards, starting at index
@@ -543,7 +553,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     //
     public void InsertRange(int index, IEnumerable<T> collection)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
 
@@ -616,7 +626,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     //
     public int LastIndexOf(T item, int index)
     {
-        if (index >= _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
         return LastIndexOf(item, index, index + 1);
     }
 
@@ -671,7 +681,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     // The complexity is O(n).
     public int RemoveAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var freeIndex = 0; // the first free slot in items array
         var items = _items;
@@ -789,7 +799,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public void Sort(Comparison<T> comparison)
     {
-        if (comparison == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
+        ArgumentNullException.ThrowIfNull(comparison);
 
         if (_size > 1) Array.Sort(_items, 0, _size, new Comparer(comparison));
         _version++;
@@ -821,7 +831,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
 
     public bool TrueForAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 

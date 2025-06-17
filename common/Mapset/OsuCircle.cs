@@ -9,8 +9,7 @@ using Tiny.PooledCollections.Generic.Temporary;
 /// <summary>Represents an osu! hit circle.</summary>
 public record OsuCircle : OsuHitObject
 {
-    ///<summary> Parses an osu! hit circle from the given strings. </summary>
-    public static OsuCircle Parse(TempList<ValueList<char>> values,
+    internal static OsuCircle Parse(TempList<ValueList<char>> values,
         int x,
         int y,
         int startTime,

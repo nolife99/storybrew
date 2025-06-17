@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-public partial class JsonTokenParser : TokenParser<JsonTokenType>
+public partial class JsonTokenParser : ITokenParser<JsonTokenType>
 {
     public TinyToken Parse(IEnumerable<Token<JsonTokenType>> tokens)
     {

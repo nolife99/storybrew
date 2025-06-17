@@ -208,7 +208,7 @@ public static class Program
     {
         if (!editor.statsLabel.Visible) return;
 
-        using var result = TempList<char>.Create(128);
+        using var result = TempList.Create<char>(128);
 
         result.AddRangeFormatted(1 / av, "f0", CultureInfo.CurrentCulture);
         result.Add('/');

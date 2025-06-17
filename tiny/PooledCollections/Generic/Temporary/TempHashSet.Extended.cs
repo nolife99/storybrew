@@ -5,6 +5,7 @@ namespace Tiny.PooledCollections.Generic.Temporary;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 partial struct TempHashSet<T>
@@ -96,7 +97,7 @@ partial struct TempHashSet<T>
     /// <param name="other"></param>
     void IntersectWithSpan(ReadOnlySpan<T> other)
     {
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false, "_buckets shouldn't be null; callers should check first");
 
         // keep track of current last index; don't want to move past the end of our bit array
         // (could happen if another thread is modifying the collection)
@@ -133,8 +134,6 @@ partial struct TempHashSet<T>
     /// <param name="other">enumerable with items to remove</param>
     public void ExceptWith(ReadOnlySpan<T> other)
     {
-        if (other == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
-
         // this is already the empty set; return
         if (_count == 0) return;
 
@@ -287,7 +286,7 @@ partial struct TempHashSet<T>
             return (UniqueCount: 0, UnfoundCount: numElementsInOther);
         }
 
-        SystemDebug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
+        Debug.Assert(_buckets.IsNullOrEmpty() == false && _count > 0, "_buckets was null but count greater than 0");
 
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
@@ -470,7 +469,7 @@ partial struct TempHashSet<T>
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
+        if (_buckets is not null)
             try
             {
                 _bucketPool.Return(_buckets);
@@ -482,7 +481,7 @@ partial struct TempHashSet<T>
 
     void ReturnEntries(Entry<T>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
+        if (_entries is not null)
             try
             {
                 _entryPool.Return(_entries, s_clearEntries);

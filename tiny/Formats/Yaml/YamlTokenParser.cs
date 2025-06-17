@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
-public class YamlTokenParser : TokenParser<YamlTokenType>
+public class YamlTokenParser : ITokenParser<YamlTokenType>
 {
     public TinyToken Parse(IEnumerable<Token<YamlTokenType>> tokens)
     {

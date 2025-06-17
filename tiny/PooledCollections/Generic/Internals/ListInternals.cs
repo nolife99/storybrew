@@ -22,7 +22,7 @@ public readonly struct ListInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (Items != null && Items.Length > 0)
+        if (Items is not null && Items.Length > 0)
             try
             {
                 Pool?.Return(Items, ClearItems);

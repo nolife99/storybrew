@@ -119,7 +119,7 @@ public sealed class LinearLayout(WidgetManager manager) : Widget(manager)
         var usedSpace = 0f;
 
         // Create a list to hold layout items
-        using var items = TempList<LayoutItem>.Create(Children.Length);
+        using var items = TempList.Create<LayoutItem>(Children.Length);
         foreach (var child in Children)
         {
             // Ignore anchored children

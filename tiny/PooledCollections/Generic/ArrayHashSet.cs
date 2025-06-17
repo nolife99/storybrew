@@ -23,7 +23,7 @@ using System.Runtime.Serialization;
     const string CountName = "Count"; // Do not rename (binary serialization). Must save buckets.Length
     const string EntriesName = "Entries"; // Do not rename (binary serialization)
 
-    internal static readonly bool s_clearEntries = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     static readonly Type s_typeOfKey = typeof(T);
     static readonly ArrayEntry<T>[] s_emptyEntries = [];
@@ -319,7 +319,7 @@ using System.Runtime.Serialization;
     {
         HashHelpers.SerializationInfoTable.TryGetValue(this, out var siInfo);
 
-        if (siInfo == null)
+        if (siInfo is null)
 
             // We can return immediately if this function is called twice.
             // Note we remove the serialization info from the table at the end of this method.
@@ -333,11 +333,11 @@ using System.Runtime.Serialization;
 
             var array = (T[]?)siInfo.GetValue(EntriesName, typeof(T[]));
 
-            if (array == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
+            if (array is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
 
             for (var i = 0; i < array.Length; i++)
             {
-                if (array[i] == null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
+                if (array[i] is null) ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_NullKey);
 
                 Add(array[i]);
             }
@@ -354,7 +354,7 @@ using System.Runtime.Serialization;
 
     public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
     {
-        if (info == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
+        ArgumentNullException.ThrowIfNull(info);
 
         var count = Count;
 
@@ -718,7 +718,7 @@ using System.Runtime.Serialization;
 
                 _entries = newEntries;
 
-                if (!entries.IsNullOrEmpty()) _entryPool.Return(entries, s_clearEntries);
+                if (entries is not null) _entryPool.Return(entries, s_clearEntries);
             }
             else _entryPool.Return(newEntries);
         }
@@ -825,12 +825,7 @@ using System.Runtime.Serialization;
 
     void RenewBuckets(int newSize)
     {
-        if (!_buckets.IsNullOrEmpty())
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -839,24 +834,14 @@ using System.Runtime.Serialization;
 
     void ReturnBuckets(int[] replaceWith)
     {
-        if (!_buckets.IsNullOrEmpty())
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         _buckets = replaceWith ?? s_emptyBuckets;
     }
 
     void ReturnEntries(ArrayEntry<T>[] replaceWith)
     {
-        if (!_entries.IsNullOrEmpty())
-            try
-            {
-                _entryPool.Return(_entries, s_clearEntries);
-            }
-            catch { }
+        if (_entries is not null) _entryPool.Return(_entries, s_clearEntries);
 
         _entries = replaceWith ?? s_emptyEntries;
     }
@@ -885,7 +870,7 @@ using System.Runtime.Serialization;
         readonly ArrayHashSet<T> _set;
 
 #if DEBUG
-        private int _startCount;
+        int _startCount;
 #endif
 
         int _count;

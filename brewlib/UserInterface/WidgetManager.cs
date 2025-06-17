@@ -10,7 +10,6 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using ScreenLayers;
 using Skinning;
-using Tiny.PooledCollections;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -105,7 +104,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
         DisableGamepadEvents(widget);
 
-        using var buttons = TempArray<ArrayEntry<MouseButton>>.Create(clickTargets.KeysAsReadOnlySpan());
+        using var buttons = TempArray.Create(clickTargets.KeysAsReadOnlySpan());
         foreach (var key in buttons)
             if (clickTargets[key.Key] == widget)
                 clickTargets.Remove(key.Key);
@@ -123,7 +122,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     readonly PooledDictionary<Widget, Widget> tooltips = new();
 
-    public void RegisterTooltip(Widget widget, string text) => RegisterTooltip(widget,
+    public void RegisterTooltip(Widget widget, scoped ReadOnlySpan<char> text) => RegisterTooltip(widget,
         new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
 
     public void RegisterTooltip(Widget widget, Widget tooltip)

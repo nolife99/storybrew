@@ -21,7 +21,7 @@ public sealed class EditorGeneratorContext(Effect effect,
     string projectAssetPath,
     string mapsetPath,
     EditorBeatmap beatmap,
-    ReadOnlySpan<EditorBeatmap> beatmaps,
+    scoped ReadOnlySpan<EditorBeatmap> beatmaps,
     MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {
     readonly ValueArray<Beatmap> _beatmaps = getBeatmaps(beatmaps);
@@ -66,9 +66,9 @@ public sealed class EditorGeneratorContext(Effect effect,
         _editorLayers.Dispose();
     }
 
-    static ValueArray<Beatmap> getBeatmaps(ReadOnlySpan<EditorBeatmap> beatmaps)
+    static ValueArray<Beatmap> getBeatmaps(scoped ReadOnlySpan<EditorBeatmap> beatmaps)
     {
-        var result = ValueArray<Beatmap>.Create(beatmaps.Length);
+        var result = ValueArray.Create<Beatmap>(beatmaps.Length);
         for (var i = 0; i < beatmaps.Length; ++i) result[i] = beatmaps[i];
 
         return result;

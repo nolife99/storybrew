@@ -6,7 +6,7 @@ namespace Tiny.PooledCollections;
 
 using System;
 
-public ref struct BitHelper
+public readonly ref struct BitHelper
 {
     const int IntSize = sizeof(int) * 8;
     readonly Span<int> _span;

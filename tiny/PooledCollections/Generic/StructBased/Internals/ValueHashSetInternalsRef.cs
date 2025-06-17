@@ -20,7 +20,7 @@ public readonly ref struct ValueHashSetInternalsRef<T>
     [NonSerialized] public readonly ReadOnlySpan<Entry<T>> Entries;
     [NonSerialized] public readonly IEqualityComparer<T> Comparer;
 
-    internal ValueHashSetInternalsRef(in ValueHashSet<T> source)
+    internal ValueHashSetInternalsRef(scoped ref readonly ValueHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -41,15 +41,15 @@ partial class ValueCollectionInternals
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueHashSetInternalsRef<T> GetRef<T>(in ValueHashSet<T> source) => new(source);
+    public static ValueHashSetInternalsRef<T> GetRef<T>(this scoped ref readonly ValueHashSet<T> source) => new(in source);
 
     /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<Entry<T>> AsReadOnlySpan<T>(in this ValueHashSet<T> source)
+    public static ReadOnlySpan<Entry<T>> AsReadOnlySpan<T>(this scoped ref readonly ValueHashSet<T> source)
         => source._entries.AsSpan(0, source._count);
 
     /// <summary>Returns the internal <see cref="Entry{T}"/> array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<Entry<T>> AsReadOnlyMemory<T>(in this ValueHashSet<T> source)
+    public static ReadOnlyMemory<Entry<T>> AsReadOnlyMemory<T>(this scoped ref readonly ValueHashSet<T> source)
         => source._entries.AsMemory(0, source._count);
 }

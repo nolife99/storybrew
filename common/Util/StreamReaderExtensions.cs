@@ -66,7 +66,7 @@ public static class StreamReaderExtensions
 
     static bool ReadLine(StreamReader reader, out TempList<char> list)
     {
-        list = TempList<char>.Create();
+        list = TempList.Create<char>();
 
         if (reader.EndOfStream) return false;
 

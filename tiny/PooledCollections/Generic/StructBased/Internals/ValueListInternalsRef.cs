@@ -10,7 +10,7 @@ public readonly ref struct ValueListInternalsRef<T>
     [NonSerialized] public readonly bool ClearItems;
     [NonSerialized] public readonly ReadOnlySpan<T> Items;
 
-    internal ValueListInternalsRef(in ValueList<T> source)
+    internal ValueListInternalsRef(scoped ref readonly ValueList<T> source)
     {
         Size = source._size;
         Version = source._version;
@@ -23,14 +23,15 @@ partial class ValueCollectionInternals
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueListInternalsRef<T> GetRef<T>(in ValueList<T> source) => new(source);
+    public static ValueListInternalsRef<T> GetRef<T>(this scoped ref readonly ValueList<T> source) => new(in source);
 
     /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlySpan<T> AsReadOnlySpan<T>(in this ValueList<T> source) => source._items.AsSpan(0, source._size);
+    public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly ValueList<T> source)
+        => new(source._items, 0, source._size);
 
     /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(in this ValueList<T> source)
-        => source._items.AsMemory(0, source._size);
+    public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly ValueList<T> source)
+        => new(source._items, 0, source._size);
 }

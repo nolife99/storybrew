@@ -47,7 +47,7 @@ public sealed class LoopCommand : CommandGroup
 
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
     {
-        var list = TempList<char>.Create();
+        var list = TempList.Create<char>();
         list.AddRange(['L', ',']);
 
         using (var startTimeString =

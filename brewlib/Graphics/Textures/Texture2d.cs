@@ -17,18 +17,11 @@ using Image = SixLabors.ImageSharp.Image;
 public sealed class Texture2d : Texture2dRegion
 {
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
-    readonly int _height;
-    readonly int _width;
     int _textureId;
 
     long bindlessId = -1;
 
-    Texture2d(int textureId, int width, int height) : base(null, new(0, 0, width, height))
-    {
-        _width = width;
-        _height = height;
-        _textureId = textureId;
-    }
+    Texture2d(int textureId, int width, int height) : base(null, new(0, 0, width, height)) => _textureId = textureId;
 
     public int TextureId
     {
@@ -262,7 +255,7 @@ public sealed class Texture2d : Texture2dRegion
                 bindlessId = -1;
             }
 
-            Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId));
+            Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId)).Wait();
         }
 
         base.Dispose(disposing);

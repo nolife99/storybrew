@@ -102,7 +102,7 @@ public record OsuHitObject
     public override string ToString() => $"{StartTime}, {Flags}";
 
     ///<summary> Parses a hit object from a given beatmap and line. </summary>
-    public static OsuHitObject Parse(Beatmap beatmap, ReadOnlySpan<char> line)
+    public static OsuHitObject Parse(Beatmap beatmap, scoped ReadOnlySpan<char> line)
     {
         using var values = line.Split([',']);
 

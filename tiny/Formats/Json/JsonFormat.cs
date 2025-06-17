@@ -23,8 +23,8 @@ public class JsonFormat : Format<JsonTokenType>
         new(JsonTokenType.Word, @"[^\s:,{}\[\]]+")
     ];
 
-    protected override Tokenizer<JsonTokenType> Tokenizer { get; } = new RegexTokenizer<JsonTokenType>(definitions, null);
-    protected override TokenParser<JsonTokenType> TokenParser { get; } = new JsonTokenParser();
+    protected override ITokenizer<JsonTokenType> Tokenizer { get; } = new RegexTokenizer<JsonTokenType>(definitions, null);
+    protected override ITokenParser<JsonTokenType> TokenParser { get; } = new JsonTokenParser();
 
     public override void Write(TextWriter writer, TinyToken value) { }
 }

@@ -23,7 +23,7 @@ public readonly struct HashSetInternals<T> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<T>> EntryPool;
 
-    public HashSetInternals(PooledHashSet<T> source)
+    internal HashSetInternals(PooledHashSet<T> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -43,19 +43,9 @@ public readonly struct HashSetInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (!Entries.IsNullOrEmpty())
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 

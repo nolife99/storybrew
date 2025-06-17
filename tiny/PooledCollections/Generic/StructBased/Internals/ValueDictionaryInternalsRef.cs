@@ -22,7 +22,7 @@ public readonly ref struct ValueDictionaryInternalsRef<TKey, TValue>
     [NonSerialized] public readonly ReadOnlySpan<Entry<TKey, TValue>> Entries;
     [NonSerialized] public readonly IEqualityComparer<TKey> Comparer;
 
-    internal ValueDictionaryInternalsRef(in ValueDictionary<TKey, TValue> source)
+    internal ValueDictionaryInternalsRef(scoped ref readonly ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -45,16 +45,16 @@ partial class ValueCollectionInternals
 {
     /// <summary>Returns a structure that holds references to internal fields of <paramref name="source"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static ValueDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(in ValueDictionary<TKey, TValue> source)
-        => new(source);
+    public static ValueDictionaryInternalsRef<TKey, TValue> GetRef<TKey, TValue>(
+        this scoped ref readonly ValueDictionary<TKey, TValue> source) => new(in source);
 
     /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<Entry<TKey, TValue>> AsReadOnlySpan<TKey, TValue>(
-        in this ValueDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source._count);
+        this scoped ref readonly ValueDictionary<TKey, TValue> source) => source._entries.AsSpan(0, source._count);
 
     /// <summary>Returns the internal <see cref="Entry{TKey, TValue}"/> array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<Entry<TKey, TValue>> AsReadOnlyMemory<TKey, TValue>(
-        in this ValueDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source._count);
+        this scoped ref readonly ValueDictionary<TKey, TValue> source) => source._entries.AsMemory(0, source._count);
 }

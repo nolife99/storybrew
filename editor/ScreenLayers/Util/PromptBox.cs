@@ -3,10 +3,18 @@
 using System;
 using BrewLib.UserInterface;
 using BrewLib.Util;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
 
-public class PromptBox(string title, string description, string initialText, Action<ReadOnlySpan<char>> action)
-    : UiScreenLayer
+public class PromptBox(scoped ReadOnlySpan<char> title,
+    scoped ReadOnlySpan<char> description,
+    scoped ReadOnlySpan<char> initialText,
+    Action<ReadOnlySpan<char>> action) : UiScreenLayer
 {
+    readonly ValueArray<char> description = ValueArray.Create(description);
+    readonly ValueArray<char> initialText = ValueArray.Create(initialText);
+
+    readonly ValueArray<char> title = ValueArray.Create(title);
     LinearLayout mainLayout;
     Button okButton, cancelButton;
     Textbox textbox;
@@ -29,11 +37,13 @@ public class PromptBox(string title, string description, string initialText, Act
             [
                 descriptionLabel = new(WidgetManager)
                 {
-                    StyleName = "small", Text = description, AnchorFrom = BoxAlignment.Centre
+                    StyleName = "small", Text = description.AsReadOnlySpan(), AnchorFrom = BoxAlignment.Centre
                 },
                 textbox = new(WidgetManager)
                 {
-                    LabelText = title, AnchorFrom = BoxAlignment.Centre, Value = initialText
+                    LabelText = title.AsReadOnlySpan(),
+                    AnchorFrom = BoxAlignment.Centre,
+                    Value = initialText.AsReadOnlySpan()
                 },
                 new LinearLayout(WidgetManager)
                 {
@@ -51,7 +61,7 @@ public class PromptBox(string title, string description, string initialText, Act
             ]
         });
 
-        if (string.IsNullOrWhiteSpace(description)) descriptionLabel.Dispose();
+        if (description.AsReadOnlySpan().IsWhiteSpace()) descriptionLabel.Dispose();
 
         okButton.OnClick += (_, _) =>
         {
@@ -74,5 +84,15 @@ public class PromptBox(string title, string description, string initialText, Act
     {
         base.Resize(width, height);
         mainLayout.Pack(400);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+        if (!disposing) return;
+
+        title.Dispose();
+        description.Dispose();
+        initialText.Dispose();
     }
 }

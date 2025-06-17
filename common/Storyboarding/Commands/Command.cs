@@ -100,7 +100,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
 
         var excludeEnd = startTimeString.AsReadOnlySpan().SequenceEqual(endTimeString.AsReadOnlySpan());
 
-        var result = TempList<char>.Create();
+        var result = TempList.Create<char>();
         result.AddRange(Identifier.AsSpan());
         result.Add(',');
 

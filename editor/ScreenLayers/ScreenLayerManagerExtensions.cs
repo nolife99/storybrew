@@ -63,8 +63,9 @@ public static class ScreenLayerManagerExtensions
             await gc;
         });
 
-    public static void AsyncLoading(this ScreenLayerManager screenLayer, string message, Func<Task> action)
-        => screenLayer.Add(new LoadingScreen(message, action));
+    public static void AsyncLoading(this ScreenLayerManager screenLayer,
+        scoped ReadOnlySpan<char> message,
+        Func<Task> action) => screenLayer.Add(new LoadingScreen(message, action));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer, scoped ReadOnlySpan<char> message, Action ok = null)
         => screenLayer.Add(new MessageBox(message, ok, null, false));
@@ -74,25 +75,29 @@ public static class ScreenLayerManagerExtensions
         Action ok,
         bool cancel) => screenLayer.Add(new MessageBox(message, ok, null, cancel));
 
-    public static void ShowMessage(this ScreenLayerManager screenLayer, string message, Action yes, Action no, bool cancel)
-        => screenLayer.Add(new MessageBox(message, yes, no, cancel));
-
-    public static void ShowPrompt(this ScreenLayerManager screenLayer, string title, Action<ReadOnlySpan<char>> action)
-        => screenLayer.Add(new PromptBox(title, "", "", action));
+    public static void ShowMessage(this ScreenLayerManager screenLayer,
+        scoped ReadOnlySpan<char> message,
+        Action yes,
+        Action no,
+        bool cancel) => screenLayer.Add(new MessageBox(message, yes, no, cancel));
 
     public static void ShowPrompt(this ScreenLayerManager screenLayer,
-        string title,
-        string description,
-        string text,
+        scoped ReadOnlySpan<char> title,
+        Action<ReadOnlySpan<char>> action) => screenLayer.Add(new PromptBox(title, "", "", action));
+
+    public static void ShowPrompt(this ScreenLayerManager screenLayer,
+        scoped ReadOnlySpan<char> title,
+        scoped ReadOnlySpan<char> description,
+        scoped ReadOnlySpan<char> text,
         Action<ReadOnlySpan<char>> action) => screenLayer.Add(new PromptBox(title, description, text, action));
 
     public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer,
-        string title,
+        scoped ReadOnlySpan<char> title,
         Action<T> action,
         params ReadOnlySpan<T> options) => screenLayer.Add(new ContextMenu<T>(title, action, options));
 
     public static void ShowContextMenu<T>(this ScreenLayerManager screenLayer,
-        string title,
+        scoped ReadOnlySpan<char> title,
         Action<T> action,
         IEnumerable<T> options) => screenLayer.Add(new ContextMenu<T>(title, action, options));
 

@@ -3,10 +3,11 @@
 using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
-public ref partial struct TempArray<T>
+public ref struct TempArray<T>
 {
-    internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
     static readonly T[] s_emptyArray = [];
 
     internal T[] _array; // Do not rename (binary serialization)
@@ -21,6 +22,7 @@ public ref partial struct TempArray<T>
         _length = length;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = _length == 0 ? s_emptyArray : _pool.Rent(length);
+        _ref = ref MemoryMarshal.GetArrayDataReference(_array);
     }
 
     internal TempArray(scoped ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
@@ -30,11 +32,15 @@ public ref partial struct TempArray<T>
         _pool = pool ?? ArrayPool<T>.Shared;
         _length = length;
         _array = _pool.Rent(length);
+        _ref = ref MemoryMarshal.GetArrayDataReference(_array);
 
         if (array.IsEmpty) return;
 
         var minLength = Math.Min(array.Length, length);
-        array[..minLength].CopyTo(_array);
+
+        Unsafe.CopyBlockUnaligned(ref Unsafe.As<T, byte>(ref _ref),
+            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(array)),
+            (uint)(minLength * Unsafe.SizeOf<T>()));
     }
 
     public int Length
@@ -52,13 +58,19 @@ public ref partial struct TempArray<T>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _array != null;
+        get => _array is not null;
     }
+
+    internal ref T _ref;
 
     public ref T this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => ref _array[index];
+        get
+        {
+            if ((uint)index >= (uint)_length) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+            return ref Unsafe.Add(ref _ref, index);
+        }
     }
 
     /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
@@ -73,38 +85,38 @@ public ref partial struct TempArray<T>
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
 
     /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in TempArray<T> dest) => CopyTo(0, dest, 0, _array.Length);
+    public void CopyTo(TempArray<T> dest) => CopyTo(0, dest, 0, _array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in TempArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
+    public void CopyTo(TempArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in TempArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(TempArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(int index, in TempArray<T> dest, int destIndex, int count)
+    public void CopyTo(int index, TempArray<T> dest, int destIndex, int count)
         => CopyTo(index, dest._array.AsSpan(), destIndex, count);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest) => CopyTo(0, dest, 0, _length);
+    public void CopyTo(Span<T> dest) => CopyTo(0, dest, 0, _length);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
+    public void CopyTo(Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public void CopyTo(Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
+    public void CopyTo(int index, Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -123,14 +135,10 @@ public ref partial struct TempArray<T>
 
     void ReturnArray(T[] replaceWith)
     {
-        if (!_array.IsNullOrEmpty())
-            try
-            {
-                _pool?.Return(_array, s_clearArray);
-            }
-            catch { }
+        if (IsValid) _pool?.Return(_array, s_clearArray);
 
         _array = replaceWith ?? s_emptyArray;
+        _ref = ref MemoryMarshal.GetArrayDataReference(_array);
     }
 
     public void Dispose()
@@ -140,39 +148,32 @@ public ref partial struct TempArray<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this);
+    public Enumerator GetEnumerator() => new(ref this);
 
     public ref struct Enumerator
     {
         readonly TempArray<T> _array;
         int _index;
 
-        public Enumerator(TempArray<T> array)
+        internal Enumerator(scoped ref TempArray<T> array)
         {
             _array = array;
-            _index = 0;
-            Current = default;
+            _index = -1;
         }
 
         public bool MoveNext()
         {
-            if ((uint)_index < (uint)_array.Length)
-            {
-                Current = _array._array[_index];
-                _index++;
-                return true;
-            }
+            var index = _index + 1;
+            if (index >= _array.Length) return false;
 
-            _index = _array.Length + 1;
-            Current = default;
-            return false;
+            _index = index;
+            return true;
         }
 
-        public T Current
+        public ref T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get;
-            private set;
+            get => ref Unsafe.Add(ref _array._ref, _index);
         }
 
         public void Reset()

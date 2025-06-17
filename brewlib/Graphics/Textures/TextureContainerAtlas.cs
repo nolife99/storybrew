@@ -33,7 +33,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
         }
     }
 
-    public Texture2dRegion Get(ReadOnlySpan<char> filename)
+    public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
     {
         PathHelper.WithStandardSeparatorsUnsafe(filename);
 

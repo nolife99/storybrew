@@ -22,7 +22,7 @@ public readonly struct StackInternals<T> : IDisposable
 
     public void Dispose()
     {
-        if (!Array.IsNullOrEmpty())
+        if (Array is not null)
             try
             {
                 Pool?.Return(Array, ClearArray);

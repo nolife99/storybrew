@@ -29,7 +29,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     static readonly T[] s_emptyArray = [];
 
-    internal static readonly bool s_clearItems = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearItems = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     internal T[] _items; // Do not rename (binary serialization)
 
@@ -74,7 +74,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     //
     public PooledList(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         _pool = pool ?? ArrayPool<T>.Shared;
 
@@ -311,7 +311,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     [MethodImpl(MethodImplOptions.NoInlining)]
     void AddWithResize(T item)
     {
-        SystemDebug.Assert(_size == _items.Length);
+        Debug.Assert(_size == _items.Length);
         var size = _size;
         Grow(size + 1);
         _size = size + 1;
@@ -364,7 +364,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public PooledList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter)
     {
-        if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+        ArgumentNullException.ThrowIfNull(converter);
 
         var list = new PooledList<TOut>(_size);
         var src = _items;
@@ -384,7 +384,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public void CopyTo(int index, T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(index, dest.AsSpan(), destIndex, count);
     }
@@ -415,13 +415,13 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     /// <param name="capacity">The minimum capacity to ensure.</param>
     void Grow(int capacity)
     {
-        SystemDebug.Assert(_items.Length < capacity);
+        Debug.Assert(_items.Length < capacity);
 
         var newcapacity = _items.Length == 0 ? DefaultCapacity : 2 * _items.Length;
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newcapacity > SystemArray.MaxLength) newcapacity = SystemArray.MaxLength;
+        if ((uint)newcapacity > Array.MaxLength) newcapacity = Array.MaxLength;
 
         // If the computed capacity is still less than specified, set to the original argument.
         // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
@@ -434,7 +434,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public T? Find(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -447,7 +447,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public PooledList<T> FindAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var list = new PooledList<T>();
         var items = _items;
@@ -470,7 +470,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
         if (count < 0 || startIndex > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var endIndex = startIndex + count;
         var items = _items;
@@ -484,7 +484,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public T? FindLast(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -501,7 +501,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public int FindLastIndex(int startIndex, int count, Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         if (_size == 0)
         {
@@ -530,7 +530,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public void ForEach(Action<T> action)
     {
-        if (action == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
+        ArgumentNullException.ThrowIfNull(action);
 
         var version = _version;
         var items = _items;
@@ -609,7 +609,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     //
     public void InsertRange(int index, IEnumerable<T> collection)
     {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+        ArgumentNullException.ThrowIfNull(collection);
 
         if ((uint)index > (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
 
@@ -672,7 +672,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     //
     public int LastIndexOf(T item, int index)
     {
-        if (index >= _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
         return LastIndexOf(item, index, index + 1);
     }
 
@@ -713,7 +713,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     // The complexity is O(n).
     public int RemoveAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var freeIndex = 0; // the first free slot in items array
         var items = _items;
@@ -820,7 +820,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public void Sort(Comparison<T> comparison)
     {
-        if (comparison == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
+        ArgumentNullException.ThrowIfNull(comparison);
 
         if (_size > 1) Array.Sort(_items, 0, _size, new Comparer(comparison));
         _version++;
@@ -852,7 +852,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public bool TrueForAll(Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -889,7 +889,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public void InsertRange(int index, T[] array)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         InsertRange(index, array.AsSpan());
     }
@@ -908,7 +908,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     /// </summary>
     public void AddRange(T[] array)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         AddRange(array.AsSpan());
     }
@@ -951,9 +951,9 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public void ConvertAll<TOut>(PooledList<TOut> output, Converter<T, TOut> converter)
     {
-        if (converter == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
+        ArgumentNullException.ThrowIfNull(converter);
 
-        if (output == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+        ArgumentNullException.ThrowIfNull(output);
 
         var items = _items;
 
@@ -962,9 +962,9 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public void FindAll(PooledList<T> output, Predicate<T> match)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
-        if (output == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.output);
+        ArgumentNullException.ThrowIfNull(output);
 
         var items = _items;
 
@@ -975,7 +975,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public bool TryFind(Predicate<T> match, out T result)
     {
-        if (match == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -992,7 +992,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     public bool TryFindLast(Predicate<T> match, out T result)
     {
-        if (match is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
+        ArgumentNullException.ThrowIfNull(match);
 
         var items = _items;
 
@@ -1009,7 +1009,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     void ReturnArray(T[] replaceWith)
     {
-        if (!_items.IsNullOrEmpty())
+        if (_items is not null)
             try
             {
                 _pool.Return(_items, s_clearItems);

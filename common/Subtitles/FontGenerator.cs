@@ -17,7 +17,6 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Storyboarding;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.StructBased;
 using Path = System.IO.Path;
 
 /// <summary> Stores information about a font image. </summary>
@@ -95,16 +94,20 @@ public sealed class FontGenerator : IDisposable
 
     readonly FastRandom debugRandom;
     readonly FontDescription description;
-    readonly ValueArray<FontEffect> effects;
+    readonly PooledList<FontEffect> effects;
 
     readonly TextOptions format;
     readonly SolidBrush textBrush;
 
-    internal FontGenerator(string dir, FontDescription desc, ReadOnlySpan<FontEffect> fx, string projDir, string assetDir)
+    internal FontGenerator(string dir,
+        FontDescription desc,
+        scoped ReadOnlySpan<FontEffect> fx,
+        string projDir,
+        string assetDir)
     {
         Directory = dir;
         description = desc;
-        effects = ValueArray<FontEffect>.Create(fx);
+        effects = new(fx);
         assetDirectory = assetDir;
 
         textBrush = new(description.Color);

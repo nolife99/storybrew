@@ -1,5 +1,6 @@
 ﻿namespace StorybrewEditor.ScreenLayers;
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,6 +9,8 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
@@ -161,10 +164,16 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             var ass = assembly;
 
             editButton.OnClick += (_, _) => changeReferencedAssembly(ass);
-            removeButton.OnClick += (_, _) => WidgetManager.ScreenLayerManager.ShowMessage(
-                $"Remove {getAssemblyName(ass)}?",
-                () => removeReferencedAssembly(ass),
-                true);
+            removeButton.OnClick += (_, _) =>
+            {
+                using var text = TempList.Create("Remove ".AsSpan());
+                text.AddRange(getAssemblyName(ass).AsSpan());
+                text.Add('?');
+
+                WidgetManager.ScreenLayerManager.ShowMessage(text.AsReadOnlySpan(),
+                    () => removeReferencedAssembly(ass),
+                    true);
+            };
         }
     }
 
@@ -190,7 +199,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         {
             AssemblyName.GetAssemblyName(assembly);
         }
-        catch
+        catch (BadImageFormatException)
         {
             return false;
         }
@@ -202,7 +211,13 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
         => assemblies.Select(getAssemblyName).Contains(getAssemblyName(assembly));
 
     static bool isDefaultAssembly(string assembly)
-        => Project.DefaultAssemblies.Any(ass => getAssemblyName(ass) == getAssemblyName(assembly));
+    {
+        foreach (var ass in Project.DefaultAssemblies)
+            if (getAssemblyName(ass) == getAssemblyName(assembly))
+                return true;
+
+        return false;
+    }
 
     static bool validateAssembly(string assembly, IEnumerable<string> assemblies)
         => !(isDefaultAssembly(assembly) || assemblyImported(assembly, assemblies));

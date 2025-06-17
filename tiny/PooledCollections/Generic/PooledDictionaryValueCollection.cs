@@ -7,6 +7,7 @@
 
 namespace Tiny.PooledCollections.Generic;
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,7 +19,7 @@ public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollecti
 
     public PooledDictionaryValueCollection(PooledDictionary<TKey, TValue> dictionary)
     {
-        if (dictionary == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
+        ArgumentNullException.ThrowIfNull(dictionary);
 
         _dictionary = dictionary;
     }
@@ -27,7 +28,7 @@ public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollecti
 
     public void CopyTo(TValue[] array, int index)
     {
-        if (array == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+        ArgumentNullException.ThrowIfNull(array);
 
         if ((uint)index > array.Length) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 

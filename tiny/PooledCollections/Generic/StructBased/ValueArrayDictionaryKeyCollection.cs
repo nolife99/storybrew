@@ -64,7 +64,7 @@ public readonly struct ValueArrayDictionaryKeyCollection<TKey, TValue> : ICollec
 
         int _index;
 
-        public Enumerator(in ValueArrayDictionary<TKey, TValue> dictionary)
+        internal Enumerator(in ValueArrayDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _index = -1;

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 
 public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.Definition> definitions,
-    TTokenType? endLineToken) : Tokenizer<TTokenType> where TTokenType : struct
+    TTokenType? endLineToken) : ITokenizer<TTokenType> where TTokenType : struct
 {
     public IEnumerable<Token<TTokenType>> Tokenize(TextReader reader)
     {

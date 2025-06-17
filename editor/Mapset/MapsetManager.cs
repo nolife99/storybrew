@@ -37,7 +37,7 @@ public sealed class MapsetManager : IDisposable
     {
         if (!Directory.Exists(path)) return;
 
-        using var maps = TempList<string>.Create(Directory.EnumerateFiles(path, "*.osu", SearchOption.TopDirectoryOnly));
+        using var maps = TempList.Create(Directory.EnumerateFiles(path, "*.osu", SearchOption.TopDirectoryOnly));
 
         maps.Sort();
         foreach (var beatmapPath in maps)

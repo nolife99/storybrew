@@ -9,7 +9,7 @@ using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary>Represents a bézier curve defined by a set of control points.</summary>
-public class BezierCurve(ReadOnlySpan<Vector2> points) : BaseCurve
+public class BezierCurve(scoped ReadOnlySpan<Vector2> points) : BaseCurve
 {
     const float BEZIER_TOLERANCE = .25f;
 
@@ -38,15 +38,15 @@ public class BezierCurve(ReadOnlySpan<Vector2> points) : BaseCurve
     }
 
     // https://github.com/ppy/osu-framework/blob/master/osu.Framework/Utils/PathApproximator.cs
-    static TempList<Vector2> BSplineToPiecewiseLinear(ReadOnlySpan<Vector2> controlPoints, int degree)
+    static TempList<Vector2> BSplineToPiecewiseLinear(scoped ReadOnlySpan<Vector2> controlPoints, int degree)
     {
-        var output = TempList<Vector2>.Create();
+        var output = TempList.Create<Vector2>();
         var pointCount = controlPoints.Length - 1;
 
         using var toFlatten = bSplineToBezierInternal(controlPoints, ref degree);
 
-        using var subdivisionBuffer1 = ValueArray<Vector2>.Create(degree + 1);
-        using var subdivisionBuffer2 = ValueArray<Vector2>.Create(degree * 2 + 1);
+        using var subdivisionBuffer1 = ValueArray.Create<Vector2>(degree + 1);
+        using var subdivisionBuffer2 = ValueArray.Create<Vector2>(degree * 2 + 1);
 
         while (toFlatten.Count > 0)
         {
@@ -59,7 +59,7 @@ public class BezierCurve(ReadOnlySpan<Vector2> points) : BaseCurve
                 continue;
             }
 
-            var rightChild = ValueArray<Vector2>.Create(degree + 1);
+            var rightChild = ValueArray.Create<Vector2>(degree + 1);
 
             bezierSubdivide(parent, subdivisionBuffer2, rightChild, subdivisionBuffer1, degree + 1);
 
@@ -73,21 +73,20 @@ public class BezierCurve(ReadOnlySpan<Vector2> points) : BaseCurve
         return output;
     }
 
-    static TempStack<ValueArray<Vector2>> bSplineToBezierInternal(ReadOnlySpan<Vector2> controlPoints, ref int degree)
+    static TempStack<ValueArray<Vector2>> bSplineToBezierInternal(scoped ReadOnlySpan<Vector2> controlPoints, ref int degree)
     {
-        var result = TempStack<ValueArray<Vector2>>.Create();
+        var result = TempStack.Create<ValueArray<Vector2>>();
         degree = int.Min(degree, controlPoints.Length - 1);
 
         var pointCount = controlPoints.Length - 1;
-        var points = ValueArray<Vector2>.Create(controlPoints.Length);
-        controlPoints.CopyTo(points.AsSpan());
+        var points = ValueArray.Create(controlPoints);
 
         if (degree == pointCount) result.Push(points);
         else
         {
             for (var i = 0; i < pointCount - degree; ++i)
             {
-                var subBezier = ValueArray<Vector2>.Create(degree + 1);
+                var subBezier = ValueArray.Create<Vector2>(degree + 1);
                 subBezier[0] = points[i];
 
                 for (var j = 0; j < degree - 1; j++)
@@ -105,15 +104,12 @@ public class BezierCurve(ReadOnlySpan<Vector2> points) : BaseCurve
                 result.Push(subBezier);
             }
 
-            var pointSpan = points.AsReadOnlySpan((pointCount - degree)..);
-            var memoryOwner = ValueArray<Vector2>.Create(pointSpan.Length);
-            pointSpan.CopyTo(memoryOwner.AsSpan());
-
+            var memoryOwner = ValueArray.Create(points.AsReadOnlySpan((pointCount - degree)..));
             points.Dispose();
             result.Push(memoryOwner);
 
             using var old = result;
-            result = TempStack<ValueArray<Vector2>>.Create(old.AsReadOnlySpan());
+            result = TempStack.Create(old.AsReadOnlySpan());
         }
 
         return result;
@@ -147,7 +143,7 @@ public class BezierCurve(ReadOnlySpan<Vector2> points) : BaseCurve
     }
 
     static void bezierApproximate(ValueArray<Vector2> controlPoints,
-        ref TempList<Vector2> output,
+        scoped ref TempList<Vector2> output,
         ValueArray<Vector2> subdivisionBuffer1,
         ValueArray<Vector2> subdivisionBuffer2,
         int count)

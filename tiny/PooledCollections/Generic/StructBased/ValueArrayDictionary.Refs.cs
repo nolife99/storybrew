@@ -85,7 +85,7 @@ partial struct ValueArrayDictionary<TKey, TValue>
 
         TryGetIndex(key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder();
+        if (_values[findIndex] is null) _values[findIndex] = builder();
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]));
 
         return ref _values[findIndex];
@@ -99,7 +99,7 @@ partial struct ValueArrayDictionary<TKey, TValue>
 
         TryGetIndex(in key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder();
+        if (_values[findIndex] is null) _values[findIndex] = builder();
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]));
 
         return ref _values[findIndex];
@@ -126,7 +126,7 @@ partial struct ValueArrayDictionary<TKey, TValue>
 
         TryGetIndex(key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder(ref parameter);
+        if (_values[findIndex] is null) _values[findIndex] = builder(ref parameter);
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]), ref parameter);
 
         return ref _values[findIndex];
@@ -153,7 +153,7 @@ partial struct ValueArrayDictionary<TKey, TValue>
 
         TryGetIndex(in key, out findIndex);
 
-        if (_values[findIndex] == null) _values[findIndex] = builder(ref parameter);
+        if (_values[findIndex] is null) _values[findIndex] = builder(ref parameter);
         else recycler(ref Unsafe.As<TValue, TValueProxy>(ref _values[findIndex]), ref parameter);
 
         return ref _values[findIndex];

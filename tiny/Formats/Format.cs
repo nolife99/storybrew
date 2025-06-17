@@ -3,26 +3,26 @@
 using System.Collections.Generic;
 using System.IO;
 
-public interface Tokenizer<TokenType>
+public interface ITokenizer<TToken>
 {
-    IEnumerable<Token<TokenType>> Tokenize(TextReader reader);
+    IEnumerable<Token<TToken>> Tokenize(TextReader reader);
 }
 
-public interface TokenParser<TokenType>
+public interface ITokenParser<TToken>
 {
-    TinyToken Parse(IEnumerable<Token<TokenType>> tokens);
+    TinyToken Parse(IEnumerable<Token<TToken>> tokens);
 }
 
-public interface Format
+public interface IFormat
 {
     TinyToken Read(TextReader reader);
     void Write(TextWriter writer, TinyToken value);
 }
 
-public abstract class Format<TokenType> : Format
+public abstract class Format<TToken> : IFormat
 {
-    protected abstract Tokenizer<TokenType> Tokenizer { get; }
-    protected abstract TokenParser<TokenType> TokenParser { get; }
+    protected abstract ITokenizer<TToken> Tokenizer { get; }
+    protected abstract ITokenParser<TToken> TokenParser { get; }
 
     public TinyToken Read(TextReader reader) => TokenParser.Parse(Tokenizer.Tokenize(reader));
     public abstract void Write(TextWriter writer, TinyToken value);

@@ -265,7 +265,7 @@ public class Textbox : Widget, Field
 
             if (acceptMultiline) return;
 
-            using var temp = TempList<char>.Create(Value);
+            using var temp = TempList.Create(Value);
             temp.RemoveAll(c => c == '\n');
 
             Value = temp.AsReadOnlySpan();
@@ -330,12 +330,12 @@ public class Textbox : Widget, Field
         cursorPosition = Value.Length;
     }
 
-    void ReplaceSelection(ReadOnlySpan<char> text)
+    void ReplaceSelection(scoped ReadOnlySpan<char> text)
     {
         var left = SelectionLeft;
         var right = SelectionRight;
 
-        using var newValue = TempList<char>.Create(Value);
+        using var newValue = TempList.Create(Value);
         if (left != right) newValue.RemoveRange(left, right - left);
         newValue.InsertRange(left, text);
 

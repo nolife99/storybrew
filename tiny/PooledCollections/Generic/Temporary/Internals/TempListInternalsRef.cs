@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct TempListInternalsRef<T>
 {
@@ -28,10 +29,10 @@ partial class TempCollectionInternals
     /// <summary>Returns the internal array as a <see cref="ReadOnlySpan{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlySpan<T> AsReadOnlySpan<T>(this scoped ref readonly TempList<T> source)
-        => source._items.AsSpan(0, source._size);
+        => MemoryMarshal.CreateReadOnlySpan(ref source._ref, source._size);
 
     /// <summary>Returns the internal array as a <see cref="ReadOnlyMemory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyMemory<T> AsReadOnlyMemory<T>(this scoped ref readonly TempList<T> source)
-        => source._items.AsMemory(0, source._size);
+        => new(source._items, 0, source._size);
 }

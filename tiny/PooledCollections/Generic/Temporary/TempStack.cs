@@ -18,6 +18,7 @@ namespace Tiny.PooledCollections.Generic.Temporary;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -27,45 +28,26 @@ public ref partial struct TempStack<T>
     internal int _size; // Number of items in the stack. Do not rename (binary serialization)
     internal int _version; // Used to keep enumerator in sync w/ collection. Do not rename (binary serialization)
 
-    [NonSerialized] internal ArrayPool<T> _pool;
+    [NonSerialized] internal readonly ArrayPool<T> _pool;
 
     static readonly T[] s_emptyArray = [];
 
-    internal static readonly bool s_clearArray = SystemRuntimeHelpers.IsReferenceOrContainsReferences<T>();
+    internal static readonly bool s_clearArray = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
 
     const int DefaultCapacity = 4;
 
-    public TempStack(int capacity) : this(capacity, ArrayPool<T>.Shared) { }
-
-    public TempStack(IEnumerable<T> collection) : this(collection, ArrayPool<T>.Shared) { }
-
-    public TempStack(ArrayPool<T> pool)
+    internal TempStack(int capacity, ArrayPool<T> pool)
     {
         _size = 0;
         _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
-        _array = s_emptyArray;
+        _array = capacity <= 0 ? s_emptyArray : _pool.Rent(capacity);
     }
 
-    // Create a stack with a specific initial capacity.  The initial capacity
-    // must be a non-negative number.
-    public TempStack(int capacity, ArrayPool<T> pool)
+    internal TempStack(IEnumerable<T> collection, ArrayPool<T> pool)
     {
-        if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
+        ArgumentNullException.ThrowIfNull(collection);
 
-        _size = 0;
-        _version = 0;
-        _pool = pool ?? ArrayPool<T>.Shared;
-        _array = capacity == 0 ? s_emptyArray : _pool.Rent(capacity);
-    }
-
-    // Fills a Stack with the contents of a particular collection.  The items are
-    // pushed onto the stack in the same order they are read by the enumerator.
-    public TempStack(IEnumerable<T> collection, ArrayPool<T> pool)
-    {
-        if (collection == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
-
-        _size = 0;
         _version = 0;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = EnumerableHelpers.ToArray(collection, s_emptyArray, _pool, out _size);
@@ -80,16 +62,12 @@ public ref partial struct TempStack<T>
     public bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => _array != null;
+        get => _array is not null;
     }
 
-    // Removes all Objects from the Stack.
     public void Clear()
     {
-        if (s_clearArray)
-            Array.Clear(_array,
-                0,
-                _size); // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
+        if (s_clearArray) Array.Clear(_array, 0, _size);
 
         _size = 0;
         _version++;
@@ -115,7 +93,7 @@ public ref partial struct TempStack<T>
 
     public void CopyTo(T[] dest, int destIndex, int count)
     {
-        if (dest == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dest);
+        ArgumentNullException.ThrowIfNull(dest);
 
         CopyTo(dest.AsSpan(), destIndex, count);
     }
@@ -134,23 +112,22 @@ public ref partial struct TempStack<T>
         }
 
         var threshold = (int)(_array.Length * 0.9);
-        if (_size < threshold)
-        {
-            var newArray = _pool.Rent(_size);
-            if (newArray.Length < _array.Length)
-            {
-                Array.Copy(_array, newArray, _size);
-                ReturnArray(newArray);
-                _version++;
-            }
-            else
+        if (_size >= threshold) return;
 
-                // The array from the pool wasn't any smaller than the one we already had,
-                // (we can only control minimum size) so return it and do nothing.
-                // If we create an exact-sized array not from the pool, we'll
-                // get an exception when returning it to the pool.
-                _pool.Return(newArray);
+        var newArray = _pool.Rent(_size);
+        if (newArray.Length < _array.Length)
+        {
+            Array.Copy(_array, newArray, _size);
+            ReturnArray(newArray);
+            _version++;
         }
+        else
+
+            // The array from the pool wasn't any smaller than the one we already had,
+            // (we can only control minimum size) so return it and do nothing.
+            // If we create an exact-sized array not from the pool, we'll
+            // get an exception when returning it to the pool.
+            _pool.Return(newArray);
     }
 
     // Returns the top object on the stack without removing it.  If the stack
@@ -236,7 +213,7 @@ public ref partial struct TempStack<T>
     [MethodImpl(MethodImplOptions.NoInlining)]
     void PushWithResize(T item)
     {
-        SystemDebug.Assert(_size == _array.Length);
+        Debug.Assert(_size == _array.Length);
         Grow(_size + 1);
         _array[_size] = item;
         _version++;
@@ -252,7 +229,7 @@ public ref partial struct TempStack<T>
     /// <returns>The new capacity of this stack.</returns>
     public int EnsureCapacity(int capacity)
     {
-        if (capacity < 0) ThrowHelper.ThrowCapacityArgumentOutOfRange_NeedNonNegNumException();
+        ArgumentOutOfRangeException.ThrowIfNegative(capacity);
 
         if (_array.Length < capacity)
         {
@@ -265,13 +242,13 @@ public ref partial struct TempStack<T>
 
     void Grow(int capacity)
     {
-        SystemDebug.Assert(_array.Length < capacity);
+        Debug.Assert(_array.Length < capacity);
 
         var newCapacity = _array.Length == 0 ? DefaultCapacity : 2 * _array.Length;
 
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast.
-        if ((uint)newCapacity > SystemArray.MaxLength) newCapacity = SystemArray.MaxLength;
+        if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
 
         // If computed capacity is still less than specified, set to the original argument.
         // Capacities exceeding Array.MaxLength will be surfaced as OutOfMemoryException by Array.Resize.
@@ -301,7 +278,7 @@ public ref partial struct TempStack<T>
 
     void ReturnArray(T[] replaceWith = null)
     {
-        if (!_array.IsNullOrEmpty())
+        if (_array is not null)
             try
             {
                 _pool.Return(_array, s_clearArray);
@@ -313,7 +290,7 @@ public ref partial struct TempStack<T>
 
     void ThrowForEmptyStack()
     {
-        SystemDebug.Assert(_size == 0);
+        Debug.Assert(_size == 0);
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyStack();
     }
 
@@ -370,7 +347,7 @@ public ref partial struct TempStack<T>
 
         void ThrowEnumerationNotStartedOrEnded()
         {
-            SystemDebug.Assert(_index == -1 || _index == -2);
+            Debug.Assert(_index == -1 || _index == -2);
 
             if (_index == -2) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumNotStarted();
             else ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumEnded();

@@ -4,23 +4,24 @@ namespace Tiny.PooledCollections.Generic.Temporary.Internals;
 
 using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public readonly struct TempArrayDictionaryInternals<TKey, TValue> : IDisposable
 {
-    [NonSerialized] public readonly int FreeEntryIndex;
-    [NonSerialized] public readonly int Collisions;
-    [NonSerialized] public readonly ulong FastModBucketsMultiplier;
+    public int FreeEntryIndex { get; }
+    public int Collisions { get; }
+    public ulong FastModBucketsMultiplier { get; }
 
-    [NonSerialized] public readonly bool ClearEntries;
-    [NonSerialized] public readonly bool ClearValues;
+    public bool ClearEntries { get; }
+    public bool ClearValues { get; }
 
-    [NonSerialized] public readonly ArrayEntry<TKey>[] Entries;
-    [NonSerialized] public readonly TValue[] Values;
-    [NonSerialized] public readonly int[] Buckets;
+    public ArrayEntry<TKey>[] Entries { get; }
+    public TValue[] Values { get; }
+    public int[] Buckets { get; }
 
-    [NonSerialized] public readonly ArrayPool<ArrayEntry<TKey>> EntryPool;
-    [NonSerialized] public readonly ArrayPool<TValue> ValuePool;
-    [NonSerialized] public readonly ArrayPool<int> BucketPool;
+    public ArrayPool<ArrayEntry<TKey>> EntryPool { get; }
+    public ArrayPool<TValue> ValuePool { get; }
+    public ArrayPool<int> BucketPool { get; }
 
     internal TempArrayDictionaryInternals(scoped ref readonly TempArrayDictionary<TKey, TValue> source)
     {
@@ -42,26 +43,9 @@ public readonly struct TempArrayDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
-
-        if (!Entries.IsNullOrEmpty())
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
-
-        if (!Values.IsNullOrEmpty())
-            try
-            {
-                ValuePool?.Return(Values, ClearValues);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
+        if (Values is not null) ValuePool?.Return(Values, ClearValues);
     }
 }
 
@@ -72,8 +56,10 @@ partial class TempCollectionInternals
     public static TempArrayDictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(
         this scoped ref TempArrayDictionary<TKey, TValue> source)
     {
-        var internals = new TempArrayDictionaryInternals<TKey, TValue>(ref source);
+        TempArrayDictionaryInternals<TKey, TValue> internals = new(ref source);
         source.Dispose();
+
+        source = Unsafe.NullRef<TempArrayDictionary<TKey, TValue>>();
 
         return internals;
     }

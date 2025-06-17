@@ -14,8 +14,7 @@ public record OsuSpinner : OsuHitObject
     /// <inheritdoc/>
     public override float EndTime => endTime;
 
-    ///<summary> Parses an osu! spinner from the given strings. </summary>
-    public static OsuSpinner Parse(TempList<ValueList<char>> values,
+    internal static OsuSpinner Parse(TempList<ValueList<char>> values,
         int x,
         int y,
         int startTime,

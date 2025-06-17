@@ -14,8 +14,7 @@ public record OsuHold : OsuHitObject
     /// <inheritdoc/>
     public override float EndTime => endTime;
 
-    ///<summary> Parses an osu!mania hold note from the given strings. </summary>
-    public static OsuHold Parse(TempList<ValueList<char>> values,
+    internal static OsuHold Parse(TempList<ValueList<char>> values,
         int x,
         int y,
         int startTime,

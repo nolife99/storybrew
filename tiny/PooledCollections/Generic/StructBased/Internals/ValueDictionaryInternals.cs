@@ -5,6 +5,7 @@ namespace Tiny.PooledCollections.Generic.StructBased.Internals;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public readonly struct ValueDictionaryInternals<TKey, TValue> : IDisposable
 {
@@ -27,7 +28,7 @@ public readonly struct ValueDictionaryInternals<TKey, TValue> : IDisposable
     [NonSerialized] public readonly ArrayPool<int> BucketPool;
     [NonSerialized] public readonly ArrayPool<Entry<TKey, TValue>> EntryPool;
 
-    internal ValueDictionaryInternals(in ValueDictionary<TKey, TValue> source)
+    internal ValueDictionaryInternals(scoped ref readonly ValueDictionary<TKey, TValue> source)
     {
 #if TARGET_64BIT || PLATFORM_ARCH_64 || UNITY_64
         FastModMultiplier = source._fastModMultiplier;
@@ -49,19 +50,9 @@ public readonly struct ValueDictionaryInternals<TKey, TValue> : IDisposable
 
     public void Dispose()
     {
-        if (!Buckets.IsNullOrEmpty())
-            try
-            {
-                BucketPool?.Return(Buckets);
-            }
-            catch { }
+        if (Buckets is not null) BucketPool?.Return(Buckets);
 
-        if (!Entries.IsNullOrEmpty())
-            try
-            {
-                EntryPool?.Return(Entries, ClearEntries);
-            }
-            catch { }
+        if (Entries is not null) EntryPool?.Return(Entries, ClearEntries);
     }
 }
 
@@ -70,13 +61,12 @@ partial class ValueCollectionInternals
     /// <summary>Returns a structure that holds ownership of internal fields of <paramref name="source"/>.</summary>
     /// <remarks>Afterward <paramref name="source"/> will be disposed.</remarks>
     public static ValueDictionaryInternals<TKey, TValue> TakeOwnership<TKey, TValue>(
-        ref ValueDictionary<TKey, TValue> source)
+        this scoped ref ValueDictionary<TKey, TValue> source)
     {
-        var internals = new ValueDictionaryInternals<TKey, TValue>(source);
-
-        source._buckets = null;
-        source._entries = null;
+        ValueDictionaryInternals<TKey, TValue> internals = new(ref source);
         source.Dispose();
+
+        source = Unsafe.NullRef<ValueDictionary<TKey, TValue>>();
 
         return internals;
     }

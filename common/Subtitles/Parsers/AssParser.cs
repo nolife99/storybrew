@@ -1,11 +1,10 @@
 ﻿namespace StorybrewCommon.Subtitles.Parsers;
 
-using System;
 using System.IO;
 using System.Text;
+using BrewLib.Util;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 using ZLinq;
@@ -23,7 +22,7 @@ public record AssParser : SubtitleParser
     /// <inheritdoc/>
     public SubtitleSet Parse(Stream stream)
     {
-        using var lines = ValueList<SubtitleLine>.Create();
+        using var lines = ValueList.Create<SubtitleLine>();
         using (StreamReader reader = new(stream, Encoding.ASCII))
             reader.ParseSections((sectionName, state) =>
                 {
@@ -36,9 +35,7 @@ public record AssParser : SubtitleParser
                                     {
                                         case "Dialogue":
                                         {
-                                            using var arguments = TempList<ValueList<char>>.Create();
-                                            foreach (var arg in value.Split(','))
-                                                arguments.Add(ValueList<char>.Create(value[arg]));
+                                            using var arguments = value.Split([',']);
 
                                             string text;
                                             using (var argsArr = arguments.AsReadOnlySpan()[9..]

@@ -68,7 +68,7 @@ public abstract class TinyToken
         }
     }
 
-    public static TinyToken Read(Stream stream, Format format)
+    public static TinyToken Read(Stream stream, IFormat format)
     {
         using StreamReader reader = new(stream, Encoding.ASCII);
         return format.Read(reader);
@@ -80,15 +80,15 @@ public abstract class TinyToken
         return Read(stream, GetFormat(path));
     }
 
-    public static TinyToken ReadString(string data, Format format)
+    public static TinyToken ReadString(string data, IFormat format)
     {
         using StringReader reader = new(data);
         return format.Read(reader);
     }
 
-    public static TinyToken ReadString<T>(string data) where T : Format, new() => ReadString(data, new T());
+    public static TinyToken ReadString<T>(string data) where T : IFormat, new() => ReadString(data, new T());
 
-    public void Write(Stream stream, Format format)
+    public void Write(Stream stream, IFormat format)
     {
         using StreamWriter writer = new(stream, Encoding.ASCII) { NewLine = "\n" };
 
@@ -101,7 +101,7 @@ public abstract class TinyToken
         Write(stream, GetFormat(path));
     }
 
-    public static Format GetFormat(string path)
+    public static IFormat GetFormat(string path)
     {
         var extension = Path.GetExtension(path);
         return extension switch

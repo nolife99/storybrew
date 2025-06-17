@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly struct TempListInternalsRefUnsafe<T>
 {
@@ -27,12 +28,12 @@ partial class TempCollectionInternalsUnsafe
 
     /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(this scoped ref readonly TempList<T> source) => source._items.AsSpan(0, source._size);
+    public static Span<T> AsSpan<T>(this scoped ref readonly TempList<T> source)
+        => MemoryMarshal.CreateSpan(ref source._ref, source._size);
 
     /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Memory<T> AsMemory<T>(this scoped ref readonly TempList<T> source)
-        => source._items.AsMemory(0, source._size);
+    public static Memory<T> AsMemory<T>(this scoped ref readonly TempList<T> source) => new(source._items, 0, source._size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void GetUnsafe<T>(this scoped ref readonly TempList<T> source, out T[] items, out int count)

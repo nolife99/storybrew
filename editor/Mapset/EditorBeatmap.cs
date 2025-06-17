@@ -393,7 +393,7 @@ public class EditorBeatmap(string path) : Beatmap
         foreach (var h in hitObjects) h.StackOffset = new CommandPosition(-stackOffset, -stackOffset) * h.StackIndex;
     }
 
-    static string removePathQuotes(ReadOnlySpan<char> path)
+    static string removePathQuotes(scoped ReadOnlySpan<char> path)
         => path.StartsWith('"') && path.EndsWith('"') ? path[1..^1].ToString() : path.ToString();
 
     #endregion

@@ -880,7 +880,7 @@ public class OsbSprite : StoryboardObject
             MoveXTimeline.HasCommands || MoveYTimeline.HasCommands ?
                 (CommandPosition)transform.ApplyToPositionXY(InitialPosition) : transform.ApplyToPosition(InitialPosition);
 
-        using var builder = TempList<char>.Create();
+        using var builder = TempList.Create<char>();
         builder.AddRangeEnum(layer);
         builder.Add(',');
 
@@ -1042,13 +1042,13 @@ public class OsbSprite : StoryboardObject
     #endregion
 }
 #pragma warning disable CS1591
-public enum OsbLayer
+public enum OsbLayer : byte
 {
     Background, Fail, Pass, Foreground, Overlay
 }
 
 ///<summary> Enumeration values determining the origin of a sprite/image. </summary>
-public enum OsbOrigin
+public enum OsbOrigin : byte
 {
     ///<summary> The sprite is anchored at the top left of the image. </summary>
     TopLeft,

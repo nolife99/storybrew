@@ -69,7 +69,7 @@ public class NewProjectMenu : UiScreenLayer
         {
             var invalidChars = Path.GetInvalidFileNameChars();
 
-            using var charArray = TempArray<char>.Create(projectNameTextbox.Value);
+            using var charArray = TempArray.Create(projectNameTextbox.Value);
             for (var i = 0; i < charArray.Length; i++)
                 if (invalidChars.Contains(charArray[i]))
                     charArray[i] = '_';
