@@ -2,9 +2,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 using OpenTK.Graphics.OpenGL;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
 
 public class ShaderContext
 {
@@ -14,7 +15,7 @@ public class ShaderContext
 
     bool canReceiveCommands;
 
-    StringBuilder code;
+    PooledList<char> code;
     ShaderVariable[] dependantVariables;
     int lastId;
     string nextGenericName => $"_tmp_{lastId++:000}";
@@ -41,7 +42,7 @@ public class ShaderContext
         }
     }
 
-    public void MarkUsedVariables(Action action, params ShaderVariable[] outputVariables)
+    public void MarkUsedVariables(Action action, params ReadOnlySpan<ShaderVariable> outputVariables)
     {
         if (canReceiveCommands)
             throw new InvalidOperationException(code is null ?
@@ -56,17 +57,22 @@ public class ShaderContext
         foreach (var t in outputVariables) markUsed(t);
     }
 
-    public void GenerateCode(StringBuilder code, Action action)
+    public void GenerateCode(scoped ref TempList<char> code, Action action)
     {
         if (canReceiveCommands)
             throw new InvalidOperationException(this.code is not null ?
                 "Already generating code" :
                 "Can't generate code while mark used variables");
 
-        this.code = code;
+        this.code = new();
         canReceiveCommands = true;
+
         action();
+        code.AddRange(this.code.AsReadOnlySpan());
+
+        this.code.Dispose();
         this.code = null;
+
         canReceiveCommands = false;
     }
 
@@ -94,17 +100,29 @@ public class ShaderContext
         var previousDependentVariables = this.dependantVariables;
         this.dependantVariables = dependantVariables;
 
-        if (code is not null) code.AppendLine(CultureInfo.InvariantCulture, $"{expression()};");
+        if (code is not null)
+        {
+            code.AddRange(expression().AsSpan());
+            code.AddRange(";\n".AsSpan());
+        }
         else expression();
 
         this.dependantVariables = previousDependentVariables;
     }
 
-    public void Comment(string line)
+    public void Comment(ReadOnlySpan<char> line)
     {
+        if (code is null) return;
+
         checkCanReceiveCommands();
-        line = string.Join("\n// ", line.Split('\n'));
-        code?.AppendLine(CultureInfo.InvariantCulture, $"\n// {line}\n");
+
+        foreach (var range in line.Split('\n'))
+        {
+            code.AddRange("\n// ".AsSpan());
+            code.AddRange(line[range]);
+        }
+
+        code.Add('\n');
     }
 
     void assign(ShaderVariable result, Func<string> expression, bool declare, string components = null)
@@ -122,7 +140,14 @@ public class ShaderContext
                 result);
 
         else if (declare)
-            code?.AppendLine(CultureInfo.InvariantCulture, $"{result.ShaderTypeName.GetString()} {result.Name};");
+        {
+            if (code is null) return;
+
+            code.AddRange(result.ShaderTypeName.GetString());
+            code.Add(' ');
+            code.AddRange(result.Name.AsSpan());
+            code.AddRange(";\n".AsSpan());
+        }
         else throw new ArgumentNullException(nameof(expression));
     }
 

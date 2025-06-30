@@ -185,7 +185,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     protected void RefreshStyle()
     {
-        ObjectDisposedException.ThrowIf(IsDisposed, this);
+        if (IsDisposed) return;
 
         var style = Style;
         if (style is not null) ApplyStyle(style);
@@ -208,8 +208,8 @@ public class Widget(WidgetManager manager) : IDisposable
         {
             if (string.IsNullOrEmpty(modifier)) continue;
 
-            sb.AddRange(" #".AsSpan());
-            sb.AddRange(modifier.AsSpan());
+            sb.Append(" #");
+            sb.Append(modifier);
         }
 
         return sb.AsReadOnlySpan().ToString();
@@ -574,16 +574,16 @@ public class Widget(WidgetManager manager) : IDisposable
 
         if (disposing)
         {
+            Tooltip = null;
+
             Parent?.Remove(this);
             manager.NotifyWidgetDisposed(this);
             ClearWidgets();
 
             children.Dispose();
+            OnDisposed?.Invoke(this, EventArgs.Empty);
         }
 
-        Tooltip = null;
-
-        if (disposing) OnDisposed?.Invoke(this, EventArgs.Empty);
         IsDisposed = true;
     }
 

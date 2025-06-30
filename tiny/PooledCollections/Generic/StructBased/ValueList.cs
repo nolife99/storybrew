@@ -785,11 +785,8 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     //
     public void Sort(int index, int count, IComparer<T>? comparer)
     {
-        if (index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
-
-        if (count < 0)
-            ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count,
-                ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
@@ -849,7 +846,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
         // before serialization.
         _pool = ArrayPool<T>.Shared;
 
-    public struct Enumerator : IEnumerator<T>, IEnumerator
+    public struct Enumerator : IEnumerator<T>
     {
         readonly ValueList<T> _list;
         int _index;

@@ -4,9 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.GraphicsLibraryFramework;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 
 public class ShaderBuilder
@@ -44,7 +45,7 @@ public class ShaderBuilder
     public ShaderVariable AddFragmentVariable(ActiveUniformType shaderTypeName)
         => FragmentShaderScope.AddVariable(Context, shaderTypeName);
 
-    public void AddRequiredExtension(params string[] extensionName) => requiredExt.AddRange(extensionName);
+    public void AddRequiredExtension(params ReadOnlySpan<string> extensionName) => requiredExt.AddRange(extensionName);
 
     public ShaderStorageType AddSSBO(int bindingIndex) => ProgramScope.AddSSBO(bindingIndex);
 
@@ -53,86 +54,90 @@ public class ShaderBuilder
         Context.VertexDeclaration = VertexDeclaration;
         Context.MarkUsedVariables(() => FragmentShader.Generate(Context), GlPosition, GlFragCoord, GlPointSize, GlFragDepth);
 
-        var commonCode = buildCommon();
-        Span<char> commonCodeSpan = stackalloc char[commonCode.Length];
+        using var commonCode = buildCommon();
+        var commonCodeSpan = commonCode.AsReadOnlySpan();
 
-        commonCode.CopyTo(0, commonCodeSpan, commonCode.Length);
+        using var vertexShaderCode = buildVertexShader();
+        using var fragmentShaderCode = buildFragmentShader();
 
-        var vertexShaderCode = buildVertexShader().Insert(0, commonCodeSpan);
-        var fragmentShaderCode = buildFragmentShader().Insert(0, commonCodeSpan);
-
-        StringHelper.StringBuilderPool.Release(commonCode);
+        vertexShaderCode.InsertRange(0, commonCodeSpan);
+        fragmentShaderCode.InsertRange(0, commonCodeSpan);
 
         if (log)
-        {
-            Trace.WriteLine("--- VERTEX ---");
-            Trace.WriteLine(vertexShaderCode);
+            Trace.WriteLine(
+                $"--- VERTEX ---\n{vertexShaderCode.AsReadOnlySpan()}\n--- FRAGMENT ---\n{fragmentShaderCode.AsReadOnlySpan()}");
 
-            Trace.WriteLine("--- FRAGMENT ---");
-            Trace.WriteLine(fragmentShaderCode);
-        }
-
-        return new(vertexShaderCode.ToString(), fragmentShaderCode.ToString());
+        return new(vertexShaderCode.AsReadOnlySpan().ToString(), fragmentShaderCode.AsReadOnlySpan().ToString());
     }
 
-    StringBuilder buildCommon()
+    TempList<char> buildCommon()
     {
-        var code = StringHelper.StringBuilderPool.Retrieve();
-        code.AppendLine(CultureInfo.InvariantCulture,
-            $"#version {int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}");
+        var code = TempList.Create("#version ".AsSpan());
+        code.AppendFormatted(int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion)),
+            provider: CultureInfo.InvariantCulture);
+
+        code.Add('\n');
 
         foreach (var extensionName in requiredExt)
         {
             if (!GLFW.ExtensionSupported(extensionName))
                 throw new NotSupportedException($"Required extension {extensionName} not supported");
 
-            code.AppendLine(CultureInfo.InvariantCulture, $"#extension {extensionName} : require");
+            code.Append("#extension ");
+            code.Append(extensionName);
+            code.Append(" : require\n");
         }
 
-        ProgramScope.DeclareTypes(code);
+        ProgramScope.DeclareTypes(ref code);
 
         return code;
     }
 
-    StringBuilder buildVertexShader()
+    TempList<char> buildVertexShader()
     {
-        StringBuilder code = new();
+        var code = TempList.Create<char>();
 
         // Attributes
 
-        ProgramScope.DeclareVaryings(code, Context, false);
+        ProgramScope.DeclareVaryings(ref code, Context, false);
 
         foreach (var attribute in VertexDeclaration)
-            code.AppendLine(CultureInfo.InvariantCulture, $"in {attribute.ShaderTypeName} {attribute.Name};");
+        {
+            code.Append("in ");
+            code.Append(attribute.ShaderTypeName);
+            code.Add(' ');
+            code.Append(attribute.Name);
+            code.Append(";\n");
+        }
 
-        ProgramScope.DeclareUniforms(code);
+        ProgramScope.DeclareUniforms(ref code);
 
-        VertexShader.GenerateFunctions(code);
+        VertexShader.GenerateFunctions(ref code);
 
         // Main function
 
-        code.AppendLine("void main() {");
-        ProgramScope.DeclareUnusedVaryingsAsVariables(code, Context);
-        VertexShaderScope.DeclareVariables(code);
-        Context.GenerateCode(code, () => VertexShader.Generate(Context));
-        code.AppendLine("}");
+        code.Append("void main() {");
+        ProgramScope.DeclareUnusedVaryingsAsVariables(ref code, Context);
+        VertexShaderScope.DeclareVariables(ref code);
+        Context.GenerateCode(ref code, () => VertexShader.Generate(Context));
+        code.Append("}\n");
         return code;
     }
 
-    StringBuilder buildFragmentShader()
+    TempList<char> buildFragmentShader()
     {
-        StringBuilder code = new();
+        var code = TempList.Create<char>();
 
-        ProgramScope.DeclareVaryings(code, Context, true);
-        ProgramScope.DeclareUniforms(code);
-        FragmentShader.GenerateFunctions(code);
+        ProgramScope.DeclareVaryings(ref code, Context, true);
+        ProgramScope.DeclareUniforms(ref code);
+        FragmentShader.GenerateFunctions(ref code);
 
         // Main function
 
-        code.AppendLine("void main() {");
-        FragmentShaderScope.DeclareVariables(code);
-        Context.GenerateCode(code, () => FragmentShader.Generate(Context));
-        code.AppendLine("}");
+        code.Append("void main() {");
+        FragmentShaderScope.DeclareVariables(ref code);
+        Context.GenerateCode(ref code, () => FragmentShader.Generate(Context));
+        code.Append("}\n");
         return code;
     }
 }

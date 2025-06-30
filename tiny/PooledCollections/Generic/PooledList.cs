@@ -14,7 +14,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using Internals;
 
 // Implements a variable-size List that uses an array of objects to store the
 // elements. A List has a capacity, which is the allocated length
@@ -188,12 +190,12 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         {
             // Following trick can reduce the range check by one
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
-            return _items[index];
+            return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index);
         }
         set
         {
             if ((uint)index >= (uint)_size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
-            _items[index] = value;
+            Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_items), index) = value;
             _version++;
         }
     }
@@ -822,7 +824,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     {
         ArgumentNullException.ThrowIfNull(comparison);
 
-        if (_size > 1) Array.Sort(_items, 0, _size, new Comparer(comparison));
+        if (_size > 1) this.AsSpan().Sort(comparison);
         _version++;
     }
 
@@ -1009,17 +1011,12 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
 
     void ReturnArray(T[] replaceWith)
     {
-        if (_items is not null)
-            try
-            {
-                _pool.Return(_items, s_clearItems);
-            }
-            catch { }
+        if (_items is not null) _pool.Return(_items, s_clearItems);
 
         _items = replaceWith ?? s_emptyArray;
     }
 
-    public struct Enumerator : IEnumerator<T>, IEnumerator
+    public struct Enumerator : IEnumerator<T>
     {
         readonly PooledList<T> _list;
         int _index;
@@ -1028,41 +1025,27 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         public Enumerator(PooledList<T> list)
         {
             _list = list;
-            _index = 0;
+            _index = -1;
             _version = list._version;
-            Current = default;
         }
 
         public void Dispose() { }
 
         public bool MoveNext()
         {
-            var localList = _list;
-
-            if (_version == localList._version && (uint)_index < (uint)localList._size)
-            {
-                Current = localList._items[_index];
-                _index++;
-                return true;
-            }
-
-            return MoveNextRare();
-        }
-
-        bool MoveNextRare()
-        {
             if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            _index = _list._size + 1;
-            Current = default;
-            return false;
+            var index = _index + 1;
+            if (index >= _list._size) return false;
+
+            _index = index;
+            return true;
         }
 
         public T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get;
-            private set;
+            get => Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_list._items), _index);
         }
 
         object? IEnumerator.Current
@@ -1080,17 +1063,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         {
             if (_version != _list._version) ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
-            _index = 0;
-            Current = default;
+            _index = -1;
         }
-    }
-
-    readonly struct Comparer : IComparer<T>
-    {
-        readonly Comparison<T> _comparison;
-
-        public Comparer(Comparison<T> comparison) => _comparison = comparison;
-
-        public int Compare(T x, T y) => _comparison(x, y);
     }
 }

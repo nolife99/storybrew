@@ -195,7 +195,7 @@ internal static class ThrowHelper
 
             default:
                 Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
-                return argument.ToString();
+                return Enum.GetName(argument);
         }
     }
 
@@ -263,7 +263,7 @@ internal static class ThrowHelper
 
             default:
                 Debug.Assert(false, "The enum value is not defined, please check the ExceptionResource Enum.");
-                return resource.ToString();
+                return Enum.GetName(resource);
         }
     }
 }

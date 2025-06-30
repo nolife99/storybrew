@@ -6,14 +6,14 @@ using Tiny.PooledCollections.Generic;
 
 public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer container = null) : IDisposable
 {
-    readonly PooledDictionary<int, AudioSample> samples = new();
+    readonly PooledDictionary<string, AudioSample> samples = new();
 
     public AudioSample Get(scoped ReadOnlySpan<char> filename)
     {
-        var hashCode = string.GetHashCode(filename);
-        if (samples.TryGetValue(hashCode, out var sample)) return sample;
+        if (samples.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var sample)) return sample;
 
-        return samples[hashCode] = manager.LoadSample(filename.ToString(), container);
+        var str = filename.ToString();
+        return samples[str] = manager.LoadSample(str, container);
     }
 
     #region IDisposable Support

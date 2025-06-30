@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.UserInterface.Components;
 
 using System;
-using System.Linq;
 using System.Numerics;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -62,17 +61,23 @@ public class LayerList : Widget
         layersLayout.ClearWidgets();
         foreach (var osbLayer in Project.OsbLayers)
         {
+            using var text = TempList.Create<char>();
+            text.AppendEnum(osbLayer);
+
             layersLayout.Add(new Label(Manager)
             {
                 StyleName = "listHeader",
-                Text = osbLayer.ToString(),
+                Text = text.AsReadOnlySpan(),
                 HandleDrop = data =>
                 {
                     if (data is not EditorStoryboardLayer droppedLayer) return false;
 
-                    var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
-
-                    if (dndLayer is not null) layerManager.MoveToOsbLayer(dndLayer, osbLayer);
+                    foreach (var dndLayer in layerManager.Layers)
+                        if (dndLayer.Identifier == droppedLayer.Identifier)
+                        {
+                            layerManager.MoveToOsbLayer(dndLayer, osbLayer);
+                            break;
+                        }
 
                     return true;
                 }
@@ -85,8 +90,10 @@ public class LayerList : Widget
 
     void buildLayers(OsbLayer osbLayer, bool diffSpecific)
     {
-        foreach (var layer in layerManager.Layers.Where(l => l.OsbLayer == osbLayer && l.DiffSpecific == diffSpecific))
+        foreach (var layer in layerManager.Layers)
         {
+            if (layer.OsbLayer != osbLayer || layer.DiffSpecific != diffSpecific) continue;
+
             var effect = layer.Effect;
 
             LinearLayout layerRoot;
@@ -165,9 +172,12 @@ public class LayerList : Widget
 
                     if (droppedLayer.Identifier == layer.Identifier) return true;
 
-                    var dndLayer = layerManager.Layers.Find(l => l.Identifier == droppedLayer.Identifier);
-
-                    if (dndLayer is not null) layerManager.MoveToLayer(dndLayer, layer);
+                    foreach (var dndLayer in layerManager.Layers)
+                        if (dndLayer.Identifier == droppedLayer.Identifier)
+                        {
+                            layerManager.MoveToOsbLayer(dndLayer, osbLayer);
+                            break;
+                        }
 
                     return true;
                 }
@@ -192,7 +202,7 @@ public class LayerList : Widget
 
             effect.OnChanged += effectChangedHandler = (_, _) =>
             {
-                using var text = getLayerDetails(layer, effect);
+                using var text = getLayerDetails(layer, layer.Effect);
                 detailsLabel.Text = text.AsReadOnlySpan();
             };
 
@@ -221,7 +231,7 @@ public class LayerList : Widget
             {
                 layer.Highlight = false;
                 layer.OnChanged -= changedHandler;
-                effect.OnChanged -= effectChangedHandler;
+                layer.Effect.OnChanged -= effectChangedHandler;
             };
 
             diffSpecificButton.OnClick += (_, _) => layer.DiffSpecific = !layer.DiffSpecific;

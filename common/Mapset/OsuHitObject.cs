@@ -2,6 +2,7 @@
 
 using System;
 using System.Globalization;
+using System.Numerics;
 using BrewLib.Util;
 using SixLabors.ImageSharp;
 using Storyboarding.CommandValues;
@@ -14,9 +15,8 @@ public record OsuHitObject
     public static readonly SizeF PlayfieldSize = new(512, 384), StoryboardSize = new(640, 480);
 
     ///<summary> Represents the offset between the playfield and the storyboard field in osu!. </summary>
-    public static readonly CommandPosition PlayfieldToStoryboardOffset = new(
-        (StoryboardSize.Width - PlayfieldSize.Width) / 2,
-        (StoryboardSize.Height - PlayfieldSize.Height) * .75 - 16);
+    public static readonly Vector2 PlayfieldToStoryboardOffset = new((StoryboardSize.Width - PlayfieldSize.Width) / 2,
+        (StoryboardSize.Height - PlayfieldSize.Height) * .75f - 16);
 
     ///<summary> Represents the widescreen storyboard size in osu!. </summary>
     public static readonly SizeF WidescreenStoryboardSize = StoryboardSize with { Width = StoryboardSize.Width * 4 / 3 };
@@ -25,7 +25,7 @@ public record OsuHitObject
     public static readonly float WidescreenStoryboardArea = WidescreenStoryboardSize.Width * WidescreenStoryboardSize.Height;
 
     ///<summary> Represents the bounds of the storyboard size in osu!. </summary>
-    public static readonly RectangleF StoryboardBounds = new(default, StoryboardSize);
+    public static readonly RectangleF StoryboardBounds = new(PointF.Empty, StoryboardSize);
 
     ///<summary> Represents the bounds of the widescreen storyboard size in osu!. </summary>
     public static readonly RectangleF WidescreenStoryboardBounds = new(
@@ -45,22 +45,22 @@ public record OsuHitObject
     public HitObjectFlag Flags { get; set; }
 
     ///<summary> Represents the hit object's position in osu!. </summary>
-    public CommandPosition PlayfieldPosition { get; protected init; }
+    public Vector2 PlayfieldPosition { get; protected init; }
 
     ///<summary> Represents the stack number of this hit object. </summary>
     public int StackIndex { get; set; }
 
     ///<summary> Represents this hit object's stacking offset in osu!. </summary>
-    public CommandPosition StackOffset { get; set; }
+    public Vector2 StackOffset { get; set; }
 
     ///<summary> Represents this hit object's storyboard position in osu!. </summary>
-    public CommandPosition Position => PlayfieldPosition + PlayfieldToStoryboardOffset;
+    public Vector2 Position => PlayfieldPosition + PlayfieldToStoryboardOffset;
 
     ///<summary> Represents this hit object's end position in osu!. </summary>
-    public CommandPosition PlayfieldEndPosition => PlayfieldPositionAtTime(EndTime);
+    public Vector2 PlayfieldEndPosition => PlayfieldPositionAtTime(EndTime);
 
     ///<summary> Represents this hit object's storyboard end position in osu!. </summary>
-    public CommandPosition EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;
+    public Vector2 EndPosition => PlayfieldEndPosition + PlayfieldToStoryboardOffset;
 
     ///<summary> Represents the start time of this hit object. </summary>
     public float StartTime { get; protected init; }
@@ -93,10 +93,10 @@ public record OsuHitObject
     public int ComboOffset => (int)Flags >> 4 & 7;
 
     /// <returns> This hit object's position at <paramref name="time"/>. </returns>
-    public virtual CommandPosition PlayfieldPositionAtTime(float time) => PlayfieldPosition;
+    public virtual Vector2 PlayfieldPositionAtTime(float time) => PlayfieldPosition;
 
     /// <returns> This hit object's storyboard position at <paramref name="time"/>. </returns>
-    public CommandPosition PositionAtTime(float time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
+    public Vector2 PositionAtTime(float time) => PlayfieldPositionAtTime(time) + PlayfieldToStoryboardOffset;
 
     /// <inheritdoc/>
     public override string ToString() => $"{StartTime}, {Flags}";

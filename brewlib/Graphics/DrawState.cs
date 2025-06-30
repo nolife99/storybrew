@@ -18,6 +18,7 @@ using Textures;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using Util;
 
 public static class DrawState
 {
@@ -70,7 +71,7 @@ public static class DrawState
 
                     using var str = TempList.Create("[OpenGL] ".AsSpan());
                     str.AddRange(chars);
-                    str.AddRange(" (".AsSpan());
+                    str.Append(" (");
 
                     ReadOnlySpan<char> sourceString = source switch
                     {
@@ -84,7 +85,7 @@ public static class DrawState
                     };
 
                     str.AddRange(sourceString);
-                    str.AddRange(", ".AsSpan());
+                    str.Append(", ");
 
                     ReadOnlySpan<char> typeString = type switch
                     {
@@ -101,7 +102,7 @@ public static class DrawState
                     };
 
                     str.AddRange(typeString);
-                    str.AddRange(", ".AsSpan());
+                    str.Append(", ");
 
                     ReadOnlySpan<char> severityString = severity switch
                     {
@@ -113,7 +114,7 @@ public static class DrawState
                     };
 
                     str.AddRange(severityString);
-                    str.AddRange(")\n".AsSpan());
+                    str.Append(")\n");
 
                     Trace.Write(str.AsReadOnlySpan().ToString());
                     if (severity is DebugSeverity.DebugSeverityHigh)
@@ -161,7 +162,7 @@ public static class DrawState
         }
 
         WhitePixel = Texture2d.Create(Color.White.ToPixel<Rgba32>());
-        TransparentPixel = Texture2d.Create(default);
+        TransparentPixel = Texture2d.Create(Color.Transparent.ToPixel<Rgba32>());
 
         TextGenerator = new(resourceContainer);
         TextFontManager = new(textureContainer);

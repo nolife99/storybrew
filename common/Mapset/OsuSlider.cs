@@ -5,7 +5,6 @@ using System.Globalization;
 using System.Numerics;
 using BrewLib.Util;
 using Curves;
-using Storyboarding.CommandValues;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
@@ -16,7 +15,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
 {
     Curve curve;
 
-    CommandPosition playfieldTipPosition;
+    Vector2 playfieldTipPosition;
 
     /// <summary>The curve type of this slider.</summary>
     public SliderCurveType CurveType { get; init; }
@@ -59,7 +58,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     }
 
     /// <summary>Gets the position of the end of the slider's body in playfield coordinates.</summary>
-    public CommandPosition PlayfieldTipPosition
+    public Vector2 PlayfieldTipPosition
     {
         get
         {
@@ -69,7 +68,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     }
 
     /// <summary>Gets the position of the end of the slider's body in storyboard coordinates.</summary>
-    public CommandPosition TipPosition => PlayfieldTipPosition + PlayfieldToStoryboardOffset;
+    public Vector2 TipPosition => PlayfieldTipPosition + PlayfieldToStoryboardOffset;
 
     /// <summary> How many times the slider ball travels across the slider's body. </summary>
     public int TravelCount => nodes.Length - 1;
@@ -78,7 +77,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
     public int RepeatCount => nodes.Length - 2;
 
     /// <inheritdoc/>
-    public override CommandPosition PlayfieldPositionAtTime(float time)
+    public override Vector2 PlayfieldPositionAtTime(float time)
     {
         if (time <= StartTime) return PlayfieldPosition;
         if (EndTime <= time) return TravelCount % 2 == 0 ? PlayfieldPosition : PlayfieldTipPosition;
@@ -138,7 +137,7 @@ public record OsuSlider(OsuSliderNode[] nodes, Vector2[] controlPoints) : OsuHit
         using var curves = TempList.Create<Curve>();
         using var curvePoints = TempList.Create<Vector2>();
 
-        var previousPosition = (Vector2)PlayfieldPosition;
+        var previousPosition = PlayfieldPosition;
         curvePoints.Add(previousPosition);
 
         foreach (var controlPoint in controlPoints)

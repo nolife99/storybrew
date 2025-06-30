@@ -1,6 +1,5 @@
 namespace BrewLib.Util;
 
-using System;
 using System.Collections.Generic;
 
 public static class ListExtensions
@@ -18,10 +17,5 @@ public static class ListExtensions
                 list[i] = list[i - 1];
 
         list[to] = item;
-    }
-
-    public static void Dispose<TKey, TValue>(this Dictionary<TKey, TValue> disposable) where TValue : IDisposable
-    {
-        foreach (var reference in disposable.Values) reference?.Dispose();
     }
 }

@@ -59,7 +59,7 @@ public class QuadRendererBuffered : IQuadRenderer
         var ssboSize = (Unsafe.SizeOf<Matrix4x4>() + Unsafe.SizeOf<Vector4>()) * maxQuadsPerBatch;
         if (DrawState.BindlessTexturesSupported)
         {
-            ssboSize += Unsafe.SizeOf<long>() * maxQuadsPerBatch;
+            ssboSize += sizeof(long) * maxQuadsPerBatch;
             bindlessTextures = new();
         }
         else textureUniformLocation = shader.GetUniformLocation(TextureUniformName);

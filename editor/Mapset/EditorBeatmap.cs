@@ -342,19 +342,19 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.EndTime) break;
 
                         if (objectN is OsuSlider spanN &&
-                            (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared < stackLenienceSquared)
+                            (spanN.PlayfieldEndPosition - objectI.PlayfieldPosition).LengthSquared() < stackLenienceSquared)
                         {
                             var offset = objectI.StackIndex - objectN.StackIndex + 1;
 
                             for (var j = n + 1; j <= i; ++j)
-                                if ((spanN.PlayfieldEndPosition - hitObjects[j].PlayfieldPosition).LengthSquared <
+                                if ((spanN.PlayfieldEndPosition - hitObjects[j].PlayfieldPosition).LengthSquared() <
                                     stackLenienceSquared)
                                     hitObjects[j].StackIndex -= offset;
 
                             break;
                         }
 
-                        if (!((objectN.PlayfieldPosition - objectI.PlayfieldPosition).LengthSquared <
+                        if (!((objectN.PlayfieldPosition - objectI.PlayfieldPosition).LengthSquared() <
                             stackLenienceSquared)) continue;
 
                         objectN.StackIndex = objectI.StackIndex + 1;
@@ -374,7 +374,7 @@ public class EditorBeatmap(string path) : Beatmap
                         if (objectI.StartTime - preemtTime * StackLeniency > objectN.StartTime) break;
 
                         if (!((((objectN as OsuSlider)?.PlayfieldEndPosition ?? objectN.PlayfieldPosition) -
-                                objectI.PlayfieldPosition).LengthSquared <
+                                objectI.PlayfieldPosition).LengthSquared() <
                             stackLenienceSquared)) continue;
 
                         objectN.StackIndex = objectI.StackIndex + 1;

@@ -54,16 +54,18 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
 
     public int CompareTo(ICommand other)
     {
-        var result = float.Round(StartTime).CompareTo(float.Round(other.StartTime));
-        if (result == 0) result = float.Round(EndTime).CompareTo(float.Round(other.EndTime));
+        var result = StartTime.CompareTo(other.StartTime);
+        if (result != 0) return result;
 
-        if (other is ITypedCommand<TValue> value && result == 0)
-        {
-            result = EqualityComparer<TValue>.Default.Equals(StartValue, value.StartValue) ? 0 : 1;
-            if (result == 0) result = EqualityComparer<TValue>.Default.Equals(EndValue, value.EndValue) ? 0 : 1;
-        }
+        result = EndTime.CompareTo(other.EndTime);
+        if (result != 0) return result;
 
-        return result;
+        if (other is not ITypedCommand<TValue> typedOther) return 1;
+
+        return EqualityComparer<TValue>.Default.Equals(StartValue, typedOther.StartValue) &&
+            EqualityComparer<TValue>.Default.Equals(EndValue, typedOther.EndValue) ?
+                0 :
+                1;
     }
 
     public override int GetHashCode() => HashCode.Combine(Identifier, StartTime, EndTime, StartValue, EndValue);
@@ -101,7 +103,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         var excludeEnd = startTimeString.AsReadOnlySpan().SequenceEqual(endTimeString.AsReadOnlySpan());
 
         var result = TempList.Create<char>();
-        result.AddRange(Identifier.AsSpan());
+        result.Append(Identifier);
         result.Add(',');
 
         using (var easingChars = ((int)Easing).ToCharArray(provider: exportSettings.NumberFormat))
@@ -127,7 +129,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
 
     public override string ToString()
     {
-        using var str = ToOsbString(ExportSettings.Default, default);
+        using var str = ToOsbString(ExportSettings.Default, StoryboardTransform.Identity);
         return str.AsReadOnlySpan().ToString();
     }
 }

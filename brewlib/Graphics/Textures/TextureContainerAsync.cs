@@ -17,7 +17,7 @@ using Util;
 public sealed class TextureContainerAsync(ResourceContainer resourceContainer = null,
     TextureOptions textureOptions = null) : TextureContainer
 {
-    readonly PooledDictionary<int, TextureUploadQueue.QueuedUpload> textures = new();
+    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload> textures = new();
 
     public float UncompressedMemoryUseMb
     {
@@ -37,15 +37,15 @@ public sealed class TextureContainerAsync(ResourceContainer resourceContainer = 
 
     public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
     {
-        var hashCode = string.GetHashCode(filename);
-
-        var found = textures.TryGetValue(hashCode, out var texture);
+        var found = textures.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var texture);
         switch (found)
         {
             case true when texture.IsLoaded: return texture.Result;
 
             case false:
-                textures[hashCode] = TextureUploadQueue.Queue(filename.ToString(), resourceContainer, textureOptions); break;
+                var str = filename.ToString();
+                textures[str] = TextureUploadQueue.Queue(str, resourceContainer, textureOptions);
+                break;
         }
 
         return DrawState.TransparentPixel;
@@ -124,9 +124,20 @@ internal static class TextureUploadQueue
 
                     var filename = queued.FileName;
 
-                    using var stream = File.Exists(filename) ?
-                        File.OpenRead(filename) :
-                        queued.Container?.GetStream(filename, ResourceSource.Embedded);
+                    Stream stream;
+                    try
+                    {
+                        stream = File.Exists(filename) ?
+                            File.OpenRead(filename) :
+                            queued.Container?.GetStream(filename, ResourceSource.Embedded);
+                    }
+                    catch (IOException)
+                    {
+                        queuedUploads.Enqueue(queued);
+
+                        // Happens when another process is writing to the file, will try again later.
+                        continue;
+                    }
 
                     if (stream is null)
                     {
@@ -134,7 +145,11 @@ internal static class TextureUploadQueue
                         continue;
                     }
 
-                    using (var bitmap = Image.Load<Rgba32>(stream)) queued.Result = Texture2d.Load(bitmap, queued.Options);
+                    using (var bitmap = Image.Load<Rgba32>(stream))
+                    {
+                        stream.Dispose();
+                        queued.Result = Texture2d.Load(bitmap, queued.Options);
+                    }
 
                     queued.IsLoaded = true;
                 }

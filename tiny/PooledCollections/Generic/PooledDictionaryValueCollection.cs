@@ -64,7 +64,7 @@ public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollecti
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
 
-    public struct Enumerator : IEnumerator<TValue>, IEnumerator
+    public struct Enumerator : IEnumerator<TValue>
     {
         readonly PooledDictionary<TKey, TValue> _dictionary;
         int _index;

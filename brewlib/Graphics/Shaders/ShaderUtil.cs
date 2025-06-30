@@ -1,10 +1,11 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
+using System;
 using OpenTK.Graphics.OpenGL;
 
 public static class ShaderUtil
 {
-    public static string GetString(this ActiveUniformType type) => type switch
+    public static ReadOnlySpan<char> GetString(this ActiveUniformType type) => type switch
     {
         ActiveUniformType.Int => "int",
         ActiveUniformType.UnsignedInt => "uint",

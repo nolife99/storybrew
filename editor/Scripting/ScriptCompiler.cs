@@ -14,6 +14,8 @@ using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using Storyboarding;
 using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public static class ScriptCompiler
 {
@@ -70,9 +72,7 @@ public static class ScriptCompiler
             }
         }
 
-        var error = StringHelper.StringBuilderPool.Retrieve();
-        error.Append("Compilation error\n \n");
-
+        using var error = TempList.Create("Compilation error\n \n".AsSpan());
         foreach (var diagnostics in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
             .GroupBy(k =>
             {
@@ -81,19 +81,17 @@ public static class ScriptCompiler
                 return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
             }))
         {
-            error.Append(Path.GetFileName(diagnostics.Key.AsSpan()));
+            error.AddRange(Path.GetFileName(diagnostics.Key.AsSpan()));
             error.Append(":\n");
 
             foreach (var diagnostic in diagnostics)
             {
                 error.Append("--");
-                error.Append(diagnostic);
-                error.Append('\n');
+                error.Append(diagnostic.ToString());
+                error.Add('\n');
             }
         }
 
-        var errorStr = error.ToString();
-        StringHelper.StringBuilderPool.Release(error);
-        throw new ScriptCompilationException(errorStr);
+        throw new ScriptCompilationException(error.AsReadOnlySpan().ToString());
     }
 }

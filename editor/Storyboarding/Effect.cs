@@ -5,12 +5,13 @@ using System.Linq;
 using System.Threading;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
 
 public abstract class Effect : IDisposable
 {
-    PooledList<EditorStoryboardLayer> layers;
+    readonly PooledList<EditorStoryboardLayer> layers;
 
     ValueArray<char> name = ValueArray.Create("Unnamed Effect".AsSpan());
     EditorStoryboardLayer placeHolderLayer;
@@ -38,7 +39,9 @@ public abstract class Effect : IDisposable
         {
             if (name.AsReadOnlySpan().SequenceEqual(value)) return;
 
+            name.Dispose();
             name = ValueArray.Create(value);
+
             RaiseChanged();
             refreshLayerNames();
         }
@@ -93,16 +96,18 @@ public abstract class Effect : IDisposable
         Project.LayerManager.Add(layer);
     }
 
-    protected void UpdateLayers(PooledList<EditorStoryboardLayer> newLayers)
+    protected void UpdateLayers(ReadOnlySpan<EditorStoryboardLayer> newLayers)
     {
         if (placeHolderLayer is not null)
         {
             Project.LayerManager.Replace(placeHolderLayer, newLayers);
             placeHolderLayer = null;
         }
-        else Project.LayerManager.Replace(layers, newLayers);
+        else Project.LayerManager.Replace(layers.AsReadOnlySpan(), newLayers);
 
-        layers = newLayers;
+        layers.Clear();
+        layers.AddRange(newLayers);
+
         refreshLayerNames();
 
         EstimatedSize = layers.Sum(layer => layer.EstimatedSize);
@@ -124,7 +129,7 @@ public abstract class Effect : IDisposable
         foreach (var layer in layers)
             layer.Identifier = string.IsNullOrWhiteSpace(layer.Name) ?
                 name.AsReadOnlySpan().ToString() :
-                $"{name} ({layer.Name})";
+                $"{name.AsReadOnlySpan()} ({layer.Name})";
     }
 
     #region IDisposable Support

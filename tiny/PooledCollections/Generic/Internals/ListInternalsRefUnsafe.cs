@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly struct ListInternalsRefUnsafe<T>
 {
@@ -27,7 +28,8 @@ partial class CollectionInternalsUnsafe
 
     /// <summary>Returns the internal array as a <see cref="Span{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Span<T> AsSpan<T>(this PooledList<T> source) => source._items.AsSpan(0, source._size);
+    public static Span<T> AsSpan<T>(this PooledList<T> source)
+        => MemoryMarshal.CreateSpan(ref MemoryMarshal.GetArrayDataReference(source._items), source._size);
 
     /// <summary>Returns the internal array as a <see cref="Memory{T}"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

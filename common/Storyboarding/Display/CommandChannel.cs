@@ -1,15 +1,18 @@
 ﻿namespace StorybrewCommon.Storyboarding.Display;
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Commands;
 using CommandValues;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 
 internal class CommandChannel<TValue> where TValue : struct, ICommandValue
 {
-    readonly PooledList<ITypedCommand<TValue>> commands = [];
-    public ReadOnlySpan<ITypedCommand<TValue>> Commands => commands.AsReadOnlySpan();
+    readonly List<ITypedCommand<TValue>> commands = [];
+
+    public ReadOnlySpan<ITypedCommand<TValue>> Commands => CollectionsMarshal.AsSpan(commands);
+
     public bool HasOverlap { get; private set; }
 
     public ITypedCommand<TValue> StartCommand => commands.Count != 0 ? commands[0] : null;
@@ -35,8 +38,8 @@ internal class CommandChannel<TValue> where TValue : struct, ICommandValue
             ++index;
         }
 
-        HasOverlap |= index > 0 && (int)float.Round(command.StartTime) < (int)float.Round(commands[index - 1].EndTime) ||
-            index < commands.Count && (int)float.Round(commands[index].StartTime) < (int)float.Round(command.EndTime);
+        HasOverlap |= index > 0 && command.StartTime < commands[index - 1].EndTime ||
+            index < commands.Count && commands[index].StartTime < command.EndTime;
 
         commands.Insert(index, command);
         return true;
@@ -57,7 +60,7 @@ internal class CommandChannel<TValue> where TValue : struct, ICommandValue
                     break;
                 }
         }
-        else if (index > 0 && (int)float.Round(time) == (int)float.Round(commands[index - 1].EndTime)) --index;
+        else if (index > 0 && time == commands[index - 1].EndTime) --index;
 
         return commands[index];
     }
@@ -77,14 +80,14 @@ internal class CommandChannel<TValue> where TValue : struct, ICommandValue
 
     bool findCommandIndex(float time, out int index)
     {
-        var span = commands.AsReadOnlySpan();
-
         var left = 0;
-        var right = span.Length - 1;
+        var right = commands.Count - 1;
+
+        ref var first = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(commands));
         while (left <= right)
         {
             index = left + (right - left >> 1);
-            var commandTime = span[index].StartTime;
+            var commandTime = Unsafe.Add(ref first, index).StartTime;
             if (commandTime == time) return true;
 
             if (commandTime < time) left = index + 1;

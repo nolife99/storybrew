@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using OpenTK.Graphics.OpenGL;
 
 public class ShaderType(string name)
@@ -9,7 +10,7 @@ public class ShaderType(string name)
     readonly List<Field> fields = [];
 
     public readonly string Name = name;
-    public IEnumerable<Field> Fields => fields;
+    public ReadOnlySpan<Field> Fields => CollectionsMarshal.AsSpan(fields);
 
     public Field AddField(string name, ActiveUniformType shaderTypeName, int arrayCount = -1)
     {
@@ -27,12 +28,7 @@ public class ShaderType(string name)
         return new ShaderFieldVariable(variable.Context, variable, field);
     }
 
-    public class Field(string name, ActiveUniformType shaderTypeName, int arrayCount)
-    {
-        public string Name => name;
-        public ActiveUniformType ShaderTypeName => shaderTypeName;
-        public int ArrayCount => arrayCount;
-    }
+    public readonly record struct Field(string Name, ActiveUniformType ShaderTypeName, int ArrayCount);
 }
 
 public class ShaderStorageType(string name, int bindingIndex) : ShaderType(name)

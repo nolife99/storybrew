@@ -22,7 +22,6 @@
         <Copyright>Copyright © Damnae 2016</Copyright>
         <AnalysisLevel>latest-recommended</AnalysisLevel>
         <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
-        <EnableNETAnalyzers>True</EnableNETAnalyzers>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">

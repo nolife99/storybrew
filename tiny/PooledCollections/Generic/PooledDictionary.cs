@@ -17,7 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 [DebuggerTypeProxy(typeof(IDictionaryDebugView<,>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public class PooledDictionary<TKey, TValue>
+public partial class PooledDictionary<TKey, TValue>
     : IDictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback, IDisposable
     where TKey : notnull
 {
@@ -35,6 +35,7 @@ public class PooledDictionary<TKey, TValue>
     internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
     internal static readonly bool s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
     internal static readonly bool s_clearEntries = s_isReferenceKey || s_isReferenceValue;
+    [NonSerialized] internal static IEqualityComparer<string> _stringComparer = new Dictionary<string, byte>().Comparer;
 
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
@@ -132,20 +133,18 @@ public class PooledDictionary<TKey, TValue>
             _entries = s_emptyEntries;
         }
 
-        if (comparer is not null &&
-            comparer !=
-            EqualityComparer<TKey>
-                .Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
-            _comparer = comparer;
-
-        // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
-        // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
-        // hash buckets become unbalanced.
-        if (typeof(TKey) == typeof(string))
+        if (!typeof(TKey).IsValueType)
         {
-            var stringComparer = NonRandomizedStringEqualityComparer.Default;
-            if (stringComparer is not null) _comparer = (IEqualityComparer<TKey>?)stringComparer;
+            _comparer = comparer ?? EqualityComparer<TKey>.Default;
+
+            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+            // hash buckets become unbalanced.
+            if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
         }
+        else if (
+            comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
+            comparer != EqualityComparer<TKey>.Default) _comparer = comparer;
     }
 
     public PooledDictionary(IDictionary<TKey, TValue> dictionary,
@@ -880,7 +879,7 @@ public class PooledDictionary<TKey, TValue>
         // Value types never rehash
         if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
-                comparer is NonRandomizedStringEqualityComparer)
+                ReferenceEquals(comparer, _stringComparer))
 
             // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
             // i.e. EqualityComparer<string>.Default.
@@ -904,7 +903,6 @@ public class PooledDictionary<TKey, TValue>
 
         if (!typeof(TKey).IsValueType && forceNewHashCodes)
         {
-            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<TKey>.Default;
 
             for (var i = 0; i < count; i++)
@@ -1083,12 +1081,7 @@ public class PooledDictionary<TKey, TValue>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets is not null)
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -1251,7 +1244,7 @@ public class PooledDictionary<TKey, TValue>
             // Value types never rehash
             if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
-                comparer is NonRandomizedStringEqualityComparer)
+                ReferenceEquals(comparer, _stringComparer))
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.

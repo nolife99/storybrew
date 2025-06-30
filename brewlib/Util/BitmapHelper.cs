@@ -82,6 +82,6 @@ public static class BitmapHelper
                 }
         }
 
-        return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : default;
+        return xMin <= xMax && yMin <= yMax ? Rectangle.FromLTRB(xMin, yMin, xMax + 1, yMax + 1) : Rectangle.Empty;
     }
 }

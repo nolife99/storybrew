@@ -20,7 +20,6 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 using UserInterface;
 using UserInterface.Components;
 using UserInterface.Drawables;
-using ZLinq;
 
 public class ProjectMenu(Project proj) : UiScreenLayer
 {
@@ -375,8 +374,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (!proj.MapsetPathIsValid)
         {
             using var text = TempList.Create("The mapset folder cannot be found.\n".AsSpan());
-            text.AddRange(proj.MapsetPath.AsSpan());
-            text.AddRange("\n\nPlease select a new one.".AsSpan());
+            text.Append(proj.MapsetPath);
+            text.Append("\n\nPlease select a new one.");
 
             Manager.ShowMessage(text.AsReadOnlySpan(), changeMapsetFolder, true);
         }
@@ -564,11 +563,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             {
                 if (Manager.GetContext<Editor>().InputManager.Alt)
                 {
-                    temp.AddRangeFormatted(storyboardPosition.X, "f0");
-                    temp.AddRange(", ".AsSpan());
-                    temp.AddRangeFormatted(storyboardPosition.Y, "f0");
+                    temp.AppendFormatted(storyboardPosition.X, "f0");
+                    temp.Append(", ");
+                    temp.AppendFormatted(storyboardPosition.Y, "f0");
                 }
-                else temp.AddRangeFormatted(TimeSpan.FromSeconds(time), @"mm\:ss\.fff");
+                else temp.AppendFormatted(TimeSpan.FromSeconds(time), @"mm\:ss\.fff");
 
                 timeB.Text = temp.AsReadOnlySpan();
             }
@@ -602,25 +601,26 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         if (activeSprites >= 1500 || prolongedSprites != 0)
         {
-            warnings.AddRange("\ue002 ".AsSpan());
-            warnings.AddRangeFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
-            warnings.AddRange(" Sprite".AsSpan());
+            warnings.Append("\ue002 ");
+            warnings.AppendFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
+            warnings.Append(" Sprite");
             AppendPlural(ref warnings, activeSprites);
 
             if (prolongedSprites != 0)
             {
-                warnings.AddRange(" (".AsSpan());
-                warnings.AddRangeFormatted(prolongedSprites, "n0", CultureInfo.InvariantCulture);
-                warnings.AddRange(" Prolonged Sprite".AsSpan());
+                warnings.Append(" (");
+                warnings.AppendFormatted(prolongedSprites, "n0", CultureInfo.InvariantCulture);
+                warnings.Append(" Prolonged Sprite");
                 AppendPlural(ref warnings, prolongedSprites);
 
                 if (proj.DisplayDebugWarning)
                 {
-                    warnings.AddRange(" (".AsSpan());
-                    using (var array = stats.ProlongedSprites.AsValueEnumerable()
-                        .SelectMany(x
-                            => ", ".AsSpan().AsValueEnumerable().Concat(x.TexturePath.AsSpan().AsValueEnumerable()))
-                        .ToArrayPool()) warnings.AddRange(array.Span[2..]);
+                    warnings.Append(" (");
+                    for (var i = 0; i < stats.ProlongedSprites.Count; ++i)
+                    {
+                        if (i != 0) warnings.Append(", ");
+                        warnings.Append(stats.ProlongedSprites[i].TexturePath);
+                    }
 
                     warnings.Add(')');
                 }
@@ -632,8 +632,8 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         }
         else if (proj.DisplayDebugWarning && activeSprites > 0)
         {
-            warnings.AddRangeFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
-            warnings.AddRange(" Sprite".AsSpan());
+            warnings.AppendFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
+            warnings.Append(" Sprite");
             AppendPlural(ref warnings, activeSprites);
             warnings.Add('\n');
         }
@@ -652,17 +652,17 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         {
             if (showWarning) warnings.AddRange("\ue002 ".AsSpan());
 
-            warnings.AddRangeFormatted(commands, "n0", CultureInfo.InvariantCulture);
+            warnings.AppendFormatted(commands, "n0", CultureInfo.InvariantCulture);
             warnings.AddRange(" Command".AsSpan());
             AppendPlural(ref warnings, commands);
 
             if (unusedCommands > 0)
             {
                 warnings.AddRange(" (".AsSpan());
-                warnings.AddRangeFormatted(unusedCommands, "n0", CultureInfo.InvariantCulture);
+                warnings.AppendFormatted(unusedCommands, "n0", CultureInfo.InvariantCulture);
 
                 warnings.AddRange(" (".AsSpan());
-                warnings.AddRangeFormatted(unusedRatio, "0%", CultureInfo.InvariantCulture);
+                warnings.AppendFormatted(unusedRatio, "0%", CultureInfo.InvariantCulture);
 
                 warnings.AddRange(") Command".AsSpan());
                 AppendPlural(ref warnings, unusedCommands);
@@ -678,9 +678,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (proj.DisplayDebugWarning)
             {
                 warnings.AddRange(" (".AsSpan());
-                using (var array = stats.OverlappedSprites.AsValueEnumerable()
-                    .SelectMany(x => ", ".AsSpan().AsValueEnumerable().Concat(x.TexturePath.AsSpan().AsValueEnumerable()))
-                    .ToArrayPool()) warnings.AddRange(array.Span[2..]);
+                for (var i = 0; i < stats.OverlappedSprites.Count; ++i)
+                {
+                    if (i != 0) warnings.AddRange(", ".AsSpan());
+                    warnings.AddRange(stats.OverlappedSprites[i].TexturePath.AsSpan());
+                }
 
                 warnings.Add(')');
             }
@@ -694,9 +696,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (proj.DisplayDebugWarning)
             {
                 warnings.AddRange(" (".AsSpan());
-                using (var array = stats.IncompatibleSprites.AsValueEnumerable()
-                    .SelectMany(x => ", ".AsSpan().AsValueEnumerable().Concat(x.TexturePath.AsSpan().AsValueEnumerable()))
-                    .ToArrayPool()) warnings.AddRange(array.Span[2..]);
+                for (var i = 0; i < stats.IncompatibleSprites.Count; ++i)
+                {
+                    if (i != 0) warnings.AddRange(", ".AsSpan());
+                    warnings.AddRange(stats.IncompatibleSprites[i].TexturePath.AsSpan());
+                }
 
                 warnings.Add(')');
             }
@@ -707,16 +711,16 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         var screenFill = stats.ScreenFill;
         if (screenFill >= 5 || proj.DisplayDebugWarning && screenFill > 0)
         {
-            warnings.AddRange(screenFill >= 5 ? "\ue002 ".AsSpan() : default);
-            warnings.AddRangeFormatted(screenFill, "f2", CultureInfo.InvariantCulture);
+            if (screenFill >= 5) warnings.AddRange("\ue002 ".AsSpan());
+            warnings.AppendFormatted(screenFill, "f2", CultureInfo.InvariantCulture);
             warnings.AddRange("x Screen Fill\n".AsSpan());
         }
 
         var batches = proj.FrameStats.Batches;
         if (batches >= 500 || proj.DisplayDebugWarning && batches > 0)
         {
-            warnings.AddRange(batches >= 500 ? "\ue002 ".AsSpan() : default);
-            warnings.AddRangeFormatted(batches, provider: CultureInfo.InvariantCulture);
+            if (batches >= 500) warnings.AddRange("\ue002 ".AsSpan());
+            warnings.AppendFormatted(batches, provider: CultureInfo.InvariantCulture);
             warnings.AddRange(" Batch".AsSpan());
             AppendPlural(ref warnings, batches, "es");
             warnings.Add('\n');
@@ -731,7 +735,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (showMemoryWarning) warnings.AddRange("\ue002 ".AsSpan());
             if (frameGpuMemory > 0)
             {
-                warnings.AddRangeFormatted(frameGpuMemory, "0.0", CultureInfo.InvariantCulture);
+                warnings.AppendFormatted(frameGpuMemory, "0.0", CultureInfo.InvariantCulture);
                 warnings.AddRange("MB Frame Texture Memory".AsSpan());
 
                 if (totalGpuMemory > 0) warnings.AddRange(" (".AsSpan());
@@ -739,7 +743,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
             if (totalGpuMemory > 0)
             {
-                warnings.AddRangeFormatted(totalGpuMemory, "0.0", CultureInfo.InvariantCulture);
+                warnings.AppendFormatted(totalGpuMemory, "0.0", CultureInfo.InvariantCulture);
                 warnings.AddRange("MB Total Texture Memory".AsSpan());
 
                 if (frameGpuMemory > 0) warnings.Add(')');

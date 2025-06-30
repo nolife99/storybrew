@@ -69,7 +69,9 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
             displayableObjects.Reverse();
         }
 
-        foreach (var sbo in storyboardObjects) (sbo as IPostProcessable)?.PostProcess();
+        foreach (var sbo in storyboardObjects)
+            if (sbo is IPostProcessable p)
+                p.PostProcess();
 
         startTime = float.MaxValue;
         endTime = float.MinValue;

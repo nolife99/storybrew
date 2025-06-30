@@ -149,7 +149,9 @@ public class ScriptedEffect : Effect
 
         Program.Schedule(() =>
         {
-            UpdateLayers(new(context.EditorLayers));
+            using (PooledList<EditorStoryboardLayer> layers = new(context.EditorLayers))
+                UpdateLayers(layers.AsReadOnlySpan());
+
             context.Dispose();
         });
     }
@@ -180,19 +182,18 @@ public class ScriptedEffect : Effect
 
         this.status = status;
 
-        PooledList<char> statusMessageBuilder = new();
-        if (!message.IsEmpty) statusMessageBuilder.AddRange(message);
+        statusMessage ??= new();
+        statusMessage.Clear();
+
+        if (!message.IsEmpty) statusMessage.AddRange(message);
 
         if (!log.IsWhiteSpace())
         {
-            if (statusMessageBuilder.Count > 0) statusMessageBuilder.AddRange("\n\n".AsSpan());
+            if (statusMessage.Count > 0) statusMessage.AddRange("\n\n".AsSpan());
 
-            statusMessageBuilder.AddRange("Log:\n\n".AsSpan());
-            statusMessageBuilder.AddRange(log);
+            statusMessage.AddRange("Log:\n\n".AsSpan());
+            statusMessage.AddRange(log);
         }
-
-        statusMessage?.Dispose();
-        statusMessage = statusMessageBuilder;
 
         Program.Schedule(RaiseChanged).Wait();
         statusStopwatch = Stopwatch.GetTimestamp();

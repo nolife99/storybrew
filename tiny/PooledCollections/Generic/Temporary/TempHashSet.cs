@@ -59,6 +59,9 @@ public ref partial struct TempHashSet<T>
 
     [NonSerialized] internal ArrayPool<Entry<T>> _entryPool;
 
+    [NonSerialized]
+    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+
     #region Constructors
 
     internal TempHashSet(IEqualityComparer<T>? comparer, ArrayPool<int> bucketPool, ArrayPool<Entry<T>> entryPool)
@@ -88,11 +91,7 @@ public ref partial struct TempHashSet<T>
         // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
         // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
         // hash buckets become unbalanced.
-        if (typeof(T) == typeof(string))
-        {
-            var stringComparer = NonRandomizedStringEqualityComparer.Default;
-            if (stringComparer is not null) _comparer = (IEqualityComparer<T>?)stringComparer;
-        }
+        if (typeof(T) == typeof(string)) _comparer = (IEqualityComparer<T>)_stringComparer;
     }
 
     internal TempHashSet(IEnumerable<T> collection,
@@ -703,7 +702,6 @@ public ref partial struct TempHashSet<T>
 
         if (!typeof(T).IsValueType && forceNewHashCodes)
         {
-            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<T>.Default;
 
             for (var i = 0; i < count; i++)
@@ -936,7 +934,7 @@ public ref partial struct TempHashSet<T>
         // Value types never rehash
         if (!typeof(T).IsValueType &&
             collisionCount > HashHelpers.HashCollisionThreshold &&
-            comparer is NonRandomizedStringEqualityComparer)
+            ReferenceEquals(comparer, _stringComparer))
         {
             // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
             // i.e. EqualityComparer<string>.Default.

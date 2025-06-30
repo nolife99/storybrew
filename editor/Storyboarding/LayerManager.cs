@@ -7,6 +7,7 @@ using BrewLib.Util;
 using SixLabors.ImageSharp;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Temporary;
 
 public sealed class LayerManager : IDisposable
 {
@@ -27,29 +28,35 @@ public sealed class LayerManager : IDisposable
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Replace(PooledList<EditorStoryboardLayer> oldLayers, PooledList<EditorStoryboardLayer> newLayers)
+    public void Replace(ReadOnlySpan<EditorStoryboardLayer> oldLayers, ReadOnlySpan<EditorStoryboardLayer> newLayers)
     {
-        oldLayers = [..oldLayers];
+        using var tempOldLayers = TempList.Create(oldLayers);
         foreach (var newLayer in newLayers)
         {
-            var oldLayer = oldLayers.Find(l => l.Name == newLayer.Name);
-            if (oldLayer is not null)
+            var found = false;
+            foreach (var layer in tempOldLayers)
             {
-                var index = Layers.IndexOf(oldLayer);
+                if (layer.Name != newLayer.Name) continue;
+
+                var index = Layers.IndexOf(layer);
                 if (index != -1)
                 {
                     newLayer.CopySettings(Layers[index]);
                     Layers[index] = newLayer;
                 }
 
-                oldLayers.Remove(oldLayer);
+                tempOldLayers.Remove(layer);
+                found = true;
+
+                break;
             }
-            else Layers.Insert(findLayerIndex(newLayer), newLayer);
+
+            if (!found) Layers.Insert(findLayerIndex(newLayer), newLayer);
 
             newLayer.OnChanged += layer_OnChanged;
         }
 
-        foreach (var oldLayer in oldLayers)
+        foreach (var oldLayer in tempOldLayers)
         {
             oldLayer.OnChanged -= layer_OnChanged;
             Layers.Remove(oldLayer);
@@ -58,7 +65,7 @@ public sealed class LayerManager : IDisposable
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public void Replace(EditorStoryboardLayer oldLayer, PooledList<EditorStoryboardLayer> newLayers)
+    public void Replace(EditorStoryboardLayer oldLayer, ReadOnlySpan<EditorStoryboardLayer> newLayers)
     {
         var index = Layers.IndexOf(oldLayer);
         if (index != -1)
@@ -76,7 +83,7 @@ public sealed class LayerManager : IDisposable
         }
         else
             throw new InvalidOperationException(
-                $"Cannot replace layer '{oldLayer.Name}' with multiple layers, old layer not found");
+                $"Cannot replace layer '{oldLayer.Identifier}' with multiple layers, old layer not found");
 
         OnLayersChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -91,9 +98,15 @@ public sealed class LayerManager : IDisposable
 
     public void MoveToOsbLayer(EditorStoryboardLayer layer, OsbLayer osbLayer)
     {
-        var firstLayer = Layers.Find(l => l.OsbLayer == osbLayer);
-        if (firstLayer is not null) MoveToLayer(layer, firstLayer);
-        else layer.OsbLayer = osbLayer;
+        foreach (var firstLayer in Layers)
+        {
+            if (firstLayer.OsbLayer != osbLayer) continue;
+
+            MoveToLayer(layer, firstLayer);
+            return;
+        }
+
+        layer.OsbLayer = osbLayer;
     }
 
     public void MoveToLayer(EditorStoryboardLayer layerToMove, EditorStoryboardLayer toLayer)
@@ -108,7 +121,7 @@ public sealed class LayerManager : IDisposable
             sortLayer(layerToMove);
         }
         else
-            throw new InvalidOperationException($"Cannot move layer '{layerToMove.Name}' to the position of '{
+            throw new InvalidOperationException($"Cannot move layer '{layerToMove.Identifier}' to the position of '{
                 layerToMove.Name}'");
     }
 
@@ -131,7 +144,7 @@ public sealed class LayerManager : IDisposable
     void sortLayer(EditorStoryboardLayer layer)
     {
         var initialIndex = Layers.IndexOf(layer);
-        if (initialIndex < 0) throw new InvalidOperationException($"Layer '{layer.Name}' cannot be found");
+        if (initialIndex < 0) throw new InvalidOperationException($"Layer '{layer.Identifier}' cannot be found");
 
         var newIndex = initialIndex;
         while (newIndex > 0 && layer.CompareTo(Layers[newIndex - 1]) < 0) --newIndex;

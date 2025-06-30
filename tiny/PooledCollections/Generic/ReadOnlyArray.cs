@@ -98,7 +98,7 @@ public readonly struct ReadOnlyArray<T> : IReadOnlyList<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator ReadOnlyArray<T>(T[] array) => new(array);
 
-    public struct Enumerator : IEnumerator<T>, IEnumerator
+    public struct Enumerator : IEnumerator<T>
     {
         readonly T[] _array;
         readonly int _length;

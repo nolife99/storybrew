@@ -7,10 +7,10 @@ using System.Runtime.CompilerServices;
 public static class TempArray
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArray<T> Create<T>(int length) => new(length, ArrayPool<T>.Shared);
+    public static TempArray<T> Create<T>(int length) => new(int.Max(length, 0), ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArray<T> Create<T>(int length, ArrayPool<T> pool) => new(length, pool);
+    public static TempArray<T> Create<T>(int length, ArrayPool<T> pool) => new(int.Max(length, 0), pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArray<T> Empty<T>() => Create<T>(0);
@@ -26,11 +26,11 @@ public static class TempArray
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length)
-        => new(array, length, ArrayPool<T>.Shared);
+        => new(array, int.Clamp(length, 0, array.Length), ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArray<T> Create<T>(scoped ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
-        => new(array, length, pool);
+        => new(array, int.Clamp(length, 0, array.Length), pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempArray<T> Create<T>(T[] array) => Create(array, array.Length, ArrayPool<T>.Shared);
@@ -39,8 +39,10 @@ public static class TempArray
     public static TempArray<T> Create<T>(T[] array, ArrayPool<T> pool) => Create(array, array.Length, pool);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArray<T> Create<T>(T[] array, int length) => Create(array, length, ArrayPool<T>.Shared);
+    public static TempArray<T> Create<T>(T[] array, int length)
+        => Create(array, int.Clamp(length, 0, array.Length), ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempArray<T> Create<T>(T[] array, int length, ArrayPool<T> pool) => Create(array, length, pool);
+    public static TempArray<T> Create<T>(T[] array, int length, ArrayPool<T> pool)
+        => Create(array, int.Clamp(length, 0, array.Length), pool);
 }

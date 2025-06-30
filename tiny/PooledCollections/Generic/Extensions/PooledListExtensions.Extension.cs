@@ -89,11 +89,9 @@ public static class PooledListExtensions
 
         public int FindIndex<TPredicate>(int startIndex, int count, TPredicate match) where TPredicate : IPredicate<T>
         {
-            if ((uint)startIndex > (uint)_list._size)
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-            if (count < 0 || startIndex > _list._size - count)
-                ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
+            ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)startIndex, (uint)_list._size);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(startIndex, _list._size - count);
 
             ArgumentNullException.ThrowIfNull(match);
 
@@ -131,16 +129,13 @@ public static class PooledListExtensions
             ArgumentNullException.ThrowIfNull(match);
 
             if (_list._size == 0)
-            {
+
                 // Special case for 0 length List
-                if (startIndex != -1) ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
-            }
+                ArgumentOutOfRangeException.ThrowIfNotEqual(startIndex, -1);
             else
-            {
+
                 // Make sure we're not out of range
-                if ((uint)startIndex >= (uint)_list._size)
-                    ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
-            }
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)startIndex, (uint)_list._size);
 
             // 2nd have of this also catches when startIndex == MAXINT, so MAXINT - 0 + 1 == -1, which is < 0.
             if (count < 0 || startIndex - count + 1 < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();

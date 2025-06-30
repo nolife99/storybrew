@@ -27,7 +27,7 @@ using System.Runtime.Serialization;
 // A simple Queue of generic objects.  Internally it is implemented as a
 // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
 [DebuggerTypeProxy(typeof(ValueQueueDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial struct ValueQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, IDeserializationCallback
+public partial struct ValueQueue<T> : IReadOnlyCollection<T>, IDeserializationCallback
 {
     internal T[] _array;
     internal int _head; // The index from which to dequeue if the queue isn't empty.
@@ -342,7 +342,7 @@ public partial struct ValueQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     // Implements an enumerator for a Queue.  The enumerator uses the
     // internal version number of the list to ensure that no modifications are
     // made to the list while an enumeration is in progress.
-    public struct Enumerator : IEnumerator<T>, IEnumerator
+    public struct Enumerator : IEnumerator<T>
     {
         readonly ValueQueue<T> _q;
         readonly int _version;

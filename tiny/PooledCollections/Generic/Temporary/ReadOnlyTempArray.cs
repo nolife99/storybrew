@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 public readonly ref struct ReadOnlyTempArray<T>
 {
@@ -44,7 +45,7 @@ public readonly ref struct ReadOnlyTempArray<T>
     {
         ArgumentNullException.ThrowIfNull(dest);
 
-        CopyTo(index, dest.AsSpan(), destIndex, count);
+        CopyTo(index, new Span<T>(dest), destIndex, count);
     }
 
     /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
@@ -59,7 +60,7 @@ public readonly ref struct ReadOnlyTempArray<T>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void CopyTo(int index, in TempArray<T> dest, int destIndex, int count)
-        => CopyTo(index, dest._array.AsSpan(), destIndex, count);
+        => CopyTo(index, MemoryMarshal.CreateSpan(ref dest._ref, count), destIndex, count);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -75,10 +76,9 @@ public readonly ref struct ReadOnlyTempArray<T>
 
     public void CopyTo(int index, in Span<T> dest, int destIndex, int count)
     {
-        if (destIndex < 0 || destIndex > dest.Length)
-            ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
-
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(destIndex);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(destIndex, dest.Length);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (dest.Length - destIndex < count || _array.Length - index < count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);

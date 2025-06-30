@@ -17,7 +17,7 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
 {
     readonly ValueDictionary<TKey, TValue> _dictionary;
 
-    public ValueDictionaryKeyCollection(ValueDictionary<TKey, TValue> dictionary) => _dictionary = dictionary;
+    internal ValueDictionaryKeyCollection(ValueDictionary<TKey, TValue> dictionary) => _dictionary = dictionary;
 
     public Enumerator GetEnumerator() => new(_dictionary);
 
@@ -59,7 +59,7 @@ public readonly struct ValueDictionaryKeyCollection<TKey, TValue> : ICollection<
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
 
-    public struct Enumerator : IEnumerator<TKey>, IEnumerator
+    public struct Enumerator : IEnumerator<TKey>
     {
         readonly ValueDictionary<TKey, TValue> _dictionary;
         int _index;

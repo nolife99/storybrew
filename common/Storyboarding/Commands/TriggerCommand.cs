@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using BrewLib.Util;
 using CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -23,8 +24,8 @@ public sealed class TriggerCommand : CommandGroup
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
     {
         var list = TempList.Create<char>();
-        list.AddRange(['T', ',']);
-        list.AddRange(TriggerName.AsSpan());
+        list.Append("T,");
+        list.Append(TriggerName);
 
         using (var startTimeString =
             (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(StartTime))

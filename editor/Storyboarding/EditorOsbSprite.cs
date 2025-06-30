@@ -61,7 +61,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
 
         var forceVisible = !sprite.ShouldBeActive(time) && Native.Window.IsKeyDown(Keys.LeftAlt);
 
-        var fade = (float)sprite.OpacityAt(time);
+        var fade = (float)sprite.FadeTimeline.ValueAtTime(time);
         if (forceVisible) fade = float.Max(fade, .5f);
         else if (fade < .00001f) return;
 
@@ -73,22 +73,24 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         }
         else if (scale.X == 0 || scale.Y == 0) return;
 
-        Span<char> span = stackalloc char[project.MapsetPath.Length + texturePath.Length + 1];
-        Path.TryJoin(project.MapsetPath, texturePath, span, out _);
-        PathHelper.WithStandardSeparatorsUnsafe(span);
+        Span<char> span = stackalloc char[260];
+        Path.TryJoin(project.MapsetPath, texturePath, span, out var written);
+
+        var splitSpan = span[..written];
+        PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
 
         Texture2dRegion texture;
         try
         {
-            texture = project.TextureContainer.Get(span);
+            texture = project.TextureContainer.Get(splitSpan);
             if (texture is null)
             {
-                Span<char> span2 = stackalloc char[project.ProjectAssetFolderPath.Length + texturePath.Length + 1];
-                Path.TryJoin(project.ProjectAssetFolderPath, texturePath, span2, out _);
-                PathHelper.WithStandardSeparatorsUnsafe(span2);
+                Path.TryJoin(project.ProjectAssetFolderPath, texturePath, span, out written);
 
-                span = span2;
-                texture = project.TextureContainer.Get(span);
+                splitSpan = span[..written];
+                PathHelper.WithStandardSeparatorsUnsafe(splitSpan);
+
+                texture = project.TextureContainer.Get(splitSpan);
             }
         }
         catch (IOException)
@@ -99,12 +101,12 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
 
         if (texture is null) return;
 
-        var additive = (bool)sprite.AdditiveAt(time);
+        var additive = (bool)sprite.AdditiveTimeline.ValueAtTime(time);
         var position = (Vector2)sprite.PositionAt(time);
-        var rotation = (float)sprite.RotationAt(time);
+        var rotation = (float)sprite.RotateTimeline.ValueAtTime(time);
 
-        if (sprite.FlipHAt(time)) scale.X = -scale.X;
-        if (sprite.FlipVAt(time)) scale.Y = -scale.Y;
+        if (sprite.FlipHTimeline.ValueAtTime(time)) scale.X = -scale.X;
+        if (sprite.FlipVTimeline.ValueAtTime(time)) scale.Y = -scale.Y;
 
         var origin = GetOriginVector(sprite.Origin, texture.Size);
         if (!transform.IsIdentity)
@@ -134,13 +136,12 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
                         OsuHitObject.WidescreenStoryboardArea;
             }
 
-            var hashCode = string.GetHashCode(span);
-            if (hashCode != frameStats.LastTexture)
+            if (texturePath != frameStats.LastTexture)
             {
-                frameStats.LastTexture = hashCode;
+                frameStats.LastTexture = texturePath;
                 ++frameStats.Batches;
 
-                if (frameStats.LoadedPaths.Add(hashCode)) frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
+                if (frameStats.LoadedPaths.Add(texturePath)) frameStats.GpuPixelsFrame += texture.Size.X * texture.Size.Y;
             }
             else if (frameStats.LastBlendingMode != additive)
             {

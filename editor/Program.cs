@@ -16,6 +16,7 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
+using Utils = OpenTK.Core.Utils;
 using Vector = System.Numerics.Vector;
 
 public static class Program
@@ -187,7 +188,7 @@ public static class Program
             var active = (float)GLFW.GetTime() - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
+            if (sleepTime > 0) Utils.AccurateSleep(sleepTime, 8);
 
             var frameTime = cur - prev;
             prev = cur;
@@ -210,22 +211,22 @@ public static class Program
 
         using var result = TempList.Create<char>(128);
 
-        result.AddRangeFormatted(1 / av, "f0", CultureInfo.CurrentCulture);
+        result.AppendFormatted(1 / av, "f0", CultureInfo.CurrentCulture);
         result.Add('/');
-        result.AddRangeFormatted(1 / avActive, "f0", CultureInfo.CurrentCulture);
+        result.AppendFormatted(1 / avActive, "f0", CultureInfo.CurrentCulture);
 
         result.AddRange("fps (act:".AsSpan());
-        result.AddRangeFormatted(avActive * 1000, "f2", CultureInfo.CurrentCulture);
+        result.AppendFormatted(avActive * 1000, "f2", CultureInfo.CurrentCulture);
 
         result.AddRange(" avg:".AsSpan());
-        result.AddRangeFormatted(av * 1000, "f2", CultureInfo.CurrentCulture);
+        result.AppendFormatted(av * 1000, "f2", CultureInfo.CurrentCulture);
 
         result.AddRange(" hi:".AsSpan());
-        result.AddRangeFormatted(longest * 1000, "f2", CultureInfo.CurrentCulture);
+        result.AppendFormatted(longest * 1000, "f2", CultureInfo.CurrentCulture);
 
         result.AddRange(")\n".AsSpan());
 
-        result.AddRangeFormatted(draws, "", CultureInfo.CurrentCulture);
+        result.AppendFormatted(draws, "", CultureInfo.CurrentCulture);
         result.AddRange(" draws".AsSpan());
         result.Add('\n');
 

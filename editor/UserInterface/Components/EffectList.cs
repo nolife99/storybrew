@@ -250,7 +250,7 @@ public partial class EffectList : Widget
                 {
                     using var sb = TempList.Create<char>();
                     sb.AddRange("Status: ".AsSpan());
-                    sb.AddRangeEnum(effect.Status);
+                    sb.AppendEnum(effect.Status);
 
                     if (!effect.StatusMessage.IsWhiteSpace())
                     {
@@ -308,7 +308,7 @@ public partial class EffectList : Widget
         button.Disabled = effect.StatusMessage.IsWhiteSpace();
 
         using var tooltip = TempList.Create<char>();
-        tooltip.AddRangeEnum(effect.Status);
+        tooltip.AppendEnum(effect.Status);
 
         button.Tooltip = tooltip.AsReadOnlySpan();
 

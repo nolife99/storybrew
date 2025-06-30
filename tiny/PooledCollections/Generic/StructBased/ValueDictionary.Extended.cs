@@ -26,12 +26,13 @@ partial struct ValueDictionary<TKey, TValue> : IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest) => CopyTo(dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex)
+        => CopyTo(dest, destIndex, Count);
 
-    public void CopyTo(in Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
+    public readonly void CopyTo(scoped Span<KeyValuePair<TKey, TValue>> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();

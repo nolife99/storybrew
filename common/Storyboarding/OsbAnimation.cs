@@ -1,9 +1,9 @@
 ﻿namespace StorybrewCommon.Storyboarding;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using BrewLib.Memory;
 using BrewLib.Util;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -11,6 +11,8 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 /// <summary> A type of <see cref="OsbSprite"/> that loops through given frames, or animates. </summary>
 public class OsbAnimation : OsbSprite
 {
+    readonly Dictionary<int, string> frameMap = new();
+
     ///<summary> Amount of frames in the animation. </summary>
     public int FrameCount;
 
@@ -29,9 +31,11 @@ public class OsbAnimation : OsbSprite
     /// <summary> Gets the path of the frame at <paramref name="time"/>. </summary>
     public override string GetTexturePathAt(float time)
     {
+        var frame = GetFrameAt(time);
+        if (frameMap.TryGetValue(frame, out var result)) return result;
+
         var span = TexturePath.AsSpan();
         var dotIndex = span.LastIndexOf('.');
-        var frame = GetFrameAt(time);
         var digits = StringHelper.GetDigitCount(frame);
 
         Span<char> chars = stackalloc char[span.Length + digits];
@@ -47,7 +51,7 @@ public class OsbAnimation : OsbSprite
             span[dotIndex..].CopyTo(chars[(dotIndex + digits)..]);
         }
 
-        return StringPool.GetOrAdd(chars);
+        return frameMap[frame] = chars.ToString();
     }
 
     int GetFrameAt(float time)
@@ -73,13 +77,13 @@ public class OsbAnimation : OsbSprite
         using var builder = TempList.Create<char>();
 
         builder.Add(',');
-        builder.AddRangeFormatted(FrameCount, provider: exportSettings.NumberFormat);
+        builder.AppendFormatted(FrameCount, provider: exportSettings.NumberFormat);
 
         builder.Add(',');
-        builder.AddRangeFormatted(FrameDelay, provider: exportSettings.NumberFormat);
+        builder.AppendFormatted(FrameDelay, provider: exportSettings.NumberFormat);
 
         builder.Add(',');
-        builder.AddRangeFormatted(LoopType, provider: exportSettings.NumberFormat);
+        builder.AppendFormatted(LoopType, provider: exportSettings.NumberFormat);
 
         writer.WriteLine(builder.AsReadOnlySpan());
     }

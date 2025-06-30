@@ -196,13 +196,13 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
                     break;
 
                 case ResultState.CommandInPresent:
-                    if (channelState is ResultState.CommandInPresent && channelResult.IsBefore(currentResult))
+                    if (channelState is ResultState.CommandInPresent && channelResult.IsBefore(in currentResult))
                         currentResult = channelResult;
 
                     break;
 
                 case ResultState.CommandInFuture:
-                    if (channelState is not ResultState.CommandInFuture || channelResult.IsBefore(currentResult))
+                    if (channelState is not ResultState.CommandInFuture || channelResult.IsBefore(in currentResult))
                     {
                         currentResult = channelResult;
                         currentState = channelState;
@@ -212,7 +212,7 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
 
                 case ResultState.CommandInPast:
                     if (channelState is ResultState.CommandInPresent ||
-                        channelState is ResultState.CommandInPast && currentResult.IsBefore(channelResult))
+                        channelState is ResultState.CommandInPast && currentResult.IsBefore(in channelResult))
                     {
                         currentResult = channelResult;
                         currentState = channelState;

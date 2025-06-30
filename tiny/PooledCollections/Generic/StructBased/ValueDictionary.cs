@@ -45,6 +45,9 @@ public partial struct ValueDictionary<TKey, TValue>
 
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
+    [NonSerialized]
+    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+
     [NonSerialized] internal ArrayPool<Entry<TKey, TValue>> _entryPool;
 
     internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
@@ -92,11 +95,7 @@ public partial struct ValueDictionary<TKey, TValue>
         // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
         // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
         // hash buckets become unbalanced.
-        if (typeof(TKey) == typeof(string))
-        {
-            var stringComparer = NonRandomizedStringEqualityComparer.Default;
-            if (stringComparer is not null) _comparer = (IEqualityComparer<TKey>?)stringComparer;
-        }
+        if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>)_stringComparer;
     }
 
     internal ValueDictionary(IDictionary<TKey, TValue> dictionary,
@@ -191,21 +190,21 @@ public partial struct ValueDictionary<TKey, TValue>
         HashHelpers.SerializationInfoTable.Add(this, info);
     }
 
-    public IEqualityComparer<TKey> Comparer => _comparer ?? EqualityComparer<TKey>.Default;
+    public readonly IEqualityComparer<TKey> Comparer => _comparer ?? EqualityComparer<TKey>.Default;
 
-    public int Count
+    public readonly int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _count - _freeCount;
     }
 
-    public bool IsValid
+    public readonly bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _entries is not null && _buckets is not null;
     }
 
-    public ValueDictionaryKeyCollection<TKey, TValue> Keys => new(this);
+    public readonly ValueDictionaryKeyCollection<TKey, TValue> Keys => new(this);
 
     ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
 
@@ -279,9 +278,9 @@ public partial struct ValueDictionary<TKey, TValue>
         }
     }
 
-    public bool ContainsKey(TKey key) => !Unsafe.IsNullRef(ref FindValue(key));
+    public readonly bool ContainsKey(TKey key) => !Unsafe.IsNullRef(ref FindValue(key));
 
-    public bool ContainsValue(TValue value)
+    public readonly bool ContainsValue(TValue value)
     {
         var entries = _entries;
         if (value is null)
@@ -312,12 +311,12 @@ public partial struct ValueDictionary<TKey, TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest, 0, Count);
+    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest) => CopyTo(dest, 0, Count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest, destIndex, Count);
+    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex) => CopyTo(dest, destIndex, Count);
 
-    public void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
+    public readonly void CopyTo(KeyValuePair<TKey, TValue>[] dest, int destIndex, int count)
     {
         ArgumentNullException.ThrowIfNull(dest);
 
@@ -325,13 +324,13 @@ public partial struct ValueDictionary<TKey, TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Enumerator GetEnumerator() => new(this, Enumerator.KeyValuePair);
+    public Enumerator GetEnumerator() => new(in this, Enumerator.KeyValuePair);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
         => new Enumerator(this, Enumerator.KeyValuePair);
 
-    public void GetObjectData(SerializationInfo info, StreamingContext context)
+    public readonly void GetObjectData(SerializationInfo info, StreamingContext context)
     {
         ArgumentNullException.ThrowIfNull(info);
 
@@ -634,7 +633,7 @@ public partial struct ValueDictionary<TKey, TValue>
         // Value types never rehash
         if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
-                comparer is NonRandomizedStringEqualityComparer)
+                ReferenceEquals(comparer, _stringComparer))
 
             // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
             // i.e. EqualityComparer<string>.Default.
@@ -799,7 +798,7 @@ public partial struct ValueDictionary<TKey, TValue>
             // Value types never rehash
             if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
-                comparer is NonRandomizedStringEqualityComparer)
+                ReferenceEquals(comparer, _stringComparer))
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
@@ -875,7 +874,6 @@ public partial struct ValueDictionary<TKey, TValue>
 
         if (!typeof(TKey).IsValueType && forceNewHashCodes)
         {
-            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<TKey>.Default;
 
             for (var i = 0; i < count; i++)

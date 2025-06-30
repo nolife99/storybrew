@@ -14,26 +14,29 @@ public static class TempList
     public static TempList<T> Create<T>(int capacity) => new(capacity, ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(ArrayPool<T> pool) => new(0, pool);
+    public static TempList<T> Create<T>(ArrayPool<T> pool) => new(0, pool ?? ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(int capacity, ArrayPool<T> pool) => new(capacity, pool);
+    public static TempList<T> Create<T>(int capacity, ArrayPool<T> pool) => new(capacity, pool ?? ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempList<T> Create<T>(IEnumerable<T> collection) => new(collection, ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(IEnumerable<T> collection, ArrayPool<T> pool) => new(collection, pool);
+    public static TempList<T> Create<T>(IEnumerable<T> collection, ArrayPool<T> pool)
+        => new(collection, pool ?? ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(T[] items) => new(items.AsSpan(), ArrayPool<T>.Shared);
+    public static TempList<T> Create<T>(T[] items) => new(new ReadOnlySpan<T>(items), ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(T[] items, ArrayPool<T> pool) => new(items.AsSpan(), pool);
+    public static TempList<T> Create<T>(T[] items, ArrayPool<T> pool)
+        => new(new ReadOnlySpan<T>(items), pool ?? ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span) => new(span, ArrayPool<T>.Shared);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span, ArrayPool<T> pool) => new(span, pool);
+    public static TempList<T> Create<T>(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
+        => new(span, pool ?? ArrayPool<T>.Shared);
 }

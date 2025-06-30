@@ -6,16 +6,19 @@ using System.Text;
 using System.Text.RegularExpressions;
 using OpenTK.Graphics.OpenGL;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 
 public sealed partial class Shader : IDisposable
 {
     readonly StringBuilder log = new();
 
-    PooledDictionary<int, Property<ActiveAttribType>> attributes;
+    PooledDictionary<string, Property<ActiveAttribType>> attributes;
 
     bool isInitialized, started;
-    PooledDictionary<int, Property<ActiveUniformType>> uniforms;
+    PooledDictionary<string, Property<ActiveUniformType>> uniforms;
     int vertexShaderId = -1, fragmentShaderId = -1, SortId = -1;
 
     public Shader(string vertexShaderCode, string fragmentShaderCode)
@@ -57,14 +60,16 @@ public sealed partial class Shader : IDisposable
     }
 
     public int GetAttributeLocation(scoped ReadOnlySpan<char> name)
-        => attributes.TryGetValue(string.GetHashCode(name), out var property) ? property.Location : -1;
+        => attributes.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(name, out var property) ? property.Location : -1;
 
     public int GetUniformLocation(scoped ReadOnlySpan<char> name, int index = -1, string field = null)
     {
         Span<char> buffer = stackalloc char[256];
         buffer = buffer[..(GetUniformIdentifier(buffer, name, index, field) - 1)];
 
-        var location = uniforms.TryGetValue(string.GetHashCode(buffer), out var property) ? property.Location : -1;
+        var location = uniforms.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(buffer, out var property) ?
+            property.Location :
+            -1;
 
         if (location < 0) throw new ArgumentException($"{name} isn't a valid uniform identifier ({buffer})");
 
@@ -149,7 +154,7 @@ public sealed partial class Shader : IDisposable
         for (var i = 0; i < attributeCount; ++i)
         {
             var name = GL.GetActiveAttrib(SortId, i, out var size, out var type);
-            attributes[name.GetHashCode()] = new(size, type, GL.GetAttribLocation(SortId, name));
+            attributes[name] = new(size, type, GL.GetAttribLocation(SortId, name));
         }
     }
 
@@ -161,7 +166,7 @@ public sealed partial class Shader : IDisposable
         for (var i = 0; i < uniformCount; ++i)
         {
             var name = GL.GetActiveUniform(SortId, i, out var size, out var type);
-            uniforms[name.GetHashCode()] = new(size, type, GL.GetUniformLocation(SortId, name));
+            uniforms[name] = new(size, type, GL.GetUniformLocation(SortId, name));
         }
     }
 
@@ -183,34 +188,43 @@ public sealed partial class Shader : IDisposable
     static string addLineExtracts(string log, string code)
     {
         var errorRegex = ErrRegex();
-        var splitCode = code.Replace("\r\n", "\n").Split('\n');
+        using var splitCode = code.Replace("\r\n", "\n").AsSpan().Split(['\n']);
 
-        var sb = StringHelper.StringBuilderPool.Retrieve();
-        foreach (var line in log.Split('\n'))
+        using var sb = TempList.Create<char>();
+
+        var logSpan = log.AsSpan();
+        foreach (var line in logSpan.Split('\n'))
         {
-            sb.AppendLine(line);
+            var splitLine = logSpan[line];
+            sb.AddRange(splitLine);
 
-            var match = errorRegex.Match(line);
-            if (!match.Success) continue;
+            if (!errorRegex.IsMatch(splitLine)) continue;
 
+            var match = errorRegex.Match(splitLine.ToString());
             var character = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
             var lineNumber = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) - 1;
 
             if (lineNumber > 0)
             {
                 sb.Append("  ");
-                sb.AppendLine(splitCode[lineNumber - 1]);
+                sb.AddRange(splitCode[lineNumber - 1].AsReadOnlySpan());
+                sb.Add('\n');
+
+                splitCode[lineNumber - 1].Dispose();
             }
 
             sb.Append("> ");
-            sb.AppendLine(splitCode[lineNumber]);
-            sb.Append(' ', character + 2);
-            sb.AppendLine("^");
+            sb.AddRange(splitCode[lineNumber].AsReadOnlySpan());
+            sb.Add('\n');
+
+            splitCode[lineNumber].Dispose();
+
+            for (var i = 0; i < character + 2; ++i) sb.Add(' ');
+            sb.Add('^');
+            sb.Add('\n');
         }
 
-        var sbCode = sb.ToString();
-        StringHelper.StringBuilderPool.Release(sb);
-        return sbCode;
+        return sb.AsReadOnlySpan().ToString();
     }
 
     public override string ToString() => $"program:{SortId} vs:{vertexShaderId} fs:{fragmentShaderId}";

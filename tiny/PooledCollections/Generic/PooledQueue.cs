@@ -27,7 +27,7 @@ using System.Runtime.Serialization;
 // A simple Queue of generic objects.  Internally it is implemented as a
 // circular buffer, so Enqueue can be O(n).  Dequeue is O(1).
 [DebuggerTypeProxy(typeof(PooledQueueDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, IDeserializationCallback
+public partial class PooledQueue<T> : IReadOnlyCollection<T>, IDeserializationCallback
 {
     static readonly T[] s_emptyArray = [];
 
@@ -342,7 +342,7 @@ public partial class PooledQueue<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
     // Implements an enumerator for a Queue.  The enumerator uses the
     // internal version number of the list to ensure that no modifications are
     // made to the list while an enumeration is in progress.
-    public struct Enumerator : IEnumerator<T>, IEnumerator
+    public struct Enumerator : IEnumerator<T>
     {
         readonly PooledQueue<T> _q;
         readonly int _version;

@@ -43,6 +43,9 @@ public ref partial struct TempDictionary<TKey, TValue>
 
     [NonSerialized] internal ArrayPool<Entry<TKey, TValue>> _entryPool;
 
+    [NonSerialized]
+    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
+
     internal static readonly bool s_isReferenceKey = RuntimeHelpers.IsReferenceOrContainsReferences<TKey>();
     internal static readonly bool s_isReferenceValue = RuntimeHelpers.IsReferenceOrContainsReferences<TValue>();
     internal static readonly bool s_clearEntries = s_isReferenceKey || s_isReferenceValue;
@@ -88,11 +91,7 @@ public ref partial struct TempDictionary<TKey, TValue>
         // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
         // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
         // hash buckets become unbalanced.
-        if (typeof(TKey) == typeof(string))
-        {
-            var stringComparer = NonRandomizedStringEqualityComparer.Default;
-            if (stringComparer is not null) _comparer = (IEqualityComparer<TKey>?)stringComparer;
-        }
+        if (typeof(TKey) == typeof(string)) _comparer = (IEqualityComparer<TKey>?)_stringComparer;
     }
 
     internal TempDictionary(IDictionary<TKey, TValue> dictionary,
@@ -565,7 +564,7 @@ public ref partial struct TempDictionary<TKey, TValue>
         // Value types never rehash
         if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
-                comparer is NonRandomizedStringEqualityComparer)
+                ReferenceEquals(comparer, _stringComparer))
 
             // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
             // i.e. EqualityComparer<string>.Default.
@@ -728,7 +727,7 @@ public ref partial struct TempDictionary<TKey, TValue>
             // Value types never rehash
             if (!typeof(TKey).IsValueType &&
                 collisionCount > HashHelpers.HashCollisionThreshold &&
-                comparer is NonRandomizedStringEqualityComparer)
+                ReferenceEquals(comparer, _stringComparer))
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
@@ -767,7 +766,6 @@ public ref partial struct TempDictionary<TKey, TValue>
 
         if (!typeof(TKey).IsValueType && forceNewHashCodes)
         {
-            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<TKey>.Default;
 
             for (var i = 0; i < count; i++)

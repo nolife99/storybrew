@@ -6,17 +6,19 @@ using SixLabors.ImageSharp.Drawing.Processing;
 using SixLabors.ImageSharp.Processing;
 
 /// <summary> A font background effect. </summary>
-/// <remarks> Creates a new <see cref="FontBackground"/> descriptor with information about a font background. </remarks>
-/// <param name="color"> The coloring tint of the glow. </param>
-public record FontBackground(Color color = default) : FontEffect
+public record FontBackground : FontEffect
 {
-    readonly SolidBrush brush = new(color);
+    readonly SolidBrush brush;
+
+    /// <summary> Creates a new <see cref="FontBackground"/> descriptor with information about a font background. </summary>
+    /// <param name="color"> The coloring tint of the glow. </param>
+    public FontBackground(Color color = default) => brush = new(color);
 
     /// <inheritdoc/>
     public bool Overlay => false;
 
     /// <inheritdoc/>
-    public SizeF Measure => default;
+    public SizeF Measure => SizeF.Empty;
 
     /// <inheritdoc/>
     public void Draw(IImageProcessingContext bitmap, IPathCollection path, float x, float y) => bitmap.Clear(brush);

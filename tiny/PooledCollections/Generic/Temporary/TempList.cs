@@ -12,6 +12,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Internals;
 
 public ref struct TempList<T>
 {
@@ -102,22 +103,19 @@ public ref struct TempList<T>
                 return;
             }
 
-            if (_size > 0)
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(newItems)),
-                    ref Unsafe.As<T, byte>(ref _ref),
-                    (uint)(_size * Unsafe.SizeOf<T>()));
+            if (_size > 0) Array.Copy(_items, 0, newItems, 0, _size);
 
             ReturnArray(newItems);
         }
     }
 
-    public int Count
+    public readonly int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _size;
     }
 
-    public bool IsValid
+    public readonly bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _items is not null;
@@ -159,7 +157,7 @@ public ref struct TempList<T>
 
     public void AddRange(IEnumerable<T> collection) => InsertRange(_size, collection);
 
-    public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
+    public readonly int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -169,9 +167,9 @@ public ref struct TempList<T>
         return Array.BinarySearch(_items, index, count, item, comparer);
     }
 
-    public int BinarySearch(T item) => BinarySearch(0, Count, item, null);
+    public readonly int BinarySearch(T item) => BinarySearch(0, Count, item, null);
 
-    public int BinarySearch(T item, IComparer<T>? comparer) => BinarySearch(0, Count, item, comparer);
+    public readonly int BinarySearch(T item, IComparer<T>? comparer) => BinarySearch(0, Count, item, comparer);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
@@ -186,13 +184,13 @@ public ref struct TempList<T>
         else _size = 0;
     }
 
-    public bool Contains(T item) => _size != 0 && IndexOf(item) >= 0;
+    public readonly bool Contains(T item) => _size != 0 && IndexOf(item) >= 0;
 
-    public TempList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter, ArrayPool<TOut> pool = null)
+    public readonly TempList<TOut> ConvertAll<TOut>(Converter<T, TOut> converter, ArrayPool<TOut> pool = null)
     {
         ArgumentNullException.ThrowIfNull(converter);
 
-        var list = new TempList<TOut>(_size, pool ?? ArrayPool<TOut>.Shared);
+        TempList<TOut> list = new(_size, pool ?? ArrayPool<TOut>.Shared);
         var src = _items;
         var dst = list._items;
 
@@ -202,15 +200,15 @@ public ref struct TempList<T>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _size);
+    public readonly void CopyTo(T[] dest) => CopyTo(0, dest, 0, _size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
+    public readonly void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public readonly void CopyTo(T[] dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, T[] dest, int destIndex, int count)
+    public readonly void CopyTo(int index, T[] dest, int destIndex, int count)
     {
         ArgumentNullException.ThrowIfNull(dest);
 
@@ -239,9 +237,9 @@ public ref struct TempList<T>
         Capacity = newcapacity;
     }
 
-    public bool Exists(Predicate<T> match) => FindIndex(match) != -1;
+    public readonly bool Exists(Predicate<T> match) => FindIndex(match) != -1;
 
-    public T? Find(Predicate<T> match)
+    public readonly T Find(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -254,7 +252,7 @@ public ref struct TempList<T>
         return default;
     }
 
-    public TempList<T> FindAll(Predicate<T> match)
+    public readonly TempList<T> FindAll(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -268,11 +266,11 @@ public ref struct TempList<T>
         return list;
     }
 
-    public int FindIndex(Predicate<T> match) => FindIndex(0, _size, match);
+    public readonly int FindIndex(Predicate<T> match) => FindIndex(0, _size, match);
 
-    public int FindIndex(int startIndex, Predicate<T> match) => FindIndex(startIndex, _size - startIndex, match);
+    public readonly int FindIndex(int startIndex, Predicate<T> match) => FindIndex(startIndex, _size - startIndex, match);
 
-    public int FindIndex(int startIndex, int count, Predicate<T> match)
+    public readonly int FindIndex(int startIndex, int count, Predicate<T> match)
     {
         if ((uint)startIndex > (uint)_size)
             ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -291,7 +289,7 @@ public ref struct TempList<T>
         return -1;
     }
 
-    public T? FindLast(Predicate<T> match)
+    public readonly T FindLast(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -304,11 +302,12 @@ public ref struct TempList<T>
         return default;
     }
 
-    public int FindLastIndex(Predicate<T> match) => FindLastIndex(_size - 1, _size, match);
+    public readonly int FindLastIndex(Predicate<T> match) => FindLastIndex(_size - 1, _size, match);
 
-    public int FindLastIndex(int startIndex, Predicate<T> match) => FindLastIndex(startIndex, startIndex + 1, match);
+    public readonly int FindLastIndex(int startIndex, Predicate<T> match)
+        => FindLastIndex(startIndex, startIndex + 1, match);
 
-    public int FindLastIndex(int startIndex, int count, Predicate<T> match)
+    public readonly int FindLastIndex(int startIndex, int count, Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -337,7 +336,7 @@ public ref struct TempList<T>
         return -1;
     }
 
-    public void ForEach(Action<T> action)
+    public readonly void ForEach(Action<T> action)
     {
         ArgumentNullException.ThrowIfNull(action);
 
@@ -360,7 +359,7 @@ public ref struct TempList<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator() => new(ref this);
 
-    public TempList<T> GetRange(int index, int count, ArrayPool<T> pool = null)
+    public readonly TempList<T> GetRange(int index, int count, ArrayPool<T> pool = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
         ArgumentOutOfRangeException.ThrowIfNegative(count);
@@ -381,7 +380,7 @@ public ref struct TempList<T>
     // This method uses the Array.IndexOf method to perform the
     // search.
     //
-    public int IndexOf(T item) => Array.IndexOf(_items, item, 0, _size);
+    public readonly int IndexOf(T item) => Array.IndexOf(_items, item, 0, _size);
 
     // Returns the index of the first occurrence of a given value in a range of
     // this list. The list is searched forwards, starting at index
@@ -392,7 +391,7 @@ public ref struct TempList<T>
     // This method uses the Array.IndexOf method to perform the
     // search.
     //
-    public int IndexOf(T item, int index)
+    public readonly int IndexOf(T item, int index)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
         return Array.IndexOf(_items, item, index, _size - index);
@@ -407,7 +406,7 @@ public ref struct TempList<T>
     // This method uses the Array.IndexOf method to perform the
     // search.
     //
-    public int IndexOf(T item, int index, int count)
+    public readonly int IndexOf(T item, int index, int count)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
 
@@ -494,7 +493,7 @@ public ref struct TempList<T>
     // This method uses the Array.LastIndexOf method to perform the
     // search.
     //
-    public int LastIndexOf(T item)
+    public readonly int LastIndexOf(T item)
     {
         if (_size == 0)
 
@@ -513,7 +512,7 @@ public ref struct TempList<T>
     // This method uses the Array.LastIndexOf method to perform the
     // search.
     //
-    public int LastIndexOf(T item, int index)
+    public readonly int LastIndexOf(T item, int index)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, _size);
         return LastIndexOf(item, index, index + 1);
@@ -528,7 +527,7 @@ public ref struct TempList<T>
     // This method uses the Array.LastIndexOf method to perform the
     // search.
     //
-    public int LastIndexOf(T item, int index, int count)
+    public readonly int LastIndexOf(T item, int index, int count)
     {
         if (Count != 0 && index < 0) ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
 
@@ -670,13 +669,13 @@ public ref struct TempList<T>
 
         if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-        if (count > 1) _items.AsSpan(index, count).Sort(comparer);
+        if (count > 1) this.AsSpan().Sort(comparer);
         _version++;
     }
 
     public void Sort(Comparison<T> comparison)
     {
-        if (_size > 1) _items.AsSpan(0, _size).Sort(new Comparer(comparison));
+        if (_size > 1) this.AsSpan().Sort(comparison);
         _version++;
     }
 
@@ -698,7 +697,7 @@ public ref struct TempList<T>
         if (_size < _items.Length * 0.9) Capacity = _size;
     }
 
-    public bool TrueForAll(Predicate<T> match)
+    public readonly bool TrueForAll(Predicate<T> match)
     {
         ArgumentNullException.ThrowIfNull(match);
 
@@ -740,11 +739,6 @@ public ref struct TempList<T>
         }
     }
 
-    readonly struct Comparer(Comparison<T> comparison) : IComparer<T>
-    {
-        public int Compare(T x, T y) => comparison(x, y);
-    }
-
     internal TempList(scoped ReadOnlySpan<T> span, ArrayPool<T> pool)
     {
         _pool = pool ?? ArrayPool<T>.Shared;
@@ -759,12 +753,9 @@ public ref struct TempList<T>
         else
         {
             _items = _pool.Rent(count);
+            span.CopyTo(_items);
+
             _ref = ref MemoryMarshal.GetArrayDataReference(_items);
-
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<T, byte>(ref _ref),
-                ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                (uint)(span.Length * Unsafe.SizeOf<T>()));
-
             _size = count;
         }
 
@@ -818,7 +809,7 @@ public ref struct TempList<T>
     {
         ArgumentNullException.ThrowIfNull(array);
 
-        AddRange(array.AsSpan());
+        AddRange(new ReadOnlySpan<T>(array));
     }
 
     /// <summary>
@@ -830,17 +821,17 @@ public ref struct TempList<T>
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped Span<T> dest) => CopyTo(0, dest, 0, _size);
+    public readonly void CopyTo(scoped Span<T> dest) => CopyTo(0, dest, 0, _size);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
+    public readonly void CopyTo(scoped Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _size);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(scoped Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public readonly void CopyTo(scoped Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, scoped Span<T> dest, int destIndex, int count)
+    public readonly void CopyTo(int index, scoped Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();

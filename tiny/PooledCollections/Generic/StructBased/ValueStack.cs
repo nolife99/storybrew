@@ -28,7 +28,7 @@ using System.Runtime.Serialization;
 // so Push can be O(n).  Pop is O(1).
 
 [DebuggerTypeProxy(typeof(ValueStackDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, IDeserializationCallback
+public partial struct ValueStack<T> : IReadOnlyCollection<T>, IDeserializationCallback
 {
     internal T[] _array; // Storage for stack elements. Do not rename (binary serialization)
     internal int _size; // Number of items in the stack. Do not rename (binary serialization)
@@ -326,7 +326,7 @@ public partial struct ValueStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
         // before serialization.
         _pool = ArrayPool<T>.Shared;
 
-    public struct Enumerator : IEnumerator<T>, IEnumerator
+    public struct Enumerator : IEnumerator<T>
     {
         readonly ValueStack<T> _stack;
         readonly int _version;

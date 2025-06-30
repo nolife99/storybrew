@@ -1,17 +1,15 @@
 namespace StorybrewCommon.Storyboarding;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
-using System.Runtime.CompilerServices;
 using BrewLib.Util;
 using Commands;
 using CommandValues;
 using Display;
 using Mapset;
 using StorybrewCommon.Util;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using ZLinq;
@@ -22,7 +20,7 @@ public class OsbSprite : StoryboardObject
     ///<summary> Default position of sprites, unless modified elsewhere. </summary>
     public static readonly CommandPosition DefaultPosition = new(320, 240);
 
-    readonly PooledList<ICommand> commands = [];
+    readonly List<ICommand> commands = [];
 
     float commandsStartTime = float.MaxValue, commandsEndTime = float.MinValue, displayEndTime = float.MaxValue,
         displayStartTime = float.MinValue;
@@ -53,7 +51,15 @@ public class OsbSprite : StoryboardObject
     public bool InGroup => currentCommandGroup is not null;
 
     /// <returns> The path to the image of the <see cref="OsbSprite"/>. </returns>
-    public string TexturePath { get => texturePath; set => texturePath = PathHelper.WithStandardSeparators(value); }
+    public string TexturePath
+    {
+        get => texturePath;
+        set
+        {
+            PathHelper.WithStandardSeparatorsUnsafe(value.AsSpan());
+            texturePath = value;
+        }
+    }
 
     /// <returns> The initial position of the <see cref="OsbSprite"/>. </returns>
     public CommandPosition InitialPosition
@@ -126,8 +132,7 @@ public class OsbSprite : StoryboardObject
     void refreshStartEndTimes()
     {
         clearStartEndTimes();
-        foreach (var command in commands.AsReadOnlySpan()
-            .AsValueEnumerable()
+        foreach (var command in commands.AsValueEnumerable()
             .Concat(displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
         {
             commandsStartTime = float.Min(commandsStartTime, command.StartTime);
@@ -245,7 +250,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startPosition"> Start <see cref="CommandPosition"/> value of the command. </param>
     /// <param name="endPosition"> End <see cref="CommandPosition"/> value of the command. </param>
     public void Move(float startTime, float endTime, CommandPosition startPosition, CommandPosition endPosition)
-        => Move(default, startTime, endTime, startPosition, endPosition);
+        => Move(OsbEasing.None, startTime, endTime, startPosition, endPosition);
 
     /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
@@ -255,7 +260,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="endX"> End-X value of the command. </param>
     /// <param name="endY"> End-Y value of the command. </param>
     public void Move(float startTime, float endTime, CommandPosition startPosition, double endX, double endY)
-        => Move(default, startTime, endTime, startPosition, endX, endY);
+        => Move(OsbEasing.None, startTime, endTime, startPosition, endX, endY);
 
     /// <summary>Change the position of an <see cref="OsbSprite"/> over time. Commands similar to MoveX are available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
@@ -266,20 +271,20 @@ public class OsbSprite : StoryboardObject
     /// <param name="endX"> End-X value of the command. </param>
     /// <param name="endY"> End-Y value of the command. </param>
     public void Move(float startTime, float endTime, double startX, double startY, double endX, double endY)
-        => Move(default, startTime, endTime, startX, startY, endX, endY);
+        => Move(OsbEasing.None, startTime, endTime, startX, startY, endX, endY);
 
     /// <summary> Sets the position of an <see cref="OsbSprite"/>. Commands similar to MoveX are available for MoveY. </summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="time"> Time of the command. </param>
     /// <param name="position"> <see cref="CommandPosition"/> value of the command. </param>
-    public void Move(float time, CommandPosition position) => Move(default, time, time, position, position);
+    public void Move(float time, CommandPosition position) => Move(OsbEasing.None, time, time, position, position);
 
     /// <summary> Sets the position of an <see cref="OsbSprite"/>. Commands similar to MoveX are available for MoveY. </summary>
     /// <remarks> Cannot be used with <see cref="MoveXCommand"/> or <see cref="MoveYCommand"/>. </remarks>
     /// <param name="time"> Time of the command. </param>
     /// <param name="x"> X value of the command. </param>
     /// <param name="y"> Y value of the command. </param>
-    public void Move(float time, double x, double y) => Move(default, time, time, x, y, x, y);
+    public void Move(float time, double x, double y) => Move(OsbEasing.None, time, time, x, y, x, y);
 
     //==========MX==========//
     /// <summary> Change the x-position of a <see cref="OsbSprite"/> over time. Commands are also available for MoveY.</summary>
@@ -299,13 +304,13 @@ public class OsbSprite : StoryboardObject
     /// <param name="startX"> Start-X value of the command. </param>
     /// <param name="endX"> End-X value of the command. </param>
     public void MoveX(float startTime, float endTime, double startX, double endX)
-        => MoveX(default, startTime, endTime, startX, endX);
+        => MoveX(OsbEasing.None, startTime, endTime, startX, endX);
 
     /// <summary> Sets the X-Position of an <see cref="OsbSprite"/>. Commands are also available for MoveY.</summary>
     /// <remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
     /// <param name="time"> Time of the command. </param>
     /// <param name="x"> X value of the command. </param>
-    public void MoveX(float time, double x) => MoveX(default, time, time, x, x);
+    public void MoveX(float time, double x) => MoveX(OsbEasing.None, time, time, x, x);
 
     //==========MY==========//
     /// <summary> Change the Y-Position of an <see cref="OsbSprite"/> over time. Commands are also available for MoveX. </summary>
@@ -325,13 +330,13 @@ public class OsbSprite : StoryboardObject
     /// <param name="startY"> Start-Y value of the command. </param>
     /// <param name="endY"> End-Y value of the command. </param>
     public void MoveY(float startTime, float endTime, double startY, double endY)
-        => MoveY(default, startTime, endTime, startY, endY);
+        => MoveY(OsbEasing.None, startTime, endTime, startY, endY);
 
     /// <summary> Sets the Y-Position of an <see cref="OsbSprite"/>. Commands are also available for MoveX. </summary>
     /// <remarks> Cannot be used with <see cref="MoveCommand"/>. </remarks>
     /// <param name="time"> Time of the command. </param>
     /// <param name="y"> Y value of the command. </param>
-    public void MoveY(float time, float y) => MoveY(default, time, time, y, y);
+    public void MoveY(float time, float y) => MoveY(OsbEasing.None, time, time, y, y);
 
     //==========S==========//
     /// <summary> Change the size of a sprite over time. </summary>
@@ -351,13 +356,13 @@ public class OsbSprite : StoryboardObject
     /// <param name="startScale"> Start scale of the command. </param>
     /// <param name="endScale"> End scale of the command. </param>
     public void Scale(float startTime, float endTime, double startScale, double endScale)
-        => Scale(default, startTime, endTime, startScale, endScale);
+        => Scale(OsbEasing.None, startTime, endTime, startScale, endScale);
 
     /// <summary> Sets the size of a sprite. </summary>
     /// <remarks> Cannot be used with <see cref="VScaleCommand"/>. </remarks>
     /// <param name="time"> Time of the command. </param>
     /// <param name="scale"> Scale of the command. </param>
-    public void Scale(float time, double scale) => Scale(default, time, time, scale, scale);
+    public void Scale(float time, double scale) => Scale(OsbEasing.None, time, time, scale, scale);
 
     //==========V==========//
     /// <summary> Change the vector scale of a sprite over time. </summary>
@@ -405,7 +410,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startScale"> Start <see cref="CommandScale"/> value of the command. </param>
     /// <param name="endScale"> End <see cref="CommandScale"/> value of the command. </param>
     public void ScaleVec(float startTime, float endTime, CommandScale startScale, CommandScale endScale)
-        => ScaleVec(default, startTime, endTime, startScale, endScale);
+        => ScaleVec(OsbEasing.None, startTime, endTime, startScale, endScale);
 
     /// <summary> Change the vector scale of a sprite over time. </summary>
     /// <remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
@@ -415,7 +420,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="endX"> End X-Scale value of the command. </param>
     /// <param name="endY"> End Y-Scale value of the command. </param>
     public void ScaleVec(float startTime, float endTime, CommandScale startScale, double endX, double endY)
-        => ScaleVec(default, startTime, endTime, startScale, endX, endY);
+        => ScaleVec(OsbEasing.None, startTime, endTime, startScale, endX, endY);
 
     /// <summary> Change the vector scale of a sprite over time. </summary>
     /// <remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
@@ -426,20 +431,20 @@ public class OsbSprite : StoryboardObject
     /// <param name="endX"> End X-Scale value of the command. </param>
     /// <param name="endY"> End Y-Scale value of the command. </param>
     public void ScaleVec(float startTime, float endTime, double startX, double startY, double endX, double endY)
-        => ScaleVec(default, startTime, endTime, startX, startY, endX, endY);
+        => ScaleVec(OsbEasing.None, startTime, endTime, startX, startY, endX, endY);
 
     /// <summary> Sets the vector scale of a sprite. </summary>
     /// <remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
     /// <param name="time"> Time of the command. </param>
     /// <param name="scale"> <see cref="CommandScale"/> value of the command. </param>
-    public void ScaleVec(float time, CommandScale scale) => ScaleVec(default, time, time, scale, scale);
+    public void ScaleVec(float time, CommandScale scale) => ScaleVec(OsbEasing.None, time, time, scale, scale);
 
     /// <summary> Sets the vector scale of a sprite. </summary>
     /// <remarks> Cannot be used with <see cref="ScaleCommand"/>. </remarks>
     /// <param name="time"> Time of the command. </param>
     /// <param name="x"> Scale-X value of the command. </param>
     /// <param name="y"> Scale-Y value of the command. </param>
-    public void ScaleVec(float time, double x, double y) => ScaleVec(default, time, time, x, y, x, y);
+    public void ScaleVec(float time, double x, double y) => ScaleVec(OsbEasing.None, time, time, x, y, x, y);
 
     //==========R==========//
     /// <summary> Change the rotation of an <see cref="OsbSprite"/> over time. Angles are in radians. </summary>
@@ -457,12 +462,12 @@ public class OsbSprite : StoryboardObject
     /// <param name="startRotation"> Start radians of the command. </param>
     /// <param name="endRotation"> End radians of the command. </param>
     public void Rotate(float startTime, float endTime, double startRotation, double endRotation)
-        => Rotate(default, startTime, endTime, startRotation, endRotation);
+        => Rotate(OsbEasing.None, startTime, endTime, startRotation, endRotation);
 
     /// <summary> Sets the rotation of an <see cref="OsbSprite"/>. Angles are in radians. </summary>
     /// <param name="time"> Time of the command. </param>
     /// <param name="rotation"> Radians of the command. </param>
-    public void Rotate(float time, double rotation) => Rotate(default, time, time, rotation, rotation);
+    public void Rotate(float time, double rotation) => Rotate(OsbEasing.None, time, time, rotation, rotation);
 
     //==========F==========//
     /// <summary> Change the opacity of an <see cref="OsbSprite"/> over time. </summary>
@@ -480,12 +485,12 @@ public class OsbSprite : StoryboardObject
     /// <param name="startFade"> Start fade value of the command. </param>
     /// <param name="endFade"> End fade value of the command. </param>
     public void Fade(float startTime, float endTime, double startFade, double endFade)
-        => Fade(default, startTime, endTime, startFade, endFade);
+        => Fade(OsbEasing.None, startTime, endTime, startFade, endFade);
 
     /// <summary> Sets the opacity of an <see cref="OsbSprite"/>. </summary>
     /// <param name="time"> Time of the command. </param>
     /// <param name="fade"> Fade value of the command. </param>
-    public void Fade(float time, double fade) => Fade(default, time, time, fade, fade);
+    public void Fade(float time, double fade) => Fade(OsbEasing.None, time, time, fade, fade);
 
     //==========C==========//
     /// <summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
@@ -539,7 +544,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startColor"> Start <see cref="CommandColor"/> value of the command. </param>
     /// <param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
     public void Color(float startTime, float endTime, CommandColor startColor, CommandColor endColor)
-        => Color(default, startTime, endTime, startColor, endColor);
+        => Color(OsbEasing.None, startTime, endTime, startColor, endColor);
 
     /// <summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -549,7 +554,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="endG"> End green value of the command. </param>
     /// <param name="endB"> End blue value of the command. </param>
     public void Color(float startTime, float endTime, CommandColor startColor, double endR, double endG, double endB)
-        => Color(default, startTime, endTime, startColor, endR, endG, endB);
+        => Color(OsbEasing.None, startTime, endTime, startColor, endR, endG, endB);
 
     /// <summary> Change the RGB color of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -567,19 +572,19 @@ public class OsbSprite : StoryboardObject
         double startB,
         double endR,
         double endG,
-        double endB) => Color(default, startTime, endTime, startR, startG, startB, endR, endG, endB);
+        double endB) => Color(OsbEasing.None, startTime, endTime, startR, startG, startB, endR, endG, endB);
 
     /// <summary> Sets the RGB color of an <see cref="OsbSprite"/>. </summary>
     /// <param name="time"> Time of the command. </param>
     /// <param name="color"> The <see cref="CommandColor"/> value of the command. </param>
-    public void Color(float time, CommandColor color) => Color(default, time, time, color, color);
+    public void Color(float time, CommandColor color) => Color(OsbEasing.None, time, time, color, color);
 
     /// <summary> Sets the RGB color of an <see cref="OsbSprite"/>. </summary>
     /// <param name="time"> Time of the command. </param>
     /// <param name="r"> Red value of the command. </param>
     /// <param name="g"> Green value of the command. </param>
     /// <param name="b"> Blue value of the command. </param>
-    public void Color(float time, double r, double g, double b) => Color(default, time, time, r, g, b, r, g, b);
+    public void Color(float time, double r, double g, double b) => Color(OsbEasing.None, time, time, r, g, b, r, g, b);
 
     /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="easing"> <see cref="OsbEasing"/> to be applied to the command. </param>
@@ -645,7 +650,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="startB"> Start brightness level (from 0 to 1) of the command. </param>
     /// <param name="endColor"> End <see cref="CommandColor"/> value of the command. </param>
     public void ColorHsb(float startTime, float endTime, double startH, double startS, double startB, CommandColor endColor)
-        => ColorHsb(default, startTime, endTime, startH, startS, startB, endColor);
+        => ColorHsb(OsbEasing.None, startTime, endTime, startH, startS, startB, endColor);
 
     /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -655,7 +660,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="endS"> End saturation value (from 0 to 1) of the command. </param>
     /// <param name="endB"> End brightness level (from 0 to 1) of the command. </param>
     public void ColorHsb(float startTime, float endTime, CommandColor startColor, double endH, double endS, double endB)
-        => ColorHsb(default, startTime, endTime, startColor, endH, endS, endB);
+        => ColorHsb(OsbEasing.None, startTime, endTime, startColor, endH, endS, endB);
 
     /// <summary> Change the hue, saturation, and brightness of an <see cref="OsbSprite"/> over time. </summary>
     /// <param name="startTime"> Start time of the command. </param>
@@ -673,14 +678,14 @@ public class OsbSprite : StoryboardObject
         double startB,
         double endH,
         double endS,
-        double endB) => ColorHsb(default, startTime, endTime, startH, startS, startB, endH, endS, endB);
+        double endB) => ColorHsb(OsbEasing.None, startTime, endTime, startH, startS, startB, endH, endS, endB);
 
     /// <summary> Sets the hue, saturation, and brightness of an <see cref="OsbSprite"/>. </summary>
     /// <param name="time"> Time of the command. </param>
     /// <param name="h"> Hue value (in degrees) of the command. </param>
     /// <param name="s"> Saturation value (from 0 to 1) of the command. </param>
     /// <param name="b"> Brightness level (from 0 to 1) of the command. </param>
-    public void ColorHsb(float time, double h, double s, double b) => ColorHsb(default, time, time, h, s, b, h, s, b);
+    public void ColorHsb(float time, double h, double s, double b) => ColorHsb(OsbEasing.None, time, time, h, s, b, h, s, b);
 
     //==========P==========//
     /// <summary> Apply a parameter to an <see cref="OsbSprite"/> for a given duration. </summary>
@@ -855,8 +860,7 @@ public class OsbSprite : StoryboardObject
         if (CommandCost == 0) return;
 
         WriteHeader(writer, exportSettings, layer, transform);
-        foreach (var command in commands.AsReadOnlySpan()
-            .AsValueEnumerable()
+        foreach (var command in commands.AsValueEnumerable()
             .Concat(displayValueBuilders.AsValueEnumerable().SelectMany(c => c.Item2.Commands.AsValueEnumerable())))
             command.WriteOsb(writer, exportSettings, transform, 1);
     }
@@ -881,14 +885,14 @@ public class OsbSprite : StoryboardObject
                 (CommandPosition)transform.ApplyToPositionXY(InitialPosition) : transform.ApplyToPosition(InitialPosition);
 
         using var builder = TempList.Create<char>();
-        builder.AddRangeEnum(layer);
+        builder.AppendEnum(layer);
         builder.Add(',');
 
-        builder.AddRangeEnum(Origin);
+        builder.AppendEnum(Origin);
         builder.Add(',');
 
         builder.Add('"');
-        builder.AddRange(TexturePath.AsSpan().Trim());
+        builder.AddRange(texturePath.AsSpan().Trim());
         builder.Add('"');
 
         builder.Add(',');
@@ -925,7 +929,7 @@ public class OsbSprite : StoryboardObject
     /// <param name="size"> The size of the sprite. </param>
     public static Vector2 GetOriginVector(OsbOrigin origin, Vector2 size) => origin switch
     {
-        OsbOrigin.TopLeft => default,
+        OsbOrigin.TopLeft => Vector2.Zero,
         OsbOrigin.TopCentre => new(size.X * .5f, 0),
         OsbOrigin.TopRight => size with { Y = 0 },
         OsbOrigin.CentreLeft => new(0, size.Y * .5f),
@@ -933,7 +937,7 @@ public class OsbSprite : StoryboardObject
         OsbOrigin.CentreRight => size with { Y = size.Y * .5f },
         OsbOrigin.BottomLeft => size with { X = 0 },
         OsbOrigin.BottomCentre => size with { X = size.X * .5f },
-        OsbOrigin.BottomRight => new(size.X, size.Y),
+        OsbOrigin.BottomRight => size,
         _ => throw new NotSupportedException(origin.ToString())
     };
 
@@ -953,46 +957,38 @@ public class OsbSprite : StoryboardObject
 
     /// <summary> Retrieves the <see cref="CommandPosition"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandPosition PositionAt(float time) => MoveTimeline.HasCommands ?
         MoveTimeline.ValueAtTime(time) :
         new(MoveXTimeline.ValueAtTime(time), MoveYTimeline.ValueAtTime(time));
 
     /// <summary> Retrieves the <see cref="CommandScale"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandScale ScaleAt(float time) => ScaleVecTimeline.HasCommands ?
         ScaleVecTimeline.ValueAtTime(time) :
         new(ScaleTimeline.ValueAtTime(time));
 
     /// <summary> Retrieves the rotation, in radians, of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandDecimal RotationAt(float time) => RotateTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the opacity level of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandDecimal OpacityAt(float time) => FadeTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the <see cref="CommandColor"/> of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandColor ColorAt(float time) => ColorTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the additive value of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter AdditiveAt(float time) => AdditiveTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the horizontal flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter FlipHAt(float time) => FlipHTimeline.ValueAtTime(time);
 
     /// <summary> Retrieves the vertical flip of a sprite at a given time. </summary>
     /// <param name="time"> Time to retrieve the information at. </param>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public CommandParameter FlipVAt(float time) => FlipVTimeline.ValueAtTime(time);
 
     void initializeDisplayValueBuilders() => displayValueBuilders =
@@ -1010,7 +1006,7 @@ public class OsbSprite : StoryboardObject
         (c => c is ParameterCommand { StartValue.Type: ParameterType.FlipVertical }, FlipVTimeline)
     ];
 
-    bool addDisplayCommand(ICommand command)
+    void addDisplayCommand(ICommand command)
     {
         foreach (var (predicate, timeline) in displayValueBuilders)
             if (predicate(command))
@@ -1018,10 +1014,8 @@ public class OsbSprite : StoryboardObject
                 var result = timeline.Add(command);
                 if (result) ++CommandCost;
 
-                return result;
+                return;
             }
-
-        return false;
     }
 
     void startDisplayLoop(LoopCommand loopCommand)
@@ -1042,7 +1036,7 @@ public class OsbSprite : StoryboardObject
     #endregion
 }
 #pragma warning disable CS1591
-public enum OsbLayer : byte
+public enum OsbLayer
 {
     Background, Fail, Pass, Foreground, Overlay
 }

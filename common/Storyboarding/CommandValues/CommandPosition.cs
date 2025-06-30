@@ -2,12 +2,11 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using BrewLib.Util;
-using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for movement commands.</summary>
 [StructLayout(LayoutKind.Sequential)] public readonly record struct CommandPosition
@@ -17,28 +16,24 @@ using Vector2 = System.Numerics.Vector2;
         IDivisionOperators<CommandPosition, CommandPosition, CommandPosition>,
         IUnaryNegationOperators<CommandPosition, CommandPosition>
 {
-    readonly Vector2d internalVec;
+    internal readonly Vector128<double> internalVec;
 
     ///<summary> Gets the X value of this instance. </summary>
-    public CommandDecimal X => internalVec.X;
+    public CommandDecimal X => internalVec.GetLower().ToScalar();
 
     ///<summary> Gets the Y value of this instance. </summary>
-    public CommandDecimal Y => internalVec.Y;
-
-    ///<summary> Gets the square of the vector length (magnitude). </summary>
-    public float LengthSquared => (float)internalVec.LengthSquared;
-
-    ///<summary> Gets the vector length (magnitude). </summary>
-    public float Length => (float)internalVec.Length;
+    public CommandDecimal Y => internalVec.GetUpper().ToScalar();
 
     /// <summary> Constructs a <see cref="CommandPosition"/> from an X and Y value. </summary>
-    public CommandPosition(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
+    public CommandPosition(CommandDecimal x, CommandDecimal y) => internalVec = Vector128.Create(x, y);
 
     /// <summary> Constructs a <see cref="CommandPosition"/> from a value. </summary>
     public CommandPosition(CommandDecimal value) : this(value, value) { }
 
     /// <summary> Constructs a <see cref="CommandPosition"/> from a <see cref="Vector2"/>. </summary>
-    public CommandPosition(Vector2 vector) => internalVec = new(vector.X, vector.Y);
+    public CommandPosition(Vector2 vector) => internalVec = Vector128.Create(vector.X, vector.Y);
+
+    CommandPosition(ref readonly Vector128<double> vec) => internalVec = vec;
 
     /// <inheritdoc/>
     public bool Equals(CommandPosition other) => internalVec == other.internalVec;
@@ -83,16 +78,14 @@ using Vector2 = System.Numerics.Vector2;
     public static CommandPosition operator /(CommandPosition left, CommandDecimal right) => left.internalVec / right;
 
     public static implicit operator CommandPosition(OpenTK.Mathematics.Vector2 obj) => new(obj.X, obj.Y);
+    public static implicit operator OpenTK.Mathematics.Vector2(CommandPosition obj) => new(obj.X, obj.Y);
 
-    public static implicit operator OpenTK.Mathematics.Vector2(CommandPosition obj)
-        => new((float)obj.internalVec.X, (float)obj.internalVec.Y);
-
-    public static implicit operator CommandPosition(Vector2d obj) => new(obj.X, obj.Y);
-    public static implicit operator Vector2d(CommandPosition obj) => obj.internalVec;
+    public static implicit operator CommandPosition(Vector128<double> obj) => new(in obj);
+    public static implicit operator Vector128<double>(CommandPosition obj) => obj.internalVec;
 
     public static implicit operator CommandPosition(PointF obj) => new(obj.X, obj.Y);
-    public static implicit operator PointF(CommandPosition obj) => new((float)obj.internalVec.X, (float)obj.internalVec.Y);
+    public static implicit operator PointF(CommandPosition obj) => new(obj.X, obj.Y);
 
     public static implicit operator CommandPosition(Vector2 obj) => new(obj.X, obj.Y);
-    public static implicit operator Vector2(CommandPosition obj) => new((float)obj.internalVec.X, (float)obj.internalVec.Y);
+    public static implicit operator Vector2(CommandPosition obj) => new(obj.X, obj.Y);
 }

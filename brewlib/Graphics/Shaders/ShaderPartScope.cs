@@ -2,8 +2,9 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 using OpenTK.Graphics.OpenGL;
+using Tiny.PooledCollections.Generic.Temporary;
+using Util;
 
 public class ShaderPartScope(string variablePrefix)
 {
@@ -18,13 +19,22 @@ public class ShaderPartScope(string variablePrefix)
         return variable;
     }
 
-    public void DeclareVariables(StringBuilder code)
+    public void DeclareVariables(scoped ref TempList<char> code)
     {
         foreach (var variable in variables)
         {
-            code.Append(CultureInfo.InvariantCulture, $"{variable.ShaderTypeName.GetString()} {variable.Name}");
-            if (variable.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{variable.ArrayCount}]");
-            code.AppendLine(";");
+            code.AddRange(variable.ShaderTypeName.GetString());
+            code.Add(' ');
+            code.Append(variable.Name);
+
+            if (variable.ArrayCount != -1)
+            {
+                code.Add('[');
+                code.AppendFormatted(variable.ArrayCount, provider: CultureInfo.InvariantCulture);
+                code.Add(']');
+            }
+
+            code.Append(";\n");
         }
     }
 }

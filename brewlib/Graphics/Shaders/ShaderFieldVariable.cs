@@ -1,5 +1,7 @@
 ﻿namespace BrewLib.Graphics.Shaders;
 
+using System;
+
 internal class ShaderFieldVariable(ShaderContext context, ShaderVariable baseVariable, ShaderType.Field field)
     : ShaderVariable(context, $"{baseVariable.Name}_field_{field.Name}", field.ShaderTypeName, baseVariable.ArrayCount)
 {
@@ -16,7 +18,7 @@ internal class ShaderFieldVariable(ShaderContext context, ShaderVariable baseVar
 
     new class Reference(ShaderVariable variable, ShaderType.Field field) : ShaderVariable.Reference(variable)
     {
-        public override string this[string index] => $"{variable.Name}.{field.Name}[{index}]";
+        public override string this[ReadOnlySpan<char> index] => $"{variable.Name}.{field.Name}[{index}]";
         public override string ToString() => $"{base.ToString()}.{field.Name}";
     }
 }

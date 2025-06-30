@@ -29,7 +29,7 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
             DrawState.TextGenerator.CreateBitmap(prepended,
                 name,
                 size,
-                default,
+                Vector2.Zero,
                 BoxAlignment.Centre,
                 out measuredSize,
                 true);
@@ -40,7 +40,7 @@ public sealed class TextFontAtlased(string name, float size, TextureContainer co
         using var bitmap = DrawState.TextGenerator.CreateBitmap(c.ToString(),
             name,
             size,
-            default,
+            Vector2.Zero,
             BoxAlignment.Centre,
             out measuredSize,
             false);

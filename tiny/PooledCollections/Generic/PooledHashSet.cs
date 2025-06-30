@@ -17,8 +17,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 [DebuggerTypeProxy(typeof(ICollectionDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public class PooledHashSet<T>
-    : ICollection<T>, ISet<T>, IReadOnlyCollection<T>, IReadOnlySet<T>, ISerializable, IDeserializationCallback, IDisposable
+public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeserializationCallback, IDisposable
 {
     // This uses the same array-based implementation as Dictionary<TKey, TValue>.
 
@@ -45,6 +44,9 @@ public class PooledHashSet<T>
     static readonly Entry<T>[] s_emptyEntries = [];
 
     internal static readonly bool s_clearEntries = RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+
+    [NonSerialized]
+    internal static IEqualityComparer<string> _stringComparer = PooledDictionary<string, byte>._stringComparer;
 
     [NonSerialized] internal ArrayPool<int> _bucketPool;
 
@@ -726,11 +728,7 @@ public class PooledHashSet<T>
         // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
         // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
         // hash buckets become unbalanced.
-        if (typeof(T) == typeof(string))
-        {
-            var stringComparer = NonRandomizedStringEqualityComparer.Default;
-            if (stringComparer is not null) _comparer = (IEqualityComparer<T>?)stringComparer;
-        }
+        if (typeof(T) == typeof(string)) _comparer = (IEqualityComparer<T>)_stringComparer;
     }
 
     public PooledHashSet(IEnumerable<T> collection,
@@ -1452,7 +1450,6 @@ public class PooledHashSet<T>
 
         if (!typeof(T).IsValueType && forceNewHashCodes)
         {
-            Debug.Assert(_comparer is NonRandomizedStringEqualityComparer);
             _comparer = EqualityComparer<T>.Default;
 
             for (var i = 0; i < count; i++)
@@ -1691,7 +1688,7 @@ public class PooledHashSet<T>
         // Value types never rehash
         if (!typeof(T).IsValueType &&
             collisionCount > HashHelpers.HashCollisionThreshold &&
-            comparer is NonRandomizedStringEqualityComparer)
+            ReferenceEquals(comparer, _stringComparer))
         {
             // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
             // i.e. EqualityComparer<string>.Default.

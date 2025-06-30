@@ -7,7 +7,7 @@ using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Util;
 
-public class TextLayout : IDisposable
+public sealed class TextLayout : IDisposable
 {
     readonly PooledList<TextLayoutLine> _lines;
 
@@ -156,7 +156,8 @@ public class TextLayout : IDisposable
     }
 }
 
-public class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph) : IDisposable
+public sealed class
+    TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph) : IDisposable
 {
     readonly PooledList<TextLayoutGlyph> _glyphs = new();
     bool advance = advanceOnEmptyGlyph;

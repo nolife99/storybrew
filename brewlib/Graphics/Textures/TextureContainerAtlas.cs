@@ -15,7 +15,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     string atlasDescription = nameof(TextureContainerAtlas)) : TextureContainer
 {
     readonly PooledDictionary<TextureOptions, TextureMultiAtlas2d> atlases = new();
-    readonly PooledDictionary<int, Texture2dRegion> textures = new();
+    readonly PooledDictionary<string, Texture2dRegion> textures = new();
 
     public float UncompressedMemoryUseMb
     {
@@ -37,11 +37,10 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     {
         PathHelper.WithStandardSeparatorsUnsafe(filename);
 
-        var hashCode = string.GetHashCode(filename);
-        if (textures.TryGetValue(hashCode, out var texture)) return texture;
+        if (textures.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var texture)) return texture;
 
         var str = filename.ToString();
-        return textures[hashCode] = Add(Texture2d.LoadBitmap(str, resourceContainer),
+        return textures[str] = Add(Texture2d.LoadBitmap(str, resourceContainer),
             textureOptions ?? Texture2d.LoadTextureOptions(str, resourceContainer));
     }
 

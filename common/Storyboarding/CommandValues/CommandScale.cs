@@ -2,12 +2,11 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using BrewLib.Util;
-using OpenTK.Mathematics;
 using SixLabors.ImageSharp;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
-using Vector2 = System.Numerics.Vector2;
 
 ///<summary> Base structure for scale commands. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly record struct CommandScale
@@ -16,25 +15,27 @@ using Vector2 = System.Numerics.Vector2;
         IMultiplyOperators<CommandScale, CommandScale, CommandScale>,
         IDivisionOperators<CommandScale, CommandScale, CommandScale>, IUnaryNegationOperators<CommandScale, CommandScale>
 {
-    readonly Vector2d internalVec;
+    internal readonly Vector128<double> internalVec;
 
     ///<summary> Represents a scale vector in which all values are 1 (one). </summary>
     public static readonly CommandScale One = new(1, 1);
 
     ///<summary> Gets the X value of this instance. </summary>
-    public CommandDecimal X => internalVec.X;
+    public CommandDecimal X => internalVec.GetLower().ToScalar();
 
     ///<summary> Gets the Y value of this instance. </summary>
-    public CommandDecimal Y => internalVec.Y;
+    public CommandDecimal Y => internalVec.GetUpper().ToScalar();
 
     /// <summary> Constructs a <see cref="CommandScale"/> from an X and Y value. </summary>
-    public CommandScale(CommandDecimal x, CommandDecimal y) => internalVec = new(x, y);
+    public CommandScale(CommandDecimal x, CommandDecimal y) => internalVec = Vector128.Create(x, y);
 
     /// <summary> Constructs a <see cref="CommandScale"/> from a value. </summary>
     public CommandScale(CommandDecimal value) : this(value, value) { }
 
     /// <summary> Constructs a <see cref="CommandScale"/> from a <see cref="Vector2"/>. </summary>
-    public CommandScale(Vector2 vector) => internalVec = new(vector.X, vector.Y);
+    public CommandScale(Vector2 vector) => internalVec = Vector128.Create(vector.X, vector.Y);
+
+    CommandScale(ref readonly Vector128<double> vec) => internalVec = vec;
 
     /// <inheritdoc/>
     public bool Equals(CommandScale other) => internalVec == other.internalVec;
@@ -70,18 +71,17 @@ using Vector2 = System.Numerics.Vector2;
 
     public static implicit operator CommandScale(OpenTK.Mathematics.Vector2 obj) => new(obj.X, obj.Y);
 
-    public static implicit operator OpenTK.Mathematics.Vector2(CommandScale obj)
-        => new((float)obj.internalVec.X, (float)obj.internalVec.Y);
+    public static implicit operator OpenTK.Mathematics.Vector2(CommandScale obj) => new(obj.X, obj.Y);
 
-    public static implicit operator CommandScale(Vector2d obj) => new(obj.X, obj.Y);
-    public static implicit operator Vector2d(CommandScale obj) => obj.internalVec;
+    public static implicit operator CommandScale(Vector128<double> obj) => new(in obj);
+    public static implicit operator Vector128<double>(CommandScale obj) => obj.internalVec;
 
     public static implicit operator CommandScale(SizeF obj) => new(obj.Width, obj.Height);
-    public static implicit operator SizeF(CommandScale obj) => new((float)obj.internalVec.X, (float)obj.internalVec.Y);
+    public static implicit operator SizeF(CommandScale obj) => new(obj.X, obj.Y);
 
-    public static implicit operator CommandScale(CommandPosition obj) => new(obj.X, obj.Y);
-    public static implicit operator CommandPosition(CommandScale obj) => new(obj.internalVec.X, obj.internalVec.Y);
+    public static implicit operator CommandScale(CommandPosition obj) => obj.internalVec;
+    public static implicit operator CommandPosition(CommandScale obj) => obj.internalVec;
 
     public static implicit operator CommandScale(Vector2 obj) => new(obj.X, obj.Y);
-    public static implicit operator Vector2(CommandScale obj) => new((float)obj.internalVec.X, (float)obj.internalVec.Y);
+    public static implicit operator Vector2(CommandScale obj) => new(obj.X, obj.Y);
 }

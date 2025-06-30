@@ -18,7 +18,7 @@ using Util;
 public sealed class Skin(TextureContainer textureContainer) : IDisposable
 {
     readonly PooledDictionary<string, Drawable> drawables = new();
-    readonly PooledDictionary<Type, PooledDictionary<int, WidgetStyle>> stylesPerType = new();
+    readonly PooledDictionary<Type, PooledDictionary<string, WidgetStyle>> stylesPerType = new();
     readonly TextureContainer TextureContainer = textureContainer;
     public Func<string, Type> ResolveDrawableType, ResolveWidgetType, ResolveStyleType;
 
@@ -37,7 +37,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
             var n = name;
             while (!n.IsEmpty)
             {
-                if (styles.TryGetValue(string.GetHashCode(n), out var style)) return style;
+                if (styles.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(n, out var style)) return style;
 
                 n = getImplicitParentStyleName(n);
             }
@@ -188,7 +188,8 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         var implicitParentStyleName = getImplicitParentStyleName(styleName);
                         if (!implicitParentStyleName.IsEmpty)
                         {
-                            if (!styles.TryGetValue(string.GetHashCode(implicitParentStyleName), out parentStyle) &&
+                            if (!styles.GetAlternateLookup<ReadOnlySpan<char>>()
+                                    .TryGetValue(implicitParentStyleName, out parentStyle) &&
                                 styleTypeObject.Value<TinyToken>(implicitParentStyleName.ToString()) is not null)
                                 throw new InvalidDataException(
                                     $"Implicit parent style '{implicitParentStyleName}' style must be defined before '{styleName}'");
@@ -197,7 +198,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                         }
 
                         var parentName = styleObject.Value<string>("_parent");
-                        if (parentName is not null && !styles.TryGetValue(parentName.GetHashCode(), out parentStyle))
+                        if (parentName is not null && !styles.TryGetValue(parentName, out parentStyle))
                             throw new InvalidDataException(
                                 $"Parent style '{parentName}' style must be defined before '{styleName}'");
 
@@ -209,7 +210,7 @@ public sealed class Skin(TextureContainer textureContainer) : IDisposable
                             else throw new InvalidDataException($"The default {styleTypeName} style must be defined first");
                         }
 
-                        styles.Add(styleName.GetHashCode(), style);
+                        styles.Add(styleName, style);
                     }
                     catch (InvalidDataException e)
                     {

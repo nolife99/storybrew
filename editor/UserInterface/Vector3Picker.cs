@@ -4,13 +4,17 @@ using System;
 using System.Globalization;
 using System.Numerics;
 using BrewLib.UserInterface;
+using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class Vector3Picker : Widget, Field
 {
     readonly LinearLayout layout;
     readonly Textbox xTextbox, yTextbox, zTextbox;
 
-    float[] value;
+    ValueArray<float> value;
 
     public Vector3Picker(WidgetManager manager) : base(manager)
     {
@@ -66,78 +70,67 @@ public class Vector3Picker : Widget, Field
     public override Vector2 MaxSize => Vector2.Zero;
     public override Vector2 PreferredSize => layout.PreferredSize;
 
-    public float[] Value
+    public ReadOnlySpan<float> Value
     {
-        get => value;
+        get => value.AsReadOnlySpan();
         set
         {
-            if (this.value == value) return;
+            if (this.value.AsReadOnlySpan().SequenceEqual(value)) return;
 
-            this.value = value;
+            this.value.Dispose();
+            this.value = ValueArray.Create(value);
 
             updateWidgets();
             OnValueChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    public object FieldValue { get => Value; set => Value = (float[])value; }
+    public object FieldValue { get => Value.ToArray(); set => Value = (float[])value; }
 
     public event EventHandler OnValueChanged, OnValueCommited;
 
     void xTextbox_OnValueCommited(object sender, EventArgs e)
     {
         var xCommit = xTextbox.Value;
-
-        float x;
-        try
-        {
-            x = float.Parse(xCommit, CultureInfo.InvariantCulture);
-        }
-        catch
+        if (!float.TryParse(xCommit, CultureInfo.InvariantCulture, out var x))
         {
             updateWidgets();
             return;
         }
 
-        Value = [x, value[1], value[2]];
+        using var temp = TempArray.Create([x, value[1], value[2]]);
+        Value = temp.AsReadOnlySpan();
+
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
 
     void yTextbox_OnValueCommited(object sender, EventArgs e)
     {
         var yCommit = yTextbox.Value;
-
-        float y;
-        try
-        {
-            y = float.Parse(yCommit, CultureInfo.InvariantCulture);
-        }
-        catch
+        if (!float.TryParse(yCommit, CultureInfo.InvariantCulture, out var y))
         {
             updateWidgets();
             return;
         }
 
-        Value = [value[0], y, value[2]];
+        using var temp = TempArray.Create([value[0], y, value[2]]);
+        Value = temp.AsReadOnlySpan();
+
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
 
     void zTextbox_OnValueCommited(object sender, EventArgs e)
     {
         var zCommit = zTextbox.Value;
-
-        float z;
-        try
-        {
-            z = float.Parse(zCommit, CultureInfo.InvariantCulture);
-        }
-        catch
+        if (!float.TryParse(zCommit, CultureInfo.InvariantCulture, out var z))
         {
             updateWidgets();
             return;
         }
 
-        value = [value[0], value[1], z];
+        using var temp = TempArray.Create([value[0], value[1], z]);
+        Value = temp.AsReadOnlySpan();
+
         OnValueCommited?.Invoke(this, EventArgs.Empty);
     }
 
@@ -152,5 +145,11 @@ public class Vector3Picker : Widget, Field
     {
         base.Layout();
         layout.Size = Size;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) value.Dispose();
+        base.Dispose(disposing);
     }
 }

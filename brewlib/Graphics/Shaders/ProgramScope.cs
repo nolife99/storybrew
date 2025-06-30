@@ -2,8 +2,9 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Text;
 using OpenTK.Graphics.OpenGL;
+using Tiny.PooledCollections.Generic.Temporary;
+using Util;
 
 public class ProgramScope
 {
@@ -12,8 +13,8 @@ public class ProgramScope
     readonly List<ShaderVariable> varyings = [], uniforms = [], vertexBuiltins = [], fragmentBuiltins = [];
 
     int lastId;
-    string nextGenericTypeName => $"t_{lastId++:000}";
-    string nextGenericVaryingName => $"v_{lastId++:000}";
+    string nextGenericTypeName => $"t{lastId++:000}";
+    string nextGenericVaryingName => $"v{lastId++:000}";
 
     public ShaderType AddStruct()
     {
@@ -55,90 +56,144 @@ public class ProgramScope
         return varying;
     }
 
-    public void DeclareTypes(StringBuilder code)
+    public void DeclareTypes(scoped ref TempList<char> code)
     {
         foreach (var type in structs)
         {
-            code.AppendLine(CultureInfo.InvariantCulture, $"struct {type.Name} {{");
-            foreach (var field in type.Fields)
-                code.AppendLine(CultureInfo.InvariantCulture, $"    {field.ShaderTypeName.GetString()} {field.Name};");
+            code.Append("struct ");
+            code.Append(type.Name);
+            code.Append(" {\n");
 
-            code.AppendLine("};");
+            foreach (var field in type.Fields)
+            {
+                code.AddRange(field.ShaderTypeName.GetString());
+                code.Add(' ');
+                code.Append(field.Name);
+                code.Append(";\n");
+            }
+
+            code.Append("};\n");
         }
 
         foreach (var type in ssbos)
         {
-            code.AppendLine(CultureInfo.InvariantCulture,
-                $"layout(binding = {type.BindingIndex}) buffer {ShaderStorageType.BlockName} {{");
+            code.Append("layout(binding = ");
+            code.AppendFormatted(type.BindingIndex, provider: CultureInfo.InvariantCulture);
+            code.Append(") buffer ");
+            code.Append(ShaderStorageType.BlockName);
+            code.Append(" {\n");
 
             foreach (var field in type.Fields)
             {
-                code.Append(CultureInfo.InvariantCulture, $"    {field.ShaderTypeName.GetString()} {field.Name}");
-                if (field.ArrayCount == 0) code.AppendLine("[];");
-                else if (field.ArrayCount != -1) code.AppendLine(CultureInfo.InvariantCulture, $"[{field.ArrayCount}];");
+                code.AddRange(field.ShaderTypeName.GetString());
+                code.Add(' ');
+                code.Append(field.Name);
+
+                if (field.ArrayCount == 0) code.Append("[];");
+                else if (field.ArrayCount != -1)
+                {
+                    code.Add('[');
+                    code.AppendFormatted(field.ArrayCount, provider: CultureInfo.InvariantCulture);
+                    code.Append("];");
+                }
+
+                code.Add('\n');
             }
 
-            code.AppendLine(CultureInfo.InvariantCulture, $"}} {type.Name};");
+            code.Append("} ");
+            code.Append(type.Name);
+            code.Append(";\n");
         }
     }
 
-    public void DeclareUniforms(StringBuilder code)
+    public void DeclareUniforms(scoped ref TempList<char> code)
     {
         foreach (var uniform in uniforms)
         {
-            code.Append(CultureInfo.InvariantCulture, $"uniform {uniform.ShaderTypeName.GetString()} {uniform.Name}");
-            if (uniform.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{uniform.ArrayCount}]");
-            code.AppendLine(";");
+            code.Append("uniform ");
+            code.AddRange(uniform.ShaderTypeName.GetString());
+            code.Add(' ');
+            code.Append(uniform.Name);
+
+            if (uniform.ArrayCount != -1)
+            {
+                code.Add('[');
+                code.AppendFormatted(uniform.ArrayCount, provider: CultureInfo.InvariantCulture);
+                code.Add(']');
+            }
+
+            code.Append(";\n");
         }
     }
 
-    public void DeclareVaryings(StringBuilder code, ShaderContext context, bool isFragmentShader)
+    public void DeclareVaryings(scoped ref TempList<char> code, ShaderContext context, bool isFragmentShader)
     {
         if (isFragmentShader)
             for (var i = 0; i < fragmentBuiltins.Count; i++)
-            {
-                var varying = fragmentBuiltins[i];
-                DeclareBuiltinVarying(varying, i);
-            }
+                DeclareBuiltinVarying(ref code, fragmentBuiltins[i], i);
         else
             for (var i = 0; i < vertexBuiltins.Count; i++)
-            {
-                var varying = vertexBuiltins[i];
-                DeclareBuiltinVarying(varying, i);
-            }
+                DeclareBuiltinVarying(ref code, vertexBuiltins[i], i);
 
         foreach (var varying in varyings)
             if (context.Uses(varying))
             {
-                var flat = varying.ShaderTypeName.IsFlatType() ? "flat " : "";
-                var varyingType = isFragmentShader ? "in" : "out";
-                code.Append(CultureInfo.InvariantCulture,
-                    $"{flat}{varyingType} {varying.ShaderTypeName.GetString()} {varying.Name}");
+                if (varying.ShaderTypeName.IsFlatType()) code.Append("flat ");
+                code.Append(isFragmentShader ? "in" : "out");
+                code.Add(' ');
+                code.AddRange(varying.ShaderTypeName.GetString());
+                code.Add(' ');
+                code.Append(varying.Name);
 
-                if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-                code.AppendLine(";");
+                if (varying.ArrayCount != -1)
+                {
+                    code.Add('[');
+                    code.AppendFormatted(varying.ArrayCount, provider: CultureInfo.InvariantCulture);
+                    code.Add(']');
+                }
+
+                code.Append(";\n");
             }
 
         return;
 
-        void DeclareBuiltinVarying(ShaderVariable varying, int index)
+        void DeclareBuiltinVarying(scoped ref TempList<char> code, ShaderVariable varying, int index)
         {
-            code.Append(CultureInfo.InvariantCulture,
-                $"layout(location = {index}) out {varying.ShaderTypeName.GetString()} {varying.Name}");
+            code.Append("layout(location = ");
+            code.AppendFormatted(index, provider: CultureInfo.InvariantCulture);
+            code.Append(") out ");
+            code.AddRange(varying.ShaderTypeName.GetString());
+            code.Add(' ');
+            code.Append(varying.Name);
 
-            if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-            code.AppendLine(";");
+            if (varying.ArrayCount != -1)
+            {
+                code.Add('[');
+                code.AppendFormatted(varying.ArrayCount, provider: CultureInfo.InvariantCulture);
+                code.Add(']');
+            }
+
+            code.Append(";\n");
         }
     }
 
-    public void DeclareUnusedVaryingsAsVariables(StringBuilder code, ShaderContext context)
+    public void DeclareUnusedVaryingsAsVariables(scoped ref TempList<char> code, ShaderContext context)
     {
         foreach (var varying in varyings)
             if (!context.Uses(varying))
             {
-                code.Append(CultureInfo.InvariantCulture, $"{varying.ShaderTypeName.GetString()} {varying.Name}");
-                if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
-                code.AppendLine(";");
+                code.AddRange(varying.ShaderTypeName.GetString());
+                code.Add(' ');
+                code.Append(varying.Name);
+
+                if (varying.ArrayCount != -1)
+                {
+                    code.Add('[');
+                    code.AppendFormatted(varying.ArrayCount, provider: CultureInfo.InvariantCulture);
+                    code.Add(']');
+                }
+
+                code.Append(";\n");
             }
     }
 }

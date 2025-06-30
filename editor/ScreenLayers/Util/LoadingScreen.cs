@@ -15,11 +15,13 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) :
     readonly ValueArray<char> title = ValueArray.Create(title);
     LinearLayout mainLayout;
 
+    Task task;
+
     public override bool IsPopup => true;
 
     public override void Load()
     {
-        Task.Run(async () =>
+        task = Task.Run(async () =>
         {
             Exception ex = null;
             try
@@ -67,7 +69,7 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) :
 
         base.Load();
 
-        using var tempTitle = TempList.Create(title);
+        using var tempTitle = TempList.Create(title.AsReadOnlySpan());
         tempTitle.AddRange("...".AsSpan());
 
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)

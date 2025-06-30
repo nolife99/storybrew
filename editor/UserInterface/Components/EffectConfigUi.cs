@@ -16,6 +16,8 @@ using Storyboarding;
 using StorybrewCommon.Storyboarding;
 using StorybrewCommon.Storyboarding.CommandValues;
 using StorybrewCommon.Util;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Color4 = OpenTK.Mathematics.Color4;
 
 public class EffectConfigUi : Widget
@@ -268,7 +270,12 @@ public class EffectConfigUi : Widget
                 setFieldValue(field, ctor.Invoke([widget.Value[0], widget.Value[1], widget.Value[2]]));
 
                 var configVal = effect.Config.GetValue(field.Name);
-                widget.Value = [(float)x.GetValue(configVal), (float)y.GetValue(configVal), (float)z.GetValue(configVal)];
+
+                using var temp = TempArray.Create([
+                    (float)x.GetValue(configVal), (float)y.GetValue(configVal), (float)z.GetValue(configVal)
+                ]);
+
+                widget.Value = temp.AsReadOnlySpan();
             };
         }
         else if (field.Type == typeof(CommandColor) || field.Type == typeof(Color4) || field.Type == typeof(Rgba32))

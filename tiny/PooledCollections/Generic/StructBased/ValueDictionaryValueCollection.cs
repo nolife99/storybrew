@@ -59,7 +59,7 @@ public readonly struct ValueDictionaryValueCollection<TKey, TValue> : ICollectio
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(_dictionary);
 
-    public struct Enumerator : IEnumerator<TValue>, IEnumerator
+    public struct Enumerator : IEnumerator<TValue>
     {
         readonly ValueDictionary<TKey, TValue> _dictionary;
         int _index;

@@ -28,7 +28,7 @@ using System.Runtime.Serialization;
 // so Push can be O(n).  Pop is O(1).
 
 [DebuggerTypeProxy(typeof(PooledStackDebugView<>)), DebuggerDisplay("Count = {Count}"), Serializable]
-public partial class PooledStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, IDeserializationCallback
+public partial class PooledStack<T> : IReadOnlyCollection<T>, IDeserializationCallback
 {
     const int DefaultCapacity = 4;
 
@@ -328,7 +328,7 @@ public partial class PooledStack<T> : IEnumerable<T>, IReadOnlyCollection<T>, ID
         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EmptyStack();
     }
 
-    public struct Enumerator : IEnumerator<T>, IEnumerator
+    public struct Enumerator : IEnumerator<T>
     {
         readonly PooledStack<T> _stack;
         readonly int _version;

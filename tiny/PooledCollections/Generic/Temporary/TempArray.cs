@@ -17,8 +17,6 @@ public ref struct TempArray<T>
 
     internal TempArray(int length, ArrayPool<T> pool)
     {
-        if (length < 0) ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
         _length = length;
         _pool = pool ?? ArrayPool<T>.Shared;
         _array = _length == 0 ? s_emptyArray : _pool.Rent(length);
@@ -27,8 +25,6 @@ public ref struct TempArray<T>
 
     internal TempArray(scoped ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
     {
-        if (length < 0) ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-
         _pool = pool ?? ArrayPool<T>.Shared;
         _length = length;
         _array = _pool.Rent(length);
@@ -36,26 +32,22 @@ public ref struct TempArray<T>
 
         if (array.IsEmpty) return;
 
-        var minLength = Math.Min(array.Length, length);
-
-        Unsafe.CopyBlockUnaligned(ref Unsafe.As<T, byte>(ref _ref),
-            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(array)),
-            (uint)(minLength * Unsafe.SizeOf<T>()));
+        array[..int.Min(array.Length, length)].CopyTo(_array);
     }
 
-    public int Length
+    public readonly int Length
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _length;
     }
 
-    public int Capacity
+    public readonly int Capacity
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _array.Length;
     }
 
-    public bool IsValid
+    public readonly bool IsValid
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => _array is not null;
@@ -68,55 +60,55 @@ public ref struct TempArray<T>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
-            if ((uint)index >= (uint)_length) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)_length);
             return ref Unsafe.Add(ref _ref, index);
         }
     }
 
     /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest) => CopyTo(0, dest, 0, _length);
+    public readonly void CopyTo(T[] dest) => CopyTo(0, dest, 0, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
+    public readonly void CopyTo(T[] dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(T[] dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public readonly void CopyTo(T[] dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, T[] dest, int destIndex, int count)
+    public readonly void CopyTo(int index, T[] dest, int destIndex, int count)
     {
         ArgumentNullException.ThrowIfNull(dest);
 
-        CopyTo(index, dest.AsSpan(), destIndex, count);
+        CopyTo(index, new Span<T>(dest), destIndex, count);
     }
 
     /// <summary>Copies this List into array, which must be of a compatible array type.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(TempArray<T> dest) => CopyTo(0, dest, 0, _array.Length);
+    public readonly void CopyTo(TempArray<T> dest) => CopyTo(0, dest, 0, _array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(TempArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
+    public readonly void CopyTo(TempArray<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _array.Length);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(TempArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public readonly void CopyTo(TempArray<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(int index, TempArray<T> dest, int destIndex, int count)
-        => CopyTo(index, dest._array.AsSpan(), destIndex, count);
+    public readonly void CopyTo(int index, TempArray<T> dest, int destIndex, int count)
+        => CopyTo(index, MemoryMarshal.CreateSpan(ref dest._ref, count), destIndex, count);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(Span<T> dest) => CopyTo(0, dest, 0, _length);
+    public readonly void CopyTo(Span<T> dest) => CopyTo(0, dest, 0, _length);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
+    public readonly void CopyTo(Span<T> dest, int destIndex) => CopyTo(0, dest, destIndex, _length);
 
     /// <summary>Copies this List into the given span.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void CopyTo(Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
+    public readonly void CopyTo(Span<T> dest, int destIndex, int count) => CopyTo(0, dest, destIndex, count);
 
-    public void CopyTo(int index, Span<T> dest, int destIndex, int count)
+    public readonly void CopyTo(int index, Span<T> dest, int destIndex, int count)
     {
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
@@ -181,7 +173,5 @@ public ref struct TempArray<T>
             _index = 0;
             Current = default;
         }
-
-        public void Dispose() { }
     }
 }

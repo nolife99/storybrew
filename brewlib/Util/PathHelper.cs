@@ -101,17 +101,6 @@ public static class PathHelper
 
     public static bool IsValidPath(string path) => !MemoryExtensions.ContainsAny(path, invalidChars);
 
-    public static bool IsValidFilename(string filename)
-    {
-        foreach (var character in filename.AsSpan())
-            if (invalidChars.Contains(character) ||
-                !(char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) ||
-                    char.IsDigit(character)))
-                return false;
-
-        return true;
-    }
-
     public static bool IsValidFilename(char character) => !invalidChars.Contains(character) &&
         (char.IsLetter(character) && (char.IsLower(character) || char.IsUpper(character)) || char.IsDigit(character));
 }

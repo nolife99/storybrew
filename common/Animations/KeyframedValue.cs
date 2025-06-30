@@ -71,7 +71,14 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     /// <summary>Adds a set of keyframes to the keyframed value.</summary>
     /// <param name="values"> The set of keyframes to add. </param>
     /// <returns> The keyframed value. </returns>
-    public KeyframedValue<TValue> Add(params Keyframe<TValue>[] values) => AddRange(values);
+    public KeyframedValue<TValue> Add(params ReadOnlySpan<Keyframe<TValue>> values)
+    {
+        foreach (var keyframe in values)
+            if (keyframes.Count == 0 || keyframes[^1].Time < keyframe.Time) keyframes.Add(keyframe);
+            else keyframes.Insert(indexFor(keyframe, false), keyframe);
+
+        return this;
+    }
 
     /// <summary>Adds a new keyframe to the keyframed value at the given time with the given value.</summary>
     /// <param name="time"> The time of the new keyframe. </param>
@@ -164,7 +171,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
     {
         if (keyframes.Count == 0) return;
 
-        var span = keyframes.AsSpan();
+        var span = keyframes.AsReadOnlySpan();
 
         var startTime = explicitStartTime ?? span[0].Time;
         var endTime = explicitEndTime ?? span[^1].Time;
@@ -173,9 +180,9 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         Keyframe<TValue>? previous = null, stepStart = null, previousPairEnd = null;
         var comparer = EqualityComparer<TValue>.Default;
 
-        foreach (ref var t in span)
+        foreach (ref readonly var t in span)
         {
-            var endKeyframe = editKeyframe(ref t, edit);
+            var endKeyframe = editKeyframe(in t, edit);
             if (previous.HasValue)
             {
                 ref readonly var startKeyframe = ref Nullable.GetValueRefOrDefaultRef(ref previous);
@@ -233,7 +240,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
 
         if (!hasPair && keyframes.Count != 0)
         {
-            var first = editKeyframe(ref span[0], edit).WithTime(startTime);
+            var first = editKeyframe(in span[0], edit).WithTime(startTime);
             if (!comparer.Equals(first.Value, defaultValue))
             {
                 var last = loopable ? first.WithTime(endTime) : first;
@@ -250,7 +257,7 @@ public class KeyframedValue<TValue> : IEnumerable<Keyframe<TValue>>
         pair(loopable ? previousPairEndValue : endPair, endPair);
     }
 
-    static Keyframe<TValue> editKeyframe(ref Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null)
+    static Keyframe<TValue> editKeyframe(ref readonly Keyframe<TValue> keyframe, Func<TValue, TValue> edit = null)
         => edit is not null ? new(keyframe.Time, edit(keyframe.Value), keyframe.Ease, keyframe.Until) : keyframe;
 
     ///<summary> Removes all keyframes in the set. </summary>

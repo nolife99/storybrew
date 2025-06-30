@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
-using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -173,7 +172,7 @@ public sealed partial class Project : IDisposable
         obj.GpuPixelsFrame = 0;
         obj.LastBlendingMode = false;
 
-        obj.LastTexture = 0;
+        obj.LastTexture = null;
         obj.ScreenFill = 0;
         obj.SpriteCount = obj.Batches = obj.CommandCount = obj.EffectiveCommandCount = 0;
     });
@@ -468,7 +467,7 @@ public sealed partial class Project : IDisposable
         RuntimeEnvironment.GetSystemVersion().TrimStart('v'),
         string.Concat("ref/net", RuntimeEnvironment.GetSystemVersion().AsSpan(1, 3))));
 
-    public static readonly FrozenSet<string> DefaultAssemblies =
+    public static readonly string[] DefaultAssemblies =
     [
         typeof(Font).Assembly.Location,
         typeof(IPathCollection).Assembly.Location,
@@ -485,7 +484,7 @@ public sealed partial class Project : IDisposable
                 "*.dll"))
     ];
 
-    PooledHashSet<string> importedAssemblies = [];
+    HashSet<string> importedAssemblies = [];
 
     public ICollection<string> ImportedAssemblies
     {
@@ -494,7 +493,7 @@ public sealed partial class Project : IDisposable
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
 
-            importedAssemblies = value as PooledHashSet<string> ?? new(value);
+            importedAssemblies = value as HashSet<string> ?? [..value];
             scriptManager.ReferencedAssemblies = ReferencedAssemblies;
         }
     }
@@ -545,7 +544,7 @@ public sealed partial class Project : IDisposable
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        await using BinaryWriter w = new(new DeflateStream(File.Create(path), CompressionLevel.SmallestSize, false),
+        await using BinaryWriter w = new(new BrotliStream(File.Create(path), CompressionLevel.SmallestSize, false),
             Encoding,
             false);
 
@@ -560,8 +559,11 @@ public sealed partial class Project : IDisposable
         w.Write(effects.Count);
         foreach (var effect in effects)
         {
+            w.Write7BitEncodedInt(effect.BaseName.Length);
             w.Write(effect.BaseName);
+
             w.Write(effect.Multithreaded);
+            w.Write7BitEncodedInt(effect.Name.Length);
             w.Write(effect.Name);
 
             w.Write(effect.Config.FieldCount);
@@ -600,7 +602,7 @@ public sealed partial class Project : IDisposable
 
     void loadBinary(string path)
     {
-        using BinaryReader r = new(new DeflateStream(File.OpenRead(path), CompressionMode.Decompress, false),
+        using BinaryReader r = new(new BrotliStream(File.OpenRead(path), CompressionMode.Decompress, false),
             Encoding,
             false);
 
@@ -617,8 +619,10 @@ public sealed partial class Project : IDisposable
         for (var effectIndex = 0; effectIndex < effectCount; ++effectIndex)
         {
             if (version < 8) r.ReadBytes(16);
-            var effect = AddScriptedEffect(r.ReadString(), r.ReadBoolean());
-            effect.Name = r.ReadString();
+            var effectBaseName = r.ReadChars(r.Read7BitEncodedInt());
+
+            var effect = AddScriptedEffect(new(effectBaseName), r.ReadBoolean());
+            effect.Name = new(r.ReadChars(r.Read7BitEncodedInt()));
 
             var fieldCount = r.ReadInt32();
             for (var fieldIndex = 0; fieldIndex < fieldCount; ++fieldIndex)
@@ -658,7 +662,7 @@ public sealed partial class Project : IDisposable
         }
 
         var assemblyCount = r.ReadInt32();
-        PooledHashSet<string> imported = new(assemblyCount);
+        HashSet<string> imported = new(assemblyCount);
         for (var i = 0; i < assemblyCount; ++i) imported.Add(r.ReadString());
 
         ImportedAssemblies = imported;
@@ -756,9 +760,7 @@ public sealed partial class Project : IDisposable
                     layersRoot.Add(StringHelper.GetMd5(layer.Identifier), layerRoot);
                 }
 
-            var effectPath = directoryWriter.GetPath("effect." + StringHelper.GetMd5(effect.Name) + ".yaml");
-
-            effectRoot.Write(effectPath);
+            effectRoot.Write(directoryWriter.GetPath("effect." + StringHelper.GetMd5(effect.Name) + ".yaml"));
         }
 
         directoryWriter.Commit();
@@ -797,7 +799,7 @@ public sealed partial class Project : IDisposable
 
         SelectBeatmap(indexRoot.Value<long>("BeatmapId"), indexRoot.Value<string>("BeatmapName"));
 
-        ImportedAssemblies = indexRoot.Values<string>("Assemblies").ToArray();
+        ImportedAssemblies = indexRoot.Values<string>("Assemblies").ToHashSet();
 
         // Load effects
         using PooledDictionary<string, Action> layerInserters = new();
@@ -910,7 +912,7 @@ public sealed partial class Project : IDisposable
         });
 
         var usesOverlayLayer = localLayers.Exists(l => l.OsbLayer is OsbLayer.Overlay);
-        var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
+        using var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
 
         localLayers.Dispose();
 
@@ -981,8 +983,6 @@ public sealed partial class Project : IDisposable
 
             await writer.WriteLineAsync("//Storyboard Sound Samples");
         }
-
-        sbLayer.Dispose();
     }
 
     #endregion

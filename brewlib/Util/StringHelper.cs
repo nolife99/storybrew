@@ -7,7 +7,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
-using Memory;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -16,8 +15,6 @@ public static class StringHelper
 {
     static readonly string[] sizeOrders = ["b", "kb", "mb", "gb", "tb"];
     static readonly string utf8Bom = Encoding.UTF8.GetString(Encoding.UTF8.GetPreamble());
-
-    public static readonly Pool<StringBuilder> StringBuilderPool = new(obj => obj.Length = 0);
 
     public static string ToByteSize(float byteCount, string format = "{0:0.##} {1}")
     {
@@ -41,7 +38,7 @@ public static class StringHelper
         data = MD5.HashData(data);
 
         using var chars = TempList.Create<char>();
-        foreach (var t in data) chars.AddRangeFormatted(t, "x2", CultureInfo.InvariantCulture);
+        foreach (var t in data) chars.AppendFormatted(t, "x2", CultureInfo.InvariantCulture);
 
         return chars.AsReadOnlySpan().ToString();
     }
@@ -51,7 +48,7 @@ public static class StringHelper
         var data = GetFileMd5Bytes(path);
 
         using var chars = TempList.Create<char>();
-        foreach (var t in data) chars.AddRangeFormatted(t, "x2", CultureInfo.InvariantCulture);
+        foreach (var t in data) chars.AppendFormatted(t, "x2", CultureInfo.InvariantCulture);
 
         return chars.AsReadOnlySpan().ToString();
     }
@@ -83,7 +80,10 @@ public static class StringHelper
         return TempArray.Create<char>(temp[..written]);
     }
 
-    public static void AddRangeFormatted<T>(this scoped ref readonly TempList<char> list,
+    public static void Append(this scoped ref readonly TempList<char> list, string value)
+        => Unsafe.AsRef(in list).AddRange(value.AsSpan());
+
+    public static void AppendFormatted<T>(this scoped ref readonly TempList<char> list,
         T value,
         scoped ReadOnlySpan<char> format = default,
         IFormatProvider provider = null) where T : ISpanFormattable
@@ -94,7 +94,7 @@ public static class StringHelper
         Unsafe.AsRef(in list).AddRange(temp[..written]);
     }
 
-    public static void AddRangeEnum<T>(this scoped ref readonly TempList<char> list,
+    public static void AppendEnum<T>(this scoped ref readonly TempList<char> list,
         T value,
         scoped ReadOnlySpan<char> format = default) where T : struct, Enum
     {
