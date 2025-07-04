@@ -10,8 +10,6 @@ using SixLabors.ImageSharp;
 using Skinning.Styles;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
@@ -21,6 +19,8 @@ public class Widget(WidgetManager manager) : IDisposable
     static int nextId;
     public readonly int Id = nextId++;
 
+    readonly PooledList<char> tooltip = new();
+
     Drawable background = NullDrawable.Instance, foreground = NullDrawable.Instance;
 
     bool clipChildren, displayed = true, hoverable = true;
@@ -28,8 +28,6 @@ public class Widget(WidgetManager manager) : IDisposable
     public float Opacity = 1;
 
     string styleName;
-
-    ValueArray<char> tooltip = ValueArray.Empty<char>();
     protected WidgetManager Manager => manager;
 
     public bool Displayed
@@ -118,13 +116,12 @@ public class Widget(WidgetManager manager) : IDisposable
             {
                 Manager.UnregisterTooltip(this);
 
-                tooltip.Dispose();
-                tooltip = ValueArray.Empty<char>();
+                tooltip.Clear();
             }
             else
             {
-                tooltip.Dispose();
-                tooltip = ValueArray.Create(value);
+                tooltip.Clear();
+                tooltip.AddRange(value);
 
                 Manager.RegisterTooltip(this, value);
             }
@@ -575,6 +572,7 @@ public class Widget(WidgetManager manager) : IDisposable
         if (disposing)
         {
             Tooltip = null;
+            tooltip.Dispose();
 
             Parent?.Remove(this);
             manager.NotifyWidgetDisposed(this);

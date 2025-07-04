@@ -13,11 +13,11 @@ public class ContextMenu<T> : UiScreenLayer
 {
     readonly Action<T> callback;
     readonly PooledList<Option> options;
-    readonly ValueArray<char> title;
 
     Button cancelButton;
     LinearLayout mainLayout, optionsLayout;
     Textbox searchTextbox;
+    ValueArray<char> title;
 
     public ContextMenu(scoped ReadOnlySpan<char> title, Action<T> callback, params ReadOnlySpan<T> options)
     {

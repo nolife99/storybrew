@@ -256,7 +256,8 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
                 return;
             }
 
-            if (!validateAssembly(path, selectedAssemblies.Where(ass => ass != assembly))) return;
+            var assem = assembly;
+            if (!validateAssembly(path, selectedAssemblies.Where(ass => ass != assem))) return;
 
             var newPath = PathHelper.FolderContainsPath(project.ProjectFolderPath, path) ?
                 path :

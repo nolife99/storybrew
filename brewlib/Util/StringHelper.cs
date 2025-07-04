@@ -80,6 +80,7 @@ public static class StringHelper
         return TempArray.Create<char>(temp[..written]);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Append(this scoped ref readonly TempList<char> list, string value)
         => Unsafe.AsRef(in list).AddRange(value.AsSpan());
 

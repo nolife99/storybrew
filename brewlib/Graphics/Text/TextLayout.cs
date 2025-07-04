@@ -9,15 +9,13 @@ using Util;
 
 public sealed class TextLayout : IDisposable
 {
-    readonly PooledList<TextLayoutLine> _lines;
+    readonly PooledList<TextLayoutLine> _lines = new();
 
     public TextLayout(scoped ReadOnlySpan<char> text, TextFont font, BoxAlignment alignment, Vector2 maxSize)
     {
         var glyphIndex = 0;
         var width = 0f;
         var height = 0f;
-
-        _lines = new();
 
         using (var lineBreaks = LineBreaker.Split(text, font, float.Ceiling(maxSize.X), (c, f) => f.GetGlyph(c).Width))
             foreach (var (start, length) in lineBreaks)

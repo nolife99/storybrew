@@ -14,10 +14,21 @@ using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 using Util;
 
-public sealed class TextureContainerAsync(ResourceContainer resourceContainer = null,
-    TextureOptions textureOptions = null) : TextureContainer
+public sealed class TextureContainerAsync : TextureContainer
 {
-    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload> textures = new();
+    readonly ResourceContainer resourceContainer;
+    readonly TextureOptions textureOptions;
+    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload> textures;
+    readonly PooledDictionary<string, TextureUploadQueue.QueuedUpload>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+
+    public TextureContainerAsync(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
+    {
+        this.resourceContainer = resourceContainer;
+        this.textureOptions = textureOptions;
+
+        textures = new();
+        texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
+    }
 
     public float UncompressedMemoryUseMb
     {
@@ -37,7 +48,7 @@ public sealed class TextureContainerAsync(ResourceContainer resourceContainer = 
 
     public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
     {
-        var found = textures.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var texture);
+        var found = texturesLookup.TryGetValue(filename, out var texture);
         switch (found)
         {
             case true when texture.IsLoaded: return texture.Result;

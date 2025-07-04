@@ -5,7 +5,7 @@ using Tiny.PooledCollections.Generic.Temporary;
 
 public class Sequence(params ShaderSnippet[] snippets) : ShaderSnippet
 {
-    public override int MinVersion => snippets.Select(t => t.MinVersion).Prepend(base.MinVersion).Max();
+    public override int MinVersion => int.Max(base.MinVersion, snippets.MaxBy(t => t.MinVersion).MinVersion);
 
     public override void GenerateFunctions(scoped ref TempList<char> code)
     {

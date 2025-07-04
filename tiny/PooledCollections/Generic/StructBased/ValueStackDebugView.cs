@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 internal sealed class ValueStackDebugView<T>
 {
-    readonly ValueStack<T> _stack;
+    ValueStack<T> _stack;
 
     public ValueStackDebugView(ValueStack<T> stack) => _stack = stack;
 

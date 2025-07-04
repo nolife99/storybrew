@@ -29,6 +29,8 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (_textureId == 0) throw new InvalidOperationException("Texture not created");
 
+            ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
+
             return _textureId;
         }
     }
@@ -41,6 +43,8 @@ public sealed class Texture2d : Texture2dRegion
 
             if (!DrawState.BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
 
+            ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
+
             GL.Arb.MakeTextureHandleResident(bindlessId = GL.Arb.GetTextureHandle(TextureId));
             if (!BitConverter.IsLittleEndian)
                 bindlessId = (long)(uint)(bindlessId & 0xFFFFFFFF) << 32 | (uint)(bindlessId >> 32 & 0xFFFFFFFF);
@@ -51,6 +55,8 @@ public sealed class Texture2d : Texture2dRegion
 
     public void Update(Rgba32 color, int x, int y, int width, int height)
     {
+        ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
+
         if (useGlClearTex)
             GL.ClearTexSubImage(_textureId,
                 0,
@@ -69,7 +75,9 @@ public sealed class Texture2d : Texture2dRegion
             var span = spanOwner.Memory.Span;
 
             span.Fill(color);
-            GL.TextureSubImage2D(_textureId,
+
+            GL.BindTexture(TextureTarget.Texture2D, _textureId);
+            GL.TexSubImage2D(TextureTarget.Texture2D,
                 0,
                 x,
                 y,
@@ -85,9 +93,11 @@ public sealed class Texture2d : Texture2dRegion
     {
         ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
+        GL.BindTexture(TextureTarget.Texture2D, _textureId);
+
         var buffer = bitmap.Frames.RootFrame.PixelBuffer;
         if (buffer.MemoryGroup.Count == 1)
-            GL.TextureSubImage2D(_textureId,
+            GL.TexSubImage2D(TextureTarget.Texture2D,
                 0,
                 x,
                 y,
@@ -98,7 +108,7 @@ public sealed class Texture2d : Texture2dRegion
                 ref MemoryMarshal.GetReference(buffer.DangerousGetRowSpan(0)));
         else
             for (var i = 0; i < buffer.Height; ++i)
-                GL.TextureSubImage2D(_textureId,
+                GL.TexSubImage2D(TextureTarget.Texture2D,
                     0,
                     0,
                     y + i,

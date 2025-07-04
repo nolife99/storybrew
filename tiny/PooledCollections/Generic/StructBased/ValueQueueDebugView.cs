@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 internal sealed class ValueQueueDebugView<T>
 {
-    readonly ValueQueue<T> _queue;
+    ValueQueue<T> _queue;
 
     public ValueQueueDebugView(ValueQueue<T> queue) => _queue = queue;
 

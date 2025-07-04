@@ -2,9 +2,9 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using BrewLib.Util;
+using ZLinq;
 
 ///<summary> Parsing methods for .sbv subtitle files. </summary>
 public record SbvParser : SubtitleParser
@@ -17,12 +17,14 @@ public record SbvParser : SubtitleParser
     }
 
     /// <inheritdoc/>
-    public SubtitleSet Parse(Stream stream) => new(from block in parseBlocks(stream)
-        select block.Split('\n') into blockLines
-        let timestamps = blockLines[0].Split(',')
-        select new SubtitleLine(SubtitleParser.ParseTimestamp(timestamps[0]),
-            SubtitleParser.ParseTimestamp(timestamps[1]),
-            string.Join('\n', blockLines, 1, blockLines.Length - 1)));
+    public SubtitleSet Parse(Stream stream) => new(parseBlocks(stream)
+        .AsValueEnumerable()
+        .Select(block => block.Split('\n'))
+        .Select(blockLines => (blockLines, blockLines[0].Split(',')))
+        .Select(t => new SubtitleLine(SubtitleParser.ParseTimestamp(t.Item2[0]),
+            SubtitleParser.ParseTimestamp(t.Item2[1]),
+            string.Join('\n', t.blockLines, 1, t.blockLines.Length - 1)))
+        .ToArray());
 
     static IEnumerable<string> parseBlocks(Stream stream)
     {

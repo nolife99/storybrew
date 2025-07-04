@@ -160,12 +160,14 @@ public class StartMenu : UiScreenLayer
 
                         var authorName = release.Value<string>("author", "login");
 
-                        var body = release.Value<string>("body");
-                        if (body.Contains("---")) body = body[..body.IndexOf("---", StringComparison.Ordinal)];
-                        body = body.Replace("\r\n", "\n").Trim(' ', '\n');
+                        var body = release.Value<string>("body").AsSpan();
+                        if (body.Contains("---", StringComparison.Ordinal))
+                            body = body[..body.IndexOf("---", StringComparison.Ordinal)];
+
+                        body = body.ToString().Replace("\r\n", "\n").AsSpan().Trim([' ', '\n']);
                         body = $"v{version} - {authorName}, {publishDate.ToTimeAgo()}\n{body}\n\n";
 
-                        var newDescription = description + body;
+                        var newDescription = string.Concat(description, body);
                         if (description.Length > 0 && newDescription.Count(c => c == '\n') > 35) break;
 
                         description = newDescription;

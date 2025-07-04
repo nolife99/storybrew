@@ -3,9 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using BrewLib.Util;
+using ZLinq;
 
 ///<summary> Parsing methods for .srt subtitle files. </summary>
 public record SrtParser : SubtitleParser
@@ -18,12 +18,14 @@ public record SrtParser : SubtitleParser
     }
 
     /// <inheritdoc/>
-    public SubtitleSet Parse(Stream stream) => new(from block in parseBlocks(stream)
-        select block.Split('\n') into blockLines
-        let timestamps = blockLines[1].Split("-->")
-        select new SubtitleLine(SubtitleParser.ParseTimestamp(timestamps[0].Replace(',', '.')),
-            SubtitleParser.ParseTimestamp(timestamps[1].Replace(',', '.')),
-            string.Join("\n", blockLines, 2, blockLines.Length - 2)));
+    public SubtitleSet Parse(Stream stream) => new(parseBlocks(stream)
+        .AsValueEnumerable()
+        .Select(block => block.Split('\n'))
+        .Select(blockLines => (blockLines, blockLines[1].Split("-->")))
+        .Select(t => new SubtitleLine(SubtitleParser.ParseTimestamp(t.Item2[0].Replace(',', '.')),
+            SubtitleParser.ParseTimestamp(t.Item2[1].Replace(',', '.')),
+            string.Join("\n", t.blockLines, 2, t.blockLines.Length - 2)))
+        .ToArray());
 
     static IEnumerable<string> parseBlocks(Stream stream)
     {

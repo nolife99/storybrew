@@ -62,12 +62,12 @@ public sealed class AudioManager : IDisposable
         for (var i = 0; i < audioChannels.Count; ++i)
         {
             var channel = audioChannels[i];
-            if (Bass.GetDeviceInfo(Bass.ChannelGetDevice(channel.Channel), out var info) && !info.IsDefault)
+            if (Bass.GetDeviceInfo(Bass.ChannelGetDevice(channel.Channel), out var info) && !SoundUtil.IsDefault(info))
             {
                 var device = 0;
                 while (Bass.GetDeviceInfo(device, out info))
                 {
-                    if (info.Driver is not null && info.IsDefault) break;
+                    if (info.Driver is not null && SoundUtil.IsDefault(info)) break;
 
                     ++device;
                 }

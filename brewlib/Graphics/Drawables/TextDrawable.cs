@@ -6,13 +6,14 @@ using Cameras;
 using Renderers;
 using SixLabors.ImageSharp;
 using Text;
-using Tiny.PooledCollections.Generic.StructBased;
-using Tiny.PooledCollections.Generic.StructBased.Internals;
+using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Util;
 
 public sealed class TextDrawable : Drawable
 {
     readonly RenderStates RenderStates = new();
+    readonly PooledList<char> text = new();
     BoxAlignment alignment = BoxAlignment.TopLeft;
     public Color Color;
     float currentFontSize, currentScaling = 1, fontSize = 12, scaling = 1;
@@ -22,7 +23,6 @@ public sealed class TextDrawable : Drawable
     string fontName = "Tahoma";
 
     Vector2 maxSize;
-    ValueArray<char> text = ValueArray.Empty<char>();
     TextLayout textLayout;
 
     public Vector2 Size
@@ -30,7 +30,7 @@ public sealed class TextDrawable : Drawable
         get
         {
             validate();
-            return text.Length > 0 ? textLayout.Size / scaling : font.GetGlyph(' ').Size / scaling;
+            return text.Count > 0 ? textLayout.Size / scaling : font.GetGlyph(' ').Size / scaling;
         }
     }
 
@@ -48,14 +48,14 @@ public sealed class TextDrawable : Drawable
 
     public IconFont Icon
     {
-        get => text.Length == 0 ? 0 : (IconFont)text[0];
+        get => text.Count == 0 ? 0 : (IconFont)text[0];
         set
         {
             var character = (char)value;
             if (text.AsReadOnlySpan().SequenceEqual([character])) return;
 
-            text.Dispose();
-            text = ValueArray.Create([character]);
+            text.Clear();
+            text.Add(character);
 
             invalidate();
         }
@@ -68,8 +68,8 @@ public sealed class TextDrawable : Drawable
         {
             if (text.AsReadOnlySpan().SequenceEqual(value)) return;
 
-            text.Dispose();
-            text = ValueArray.Create(value);
+            text.Clear();
+            text.AddRange(value);
 
             invalidate();
         }

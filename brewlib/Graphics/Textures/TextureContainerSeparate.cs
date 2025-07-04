@@ -6,10 +6,21 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 
-public sealed class TextureContainerSeparate(ResourceContainer resourceContainer = null,
-    TextureOptions textureOptions = null) : TextureContainer
+public sealed class TextureContainerSeparate : TextureContainer
 {
-    readonly PooledDictionary<string, Texture2d> textures = new();
+    readonly ResourceContainer resourceContainer;
+    readonly TextureOptions textureOptions;
+    readonly PooledDictionary<string, Texture2d> textures;
+    readonly PooledDictionary<string, Texture2d>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+
+    public TextureContainerSeparate(ResourceContainer resourceContainer = null, TextureOptions textureOptions = null)
+    {
+        this.resourceContainer = resourceContainer;
+        this.textureOptions = textureOptions;
+
+        textures = new();
+        texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
+    }
 
     public float UncompressedMemoryUseMb
     {
@@ -29,7 +40,7 @@ public sealed class TextureContainerSeparate(ResourceContainer resourceContainer
 
     public Texture2dRegion Get(scoped ReadOnlySpan<char> filename)
     {
-        if (textures.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var texture)) return texture;
+        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
 
         var str = filename.ToString();
         return textures[str] = Texture2d.Load(str, resourceContainer, textureOptions);

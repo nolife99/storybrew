@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.UserInterface;
 using BrewLib.Util;
@@ -12,60 +13,54 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) : UiScreenLayer
 {
-    readonly ValueArray<char> title = ValueArray.Create(title);
+    readonly Func<Task> action = action;
     LinearLayout mainLayout;
-
-    Task task;
+    ValueArray<char> title = ValueArray.Create(title);
 
     public override bool IsPopup => true;
 
     public override void Load()
     {
-        task = Task.Run(async () =>
-        {
-            Exception ex = null;
-            try
+        ThreadPool.UnsafeQueueUserWorkItem(async loadingScreen =>
             {
-                await action();
-            }
-            catch (Exception e)
-            {
-                ex = e;
-            }
+                try
+                {
+                    await loadingScreen.action();
+                    await Program.Schedule(loadingScreen.Exit);
+                }
+                catch (Exception e)
+                {
+                    Trace.TraceError(
+                        $"{loadingScreen.title.AsReadOnlySpan()} failed ({loadingScreen.action.Method.Name}): {e}");
 
-            if (ex is null)
-            {
-                await Program.Schedule(Exit);
-                return;
-            }
+                    await Program.Schedule(() =>
+                    {
+                        using var sb = ValueList.Create(e.Message.AsSpan());
+                        sb.AddRange(" (".AsSpan());
+                        sb.AddRange(e.GetType().Name.AsSpan());
+                        sb.AddRange(")\n".AsSpan());
 
-            Trace.TraceError($"{title.AsReadOnlySpan()} failed ({action.Method.Name}): {ex}");
+                        var innerEx = e.InnerException;
+                        while (innerEx is not null)
+                        {
+                            sb.AddRange("Caused by: ".AsSpan());
+                            sb.AddRange(innerEx.Message.AsSpan());
+                            sb.AddRange(" (".AsSpan());
+                            sb.AddRange(innerEx.GetType().Name.AsSpan());
+                            sb.AddRange(")\n ".AsSpan());
 
-            using var sb = ValueList.Create(ex.Message.AsSpan());
-            sb.AddRange(" (".AsSpan());
-            sb.AddRange(ex.GetType().Name.AsSpan());
-            sb.AddRange(")\n".AsSpan());
+                            innerEx = innerEx.InnerException;
+                        }
 
-            var innerEx = ex.InnerException;
-            while (innerEx is not null)
-            {
-                sb.AddRange("Caused by: ".AsSpan());
-                sb.AddRange(innerEx.Message.AsSpan());
-                sb.AddRange(" (".AsSpan());
-                sb.AddRange(innerEx.GetType().Name.AsSpan());
-                sb.AddRange(")\n ".AsSpan());
+                        loadingScreen.Manager.ShowMessage(
+                            $"{loadingScreen.title.AsReadOnlySpan()} failed:\n \n{sb.AsReadOnlySpan()}\n \nDetails:\n{e.GetBaseException()}");
 
-                innerEx = innerEx.InnerException;
-            }
-
-            await Program.Schedule(() =>
-            {
-                Manager.ShowMessage(
-                    $"{title.AsReadOnlySpan()} failed:\n \n{sb.AsReadOnlySpan()}\n \nDetails:\n{ex.GetBaseException()}");
-
-                Exit();
-            });
-        });
+                        loadingScreen.Exit();
+                    });
+                }
+            },
+            this,
+            true);
 
         base.Load();
 

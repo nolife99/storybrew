@@ -44,17 +44,14 @@ public class YamlTokenParser : ITokenParser<YamlTokenType>
         {
             indent ??= context.IndentLevel + VirtualIndent;
             var lineIndent = ResultCount == 0 ? context.IndentLevel + VirtualIndent : context.IndentLevel;
-            if (lineIndent != indent)
-            {
-                if (lineIndent > indent)
-                    throw new InvalidDataException($"Unexpected indent: {lineIndent}, expected: {indent}, token: {
-                        context.CurrentToken}");
+            if (lineIndent == indent) return false;
 
-                context.PopParser();
-                return true;
-            }
+            if (lineIndent > indent)
+                throw new InvalidDataException($"Unexpected indent: {lineIndent}, expected: {indent}, token: {
+                    context.CurrentToken}");
 
-            return false;
+            context.PopParser();
+            return true;
         }
     }
 

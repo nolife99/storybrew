@@ -4,7 +4,6 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -18,7 +17,9 @@ using Storyboarding;
 using Subtitles;
 using Subtitles.Parsers;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Temporary;
 using Util;
+using ZLinq;
 
 ///<summary> Defines a storyboard script to be generated. </summary>
 public abstract class StoryboardObjectGenerator : Script
@@ -31,17 +32,14 @@ public abstract class StoryboardObjectGenerator : Script
     ///<summary>Reserved</summary>
     protected StoryboardObjectGenerator() => configurableFields = GetType()
         .GetFields()
-        .Select(field =>
-        {
-            var configurable = field.GetCustomAttribute<ConfigurableAttribute>(true);
-            return configurable is null ? null : new { Field = field, Configurable = configurable };
-        })
-        .Where(item => item is not null)
-        .Select((item, order) => new ConfigurableField(item.Field,
-            item.Configurable,
-            item.Field.GetValue(this),
-            item.Field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
-            item.Field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
+        .AsValueEnumerable()
+        .Select(field => (field, field.GetCustomAttribute<ConfigurableAttribute>(true)))
+        .Where(item => item.Item2 is not null)
+        .Select((item, order) => new ConfigurableField(item.field,
+            item.Item2,
+            item.field.GetValue(this),
+            item.field.GetCustomAttribute<GroupAttribute>(true)?.Name?.Trim(),
+            item.field.GetCustomAttribute<DescriptionAttribute>(true)?.Content?.Trim(),
             order))
         .ToArray();
 
@@ -336,7 +334,7 @@ public abstract class StoryboardObjectGenerator : Script
     {
         if (context is not null) throw new InvalidOperationException();
 
-        var remainingFieldNames = config.FieldNames.ToList();
+        using var remainingFieldNames = TempList.Create(config.FieldNames);
         foreach (var (field, configurableAttribute, o, beginsGroup, description, order) in configurableFields)
         {
             NamedValue[] allowedValues = null;
@@ -344,8 +342,8 @@ public abstract class StoryboardObjectGenerator : Script
             var fieldType = field.FieldType;
             if (fieldType.IsEnum)
             {
-                var enumValues = Enum.GetValues(fieldType);
-                fieldType = Enum.GetUnderlyingType(fieldType);
+                var enumValues = fieldType.GetEnumValues();
+                fieldType = fieldType.GetEnumUnderlyingType();
 
                 allowedValues = new NamedValue[enumValues.Length];
                 for (var i = 0; i < enumValues.Length; ++i)

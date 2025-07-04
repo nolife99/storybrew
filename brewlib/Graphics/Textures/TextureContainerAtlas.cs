@@ -7,15 +7,35 @@ using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 using Util;
 
-public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = null,
-    TextureOptions textureOptions = null,
-    int width = 1024,
-    int height = 1024,
-    int padding = 0,
-    string atlasDescription = nameof(TextureContainerAtlas)) : TextureContainer
+public sealed class TextureContainerAtlas : TextureContainer
 {
-    readonly PooledDictionary<TextureOptions, TextureMultiAtlas2d> atlases = new();
-    readonly PooledDictionary<string, Texture2dRegion> textures = new();
+    readonly string atlasDescription;
+    readonly PooledDictionary<TextureOptions, TextureMultiAtlas2d> atlases;
+    readonly int height, padding, width;
+
+    readonly ResourceContainer resourceContainer;
+    readonly TextureOptions textureOptions;
+    readonly PooledDictionary<string, Texture2dRegion> textures;
+    readonly PooledDictionary<string, Texture2dRegion>.AlternateLookup<ReadOnlySpan<char>> texturesLookup;
+
+    public TextureContainerAtlas(ResourceContainer resourceContainer = null,
+        TextureOptions textureOptions = null,
+        int width = 1024,
+        int height = 1024,
+        int padding = 0,
+        string atlasDescription = nameof(TextureContainerAtlas))
+    {
+        this.resourceContainer = resourceContainer;
+        this.textureOptions = textureOptions;
+        this.width = width;
+        this.height = height;
+        this.padding = padding;
+        this.atlasDescription = atlasDescription;
+
+        atlases = new();
+        textures = new();
+        texturesLookup = textures.GetAlternateLookup<ReadOnlySpan<char>>();
+    }
 
     public float UncompressedMemoryUseMb
     {
@@ -37,7 +57,7 @@ public sealed class TextureContainerAtlas(ResourceContainer resourceContainer = 
     {
         PathHelper.WithStandardSeparatorsUnsafe(filename);
 
-        if (textures.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var texture)) return texture;
+        if (texturesLookup.TryGetValue(filename, out var texture)) return texture;
 
         var str = filename.ToString();
         return textures[str] = Add(Texture2d.LoadBitmap(str, resourceContainer),

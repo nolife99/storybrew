@@ -11,10 +11,9 @@ public class PromptBox(scoped ReadOnlySpan<char> title,
     scoped ReadOnlySpan<char> initialText,
     Action<ReadOnlySpan<char>> action) : UiScreenLayer
 {
-    readonly ValueArray<char> description = ValueArray.Create(description);
-    readonly ValueArray<char> initialText = ValueArray.Create(initialText);
+    ValueArray<char> description = ValueArray.Create(description), initialText = ValueArray.Create(initialText),
+        title = ValueArray.Create(title);
 
-    readonly ValueArray<char> title = ValueArray.Create(title);
     LinearLayout mainLayout;
     Button okButton, cancelButton;
     Textbox textbox;

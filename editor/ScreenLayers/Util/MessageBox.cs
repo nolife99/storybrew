@@ -11,8 +11,8 @@ using Tiny.PooledCollections.Generic.StructBased.Internals;
 public class MessageBox(scoped ReadOnlySpan<char> message, Action yesAction, Action noAction, bool cancelable)
     : UiScreenLayer
 {
-    readonly ValueArray<char> message = ValueArray.Create(message);
     LinearLayout mainLayout, buttonsLayout;
+    ValueArray<char> message = ValueArray.Create(message);
 
     public override bool IsPopup => true;
 

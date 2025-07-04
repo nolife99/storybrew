@@ -24,8 +24,8 @@ public sealed class EditorGeneratorContext(Effect effect,
     scoped ReadOnlySpan<EditorBeatmap> beatmaps,
     MultiFileWatcher watcher) : GeneratorContext, IDisposable
 {
-    readonly ValueArray<Beatmap> _beatmaps = getBeatmaps(beatmaps);
     readonly StringBuilder log = new();
+    ValueArray<Beatmap> _beatmaps = getBeatmaps(beatmaps);
 
     public ReadOnlySpan<EditorStoryboardLayer> EditorLayers => _editorLayers.AsReadOnlySpan();
     public override string ProjectPath => projectPath;

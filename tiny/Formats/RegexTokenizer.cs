@@ -49,10 +49,9 @@ public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.D
 
         public IEnumerable<Match> FindMatches(string input, int priority)
         {
-            var matches = regex.Matches(input);
-            for (var i = 0; i < matches.Count; i++)
+            foreach (var m in regex.Matches(input))
             {
-                var match = matches[i];
+                var match = (System.Text.RegularExpressions.Match)m;
 
                 yield return new Match
                 {

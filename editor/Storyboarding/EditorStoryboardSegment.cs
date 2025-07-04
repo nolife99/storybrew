@@ -107,16 +107,16 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
         {
             var relativePath = Path.GetFileName(path.AsSpan());
             var dotIndex = relativePath.LastIndexOf('.');
-            var dirName = Path.GetDirectoryName(path);
+            var dirName = Path.GetDirectoryName(path.AsSpan());
 
             Regex regex = new($@"{relativePath[..dotIndex]}^\d+\{relativePath[dotIndex..]}$");
-            bool matchRegex(string filename) => regex.IsMatch(Path.GetFileName(filename.AsSpan()));
+            var matchRegex = (string filename) => regex.IsMatch(Path.GetFileName(filename.AsSpan()));
 
-            var mapsetPath = Path.Combine(StoryboardObjectGenerator.Current.MapsetPath, dirName);
+            var mapsetPath = Path.Join(StoryboardObjectGenerator.Current.MapsetPath, dirName);
             if (Directory.Exists(mapsetPath))
                 frameCount = Directory.EnumerateFiles(mapsetPath, "*", SearchOption.TopDirectoryOnly).Count(matchRegex);
 
-            var assetPath = Path.Combine(StoryboardObjectGenerator.Current.AssetPath, dirName);
+            var assetPath = Path.Join(StoryboardObjectGenerator.Current.AssetPath, dirName);
             if (frameCount < 1 && Directory.Exists(assetPath))
                 frameCount = Directory.EnumerateFiles(assetPath, "*", SearchOption.TopDirectoryOnly).Count(matchRegex);
         }

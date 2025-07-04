@@ -9,7 +9,7 @@ public readonly struct ReadOnlyValueArray<T> : IReadOnlyList<T>, IDisposable
 {
     internal readonly ValueArray<T> _array;
 
-    ReadOnlyValueArray(in ValueArray<T> array) => _array = array;
+    ReadOnlyValueArray(scoped ref readonly ValueArray<T> array) => _array = array;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ReadOnlyValueArray<T> Empty() => new(ValueArray.Empty<T>());
@@ -103,5 +103,5 @@ public readonly struct ReadOnlyValueArray<T> : IReadOnlyList<T>, IDisposable
     public void Dispose() => _array.Dispose();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator ReadOnlyValueArray<T>(in ValueArray<T> array) => new(array);
+    public static implicit operator ReadOnlyValueArray<T>(ValueArray<T> array) => new(in array);
 }

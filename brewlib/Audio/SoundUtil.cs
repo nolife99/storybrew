@@ -1,5 +1,8 @@
 ﻿namespace BrewLib.Audio;
 
+using System.Runtime.CompilerServices;
+using ManagedBass;
+
 public static class SoundUtil
 {
     public const int C = 40;
@@ -23,4 +26,9 @@ public static class SoundUtil
     public static float SawWave(float t) => t % 2 - 1;
     public static float SineWave(float t) => float.Sin(t * float.Tau);
     public static float TriangleWave(float t) => float.Abs((t * 4 - 1) % 4 - 2) - 1;
+
+    public static DeviceInfoFlags GetFlags(DeviceInfo deviceInfo)
+        => Unsafe.As<DeviceInfo, DeviceInfoFlags>(ref Unsafe.AddByteOffset(ref deviceInfo, nint.Size * 2));
+
+    public static bool IsDefault(DeviceInfo deviceInfo) => (GetFlags(deviceInfo) & DeviceInfoFlags.Default) != 0;
 }

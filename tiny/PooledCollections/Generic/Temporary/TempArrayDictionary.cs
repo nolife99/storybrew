@@ -300,7 +300,7 @@ public ref partial struct TempArrayDictionary<TKey, TValue> where TKey : notnull
     //constant states) because it will be used in multithreaded parallel code
     public bool ContainsKey(in TKey key) => TryFindIndex(in key, out _);
 
-    public bool ContainsValue(TValue value)
+    public readonly bool ContainsValue(TValue value)
     {
         var values = _values;
 

@@ -1,16 +1,16 @@
 ﻿namespace StorybrewEditor.Util;
 
 using System;
-using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Tiny.PooledCollections.Generic;
 
 public sealed class AsyncActionQueue<T> : IDisposable
 {
-    readonly Lazy<ActionRunner>[] actionRunners;
+    readonly PooledList<Lazy<ActionRunner>> actionRunners;
     readonly bool allowDuplicates;
     readonly ActionQueueContext context;
 
@@ -21,8 +21,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
         if (runnerCount == 0) runnerCount = int.Max(1, Environment.ProcessorCount - 1);
         context = new();
 
-        actionRunners = ArrayPool<Lazy<ActionRunner>>.Shared.Rent(runnerCount);
-        for (var i = 0; i < runnerCount; ++i) actionRunners[i] = new(() => new(context));
+        actionRunners = new(runnerCount);
+        for (var i = 0; i < runnerCount; ++i) actionRunners.Add(new(() => new(context)));
     }
 
     public bool Enabled { get => context.Enabled; set => context.Enabled = value; }
@@ -37,10 +37,14 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
     public void Queue(T target, int uniqueKey, Action<CancellationTokenSource> action, bool mustRunAlone = false)
     {
-        for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Length); ++i)
-            actionRunners[i]?.Value.EnsureThreadAlive();
+        using (ExecutionContext.SuppressFlow())
+            for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
+                actionRunners[i]?.Value.EnsureThreadAlive();
 
-        if (!allowDuplicates && context.Queue.Any(q => q.UniqueKey == uniqueKey)) return;
+        if (!allowDuplicates)
+            foreach (var runner in context.Queue)
+                if (runner.UniqueKey == uniqueKey)
+                    return;
 
         context.Queue.Enqueue(new(target, uniqueKey, action, mustRunAlone));
         context.Signal();
@@ -51,7 +55,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         context.Queue.Clear();
         return stopThreads ?
             Task.WhenAll(actionRunners.Where(runner => runner is not null && runner.IsValueCreated)
-                .Select(runner => runner.Value.DisposeAsync().AsTask())) :
+                .Select(runner => runner.Value.JoinOrAbort())) :
             Task.CompletedTask;
     }
 
@@ -92,12 +96,13 @@ public sealed class AsyncActionQueue<T> : IDisposable
         public void TriggerActionFailed(T target, Exception e) => OnActionFailed?.Invoke(target, e);
     }
 
-    sealed class ActionRunner(ActionQueueContext context) : IAsyncDisposable
+    sealed class ActionRunner(ActionQueueContext context)
     {
+        readonly ActionQueueContext context = context;
         Task thread;
         CancellationTokenSource tokenSrc;
 
-        public async ValueTask DisposeAsync()
+        public async Task JoinOrAbort()
         {
             if (thread is null) return;
 
@@ -119,9 +124,13 @@ public sealed class AsyncActionQueue<T> : IDisposable
             tokenSrc?.Dispose();
             tokenSrc = new();
 
-            thread = Task.Factory.StartNew(async cancellationToken =>
+            thread = Task.Factory.StartNew(async actionRunner =>
                 {
-                    var localToken = (CancellationTokenSource)cancellationToken;
+                    var runner = (ActionRunner)actionRunner;
+                    var localToken = runner.tokenSrc;
+                    var localThread = runner.thread;
+                    var localContext = runner.context;
+
                     Trace.WriteLine($"Started thread {Environment.CurrentManagedThreadId}");
 
                     await using var registration = localToken.Token.UnsafeRegister(_
@@ -137,29 +146,29 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             mustSleep = false;
                         }
 
-                        while (!context.Enabled || context.Queue.IsEmpty)
+                        while (!localContext.Enabled || localContext.Queue.IsEmpty)
                         {
-                            if (thread is null)
+                            if (localThread is null)
                             {
                                 Trace.WriteLine($"Exiting thread {Environment.CurrentManagedThreadId}");
                                 return;
                             }
 
-                            await context.WaitForSignal();
+                            await localContext.WaitForSignal();
                         }
 
-                        if (Interlocked.CompareExchange(ref context.RunningLoneTask, false, false))
+                        if (Interlocked.CompareExchange(ref localContext.RunningLoneTask, false, false))
                         {
                             mustSleep = true;
                             continue;
                         }
 
                         ActionContainer task = null;
-                        while (context.Queue.TryDequeue(out var t))
+                        while (localContext.Queue.TryDequeue(out var t))
                         {
-                            if (t.MustRunAlone && Interlocked.CompareExchange(ref context.Running, 0, 0) != 0)
+                            if (t.MustRunAlone && Interlocked.CompareExchange(ref localContext.Running, 0, 0) != 0)
                             {
-                                context.Queue.Enqueue(t);
+                                localContext.Queue.Enqueue(t);
                                 continue;
                             }
 
@@ -173,8 +182,8 @@ public sealed class AsyncActionQueue<T> : IDisposable
                             continue;
                         }
 
-                        Interlocked.Increment(ref context.Running);
-                        if (task.MustRunAlone) Interlocked.Exchange(ref context.RunningLoneTask, true);
+                        Interlocked.Increment(ref localContext.Running);
+                        if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, true);
 
                         try
                         {
@@ -182,16 +191,16 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         }
                         catch (Exception e)
                         {
-                            if (!localToken.IsCancellationRequested) context.TriggerActionFailed(task.Target, e);
+                            if (!localToken.IsCancellationRequested) localContext.TriggerActionFailed(task.Target, e);
                         }
                         finally
                         {
-                            Interlocked.Decrement(ref context.Running);
-                            if (task.MustRunAlone) Interlocked.Exchange(ref context.RunningLoneTask, false);
+                            Interlocked.Decrement(ref localContext.Running);
+                            if (task.MustRunAlone) Interlocked.Exchange(ref localContext.RunningLoneTask, false);
                         }
                     }
                 },
-                tokenSrc,
+                this,
                 tokenSrc.Token,
                 TaskCreationOptions.LongRunning,
                 TaskScheduler.Default);
@@ -209,7 +218,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
         context.Enabled = false;
         CancelQueuedActions(true).Wait();
 
-        ArrayPool<Lazy<ActionRunner>>.Shared.Return(actionRunners);
+        actionRunners.Dispose();
 
         disposed = true;
     }

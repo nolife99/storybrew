@@ -4,13 +4,26 @@ using System;
 using IO;
 using Tiny.PooledCollections.Generic;
 
-public sealed class AudioSampleContainer(AudioManager manager, ResourceContainer container = null) : IDisposable
+public sealed class AudioSampleContainer : IDisposable
 {
-    readonly PooledDictionary<string, AudioSample> samples = new();
+    readonly ResourceContainer container;
+
+    readonly AudioManager manager;
+    readonly PooledDictionary<string, AudioSample> samples;
+    readonly PooledDictionary<string, AudioSample>.AlternateLookup<ReadOnlySpan<char>> samplesLookup;
+
+    public AudioSampleContainer(AudioManager manager, ResourceContainer container = null)
+    {
+        this.manager = manager;
+        this.container = container;
+
+        samples = new();
+        samplesLookup = samples.GetAlternateLookup<ReadOnlySpan<char>>();
+    }
 
     public AudioSample Get(scoped ReadOnlySpan<char> filename)
     {
-        if (samples.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(filename, out var sample)) return sample;
+        if (samplesLookup.TryGetValue(filename, out var sample)) return sample;
 
         var str = filename.ToString();
         return samples[str] = manager.LoadSample(str, container);

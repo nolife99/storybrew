@@ -11,6 +11,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>)), DebuggerDisplay("Count = {Count}")]
 public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollection<TValue>, IReadOnlyCollection<TValue>
@@ -70,7 +72,7 @@ public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollecti
         int _index;
         readonly int _version;
 
-        public Enumerator(PooledDictionary<TKey, TValue> dictionary)
+        internal Enumerator(PooledDictionary<TKey, TValue> dictionary)
         {
             _dictionary = dictionary;
             _version = dictionary._version;
@@ -85,13 +87,14 @@ public readonly struct PooledDictionaryValueCollection<TKey, TValue> : ICollecti
             if (_version != _dictionary._version)
                 ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
 
+            ref var entry = ref MemoryMarshal.GetArrayDataReference(_dictionary._entries!);
             while ((uint)_index < (uint)_dictionary._count)
             {
-                ref var entry = ref _dictionary._entries![_index++];
+                ref var localEntry = ref Unsafe.Add(ref entry, _index++);
 
-                if (entry.Next >= -1)
+                if (localEntry.Next >= -1)
                 {
-                    Current = entry.Value;
+                    Current = localEntry.Value;
                     return true;
                 }
             }
