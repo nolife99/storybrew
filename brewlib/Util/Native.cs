@@ -14,7 +14,7 @@ public static class Native
 {
     public static NativeWindow Window { get; private set; }
 
-    public static Func<Action, Task> MainThreadScheduler { get; set; }
+    public static Func<Action, ValueTask> MainThreadScheduler { get; set; }
 
     public static void InitializeHandle(NativeWindow glfwWindow) => Window = glfwWindow;
 

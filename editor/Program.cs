@@ -10,14 +10,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Util;
+using OpenTK.Core;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
-using Utils = OpenTK.Core.Utils;
-using Vector = System.Numerics.Vector;
 
 public static class Program
 {
@@ -28,17 +27,12 @@ public static class Program
 
     public static readonly string FullName = $"{Name} {Version} ({Repository})";
 
-    static Process currentProcess;
-
     public static AudioManager AudioManager { get; private set; }
     public static Settings Settings { get; private set; }
 
     static void Main(string[] args)
     {
         if (args.Length != 0 && handleArguments(args)) return;
-
-        MainThread = Thread.CurrentThread;
-        currentProcess = Process.GetCurrentProcess();
 
         setupLogging();
         startEditor();
@@ -66,8 +60,6 @@ public static class Program
     }
 
     #region Editor
-
-    public static string Stats { get; private set; }
 
     static void startEditor()
     {
@@ -152,9 +144,11 @@ public static class Program
         float prev = 0, fixedRate = 0, av = 0, avActive = 0, longest = 0, lastStat = 0, statsUpdate = targetFrame * 5;
 
         var windowContext = window.Context;
+        var stopwatch = Stopwatch.StartNew();
+
         while (!window.IsExiting)
         {
-            var cur = (float)GLFW.GetTime();
+            var cur = stopwatch.ElapsedTicks / (float)Stopwatch.Frequency;
             var fixedUpdates = 0;
 
             window.ProcessEvents(0);
@@ -173,19 +167,23 @@ public static class Program
 
             window.IsVisible = true;
             while (scheduledActions.TryDequeue(out var action))
+            {
                 try
                 {
                     action.Action();
-                    action.Task.TrySetResult();
+                    action.Task.SetResult(0);
                 }
                 catch (Exception e)
                 {
                     Trace.TraceError($"Scheduled task {action.Action.Method}:\n{e}");
 
-                    action.Task.TrySetException(e);
+                    action.Task.SetException(e);
                 }
 
-            var active = (float)GLFW.GetTime() - cur;
+                ValueTaskSourcePool.Return(action.Task);
+            }
+
+            var active = stopwatch.ElapsedTicks / (float)Stopwatch.Frequency - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
             if (sleepTime > 0) Utils.AccurateSleep(sleepTime, 8);
@@ -215,19 +213,19 @@ public static class Program
         result.Add('/');
         result.AppendFormatted(1 / avActive, "f0", CultureInfo.CurrentCulture);
 
-        result.AddRange("fps (act:".AsSpan());
+        result.Append("fps (act:");
         result.AppendFormatted(avActive * 1000, "f2", CultureInfo.CurrentCulture);
 
-        result.AddRange(" avg:".AsSpan());
+        result.Append(" avg:");
         result.AppendFormatted(av * 1000, "f2", CultureInfo.CurrentCulture);
 
-        result.AddRange(" hi:".AsSpan());
+        result.Append(" hi:");
         result.AppendFormatted(longest * 1000, "f2", CultureInfo.CurrentCulture);
 
-        result.AddRange(")\n".AsSpan());
+        result.Append(")\n");
 
         result.AppendFormatted(draws, "", CultureInfo.CurrentCulture);
-        result.AddRange(" draws".AsSpan());
+        result.Append(" draws");
         result.Add('\n');
 
         editor.statsLabel.Text = result.AsReadOnlySpan();
@@ -237,23 +235,22 @@ public static class Program
 
     #region Scheduling
 
-    static readonly ConcurrentQueue<(Action Action, TaskCompletionSource Task)> scheduledActions = [];
+    static readonly ConcurrentQueue<(Action Action, ManualResetValueTaskSourceCore<byte> Task)> scheduledActions = [];
 
-    public static Thread MainThread { get; private set; }
+    static readonly int mainThreadId = Environment.CurrentManagedThreadId;
 
-    public static Task Schedule(Action action)
+    public static ValueTask Schedule(Action action)
     {
-        if (Thread.CurrentThread == MainThread)
+        if (Environment.CurrentManagedThreadId == mainThreadId)
         {
             action();
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
-        TaskCompletionSource tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
+        var tcs = ValueTaskSourcePool.Get();
         scheduledActions.Enqueue((action, tcs));
 
-        return tcs.Task;
+        return new(tcs, tcs.Version);
     }
 
     #endregion

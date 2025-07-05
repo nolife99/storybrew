@@ -4,12 +4,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using IO;
 using OpenTK.Windowing.Desktop;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Memory;
 using SixLabors.ImageSharp.PixelFormats;
 using Tiny.PooledCollections.Generic;
 using Util;
@@ -94,11 +92,6 @@ internal static class TextureUploadQueue
 
     public static void Initialize()
     {
-        var allocator = MemoryAllocator.Default;
-        allocator.GetType()
-            .GetField("sharedArrayPoolThresholdInBytes", BindingFlags.NonPublic | BindingFlags.Instance)
-            ?.SetValue(allocator, 65536); // Prevents LOH allocations
-
         Native.Window.Context.MakeNoneCurrent();
 
         for (var i = 0; i < UPLOAD_THREAD_COUNT; ++i)

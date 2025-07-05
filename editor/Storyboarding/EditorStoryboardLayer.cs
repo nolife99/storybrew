@@ -102,7 +102,7 @@ public class EditorStoryboardLayer : StoryboardLayer, IComparable<EditorStoryboa
 
     public int CompareTo(EditorStoryboardLayer other)
     {
-        int value = osbLayer - other.osbLayer;
+        var value = osbLayer - other.osbLayer;
         if (value == 0) value = (other.diffSpecific ? 1 : 0) - (diffSpecific ? 1 : 0);
         return value;
     }

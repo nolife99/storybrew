@@ -103,7 +103,7 @@ public ref struct TempList<T>
                 return;
             }
 
-            if (_size > 0) Array.Copy(_items, 0, newItems, 0, _size);
+            if (_size > 0) this.AsReadOnlySpan().CopyTo(newItems);
 
             ReturnArray(newItems);
         }
@@ -155,6 +155,7 @@ public ref struct TempList<T>
         _items[size] = item;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     public void AddRange(IEnumerable<T> collection) => InsertRange(_size, collection);
 
     public readonly int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
@@ -361,14 +362,8 @@ public ref struct TempList<T>
 
     public readonly TempList<T> GetRange(int index, int count, ArrayPool<T> pool = null)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(index);
-        ArgumentOutOfRangeException.ThrowIfNegative(count);
-
-        if (_size - index < count) ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-
-        var list = new TempList<T>(count, pool ?? ArrayPool<T>.Shared);
-        Array.Copy(_items, index, list._items, 0, count);
-        list._size = count;
+        var copySpan = this.AsReadOnlySpan().Slice(index, count);
+        var list = new TempList<T>(copySpan, pool ?? ArrayPool<T>.Shared);
         return list;
     }
 

@@ -593,7 +593,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
     TempList<char> buildWarningMessage()
     {
-        var warnings = TempList.Create<char>(256);
+        var warnings = TempList.Create<char>(1024);
         var stats = proj.FrameStats;
 
         var activeSprites = stats.SpriteCount;

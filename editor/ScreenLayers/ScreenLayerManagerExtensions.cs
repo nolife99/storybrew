@@ -24,7 +24,7 @@ public static class ScreenLayerManagerExtensions
 
                 var selectedPath = NFD.PickFolder(initialValue);
                 if (!string.IsNullOrEmpty(selectedPath)) await Program.Schedule(() => callback(selectedPath));
-                await gc.ConfigureAwait(false);
+                await gc;
             });
 
     public static void OpenFilePicker(this ScreenLayerManager screenLayer,
@@ -42,7 +42,7 @@ public static class ScreenLayerManagerExtensions
 
             var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
             if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(() => callback(fileName));
-            await gc.ConfigureAwait(false);
+            await gc;
         });
 
     public static void OpenSaveLocationPicker(this ScreenLayerManager screenLayer,
@@ -60,12 +60,12 @@ public static class ScreenLayerManagerExtensions
 
             var fileName = NFD.SaveDialog(initialValue, extension, filter);
             if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(() => callback(fileName));
-            await gc.ConfigureAwait(false);
+            await gc;
         });
 
     public static void AsyncLoading(this ScreenLayerManager screenLayer,
         scoped ReadOnlySpan<char> message,
-        Func<Task> action) => screenLayer.Add(new LoadingScreen(message, action));
+        Func<ValueTask> action) => screenLayer.Add(new LoadingScreen(message, action));
 
     public static void ShowMessage(this ScreenLayerManager screenLayer, scoped ReadOnlySpan<char> message, Action ok = null)
         => screenLayer.Add(new MessageBox(message, ok, null, false));

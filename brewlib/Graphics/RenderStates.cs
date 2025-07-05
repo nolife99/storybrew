@@ -28,6 +28,7 @@ public readonly record struct BlendingFactorState
 
     readonly bool enabled = true;
     readonly BlendingFactorSrc src, alphaSrc;
+    static BlendingFactorState() => Default.Apply();
 
     public BlendingFactorState(BlendingMode mode)
     {

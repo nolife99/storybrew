@@ -35,11 +35,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
         remove => context.OnActionFailed -= value;
     }
 
-    public void Queue(T target, int uniqueKey, Action<CancellationTokenSource> action, bool mustRunAlone = false)
+    public void Queue(T target, int uniqueKey, Func<CancellationTokenSource, ValueTask> action, bool mustRunAlone = false)
     {
-        using (ExecutionContext.SuppressFlow())
-            for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
-                actionRunners[i]?.Value.EnsureThreadAlive();
+        for (var i = 0; i < int.Min(1 + (mustRunAlone ? 0 : TaskCount), actionRunners.Count); ++i)
+            actionRunners[i]?.Value.EnsureThreadAlive();
 
         if (!allowDuplicates)
             foreach (var runner in context.Queue)
@@ -59,7 +58,10 @@ public sealed class AsyncActionQueue<T> : IDisposable
             Task.CompletedTask;
     }
 
-    sealed record ActionContainer(T Target, int UniqueKey, Action<CancellationTokenSource> Action, bool MustRunAlone);
+    sealed record ActionContainer(T Target,
+        int UniqueKey,
+        Func<CancellationTokenSource, ValueTask> Action,
+        bool MustRunAlone);
 
     sealed class ActionQueueContext
     {
@@ -128,7 +130,6 @@ public sealed class AsyncActionQueue<T> : IDisposable
                 {
                     var runner = (ActionRunner)actionRunner;
                     var localToken = runner.tokenSrc;
-                    var localThread = runner.thread;
                     var localContext = runner.context;
 
                     Trace.WriteLine($"Started thread {Environment.CurrentManagedThreadId}");
@@ -148,7 +149,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
                         while (!localContext.Enabled || localContext.Queue.IsEmpty)
                         {
-                            if (localThread is null)
+                            if (runner.thread is null)
                             {
                                 Trace.WriteLine($"Exiting thread {Environment.CurrentManagedThreadId}");
                                 return;
@@ -187,7 +188,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
 
                         try
                         {
-                            task.Action(localToken);
+                            await task.Action(localToken);
                         }
                         catch (Exception e)
                         {

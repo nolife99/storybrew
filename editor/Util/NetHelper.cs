@@ -40,7 +40,7 @@ public static class NetHelper
             using var response = await Client.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
 
-            var responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseContent = await response.Content.ReadAsStringAsync();
 
             action?.Invoke(responseContent, null);
         }

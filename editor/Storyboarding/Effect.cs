@@ -3,6 +3,7 @@
 using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using StorybrewCommon.Storyboarding;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
@@ -121,7 +122,7 @@ public abstract class Effect : IDisposable
         Project.QueueEffectUpdate(this);
     }
 
-    public abstract void Update(CancellationTokenSource cts);
+    public abstract ValueTask Update(CancellationTokenSource cts);
     public abstract void CancelUpdate();
 
     void refreshLayerNames()

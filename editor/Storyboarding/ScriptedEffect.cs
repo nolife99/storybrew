@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime;
 using System.Threading;
+using System.Threading.Tasks;
 using Scripting;
 using StorybrewCommon.Scripting;
 using Tiny.PooledCollections.Generic;
@@ -46,7 +47,7 @@ public class ScriptedEffect : Effect
     public override bool Multithreaded => multithreaded;
     public override bool BeatmapDependent => beatmapDependent;
 
-    public override void Update(CancellationTokenSource cts)
+    public override async ValueTask Update(CancellationTokenSource cts)
     {
         if (!scriptContainer.HasScript) return;
 
@@ -69,25 +70,24 @@ public class ScriptedEffect : Effect
         {
             Interlocked.Exchange(ref token, cts);
 
-            changeStatus(EffectStatus.Loading);
+            await changeStatus(EffectStatus.Loading);
             var script = scriptContainer.CreateScript(cts);
 
-            changeStatus(EffectStatus.Configuring);
-            Program.Schedule(() =>
+            await changeStatus(EffectStatus.Configuring);
+            await Program.Schedule(() =>
+            {
+                beatmapDependent = true;
+                if (script.Identifier != configScriptIdentifier)
                 {
-                    beatmapDependent = true;
-                    if (script.Identifier != configScriptIdentifier)
-                    {
-                        script.UpdateConfiguration(Config);
-                        configScriptIdentifier = script.Identifier;
+                    script.UpdateConfiguration(Config);
+                    configScriptIdentifier = script.Identifier;
 
-                        RaiseConfigFieldsChanged();
-                    }
-                    else script.ApplyConfiguration(Config);
-                })
-                .Wait();
+                    RaiseConfigFieldsChanged();
+                }
+                else script.ApplyConfiguration(Config);
+            });
 
-            changeStatus(EffectStatus.Updating);
+            await changeStatus(EffectStatus.Updating);
 
             ControlledExecution.Run(() => script.Generate(context), cts.Token);
 
@@ -97,12 +97,12 @@ public class ScriptedEffect : Effect
         }
         catch (ScriptCompilationException e)
         {
-            changeStatus(EffectStatus.CompilationFailed, e.Message, context.Log);
+            await changeStatus(EffectStatus.CompilationFailed, e.Message, context.Log);
             return;
         }
         catch (ScriptLoadingException e)
         {
-            changeStatus(EffectStatus.LoadingFailed,
+            await changeStatus(EffectStatus.LoadingFailed,
                 e.InnerException is not null ? $"{e.Message}: {e.InnerException.Message}" : e.Message,
                 context.Log);
 
@@ -110,12 +110,12 @@ public class ScriptedEffect : Effect
         }
         catch (OperationCanceledException)
         {
-            changeStatus(EffectStatus.UpdateCanceled);
+            await changeStatus(EffectStatus.UpdateCanceled);
             return;
         }
         catch (Exception e)
         {
-            changeStatus(EffectStatus.ExecutionFailed, getExecutionFailedMessage(e), context.Log);
+            await changeStatus(EffectStatus.ExecutionFailed, getExecutionFailedMessage(e), context.Log);
             return;
         }
         finally
@@ -133,7 +133,7 @@ public class ScriptedEffect : Effect
             }
         }
 
-        changeStatus(EffectStatus.Ready, log: context.Log);
+        await changeStatus(EffectStatus.Ready, log: context.Log);
         if (Disposed)
         {
             newDependencyWatcher.Dispose();
@@ -149,9 +149,7 @@ public class ScriptedEffect : Effect
 
         Program.Schedule(() =>
         {
-            using (PooledList<EditorStoryboardLayer> layers = new(context.EditorLayers))
-                UpdateLayers(layers.AsReadOnlySpan());
-
+            UpdateLayers(context.EditorLayers);
             context.Dispose();
         });
     }
@@ -166,7 +164,7 @@ public class ScriptedEffect : Effect
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
 
-    void changeStatus(EffectStatus status, ReadOnlySpan<char> message = default, ReadOnlySpan<char> log = default)
+    ValueTask changeStatus(EffectStatus status, ReadOnlySpan<char> message = default, ReadOnlySpan<char> log = default)
     {
         var duration = Stopwatch.GetElapsedTime(statusStopwatch);
         if (duration > TimeSpan.Zero)
@@ -195,8 +193,9 @@ public class ScriptedEffect : Effect
             statusMessage.AddRange(log);
         }
 
-        Program.Schedule(RaiseChanged).Wait();
+        var task = Program.Schedule(RaiseChanged);
         statusStopwatch = Stopwatch.GetTimestamp();
+        return task;
     }
 
     string getExecutionFailedMessage(Exception e) => e is FileNotFoundException exception ?

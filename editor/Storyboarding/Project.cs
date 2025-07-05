@@ -521,7 +521,7 @@ public sealed partial class Project : IDisposable
         }
     }
 
-    public Task Save()
+    public ValueTask Save()
     {
         var text = projectPath.Replace(DefaultBinaryFilename, DefaultTextFilename);
 
@@ -540,7 +540,7 @@ public sealed partial class Project : IDisposable
         return project;
     }
 
-    async Task saveBinary(string path)
+    async ValueTask saveBinary(string path)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
@@ -668,7 +668,7 @@ public sealed partial class Project : IDisposable
         ImportedAssemblies = imported;
     }
 
-    async Task saveText(string path)
+    async ValueTask saveText(string path)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
@@ -865,7 +865,7 @@ public sealed partial class Project : IDisposable
         foreach (var key in layerInserters.Keys.Except(layersOrder)) layerInserters[key]();
     }
 
-    public static async Task<Project> Create(string projectFolderName,
+    public static async ValueTask<Project> Create(string projectFolderName,
         string mapsetPath,
         bool withCommonScripts,
         ResourceContainer resourceContainer)
@@ -891,7 +891,7 @@ public sealed partial class Project : IDisposable
         return project;
     }
 
-    public async Task ExportToOsb(bool exportOsb = true)
+    public async ValueTask ExportToOsb(bool exportOsb = true)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 

@@ -11,9 +11,9 @@ using Tiny.PooledCollections.Generic.StructBased.Internals;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
-public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) : UiScreenLayer
+public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<ValueTask> action) : UiScreenLayer
 {
-    readonly Func<Task> action = action;
+    readonly Func<ValueTask> action = action;
     LinearLayout mainLayout;
     ValueArray<char> title = ValueArray.Create(title);
 
@@ -35,19 +35,19 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) :
 
                     await Program.Schedule(() =>
                     {
-                        using var sb = ValueList.Create(e.Message.AsSpan());
-                        sb.AddRange(" (".AsSpan());
-                        sb.AddRange(e.GetType().Name.AsSpan());
-                        sb.AddRange(")\n".AsSpan());
+                        using var sb = TempList.Create(e.Message);
+                        sb.Append(" (");
+                        sb.Append(e.GetType().Name);
+                        sb.Append(")\n");
 
                         var innerEx = e.InnerException;
                         while (innerEx is not null)
                         {
-                            sb.AddRange("Caused by: ".AsSpan());
-                            sb.AddRange(innerEx.Message.AsSpan());
-                            sb.AddRange(" (".AsSpan());
-                            sb.AddRange(innerEx.GetType().Name.AsSpan());
-                            sb.AddRange(")\n ".AsSpan());
+                            sb.Append("Caused by: ");
+                            sb.Append(innerEx.Message);
+                            sb.Append(" (");
+                            sb.Append(innerEx.GetType().Name);
+                            sb.Append(")\n ");
 
                             innerEx = innerEx.InnerException;
                         }
@@ -65,7 +65,7 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<Task> action) :
         base.Load();
 
         using var tempTitle = TempList.Create(title.AsReadOnlySpan());
-        tempTitle.AddRange("...".AsSpan());
+        tempTitle.Append("...");
 
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)
         {

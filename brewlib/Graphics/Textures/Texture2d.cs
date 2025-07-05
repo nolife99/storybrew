@@ -265,7 +265,7 @@ public sealed class Texture2d : Texture2dRegion
                 bindlessId = -1;
             }
 
-            Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId)).Wait();
+            Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId));
         }
 
         base.Dispose(disposing);

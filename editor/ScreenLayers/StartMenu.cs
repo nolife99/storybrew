@@ -206,7 +206,7 @@ public class StartMenu : UiScreenLayer
             }
         });
 
-    Task handleLatestVersionException(Exception exception)
+    ValueTask handleLatestVersionException(Exception exception)
     {
         Trace.TraceError($"Error while retrieving latest release information: {exception.GetType()} {exception.Message}");
         versionLabel.Text = $"Could not retrieve latest release information:\n{exception.GetType()} {exception.Message

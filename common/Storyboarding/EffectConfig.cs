@@ -12,9 +12,9 @@ public partial class EffectConfig
 {
     readonly Dictionary<string, ConfigField> fields = [];
     public int FieldCount => fields.Count;
-    public IEnumerable<ConfigField> Fields => fields.Values;
+    public ICollection<ConfigField> Fields => fields.Values;
     public IEnumerable<ConfigField> SortedFields => fields.Values.OrderBy(field => field.Order);
-    public IEnumerable<string> FieldNames => fields.Keys;
+    public ICollection<string> FieldNames => fields.Keys;
 
     public void UpdateField(string name,
         string displayName,
