@@ -297,7 +297,7 @@ partial class PooledDictionary<TKey, TValue>
             var dictionary = Dictionary;
             var comparer = GetAlternateComparer(dictionary);
 
-            if (dictionary._buckets == null) dictionary.Initialize(0);
+            if (dictionary._buckets.IsNullOrEmpty()) dictionary.Initialize(0);
             Debug.Assert(dictionary._buckets != null);
 
             var entries = dictionary._entries;

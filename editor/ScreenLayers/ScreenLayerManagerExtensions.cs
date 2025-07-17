@@ -23,7 +23,9 @@ public static class ScreenLayerManagerExtensions
                 });
 
                 var selectedPath = NFD.PickFolder(initialValue);
-                if (!string.IsNullOrEmpty(selectedPath)) await Program.Schedule(() => callback(selectedPath));
+                if (!string.IsNullOrEmpty(selectedPath))
+                    await Program.Schedule(s => s.callback(s.selectedPath), (callback, selectedPath));
+
                 await gc;
             });
 
@@ -41,7 +43,7 @@ public static class ScreenLayerManagerExtensions
             });
 
             var fileName = NFD.OpenDialog(Path.Combine(initialDirectory, initialValue), filter);
-            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(() => callback(fileName));
+            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
             await gc;
         });
 
@@ -59,7 +61,7 @@ public static class ScreenLayerManagerExtensions
             });
 
             var fileName = NFD.SaveDialog(initialValue, extension, filter);
-            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(() => callback(fileName));
+            if (!string.IsNullOrEmpty(fileName)) await Program.Schedule(s => s.callback(s.fileName), (callback, fileName));
             await gc;
         });
 
@@ -121,7 +123,8 @@ public static class ScreenLayerManagerExtensions
                                 true,
                                 screenLayer.GetContext<Editor>().ResourceContainer);
 
-                            await Program.Schedule(() => screenLayer.Set(new ProjectMenu(project)));
+                            await Program.Schedule(s => s.screenLayer.Set(new ProjectMenu(s.project)),
+                                (screenLayer, project));
                         });
             });
     }

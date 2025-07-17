@@ -1,7 +1,6 @@
 ﻿namespace StorybrewEditor.Storyboarding;
 
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using BrewLib.Audio;
@@ -18,8 +17,6 @@ using StorybrewCommon.Util;
 
 public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
 {
-    static readonly long timestamp = Stopwatch.GetTimestamp();
-
     static readonly RenderStates AlphaBlendStates = new(),
         AdditiveStates = new() { BlendingFactor = new(BlendingMode.Additive) };
 
@@ -156,11 +153,7 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
         var color = (Color)sprite.ColorAt(time);
         if (forceVisible)
             color = SixLabors.ImageSharp.Color.FromScaledVector(color.ToScaledVector4() *
-                ColorExtensions.FromHsb(new(
-                    SoundUtil.TriangleWave((float)Stopwatch.GetElapsedTime(timestamp).TotalSeconds / 4) / 2 + .5f,
-                    1,
-                    1,
-                    1)));
+                ColorExtensions.FromHsb(new(SoundUtil.TriangleWave(Environment.TickCount * .00025f) / 2 + .5f, 1, 1, 1)));
 
         DrawState.Prepare(drawContext.Get<IQuadRenderer>(), camera, additive ? AdditiveStates : AlphaBlendStates)
             .Draw(texture,

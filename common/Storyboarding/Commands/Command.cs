@@ -36,6 +36,7 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
         EndTime += offset;
     }
 
+    public virtual bool IsFragmentableAt(float time) => Easing == OsbEasing.None;
     public CommandResult<TValue> AsResult(float timeOffset) => new(this, timeOffset);
 
     public float StartTime { get; private set; }

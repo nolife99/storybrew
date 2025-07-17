@@ -21,6 +21,8 @@ public sealed class TriggerCommand : CommandGroup
     public string TriggerName { get; }
     public int Group { get; }
 
+    public override bool IsFragmentableAt(float time) => false;
+
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
     {
         var list = TempList.Create<char>();

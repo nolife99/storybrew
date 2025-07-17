@@ -70,9 +70,9 @@ public class NewProjectMenu : UiScreenLayer
             var invalidChars = Path.GetInvalidFileNameChars();
 
             using var charArray = TempArray.Create(projectNameTextbox.Value);
-            for (var i = 0; i < charArray.Length; i++)
-                if (invalidChars.Contains(charArray[i]))
-                    charArray[i] = '_';
+            foreach (ref var c in charArray)
+                if (invalidChars.Contains(c))
+                    c = '_';
 
             projectNameTextbox.Value = charArray.AsReadOnlySpan();
         };
@@ -92,8 +92,11 @@ public class NewProjectMenu : UiScreenLayer
 
         updateButtonsState();
 
-        startButton.OnClick += (_, _) => createProject();
         cancelButton.OnClick += (_, _) => Exit();
+        startButton.OnClick += (_, _) => Manager.AsyncLoading("Creating project",
+            async () => await Program.Schedule(s => s.Item2.Manager.Set(new ProjectMenu(s.Item1)),
+                (await Project.Create(projectNameTextbox.Value.ToString(), mapsetPathSelector.Value.ToString(), true, Manager.GetContext<Editor>().ResourceContainer),
+                    this)));
     }
 
     public override void Resize(int width, int height)
@@ -102,49 +105,44 @@ public class NewProjectMenu : UiScreenLayer
         mainLayout.Pack(300);
     }
 
-    void createProject() => Manager.AsyncLoading("Creating project",
-        async () =>
-        {
-            var project = await Project.Create(projectNameTextbox.Value.ToString(),
-                mapsetPathSelector.Value.ToString(),
-                true,
-                Manager.GetContext<Editor>().ResourceContainer);
-
-            await Program.Schedule(() => Manager.Set(new ProjectMenu(project)));
-        });
-
-    void updateButtonsState() => startButton.Disabled = !updateFieldsValid();
-
-    bool updateFieldsValid()
+    void updateButtonsState()
     {
         var projectFolderName = projectNameTextbox.Value;
         if (projectFolderName.IsWhiteSpace())
         {
             startButton.Tooltip = "The project name isn't valid";
-            return false;
+            startButton.Disabled = true;
+
+            return;
         }
 
         var projectFolderPath = Path.Combine(Project.ProjectsFolder, projectFolderName.ToString());
         if (Directory.Exists(projectFolderPath))
         {
             startButton.Tooltip = $"A project named '{projectFolderName}' already exists";
-            return false;
+            startButton.Disabled = true;
+
+            return;
         }
 
         var mapsetPath = mapsetPathSelector.Value.ToString();
         if (!Directory.Exists(mapsetPath))
         {
             startButton.Tooltip = "The selected mapset folder does not exist";
-            return false;
+            startButton.Disabled = true;
+
+            return;
         }
 
         if (!Directory.EnumerateFiles(mapsetPath, "*.osu", SearchOption.TopDirectoryOnly).Any())
         {
             startButton.Tooltip = "No .osu found in the selected mapset folder";
-            return false;
+            startButton.Disabled = true;
+
+            return;
         }
 
         startButton.Tooltip = "";
-        return true;
+        startButton.Disabled = false;
     }
 }

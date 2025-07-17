@@ -32,7 +32,7 @@ public class ScriptedEffect : Effect
         ScriptContainer<StoryboardObjectGenerator> scriptContainer,
         bool multithreaded = false) : base(project)
     {
-        statusStopwatch = Stopwatch.GetTimestamp();
+        statusStopwatch = Environment.TickCount64;
 
         this.scriptContainer = scriptContainer;
         scriptContainer.OnScriptChanged += scriptContainer_OnScriptChanged;
@@ -74,18 +74,21 @@ public class ScriptedEffect : Effect
             var script = scriptContainer.CreateScript(cts);
 
             await changeStatus(EffectStatus.Configuring);
-            await Program.Schedule(() =>
-            {
-                beatmapDependent = true;
-                if (script.Identifier != configScriptIdentifier)
+            await Program.Schedule(state =>
                 {
-                    script.UpdateConfiguration(Config);
-                    configScriptIdentifier = script.Identifier;
+                    var (localScript, localEffect) = state;
 
-                    RaiseConfigFieldsChanged();
-                }
-                else script.ApplyConfiguration(Config);
-            });
+                    localEffect.beatmapDependent = true;
+                    if (localScript.Identifier != localEffect.configScriptIdentifier)
+                    {
+                        localScript.UpdateConfiguration(localEffect.Config);
+                        localEffect.configScriptIdentifier = localScript.Identifier;
+
+                        localEffect.RaiseConfigFieldsChanged();
+                    }
+                    else localScript.ApplyConfiguration(localEffect.Config);
+                },
+                (script, this));
 
             await changeStatus(EffectStatus.Updating);
 
@@ -147,27 +150,22 @@ public class ScriptedEffect : Effect
 
         if (Project.Disposed) return;
 
-        Program.Schedule(() =>
-        {
-            UpdateLayers(context.EditorLayers);
-            context.Dispose();
-        });
+        Program.Schedule(state =>
+            {
+                state.Item2.UpdateLayers(state.context.EditorLayers);
+                state.context.Dispose();
+            },
+            (context, this));
     }
 
-    public override void CancelUpdate()
-    {
-        var localToken = token;
-        Interlocked.Exchange(ref token, null);
-
-        localToken.CancelAfter(400);
-    }
+    public override void CancelUpdate() => Interlocked.Exchange(ref token, null).CancelAfter(400);
 
     void scriptContainer_OnScriptChanged(object sender, EventArgs e) => Refresh();
 
     ValueTask changeStatus(EffectStatus status, ReadOnlySpan<char> message = default, ReadOnlySpan<char> log = default)
     {
-        var duration = Stopwatch.GetElapsedTime(statusStopwatch);
-        if (duration > TimeSpan.Zero)
+        var duration = Environment.TickCount64 - statusStopwatch;
+        if (duration > 0)
             switch (this.status)
             {
                 case EffectStatus.Ready:
@@ -175,7 +173,7 @@ public class ScriptedEffect : Effect
                 case EffectStatus.LoadingFailed:
                 case EffectStatus.ExecutionFailed: break;
 
-                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration.Milliseconds}ms"); break;
+                default: Trace.WriteLine($"{BaseName}: {this.status} took {duration}ms"); break;
             }
 
         this.status = status;
@@ -193,8 +191,8 @@ public class ScriptedEffect : Effect
             statusMessage.AddRange(log);
         }
 
-        var task = Program.Schedule(RaiseChanged);
-        statusStopwatch = Stopwatch.GetTimestamp();
+        var task = Program.Schedule(ef => ef.RaiseChanged(), this);
+        statusStopwatch = Environment.TickCount64;
         return task;
     }
 

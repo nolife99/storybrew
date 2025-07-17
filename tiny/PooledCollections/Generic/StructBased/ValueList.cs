@@ -521,7 +521,7 @@ public partial struct ValueList<T> : IList<T>, IReadOnlyList<T>, IDeserializatio
     //
     public int IndexOf(T item, int index, int count)
     {
-        if (index > _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
 
         if (count < 0 || index > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 

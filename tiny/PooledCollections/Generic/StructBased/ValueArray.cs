@@ -22,7 +22,7 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCal
 
     internal ValueArray(int length, ArrayPool<T> pool)
     {
-        if (length < 0) ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
 
         _length = length;
         _pool = pool ?? ArrayPool<T>.Shared;
@@ -31,7 +31,7 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCal
 
     internal ValueArray(scoped ref readonly ReadOnlySpan<T> array, int length, ArrayPool<T> pool)
     {
-        if (length < 0) ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
 
         _pool = pool ?? ArrayPool<T>.Shared;
         _length = length;
@@ -125,7 +125,7 @@ public struct ValueArray<T> : IReadOnlyList<T>, IDisposable, IDeserializationCal
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (dest.Length - destIndex < count || _length - index < count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);

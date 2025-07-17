@@ -10,7 +10,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using BrewLib.Audio;
 using BrewLib.Util;
-using OpenTK.Core;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -74,11 +73,11 @@ public static class Program
 
             using Editor editor = new(window);
 
-            void refreshCallback()
+            var refreshCallback = () =>
             {
                 editor.Draw();
                 window.Context.SwapBuffers();
-            }
+            };
 
             window.Refresh += refreshCallback;
 
@@ -166,27 +165,12 @@ public static class Program
             windowContext.SwapBuffers();
 
             window.IsVisible = true;
-            while (scheduledActions.TryDequeue(out var action))
-            {
-                try
-                {
-                    action.Action();
-                    action.Task.SetResult(0);
-                }
-                catch (Exception e)
-                {
-                    Trace.TraceError($"Scheduled task {action.Action.Method}:\n{e}");
-
-                    action.Task.SetException(e);
-                }
-
-                ValueTaskSourcePool.Return(action.Task);
-            }
+            while (scheduledActions.TryDequeue(out var action)) action.Dispose();
 
             var active = stopwatch.ElapsedTicks / (float)Stopwatch.Frequency - cur;
             var sleepTime = (window.IsFocused ? targetFrame : fixedRateUpdate) - active;
 
-            if (sleepTime > 0) Utils.AccurateSleep(sleepTime, 8);
+            if (sleepTime > 0) Thread.Sleep((int)(sleepTime * 1000));
 
             var frameTime = cur - prev;
             prev = cur;
@@ -235,22 +219,22 @@ public static class Program
 
     #region Scheduling
 
-    static readonly ConcurrentQueue<(Action Action, ManualResetValueTaskSourceCore<byte> Task)> scheduledActions = [];
+    static readonly ConcurrentQueue<IDisposable> scheduledActions = [];
 
     static readonly int mainThreadId = Environment.CurrentManagedThreadId;
 
-    public static ValueTask Schedule(Action action)
+    public static ValueTask Schedule<TState>(Action<TState> action, TState state = default)
     {
         if (Environment.CurrentManagedThreadId == mainThreadId)
         {
-            action();
+            action(state);
             return ValueTask.CompletedTask;
         }
 
-        var tcs = ValueTaskSourcePool.Get();
-        scheduledActions.Enqueue((action, tcs));
+        var tcs = ValueTaskSourceHolder<TState>.Get(action, state);
+        scheduledActions.Enqueue(tcs);
 
-        return new(tcs, tcs.Version);
+        return tcs.Task;
     }
 
     #endregion

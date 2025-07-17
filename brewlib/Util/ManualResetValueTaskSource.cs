@@ -9,12 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
-public static class ValueTaskSourcePool
+public static class ValueTaskSourcePool<T>
 {
-    static readonly ConcurrentQueue<ManualResetValueTaskSourceCore<byte>> queue = new();
-    static ManualResetValueTaskSourceCore<byte> fastItem;
+    static readonly ConcurrentQueue<ManualResetValueTaskSourceCore<T>> queue = new();
+    static ManualResetValueTaskSourceCore<T> fastItem;
 
-    public static ManualResetValueTaskSourceCore<byte> Get()
+    public static ManualResetValueTaskSourceCore<T> Get()
     {
         var item = fastItem;
         if (item is not null && Interlocked.CompareExchange(ref fastItem, null, item) == item || queue.TryDequeue(out item))
@@ -26,7 +26,7 @@ public static class ValueTaskSourcePool
         return new() { RunContinuationsAsynchronously = true };
     }
 
-    public static void Return(ManualResetValueTaskSourceCore<byte> obj)
+    public static void Return(ManualResetValueTaskSourceCore<T> obj)
     {
         if (fastItem is not null || Interlocked.CompareExchange(ref fastItem, obj, null) is not null) queue.Enqueue(obj);
     }
@@ -128,7 +128,7 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
         // To minimize the chances of that, we check preemptively whether _continuation
         // is already set to something other than the completion sentinel.
 
-        object oldContinuation = _continuation;
+        var oldContinuation = _continuation;
         if (oldContinuation is null)
         {
             _continuationState = state;

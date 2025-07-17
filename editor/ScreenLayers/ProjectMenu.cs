@@ -15,6 +15,7 @@ using Scripting;
 using Storyboarding;
 using StorybrewCommon.Mapset;
 using StorybrewEditor.Util;
+using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using UserInterface;
@@ -496,28 +497,30 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             var first = true;
             var mainBeatmap = proj.MainBeatmap;
 
-            foreach (var map in proj.MapsetManager.Beatmaps.ToArray())
-            {
-                await Program.Schedule(() => proj.MainBeatmap = map);
-                while (proj.EffectsStatus != EffectStatus.Ready)
+            using (var array = ValueArray.Create(proj.MapsetManager.Beatmaps))
+                foreach (var map in array)
                 {
-                    switch (proj.EffectsStatus)
+                    await Program.Schedule(s => s.proj.MainBeatmap = s.map, (map, proj));
+                    while (proj.EffectsStatus != EffectStatus.Ready)
                     {
-                        case EffectStatus.CompilationFailed:
-                        case EffectStatus.ExecutionFailed:
-                        case EffectStatus.LoadingFailed:
-                            throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
-                            })\nCheck its log for the actual error.");
+                        switch (proj.EffectsStatus)
+                        {
+                            case EffectStatus.CompilationFailed:
+                            case EffectStatus.ExecutionFailed:
+                            case EffectStatus.LoadingFailed:
+                                throw new ScriptLoadingException($"An effect failed to execute ({proj.EffectsStatus
+                                })\nCheck its log for the actual error.");
+                        }
+
+                        await Task.Delay(100);
                     }
 
-                    await Task.Delay(100);
+                    await proj.ExportToOsb(first);
+                    first = false;
                 }
 
-                await proj.ExportToOsb(first);
-                first = false;
-            }
-
-            if (proj.MainBeatmap != mainBeatmap) await Program.Schedule(() => proj.MainBeatmap = mainBeatmap);
+            if (proj.MainBeatmap != mainBeatmap)
+                await Program.Schedule(s => s.proj.MainBeatmap = s.mainBeatmap, (mainBeatmap, proj));
         });
 
     public override void FixedUpdate()
@@ -805,7 +808,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             async () =>
             {
                 await proj.CancelEffectUpdates(true);
-                await Program.Schedule(() => Manager.GetContext<Editor>().Restart());
+                await Program.Schedule(m => m.GetContext<Editor>().Restart(), Manager);
 
                 await Task.Delay(5000);
 
@@ -821,7 +824,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                     async () =>
                     {
                         await proj.Save();
-                        await Program.Schedule(action);
+                        await Program.Schedule(a => a(), action);
                     }),
                 action,
                 true);
@@ -885,10 +888,11 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         base.Dispose(disposing);
         if (disposed) return;
 
+        proj.OnEffectsContentChanged -= project_OnEffectsContentChanged;
+        proj.OnEffectsStatusChanged -= project_OnEffectsStatusChanged;
+
         if (disposing)
         {
-            proj.OnEffectsContentChanged -= project_OnEffectsContentChanged;
-            proj.OnEffectsStatusChanged -= project_OnEffectsStatusChanged;
             proj.Dispose();
             audio.Dispose();
         }

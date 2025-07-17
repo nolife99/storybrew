@@ -11,6 +11,8 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using StorybrewEditor.Util;
 using Tiny;
 using Tiny.Formats.Json;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class StartMenu : UiScreenLayer
 {
@@ -175,30 +177,38 @@ public class StartMenu : UiScreenLayer
                     else break;
                 }
 
-                await Program.Schedule(() =>
-                {
-                    if (Program.Version < latestVersion)
+                await Program.Schedule(s =>
                     {
-                        updateButton.Text = "Version " + latestVersion + " available!";
-                        updateButton.Tooltip = $"What's new:\n\n{description.AsSpan().TrimEnd('\n')}";
-                        updateButton.OnClick += (_, _) =>
+                        var (latestVer, desc, menu) = s;
+
+                        if (Program.Version < latestVer)
                         {
-                            if (downloadUrl is not null && latestVersion >= new Version(1, 4))
-                                Manager.Add(new UpdateMenu(downloadUrl));
-                            else Updater.OpenLatestReleasePage();
-                        };
+                            menu.updateButton.Text = "Version " + latestVer + " available!";
 
-                        updateButton.StyleName = "";
-                        updateButton.Disabled = false;
-                    }
-                    else
-                    {
-                        versionLabel.Tooltip = $"Recent changes:\n\n{description.AsSpan().TrimEnd('\n')}";
-                        updateButton.Displayed = false;
-                    }
+                            using (var sb = TempList.Create<char>())
+                            {
+                                sb.Append("What's new:\n\n");
+                                sb.AddRange(desc.AsSpan().TrimEnd('\n'));
 
-                    bottomLayout.Pack(600);
-                });
+                                menu.updateButton.Tooltip = sb.AsReadOnlySpan();
+                            }
+
+                            if (downloadUrl is not null && latestVer >= new Version(1, 4))
+                                menu.updateButton.OnClick += (_, _) => menu.Manager.Add(new UpdateMenu(downloadUrl));
+                            else menu.updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
+
+                            menu.updateButton.StyleName = "";
+                            menu.updateButton.Disabled = false;
+                        }
+                        else
+                        {
+                            menu.versionLabel.Tooltip = $"Recent changes:\n\n{desc.AsSpan().TrimEnd('\n')}";
+                            menu.updateButton.Displayed = false;
+                        }
+
+                        menu.bottomLayout.Pack(600);
+                    },
+                    (latestVersion, description, this));
             }
             catch (Exception ex)
             {
@@ -216,6 +226,6 @@ public class StartMenu : UiScreenLayer
         updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
         updateButton.Disabled = false;
 
-        return Program.Schedule(() => bottomLayout.Pack(600));
+        return Program.Schedule(s => s.Pack(600), bottomLayout);
     }
 }

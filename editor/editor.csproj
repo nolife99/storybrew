@@ -29,10 +29,10 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <Optimize>True</Optimize>
-        <DefineConstants>TARGET_64BIT</DefineConstants>
+        <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-        <DefineConstants>TARGET_64BIT</DefineConstants>
+        <DefineConstants>TRACE;TARGET_64BIT</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>

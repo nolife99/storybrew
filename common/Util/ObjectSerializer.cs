@@ -8,6 +8,7 @@ using System.Numerics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Storyboarding.CommandValues;
+using ZLinq;
 using Color4 = OpenTK.Mathematics.Color4;
 
 #pragma warning disable CS1591
@@ -106,11 +107,7 @@ public abstract class ObjectSerializer
             v =>
             {
                 var vector = (Vector3)v;
-                return vector.X.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    vector.Y.ToString(CultureInfo.InvariantCulture) +
-                    "," +
-                    vector.Z.ToString(CultureInfo.InvariantCulture);
+                return ((Span<float>) [vector.X, vector.Y, vector.Z]).AsValueEnumerable().JoinToString(',');
             }),
         new SimpleObjectSerializer<OpenTK.Mathematics.Vector2>(
             r => new OpenTK.Mathematics.Vector2(r.ReadSingle(), r.ReadSingle()),

@@ -26,39 +26,49 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<ValueTask> acti
                 try
                 {
                     await loadingScreen.action();
-                    await Program.Schedule(loadingScreen.Exit);
+                    await Program.Schedule(l => l.Exit(), loadingScreen);
                 }
                 catch (Exception e)
                 {
                     Trace.TraceError(
                         $"{loadingScreen.title.AsReadOnlySpan()} failed ({loadingScreen.action.Method.Name}): {e}");
 
-                    await Program.Schedule(() =>
-                    {
-                        using var sb = TempList.Create(e.Message);
-                        sb.Append(" (");
-                        sb.Append(e.GetType().Name);
-                        sb.Append(")\n");
-
-                        var innerEx = e.InnerException;
-                        while (innerEx is not null)
+                    await Program.Schedule(state =>
                         {
-                            sb.Append("Caused by: ");
-                            sb.Append(innerEx.Message);
+                            var (l, ex) = state;
+
+                            using var sb = TempList.Create(l.title.AsReadOnlySpan());
+                            sb.Append(" failed:\n \n");
+
+                            sb.Append(ex.Message);
                             sb.Append(" (");
-                            sb.Append(innerEx.GetType().Name);
-                            sb.Append(")\n ");
+                            sb.Append(ex.GetType().Name);
+                            sb.Append(")\n");
 
-                            innerEx = innerEx.InnerException;
-                        }
+                            var innerEx = ex.InnerException;
+                            while (innerEx is not null)
+                            {
+                                sb.Append("Caused by: ");
+                                sb.Append(innerEx.Message);
+                                sb.Append(" (");
+                                sb.Append(innerEx.GetType().Name);
+                                sb.Append(")\n ");
 
-                        loadingScreen.Manager.ShowMessage(
-                            $"{loadingScreen.title.AsReadOnlySpan()} failed:\n \n{sb.AsReadOnlySpan()}\n \nDetails:\n{e.GetBaseException()}");
+                                innerEx = innerEx.InnerException;
+                            }
 
-                        loadingScreen.Exit();
-                    });
+                            sb.Append("\n \nDetails:\n");
+                            sb.Append(ex.GetBaseException().ToString());
+
+                            l.Manager.ShowMessage(sb.AsReadOnlySpan());
+
+                            l.Exit();
+                        },
+                        (loadingScreen, e));
                 }
             },
+#pragma warning restore EPC17
+#pragma warning restore EPC17
             this,
             true);
 

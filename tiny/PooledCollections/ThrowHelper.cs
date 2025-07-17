@@ -54,9 +54,6 @@ internal static class ThrowHelper
     public static void ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess()
         => throw GetArgumentOutOfRangeException(EA.startIndex, ER.ArgumentOutOfRange_IndexMustBeLess);
 
-    public static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
-        => throw GetArgumentOutOfRangeException(EA.count, ER.ArgumentOutOfRange_NeedNonNegNum);
-
     public static void ThrowArrayIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual()
         => throw GetArgumentOutOfRangeException(EA.arrayIndex, ER.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
@@ -68,9 +65,6 @@ internal static class ThrowHelper
 
     public static void ThrowIndexArgumentOutOfRange_NeedNonNegNumException()
         => throw GetArgumentOutOfRangeException(EA.index, ER.ArgumentOutOfRange_NeedNonNegNum);
-
-    public static void ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum()
-        => throw GetArgumentOutOfRangeException(EA.length, ER.ArgumentOutOfRange_NeedNonNegNum);
 
     public static void ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count()
         => throw GetArgumentOutOfRangeException(EA.count, ER.ArgumentOutOfRange_Count);

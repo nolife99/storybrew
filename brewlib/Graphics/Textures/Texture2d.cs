@@ -17,6 +17,8 @@ using Image = SixLabors.ImageSharp.Image;
 public sealed class Texture2d : Texture2dRegion
 {
     static readonly bool useGlClearTex = GLFW.ExtensionSupported("GL_ARB_clear_texture");
+
+    public static readonly bool BindlessTexturesSupported = GLFW.ExtensionSupported("GL_ARB_bindless_texture");
     int _textureId;
 
     long bindlessId = -1;
@@ -41,7 +43,7 @@ public sealed class Texture2d : Texture2dRegion
         {
             if (bindlessId != -1) return bindlessId;
 
-            if (!DrawState.BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
+            if (!BindlessTexturesSupported) throw new InvalidOperationException("Bindless textures not supported");
 
             ObjectDisposedException.ThrowIf(disposed, typeof(Texture2d));
 
@@ -265,7 +267,7 @@ public sealed class Texture2d : Texture2dRegion
                 bindlessId = -1;
             }
 
-            Native.MainThreadScheduler(() => GL.DeleteTexture(_textureId));
+            Native.MainThreadScheduler(id => GL.DeleteTexture((int)id), _textureId);
         }
 
         base.Dispose(disposing);

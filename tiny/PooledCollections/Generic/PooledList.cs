@@ -582,7 +582,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     //
     public int IndexOf(T item, int index)
     {
-        if (index > _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
         return Array.IndexOf(_items, item, index, _size - index);
     }
 
@@ -597,7 +597,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
     //
     public int IndexOf(T item, int index, int count)
     {
-        if (index > _size) ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _size);
 
         if (count < 0 || index > _size - count) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
 
@@ -939,7 +939,7 @@ public class PooledList<T> : IList<T>, IReadOnlyList<T>, IDeserializationCallbac
         if (destIndex < 0 || destIndex > dest.Length)
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         if (dest.Length - destIndex < count || _size - index < count)
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);

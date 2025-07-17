@@ -19,12 +19,6 @@ public ref partial struct TempHashSet<T>
 {
     // This uses the same array-based implementation as Dictionary<TKey, TValue>.
 
-    // Constants for serialization
-    const string CapacityName = "Capacity"; // Do not rename (binary serialization)
-    const string ElementsName = "Elements"; // Do not rename (binary serialization)
-    const string ComparerName = "Comparer"; // Do not rename (binary serialization)
-    const string VersionName = "Version"; // Do not rename (binary serialization)
-
     /// <summary>Cutoff point for stackallocs. This corresponds to the number of ints.</summary>
     const int StackAllocThreshold = 100;
 
@@ -1052,10 +1046,11 @@ public ref partial struct TempHashSet<T>
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> span = stackalloc int[StackAllocThreshold];
-        var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] pooledArray = null;
+        BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
+                stackalloc int[intArrayLength] :
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         // Mark if contains: find index of in slots array and mark corresponding element in bit array.
         foreach (var item in other)
@@ -1071,6 +1066,8 @@ public ref partial struct TempHashSet<T>
             ref var entry = ref _entries![i];
             if (entry.Next >= -1 && !bitHelper.IsMarked(i)) Remove(entry.Value);
         }
+
+        if (pooledArray is not null) _bucketPool.Return(pooledArray);
     }
 
     /// <summary>
@@ -1121,20 +1118,20 @@ public ref partial struct TempHashSet<T>
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
-        var itemsToRemove = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] itemsToRemoveArray = null;
+        BitHelper itemsToRemove = new(intArrayLength <= StackAllocThreshold / 2 ?
+                stackalloc int[intArrayLength] :
+                new(itemsToRemoveArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
-        Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
-        var itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] itemsAddedFromOtherArray = null;
+        BitHelper itemsAddedFromOther = new(itemsToRemoveArray is null ?
+                stackalloc int[intArrayLength] :
+                new(itemsAddedFromOtherArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         foreach (var item in other)
-        {
-            int location;
-            if (AddIfNotPresent(item, out location))
+            if (AddIfNotPresent(item, out var location))
 
                 // wasn't already present in collection; flag it as something not to remove
                 // *NOTE* if location is out of range, we should ignore. BitHelper will
@@ -1150,12 +1147,16 @@ public ref partial struct TempHashSet<T>
                 // because they could not have been in the original collection
                 if (location < originalCount && !itemsAddedFromOther.IsMarked(location)) itemsToRemove.MarkBit(location);
             }
-        }
 
         // if anything marked, remove it
         for (var i = 0; i < originalCount; i++)
             if (itemsToRemove.IsMarked(i))
                 Remove(_entries![i].Value);
+
+        if (itemsToRemoveArray is null) return;
+
+        _bucketPool.Return(itemsToRemoveArray);
+        _bucketPool.Return(itemsAddedFromOtherArray);
     }
 
     /// <summary>
@@ -1192,10 +1193,11 @@ public ref partial struct TempHashSet<T>
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> span = stackalloc int[StackAllocThreshold];
-        var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] pooledArray = null;
+        BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
+                stackalloc int[intArrayLength] :
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         var unfoundCount = 0; // count of items in other not found in this
         var uniqueFoundCount = 0; // count of unique items in other found in this
@@ -1205,12 +1207,11 @@ public ref partial struct TempHashSet<T>
             var index = FindItemIndex(item);
             if (index >= 0)
             {
-                if (!bitHelper.IsMarked(index))
-                {
-                    // Item hasn't been seen yet.
-                    bitHelper.MarkBit(index);
-                    uniqueFoundCount++;
-                }
+                if (bitHelper.IsMarked(index)) continue;
+
+                // Item hasn't been seen yet.
+                bitHelper.MarkBit(index);
+                uniqueFoundCount++;
             }
             else
             {
@@ -1218,6 +1219,8 @@ public ref partial struct TempHashSet<T>
                 if (returnIfUnfound) break;
             }
         }
+
+        if (pooledArray is not null) _bucketPool.Return(pooledArray);
 
         return (uniqueFoundCount, unfoundCount);
     }
@@ -1245,12 +1248,7 @@ public ref partial struct TempHashSet<T>
 
     void RenewBuckets(int newSize)
     {
-        if (_buckets is not null)
-            try
-            {
-                _bucketPool.Return(_buckets);
-            }
-            catch { }
+        if (_buckets is not null) _bucketPool.Return(_buckets);
 
         var buckets = _bucketPool.Rent(newSize);
         Array.Clear(buckets, 0, buckets.Length);
@@ -1259,15 +1257,7 @@ public ref partial struct TempHashSet<T>
 
     void RenewEntries(int newSize)
     {
-        if (_entries is not null)
-            try
-            {
-                _entryPool.Return(_entries, s_clearEntries);
-            }
-            catch
-            {
-                if (s_clearEntries) Array.Clear(_entries, 0, _entries.Length);
-            }
+        if (_entries is not null) _entryPool.Return(_entries, s_clearEntries);
 
         _entries = _entryPool.Rent(newSize);
     }

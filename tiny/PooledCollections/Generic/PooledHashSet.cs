@@ -232,10 +232,11 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> span = stackalloc int[StackAllocThreshold];
-        var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] pooledArray = null;
+        BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
+                stackalloc int[intArrayLength] :
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         // mark if contains: find index of in slots array and mark corresponding element in bit array
         for (int i = 0, len = other.Length; i < len; i++)
@@ -251,6 +252,8 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
             ref var entry = ref _entries![i];
             if (entry.Next >= -1 && !bitHelper.IsMarked(i)) Remove(entry.Value);
         }
+
+        if (pooledArray is not null) _bucketPool.Return(pooledArray);
     }
 
     /// <summary>Remove items in other from this set. Modifies this set.</summary>
@@ -302,15 +305,17 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
-        var itemsToRemove = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] itemsToRemoveArray = null;
+        BitHelper itemsToRemove = new(intArrayLength <= StackAllocThreshold / 2 ?
+                stackalloc int[intArrayLength] :
+                new(itemsToRemoveArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
-        Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
-        var itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] itemsAddedFromOtherArray = null;
+        BitHelper itemsAddedFromOther = new(itemsToRemoveArray is null ?
+                stackalloc int[intArrayLength] :
+                new(itemsAddedFromOtherArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         for (int i = 0, len = other.Length; i < len; i++)
             if (AddIfNotPresent(other[i], out var location))
@@ -334,6 +339,11 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         for (var i = 0; i < originalCount; i++)
             if (itemsToRemove.IsMarked(i))
                 Remove(_entries![i].Value);
+
+        if (itemsToRemoveArray is null) return;
+
+        _bucketPool.Return(itemsToRemoveArray);
+        _bucketPool.Return(itemsAddedFromOtherArray);
     }
 
     /// <summary>Checks if this is a subset of other.</summary>
@@ -419,10 +429,11 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> span = stackalloc int[StackAllocThreshold];
-        var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] pooledArray = null;
+        BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
+                stackalloc int[intArrayLength] :
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         var unfoundCount = 0; // count of items in other not found in this
         var uniqueFoundCount = 0; // count of unique items in other found in this
@@ -445,6 +456,8 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
                 if (returnIfUnfound) break;
             }
         }
+
+        if (pooledArray is not null) _bucketPool.Return(pooledArray);
 
         return (uniqueFoundCount, unfoundCount);
     }
@@ -560,7 +573,7 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
         // Also throw if count less than 0.
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         // Will the array, starting at arrayIndex, be able to hold elements? Note: not
         // checking arrayIndex >= array.Length (consistency with list of allowing
@@ -1806,10 +1819,11 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> span = stackalloc int[StackAllocThreshold];
-        var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] pooledArray = null;
+        BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
+                stackalloc int[intArrayLength] :
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         // Mark if contains: find index of in slots array and mark corresponding element in bit array.
         foreach (var item in other)
@@ -1825,6 +1839,8 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
             ref var entry = ref _entries![i];
             if (entry.Next >= -1 && !bitHelper.IsMarked(i)) Remove(entry.Value);
         }
+
+        if (pooledArray is not null) _bucketPool.Return(pooledArray);
     }
 
     /// <summary>
@@ -1875,15 +1891,17 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> itemsToRemoveSpan = stackalloc int[StackAllocThreshold / 2];
-        var itemsToRemove = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsToRemoveSpan.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] itemsToRemoveArray = null;
+        BitHelper itemsToRemove = new(intArrayLength <= StackAllocThreshold / 2 ?
+                stackalloc int[intArrayLength] :
+                new(itemsToRemoveArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
-        Span<int> itemsAddedFromOtherSpan = stackalloc int[StackAllocThreshold / 2];
-        var itemsAddedFromOther = intArrayLength <= StackAllocThreshold / 2 ?
-            new BitHelper(itemsAddedFromOtherSpan.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] itemsAddedFromOtherArray = null;
+        BitHelper itemsAddedFromOther = new(itemsToRemoveArray is null ?
+                stackalloc int[intArrayLength] :
+                new(itemsAddedFromOtherArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         foreach (var item in other)
         {
@@ -1910,6 +1928,11 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         for (var i = 0; i < originalCount; i++)
             if (itemsToRemove.IsMarked(i))
                 Remove(_entries![i].Value);
+
+        if (itemsToRemoveArray is null) return;
+
+        _bucketPool.Return(itemsToRemoveArray);
+        _bucketPool.Return(itemsAddedFromOtherArray);
     }
 
     /// <summary>
@@ -1946,10 +1969,11 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
         var originalCount = _count;
         var intArrayLength = BitHelper.ToIntArrayLength(originalCount);
 
-        Span<int> span = stackalloc int[StackAllocThreshold];
-        var bitHelper = intArrayLength <= StackAllocThreshold ?
-            new BitHelper(span.Slice(0, intArrayLength), true) :
-            new BitHelper(new int[intArrayLength], false);
+        int[] pooledArray = null;
+        BitHelper bitHelper = new(intArrayLength <= StackAllocThreshold ?
+                stackalloc int[intArrayLength] :
+                new(pooledArray = _bucketPool.Rent(intArrayLength), 0, 100),
+            true);
 
         var unfoundCount = 0; // count of items in other not found in this
         var uniqueFoundCount = 0; // count of unique items in other found in this
@@ -1972,6 +1996,8 @@ public class PooledHashSet<T> : ISet<T>, IReadOnlySet<T>, ISerializable, IDeseri
                 if (returnIfUnfound) break;
             }
         }
+
+        if (pooledArray is not null) _bucketPool.Return(pooledArray);
 
         return (uniqueFoundCount, unfoundCount);
     }

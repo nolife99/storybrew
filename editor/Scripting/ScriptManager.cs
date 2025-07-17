@@ -91,18 +91,19 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
     public string ScriptsPath { get; }
     public void Dispose() => Dispose(true);
 
-    public ScriptContainer<TScript> Get(string scriptName)
+    public ScriptContainer<TScript> Get(ReadOnlySpan<char> scriptName)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
 
-        if (scriptContainers.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
+        var altLookup = scriptContainers.GetAlternateLookup<ReadOnlySpan<char>>();
+        if (altLookup.TryGetValue(scriptName, out var scriptContainer)) return scriptContainer;
 
-        var scriptTypeName = $"{scriptsNamespace}.{scriptName}";
-        var sourcePath = Path.Combine(ScriptsPath, $"{scriptName}.cs");
+        var scriptFileName = $"{scriptName}.cs";
+        var sourcePath = Path.Combine(ScriptsPath, scriptFileName);
 
         if (commonScriptsPath is not null && !File.Exists(sourcePath))
         {
-            var commonSourcePath = Path.Combine(commonScriptsPath, $"{scriptName}.cs");
+            var commonSourcePath = Path.Combine(commonScriptsPath, scriptFileName);
             if (File.Exists(commonSourcePath))
             {
                 File.Copy(commonSourcePath, sourcePath);
@@ -110,7 +111,8 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             }
         }
 
-        return scriptContainers[scriptName] = new(scriptTypeName, sourcePath, scriptsLibraryPath, referencedAssemblies);
+        return altLookup[scriptName] =
+            new($"{scriptsNamespace}.{scriptName}", sourcePath, scriptsLibraryPath, referencedAssemblies);
     }
 
     public IEnumerable<string> GetScriptNames() => Directory

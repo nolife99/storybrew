@@ -10,6 +10,8 @@ public sealed record ScaleCommand : Command<CommandDecimal>
 
     private protected override string Identifier => "S";
 
+    public override bool IsFragmentableAt(float time) => base.IsFragmentableAt(time) && StartValue >= 0 && EndValue >= 0;
+
     protected override CommandDecimal GetTransformedStartValue(StoryboardTransform transform)
         => transform.ApplyToScale(StartValue);
 

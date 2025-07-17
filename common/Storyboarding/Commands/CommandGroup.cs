@@ -1,17 +1,17 @@
 ﻿namespace StorybrewCommon.Storyboarding.Commands;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Internals;
+using System.Runtime.InteropServices;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 #pragma warning disable CS1591
 public abstract class CommandGroup : ICommand
 {
-    private protected readonly PooledList<ICommand> commands = new();
-    public ReadOnlySpan<ICommand> Commands => commands.AsReadOnlySpan();
+    private protected readonly List<ICommand> commands = [];
+    public ReadOnlySpan<ICommand> Commands => CollectionsMarshal.AsSpan(commands);
 
     public float CommandsStartTime
     {
@@ -58,8 +58,8 @@ public abstract class CommandGroup : ICommand
 
     public int CompareTo(ICommand other)
     {
-        var result = float.Round(StartTime).CompareTo(float.Round(other.StartTime));
-        return result != 0 ? result : float.Round(EndTime).CompareTo(float.Round(other.EndTime));
+        var result = StartTime.CompareTo(other.StartTime);
+        return result != 0 ? result : EndTime.CompareTo(other.EndTime);
     }
 
     void ICommand.WriteOsb(TextWriter writer, ExportSettings exportSettings, StoryboardTransform transform, int indentation)
@@ -74,6 +74,8 @@ public abstract class CommandGroup : ICommand
 
         foreach (var command in commands) command.WriteOsb(writer, exportSettings, transform, indentation + 1);
     }
+
+    public abstract bool IsFragmentableAt(float time);
 
     public bool Add(ICommand command)
     {

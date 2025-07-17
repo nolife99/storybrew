@@ -45,6 +45,15 @@ public sealed class LoopCommand : CommandGroup
         base.EndGroup();
     }
 
+    public override bool IsFragmentableAt(float time)
+    {
+        for (var i = 1; i < LoopCount - 1; i++)
+            if (time == StartTime + i * CommandsEndTime)
+                return true;
+
+        return false;
+    }
+
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
     {
         var list = TempList.Create<char>();

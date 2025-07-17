@@ -32,7 +32,10 @@ using Tiny;
 using Tiny.PooledCollections.Generic;
 using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.StructBased;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
+using ZLinq;
 using Path = System.IO.Path;
 
 public sealed partial class Project : IDisposable
@@ -240,7 +243,7 @@ public sealed partial class Project : IDisposable
 
     public IEnumerable<string> GetEffectNames() => scriptManager.GetScriptNames();
 
-    public Effect AddScriptedEffect(string scriptName, bool multithreaded = false)
+    public Effect AddScriptedEffect(ReadOnlySpan<char> scriptName, bool multithreaded = false)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
@@ -271,7 +274,7 @@ public sealed partial class Project : IDisposable
         OnEffectsChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    string GetUniqueEffectName(string baseName)
+    string GetUniqueEffectName(ReadOnlySpan<char> baseName)
     {
         var count = 1;
         string name;
@@ -446,16 +449,21 @@ public sealed partial class Project : IDisposable
         Trace.WriteLine($"Watching (assets): {assetsFolderPath}");
     }
 
-    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e) => Program.Schedule(() =>
+    void assetWatcher_OnFileChanged(object sender, FileSystemEventArgs e)
     {
         if (Disposed) return;
 
-        switch (Path.GetExtension(e.Name))
-        {
-            case ".png" or ".jpg" or ".jpeg": reloadTextures(); break;
-            case ".wav" or ".mp3" or ".ogg": reloadAudio(); break;
-        }
-    });
+        Program.Schedule(state =>
+            {
+                var (proj, ev) = state;
+                switch (Path.GetExtension(ev.Name))
+                {
+                    case ".png" or ".jpg" or ".jpeg": proj.reloadTextures(); break;
+                    case ".wav" or ".mp3" or ".ogg": proj.reloadAudio(); break;
+                }
+            },
+            (this, e));
+    }
 
     #endregion
 
@@ -484,7 +492,7 @@ public sealed partial class Project : IDisposable
                 "*.dll"))
     ];
 
-    HashSet<string> importedAssemblies = [];
+    PooledHashSet<string> importedAssemblies = [];
 
     public ICollection<string> ImportedAssemblies
     {
@@ -492,8 +500,9 @@ public sealed partial class Project : IDisposable
         set
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
+            importedAssemblies.Dispose();
 
-            importedAssemblies = value as HashSet<string> ?? [..value];
+            importedAssemblies = value as PooledHashSet<string> ?? new(value);
             scriptManager.ReferencedAssemblies = ReferencedAssemblies;
         }
     }
@@ -540,13 +549,11 @@ public sealed partial class Project : IDisposable
         return project;
     }
 
-    async ValueTask saveBinary(string path)
+    ValueTask saveBinary(string path)
     {
         ObjectDisposedException.ThrowIf(Disposed, this);
 
-        await using BinaryWriter w = new(new BrotliStream(File.Create(path), CompressionLevel.SmallestSize, false),
-            Encoding,
-            false);
+        BinaryWriter w = new(new BrotliStream(File.Create(path), CompressionLevel.SmallestSize, false), Encoding, false);
 
         w.Write(Version);
 
@@ -598,6 +605,8 @@ public sealed partial class Project : IDisposable
         foreach (var assembly in importedAssemblies) w.Write(assembly);
 
         Changed = false;
+
+        return w.DisposeAsync();
     }
 
     void loadBinary(string path)
@@ -616,13 +625,19 @@ public sealed partial class Project : IDisposable
         OwnsOsb = r.ReadBoolean();
 
         var effectCount = r.ReadInt32();
+        Span<char> charBuffer = stackalloc char[255];
+
         for (var effectIndex = 0; effectIndex < effectCount; ++effectIndex)
         {
             if (version < 8) r.ReadBytes(16);
-            var effectBaseName = r.ReadChars(r.Read7BitEncodedInt());
+            var effectBaseName = charBuffer[..r.Read7BitEncodedInt()];
+            r.Read(effectBaseName);
 
-            var effect = AddScriptedEffect(new(effectBaseName), r.ReadBoolean());
-            effect.Name = new(r.ReadChars(r.Read7BitEncodedInt()));
+            var effect = AddScriptedEffect(effectBaseName, r.ReadBoolean());
+            var effectName = charBuffer[..r.Read7BitEncodedInt()];
+            r.Read(effectName);
+
+            using (var temp = TempArray.Create<char>(effectName)) effect.Name = temp.AsReadOnlySpan();
 
             var fieldCount = r.ReadInt32();
             for (var fieldIndex = 0; fieldIndex < fieldCount; ++fieldIndex)
@@ -841,28 +856,23 @@ public sealed partial class Project : IDisposable
 
             var layersRoot = effectRoot.Value<TinyObject>("Layers");
             foreach (var (layerHash, layerRoot) in layersRoot)
-            {
-                var layerEffect = effect;
-
-                layerInserters[layerHash] = () => layerEffect.AddPlaceholder(
-                    new(layerRoot.Value<string>("Name"), layerEffect)
-                    {
-                        OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
-                        DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
-                        Visible = layerRoot.Value<bool>("Visible")
-                    });
-            }
+                layerInserters[layerHash] = () => effect.AddPlaceholder(new(layerRoot.Value<string>("Name"), effect)
+                {
+                    OsbLayer = layerRoot.Value<OsbLayer>("OsbLayer"),
+                    DiffSpecific = layerRoot.Value<bool>("DiffSpecific"),
+                    Visible = layerRoot.Value<bool>("Visible")
+                });
         }
 
         if (effects.Count == 0) EffectsStatus = EffectStatus.Ready;
 
-        var layersOrder = indexRoot.Values<string>("Layers").Distinct().ToArray();
+        var layersOrder = indexRoot.Values<string>("Layers").AsValueEnumerable().Distinct();
 
         foreach (var layerGuid in layersOrder)
             if (layerInserters.TryGetValue(layerGuid, out var insertLayer))
                 insertLayer();
 
-        foreach (var key in layerInserters.Keys.Except(layersOrder)) layerInserters[key]();
+        foreach (var key in layerInserters.Keys.AsValueEnumerable().Except(layersOrder)) layerInserters[key]();
     }
 
     public static async ValueTask<Project> Create(string projectFolderName,
@@ -870,25 +880,30 @@ public sealed partial class Project : IDisposable
         bool withCommonScripts,
         ResourceContainer resourceContainer)
     {
+        var project = create(projectFolderName, mapsetPath, withCommonScripts, resourceContainer);
+        await project.Save();
+        return project;
+    }
+
+    static Project create(ReadOnlySpan<char> projectFolderName,
+        string mapsetPath,
+        bool withCommonScripts,
+        ResourceContainer resourceContainer)
+    {
         if (!Directory.Exists(ProjectsFolder)) Directory.CreateDirectory(ProjectsFolder);
 
-        if (Path.GetInvalidFileNameChars().Any(projectFolderName.Contains) || string.IsNullOrWhiteSpace(projectFolderName))
+        if (projectFolderName.ContainsAny(Path.GetInvalidFileNameChars()) || projectFolderName.IsWhiteSpace())
             throw new InvalidOperationException($"'{projectFolderName}' isn't a valid project folder name");
 
-        var projectFolderPath = Path.Combine(ProjectsFolder, projectFolderName);
+        var projectFolderPath = Path.Join(ProjectsFolder, projectFolderName);
         if (Directory.Exists(projectFolderPath))
             throw new InvalidOperationException($"A project already exists at '{projectFolderPath}'");
 
         Directory.CreateDirectory(projectFolderPath);
-        Project project =
-            new(Path.Combine(projectFolderPath, DefaultBinaryFilename), withCommonScripts, resourceContainer)
-            {
-                MapsetPath = mapsetPath
-            };
-
-        await project.Save();
-
-        return project;
+        return new(Path.Combine(projectFolderPath, DefaultBinaryFilename), withCommonScripts, resourceContainer)
+        {
+            MapsetPath = mapsetPath
+        };
     }
 
     public async ValueTask ExportToOsb(bool exportOsb = true)
@@ -898,18 +913,19 @@ public sealed partial class Project : IDisposable
         string osuPath = null, osbPath = null;
         PooledList<EditorStoryboardLayer> localLayers = null, diffSpecific = null;
 
-        await Program.Schedule(() =>
-        {
-            osuPath = MainBeatmap.Path;
-            osbPath = OsbPath;
+        await Program.Schedule(proj =>
+            {
+                osuPath = proj.MainBeatmap.Path;
+                osbPath = proj.OsbPath;
 
-            if (!OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
+                if (!proj.OwnsOsb && File.Exists(osbPath)) File.Move(osbPath, $"{osbPath}.bak");
 
-            if (!OwnsOsb) OwnsOsb = true;
+                if (!proj.OwnsOsb) proj.OwnsOsb = true;
 
-            localLayers = LayerManager.FindLayers(l => l.Visible);
-            diffSpecific = LayerManager.FindLayers(l => l.DiffSpecific);
-        });
+                localLayers = proj.LayerManager.FindLayers(l => l.Visible);
+                diffSpecific = proj.LayerManager.FindLayers(l => l.DiffSpecific);
+            },
+            this);
 
         var usesOverlayLayer = localLayers.Exists(l => l.OsbLayer is OsbLayer.Overlay);
         using var sbLayer = localLayers.FindAll(l => !l.DiffSpecific);
@@ -1007,6 +1023,7 @@ public sealed partial class Project : IDisposable
 
         MapsetManager?.Dispose();
         scriptManager.Dispose();
+        importedAssemblies.Dispose();
         TextureContainer.Dispose();
         AudioContainer.Dispose();
 

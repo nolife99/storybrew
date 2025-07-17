@@ -129,13 +129,14 @@ public sealed class AsyncActionQueue<T> : IDisposable
             thread = Task.Factory.StartNew(async actionRunner =>
                 {
                     var runner = (ActionRunner)actionRunner;
+                    var threadId = runner.thread.Id;
                     var localToken = runner.tokenSrc;
                     var localContext = runner.context;
 
-                    Trace.WriteLine($"Started thread {Environment.CurrentManagedThreadId}");
+                    Trace.WriteLine($"Started thread {threadId}");
 
                     await using var registration = localToken.Token.UnsafeRegister(_
-                            => Trace.WriteLine($"Aborting thread {Environment.CurrentManagedThreadId}"),
+                            => Trace.WriteLine($"Aborting thread {threadId}"),
                         null);
 
                     var mustSleep = false;
@@ -151,7 +152,7 @@ public sealed class AsyncActionQueue<T> : IDisposable
                         {
                             if (runner.thread is null)
                             {
-                                Trace.WriteLine($"Exiting thread {Environment.CurrentManagedThreadId}");
+                                Trace.WriteLine($"Exiting thread {threadId}");
                                 return;
                             }
 

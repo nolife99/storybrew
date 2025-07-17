@@ -15,6 +15,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Processors.Transforms;
 using Storyboarding;
 using Tiny.PooledCollections.Generic;
 using Path = System.IO.Path;
@@ -210,11 +211,9 @@ public sealed class FontGenerator : IDisposable
 
             if (!description.Debug) return;
 
-            b.DrawLine(Color.Red, 1, new(x, paddingY), new(x, paddingY + measuredSize.Height))
-                .DrawLine(Color.Red,
-                    1,
-                    new(x - measuredSize.Width * .5f, paddingY),
-                    new(x + measuredSize.Width * .5f, paddingY));
+            SolidPen pen = new(Color.Red, 1);
+            b.DrawLine(pen, new(x, paddingY), new(x, paddingY + measuredSize.Height))
+                .DrawLine(pen, new(x - measuredSize.Width * .5f, paddingY), new(x + measuredSize.Width * .5f, paddingY));
         });
 
         var bounds = description.TrimTransparency ? BitmapHelper.FindTransparencyBounds(realText) : default;
@@ -265,7 +264,7 @@ public sealed class FontGenerator : IDisposable
             return new(texturePath, offsetX, offsetY, baseWidth, baseHeight, width, height, segments);
         }
 
-        if (validBounds) realText.Mutate(b => b.Crop(bounds));
+        if (validBounds) realText.Mutate(new CropProcessor(bounds, realText.Size));
 
         var path = Path.Combine(assetDirectory, texturePath);
         using (var stream = File.Create(path))

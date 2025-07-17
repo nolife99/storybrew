@@ -57,7 +57,7 @@ public class QuadRendererBuffered : IQuadRenderer
         this.shader = shader;
 
         var ssboSize = (Unsafe.SizeOf<Matrix4x4>() + Unsafe.SizeOf<Vector4>()) * maxQuadsPerBatch;
-        if (DrawState.BindlessTexturesSupported)
+        if (Texture2d.BindlessTexturesSupported)
         {
             ssboSize += sizeof(long) * maxQuadsPerBatch;
             bindlessTextures = new();
@@ -141,7 +141,7 @@ public class QuadRendererBuffered : IQuadRenderer
         if (primitiveStreamer.PrimitivesInBatch != 0)
         {
             combinedMatrices.Add(Matrix4x4.Multiply(transformMatrix, camera.ProjectionView));
-            if (DrawState.BindlessTexturesSupported) bindlessTextures.Add(currentTextureHandle);
+            if (Texture2d.BindlessTexturesSupported) bindlessTextures.Add(currentTextureHandle);
 
             var clipRegion = Rectangle.Intersect(DrawState.ClipRegion ?? Rectangle.Empty, DrawState.Viewport);
             if (clipRegion == Rectangle.Empty) clipRegion = DrawState.Viewport;
@@ -160,7 +160,7 @@ public class QuadRendererBuffered : IQuadRenderer
 
         combinedMatrices.Clear();
 
-        if (DrawState.BindlessTexturesSupported)
+        if (Texture2d.BindlessTexturesSupported)
         {
             GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
                 maxQuadsPerBatch * Unsafe.SizeOf<Matrix4x4>(),
@@ -180,7 +180,7 @@ public class QuadRendererBuffered : IQuadRenderer
         }
 
         GL.BufferSubData(BufferTarget.ShaderStorageBuffer,
-            maxQuadsPerBatch * ((DrawState.BindlessTexturesSupported ? sizeof(long) : 0) + Unsafe.SizeOf<Matrix4x4>()),
+            maxQuadsPerBatch * ((Texture2d.BindlessTexturesSupported ? sizeof(long) : 0) + Unsafe.SizeOf<Matrix4x4>()),
             queuedRenders * Unsafe.SizeOf<Vector4>(),
             ref MemoryMarshal.GetReference(clipRegions.AsReadOnlySpan()));
 
@@ -191,7 +191,7 @@ public class QuadRendererBuffered : IQuadRenderer
 
     void IQuadRenderer.Draw(ref readonly QuadPrimitive quad, Texture2dRegion texture)
     {
-        if (DrawState.BindlessTexturesSupported)
+        if (Texture2d.BindlessTexturesSupported)
         {
             var textureId = texture.BindableTexture.BindlessTextureHandle;
             if (currentTextureHandle != textureId)
@@ -224,7 +224,7 @@ public class QuadRendererBuffered : IQuadRenderer
         ShaderBuilder sb = new(VertexDeclaration);
         sb.AddRequiredExtension("GL_ARB_shader_draw_parameters", "GL_ARB_shader_storage_buffer_object");
 
-        if (DrawState.BindlessTexturesSupported) sb.AddRequiredExtension("GL_ARB_bindless_texture");
+        if (Texture2d.BindlessTexturesSupported) sb.AddRequiredExtension("GL_ARB_bindless_texture");
 
         var allSsbo = sb.AddSSBO(0);
 
@@ -232,7 +232,7 @@ public class QuadRendererBuffered : IQuadRenderer
             new(sb.Context, allSsbo.Name, ActiveUniformType.FloatMat4, maxQuadsPerBatch),
             allSsbo.AddField(CombinedMatrixUniformName, ActiveUniformType.FloatMat4, maxQuadsPerBatch));
 
-        var texture = DrawState.BindlessTexturesSupported ?
+        var texture = Texture2d.BindlessTexturesSupported ?
             allSsbo.FieldAsVariable(new(sb.Context, allSsbo.Name, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch),
                 allSsbo.AddField(TextureUniformName, ActiveUniformType.UnsignedIntVec2, maxQuadsPerBatch)) :
             sb.AddUniform(TextureUniformName, ActiveUniformType.Sampler2D);
@@ -259,7 +259,7 @@ public class QuadRendererBuffered : IQuadRenderer
             new Assign(sb.GlFragColor,
                 () =>
                 {
-                    var texRef = DrawState.BindlessTexturesSupported ?
+                    var texRef = Texture2d.BindlessTexturesSupported ?
                         $"sampler2D({texture.Ref[drawId.Ref.ToString()]})" :
                         texture.Ref.ToString();
 
@@ -280,7 +280,7 @@ public class QuadRendererBuffered : IQuadRenderer
         GL.DeleteBuffer(ssbo);
 
         combinedMatrices.Dispose();
-        if (DrawState.BindlessTexturesSupported) bindlessTextures.Dispose();
+        if (Texture2d.BindlessTexturesSupported) bindlessTextures.Dispose();
         clipRegions.Dispose();
 
         if (!disposing) return;

@@ -29,7 +29,6 @@ public static class DrawState
     static bool flushingRenderer;
     static int drawCalls;
     public static bool UseTextureCompression { get; set; }
-    public static bool BindlessTexturesSupported { get; } = GLFW.ExtensionSupported("GL_ARB_bindless_texture");
 
     public static bool ColorCorrected { get; private set; }
     public static int MaxTextureSize { get; private set; }
@@ -155,7 +154,7 @@ public static class DrawState
 
         Trace.WriteLine($"max texture size: {MaxTextureSize}");
 
-        if (!BindlessTexturesSupported)
+        if (!Texture2d.BindlessTexturesSupported)
         {
             samplerTextureIds = new int[maxTextureImageUnits];
             samplerTexturingModes = new TextureTarget[maxTextureImageUnits];

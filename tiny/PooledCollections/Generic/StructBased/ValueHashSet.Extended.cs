@@ -422,7 +422,7 @@ partial struct ValueHashSet<T> : IDisposable
             ThrowHelper.ThrowDestIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLessOrEqual();
 
         // Also throw if count less than 0.
-        if (count < 0) ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
 
         // Will the array, starting at arrayIndex, be able to hold elements? Note: not
         // checking arrayIndex >= array.Length (consistency with list of allowing

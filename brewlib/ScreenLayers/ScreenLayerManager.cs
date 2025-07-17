@@ -8,6 +8,8 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using Time;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
+using Tiny.PooledCollections.Generic.Temporary;
 
 public sealed class ScreenLayerManager : IDisposable
 {
@@ -75,7 +77,8 @@ public sealed class ScreenLayerManager : IDisposable
 
     public void Exit()
     {
-        foreach (var layer in layers.ToArray())
+        using var snapshot = TempArray.Create(layers.AsReadOnlySpan());
+        foreach (var layer in snapshot)
             if (!layer.IsExiting)
                 layer.Exit();
     }
@@ -86,7 +89,7 @@ public sealed class ScreenLayerManager : IDisposable
         if (!active) changeFocus(null);
 
         updateQueue.Clear();
-        updateQueue.AddRange(layers);
+        updateQueue.AddRange(layers.AsReadOnlySpan());
 
         bool covered = false, top = true, hasFocus = active;
         while (updateQueue.Count > 0)

@@ -8,6 +8,7 @@ using IO;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Drawing.Processing.Processors.Text;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using Tiny.PooledCollections.Generic;
@@ -72,8 +73,8 @@ public sealed class TextGenerator(ResourceContainer resourceContainer) : IDispos
             shadowTextOptions = new(textOptions) { Origin = padding + Vector2.One };
 
         var str = text.ToString();
-        bitmap.Mutate(b => b.DrawText(drawOptions, shadowTextOptions, str, shadow, null)
-            .DrawText(drawOptions, textOptions, str, fill, null));
+        bitmap.Mutate(new DrawTextProcessor(drawOptions, shadowTextOptions, str, shadow, null),
+            new DrawTextProcessor(drawOptions, textOptions, str, fill, null));
 
         return bitmap;
     }

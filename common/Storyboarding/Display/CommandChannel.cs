@@ -83,10 +83,10 @@ internal class CommandChannel<TValue> where TValue : struct, ICommandValue
         var left = 0;
         var right = commands.Count - 1;
 
-        ref var first = ref MemoryMarshal.GetReference(CollectionsMarshal.AsSpan(commands));
+        ref var first = ref MemoryMarshal.GetReference(Commands);
         while (left <= right)
         {
-            index = (int)((uint)right + (uint)left >> 1);
+            index = right + left >> 1;
             var commandTime = Unsafe.Add(ref first, index).StartTime;
             if (commandTime == time) return true;
 

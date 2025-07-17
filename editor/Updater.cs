@@ -3,7 +3,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using BrewLib.Util;
 using Util;
 
@@ -154,5 +153,11 @@ public static class Updater
     }
 
     static bool matchFilter(string filename, string[] filters)
-        => filters.Any(filter => filename.StartsWith(filter, StringComparison.Ordinal));
+    {
+        foreach (var filter in filters)
+            if (filename.StartsWith(filter, StringComparison.Ordinal))
+                return true;
+
+        return false;
+    }
 }
