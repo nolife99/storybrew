@@ -60,49 +60,27 @@ public class ProgramScope
     {
         foreach (var type in structs)
         {
-            code.Append("struct ");
-            code.Append(type.Name);
-            code.Append(" {\n");
-
-            foreach (var field in type.Fields)
-            {
-                code.AddRange(field.ShaderTypeName.GetString());
-                code.Add(' ');
-                code.Append(field.Name);
-                code.Append(";\n");
-            }
-
+            code.Append($"struct {type.Name} {{\n");
+            foreach (var field in type.Fields) code.Append($"{field.ShaderTypeName.GetString()} {field.Name};\n");
             code.Append("};\n");
         }
 
         foreach (var type in ssbos)
         {
-            code.Append("layout(binding = ");
-            code.AppendFormatted(type.BindingIndex, provider: CultureInfo.InvariantCulture);
-            code.Append(") buffer ");
-            code.Append(ShaderStorageType.BlockName);
-            code.Append(" {\n");
+            code.Append(CultureInfo.InvariantCulture,
+                $"layout(binding = {type.BindingIndex}) buffer {ShaderStorageType.BlockName} {{\n");
 
             foreach (var field in type.Fields)
             {
-                code.AddRange(field.ShaderTypeName.GetString());
-                code.Add(' ');
-                code.Append(field.Name);
+                code.Append($"{field.ShaderTypeName.GetString()} {field.Name}");
 
                 if (field.ArrayCount == 0) code.Append("[];");
-                else if (field.ArrayCount != -1)
-                {
-                    code.Add('[');
-                    code.AppendFormatted(field.ArrayCount, provider: CultureInfo.InvariantCulture);
-                    code.Append("];");
-                }
+                else if (field.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{field.ArrayCount}];");
 
                 code.Add('\n');
             }
 
-            code.Append("} ");
-            code.Append(type.Name);
-            code.Append(";\n");
+            code.Append($"}} {type.Name};\n");
         }
     }
 
@@ -110,18 +88,8 @@ public class ProgramScope
     {
         foreach (var uniform in uniforms)
         {
-            code.Append("uniform ");
-            code.AddRange(uniform.ShaderTypeName.GetString());
-            code.Add(' ');
-            code.Append(uniform.Name);
-
-            if (uniform.ArrayCount != -1)
-            {
-                code.Add('[');
-                code.AppendFormatted(uniform.ArrayCount, provider: CultureInfo.InvariantCulture);
-                code.Add(']');
-            }
-
+            code.Append($"uniform {uniform.ShaderTypeName.GetString()} {uniform.Name}");
+            if (uniform.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{uniform.ArrayCount}]");
             code.Append(";\n");
         }
     }
@@ -139,19 +107,9 @@ public class ProgramScope
             if (context.Uses(varying))
             {
                 if (varying.ShaderTypeName.IsFlatType()) code.Append("flat ");
-                code.Append(isFragmentShader ? "in" : "out");
-                code.Add(' ');
-                code.AddRange(varying.ShaderTypeName.GetString());
-                code.Add(' ');
-                code.Append(varying.Name);
+                code.Append($"{(isFragmentShader ? "in" : "out")} {varying.ShaderTypeName.GetString()} {varying.Name}");
 
-                if (varying.ArrayCount != -1)
-                {
-                    code.Add('[');
-                    code.AppendFormatted(varying.ArrayCount, provider: CultureInfo.InvariantCulture);
-                    code.Add(']');
-                }
-
+                if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
                 code.Append(";\n");
             }
 
@@ -159,20 +117,10 @@ public class ProgramScope
 
         void DeclareBuiltinVarying(scoped ref TempList<char> code, ShaderVariable varying, int index)
         {
-            code.Append("layout(location = ");
-            code.AppendFormatted(index, provider: CultureInfo.InvariantCulture);
-            code.Append(") out ");
-            code.AddRange(varying.ShaderTypeName.GetString());
-            code.Add(' ');
-            code.Append(varying.Name);
+            code.Append(CultureInfo.InvariantCulture,
+                $"layout(location = {index}) out {varying.ShaderTypeName.GetString()} {varying.Name}");
 
-            if (varying.ArrayCount != -1)
-            {
-                code.Add('[');
-                code.AppendFormatted(varying.ArrayCount, provider: CultureInfo.InvariantCulture);
-                code.Add(']');
-            }
-
+            if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
             code.Append(";\n");
         }
     }
@@ -182,17 +130,8 @@ public class ProgramScope
         foreach (var varying in varyings)
             if (!context.Uses(varying))
             {
-                code.AddRange(varying.ShaderTypeName.GetString());
-                code.Add(' ');
-                code.Append(varying.Name);
-
-                if (varying.ArrayCount != -1)
-                {
-                    code.Add('[');
-                    code.AppendFormatted(varying.ArrayCount, provider: CultureInfo.InvariantCulture);
-                    code.Add(']');
-                }
-
+                code.Append($"{varying.ShaderTypeName.GetString()} {varying.Name}");
+                if (varying.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{varying.ArrayCount}]");
                 code.Append(";\n");
             }
     }

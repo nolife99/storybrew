@@ -72,20 +72,15 @@ public class ShaderBuilder
 
     TempList<char> buildCommon()
     {
-        var code = TempList.Create("#version ".AsSpan());
-        code.AppendFormatted(int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion)),
-            provider: CultureInfo.InvariantCulture);
-
-        code.Add('\n');
+        var code = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+            $"#version {int.Max(MinVersion, int.Max(VertexShader.MinVersion, FragmentShader.MinVersion))}\n");
 
         foreach (var extensionName in requiredExt)
         {
             if (!GLFW.ExtensionSupported(extensionName))
                 throw new NotSupportedException($"Required extension {extensionName} not supported");
 
-            code.Append("#extension ");
-            code.Append(extensionName);
-            code.Append(" : require\n");
+            code.Append($"#extension {extensionName} : require\n");
         }
 
         ProgramScope.DeclareTypes(ref code);
@@ -101,14 +96,7 @@ public class ShaderBuilder
 
         ProgramScope.DeclareVaryings(ref code, Context, false);
 
-        foreach (var attribute in VertexDeclaration)
-        {
-            code.Append("in ");
-            code.Append(attribute.ShaderTypeName);
-            code.Add(' ');
-            code.Append(attribute.Name);
-            code.Append(";\n");
-        }
+        foreach (var attribute in VertexDeclaration) code.Append($"in {attribute.ShaderTypeName} {attribute.Name};\n");
 
         ProgramScope.DeclareUniforms(ref code);
 

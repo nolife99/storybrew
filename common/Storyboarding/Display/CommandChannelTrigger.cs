@@ -2,13 +2,10 @@
 
 using CommandValues;
 
-internal class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
+internal sealed class CommandChannelTrigger<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     public bool Active;
     public float TriggerTime;
-
-    public override CommandResult<TValue> StartResult => StartCommand.AsResult(TriggerTime);
-    public override CommandResult<TValue> EndResult => EndCommand.AsResult(TriggerTime);
 
     public override bool ResultAtTime(float time, out CommandResult<TValue> result)
     {

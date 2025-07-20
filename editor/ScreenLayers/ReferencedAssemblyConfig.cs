@@ -9,7 +9,6 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using Storyboarding;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
@@ -166,10 +165,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
             editButton.OnClick += (_, _) => changeReferencedAssembly(ass);
             removeButton.OnClick += (_, _) =>
             {
-                using var text = TempList.Create("Remove ".AsSpan());
-                text.AddRange(getAssemblyName(ass).AsSpan());
-                text.Add('?');
-
+                using var text = StringHelper.Interpolate($"Remove {getAssemblyName(ass)}?");
                 WidgetManager.ScreenLayerManager.ShowMessage(text.AsReadOnlySpan(),
                     () => removeReferencedAssembly(ass),
                     true);

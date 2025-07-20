@@ -154,11 +154,10 @@ public sealed class TextLayout : IDisposable
     }
 }
 
-public sealed class
-    TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmptyGlyph) : IDisposable
+public sealed class TextLayoutLine(TextLayout layout, float y, BoxAlignment alignment, bool advanceOnEmpty) : IDisposable
 {
     readonly PooledList<TextLayoutGlyph> _glyphs = new();
-    bool advance = advanceOnEmptyGlyph;
+    bool advance = advanceOnEmpty;
 
     public ReadOnlySpan<TextLayoutGlyph> Glyphs => _glyphs.AsReadOnlySpan();
 
@@ -173,7 +172,7 @@ public sealed class
 
     public void Dispose() => _glyphs.Dispose();
 
-    public void Add(FontGlyph glyph, char character, int glyphIndex)
+    internal void Add(FontGlyph glyph, char character, int glyphIndex)
     {
         if (!glyph.IsEmpty) advance = true;
 
@@ -186,7 +185,6 @@ public sealed class
 }
 
 public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Glyph, char Character, int Index, float X)
-    : IComparable<TextLayoutGlyph>
 {
     public Vector2 Position
     {
@@ -196,6 +194,4 @@ public readonly record struct TextLayoutGlyph(TextLayoutLine Line, FontGlyph Gly
             return linePosition with { X = linePosition.X + X };
         }
     }
-
-    public int CompareTo(TextLayoutGlyph other) => Character.CompareTo(other.Character);
 }

@@ -13,7 +13,6 @@ using BrewLib.Util;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 
@@ -191,26 +190,8 @@ public static class Program
     {
         if (!editor.statsLabel.Visible) return;
 
-        using var result = TempList.Create<char>(128);
-
-        result.AppendFormatted(1 / av, "f0", CultureInfo.CurrentCulture);
-        result.Add('/');
-        result.AppendFormatted(1 / avActive, "f0", CultureInfo.CurrentCulture);
-
-        result.Append("fps (act:");
-        result.AppendFormatted(avActive * 1000, "f2", CultureInfo.CurrentCulture);
-
-        result.Append(" avg:");
-        result.AppendFormatted(av * 1000, "f2", CultureInfo.CurrentCulture);
-
-        result.Append(" hi:");
-        result.AppendFormatted(longest * 1000, "f2", CultureInfo.CurrentCulture);
-
-        result.Append(")\n");
-
-        result.AppendFormatted(draws, "", CultureInfo.CurrentCulture);
-        result.Append(" draws");
-        result.Add('\n');
+        using var result = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+            $"{1 / av:f0}/{1 / avActive:f0}fps (act:{avActive * 1000:f1} avg:{av * 1000:f1} hi:{longest * 1000:f1})\n{draws:n0} draws");
 
         editor.statsLabel.Text = result.AsReadOnlySpan();
     }

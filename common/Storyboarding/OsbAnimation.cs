@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using BrewLib.Util;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 /// <summary> A type of <see cref="OsbSprite"/> that loops through given frames, or animates. </summary>
@@ -74,16 +73,7 @@ public class OsbAnimation : OsbSprite
         writer.Write("Animation,");
         WriteHeaderCommon(writer, exportSettings, layer, transform);
 
-        using var builder = TempList.Create<char>();
-
-        builder.Add(',');
-        builder.AppendFormatted(FrameCount, provider: exportSettings.NumberFormat);
-
-        builder.Add(',');
-        builder.AppendFormatted(FrameDelay, provider: exportSettings.NumberFormat);
-
-        builder.Add(',');
-        builder.AppendFormatted(LoopType, provider: exportSettings.NumberFormat);
+        using var builder = StringHelper.Interpolate(exportSettings.NumberFormat, $",{FrameCount},{FrameDelay},{LoopType}");
 
         writer.WriteLine(builder.AsReadOnlySpan());
     }

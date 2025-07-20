@@ -16,7 +16,6 @@ using SixLabors.ImageSharp.PixelFormats;
 using Text;
 using Textures;
 using Tiny.PooledCollections.Generic;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using Util;
 
@@ -68,52 +67,35 @@ public static class DrawState
                     Span<char> chars = stackalloc char[Encoding.UTF8.GetCharCount(bytes)];
                     Encoding.UTF8.GetChars(bytes, chars);
 
-                    using var str = TempList.Create("[OpenGL] ".AsSpan());
-                    str.AddRange(chars);
-                    str.Append(" (");
-
-                    ReadOnlySpan<char> sourceString = source switch
+                    using var str = StringHelper.Interpolate($"[OpenGL] {chars} (Source: {source switch
                     {
-                        DebugSource.DebugSourceApi => "Source: API",
-                        DebugSource.DebugSourceWindowSystem => "Source: Window System",
-                        DebugSource.DebugSourceShaderCompiler => "Source: Shader Compiler",
-                        DebugSource.DebugSourceThirdParty => "Source: Third Party",
-                        DebugSource.DebugSourceApplication => "Source: Application",
-                        DebugSource.DebugSourceOther => "Source: Other",
-                        _ => null
-                    };
-
-                    str.AddRange(sourceString);
-                    str.Append(", ");
-
-                    ReadOnlySpan<char> typeString = type switch
-                    {
-                        DebugType.DebugTypeError => "Type: Error",
-                        DebugType.DebugTypeDeprecatedBehavior => "Type: Deprecated Behaviour",
-                        DebugType.DebugTypeUndefinedBehavior => "Type: Undefined Behaviour",
-                        DebugType.DebugTypePortability => "Type: Portability",
-                        DebugType.DebugTypePerformance => "Type: Performance",
-                        DebugType.DebugTypeMarker => "Type: Marker",
-                        DebugType.DebugTypePushGroup => "Type: Push Group",
-                        DebugType.DebugTypePopGroup => "Type: Pop Group",
-                        DebugType.DebugTypeOther => "Type: Other",
-                        _ => null
-                    };
-
-                    str.AddRange(typeString);
-                    str.Append(", ");
-
-                    ReadOnlySpan<char> severityString = severity switch
-                    {
-                        DebugSeverity.DebugSeverityHigh => "Severity: High",
-                        DebugSeverity.DebugSeverityMedium => "Severity: Medium",
-                        DebugSeverity.DebugSeverityLow => "Severity: Low",
-                        DebugSeverity.DebugSeverityNotification => "Severity: Notification",
-                        _ => null
-                    };
-
-                    str.AddRange(severityString);
-                    str.Append(")\n");
+                        DebugSource.DebugSourceApi => "API",
+                        DebugSource.DebugSourceWindowSystem => "Window System",
+                        DebugSource.DebugSourceShaderCompiler => "Shader Compiler",
+                        DebugSource.DebugSourceThirdParty => "Third Party",
+                        DebugSource.DebugSourceApplication => "Application",
+                        DebugSource.DebugSourceOther => "Other",
+                        _ => ""
+                    }}, Type: {type switch
+                {
+                    DebugType.DebugTypeError => "Error",
+                    DebugType.DebugTypeDeprecatedBehavior => "Deprecated Behaviour",
+                    DebugType.DebugTypeUndefinedBehavior => "Undefined Behaviour",
+                    DebugType.DebugTypePortability => "Portability",
+                    DebugType.DebugTypePerformance => "Performance",
+                    DebugType.DebugTypeMarker => "Marker",
+                    DebugType.DebugTypePushGroup => "Push Group",
+                    DebugType.DebugTypePopGroup => "Pop Group",
+                    DebugType.DebugTypeOther => "Other",
+                    _ => ""
+                }}, Severity: {severity switch
+            {
+                DebugSeverity.DebugSeverityHigh => "High",
+                DebugSeverity.DebugSeverityMedium => "Medium",
+                DebugSeverity.DebugSeverityLow => "Low",
+                DebugSeverity.DebugSeverityNotification => "Notification",
+                _ => ""
+            }})\n");
 
                     Trace.Write(str.AsReadOnlySpan().ToString());
                     if (severity is DebugSeverity.DebugSeverityHigh)

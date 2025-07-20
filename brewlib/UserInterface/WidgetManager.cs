@@ -17,7 +17,7 @@ using Util;
 
 public sealed class WidgetManager : IInputHandler, IDisposable
 {
-    readonly ArrayDictionary<MouseButton, Widget> clickTargets = new();
+    readonly PooledDictionary<MouseButton, Widget> clickTargets = new();
 
     public readonly InputManager InputManager;
     public readonly Widget Root;
@@ -104,7 +104,7 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
         DisableGamepadEvents(widget);
 
-        using var buttons = TempArray.Create(clickTargets.KeysAsReadOnlySpan());
+        using var buttons = TempArray.Create(clickTargets.AsReadOnlySpan());
         foreach (var key in buttons)
             if (clickTargets[key.Key] == widget)
                 clickTargets.Remove(key.Key);
@@ -122,8 +122,22 @@ public sealed class WidgetManager : IInputHandler, IDisposable
 
     readonly PooledDictionary<Widget, Widget> tooltips = new();
 
-    public void RegisterTooltip(Widget widget, scoped ReadOnlySpan<char> text) => RegisterTooltip(widget,
-        new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
+    public void RegisterTooltip(Widget widget, ReadOnlySpan<char> text)
+    {
+        if (tooltips.TryGetValue(widget, out var tooltip) && tooltip is Label label)
+        {
+            label.Text = text;
+            if (label.NeedsLayout)
+            {
+                label.Pack(650);
+                label.Pack();
+            }
+
+            return;
+        }
+
+        RegisterTooltip(widget, new Label(this) { StyleName = "tooltip", AnchorTarget = widget, Text = text });
+    }
 
     public void RegisterTooltip(Widget widget, Widget tooltip)
     {

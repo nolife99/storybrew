@@ -25,9 +25,7 @@ public sealed class TriggerCommand : CommandGroup
 
     protected override TempList<char> GetCommandGroupHeader(ExportSettings exportSettings)
     {
-        var list = TempList.Create<char>();
-        list.Append("T,");
-        list.Append(TriggerName);
+        var list = StringHelper.Interpolate($"T,{TriggerName},");
 
         using (var startTimeString =
             (exportSettings.UseFloatForTime ? (CommandDecimal)StartTime : (CommandDecimal)float.Round(StartTime))

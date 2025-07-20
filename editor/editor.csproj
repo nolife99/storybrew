@@ -5,7 +5,7 @@
         <RootNamespace>StorybrewEditor</RootNamespace>
         <AssemblyName>StorybrewEditor</AssemblyName>
         <Platforms>x86;x64</Platforms>
-        <Version>1.93</Version>
+        <Version>1.94</Version>
         <TargetFramework>net9.0-windows</TargetFramework>
         <PublishReadyToRun>true</PublishReadyToRun>
         <UseWpf>true</UseWpf>

@@ -103,27 +103,14 @@ public abstract record Command<TValue> : ITypedCommand<TValue>, IOffsetable wher
 
         var excludeEnd = startTimeString.AsReadOnlySpan().SequenceEqual(endTimeString.AsReadOnlySpan());
 
-        var result = TempList.Create<char>();
-        result.Append(Identifier);
-        result.Add(',');
+        var result = StringHelper.Interpolate(exportSettings.NumberFormat,
+            $"{Identifier},{(int)Easing},{startTimeString.AsReadOnlySpan()},");
 
-        using (var easingChars = ((int)Easing).ToCharArray(provider: exportSettings.NumberFormat))
-            result.AddRange(easingChars.AsReadOnlySpan());
-
-        result.Add(',');
-        result.AddRange(startTimeString.AsReadOnlySpan());
-
-        result.Add(',');
         if (!excludeEnd) result.AddRange(endTimeString.AsReadOnlySpan());
 
-        result.Add(',');
-        result.AddRange(startValueString.AsReadOnlySpan());
-
+        result.Append($",{startValueString.AsReadOnlySpan()}");
         if (!startValueString.AsReadOnlySpan().SequenceEqual(endValueString.AsReadOnlySpan()))
-        {
-            result.Add(',');
-            result.AddRange(endValueString.AsReadOnlySpan());
-        }
+            result.Append($",{endValueString.AsReadOnlySpan()}");
 
         return result;
     }

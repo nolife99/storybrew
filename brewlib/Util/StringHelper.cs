@@ -7,6 +7,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
+using Memory;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
@@ -80,6 +81,27 @@ public static class StringHelper
         return TempArray.Create<char>(temp[..written]);
     }
 
+    public static void Append(this scoped ref readonly TempList<char> list,
+        IFormatProvider provider,
+        [InterpolatedStringHandlerArgument(nameof(provider))] scoped ref PoolingInterpolatedStringHandler handler)
+    {
+        using var buffer = handler.buffer;
+        Unsafe.AsRef(in list).AddRange(buffer.AsReadOnlySpan());
+    }
+
+    public static void Append(this scoped ref readonly TempList<char> list,
+        scoped ref PoolingInterpolatedStringHandler handler)
+    {
+        using var buffer = handler.buffer;
+        Unsafe.AsRef(in list).AddRange(buffer.AsReadOnlySpan());
+    }
+
+    public static TempList<char> Interpolate(IFormatProvider provider,
+        [InterpolatedStringHandlerArgument(nameof(provider))] scoped ref PoolingInterpolatedStringHandler handler)
+        => handler.buffer;
+
+    public static TempList<char> Interpolate(scoped ref PoolingInterpolatedStringHandler handler) => handler.buffer;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void Append(this scoped ref readonly TempList<char> list, string value)
         => Unsafe.AsRef(in list).AddRange(value.AsSpan());
@@ -91,16 +113,6 @@ public static class StringHelper
     {
         Span<char> temp = stackalloc char[128];
         value.TryFormat(temp, out var written, format, provider);
-
-        Unsafe.AsRef(in list).AddRange(temp[..written]);
-    }
-
-    public static void AppendEnum<T>(this scoped ref readonly TempList<char> list,
-        T value,
-        scoped ReadOnlySpan<char> format = default) where T : struct, Enum
-    {
-        Span<char> temp = stackalloc char[128];
-        Enum.TryFormat(value, temp, out var written, format);
 
         Unsafe.AsRef(in list).AddRange(temp[..written]);
     }

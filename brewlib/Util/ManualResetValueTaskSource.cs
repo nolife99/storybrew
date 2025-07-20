@@ -196,7 +196,8 @@ public class ManualResetValueTaskSourceCore<TResult> : IValueTaskSource<TResult>
 
     [StackTraceHidden] void ThrowForFailedGetResult(short token)
     {
-        if (token != Version || !_completed) throw new InvalidOperationException("The operation has not yet completed.");
+        if (token != Version) throw new InvalidOperationException("The operation has become invalid.");
+        if (!_completed) throw new InvalidOperationException("The operation has not yet completed.");
 
         _error?.Throw();
         Debug.Fail($"{nameof(ThrowForFailedGetResult)} should never get here");

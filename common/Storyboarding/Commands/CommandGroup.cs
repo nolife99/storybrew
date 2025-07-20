@@ -66,8 +66,6 @@ public abstract class CommandGroup : ICommand
     {
         if (commands.Count <= 0) return;
 
-        commands.TrimExcess();
-
         for (var i = 0; i < indentation; ++i) writer.Write(' ');
 
         using (var header = GetCommandGroupHeader(ExportSettings.Default)) writer.WriteLine(header.AsReadOnlySpan());

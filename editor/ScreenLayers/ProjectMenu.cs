@@ -3,6 +3,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using BrewLib.Audio;
@@ -72,11 +73,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             [
                 timeB = new(WidgetManager)
                 {
-                    StyleName = "small",
-                    AnchorFrom = BoxAlignment.Centre,
-                    Text = "--:--:---",
-                    Tooltip = "Current time\nCtrl-C to copy",
-                    CanGrow = false
+                    StyleName = "small", AnchorFrom = BoxAlignment.Centre, Text = "--:--:---", CanGrow = false
                 },
                 divisorB = new(WidgetManager)
                 {
@@ -184,7 +181,6 @@ public class ProjectMenu(Project proj) : UiScreenLayer
                 {
                     StyleName = "icon",
                     Icon = IconFont.IosShare,
-                    Tooltip = "Export to .osb\n(Right click to export once for each diff)",
                     AnchorFrom = BoxAlignment.Centre,
                     CanGrow = false
                 }
@@ -368,15 +364,23 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             else exportProject();
         };
 
+        proj.LayerManager.OnLayersChanged += (_, _) =>
+        {
+            using var text = StringHelper.Interpolate(
+                $"Export to .osb ({StringHelper.ToByteSize(proj.LayerManager.Layers.Sum(l => l.EstimatedSize))})\n(Right click to export once for each diff)");
+
+            exportB.Tooltip = text.AsReadOnlySpan();
+        };
+
         proj.OnMapsetPathChanged += project_OnMapsetPathChanged;
         proj.OnEffectsContentChanged += project_OnEffectsContentChanged;
         proj.OnEffectsStatusChanged += project_OnEffectsStatusChanged;
 
         if (!proj.MapsetPathIsValid)
         {
-            using var text = TempList.Create("The mapset folder cannot be found.\n".AsSpan());
-            text.Append(proj.MapsetPath);
-            text.Append("\n\nPlease select a new one.");
+            using var text =
+                StringHelper.Interpolate(
+                    $"The mapset folder cannot be found.\n{proj.MapsetPath}\n\nPlease select a new one.");
 
             Manager.ShowMessage(text.AsReadOnlySpan(), changeMapsetFolder, true);
         }
@@ -565,15 +569,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             using (var temp = TempList.Create<char>())
             {
                 if (Manager.GetContext<Editor>().InputManager.Alt)
-                {
-                    temp.AppendFormatted(storyboardPosition.X, "f0");
-                    temp.Append(", ");
-                    temp.AppendFormatted(storyboardPosition.Y, "f0");
-                }
-                else temp.AppendFormatted(TimeSpan.FromSeconds(time), @"mm\:ss\.fff");
+                    temp.Append($"{storyboardPosition.X:f0}, {storyboardPosition.Y:f0}");
+                else temp.Append($@"{TimeSpan.FromSeconds(time):mm\:ss\.fff}");
 
                 timeB.Text = temp.AsReadOnlySpan();
             }
+
+            using (var text = StringHelper.Interpolate(CultureInfo.InvariantCulture,
+                $"Current time ({time * 1000:f0})\nCtrl-C to copy")) timeB.Tooltip = text.AsReadOnlySpan();
 
             using (var text = buildWarningMessage()) warningsLabel.Text = text.AsReadOnlySpan();
 
@@ -604,16 +607,12 @@ public class ProjectMenu(Project proj) : UiScreenLayer
 
         if (activeSprites >= 1500 || prolongedSprites != 0)
         {
-            warnings.Append("\ue002 ");
-            warnings.AppendFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
-            warnings.Append(" Sprite");
+            warnings.Append(CultureInfo.InvariantCulture, $"\ue002 {activeSprites:n0} Sprite");
             AppendPlural(ref warnings, activeSprites);
 
             if (prolongedSprites != 0)
             {
-                warnings.Append(" (");
-                warnings.AppendFormatted(prolongedSprites, "n0", CultureInfo.InvariantCulture);
-                warnings.Append(" Prolonged Sprite");
+                warnings.Append(CultureInfo.InvariantCulture, $" ({prolongedSprites:n0} Prolonged Sprite");
                 AppendPlural(ref warnings, prolongedSprites);
 
                 if (proj.DisplayDebugWarning)
@@ -635,8 +634,7 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         }
         else if (proj.DisplayDebugWarning && activeSprites > 0)
         {
-            warnings.AppendFormatted(activeSprites, "n0", CultureInfo.InvariantCulture);
-            warnings.Append(" Sprite");
+            warnings.Append(CultureInfo.InvariantCulture, $"{activeSprites:n0} Sprite");
             AppendPlural(ref warnings, activeSprites);
             warnings.Add('\n');
         }
@@ -655,19 +653,12 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         {
             if (showWarning) warnings.Append("\ue002 ");
 
-            warnings.AppendFormatted(commands, "n0", CultureInfo.InvariantCulture);
-            warnings.Append(" Command");
+            warnings.Append(CultureInfo.InvariantCulture, $"{commands:n0} Command");
             AppendPlural(ref warnings, commands);
 
             if (unusedCommands > 0)
             {
-                warnings.Append(" (");
-                warnings.AppendFormatted(unusedCommands, "n0", CultureInfo.InvariantCulture);
-
-                warnings.Append(" (");
-                warnings.AppendFormatted(unusedRatio, "0%", CultureInfo.InvariantCulture);
-
-                warnings.Append(") Command");
+                warnings.Append(CultureInfo.InvariantCulture, $" ({unusedCommands:n0} ({unusedRatio:0%}) Command");
                 AppendPlural(ref warnings, unusedCommands);
                 warnings.Append(" on Hidden Sprites)");
             }
@@ -715,16 +706,14 @@ public class ProjectMenu(Project proj) : UiScreenLayer
         if (screenFill >= 5 || proj.DisplayDebugWarning && screenFill > 0)
         {
             if (screenFill >= 5) warnings.Append("\ue002 ");
-            warnings.AppendFormatted(screenFill, "f2", CultureInfo.InvariantCulture);
-            warnings.Append("x Screen Fill\n");
+            warnings.Append(CultureInfo.InvariantCulture, $"{screenFill:f2}x Screen Fill\n");
         }
 
         var batches = proj.FrameStats.Batches;
         if (batches >= 500 || proj.DisplayDebugWarning && batches > 0)
         {
             if (batches >= 500) warnings.Append("\ue002 ");
-            warnings.AppendFormatted(batches, provider: CultureInfo.InvariantCulture);
-            warnings.Append(" Batch");
+            warnings.Append(CultureInfo.InvariantCulture, $"{batches:n0} Batch");
             AppendPlural(ref warnings, batches, "es");
             warnings.Add('\n');
         }
@@ -738,17 +727,13 @@ public class ProjectMenu(Project proj) : UiScreenLayer
             if (showMemoryWarning) warnings.Append("\ue002 ");
             if (frameGpuMemory > 0)
             {
-                warnings.AppendFormatted(frameGpuMemory, "0.0", CultureInfo.InvariantCulture);
-                warnings.Append("MB Frame Texture Memory");
-
+                warnings.Append(CultureInfo.InvariantCulture, $"{frameGpuMemory:0.0}MB Frame Texture Memory");
                 if (totalGpuMemory > 0) warnings.Append(" (");
             }
 
             if (totalGpuMemory > 0)
             {
-                warnings.AppendFormatted(totalGpuMemory, "0.0", CultureInfo.InvariantCulture);
-                warnings.Append("MB Total Texture Memory");
-
+                warnings.Append(CultureInfo.InvariantCulture, $"{totalGpuMemory:0.0}MB Total Texture Memory");
                 if (frameGpuMemory > 0) warnings.Add(')');
             }
 

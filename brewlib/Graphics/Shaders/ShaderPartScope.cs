@@ -23,16 +23,8 @@ public class ShaderPartScope(string variablePrefix)
     {
         foreach (var variable in variables)
         {
-            code.AddRange(variable.ShaderTypeName.GetString());
-            code.Add(' ');
-            code.Append(variable.Name);
-
-            if (variable.ArrayCount != -1)
-            {
-                code.Add('[');
-                code.AppendFormatted(variable.ArrayCount, provider: CultureInfo.InvariantCulture);
-                code.Add(']');
-            }
+            code.Append($"{variable.ShaderTypeName.GetString()} {variable.Name}");
+            if (variable.ArrayCount != -1) code.Append(CultureInfo.InvariantCulture, $"[{variable.ArrayCount}]");
 
             code.Append(";\n");
         }

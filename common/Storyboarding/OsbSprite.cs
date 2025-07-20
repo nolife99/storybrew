@@ -10,7 +10,6 @@ using CommandValues;
 using Display;
 using Mapset;
 using StorybrewCommon.Util;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 using ZLinq;
 
@@ -157,30 +156,41 @@ public class OsbSprite : StoryboardObject
         {
             if (FadeTimeline.HasCommands)
             {
-                var start = FadeTimeline.StartResult;
-                if (start.StartValue == 0) displayStartTime = float.Max(displayStartTime, start.StartTime);
+                Func<CommandDecimal, bool> isZero = static value => value == .0;
+                Func<CommandDecimal, CommandDecimal, bool> isNoOp = static (startValue, endValue)
+                    => startValue == .0 && endValue == .0;
 
-                var end = FadeTimeline.EndResult;
-                if (end.EndValue == 0) displayEndTime = float.Min(displayEndTime, end.EndTime);
+                if (FadeTimeline.FindStartEdge(isZero, isNoOp, out var startEdge))
+                    displayStartTime = float.Max(displayStartTime, startEdge);
+
+                if (FadeTimeline.FindEndEdge(isZero, isNoOp, out var endEdge))
+                    displayEndTime = float.Min(displayEndTime, endEdge);
             }
 
             if (ScaleTimeline.HasCommands)
             {
-                var start = ScaleTimeline.StartResult;
-                if (start.StartValue == 0) displayStartTime = float.Max(displayStartTime, start.StartTime);
+                Func<CommandDecimal, bool> isZero = static value => value == .0;
+                Func<CommandDecimal, CommandDecimal, bool> isNoOp = static (startValue, endValue)
+                    => startValue == .0 && endValue == .0;
 
-                var end = ScaleTimeline.EndResult;
-                if (end.EndValue == 0) displayEndTime = float.Min(displayEndTime, end.EndTime);
+                if (ScaleTimeline.FindStartEdge(isZero, isNoOp, out var startEdge))
+                    displayStartTime = float.Max(displayStartTime, startEdge);
+
+                if (ScaleTimeline.FindEndEdge(isZero, isNoOp, out var endEdge))
+                    displayEndTime = float.Min(displayEndTime, endEdge);
             }
 
             if (ScaleVecTimeline.HasCommands)
             {
-                var start = ScaleVecTimeline.StartResult;
-                if (start.StartValue.X <= 0 || start.StartValue.Y <= 0)
-                    displayStartTime = float.Max(displayStartTime, start.StartTime);
+                Func<CommandScale, bool> isZero = static value => value.X == 0 || value.Y == 0;
+                Func<CommandScale, CommandScale, bool> isNoOp = static (startValue, endValue)
+                    => startValue.X == .0 && endValue.X == .0 || startValue.Y == .0 && endValue.Y == .0;
 
-                var end = ScaleVecTimeline.EndResult;
-                if (end.EndValue.X <= 0 || end.EndValue.Y <= 0) displayEndTime = float.Min(displayEndTime, end.EndTime);
+                if (ScaleVecTimeline.FindStartEdge(isZero, isNoOp, out var startEdge))
+                    displayStartTime = float.Max(displayStartTime, startEdge);
+
+                if (ScaleVecTimeline.FindEndEdge(isZero, isNoOp, out var endEdge))
+                    displayEndTime = float.Min(displayEndTime, endEdge);
             }
         }
 
@@ -888,7 +898,8 @@ public class OsbSprite : StoryboardObject
     /// <returns> True if the sprite is active at <paramref name="time"/>, else returns false. </returns>
     public bool IsActive(float time) => StartTime <= time && time <= EndTime;
 
-    public bool ShouldBeActive(float time) => DisplayStartTime <= time && time <= DisplayEndTime;
+    /// <returns> True if the sprite is visible at <paramref name="time"/>, else returns false. </returns>
+    public bool InDisplayInterval(float time) => DisplayStartTime <= time && time <= DisplayEndTime;
 
     ///<summary> Writes this sprite's data to a stream. </summary>
     public override void WriteOsb(TextWriter writer,
@@ -923,18 +934,7 @@ public class OsbSprite : StoryboardObject
             MoveXTimeline.HasCommands || MoveYTimeline.HasCommands ?
                 (CommandPosition)transform.ApplyToPositionXY(InitialPosition) : transform.ApplyToPosition(InitialPosition);
 
-        using var builder = TempList.Create<char>();
-        builder.AppendEnum(layer);
-        builder.Add(',');
-
-        builder.AppendEnum(Origin);
-        builder.Add(',');
-
-        builder.Add('"');
-        builder.AddRange(texturePath.AsSpan().Trim());
-        builder.Add('"');
-
-        builder.Add(',');
+        using var builder = StringHelper.Interpolate($"{layer},{Origin},\"{texturePath.AsSpan().Trim()}\",");
 
         if (!MoveTimeline.HasCommands && !MoveXTimeline.HasCommands)
         {

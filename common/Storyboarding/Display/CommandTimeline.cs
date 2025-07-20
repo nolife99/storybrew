@@ -5,6 +5,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Commands;
 using CommandValues;
+using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
+using ZLinq;
 
 public interface CommandTimeline
 {
@@ -29,74 +32,6 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
 
     public CommandTimeline() { }
     public CommandTimeline(TValue defaultValue) => DefaultValue = defaultValue;
-
-    public CommandResult<TValue> StartResult
-    {
-        get
-        {
-            if (!HasCommands) return default;
-
-            var earliestResult = channels[0].StartResult;
-            foreach (var channel in channels)
-            {
-                var result = channel.StartResult;
-                if (result.StartTime < earliestResult.StartTime) earliestResult = result;
-            }
-
-            return earliestResult;
-        }
-    }
-
-    public CommandResult<TValue> EndResult
-    {
-        get
-        {
-            if (!HasCommands) return default;
-
-            var latestResult = channels[0].EndResult;
-            foreach (var channel in channels)
-            {
-                var result = channel.EndResult;
-                if (result.StartTime > latestResult.StartTime) latestResult = result;
-            }
-
-            return latestResult;
-        }
-    }
-
-    public TValue StartValue
-    {
-        get
-        {
-            if (!HasCommands) return DefaultValue;
-
-            var earliestResult = channels[0].StartResult;
-            foreach (var channel in channels)
-            {
-                var result = channel.StartResult;
-                if (result.StartTime < earliestResult.StartTime) earliestResult = result;
-            }
-
-            return earliestResult.StartValue;
-        }
-    }
-
-    public TValue EndValue
-    {
-        get
-        {
-            if (!HasCommands) return DefaultValue;
-
-            var latestResult = channels[0].EndResult;
-            foreach (var channel in channels)
-            {
-                var result = channel.EndResult;
-                if (result.EndTime > latestResult.EndTime) latestResult = result;
-            }
-
-            return latestResult.EndValue;
-        }
-    }
 
     public ReadOnlySpan<ICommand> Commands => defaultChannel is null ?
         default :
@@ -223,6 +158,75 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         }
 
         return currentState switch { ResultState.NoCommand => DefaultValue, _ => currentResult.ValueAtTime(time) };
+    }
+
+    public bool FindStartEdge(Func<TValue, bool> isZero, Func<TValue, TValue, bool> isNoOp, out float startEdge)
+    {
+        startEdge = float.MaxValue;
+
+        using var results = getCommandResults();
+        foreach (var result in results)
+        {
+            if (isNoOp(result.StartValue, result.EndValue)) continue;
+
+            if (isZero(result.StartValue))
+            {
+                startEdge = float.Min(startEdge, result.StartTime);
+                return true;
+            }
+
+            break;
+        }
+
+        return false;
+    }
+
+    public bool FindEndEdge(Func<TValue, bool> isZero, Func<TValue, TValue, bool> isNoOp, out float endEdge)
+    {
+        endEdge = float.MinValue;
+
+        using var results = getCommandResults();
+        foreach (var result in results.AsReadOnlySpan().AsValueEnumerable().Reverse())
+            if (endEdge == float.MinValue)
+            {
+                if (isNoOp(result.StartValue, result.EndValue)) continue;
+
+                if (isZero(result.EndValue)) endEdge = float.Max(endEdge, result.EndTime);
+                else return false;
+            }
+            else endEdge = float.Max(endEdge, result.EndTime);
+
+        return endEdge != float.MinValue;
+    }
+
+    TempList<CommandResult<TValue>> getCommandResults()
+    {
+        var result = TempList.Create<CommandResult<TValue>>();
+        foreach (var channel in channels)
+            switch (channel)
+            {
+                case CommandChannelTrigger<TValue> trigger:
+                    if (!trigger.Active) continue;
+
+                    foreach (var command in channel.Commands) result.Add(command.AsResult(trigger.TriggerTime));
+
+                    break;
+
+                case CommandChannelLoop<TValue> loop:
+                    for (var loopIndex = 0; loopIndex < loop.LoopCount; ++loopIndex)
+                        foreach (var command in channel.Commands)
+                            result.Add(command.AsResult(loop.LoopStartTime + loopIndex * loop.LoopDuration));
+
+                    break;
+
+                default:
+                    foreach (var command in channel.Commands) result.Add(command.AsResult());
+
+                    break;
+            }
+
+        result.Sort((x, y) => x.StartTime.CompareTo(y.StartTime));
+        return result;
     }
 
     enum ResultState

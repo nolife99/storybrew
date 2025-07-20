@@ -15,13 +15,7 @@ internal class CommandChannel<TValue> where TValue : struct, ICommandValue
 
     public bool HasOverlap { get; private set; }
 
-    public ITypedCommand<TValue> StartCommand => commands.Count != 0 ? commands[0] : null;
-    public ITypedCommand<TValue> EndCommand => commands.Count != 0 ? commands[^1] : null;
-
-    public virtual CommandResult<TValue> StartResult => StartCommand.AsResult();
-    public virtual CommandResult<TValue> EndResult => EndCommand.AsResult();
-
-    internal bool Add(ITypedCommand<TValue> command)
+    public bool Add(ITypedCommand<TValue> command)
     {
         var index = commands.BinarySearch(command);
         if (index >= 0)
@@ -45,7 +39,7 @@ internal class CommandChannel<TValue> where TValue : struct, ICommandValue
         return true;
     }
 
-    public ITypedCommand<TValue> CommandAtTime(float time)
+    protected ITypedCommand<TValue> CommandAtTime(float time)
     {
         if (commands.Count == 0) return null;
 

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using BrewLib.Graphics;
 using BrewLib.Graphics.Cameras;
 using BrewLib.IO;
@@ -225,10 +226,12 @@ public class EditorStoryboardSegment(Effect effect, EditorStoryboardLayer layer,
     {
         var exportSettings = ExportSettings.Default;
 
-        using ByteCounterStream stream = new();
-        using StreamWriter writer = new(stream, Project.Encoding);
+        ByteCountingTextWriter writer = new(Project.Encoding);
+        using var sync = TextWriter.Synchronized(writer);
 
-        foreach (var sbo in storyboardObjects) sbo.WriteOsb(writer, exportSettings, osbLayer, StoryboardTransform.Identity);
-        return (int)stream.Length;
+        Parallel.ForEach(storyboardObjects,
+            sbo => sbo.WriteOsb(sync, exportSettings, osbLayer, StoryboardTransform.Identity));
+
+        return (int)writer.ByteCount;
     }
 }

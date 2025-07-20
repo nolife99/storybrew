@@ -51,12 +51,12 @@ public class EditorOsbSprite : OsbSprite, IDisplayable, IPostProcessable
             ++frameStats.SpriteCount;
             frameStats.CommandCount += sprite.CommandCost;
 
-            if (!sprite.ShouldBeActive(time)) frameStats.ProlongedSprites.Add(sprite);
+            if (!sprite.InDisplayInterval(time)) frameStats.ProlongedSprites.Add(sprite);
             if (sprite.HasIncompatibleCommands) frameStats.IncompatibleSprites.Add(sprite);
             if (sprite.HasOverlappedCommands) frameStats.OverlappedSprites.Add(sprite);
         }
 
-        var forceVisible = !sprite.ShouldBeActive(time) && Native.Window.IsKeyDown(Keys.LeftAlt);
+        var forceVisible = !sprite.InDisplayInterval(time) && Native.Window.IsKeyDown(Keys.LeftAlt);
 
         var fade = (float)sprite.FadeTimeline.ValueAtTime(time);
         if (forceVisible) fade = float.Max(fade, .5f);

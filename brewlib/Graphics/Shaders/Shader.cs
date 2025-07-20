@@ -204,25 +204,14 @@ public sealed partial class Shader : IDisposable
             var character = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
             var lineNumber = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) - 1;
 
-            if (lineNumber > 0)
-            {
-                sb.Append("  ");
-                sb.AddRange(splitCode[lineNumber - 1].AsReadOnlySpan());
-                sb.Add('\n');
-
-                splitCode[lineNumber - 1].Dispose();
-            }
-
-            sb.Append("> ");
-            sb.AddRange(splitCode[lineNumber].AsReadOnlySpan());
-            sb.Add('\n');
-
-            splitCode[lineNumber].Dispose();
+            if (lineNumber > 0) sb.Append($"  {splitCode[lineNumber - 1].AsReadOnlySpan()}\n");
+            sb.Append($"> {splitCode[lineNumber].AsReadOnlySpan()}");
 
             for (var i = 0; i < character + 2; ++i) sb.Add(' ');
-            sb.Add('^');
-            sb.Add('\n');
+            sb.Append("^\n");
         }
+
+        foreach (var s in splitCode) s.Dispose();
 
         return sb.AsReadOnlySpan().ToString();
     }

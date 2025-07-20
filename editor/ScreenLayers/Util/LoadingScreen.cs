@@ -8,7 +8,6 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.StructBased.Internals;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<ValueTask> action) : UiScreenLayer
@@ -37,28 +36,18 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<ValueTask> acti
                         {
                             var (l, ex) = state;
 
-                            using var sb = TempList.Create(l.title.AsReadOnlySpan());
-                            sb.Append(" failed:\n \n");
-
-                            sb.Append(ex.Message);
-                            sb.Append(" (");
-                            sb.Append(ex.GetType().Name);
-                            sb.Append(")\n");
+                            using var sb = StringHelper.Interpolate(
+                                $"{l.title.AsReadOnlySpan()} failed:\n \n{ex.Message} ({ex.GetType().Name})\n");
 
                             var innerEx = ex.InnerException;
                             while (innerEx is not null)
                             {
-                                sb.Append("Caused by: ");
-                                sb.Append(innerEx.Message);
-                                sb.Append(" (");
-                                sb.Append(innerEx.GetType().Name);
-                                sb.Append(")\n ");
+                                sb.Append($"Caused by: {innerEx.Message} ({innerEx.GetType().Name})\n");
 
                                 innerEx = innerEx.InnerException;
                             }
 
-                            sb.Append("\n \nDetails:\n");
-                            sb.Append(ex.GetBaseException().ToString());
+                            sb.Append($"\n \nDetails:\n{ex.GetBaseException()}");
 
                             l.Manager.ShowMessage(sb.AsReadOnlySpan());
 
@@ -67,16 +56,12 @@ public class LoadingScreen(scoped ReadOnlySpan<char> title, Func<ValueTask> acti
                         (loadingScreen, e));
                 }
             },
-#pragma warning restore EPC17
-#pragma warning restore EPC17
             this,
             true);
 
         base.Load();
 
-        using var tempTitle = TempList.Create(title.AsReadOnlySpan());
-        tempTitle.Append("...");
-
+        using var tempTitle = StringHelper.Interpolate($"{title.AsReadOnlySpan()}...");
         WidgetManager.Root.Add(mainLayout = new(WidgetManager)
         {
             AnchorTarget = WidgetManager.Root,

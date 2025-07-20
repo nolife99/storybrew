@@ -248,15 +248,8 @@ public partial class EffectList : Widget
 
                 default:
                 {
-                    using var sb = TempList.Create<char>();
-                    sb.AddRange("Status: ".AsSpan());
-                    sb.AppendEnum(effect.Status);
-
-                    if (!effect.StatusMessage.IsWhiteSpace())
-                    {
-                        sb.AddRange("\n\n".AsSpan());
-                        sb.AddRange(effect.StatusMessage);
-                    }
+                    using var sb = StringHelper.Interpolate($"Status: {effect.Status}");
+                    if (!effect.StatusMessage.IsWhiteSpace()) sb.Append($"\n\n{effect.StatusMessage}");
 
                     Manager.ScreenLayerManager.ShowMessage(sb.AsReadOnlySpan());
 
@@ -267,15 +260,13 @@ public partial class EffectList : Widget
 
         renameButton.OnClick += (_, _) =>
         {
-            using var text = TempList.Create("Pick a new name for ".AsSpan());
-            text.AddRange(effect.Name);
-
+            using var text = StringHelper.Interpolate($"Pick a new name for {effect.Name}");
             Manager.ScreenLayerManager.ShowPrompt("Effect name",
                 text.AsReadOnlySpan(),
                 effect.Name,
                 newName =>
                 {
-                    effect.Name = newName.ToString();
+                    effect.Name = newName;
                     refreshEffects();
                 });
         };
@@ -293,10 +284,7 @@ public partial class EffectList : Widget
 
         removeButton.OnClick += (_, _) =>
         {
-            using var text = TempList.Create("Remove ".AsSpan());
-            text.AddRange(effect.Name);
-            text.Add('?');
-
+            using var text = StringHelper.Interpolate($"Remove {effect.Name}?");
             Manager.ScreenLayerManager.ShowMessage(text.AsReadOnlySpan(), () => project.Remove(effect), true);
         };
 
@@ -307,9 +295,7 @@ public partial class EffectList : Widget
     {
         button.Disabled = effect.StatusMessage.IsWhiteSpace();
 
-        using var tooltip = TempList.Create<char>();
-        tooltip.AppendEnum(effect.Status);
-
+        using var tooltip = StringHelper.Interpolate($"{effect.Status}");
         button.Tooltip = tooltip.AsReadOnlySpan();
 
         switch (effect.Status)
@@ -450,13 +436,7 @@ public partial class EffectList : Widget
     static TempList<char> getEffectDetails(Effect effect)
     {
         var str = TempList.Create("using ".AsSpan());
-        if (effect.EstimatedSize > 30720)
-        {
-            str.AddRange(effect.BaseName);
-            str.AddRange(" (".AsSpan());
-            str.AddRange(StringHelper.ToByteSize(effect.EstimatedSize).AsSpan());
-            str.Add(')');
-        }
+        if (effect.EstimatedSize > 30720) str.Append($"{effect.BaseName} ({StringHelper.ToByteSize(effect.EstimatedSize)})");
         else str.AddRange(effect.BaseName);
 
         return str;

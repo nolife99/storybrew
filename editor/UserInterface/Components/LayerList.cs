@@ -61,9 +61,7 @@ public class LayerList : Widget
         layersLayout.ClearWidgets();
         foreach (var osbLayer in Project.OsbLayers)
         {
-            using var text = TempList.Create<char>();
-            text.AppendEnum(osbLayer);
-
+            using var text = StringHelper.Interpolate($"{osbLayer}");
             layersLayout.Add(new Label(Manager)
             {
                 StyleName = "listHeader",

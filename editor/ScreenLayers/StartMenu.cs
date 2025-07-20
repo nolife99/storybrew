@@ -11,7 +11,6 @@ using OpenTK.Windowing.GraphicsLibraryFramework;
 using StorybrewEditor.Util;
 using Tiny;
 using Tiny.Formats.Json;
-using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 public class StartMenu : UiScreenLayer
@@ -179,22 +178,17 @@ public class StartMenu : UiScreenLayer
 
                 await Program.Schedule(s =>
                     {
-                        var (latestVer, desc, menu) = s;
+                        var (latestVer, desc, dlUrl, menu) = s;
 
                         if (Program.Version < latestVer)
                         {
                             menu.updateButton.Text = "Version " + latestVer + " available!";
 
-                            using (var sb = TempList.Create<char>())
-                            {
-                                sb.Append("What's new:\n\n");
-                                sb.AddRange(desc.AsSpan().TrimEnd('\n'));
-
+                            using (var sb = StringHelper.Interpolate($"What's new:\n\n{desc.AsSpan().TrimEnd('\n')}"))
                                 menu.updateButton.Tooltip = sb.AsReadOnlySpan();
-                            }
 
-                            if (downloadUrl is not null && latestVer >= new Version(1, 4))
-                                menu.updateButton.OnClick += (_, _) => menu.Manager.Add(new UpdateMenu(downloadUrl));
+                            if (dlUrl is not null && latestVer >= new Version(1, 4))
+                                menu.updateButton.OnClick += (_, _) => menu.Manager.Add(new UpdateMenu(dlUrl));
                             else menu.updateButton.OnClick += (_, _) => Updater.OpenLatestReleasePage();
 
                             menu.updateButton.StyleName = "";
@@ -202,13 +196,14 @@ public class StartMenu : UiScreenLayer
                         }
                         else
                         {
-                            menu.versionLabel.Tooltip = $"Recent changes:\n\n{desc.AsSpan().TrimEnd('\n')}";
+                            using var sb = StringHelper.Interpolate($"Recent changes:\n\n{desc.AsSpan().TrimEnd('\n')}");
+                            menu.versionLabel.Tooltip = sb.AsReadOnlySpan();
                             menu.updateButton.Displayed = false;
                         }
 
                         menu.bottomLayout.Pack(600);
                     },
-                    (latestVersion, description, this));
+                    (latestVersion, description, downloadUrl, this));
             }
             catch (Exception ex)
             {

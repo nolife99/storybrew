@@ -205,8 +205,7 @@ public class Widget(WidgetManager manager) : IDisposable
         {
             if (string.IsNullOrEmpty(modifier)) continue;
 
-            sb.Append(" #");
-            sb.Append(modifier);
+            sb.Append($" #{modifier}");
         }
 
         return sb.AsReadOnlySpan().ToString();
@@ -432,7 +431,7 @@ public class Widget(WidgetManager manager) : IDisposable
 
     public void Pack(float width = 0, float height = 0, float maxWidth = 0, float maxHeight = 0)
     {
-        for (var i = 0; i < 10; ++i)
+        for (var i = 0; i < 8; ++i)
         {
             var preferredSize = PreferredSize;
 

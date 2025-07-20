@@ -81,15 +81,8 @@ public static class ScriptCompiler
                 return trees.TryGetValue(k.Location.SourceTree, out var path) ? path.SourcePath : "";
             }))
         {
-            error.AddRange(Path.GetFileName(diagnostics.Key.AsSpan()));
-            error.Append(":\n");
-
-            foreach (var diagnostic in diagnostics)
-            {
-                error.Append("--");
-                error.Append(diagnostic.ToString());
-                error.Add('\n');
-            }
+            error.Append($"{Path.GetFileName(diagnostics.Key.AsSpan())}:\n");
+            foreach (var diagnostic in diagnostics) error.Append($"--{diagnostic.ToString()}\n");
         }
 
         throw new ScriptCompilationException(error.AsReadOnlySpan().ToString());

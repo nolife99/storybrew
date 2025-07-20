@@ -2,13 +2,10 @@
 
 using CommandValues;
 
-internal class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
+internal sealed class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue : struct, ICommandValue
 {
     public int LoopCount = 1;
     public float LoopStartTime, LoopDuration;
-
-    public override CommandResult<TValue> StartResult => StartCommand.AsResult(LoopStartTime);
-    public override CommandResult<TValue> EndResult => EndCommand.AsResult(LoopStartTime + (LoopCount - 1) * LoopDuration);
 
     public override bool ResultAtTime(float time, out CommandResult<TValue> result)
     {
@@ -20,14 +17,14 @@ internal class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue 
 
         if (time < LoopStartTime)
         {
-            result = StartResult;
+            result = Commands[0].AsResult(LoopStartTime);
             return true;
         }
 
         var loopTime = time - LoopStartTime;
         if (loopTime >= LoopCount * LoopDuration)
         {
-            result = EndResult;
+            result = Commands[^1].AsResult(LoopStartTime + (LoopCount - 1) * LoopDuration);
             return true;
         }
 
@@ -40,9 +37,9 @@ internal class CommandChannelLoop<TValue> : CommandChannel<TValue> where TValue 
         var loopNumber = (int)(loopTime / LoopDuration);
         loopTime %= LoopDuration;
 
-        if (loopTime <= StartCommand.StartTime)
+        if (loopTime <= Commands[0].StartTime)
         {
-            result = EndCommand.AsResult(LoopStartTime + (loopNumber - 1) * LoopDuration);
+            result = Commands[^1].AsResult(LoopStartTime + (loopNumber - 1) * LoopDuration);
             return true;
         }
 

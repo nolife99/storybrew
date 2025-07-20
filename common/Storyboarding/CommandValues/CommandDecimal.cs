@@ -24,11 +24,13 @@ using Tiny.PooledCollections.Generic.Temporary.Internals;
 
     public TempList<char> ToOsbString(ExportSettings exportSettings)
     {
-        using var arr = double.Round(value, 6).ToCharArray(provider: exportSettings.NumberFormat);
-        var span = arr.AsReadOnlySpan();
+        Span<char> arr = stackalloc char[128];
+        double.Round(value, 6).TryFormat(arr, out var written, provider: exportSettings.NumberFormat);
+
+        var span = arr[..written];
 
         var result = TempList.Create<char>();
-        if (span.StartsWith('-'))
+        if (span[0] == '-')
         {
             result.Add('-');
             span = span.TrimStart('-');
