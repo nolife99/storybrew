@@ -1,22 +1,18 @@
 ﻿namespace BrewLib.Memory;
 
 using System;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Tiny.PooledCollections.Generic.Temporary;
+using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 [InterpolatedStringHandler] public ref struct PoolingInterpolatedStringHandler
 {
-    const int MaxBufferSize = 512;
-    const char whitespace = ' ';
-
     readonly IFormatProvider provider;
     internal TempList<char> buffer;
 
     public PoolingInterpolatedStringHandler(int literalLength, int formattedCount, IFormatProvider provider = null)
     {
-        const int charsPerPlaceholder = 10;
-        var length = charsPerPlaceholder * formattedCount + literalLength;
+        var length = 10 * formattedCount + literalLength;
 
         buffer = (uint)length <= (uint)Array.MaxLength ?
             TempList.Create<char>(length) :
@@ -25,40 +21,27 @@ using Tiny.PooledCollections.Generic.Temporary;
         this.provider = provider;
     }
 
-    Span<char> GetSpan(int sizeHint) => buffer.GetInsertSpan(buffer.Count, sizeHint);
-
     public void AppendLiteral(string value) => AppendFormatted(value.AsSpan());
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // Avoids boxing value types by skipping tiered compilation
-    public void AppendFormatted<T>(T value, string format = null)
+    public void AppendFormatted(scoped ReadOnlySpan<char> value, int alignment = 0, string format = null)
     {
-        switch (value)
+        var leftAlign = false;
+        if (alignment < 0)
         {
-            case ISpanFormattable:
-                Span<char> span = stackalloc char[MaxBufferSize];
-                if (((ISpanFormattable)value).TryFormat(span, out var charsWritten, format, provider))
-                    span[..charsWritten].CopyTo(GetSpan(charsWritten));
-
-                break;
-
-            case IFormattable: AppendLiteral(((IFormattable)value).ToString(format, provider)); break;
-
-            case not null: AppendLiteral(value.ToString()); break;
+            leftAlign = true;
+            alignment = -alignment;
         }
-    }
-
-    void AppendFormatted(ReadOnlySpan<char> value, int alignment, bool leftAlign)
-    {
-        Debug.Assert(alignment >= 0);
 
         var padding = alignment - value.Length;
         if (padding <= 0)
         {
-            AppendFormatted(value);
+            buffer.AddRange(value);
             return;
         }
 
-        var span = GetSpan(alignment);
+        var span = buffer.GetInsertSpan(buffer.Count, alignment, false);
+
+        const char whitespace = ' ';
         if (leftAlign)
         {
             span.Slice(value.Length, padding).Fill(whitespace);
@@ -71,59 +54,46 @@ using Tiny.PooledCollections.Generic.Temporary;
         }
     }
 
-    public void AppendFormatted(ReadOnlySpan<char> value, int alignment)
+    public void AppendFormatted<T>(T value, int alignment = 0, string format = null)
     {
-        var leftAlign = false;
-
-        if (alignment < 0)
-        {
-            leftAlign = true;
-            alignment = -alignment;
-        }
-
-        AppendFormatted(value, alignment, leftAlign);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // Avoids boxing value types by skipping tiered compilation
-    public void AppendFormatted<T>(T value, int alignment, string format = null)
-    {
-        var leftAlign = false;
-
-        if (alignment < 0)
-        {
-            leftAlign = true;
-            alignment = -alignment;
-        }
-
         switch (value)
         {
             case ISpanFormattable:
-                Span<char> span = stackalloc char[MaxBufferSize];
-                if (!((ISpanFormattable)value).TryFormat(span, out var charsWritten, format, provider)) break;
+                buffer.GetUnsafe(out var array, out var count);
+                var bufferSize = array.Length - count;
 
-                var padding = alignment - charsWritten;
-                var dest = GetSpan(charsWritten + padding);
-
-                if (padding <= 0) { }
-                else if (leftAlign)
-                {
-                    span[..charsWritten].CopyTo(dest);
-                    dest[charsWritten..].Fill(whitespace);
-                }
+                int charsWritten;
+                if (value is Enum)
+                    while (!TryFormatUnconstrained(null, value, new(array, count, bufferSize), out charsWritten, format))
+                        Grow(ref buffer);
                 else
-                {
-                    dest[..padding].Fill(whitespace);
-                    span[..charsWritten].CopyTo(dest[padding..]);
-                }
+                    while (!((ISpanFormattable)value).TryFormat(new(array, count, bufferSize),
+                        out charsWritten,
+                        format,
+                        provider))
+                        Grow(ref buffer);
 
+                buffer.GetInsertSpan(count, charsWritten, false);
                 break;
 
-            case IFormattable:
-                AppendFormatted(((IFormattable)value).ToString(format, provider).AsSpan(), alignment, leftAlign); break;
+                void Grow(scoped ref TempList<char> buf)
+                {
+                    bufferSize = array.Length < Array.MaxLength ? bufferSize << 1 : throw new InsufficientMemoryException();
 
-            case not null: AppendFormatted(value.ToString().AsSpan(), alignment, leftAlign); break;
+                    buf.EnsureCapacity(buf.Count + bufferSize);
+                    buf.GetUnsafe(out array, out _);
+                }
+
+            case IFormattable: AppendFormatted(((IFormattable)value).ToString(format, provider).AsSpan(), alignment); break;
+
+            case not null: AppendFormatted(value.ToString().AsSpan(), alignment); break;
         }
     }
 
-    public void AppendFormatted(ReadOnlySpan<char> value) => value.CopyTo(GetSpan(value.Length));
+    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "TryFormatUnconstrained")]
+    static extern bool TryFormatUnconstrained<TEnum>(Enum c,
+        TEnum value,
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format = default);
 }

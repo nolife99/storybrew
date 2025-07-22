@@ -2,9 +2,7 @@ namespace StorybrewCommon.Storyboarding.CommandValues;
 
 using System;
 using System.Runtime.InteropServices;
-using BrewLib.Util;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
 
 ///<summary> Custom decimal handler for storyboarding. </summary>
 [StructLayout(LayoutKind.Sequential)] public readonly record struct CommandDecimal : ICommandValue

@@ -56,6 +56,7 @@ public sealed class Editor(NativeWindow window) : IDisposable
 
         drawContext = new();
         drawContext.Register(this);
+        drawContext.Register(ResourceContainer, true);
         drawContext.Register<TextureContainer>(new TextureContainerAtlas(ResourceContainer), true);
 
         drawContext.Register<IQuadRenderer>(new QuadRendererBuffered(), true);

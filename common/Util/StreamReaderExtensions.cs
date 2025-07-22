@@ -68,7 +68,7 @@ public static class StreamReaderExtensions
     {
         list = TempList.Create<char>();
 
-        if (reader.EndOfStream) return false;
+        if (reader.Peek() == -1) return false;
 
         int charRead;
         var foundEndOfLine = false;

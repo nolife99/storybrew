@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using Commands;
 using CommandValues;
 using Tiny.PooledCollections.Generic.Temporary;
-using Tiny.PooledCollections.Generic.Temporary.Internals;
-using ZLinq;
 
 public interface CommandTimeline
 {
@@ -186,7 +184,9 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
         endEdge = float.MinValue;
 
         using var results = getCommandResults();
-        foreach (var result in results.AsReadOnlySpan().AsValueEnumerable().Reverse())
+        for (var i = results.Count - 1; i >= 0; --i)
+        {
+            var result = results[i];
             if (endEdge == float.MinValue)
             {
                 if (isNoOp(result.StartValue, result.EndValue)) continue;
@@ -195,6 +195,7 @@ public class CommandTimeline<TValue> : CommandTimeline where TValue : struct, IC
                 else return false;
             }
             else endEdge = float.Max(endEdge, result.EndTime);
+        }
 
         return endEdge != float.MinValue;
     }

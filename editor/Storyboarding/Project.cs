@@ -84,12 +84,15 @@ public sealed partial class Project : IDisposable
         }");
 
         initializeAssetWatcher();
-        scriptManager = new(resourceContainer,
-            "StorybrewScripts",
-            ScriptsPath,
-            CommonScriptsPath,
-            scriptsLibraryPath,
-            ReferencedAssemblies);
+        using (var referencedAss = DefaultAssemblies.AsValueEnumerable()
+            .Union(ImportedAssemblies.AsValueEnumerable())
+            .ToArrayPool())
+            scriptManager = new(resourceContainer,
+                "StorybrewScripts",
+                ScriptsPath,
+                CommonScriptsPath,
+                scriptsLibraryPath,
+                referencedAss.Span);
 
         effectUpdateQueue.OnActionFailed += (effect, e)
             => Trace.TraceError($"'{effect}' action: {e.GetType()} ({e.Message})");
@@ -492,22 +495,24 @@ public sealed partial class Project : IDisposable
                 "*.dll"))
     ];
 
-    PooledHashSet<string> importedAssemblies = [];
+    readonly PooledList<string> importedAssemblies = [];
 
-    public ICollection<string> ImportedAssemblies
+    public ReadOnlySpan<string> ImportedAssemblies
     {
-        get => importedAssemblies;
+        get => importedAssemblies.AsReadOnlySpan();
         set
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
-            importedAssemblies.Dispose();
+            importedAssemblies.Clear();
 
-            importedAssemblies = value as PooledHashSet<string> ?? new(value);
-            scriptManager.ReferencedAssemblies = ReferencedAssemblies;
+            using var distinctAss = value.AsValueEnumerable().Distinct().ToArrayPool();
+            using var referencedAss =
+                DefaultAssemblies.AsValueEnumerable().Union(distinctAss.AsValueEnumerable()).ToArrayPool();
+
+            scriptManager.ReferencedAssemblies = referencedAss.Span;
+            importedAssemblies.AddRange(distinctAss.Span);
         }
     }
-
-    public IEnumerable<string> ReferencedAssemblies => DefaultAssemblies.Union(importedAssemblies);
 
     #endregion
 
@@ -676,11 +681,9 @@ public sealed partial class Project : IDisposable
             });
         }
 
-        var assemblyCount = r.ReadInt32();
-        HashSet<string> imported = new(assemblyCount);
-        for (var i = 0; i < assemblyCount; ++i) imported.Add(r.ReadString());
+        using var imported = ValueEnumerable.Range(0, r.ReadInt32()).Select(_ => r.ReadString()).Distinct().ToArrayPool();
 
-        ImportedAssemblies = imported;
+        ImportedAssemblies = imported.Span;
     }
 
     async ValueTask saveText(string path)
@@ -814,7 +817,8 @@ public sealed partial class Project : IDisposable
 
         SelectBeatmap(indexRoot.Value<long>("BeatmapId"), indexRoot.Value<string>("BeatmapName"));
 
-        ImportedAssemblies = indexRoot.Values<string>("Assemblies").ToHashSet();
+        using (var assemblies = indexRoot.Values<string>("Assemblies").AsValueEnumerable().ToArrayPool())
+            ImportedAssemblies = assemblies.Span;
 
         // Load effects
         using PooledDictionary<string, Action> layerInserters = new();

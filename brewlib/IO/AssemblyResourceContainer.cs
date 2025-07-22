@@ -6,15 +6,18 @@ using System.IO;
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
+using Memory;
 using Util;
 
-public class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
-    : ResourceContainer
+public sealed class AssemblyResourceContainer(Assembly assembly, string baseNamespace = null, string basePath = null)
+    : ResourceContainer, IDisposable
 {
     readonly string baseNamespace = baseNamespace ?? $"{assembly.EntryPoint.DeclaringType.Namespace}.Resources",
         basePath = basePath ?? "resources";
 
     ZipArchive archive;
+
+    public void Dispose() => archive?.Dispose();
 
     public Stream GetStream(string path, ResourceSource sources)
     {
@@ -46,7 +49,7 @@ public class AssemblyResourceContainer(Assembly assembly, string baseNamespace =
                     var entry = archive.GetEntry(path);
                     if (entry is not null)
                     {
-                        MemoryStream bytes = new();
+                        PoolingMemoryStream bytes = new();
                         using (var entryStream = entry.Open()) entryStream.CopyTo(bytes, 65536);
 
                         bytes.Position = 0;

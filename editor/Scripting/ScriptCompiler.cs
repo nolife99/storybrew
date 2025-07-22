@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Threading;
+using BrewLib.Memory;
 using BrewLib.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -16,13 +17,14 @@ using Storyboarding;
 using Tiny.PooledCollections.Generic.StructBased;
 using Tiny.PooledCollections.Generic.Temporary;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using ZLinq;
 
 public static class ScriptCompiler
 {
     public static Assembly Compile(AssemblyLoadContext context,
         IEnumerable<string> sourcePaths,
         string asmName,
-        IEnumerable<string> referencedAssemblies,
+        ReadOnlySpan<string> referencedAssemblies,
         CancellationTokenSource token)
     {
         var tokenSource = token?.Token ?? CancellationToken.None;
@@ -37,22 +39,22 @@ public static class ScriptCompiler
                 (src, sourceText));
         }
 
-        EmitResult result;
-        using (MemoryStream assemblyStream = new())
+        using var assemblies = ValueList.Create<MetadataReference>();
+        foreach (var asmPath in referencedAssemblies)
         {
-            using var assemblies = ValueList.Create<MetadataReference>();
-            foreach (var asmPath in referencedAssemblies)
+            using var stream = File.OpenRead(asmPath);
+            if (!Project.DefaultAssemblies.Contains(asmPath))
             {
-                using var stream = File.OpenRead(asmPath);
-                if (!Project.DefaultAssemblies.Contains(asmPath))
-                {
-                    context.LoadFromStream(stream);
-                    stream.Position = 0;
-                }
-
-                assemblies.Add(MetadataReference.CreateFromStream(stream));
+                context.LoadFromStream(stream);
+                stream.Position = 0;
             }
 
+            assemblies.Add(MetadataReference.CreateFromStream(stream));
+        }
+
+        EmitResult result;
+        using (PoolingMemoryStream assemblyStream = new())
+        {
             result = CSharpCompilation
                 .Create(asmName,
                     trees.Keys,
@@ -73,7 +75,8 @@ public static class ScriptCompiler
         }
 
         using var error = TempList.Create("Compilation error\n \n".AsSpan());
-        foreach (var diagnostics in result.Diagnostics.Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
+        foreach (var diagnostics in result.Diagnostics.AsValueEnumerable()
+            .Where(diagnostic => diagnostic.Severity is DiagnosticSeverity.Error)
             .GroupBy(k =>
             {
                 if (k.Location.SourceTree is null) return "";

@@ -9,14 +9,15 @@ using BrewLib.UserInterface;
 using BrewLib.Util;
 using Storyboarding;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Tiny.PooledCollections.Generic.Temporary.Internals;
+using ZLinq;
 
 public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 {
     static readonly KeyValuePair<string, string>[] fileFilter = [new(".NET Assemblies", "dll")];
 
-    readonly PooledHashSet<string> selectedAssemblies =
-        project.ImportedAssemblies as PooledHashSet<string> ?? new(project.ImportedAssemblies);
+    readonly PooledList<string> selectedAssemblies = new(project.ImportedAssemblies);
 
     LinearLayout layout, assembliesLayout;
     Button okButton, cancelButton;
@@ -87,7 +88,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 
         okButton.OnClick += (_, _) =>
         {
-            project.ImportedAssemblies = selectedAssemblies;
+            project.ImportedAssemblies = selectedAssemblies.AsReadOnlySpan();
             Exit();
         };
 
@@ -105,7 +106,7 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
     void refreshAssemblies()
     {
         assembliesLayout.ClearWidgets();
-        foreach (var assembly in selectedAssemblies.OrderBy(getAssemblyName))
+        foreach (var assembly in selectedAssemblies.AsReadOnlySpan().AsValueEnumerable().OrderBy(getAssemblyName))
         {
             Button editButton, removeButton;
             assembliesLayout.Add(new LinearLayout(WidgetManager)
@@ -229,6 +230,8 @@ public class ReferencedAssemblyConfig(Project project) : UiScreenLayer
 
     void addReferencedAssembly(string assembly)
     {
+        if (selectedAssemblies.Contains(assembly)) return;
+
         selectedAssemblies.Add(assembly);
         refreshAssemblies();
     }

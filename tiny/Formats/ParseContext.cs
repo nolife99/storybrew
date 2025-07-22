@@ -51,7 +51,7 @@ public sealed class ParseContext<TTokenType> : IDisposable
     public void ConsumeToken()
     {
         CurrentToken = LookaheadToken;
-        LookaheadToken = tokenEnumerator.MoveNext() ? tokenEnumerator.Current : null;
+        LookaheadToken = tokenEnumerator.MoveNext() ? tokenEnumerator.Current : default;
     }
 
     void initializeCurrentAndLookahead()

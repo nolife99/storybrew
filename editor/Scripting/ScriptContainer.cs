@@ -9,6 +9,8 @@ using System.Runtime.Loader;
 using System.Threading;
 using StorybrewCommon.Scripting;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
+using ZLinq;
 
 public sealed class ScriptContainer<TScript> : IDisposable where TScript : Script
 {
@@ -25,7 +27,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
     public ScriptContainer(string scriptTypeName,
         string mainSourcePath,
         string libraryFolder,
-        IEnumerable<string> referencedAssemblies)
+        ReadOnlySpan<string> referencedAssemblies)
     {
         ScriptTypeName = scriptTypeName;
         MainSourcePath = mainSourcePath;
@@ -58,18 +60,19 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
         }
     }
 
-    public IEnumerable<string> ReferencedAssemblies
+    public ReadOnlySpan<string> ReferencedAssemblies
     {
-        get => referencedAssemblies;
+        get => referencedAssemblies.AsReadOnlySpan();
         set
         {
-            PooledList<string> newReferencedAssemblies = new(value.Distinct());
+            using var distinct = value.AsValueEnumerable().Distinct().ToArrayPool();
             if (referencedAssemblies is not null &&
-                newReferencedAssemblies.Count == referencedAssemblies.Count &&
-                newReferencedAssemblies.TrueForAll(referencedAssemblies.Contains)) return;
+                distinct.Size == referencedAssemblies.Count &&
+                distinct.AsValueEnumerable().All(referencedAssemblies.Contains)) return;
 
-            referencedAssemblies?.Dispose();
-            referencedAssemblies = newReferencedAssemblies;
+            referencedAssemblies ??= new();
+            referencedAssemblies.Clear();
+            referencedAssemblies.AddRange(distinct.Span);
 
             ReloadScript();
         }
@@ -99,7 +102,7 @@ public sealed class ScriptContainer<TScript> : IDisposable where TScript : Scrip
                         scriptDomain,
                         SourcePaths,
                         Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture),
-                        referencedAssemblies,
+                        referencedAssemblies.AsReadOnlySpan(),
                         token)
                     .GetType(ScriptTypeName, true);
 

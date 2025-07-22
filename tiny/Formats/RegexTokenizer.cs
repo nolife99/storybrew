@@ -1,10 +1,9 @@
 ﻿namespace Tiny.Formats;
 
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
+using ZLinq;
 
 public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.Definition> definitions,
     TTokenType? endLineToken) : ITokenizer<TTokenType> where TTokenType : struct
@@ -25,54 +24,78 @@ public class RegexTokenizer<TTokenType>(IEnumerable<RegexTokenizer<TTokenType>.D
         }
     }
 
-    public IEnumerable<Token<TTokenType>> Tokenize(string content)
+    IEnumerable<Token<TTokenType>> Tokenize(string content)
     {
-        Definition.Match previousMatch = null;
-        foreach (var byStartGroup in definitions.SelectMany((d, i) => d.FindMatches(content, i))
-            .GroupBy(m => m.StartIndex)
-            .OrderBy(g => g.Key))
+        if (content == null) yield break;
+
+        // TODO: Change to allocation-less
+        /* using PooledList<Definition.Match> matches = new();
+        foreach (var def in definitions)
         {
-            var bestMatch = byStartGroup.OrderBy(m => m.Priority).First();
-            if (previousMatch is not null && bestMatch.StartIndex < previousMatch.EndIndex) continue;
-
-            yield return new(bestMatch.Type, bestMatch.Value) { CharNumber = bestMatch.StartIndex };
-
-            previousMatch = bestMatch;
-        }
-
-        if (endLineToken.HasValue) yield return new(Nullable.GetValueRefOrDefaultRef(in endLineToken));
-    }
-
-    public class Definition(TTokenType matchType, string regexPattern, int captureGroup = 1)
-    {
-        readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase);
-
-        public IEnumerable<Match> FindMatches(string input, int priority)
-        {
-            foreach (var m in regex.Matches(input))
+            var matchColl = def.regex.Matches(content);
+            for (var i = 0; i < matchColl.Count; ++i)
             {
-                var match = (System.Text.RegularExpressions.Match)m;
-
-                yield return new Match
+                var match = matchColl[i];
+                matches.Add(new()
                 {
                     StartIndex = match.Index,
                     EndIndex = match.Index + match.Length,
-                    Priority = priority,
-                    Type = matchType,
-                    Value = match.Groups.Count > captureGroup ? match.Groups[captureGroup].Value : match.Value
-                };
+                    Priority = i,
+                    Type = def.matchType,
+                    Value = match.Groups.Count > def.captureGroup ? match.Groups[def.captureGroup].Value : match.Value
+                });
             }
         }
+        matches.Sort((a, b) => a.StartIndex.CompareTo(b.StartIndex)); */
 
-        public override string ToString() => $"regex:{regex}, matchType:{matchType}, captureGroup:{captureGroup}";
+        using var matches = definitions.AsValueEnumerable()
+            .SelectMany((d, i) => d.regex.Matches(content)
+                .AsValueEnumerable()
+                .Select(match => new Definition.Match
+                {
+                    StartIndex = match.Index,
+                    EndIndex = match.Index + match.Length,
+                    Priority = i,
+                    Type = d.matchType,
+                    Value = match.Groups.Count > d.captureGroup ? match.Groups[d.captureGroup].Value : match.Value
+                }))
+            .OrderBy(d => d.StartIndex)
+            .ToArrayPool();
 
-        public record Match
+        var matchArr = matches.Array;
+
+        Definition.Match previousMatch = default;
+        for (var i = 0; i < matches.Size; ++i)
         {
-            public int StartIndex, EndIndex, Priority;
-            public TTokenType Type;
-            public string Value;
+            var current = matchArr[i];
 
-            public override string ToString() => $"{Type} <{Value}> from {StartIndex} to {EndIndex}, priority:{Priority}";
+            if (previousMatch.Value is not null && current.StartIndex < previousMatch.EndIndex) continue;
+
+            if (i + 1 < matches.Size &&
+                matchArr[i + 1].StartIndex == current.StartIndex &&
+                matchArr[i + 1].Priority < current.Priority) continue;
+
+            yield return new(current.Type, current.Value) { CharNumber = current.StartIndex };
+
+            previousMatch = current;
+        }
+
+        if (endLineToken.HasValue) yield return new(endLineToken.Value);
+    }
+
+    public sealed class Definition(TTokenType matchType, string regexPattern, int captureGroup = 1)
+    {
+        internal readonly int captureGroup = captureGroup;
+        internal readonly TTokenType matchType = matchType;
+        internal readonly Regex regex = new(regexPattern, RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        internal readonly record struct Match
+        {
+            public int StartIndex { get; init; }
+            public int EndIndex { get; init; }
+            public int Priority { get; init; }
+            public TTokenType Type { get; init; }
+            public string Value { get; init; }
         }
     }
 }

@@ -12,6 +12,7 @@ using BrewLib.Util;
 using Storyboarding;
 using StorybrewCommon.Scripting;
 using Tiny.PooledCollections.Generic;
+using Tiny.PooledCollections.Generic.Internals;
 using Util;
 
 public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
@@ -33,7 +34,7 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         string scriptsSourcePath,
         string commonScriptsPath,
         string scriptsLibraryPath,
-        IEnumerable<string> referencedAssemblies)
+        ReadOnlySpan<string> referencedAssemblies)
     {
         this.resourceContainer = resourceContainer;
         this.scriptsNamespace = scriptsNamespace;
@@ -77,13 +78,17 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
         Trace.WriteLine($"Watching (library): {scriptsLibraryPath}");
     }
 
-    public IEnumerable<string> ReferencedAssemblies
+    public ReadOnlySpan<string> ReferencedAssemblies
     {
-        get => referencedAssemblies;
+        get => referencedAssemblies.AsReadOnlySpan();
         set
         {
-            referencedAssemblies = value as PooledList<string> ?? new(value);
-            foreach (var container in scriptContainers.Values) container.ReferencedAssemblies = referencedAssemblies;
+            referencedAssemblies ??= new();
+            referencedAssemblies.Clear();
+            referencedAssemblies.AddRange(value);
+
+            foreach (var container in scriptContainers.Values) container.ReferencedAssemblies = value;
+
             updateSolutionFiles();
         }
     }
@@ -111,8 +116,10 @@ public sealed class ScriptManager<TScript> : IDisposable where TScript : Script
             }
         }
 
-        return altLookup[scriptName] =
-            new($"{scriptsNamespace}.{scriptName}", sourcePath, scriptsLibraryPath, referencedAssemblies);
+        return altLookup[scriptName] = new($"{scriptsNamespace}.{scriptName}",
+            sourcePath,
+            scriptsLibraryPath,
+            referencedAssemblies.AsReadOnlySpan());
     }
 
     public IEnumerable<string> GetScriptNames() => Directory
